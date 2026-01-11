@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Polarity Universe (Local)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <style>
+        /* --- Общие стили --- */
+        body {
+            user-select: none;
+            margin: 0;
+            overflow: hidden;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            background: #000;
+        }
+
+        /* --- Стили кнопок --- */
+
+
+        
+        .logo-image {
+            height: 48px;
+            width: auto;
+            display: block;
+            transition: opacity 0.3s ease;
+        }
+        .logo-link:hover .logo-image { opacity: 0.7; }
+
+        .logo-link { 
+            left: 50%; 
+            transform: translateX(-50%); 
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.3s;
+        }
+        .control-button, 
+        .top-control, 
+        .mid-control, 
+        .mode-menu-item, 
+        .secret, 
+        .word-label,
+        #mode-dropdown-toggle {
+            font-family: 'Luckiest Guy', cursive !important;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-button, .top-control, .mid-control {
+            position: fixed;
+            z-index: 1000;
+            cursor: pointer;
+            width: auto;
+            height: auto;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: normal;
+            color: rgba(255, 255, 255, 0.9) !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            padding: 0;
+            background: none;
+        }
+
+        .control-button { bottom: 20px; }
+        .further-button { left: 3%; right: auto; }
+        .closer-button { right: 3%; left: auto; }
+        .fly-button-base { left: 50%; transform: translateX(-50%); }
+
+        .top-control { top: 20px; }
+        .wire-button { 
+            top: 50%; 
+            right: 3%; left: auto;
+            transform: translateY(-50%); 
+        } 
+        
+        .mid-control { top: 50%; transform: translateY(-50%); }
+        .hidden { display: none; }
+
+        .polarity-top-control { position: fixed; top: 20px; z-index: 1000; }
+        .polarity-bottom-control { position: fixed; bottom: 55px; z-index: 1000; }
+        
+        .fore-button { right: 3%; left: auto; }
+        .go-button { left: 50%; transform: translateX(-50%); bottom: 60px; } 
+
+        .mode-menu-container {
+            position: fixed;
+            top: 20px;
+            left: 3%;
+            z-index: 1000;
+        }
+        .mode-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 50px;
+            display: none;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 0;
+            pointer-events: auto;
+        }
+        .mode-menu.show { display: flex; }
+        .mode-menu-item {
+            width: auto;
+            height: auto;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: normal;
+            color: rgba(255, 255, 255, 0.9) !important;
+            cursor: pointer;
+            padding: 5px 0;
+            background: none;
+            border: none;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        /* Объединяем стили для всех типов подписей */
+        .word-label, .secret {
+            position: fixed;
+            font-family: monospace;
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.4) !important;
+            background: transparent !important;
+            text-decoration: none;
+            padding: 10px;
+            pointer-events: auto;
+            z-index: 1000;
+            opacity: 0.7 !important;
+            transition: opacity 0.3s ease;
+        }
+
+        .word-label:hover, .secret:hover {
+            opacity: 1.0 !important;
+            color: rgba(255, 255, 255, 1.0) !important;
+        }
+
+        .secret:hover {
+            opacity: 0.5;
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="control-button further-button">Further</div>
+    <div class="control-button closer-button">Closer</div>
+    <div class="control-button fly-button-base">Fly</div> 
+    <div class="top-control logo-link" onclick="location.href='index.html'"><img src="logo.png" alt="Logo" class="logo-image"></div>    
+
+    <div class="top-control wire-button">Wire</div> 
+    <input type="file" id="file-input" style="display: none;" accept=".json">
+
+    <div class="mode-menu-container">
+        <div class="top-control polarity-top-control mode-button" id="mode-dropdown-toggle">Static</div>
+        
+        <div class="mode-menu" id="mode-menu-list">
+            <div class="mode-menu-item" data-mode="Fix">Static</div>
+            <div class="mode-menu-item" data-mode="Polar">Polar</div>
+            <div class="mode-menu-item" data-mode="Delete">Delete</div>
+            <div class="mode-menu-item" data-mode="View">View</div> 
+        </div> 
+    </div>
+    <div class="top-control polarity-top-control fore-button">Strike</div>
+
+    <div class="control-button polarity-bottom-control go-button">Bypass</div>
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
+
+<script type="module">
+// --- Local Setup Only ---
+// Все импорты Yjs удалены.
+
+// Локальное хранилище объектов (вместо Yjs Map)
+const localObjectsMap = new Map(); 
+
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+// --- I. Imports & THREE.js Setup ---
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x007bff);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
+camera.position.z = 30;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: false });
+renderer.shadowMap.enabled = false; 
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.005;
+controls.enableZoom = true;
+controls.zoomSpeed = 0.5;
+controls.enablePan = true;
+controls.panSpeed = 0.3;
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambientLight);
+const cameraLightGroup = new THREE.Group();
+camera.add(cameraLightGroup);
+scene.add(camera);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+directionalLight.position.set(0, 0, 10);
+cameraLightGroup.add(directionalLight);
+const ultramarineLight = new THREE.DirectionalLight(0x3f00ff, 1.0);
+ultramarineLight.position.set(0, 0, -10);
+cameraLightGroup.add(ultramarineLight);
+
+const additionalLights = [
+    { color: 0xff0000, position: [10, 0, 0] },
+    { color: 0x00ff00, position: [0, 10, 0] },
+    { color: 0x0000ff, position: [0, 0, 10] },
+    { color: 0x3f00ff, position: [-10, -10, -10] },
+];
+additionalLights.forEach(({ color, position }) => {
+    const light = new THREE.DirectionalLight(color, 0.8);
+    light.position.set(...position);
+    scene.add(light);
+});
+
+// --- III. Background Animation ---
+const colors = ['#006ee5', '#f84d54', '#000033', '#f84d54']; 
+let currentColorIndex = 0;
+function changeBackgroundColor() {
+    currentColorIndex = (currentColorIndex + 1) % colors.length;
+    animateBackgroundColor(new THREE.Color(colors[currentColorIndex]));
+}
+function animateBackgroundColor(targetColor) {
+    const startColor = scene.background.clone();
+    const duration = 60; 
+    const startTime = performance.now();
+    function updateBackgroundColor() {
+        const elapsed = (performance.now() - startTime) / 1000;
+        const progress = Math.min(elapsed / duration, 1);
+        scene.background.lerpColors(startColor, targetColor, progress);
+        if (progress < 1) requestAnimationFrame(updateBackgroundColor);
+    }
+    updateBackgroundColor();
+}
+setInterval(changeBackgroundColor, 100000); 
+
+// --- IV. Forma Base Logic ---
+let formaCubeFaces = [];
+let formaCubeGroup = null;
+const CUBE_SIZE = 5;
+
+function addInternalLights(group) {
+    const warmInternalLight = new THREE.PointLight(0xffaa00, 0.01, 0);
+    warmInternalLight.position.set(0, 0, 0);
+    group.add(warmInternalLight);
+}
+const FACE_CONFIGS = [
+    { color: 0xff0000, pos: [CUBE_SIZE/2, 0, 0], rot: [0, Math.PI / 2, 0], id: 0, normal: new THREE.Vector3(1, 0, 0) },
+    { color: 0x00ff00, pos: [-CUBE_SIZE/2, 0, 0], rot: [0, -Math.PI / 2, 0], id: 1, normal: new THREE.Vector3(-1, 0, 0) },
+    { color: 0x0000ff, pos: [0, CUBE_SIZE/2, 0], rot: [-Math.PI / 2, 0, 0], id: 2, normal: new THREE.Vector3(0, 1, 0) },
+    { color: 0xffff00, pos: [0, -CUBE_SIZE/2, 0], rot: [Math.PI / 2, 0, 0], id: 3, normal: new THREE.Vector3(0, -1, 0) },
+    { color: 0x00ffff, pos: [0, 0, CUBE_SIZE/2], rot: [0, 0, 0], id: 4, normal: new THREE.Vector3(0, 0, 1) },
+    { color: 0xff00ff, pos: [0, 0, -CUBE_SIZE/2], rot: [0, Math.PI, 0], id: 5, normal: new THREE.Vector3(0, 0, -1) },
+];
+
+const getTunnelFaceId = (normal) => {
+    const inverseNormal = normal.clone().negate();
+    let bestMatchId = -1;
+    let maxDot = -Infinity;
+    FACE_CONFIGS.forEach(config => {
+        const dot = config.normal.dot(inverseNormal);
+        if (dot > maxDot) {
+            maxDot = dot;
+            bestMatchId = config.id;
+        }
+    });
+    return bestMatchId;
+};
+
+const createCubeFace = (config) => {
+    const faceGeometry = new THREE.PlaneGeometry(CUBE_SIZE, CUBE_SIZE);
+    const material = new THREE.MeshStandardMaterial({
+        color: config.color,
+        roughness: 0.5,
+        metalness: 1.0,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 1.0,
+        envMap: scene.background,
+    });
+    const face = new THREE.Mesh(faceGeometry, material);
+    face.position.set(...config.pos);
+    face.rotation.set(...config.rot);
+    face.name = `face_${config.id}`;
+    face.userData = { id: config.id, originalColor: config.color, isTransparent: false, isFormaCubeFace: true };
+    return face;
+}
+
+const getCubeGroupAtPosition = (position) => {
+    let targetCube = null;
+    scene.children.some((object) => {
+        if (object.userData.isFormaCube && object.position.distanceTo(position) < 0.1) {
+            targetCube = object;
+            return true;
+        }
+        return false;
+    });
+    return targetCube;
+};
+
+const createFormaCube = (position, excludeIndex = -1, facesToCreate = FACE_CONFIGS) => {
+    const newFormaCubeGroup = new THREE.Group();
+    newFormaCubeGroup.position.copy(position);
+    newFormaCubeGroup.userData.isFormaCube = true;
+
+    const excludeIds = new Set();
+    if (excludeIndex !== -1) excludeIds.add(excludeIndex);
+
+    if (facesToCreate === FACE_CONFIGS) {
+        FACE_CONFIGS.forEach((baseConfig) => {
+            const localNormal = baseConfig.normal;
+            const neighborPosition = position.clone().add(localNormal.clone().multiplyScalar(CUBE_SIZE));
+            if (getCubeGroupAtPosition(neighborPosition)) excludeIds.add(baseConfig.id);
+        });
+    }
+
+    const activeFaces = facesToCreate === FACE_CONFIGS ? FACE_CONFIGS : facesToCreate;
+    activeFaces.forEach((faceData) => {
+        const baseConfig = FACE_CONFIGS.find(f => f.id === faceData.id);
+        if (facesToCreate === FACE_CONFIGS && excludeIds.has(baseConfig.id)) return;
+
+        const face = createCubeFace(baseConfig);
+        if (faceData.isTransparent) {
+             face.material.opacity = 0.5;
+             face.material.envMapIntensity = 0.5;
+             face.userData.isTransparent = true;
+        }
+        if (isWireframeMode) {
+             face.material.wireframe = true;
+             if (face.userData.isTransparent) face.material.opacity = 0.3;
+        }
+        newFormaCubeGroup.add(face);
+        formaCubeFaces.push(face);
+    });
+    scene.add(newFormaCubeGroup);
+    addInternalLights(newFormaCubeGroup);
+    return newFormaCubeGroup;
+};
+
+let lastTap = 0;
+const DOUBLE_TAP_DELAY = 300; 
+
+const initFormaCube = (position = new THREE.Vector3(0, 0, camera.position.z - 15)) => {
+    // Создаем сразу, без ожидания синхронизации
+    const initialPosition = position.clone();
+    const uuid = generateUUID();
+    
+    // Создаем визуально
+    const group = createFormaCube(initialPosition, -1);
+    group.userData.uuid = uuid;
+    
+    // Сохраняем в локальную карту
+    localObjectsMap.set(uuid, {
+        type: 'forma',
+        position: initialPosition.toArray(),
+        excludeIndex: -1,
+        ref: group // Ссылка на 3D объект
+    });
+    
+    controls.target.set(camera.position.x, camera.position.y, camera.position.z - 15);
+    controls.update();
+};
+
+const handleTransparentToggleLogic = (face) => {
+    const wasTransparent = face.userData.isTransparent;
+    if (wasTransparent) {
+        face.userData.isTransparent = false;
+        face.material.envMapIntensity = 1.0;
+        face.material.opacity = 1.0;
+    } else {
+        face.userData.isTransparent = true;
+        face.material.envMapIntensity = 0.5;
+        face.material.opacity = 0.5;
+    }
+    if (isWireframeMode && face.userData.isTransparent) face.material.opacity = 0.3;
+    face.material.needsUpdate = true;
+};
+
+const handleDeleteFormaFace = (faceToDelete) => {
+    const obj = faceToDelete;
+    const group = obj.parent;
+    
+    // Удаляем из массива faces
+    const index = formaCubeFaces.indexOf(obj);
+    if (index > -1) formaCubeFaces.splice(index, 1);
+
+    if (group) {
+        group.remove(obj);
+        obj.geometry.dispose();
+        
+        // Удаляем группу, если пусто
+        if (group.children.filter(c => c.isMesh).length === 0) {
+            scene.remove(group);
+            if (group.userData.uuid) localObjectsMap.delete(group.userData.uuid);
+            if (group === formaCubeGroup) formaCubeGroup = null;
+        }
+    }
+};
+
+const handleDeleteAndCreateTunnel = (event, faceToDelete, intersection) => {
+    const obj = faceToDelete;
+    const group = obj.parent;
+    const faceNormal = intersection.face.normal.clone();
+    faceNormal.transformDirection(obj.matrixWorld);
+    faceNormal.normalize();
+    const groupWorldPos = group.position.clone();
+    const newGroupPosition = groupWorldPos.clone().add(faceNormal.clone().multiplyScalar(CUBE_SIZE));
+
+    if (getCubeGroupAtPosition(newGroupPosition)) return;
+
+    const excludeId = getTunnelFaceId(faceNormal);
+    const newUUID = generateUUID();
+    
+    // Создаем новый куб
+    const newGroup = createFormaCube(newGroupPosition, excludeId);
+    newGroup.userData.uuid = newUUID;
+    localObjectsMap.set(newUUID, {
+        type: 'forma',
+        position: newGroupPosition.toArray(),
+        excludeIndex: excludeId,
+        ref: newGroup
+    });
+
+    // Удаляем грань старого куба (туннельный эффект)
+    handleDeleteFormaFace(obj);
+};
+
+// --- V. Space Polarity Objects ---
+const secrets = ['slowly', 'focus', 'pinch', 'try', 'switch', 'scroll', 'scale', 'shift', 'move', 'tap', 'touch', 'click', 'right', 'button', 'mouse', 'screen', 'fly', 'double', 'follow', 'read', 'peer', 'rest', 'quick', 'hold', 'and', 'or', 'virtual', 'eternity', 'node', 'server', 'idea', 'word', 'victory', 'release', 'keep', 'calm', 'relax', 'rest', 'leave', 'chance', 'mine', 'token', 'visual', 'reality', 'space', 'polarity', 'keep', 'mind', 'think', 'dream', 'fantasy', 'trade', 'change', 'place', 'invest', 'look', 'ask', 'find', 'sign', 'type', 'play', 'experiment', 'phenomena', 'coordinate', 'carry', 'spend', 'accept', 'bring', 'transfer', 'take', 'sell', 'market', 'stay', 'well', 'top', 'hit'];
+const staticObjects = [];
+const polarObjects = [];
+const activePoints = [];
+let mode = 'Fix'; 
+let isWireframeMode = false;
+
+const GEOMETRY_TYPES = [
+    { name: 'Box', creator: (size) => new THREE.BoxGeometry(size, size, size) },
+    { name: 'Tetra', creator: (size) => new THREE.TetrahedronGeometry(size) },
+    { name: 'Icosa', creator: (size) => new THREE.IcosahedronGeometry(size, 0) },
+    { name: 'Icosa2', creator: (size) => new THREE.IcosahedronGeometry(size, 2) },
+    { name: 'Octa', creator: (size) => new THREE.OctahedronGeometry(size) },
+    { name: 'Dodeca', creator: (size) => new THREE.DodecahedronGeometry(size) },
+];
+
+const createGeometry = (size, typeName = null) => {
+    let type;
+    let name;
+    if (typeName) {
+        type = GEOMETRY_TYPES.find(t => t.name === typeName);
+        name = typeName;
+    } else {
+        type = GEOMETRY_TYPES[Math.floor(Math.random() * GEOMETRY_TYPES.length)];
+        name = type.name;
+    }
+    return { geometry: type.creator(size), typeName: name };
+};
+
+const createFixObject = (data = {}) => { 
+    const size = data.size || (Math.random() * 1 + 2);
+    const color = data.color !== undefined ? data.color : (Math.random() * 0xffffff);
+    const roughness = data.roughness !== undefined ? data.roughness : (Math.random() * 0.8 + 0.1);
+    const metalness = data.metalness !== undefined ? data.metalness : (Math.random() * 0.8 + 0.2);
+    const opacity = data.opacity !== undefined ? data.opacity : (Math.random() * 0.8 + 0.4);
+    
+    const { geometry, typeName } = createGeometry(size, data.typeName);
+    const material = new THREE.MeshStandardMaterial({
+        color: color,
+        roughness: roughness,
+        metalness: metalness,
+        opacity: opacity,
+        transparent: true,
+        side: THREE.DoubleSide, 
+        wireframe: isWireframeMode,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    
+    if (data.position) {
+        mesh.position.fromArray(data.position);
+    } 
+    if (data.rotation) {
+        mesh.rotation.fromArray(data.rotation);
+    } else {
+        mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+    }
+
+    mesh.userData = {
+        scatterVelocity: null, scatterStart: null, scatterDuration: 1.0, scatterDeceleration: 0.05,
+        isPolarityObject: true, isPolar: false, size: size, typeName: typeName,
+        velocity: new THREE.Vector3(0, 0, 0), rotationSpeed: new THREE.Vector3(0, 0, 0),
+        mass: 1, polarity: 0,
+    };
+    mesh.material.userData.originalOpacity = mesh.material.opacity;
+    if (isWireframeMode) mesh.material.opacity = 0.7;
+    
+    scene.add(mesh);
+    staticObjects.push(mesh);
+    return mesh; 
+};
+
+const createPolarObject = (data = {}) => { 
+    const size = data.size || (Math.random() * 1.0 + 2.0);
+    const color = data.color !== undefined ? data.color : (Math.random() * 0xffffff);
+    const roughness = data.roughness !== undefined ? data.roughness : Math.random();
+    const metalness = data.metalness !== undefined ? data.metalness : Math.random();
+    const opacity = data.opacity !== undefined ? data.opacity : (Math.random() * 0.5 + 0.5);
+
+    const { geometry, typeName } = createGeometry(size, data.typeName);
+    const material = new THREE.MeshStandardMaterial({
+        color: color,
+        roughness: roughness,
+        metalness: metalness,
+        opacity: opacity,
+        transparent: true,
+        side: THREE.DoubleSide, 
+        wireframe: isWireframeMode,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+
+    if (data.position) {
+        mesh.position.fromArray(data.position);
+    }
+
+    const velocity = data.velocity ? new THREE.Vector3().fromArray(data.velocity) : new THREE.Vector3(0,0,0);
+    const rotationSpeed = data.rotationSpeed ? new THREE.Vector3().fromArray(data.rotationSpeed) : new THREE.Vector3(0,0,0);
+    const polarity = data.polarity !== undefined ? data.polarity : (Math.random() < 0.5 ? 1 : -1);
+    const mass = data.mass !== undefined ? data.mass : (Math.random() * 5 + 1);
+
+    mesh.userData = {
+        velocity: velocity, 
+        rotationSpeed: rotationSpeed,
+        mass: mass,
+        polarity: polarity,
+        scatterVelocity: null, scatterStart: null, scatterDuration: 1.0, scatterDeceleration: 0.05,
+        isPolarityObject: true, isPolar: true, size: size, typeName: typeName, 
+    };
+    mesh.material.userData.originalOpacity = mesh.material.opacity;
+    if (isWireframeMode) mesh.material.opacity = 0.7;
+
+    scene.add(mesh);
+    polarObjects.push(mesh);
+    return mesh;
+};
+
+const toggleWireframe = () => {
+    isWireframeMode = !isWireframeMode;
+    wireButton.textContent = isWireframeMode ? 'Solid' : 'Wire';
+    scene.traverse(object => {
+        if (object.isMesh && object.material) {
+            if (object.userData.isFormaCubeFace) {
+                object.material.wireframe = isWireframeMode;
+                if (isWireframeMode) {
+                    object.material.opacity = object.userData.isTransparent ? 0.3 : 1.0;
+                } else {
+                    object.material.opacity = object.userData.isTransparent ? 0.5 : 1.0;
+                }
+                object.material.needsUpdate = true;
+            } else if (object.userData.isPolarityObject) {
+                object.material.wireframe = isWireframeMode;
+                if (!object.material.userData.originalOpacity) object.material.userData.originalOpacity = object.material.opacity;
+                object.material.opacity = isWireframeMode ? 0.7 : object.material.userData.originalOpacity;
+                object.material.needsUpdate = true;
+            }
+        }
+    });
+};
+
+const applyScatterEffect = (obj) => {
+    const direction = new THREE.Vector3((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2).normalize();
+    const speed = 15 + Math.random() * 10;
+    const scatterVelocity = direction.multiplyScalar(speed);
+    obj.userData.scatterVelocity = scatterVelocity;
+    obj.userData.scatterStart = performance.now();
+    obj.rotation.x += Math.random() * 0.5;
+    obj.rotation.y += Math.random() * 0.5;
+    obj.rotation.z += Math.random() * 0.5;
+    if (Math.random() < 0.3) {
+        const t = 0.5;
+        const wordPos3D = obj.position.clone().add(scatterVelocity.clone().multiplyScalar(t * 1.0));
+        const wordPos2D = wordPos3D.project(camera);
+        const wordX = (wordPos2D.x * 0.5 + 0.5) * window.innerWidth;
+        const wordY = (-wordPos2D.y * 0.5 + 0.5) * window.innerHeight;
+        createSecret(wordX, wordY);
+    }
+}
+
+// --- Creation Handlers (Direct, no syncing) ---
+const handleCreation = () => {
+    const uuid = generateUUID();
+    const direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
+    const pos = camera.position.clone().add(direction.multiplyScalar(10)).toArray();
+    
+    const commonProps = {
+        color: Math.random() * 0xffffff,
+        roughness: Math.random(),
+        metalness: Math.random(),
+        opacity: Math.random() * 0.5 + 0.5,
+        mass: Math.random() * 5 + 1,
+        rotation: [Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI],
+    };
+
+    if (mode === 'Fix') { 
+        const data = { 
+            type: 'fix', 
+            position: pos,
+            ...commonProps
+        };
+        const mesh = createFixObject(data);
+        mesh.userData.uuid = uuid;
+        localObjectsMap.set(uuid, { ...data, ref: mesh });
+
+    } else if (mode === 'Polar') {
+        const polarity = Math.random() < 0.5 ? 1 : -1;
+        const velocity = new THREE.Vector3(0,0,0).toArray(); 
+        const rotationSpeed = [(Math.random() - 0.5) * 0.05, (Math.random() - 0.5) * 0.05, (Math.random() - 0.5) * 0.05];
+
+        const data = { 
+            type: 'polar', 
+            position: pos,
+            velocity: velocity,
+            rotationSpeed: rotationSpeed,
+            polarity: polarity,
+            ...commonProps
+        };
+        const mesh = createPolarObject(data);
+        mesh.userData.uuid = uuid;
+        localObjectsMap.set(uuid, { ...data, ref: mesh });
+    }
+};
+
+function createSecret(x, y) {
+    const secret = document.createElement('a');
+    secret.className = 'secret';
+    const word = secrets[Math.floor(Math.random() * secrets.length)];
+    secret.textContent = word;
+    secret.target = '_blank';
+    
+    // Начальная позиция
+    secret.style.cssText = `
+        position: fixed; left: ${x}px; top: ${y}px; transform: translate(-50%, -50%);
+        opacity: 0; font-family: monospace; font-size: 18px; color: white; text-decoration: none;
+        padding: 10px; border-radius: 8px; pointer-events: auto; z-index: 1000;
+        transition: opacity 0.5s ease;
+    `;
+    
+    document.body.appendChild(secret);
+    
+    const rect = secret.getBoundingClientRect();
+    const minWordDistance = Math.max(rect.width, rect.height) + 20;
+
+    if (isWordOccupied(x, y, minWordDistance)) {
+        secret.remove();
+        return;
+    }
+
+    const wordData = { 
+        x, 
+        y, 
+        element: secret, 
+        speed: 0.5 + Math.random() * 1.5, 
+        timestamp: Date.now(), 
+        isWord: true 
+    };
+    activePoints.push(wordData);
+
+    setTimeout(() => { secret.style.opacity = 1; }, 10);
+
+    setTimeout(() => {
+        secret.style.opacity = 0;
+        setTimeout(() => {
+            const index = activePoints.indexOf(wordData);
+            if (index !== -1) activePoints.splice(index, 1);
+            secret.remove();
+        }, 1000);
+    }, 10000);
+}
+
+
+function isWordOccupied(x, y, minDistance) {
+    return activePoints.some(point => {
+        if (!point.isWord) return false;
+        const dx = point.x - x;
+        const dy = point.y - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        return distance < minDistance;
+    });
+}
+
+const handleDeletePolarity = (event) => {
+    const mouse = new THREE.Vector2((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects([...staticObjects, ...polarObjects]); 
+    if (intersects.length > 0) {
+        const selectedObject = intersects[0].object;
+        
+        // Удаляем из сцены
+        scene.remove(selectedObject);
+        
+        // Удаляем из локальных массивов
+        const staticIndex = staticObjects.indexOf(selectedObject);
+        if (staticIndex > -1) staticObjects.splice(staticIndex, 1);
+        const polarIndex = polarObjects.indexOf(selectedObject);
+        if (polarIndex > -1) polarObjects.splice(polarIndex, 1);
+        
+        // Удаляем из карты по UUID
+        if (selectedObject.userData.uuid) {
+            localObjectsMap.delete(selectedObject.userData.uuid);
+        }
+        
+        return true;
+    }
+    return false;
+}
+
+const applyCameraRepulsion = () => {
+    if (mode === 'Across') return;
+    const repulsionDistance = 15;
+    const repulsionStrength = 0.05;
+    [...staticObjects, ...polarObjects].forEach((obj) => {
+        const distance = camera.position.distanceTo(obj.position);
+        if (distance < repulsionDistance) {
+            const direction = obj.position.clone().sub(camera.position).normalize();
+            const force = direction.multiplyScalar((repulsionDistance - distance) * repulsionStrength);
+            if (obj.userData.isPolar) { 
+                obj.userData.velocity.add(force);
+            } else if (!obj.userData.scatterVelocity) {
+                obj.position.add(force);
+            }
+        }
+    });
+};
+
+const handlePolarInteractions = () => {
+    for (let i = 0; i < polarObjects.length; i++) {
+        for (let j = i + 1; j < polarObjects.length; j++) {
+            const objA = polarObjects[i];
+            const objB = polarObjects[j];
+            const distance = objA.position.distanceTo(objB.position);
+            if (distance < 1) {
+                const direction = objB.position.clone().sub(objA.position).normalize();
+                const polarityEffect = objA.userData.polarity * objB.userData.polarity;
+                const force = direction.multiplyScalar(polarityEffect * 0.05);
+                objA.userData.velocity.add(force.clone().multiplyScalar(-1 / objA.userData.mass));
+                objB.userData.velocity.add(force.clone().multiplyScalar(1 / objB.userData.mass));
+            }
+        }
+    }
+};
+
+const handlePolarAndStaticInteractions = () => {
+    polarObjects.forEach((polarObj) => {
+        staticObjects.forEach((staticObj) => {
+            const distance = polarObj.position.distanceTo(staticObj.position);
+            if (distance < 15) {
+                const direction = staticObj.position.clone().sub(polarObj.position).normalize();
+                const repulsionForce = direction.multiplyScalar(0.005 * (8 - distance));
+                if (!staticObj.userData.scatterVelocity) staticObj.position.add(repulsionForce);
+                polarObj.userData.velocity.add(repulsionForce.clone().multiplyScalar(-1 / polarObj.userData.mass));
+            }
+        });
+    });
+};
+
+const applyDeceleration = () => {
+    polarObjects.forEach((obj) => {
+        if (obj.userData.scatterVelocity) return;
+        if (obj.userData.velocity.length() > 0) {
+            const deceleration = 0.003;
+            obj.userData.velocity.multiplyScalar(1 - deceleration);
+            if (obj.userData.velocity.length() < 0.001) obj.userData.velocity.set(0, 0, 0);
+        }
+    });
+};
+
+let isScalingUp = false;
+let isScalingDown = false; 
+let objectToScale = null;
+const SCALE_RATE = 1.005; 
+const SCALE_RATE_DOWN = 0.995; 
+const MIN_SCALE = 0.1;
+const MAX_SCALE = 1000;
+
+// --- VI. Camera & Buttons ---
+let isFlyingBase = false; 
+let currentSpeed = 0.0;
+const MAX_SPEED = 0.3;
+const ACCELERATION = 0.00033;
+const DECCELERATION = 0.00033;
+
+const moveCamera = (directionVector, distance) => {
+    const direction = directionVector.clone().normalize();
+    camera.position.add(direction.clone().multiplyScalar(distance));
+    controls.target.add(direction.clone().multiplyScalar(distance));
+    controls.update();
+};
+
+let targetVelocity = new THREE.Vector3();
+const accelerationPolarity = 0.001;
+const decelerationPolarity = 0.01;
+let isMovingForward = true;
+const cameraVelocity = new THREE.Vector3();
+let isMovingPolarity = false;
+
+const closerButton = document.querySelector('.closer-button');
+const furtherButton = document.querySelector('.further-button');
+const flyButtonBase = document.querySelector('.fly-button-base'); 
+const goButton = document.querySelector('.go-button');
+const foreButton = document.querySelector('.fore-button');
+const wireButton = document.querySelector('.wire-button');
+
+const modeDropdownToggle = document.getElementById('mode-dropdown-toggle');
+const modeMenuList = document.getElementById('mode-menu-list');
+const modeMenuItems = document.querySelectorAll('.mode-menu-item');
+
+closerButton.addEventListener('click', () => {
+    const direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
+    moveCamera(direction, CUBE_SIZE);
+});
+
+furtherButton.addEventListener('click', () => {
+    const direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
+    direction.negate();
+    moveCamera(direction, CUBE_SIZE);
+});
+
+flyButtonBase.addEventListener('click', () => {
+    isFlyingBase = !isFlyingBase;
+    flyButtonBase.textContent = isFlyingBase ? 'Stop' : 'Fly';
+    if (isFlyingBase && isMovingPolarity) {
+        isMovingPolarity = false;
+        goButton.innerText = "Bypass"; 
+        targetVelocity.set(0, 0, 0);
+    }
+});
+
+modeDropdownToggle.addEventListener('click', (event) => {
+    event.stopPropagation();
+    modeMenuList.classList.toggle('show');
+});
+
+modeMenuItems.forEach(item => {
+    item.addEventListener('click', () => {
+        mode = item.getAttribute('data-mode'); 
+        modeDropdownToggle.textContent = item.textContent; 
+        modeMenuList.classList.remove('show');
+    });
+});
+
+document.addEventListener('click', (event) => {
+    if (modeMenuList.classList.contains('show') && !event.target.closest('.mode-menu-container')) {
+        modeMenuList.classList.remove('show');
+    }
+});
+
+wireButton.addEventListener('click', toggleWireframe);
+
+const adjustCameraFocus = () => {
+    const direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
+    const azimuthOffset = (Math.random() - 0.5) * THREE.MathUtils.degToRad(20);
+    const elevationOffset = (Math.random() - 0.5) * THREE.MathUtils.degToRad(20);
+    direction.applyQuaternion(new THREE.Quaternion()
+        .setFromAxisAngle(new THREE.Vector3(0, 1, 0), azimuthOffset)
+        .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), elevationOffset)));
+    targetVelocity.copy(direction.multiplyScalar(isMovingForward ? 1.0 : -1.0));
+};
+
+goButton.addEventListener('click', () => { 
+    isMovingPolarity = !isMovingPolarity;
+    goButton.innerText = isMovingPolarity ? "Stop" : "Bypass"; 
+    // yEvents.push([{ type: 'bypass' }]); // Removed P2P event
+    if (isMovingPolarity) {
+        adjustCameraFocus();
+        if (isFlyingBase) { isFlyingBase = false; flyButtonBase.textContent = 'Fly'; }
+    } else {
+        targetVelocity.set(0, 0, 0);
+    }
+});
+
+const performCameraLunge = () => {
+    const startPos = camera.position.clone();
+    const direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
+    const targetPos = startPos.clone().add(direction.multiplyScalar(10));
+    const duration = 0.5;
+    const peakTime = 0.25;
+    let startTime = performance.now();
+    const scatterObjects = () => {
+        const scatterRadius = 15;
+        const scatterSpeed = 20;
+        [...staticObjects, ...polarObjects].forEach((obj) => {
+            const distance = obj.position.distanceTo(targetPos);
+            if (distance < scatterRadius) {
+                const scatterDirection = obj.position.clone().sub(targetPos).normalize();
+                obj.userData.scatterVelocity = scatterDirection.multiplyScalar(scatterSpeed);
+                obj.userData.scatterStart = performance.now();
+                obj.rotation.x += Math.random() * 0.5;
+                obj.rotation.y += Math.random() * 0.5;
+                obj.rotation.z += Math.random() * 0.5;
+            }
+        });
+    };
+    const animateLunge = () => {
+        const elapsed = (performance.now() - startTime) / 1000;
+        const t = Math.min(elapsed / duration, 1);
+        const progress = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        if (t < peakTime / duration) {
+            camera.position.lerpVectors(startPos, targetPos, progress / (peakTime / duration));
+        } else {
+            camera.position.lerpVectors(targetPos, startPos, (progress - peakTime / duration) / (1 - peakTime / duration));
+        }
+        if (t >= peakTime / duration && !scatterObjects.called) {
+            scatterObjects();
+            scatterObjects.called = true;
+        }
+        if (t < 1) requestAnimationFrame(animateLunge);
+    };
+    scatterObjects.called = false;
+    animateLunge();
+};
+
+foreButton.addEventListener('click', () => {
+    performCameraLunge();
+    // yEvents.push([{ type: 'scatter' }]); // Removed P2P event
+});
+
+// --- VII. Interactions ---
+let longPressTimer;
+const LONG_PRESS_DELAY = 700;
+let isLongPress = false;
+let longPressFired = false;
+const MOVE_THRESHOLD = 30; 
+let pointerDownPosition = new THREE.Vector2();
+
+const getIntersection = (event, objectsToCheck) => {
+    const clientX = event.clientX;
+    const clientY = event.clientY;
+    const mouse = new THREE.Vector2((clientX / window.innerWidth) * 2 - 1, -(clientY / window.innerHeight) * 2 + 1);
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    return raycaster.intersectObjects(objectsToCheck, false); 
+};
+
+renderer.domElement.addEventListener('pointerdown', (event) => {
+    if (event.target.closest('.control-button, .top-control, .mid-control, .polarity-top-control, .polarity-bottom-control, .secret, .mode-menu-container')) return; 
+
+    const currentTime = new Date().getTime();
+    const timeSinceLastTap = currentTime - lastTap;
+    
+    if (timeSinceLastTap < DOUBLE_TAP_DELAY && timeSinceLastTap > 0) {
+        lastTap = 0; 
+        const allInteractableObjects = [...formaCubeFaces, ...staticObjects, ...polarObjects];
+        const intersects = getIntersection(event, allInteractableObjects);
+        if (intersects.length > 0) { 
+            const nearestObject = intersects[0].object;
+            if (nearestObject.userData.isPolarityObject) {
+                objectToScale = nearestObject;
+                isScalingDown = true; 
+                isScalingUp = false;
+                controls.enabled = false;
+                return; 
+            }
+        }
+    } else {
+        lastTap = currentTime;
+    }
+
+    if (mode === 'View') {
+        controls.enabled = true;
+        lastTap = currentTime; 
+        clearTimeout(longPressTimer);
+        isLongPress = false;
+        longPressFired = false;
+        return; 
+    }
+    
+    let shouldDisableControls = false;
+    if (event.button === 0 || event.button === 2) { 
+        const allInteractableObjects = [...formaCubeFaces, ...staticObjects, ...polarObjects];
+        const intersects = getIntersection(event, allInteractableObjects);
+        if (intersects.length > 0) { 
+            const nearestObject = intersects[0].object;
+            if (nearestObject.userData.isPolarityObject) {
+                objectToScale = nearestObject;
+                shouldDisableControls = true;
+                if (event.button === 0) {
+                    isScalingUp = true; isScalingDown = false;
+                } else if (event.button === 2) {
+                    isScalingDown = true; isScalingUp = false;
+                }
+            }
+        }
+    }
+    controls.enabled = !shouldDisableControls; 
+    longPressFired = false;
+    pointerDownPosition.set(event.clientX, event.clientY);
+    isLongPress = false;
+    clearTimeout(longPressTimer);
+    longPressTimer = setTimeout(() => {
+        const currentUpPosition = new THREE.Vector2(event.clientX, event.clientY);
+        const moveDistance = pointerDownPosition.distanceTo(currentUpPosition);
+        if (moveDistance <= MOVE_THRESHOLD) {
+            isLongPress = true;
+            longPressFired = true;
+            const allInteractableObjects = [...formaCubeFaces, ...staticObjects, ...polarObjects];
+            const intersects = getIntersection(event, allInteractableObjects);
+            if (intersects.length > 0) {
+                const nearestObject = intersects[0].object;
+                if (nearestObject.userData.isFormaCubeFace) handleTransparentToggleLogic(nearestObject);
+            }
+        }
+    }, LONG_PRESS_DELAY);
+});
+
+renderer.domElement.addEventListener('pointerup', (event) => {
+    if (isScalingUp || isScalingDown) {
+        isScalingUp = false; isScalingDown = false; objectToScale = null; controls.enabled = true;
+    }
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (event.target.closest('.control-button, .top-control, .mid-control, .polarity-top-control, .polarity-bottom-control, .secret, .mode-menu-container')) return;
+
+    clearTimeout(longPressTimer);
+    const clientX = event.clientX;
+    const clientY = event.clientY;
+    const currentUpPosition = new THREE.Vector2(clientX, clientY);
+    const moveDistance = pointerDownPosition.distanceTo(currentUpPosition);
+    if (moveDistance > MOVE_THRESHOLD) {
+        isLongPress = false; longPressFired = false; return; 
+    }
+    if (longPressFired) {
+        isLongPress = false; longPressFired = false; return;
+    }
+    if (mode === 'View') return;
+
+    const allInteractableObjects = [...formaCubeFaces, ...staticObjects, ...polarObjects];
+    const intersects = getIntersection(event, allInteractableObjects);
+    const closestIntersection = intersects.length > 0 ? intersects[0] : null;
+    const selectedObject = closestIntersection ? closestIntersection.object : null;
+
+    if (mode === 'Delete' && selectedObject) {
+        if (selectedObject.userData.isFormaCubeFace) {
+            handleDeleteFormaFace(selectedObject);
+        } else if (selectedObject.userData.isPolarityObject) {
+            handleDeletePolarity(event); 
+        }
+        return; 
+    }
+
+    if (selectedObject) {
+        if (selectedObject.userData.isFormaCubeFace) {
+            handleDeleteAndCreateTunnel(event, selectedObject, closestIntersection);
+            return;
+        } else if (selectedObject.userData.isPolarityObject) {
+            if (mode !== 'Across') {
+                applyScatterEffect(selectedObject);
+                // yEvents.push([{ type: 'scatter' }]); // Removed P2P event
+                return;
+            }
+        }
+    }
+
+    if (mode === 'Across') {
+        const uuid = generateUUID();
+        const direction = new THREE.Vector3();
+        camera.getWorldDirection(direction);
+        const pos = camera.position.clone().add(direction.multiplyScalar(10)).toArray();
+        
+        const data = { 
+            type: 'fix', 
+            position: pos,
+            color: Math.random() * 0xffffff,
+            rotation: [Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI]
+        };
+        const mesh = createFixObject(data);
+        mesh.userData.uuid = uuid;
+        localObjectsMap.set(uuid, { ...data, ref: mesh });
+        
+    } else {
+        handleCreation(); 
+    }
+    isLongPress = false; 
+});
+
+renderer.domElement.addEventListener('pointermove', (event) => {
+    if (longPressTimer) {
+        const dist = pointerDownPosition.distanceTo(new THREE.Vector2(event.clientX, event.clientY));
+        if (dist > MOVE_THRESHOLD) {
+            clearTimeout(longPressTimer);
+            isLongPress = false;
+            longPressFired = false;
+            if (objectToScale && !controls.enabled) {
+                isScalingUp = false; isScalingDown = false; objectToScale = null; controls.enabled = true;
+            }
+        }
+    }
+});
+
+document.addEventListener('contextmenu', (event) => { event.preventDefault(); });
+
+// --- VIII. Animation ---
+const animate = () => {
+    controls.update();
+    if (objectToScale) {
+        if (isScalingUp) {
+            objectToScale.scale.multiplyScalar(SCALE_RATE);
+            if (objectToScale.scale.x > MAX_SCALE) objectToScale.scale.set(MAX_SCALE, MAX_SCALE, MAX_SCALE);
+        } else if (isScalingDown) { 
+            objectToScale.scale.multiplyScalar(SCALE_RATE_DOWN);
+            if (objectToScale.scale.x < MIN_SCALE) objectToScale.scale.set(MIN_SCALE, MIN_SCALE, MIN_SCALE);
+        }
+    }
+    if (isFlyingBase) {
+        currentSpeed = Math.min(currentSpeed + ACCELERATION, MAX_SPEED);
+    } else {
+        currentSpeed = Math.max(currentSpeed - DECCELERATION, 0.0);
+    }
+    if (currentSpeed > 0) {
+        const direction = new THREE.Vector3();
+        camera.getWorldDirection(direction);
+        moveCamera(direction, currentSpeed);
+    }
+    if (isMovingPolarity) {
+        cameraVelocity.lerp(targetVelocity, accelerationPolarity);
+    } else {
+        cameraVelocity.lerp(new THREE.Vector3(), decelerationPolarity);
+    }
+    camera.position.add(cameraVelocity);
+
+    applyCameraRepulsion();
+    
+    [...staticObjects, ...polarObjects].forEach((obj) => {
+        if (obj.userData.scatterVelocity) {
+            const elapsed = (performance.now() - obj.userData.scatterStart) / 1000;
+            if (elapsed < obj.userData.scatterDuration) {
+                obj.position.add(obj.userData.scatterVelocity.clone().multiplyScalar(1 / 60));
+            } else {
+                obj.userData.scatterVelocity.multiplyScalar(1 - obj.userData.scatterDeceleration);
+                if (obj.userData.scatterVelocity.length() < 0.01) {
+                    obj.userData.scatterVelocity = null;
+                    obj.userData.scatterStart = null;
+                } else {
+                    obj.position.add(obj.userData.scatterVelocity.clone().multiplyScalar(1 / 60));
+                }
+            }
+        }
+        if (obj.userData.isPolar) {
+            obj.position.add(obj.userData.velocity);
+            if (obj.userData.rotationSpeed) {
+                obj.rotation.x += obj.userData.rotationSpeed.x;
+                obj.rotation.y += obj.userData.rotationSpeed.y;
+                obj.rotation.z += obj.userData.rotationSpeed.z;
+            }
+        }
+    });
+
+    if (mode === 'Polar') handlePolarInteractions();
+    handlePolarAndStaticInteractions();
+    applyDeceleration();
+    
+    activePoints.forEach(point => {
+        if (point.isWord && point.element) {
+            point.y += point.speed; 
+            point.element.style.top = `${point.y}px`;
+            if (point.y > window.innerHeight - 50) {
+                point.element.style.opacity = '0';
+            }
+        }
+    });
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+};
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Запускаем инициализацию и рендер
+initFormaCube();
+try {
+    animate();
+} catch (e) {
+    console.error("Ошибка запуска отрисовки:", e);
+}
+
+document.getElementById('originButton').addEventListener('click', () => {
+    // Можно добавить легкий эффект затухания перед уходом
+    document.body.style.opacity = '0';
+    document.body.style.transition = 'opacity 0.5s';
+    
+    setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 300);
+});
+</script>
+
+</body>
+</html>
