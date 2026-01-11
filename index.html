@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="manifest.json">
+    <title>Core Universe</title>
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000; /* Фон сцены */
+            font-family: 'Luckiest Guy', cursive;
+        }
+
+        /* --- Слой Меню (Code 8) --- */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10; /* Поверх 3D сцены */
+            pointer-events: none; /* Пропускаем клики сквозь пустые места */
+        }
+
+        .logo {
+            position: absolute;
+            top: 12vh;
+            max-width: 70px;
+            height: auto;
+            opacity: 0.9;
+            pointer-events: auto; /* Логотип кликабелен, если нужно */
+        }
+
+        nav {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: center;
+            margin-top: 100px;
+            pointer-events: none;
+        }
+
+        .menu-item {
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 18px;
+            letter-spacing: 1.5px;
+            transition: transform 0.2s ease, color 0.2s ease;
+            opacity: 0.8;
+            white-space: nowrap;
+            pointer-events: auto; /* Ссылки должны перехватывать клики */
+            cursor: pointer;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Чтобы читалось на фоне объектов */
+        }
+
+        .menu-item:hover {
+            color: #ffeb3b;
+            transform: scale(1.08);
+        }
+
+        .menu-item:active {
+            transform: scale(0.95);
+        }
+
+        /* --- Canvas (Code 7) --- */
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <img src="logo.png" alt="Logo" class="logo">
+        <nav>
+            <a href="3d.html" class="menu-item">3D</a>
+            <a href="mind.html" class="menu-item">Core Metrics</a>
+            <a href="book.html" class="menu-item">Book Reader</a>
+            <a href="flash.html" class="menu-item">Flash Reader</a>
+            <a href="orbit.html" class="menu-item">Solar System</a>
+            <a href="code.html" class="menu-item">Code Viewer</a>
+            <a href="size.html" class="menu-item">Image Resizer</a>
+            <div style="font-size: 32px; color: rgba(255,255,255); margin: 10px 0; line-height: 0;">•</div>
+            <a href="https://t.me/eugenebox" class="menu-item">Contact</a>
+        </nav>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // --- Настройки из Code 7 (без UI элементов) ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0000ff); // Или #0000ff если хотите синий как в меню
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 20;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // Свет
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xffffff, 1);
+        pointLight.position.set(10, 10, 10);
+        scene.add(pointLight);
+
+        // Массивы объектов
+        const denseObjects = []; 
+        let mode = 'Fix'; // По умолчанию фиксированный режим, так как кнопок нет
+
+        // Создание объектов (Логика Code 7)
+        const createDenseObject = (position, velocity) => {
+            const geometry = new THREE.IcosahedronGeometry(Math.random() * 0.5 + 0.2, 0);
+            const material = new THREE.MeshStandardMaterial({
+                color: Math.random() * 0xffffff,
+                roughness: 0.4,
+                metalness: 0.6
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.copy(position);
+            mesh.userData = {
+                velocity: velocity,
+                mass: Math.random() * 0.5 + 0.1,
+                scatterVelocity: null
+            };
+            scene.add(mesh);
+            denseObjects.push(mesh);
+        };
+
+        // Логика выстрела/создания (Обработчик клика)
+        window.addEventListener('pointerdown', (event) => {
+            // Если клик был по ссылке меню, игнорируем создание объекта
+            if (event.target.classList.contains('menu-item') || event.target.classList.contains('logo')) {
+                return;
+            }
+
+            const mouse = new THREE.Vector2(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1
+            );
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(denseObjects);
+
+            if (intersects.length > 0) {
+                // Эффект разброса при попадании (Scatter)
+                const object = intersects[0].object;
+                const direction = new THREE.Vector3((Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5)).normalize();
+                object.userData.scatterVelocity = direction.multiplyScalar(10); 
+                object.userData.scatterStart = performance.now();
+            } else {
+                // Создание нового объекта (Shoot)
+                const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+                vector.unproject(camera);
+                const dir = vector.sub(camera.position).normalize();
+                const distance = 15; 
+                const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+                const velocity = dir.multiplyScalar(0.2); // Скорость полета
+                createDenseObject(pos, velocity);
+            }
+        });
+
+        // Физика и анимация
+        const applyDenseRepulsion = () => {
+            for (let i = 0; i < denseObjects.length; i++) {
+                for (let j = i + 1; j < denseObjects.length; j++) {
+                    const objA = denseObjects[i];
+                    const objB = denseObjects[j];
+                    const dist = objA.position.distanceTo(objB.position);
+                    const minDist = 1.5;
+
+                    if (dist < minDist) {
+                        const force = objA.position.clone().sub(objB.position).normalize().multiplyScalar(0.01);
+                        objA.position.add(force);
+                        objB.position.sub(force);
+                        
+                        // Если есть скорость, отталкиваем векторы скорости
+                        if (objA.userData.velocity) objA.userData.velocity.add(force.multiplyScalar(0.5));
+                        if (objB.userData.velocity) objB.userData.velocity.sub(force.multiplyScalar(0.5));
+                    }
+                }
+            }
+        };
+
+        const handleDenseCollisions = () => {
+             // Упрощенная коллизия со стенами (опционально, если нужно удержание в зоне)
+             denseObjects.forEach(obj => {
+                 if (obj.position.length() > 50) {
+                     obj.userData.velocity.multiplyScalar(-1);
+                     obj.position.multiplyScalar(0.99);
+                 }
+             });
+        };
+
+        const animate = () => {
+            requestAnimationFrame(animate);
+
+            denseObjects.forEach((obj, index) => {
+                // Движение по инерции
+                if (obj.userData.velocity) {
+                    obj.position.add(obj.userData.velocity);
+                    // Замедление
+                    obj.userData.velocity.multiplyScalar(0.99);
+                }
+
+                // Эффект разлета (Scatter)
+                if (obj.userData.scatterVelocity) {
+                    const elapsed = (performance.now() - obj.userData.scatterStart) / 1000;
+                    if (elapsed > 1.0) {
+                        obj.userData.scatterVelocity = null;
+                    } else {
+                        obj.position.add(obj.userData.scatterVelocity.clone().multiplyScalar(1/60));
+                    }
+                }
+                
+                obj.rotation.x += 0.01;
+                obj.rotation.y += 0.01;
+            });
+
+            applyDenseRepulsion();
+            handleDenseCollisions();
+            
+            controls.update();
+            renderer.render(scene, camera);
+        };
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
