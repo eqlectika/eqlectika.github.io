@@ -6,239 +6,248 @@
     <title>Yevgeniy Korobka | Resume</title>
     <style>
         body {
-    font-family: 'Georgia', serif;
-    line-height: 1.8;
-    color: #ffffff;
-    background-color: #0B0B45;
-    max-width: 850px;
-    margin: 0 auto;
-    padding: 60px 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
+            font-family: 'Georgia', serif;
+            line-height: 1.8;
+            color: #ffffff;
+            background-color: #0B0B45;
+            margin: 0;
+            padding: 0;
+            /* Убираем overflow: hidden, чтобы страница скроллилась */
+            min-height: 100vh;
+        }
 
-canvas {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: -1;
-}
+        canvas {
+            display: block;
+            position: fixed; /* Фон всегда на месте */
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
 
-.header, .content, .footer {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    pointer-events: none;
-}
+        #ui-layer {
+            position: relative;
+            z-index: 10;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 20px;
+            text-align: center;
+            pointer-events: none; /* Пропускаем клики на кубы */
+        }
 
-.cv-title {
-    font-size: 0.9em;
-    letter-spacing: 4px; /* Двойной letter-space */
-    text-transform: uppercase;
-    margin-bottom: 30px;
-    opacity: 0.8;
-}
+        .header { margin-bottom: 20px; }
+        
+        .header-img {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            border: 3px solid #ffffff;
+            margin-bottom: 20px;
+            pointer-events: auto;
+            object-fit: cover;
+        }
 
-.header {
-    margin-bottom: 50px;
-}
+        .export-btn {
+            display: inline-block;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            pointer-events: auto;
+        }
 
-.header-img {
-    display: block;
-    width: 180px;
-    height: 180px;
-    margin: 0 auto 25px;
-    border-radius: 50%;
-    border: 3px solid #ffffff;
-    object-fit: cover;
-    pointer-events: auto;
-}
+        .reset-button {
+            display: block;
+            margin: 0 auto 15px;
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 6px 20px;
+            font-family: inherit;
+            font-size: 0.7em;
+            letter-spacing: 2px;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: 0.3s;
+        }
+        .reset-button:hover { background: rgba(255, 255, 255, 0.1); }
 
-h3 {
-    font-size: 1.8em;
-    letter-spacing: 1.5px;
-    margin: 0;
-    font-weight: normal;
-}
+        h3 {
+            font-size: 2.2em;
+            margin: 0 0 20px 0;
+            font-weight: normal;
+            letter-spacing: 2px;
+            pointer-events: auto;
+        }
 
-.content {
-    margin-bottom: 60px;
-}
+        .content { margin-top: 20px; }
+        
+        .content p { 
+            margin: 0 auto 30px auto; 
+            font-size: 1.15em;
+            max-width: 650px;
+        }
 
-.content p {
-    margin-bottom: 2em;
-    max-width: 650px;
-    margin-left: auto;
-    margin-right: auto;
-    text-align: center;
-}
+        .footer {
+            margin-top: 60px;
+            padding: 40px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            pointer-events: auto; /* Делаем ссылки кликабельными */
+        }
 
-.footer {
-    border-top: 1px solid rgba(255, 255, 255, 0.3);
-    padding-top: 40px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    align-items: center;
-}
+        .footer a {
+            color: #ffffff;
+            text-decoration: none;
+font-size: 1.2em; /* Увеличивает размер шрифта */            
+opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+        .footer a:hover { opacity: 1; }
 
-.footer a, .export-btn {
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 1.1em;
-    transition: opacity 0.3s;
-    pointer-events: auto;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
-}
-
-.export-btn {
-    font-size: 1em;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    opacity: 0.6;
-}
-
-.footer a:hover, .export-btn:hover {
-    opacity: 1;
-}
-
-
+        .logo-image {
+            width: 56px;
+            opacity: 0.7;
+            transition: transform 0.3s;
+        }
+        .logo-image:hover { transform: scale(1.1); }
     </style>
 </head>
 <body>
-    <div class="cv-title">Curriculum Vitae</div>
 
-    <div class="header">
-        <img src="me.jpeg" alt="Yevgeniy Korobka" class="header-img">
-       <div class="export-btn">
-<div style="margin-bottom: 15px;">
-        <a href="print.html" target="_blank" class="export-btn">PDF</a>
-    </div>   </div>
-        <h3>Yevgeniy Korobka</h3>
+    <div id="ui-layer">
+        <div class="header">
+            <img src="me.jpeg" alt="Yevgeniy Korobka" class="header-img">
+            <div><a href="print.html" target="_blank" class="export-btn">Print/PDF</a></div>
+            <button id="reset-btn" class="reset-button">RESET</button>
+            <h3>Yevgeniy Korobka</h3>
+        </div>
+        
+        <div class="content">
+            <p>My professional path resembles a movement along a spiral, where each new turn is the mastery of a new element, from the tip of a pencil to the architecture of decentralized networks. I view design, 3D modeling, and hand-drawing not as decoration, but as the foundation of visual thinking, allowing ideas to be embodied in tangible forms. In this space, architecture becomes the assembly point where aesthetics meet precise calculation, creating an environment in which one wants to be "now."</p>
+            <p>The technological stack, including JavaScript, Python, and blockchain-based development, serves as a continuation of this logic in the digital world. Working with financial markets and peer-to-peer programming has taught me to see structure within chaos and to understand that any complex system lives by the laws of rhythm and balance. In blockchain, I find that very honesty of the moment, where a transaction or code is stripped of the layers of the past, existing as an accomplished fact in the present. This allows me to build applications and services that do not simply solve a task but create a stable and transparent ecosystem.</p>
+            <p>In team interaction, I transmit the wisdom of an observer who knows how to notice falsehood or excessive acceleration in time. My ability to synthesize art and high technology gives the collective an advantage—the opportunity to stop and correct the course before inertia becomes critical. I offer not just the execution of tasks, but conscious co-creation, where every algorithm and every line of architecture is aimed at creating a harmonious and meaningful result.</p>
+        </div>
+
+        <div class="footer">
+            <a href="https://t.me/eugenebox">@eugenebox</a>
+            <a href="index.html" class="logo-link">
+                <img src="logo.png" alt="Logo" class="logo-image">
+            </a>
+        </div>
     </div>
-    
-      
-    
-    <div class="content">
-        <p>
-            My professional path resembles a movement along a spiral, where each new turn is the mastery of a new element, from the tip of a pencil to the architecture of decentralized networks. I view design, 3D modeling, and hand-drawing not as decoration, but as the foundation of visual thinking, allowing ideas to be embodied in tangible forms. In this space, architecture becomes the assembly point where aesthetics meet precise calculation, creating an environment in which one wants to be "now."
-        </p>
-
-        <p>
-            The technological stack, including JavaScript, Python, and blockchain-based development, serves as a continuation of this logic in the digital world. Working with financial markets and peer-to-peer programming has taught me to see structure within chaos and to understand that any complex system lives by the laws of rhythm and balance. In blockchain, I find that very honesty of the moment, where a transaction or code is stripped of the layers of the past, existing as an accomplished fact in the present. This allows me to build applications and services that do not simply solve a task but create a stable and transparent ecosystem.
-        </p>
-
-        <p>
-            In team interaction, I transmit the wisdom of an observer who knows how to notice falsehood or excessive acceleration in time. My ability to synthesize art and high technology gives the collective an advantage—the opportunity to stop and correct the course before inertia becomes critical. I offer not just the execution of tasks, but conscious co-creation, where every algorithm and every line of architecture is aimed at creating a harmonious and meaningful result.
-        </p>
-    </div>
-
-    <div class="footer">
-        <a href="https://t.me/eugenebox">@eugenebox</a>
-    </div>
-
-    <div style="margin-top: 20px; padding-bottom: 10px; display: flex; flex-direction: column; align-items: center;">
-    <a href="index.html" style="pointer-events: auto; transition: opacity 0.3s;">
-        <img src="logo.png" alt="Home" style="width: 40px; height: auto; opacity: 0.7;">
-    </a>
-</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
 
 <script>
-// Константы и конфигурация из 3d.html
-const CUBE_SIZE = 5;
-const FACE_CONFIGS = [
-    { color: 0xff0000, pos: [2.5, 0, 0], rot: [0, Math.PI / 2, 0] },
-    { color: 0x00ff00, pos: [-2.5, 0, 0], rot: [0, -Math.PI / 2, 0] },
-    { color: 0x0000ff, pos: [0, 2.5, 0], rot: [-Math.PI / 2, 0, 0] },
-    { color: 0xffff00, pos: [0, -2.5, 0], rot: [Math.PI / 2, 0, 0] },
-    { color: 0x00ffff, pos: [0, 0, 2.5], rot: [0, 0, 0] },
-    { color: 0xff00ff, pos: [0, 0, -2.5], rot: [0, Math.PI, 0] }
-];
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0B0B45);
 
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 50;
 
-// Свет для объема
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-scene.add(ambientLight);
-const pointLight = new THREE.PointLight(0xffffff, 0.8);
-pointLight.position.set(20, 20, 20);
-scene.add(pointLight);
-
-// Функция создания куба из отдельных граней
-function createModularCube(position) {
-    const group = new THREE.Group();
-    FACE_CONFIGS.forEach(config => {
-        const geometry = new THREE.PlaneGeometry(CUBE_SIZE, CUBE_SIZE);
-        const material = new THREE.MeshStandardMaterial({
-            color: config.color,
-            transparent: true,
-            opacity: 0.4, // Прозрачность как в 3d.html
-            side: THREE.DoubleSide,
-            metalness: 0.7,
-            roughness: 0.2
-        });
-        const face = new THREE.Mesh(geometry, material);
-        face.position.set(...config.pos);
-        face.rotation.set(...config.rot);
-        group.add(face);
-    });
-    group.position.copy(position);
-    scene.add(group);
-    return group;
-}
-
-// Создаем несколько объектов для фона
-const cubes = [];
-for (let i = 0; i < 8; i++) {
-    const pos = new THREE.Vector3(
-        (Math.random() - 0.5) * 50,
-        (Math.random() - 0.5) * 50,
-        (Math.random() - 0.5) * 30
-    );
-    cubes.push(createModularCube(pos));
-}
-
-camera.position.z = 40;
-
-// Управление сценой (масштабирование и вращение)
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.05;
-
-function animate() {
-    requestAnimationFrame(animate);
-    
-    // Легкое вращение самих кубов для динамики
-    cubes.forEach(cube => {
-        cube.rotation.y += 0.002;
-        cube.rotation.x += 0.001;
-    });
-
-    controls.update();
-    renderer.render(scene, camera);
-}
-
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-});
+    document.body.appendChild(renderer.domElement);
 
-animate();
+    // Controls привязаны к renderer.domElement, чтобы не мешать скроллу текста
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableZoom = false; // Отключаем зум колесом, чтобы работал скролл страницы
+    
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let activePoints = [];
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const light = new THREE.PointLight(0xffffff, 0.9);
+    light.position.set(20, 30, 40);
+    scene.add(light);
+
+    function createModularCube(position) {
+        const group = new THREE.Group();
+        group.name = "userCube";
+        const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0x00ffff, 0xff00ff];
+        const faceConfigs = [
+            { pos: [2.5, 0, 0], rot: [0, Math.PI/2, 0] }, { pos: [-2.5, 0, 0], rot: [0, -Math.PI/2, 0] },
+            { pos: [0, 2.5, 0], rot: [-Math.PI/2, 0, 0] }, { pos: [0, -2.5, 0], rot: [Math.PI/2, 0, 0] },
+            { pos: [0, 0, 2.5], rot: [0, 0, 0] }, { pos: [0, 0, -2.5], rot: [0, Math.PI, 0] }
+        ];
+
+        faceConfigs.forEach((config, i) => {
+            const face = new THREE.Mesh(
+                new THREE.PlaneGeometry(5, 5),
+                new THREE.MeshStandardMaterial({ color: colors[i], transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+            );
+            face.position.set(...config.pos);
+            face.rotation.set(...config.rot);
+            group.add(face);
+        });
+
+        group.position.copy(position);
+        scene.add(group);
+        activePoints.push(group);
+    }
+
+    document.getElementById('reset-btn').addEventListener('click', (e) => {
+        const toRemove = [];
+        scene.traverse((child) => {
+            if (child.name === "userCube") toRemove.push(child);
+        });
+        toRemove.forEach(obj => {
+            scene.remove(obj);
+            obj.children.forEach(mesh => {
+                mesh.geometry.dispose();
+                mesh.material.dispose();
+            });
+        });
+        activePoints = [];
+    });
+
+    window.addEventListener('pointerdown', (event) => {
+        // Игнорируем клики по ссылкам, кнопкам, фото и футеру
+        if (event.target.closest('a') || event.target.closest('button') || event.target.closest('img') || event.target.closest('h3')) return;
+
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+
+        const meshes = [];
+        activePoints.forEach(g => g.children.forEach(m => meshes.push(m)));
+        const intersects = raycaster.intersectObjects(meshes);
+
+        if (intersects.length > 0) {
+            const hit = intersects[0];
+            const normal = hit.face.normal.clone().applyQuaternion(hit.object.getWorldQuaternion(new THREE.Quaternion()));
+            const newPos = hit.object.parent.position.clone().add(normal.multiplyScalar(5));
+            createModularCube(newPos);
+        } else {
+            const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+            const dir = vector.sub(camera.position).normalize();
+            createModularCube(camera.position.clone().add(dir.multiplyScalar(50)));
+        }
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+        activePoints.forEach(c => { 
+            c.rotation.x += 0.003; 
+            c.rotation.y += 0.003; 
+        });
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 </script>
-
 </body>
 </html>
