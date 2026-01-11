@@ -1,0 +1,291 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+  <meta name="description" content="Simple Code Editor" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Code Viewer</title>
+  <style>
+    html, body { overscroll-behavior: none; }
+    body {
+      margin: 0; display: flex; flex-direction: row; height: 100vh;
+      font-family: Arial, sans-serif; background-color: black; color: white; position: relative;
+    }
+    ::-webkit-selection { background: rgba(255, 255, 0, 0.5); color: white; }
+    ::-moz-selection { background: rgba(255, 255, 0, 0.5); color: white; }
+    ::selection { background: rgba(255, 255, 0, 0.5); color: white; }
+
+    #editorContainer { flex: 38.2; display: flex; position: relative; background-color: black; min-width: 0; }
+    #preview { flex: 61.8; border: none; background-color: #333333; overflow: auto; min-width: 0; }
+    #controlPanel { flex: 0 0 auto; }
+    #lineNumbering {
+      width: 40px; 
+      padding: 10px 5px; 
+      text-align: right; 
+      font-family: monospace;
+      font-size: 14px; 
+      line-height: 1.2; 
+      color: #666; 
+      background-color: #111;
+      user-select: none; 
+      white-space: pre; /* Заменяем pre-wrap на pre */
+      overflow: hidden; /* Номера не должны прокручиваться отдельно */
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+
+
+
+    #lineNumbering::-webkit-scrollbar { display: none; width: 0; height: 0; }
+    #controlPanel > div {
+      display: flex; gap: 10px; align-items: center; justify-content: flex-start;
+      align-items: flex-start; padding: 10px; background-color: black;
+      box-sizing: border-box; z-index: 10; flex-direction: column;
+    }
+    #fileActions { display: flex; gap: 10px; flex-direction: row; align-items: center; flex-shrink: 0; }
+    #searchControls { display: flex; gap: 10px; flex-direction: row; align-items: center; flex-shrink: 0; }
+    #preview, #controlPanel { touch-action: manipulation; }
+
+      #editor {
+      flex: 1; 
+      padding: 10px; 
+      border: none; 
+      resize: none; 
+      font-family: monospace;
+      font-size: 14px; 
+      line-height: 1.2;
+      background-color: black; 
+      color: white; 
+      outline: none;
+      caret-color: white; 
+      position: relative; 
+      box-sizing: border-box; 
+      overflow: auto; /* Включает прокрутку в обе стороны */
+      white-space: pre; /* Запрещает перенос строк, сохраняя ритм нумерации */
+      min-width: 0;
+    }
+    
+    #prevMatchButton, #nextMatchButton {
+      width: 40px; height: 40px; background-color: #333333; color: white;
+      border: none; cursor: pointer; font-size: 18px; line-height: 40px;
+      text-align: center; border-radius: 5px; padding: 0; flex-shrink: 0;
+    }
+    #prevMatchButton:hover, #nextMatchButton:hover { background-color: #555555; }
+    #fileFormat { font-size: 14px; padding: 5px; width: 70px; }
+    #saveButton {
+      width: 70px; height: 40px; background-color: #007bff; color: white;
+      border: none; cursor: pointer; font-size: 14px;
+    }
+    #saveButton:hover { background-color: #0056b3; }
+    #searchField {
+      padding: 5px; font-size: 14px; border: 1px solid #555; background-color: #333333;
+      color: white; height: 30px; box-sizing: border-box; border-radius: 5px;
+      width: 12ch; min-width: 12ch; flex-grow: 0; flex-shrink: 0;
+    }
+    @media (orientation: portrait) {
+      body { flex-direction: column; }
+      #editorContainer { flex: 38.2 1 0; min-height: 0; min-width: auto; }
+      #preview { flex: 61.8 1 0; min-height: 0; min-width: auto; }
+      #controlPanel > div { flex-direction: row; justify-content: space-between; flex-wrap: wrap; align-items: center; width: 100%; }
+      #searchControls { flex-grow: 1; }
+      #searchField { flex-grow: 1; width: auto; min-width: 40px; }
+      #fileActions { flex-shrink: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div id="editorContainer">
+    <div id="lineNumbering">1</div>
+    <textarea id="editor" placeholder="Type to see your code here..."></textarea>
+  </div>
+  <iframe id="preview" title="Preview"></iframe>
+  <div id="controlPanel">
+    <div>
+      <div id="searchControls">
+        <input type="text" id="searchField" placeholder="Search">
+        <button id="prevMatchButton" title="Previous Match">▲</button>
+        <button id="nextMatchButton" title="Next Match">▼</button>
+      </div>
+      <div id="fileActions">
+        <select id="fileFormat">
+          <option value="html">HTML</option>
+          <option value="json">JSON</option>
+          <option value="txt">TXT</option>
+          <option value="js">JS</option>
+          <option value="css">CSS</option>
+        </select>
+        <button id="saveButton">Save</button>
+<a href="index.html" style="display: flex; align-items: center;">
+  <img src="logo.png" alt="Feedback" style="height: 48px; opacity: 0.3; width: auto; display: block;">
+</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const editor = document.getElementById("editor");
+    const preview = document.getElementById("preview");
+    const saveButton = document.getElementById("saveButton");
+    const fileFormat = document.getElementById("fileFormat");
+    const searchField = document.getElementById("searchField");
+    const prevMatchButton = document.getElementById("prevMatchButton");
+    const nextMatchButton = document.getElementById("nextMatchButton");
+    const lineNumbering = document.getElementById("lineNumbering");
+    let searchMatches = [];
+    let currentMatchIndex = -1;
+    let currentSearchTerm = "";
+    const mimeTypes = {
+      html: "text/html", json: "application/json", txt: "text/plain",
+      js: "application/javascript", css: "text/css",
+    };
+
+        function updateLineNumbers() {
+        const lines = editor.value.split('\n');
+        const lineCount = lines.length;
+        const numbers = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n');
+        lineNumbering.textContent = numbers;
+    }
+
+    editor.addEventListener('input', () => {
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        preview.srcdoc = editor.value;
+        updateLineNumbers();
+        editor.setSelectionRange(start, end);
+    });
+    editor.addEventListener('scroll', () => { lineNumbering.scrollTop = editor.scrollTop; });
+    updateLineNumbers();
+
+    saveButton.addEventListener("click", () => {
+      const format = fileFormat.value;
+      const mimeType = mimeTypes[format] || "text/plain";
+      const blob = new Blob([editor.value], { type: mimeType });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `code.${format}`;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+
+    // ←←← ЭТО ЕДИНСТВЕННОЕ ИЗМЕНЕНИЕ В КОДЕ ←←←
+    function highlightMatch(index) {
+        if (index === -1 || searchMatches.length === 0) {
+            clearSelection(editor);
+            return;
+        }
+        const start = searchMatches[index];
+        const end = start + currentSearchTerm.length;
+
+        editor.focus();
+        editor.setSelectionRange(start, end);
+
+        // Надёжная прокрутка на всех устройствах (включая iOS и Android)
+        const dummy = document.createElement('span');
+        dummy.style.cssText = 'position:absolute;opacity:0;height:1px;pointer-events:none;';
+        const range = new Range();
+        try {
+            range.setStart(editor.firstChild || editor, start);
+            range.collapse(true);
+            range.insertNode(dummy);
+            dummy.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            requestAnimationFrame(() => dummy.remove());
+        } catch (e) {
+            // fallback
+            const linesBefore = editor.value.substring(0, start).split('\n').length - 1;
+            editor.scrollTop = Math.max(0, (linesBefore - 2) * 16.8);
+        }
+
+        setTimeout(() => editor.setSelectionRange(start, end), 100);
+    }
+    // ←←← КОНЕЦ ИЗМЕНЕНИЯ ←←←
+
+    function resetSearch() {
+        searchMatches = [];
+        currentMatchIndex = -1;
+        currentSearchTerm = "";
+        clearSelection(editor);
+    }
+   
+    function findAllMatches(searchText) {
+        searchMatches = [];
+        currentSearchTerm = searchText;
+        if (searchText === "") return;
+        const editorContent = editor.value;
+        const normalizedContent = editorContent.toLowerCase();
+        const normalizedSearchText = searchText.toLowerCase();
+        const len = normalizedSearchText.length;
+        let index = normalizedContent.indexOf(normalizedSearchText, 0);
+        while (index !== -1) {
+            searchMatches.push(index);
+            index = normalizedContent.indexOf(normalizedSearchText, index + len);
+        }
+    }
+
+    function startSearch(searchText) {
+        const trimmedText = searchText.trim();
+        if (trimmedText === "") {
+            resetSearch();
+            searchField.style.backgroundColor = '#333333';
+            return;
+        }
+        if (trimmedText === currentSearchTerm && searchMatches.length > 0) {
+            nextMatch();
+            return;
+        }
+        resetSearch();
+        findAllMatches(trimmedText);
+        if (searchMatches.length > 0) {
+            currentMatchIndex = 0;
+            highlightMatch(currentMatchIndex);
+            searchField.style.backgroundColor = '#333333';
+        } else {
+            searchField.style.backgroundColor = 'red';
+            setTimeout(() => { searchField.style.backgroundColor = '#333333'; }, 300);
+        }
+    }
+
+    function nextMatch() {
+        if (searchMatches.length === 0) return;
+        currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
+        highlightMatch(currentMatchIndex);
+    }
+    function prevMatch() {
+        if (searchMatches.length === 0) return;
+        currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
+        highlightMatch(currentMatchIndex);
+    }
+
+    searchField.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            startSearch(searchField.value);
+        }
+    });
+   
+    nextMatchButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (searchField.value.trim() !== currentSearchTerm) {
+            startSearch(searchField.value);
+        } else {
+            nextMatch();
+        }
+    });
+    prevMatchButton.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (searchField.value.trim() !== currentSearchTerm) {
+            startSearch(searchField.value);
+        } else {
+            prevMatch();
+        }
+    });
+
+    function clearSelection(textarea) {
+        const start = textarea.selectionStart;
+        textarea.setSelectionRange(start, start);
+    }
+  </script>
+
+</body>
+</html>
