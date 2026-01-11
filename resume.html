@@ -12,7 +12,7 @@
             background-color: #0B0B45;
             margin: 0;
             padding: 0;
-            /* Убираем overflow: hidden, чтобы страница скроллилась */
+touch-action: pan-y; /* Разрешает браузеру листать страницу вверх-вниз */
             min-height: 100vh;
         }
 
@@ -21,6 +21,7 @@
             position: fixed; /* Фон всегда на месте */
             top: 0;
             left: 0;
+            touch-action: none; /* Запрещает браузеру стандартные жесты только для самого холста, чтобы работал Rotate */
             z-index: 1;
         }
 
@@ -116,7 +117,7 @@
 font-size: 1.2em; /* Увеличивает размер шрифта */            
 opacity: 0.6;
             transition: opacity 0.3s;
-        }
+        }touch-action: pan-y; /* Разрешает браузеру листать страницу вверх-вниз */
         .footer a:hover { opacity: 1; }
 
         .logo-image {
@@ -167,8 +168,12 @@ opacity: 0.6;
     document.body.appendChild(renderer.domElement);
 
     // Controls привязаны к renderer.domElement, чтобы не мешать скроллу текста
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableZoom = false; // Отключаем зум колесом, чтобы работал скролл страницы
+   const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+controls.enableZoom = false; // Отключаем зум, чтобы колесо и щипок листали страницу
+controls.enablePan = false;  // Отключаем перемещение камеры в плоскости
+controls.touches.ONE = THREE.TOUCH.ROTATE; // Один палец вращает кубы
+controls.touches.TWO = null;               // ВТОРОЙ ПАЛЕЦ ИГНОРИРУЕТСЯ — это освобождает скролл
     
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
