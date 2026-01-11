@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="manifest.json"> <!-- Ссылка на манифест -->
+    <title>Precision Image Resizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+            align-items: center;
+            background-color: #333;
+            color: #fff;
+        }
+
+        .image-container {
+            margin: 20px 0;
+            border: 0px dashed #333;
+            padding: 8px;
+            background-color: #222;
+            align-items: center;
+
+        }
+
+        #resizable-image {
+            max-width: 100%;
+            transition: width 0.3s ease;
+            display: block;
+            margin: 0 auto;
+            align-items: center;
+
+        }
+
+        .controls {
+            margin: 30px 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 15px;
+            margin: 20px 0;
+            cursor: pointer;
+            background-color: #777;
+            color: white;
+            border: 0px solid #555;
+            border-radius: 0px;
+            min-width: 100px;
+            align-items: center;
+        }
+
+        button:hover {
+            background-color: #444;
+        }
+
+        input[type="range"] {
+            width: 270px;
+            background: #333;
+            margin: 30px 0;
+            align-items: center;
+        }
+
+        input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            margin: 20px;
+            background: #222;
+            color: white;
+            border: 1px solid #555;
+            text-align: center;
+        }
+
+  .logo-image {
+    display: inline-block;
+    opacity: 0.4;
+    max-width: 48px;
+    transition: opacity 0.3s, transform 0.3s;
+    vertical-align: middle;
+  }
+
+  .logo-image:hover {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+
+        .dimensions {
+            margin: 0px 0;
+            color: #ccc;
+            align-items: center;
+
+        }
+
+        label {
+            display: inline-block;
+            min-width: 120px;
+            align-items: center;
+
+        }
+
+        #download-btn {
+            background-color: #4CAF50;
+            margin-top: 25px;
+            align-items: center;
+
+        }
+
+        #download-btn:hover {
+            background-color: #45a049;
+            align-items: center;
+        }
+
+        /* Полностью скрываем оригинальный input */
+        .hidden-file-input {
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        /* Стили для кастомной кнопки */
+        .custom-upload-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #af811a;
+            color: white;
+            border: 0px solid #aab800;
+            border-radius: 0px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .custom-upload-btn:hover {
+            background: #444;
+        }
+
+        /* Контейнер для позиционирования */
+        .upload-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        /* Убираем все следы текста в input */
+        input[type="file"] {
+            color: transparent;
+            font-size: 0;
+        }
+
+        /* Убираем текст в разных браузерах */
+        input[type="file"]::-webkit-file-upload-button,
+        input[type="file"]::file-selector-button {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Precision Image Resizer</h1>
+    
+    <div class="upload-container">
+        <!-- Наша красивая кнопка -->
+        <label for="real-file-input" class="custom-upload-btn">
+            Select Image
+        </label>
+        
+        <!-- Настоящий input, полностью скрытый -->
+        <input type="file" id="real-file-input" class="hidden-file-input" accept="image/*">
+    </div>
+    
+    <div class="image-container">
+        <img id="resizable-image" src="https://via.placeholder.com/400/333/fff" alt="Resizable Image">
+    </div>
+    
+    <div class="dimensions">
+        Dimensions: <span id="current-dimensions">400px × 400px</span>
+    </div>
+    
+    <input type="range" id="size-slider" min="20" max="1960" value="400" step="2">
+           
+    <div>
+        <button id="zoom-in">+2</button>
+        <button id="zoom-out">-2</button>
+        <button id="reset-size">Reset</button>
+    </div>
+    
+    <div>
+        <input type="number" id="width-input" min="20" max="1960" value="400">
+    </div>
+    
+    <div>Width (px)</div>
+
+    <button id="download-btn">Save Image</button>
+<a href="index.html" style="color: inherit; text-decoration: none; max-width: 48px; display: block; margin: 20px auto 0 auto;">
+  <img src="logo.png" alt="Logo" class="logo-image" style="width: 100%; height: auto; display: block;">
+</a>    
+    <script>
+        const image = document.getElementById('resizable-image');
+        const zoomInBtn = document.getElementById('zoom-in');
+        const zoomOutBtn = document.getElementById('zoom-out');
+        const resetSizeBtn = document.getElementById('reset-size');
+        const sizeSlider = document.getElementById('size-slider');
+        const widthInput = document.getElementById('width-input');
+        const dimensionsDisplay = document.getElementById('current-dimensions');
+        const imageUpload = document.getElementById('real-file-input'); // Изменено с image-upload на real-file-input
+        const downloadBtn = document.getElementById('download-btn');
+        
+        let originalWidth = 400;
+        let originalHeight = 400;
+        let currentWidth = 400;
+        let currentImageSrc = null;
+        
+        // Загрузка своего изображения
+        imageUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    currentImageSrc = event.target.result;
+                    image.src = currentImageSrc;
+                    image.onload = function() {
+                        originalWidth = this.naturalWidth;
+                        originalHeight = this.naturalHeight;
+                        currentWidth = originalWidth;
+                        resetImageSize();
+                        updateControls();
+                        updateDimensions();
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Обработчики изменений
+        sizeSlider.addEventListener('input', function() {
+            currentWidth = ensureEven(parseInt(this.value));
+            resizeImage(currentWidth);
+            updateControls();
+        });
+        
+        widthInput.addEventListener('change', function() {
+            let newWidth = ensureEven(parseInt(this.value));
+            if (isNaN(newWidth)) newWidth = currentWidth;
+            newWidth = Math.min(Math.max(newWidth, 20), 1960); // Изменено с 800 на 1960 для соответствия с max в input
+            currentWidth = newWidth;
+            resizeImage(currentWidth);
+            updateControls();
+        });
+        
+        // Кнопки управления
+        zoomInBtn.addEventListener('click', function() {
+            currentWidth = ensureEven(currentWidth + 2);
+            if (currentWidth > 1960) currentWidth = 1960; // Изменено с 800 на 1960
+            resizeImage(currentWidth);
+            updateControls();
+        });
+        
+        zoomOutBtn.addEventListener('click', function() {
+            currentWidth = ensureEven(currentWidth - 2);
+            if (currentWidth < 20) currentWidth = 20;
+            resizeImage(currentWidth);
+            updateControls();
+        });
+        
+        resetSizeBtn.addEventListener('click', function() {
+            currentWidth = originalWidth;
+            resizeImage(currentWidth);
+            updateControls();
+        });
+        
+        // Кнопка сохранения
+        downloadBtn.addEventListener('click', function() {
+            if (!currentImageSrc && image.src.includes('placeholder.com')) {
+                alert('Please upload an image first');
+                return;
+            }
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Устанавливаем размеры canvas в соответствии с текущим размером изображения
+            const imgWidth = parseInt(image.style.width) || originalWidth;
+            const imgHeight = Math.round(imgWidth * (originalHeight / originalWidth));
+            
+            canvas.width = imgWidth;
+            canvas.height = imgHeight;
+            
+            // Рисуем изображение на canvas
+            ctx.drawImage(image, 0, 0, imgWidth, imgHeight);
+            
+            // Создаем ссылку для скачивания
+            const link = document.createElement('a');
+            link.download = 'resized-image.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        });
+        
+        // Функции
+        function ensureEven(value) {
+            return Math.round(value / 2) * 2;
+        }
+        
+        function resizeImage(width) {
+            width = ensureEven(width);
+            image.style.width = width + 'px';
+            image.style.height = 'auto';
+            updateDimensions();
+        }
+        
+        function updateControls() {
+            sizeSlider.value = currentWidth;
+            widthInput.value = currentWidth;
+            sizeSlider.min = Math.min(20, currentWidth);
+            sizeSlider.max = Math.max(1960, currentWidth); // Изменено с 800 на 1960
+        }
+        
+        function updateDimensions() {
+            const currentHeight = Math.round(currentWidth * (originalHeight / originalWidth));
+            dimensionsDisplay.textContent = 
+                currentWidth + 'px × ' + currentHeight + 'px';
+        }
+        
+        function resetImageSize() {
+            currentWidth = originalWidth;
+            resizeImage(currentWidth);
+            updateControls();
+        }
+        
+        // Инициализация
+        updateControls();
+    </script>
+</body>
+</html>
