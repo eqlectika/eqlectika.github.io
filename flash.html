@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Text converter for fast reading</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+  html, body {
+    overscroll-behavior: none;
+  }
+  body, html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #000000;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    touch-action: pan-x pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  #inputContainer {
+    padding: 15px;
+    text-align: center;
+  }
+
+  #inputText {
+    width: 90%;
+    max-width: 1000px;
+    padding: 8px;
+    font-size: 16px;
+    border-radius: 0px;
+    border: none;
+  }
+#colorControl {
+    display: inline-block;
+    color: rgba(255, 255, 255, 0.2); /* Немного ярче для читаемости */
+    background-color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Тонкая рамка */
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s ease;
+    margin: 60px auto; /* Уменьшили отступ для компактности */
+    display: block;    /* Центрирование через block и width */
+    width: fit-content;
+  }
+
+  #colorControl:active {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: scale(0.98); /* Эффект нажатия */
+  }
+  #container {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+    .logo-image {
+    display: block;
+    margin: 0 auto;
+    opacity: 0.1;         /* Делает логотип ненавязчивым */
+    max-width: 48px;      /* Ограничивает размер, чтобы не отвлекать от чтения */
+    transition: opacity 0.3s;
+  }
+
+  .logo-image:hover {
+    opacity: 0.3;         /* Логотип становится ярче при наведении */
+  }
+    
+  #word {
+    font-weight: bold;
+    text-align: center;
+    white-space: nowrap;
+    max-width: 90vw;
+    overflow: visible;
+    transition: none;
+  }
+  #buttonsContainer {
+    padding: 10px;
+    text-align: center;
+  }
+  button {
+    font-size: 16px;
+    background-color: transparent;
+    color: white;
+    border-radius: 8px;
+    border: 1px solid white;
+    padding: 8px 12px;
+    outline: none;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  </style>
+</head>
+<body>
+  <div id="inputContainer">
+    <input type="text" id="inputText" value="Speed reading. Just put the text above and click «Start» below." />
+  </div>
+
+  <div id="colorControl">Background Color</div>
+  
+  <div id="container">
+    <div id="word"></div>
+  </div>
+  
+  <div style="text-align: center; margin-bottom: 70px;">
+ <a href="index.html"><img src="logo.png" alt="Logo" class="logo-image"></a>
+  </div>
+
+  <div id="buttonsContainer">
+    <button id="fasterBtn">Faster</button>
+    <button id="startBtn">Start</button>
+    <button id="slowerBtn">Slower</button>
+  </div>
+
+  <script>
+    const wordElement = document.getElementById('word');
+    const inputText = document.getElementById('inputText');
+    const startBtn = document.getElementById('startBtn');
+    const fasterBtn = document.getElementById('fasterBtn');
+    const slowerBtn = document.getElementById('slowerBtn');
+    const colorControl = document.getElementById('colorControl');
+
+    const colors = ['#000000', '#8B0000', '#00008B', '#006400', '#696969']; // заданные цвета
+    let colorIndex = 0;
+
+    colorControl.addEventListener('click', () => {
+      colorIndex = (colorIndex + 1) % colors.length;
+      document.body.style.backgroundColor = colors[colorIndex];
+    });
+
+    let words = [];
+    let index = 0;
+    let interval = 30; // базовая скорость в мс
+    let timer = null;
+
+    function setFontSize(word) {
+      const baseSize = window.innerWidth / 10;
+      let size = baseSize;
+
+      if (word.length > 17) size = baseSize / 1.2;
+      if (word.length > 18) size = baseSize / 1.3;
+      if (word.length > 19) size = baseSize / 1.4;
+      if (word.length > 20) size = baseSize / 1.5;
+
+      wordElement.style.fontSize = size + 'px';
+    }
+
+    function getDelay(word) {
+      const baseDelay = interval;
+      return baseDelay * Math.max(word.length, 1);
+    }
+
+    function showNextWordInstant() {
+      if (index >= words.length) {
+        index = 0; // Зацикливание
+      }
+
+      const currentWord = words[index];
+      wordElement.textContent = currentWord;
+      setFontSize(currentWord);
+
+      let currentInterval = getDelay(currentWord);
+
+      if (/[.,—:;!?]/.test(currentWord)) {
+        currentInterval *= 1.5;
+      }
+
+      index++;
+
+      clearTimeout(timer);
+      timer = setTimeout(showNextWordInstant, currentInterval);
+    }
+
+    function startAnimation() {
+      words = inputText.value.trim().split(/\s+/);
+      if (words.length === 0) return;
+      index = 0;
+      clearTimeout(timer);
+      showNextWordInstant();
+    }
+
+    startBtn.onclick = startAnimation;
+
+    fasterBtn.onclick = () => {
+      if (interval > 10) {
+        interval -= 10;
+        clearTimeout(timer);
+        showNextWordInstant();
+      }
+    };
+
+    slowerBtn.onclick = () => {
+      interval += 10;
+      clearTimeout(timer);
+      showNextWordInstant();
+    };
+
+    window.onload = () => {
+      startAnimation();
+    };
+
+    window.onresize = () => {
+      if (words.length > 0) {
+        let currentWord = wordElement.textContent || words[index];
+        setFontSize(currentWord);
+      }
+    };
+
+    document.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 1 || e.detail > 1) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    [startBtn, fasterBtn, slowerBtn].forEach(button => {
+      button.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        button.click();
+      }, { passive: false });
+    });
+  </script>
+
+</body>
+</html>
