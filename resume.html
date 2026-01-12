@@ -7,6 +7,17 @@
     <title>Yevgeniy Korobka | Resume</title>
     <style>
         body {
+    /* ... ваши существующие стили ... */
+    -webkit-user-select: none; /* Запрет выделения в Safari */
+    -moz-user-select: none;    /* Запрет выделения в Firefox */
+    -ms-user-select: none;     /* Запрет выделения в IE/Edge */
+    user-select: none;         /* Стандартное свойство */
+    -webkit-touch-callout: none; /* Запрет контекстного меню на iOS */
+    touch-action: none;        /* Отключение стандартных жестов браузера */
+}
+
+
+body {
             font-family: 'Georgia', serif;
             line-height: 1.8;
             color: #ffffff;
@@ -258,6 +269,15 @@ controls.touches.TWO = null;               // ВТОРОЙ ПАЛЕЦ ИГНОР
         controls.update();
         renderer.render(scene, camera);
     }
+
+window.addEventListener('pointerdown', (e) => {
+    // Разрешаем стандартное поведение только для ссылок и кнопок (меню и экспорт)
+    if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') return;
+    
+    // Блокируем выделение и системные реакции для всего остального
+    if (e.cancelable) e.preventDefault();
+}, { passive: false });
+
     animate();
 
     window.addEventListener('resize', () => {
