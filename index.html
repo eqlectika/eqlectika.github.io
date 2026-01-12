@@ -3,14 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Core Universe</title>
+    <title>Core Menu</title>
     <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background-color: #000088; font-family: 'Luckiest Guy', cursive; touch-action: none; }
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; pointer-events: none; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background-color: #000088; 
+            font-family: 'Luckiest Guy', cursive; 
+            touch-action: none;
+            /* Защита от выделения и системных меню */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        #ui-layer { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            z-index: 10; pointer-events: none; 
+        }
         .logo { position: absolute; top: 12vh; max-width: 80px; height: auto; opacity: 0.9; pointer-events: none; }
         nav { display: flex; flex-direction: column; gap: 12px; text-align: center; margin-top: 100px; pointer-events: none; }
-        .menu-item { text-decoration: none; color: #ffffff; font-size: 18px; letter-spacing: 1.5px; transition: transform 0.2s ease, color 0.2s ease; opacity: 0.8; white-space: nowrap; pointer-events: auto; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .menu-item { 
+            text-decoration: none; color: #ffffff; font-size: 18px; letter-spacing: 1.5px; 
+            transition: transform 0.2s ease, color 0.2s ease; opacity: 0.8; 
+            white-space: nowrap; pointer-events: auto; cursor: pointer; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5); 
+        }
         .menu-item:hover { color: #ffeb3b; transform: scale(1.08); }
         canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
     </style>
@@ -50,20 +72,19 @@
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        // Повышаем фоновую освещенность
-        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-        // Выносим лампы вперед (Z = 20), чтобы они светили НА объекты со стороны камеры
-        const lightRed = new THREE.PointLight(0xff0000, 2, 150);
-        lightRed.position.set(25, 15, 20);
+        // Цветные источники света, вынесенные вперед
+        const lightRed = new THREE.PointLight(0xff0000, 2.5, 150);
+        lightRed.position.set(20, 15, 25);
         scene.add(lightRed);
 
-        const lightGreen = new THREE.PointLight(0x00ff00, 2, 150);
-        lightGreen.position.set(-25, 15, 20);
+        const lightGreen = new THREE.PointLight(0x00ff00, 2.5, 150);
+        lightGreen.position.set(-20, 15, 25);
         scene.add(lightGreen);
 
-        const lightBlue = new THREE.PointLight(0x0000ff, 2, 150);
-        lightBlue.position.set(0, -25, 20);
+        const lightBlue = new THREE.PointLight(0x0000ff, 2.5, 150);
+        lightBlue.position.set(0, -25, 25);
         scene.add(lightBlue);
 
         const denseObjects = [];
@@ -72,13 +93,12 @@
 
         const createDenseObject = (position, velocity) => {
             const geometry = new THREE.IcosahedronGeometry(Math.random() * 0.5 + 0.4, 0);
-            const randomOpacity = Math.random() * 0.6 + 0.4;
+            const randomOpacity = Math.random() * 0.6 + 0.3;
             
-            // PhongMaterial дает более выразительные блики (specular)
             const material = new THREE.MeshPhongMaterial({
                 color: Math.random() * 0xffffff,
                 specular: 0xffffff,
-                shininess: 100,
+                shininess: 120,
                 transparent: true,
                 opacity: randomOpacity,
                 side: THREE.DoubleSide
@@ -93,12 +113,15 @@
 
         window.addEventListener('pointerdown', (event) => {
             if (event.target.closest('.menu-item')) return;
+            // Блокируем стандартные реакции браузера
+            if (event.cancelable) event.preventDefault();
+
             pressStartTime = performance.now();
             currentMouse.set(
                 (event.clientX / window.innerWidth) * 2 - 1,
                 -(event.clientY / window.innerHeight) * 2 + 1
             );
-        });
+        }, { passive: false });
 
         window.addEventListener('pointerup', (event) => {
             if (pressStartTime === 0) return;
@@ -108,10 +131,10 @@
             const vector = new THREE.Vector3(currentMouse.x, currentMouse.y, 0.5);
             vector.unproject(camera);
             const dir = vector.sub(camera.position).normalize();
-            // Рождаем объект чуть дальше, чтобы он сразу попадал под лучи ламп
             const pos = camera.position.clone().add(dir.multiplyScalar(10));
             
-            const speed = 0.04 + Math.min(duration * 0.1, 0.12);
+            // Плавная скорость без дискомфорта
+            const speed = 0.05 + Math.min(duration * 0.1, 0.13);
             const velocity = dir.multiplyScalar(speed);
             
             createDenseObject(pos, velocity);
@@ -126,12 +149,12 @@
             denseObjects.forEach((obj) => {
                 if (obj.userData.velocity) {
                     obj.position.add(obj.userData.velocity);
-                    obj.userData.velocity.multiplyScalar(0.999);
+                    obj.userData.velocity.multiplyScalar(0.998);
                 }
                 obj.rotation.x += 0.01;
                 obj.rotation.y += 0.01;
 
-                if (obj.position.length() > 60) {
+                if (obj.position.length() > 65) {
                     obj.userData.velocity.multiplyScalar(-1);
                 }
             });
