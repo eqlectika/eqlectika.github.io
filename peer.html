@@ -5,7 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Decentralized Levitation P2P Node</title>
     <style>
-        body { font-family: "Courier New"; margin: 0; overflow: hidden; background: #000; color: white; }
+
+body { 
+    font-family: "Courier New"; 
+    margin: 0; 
+    overflow: hidden; 
+    background: #000; 
+    color: white; 
+    /* Защита от выделения и системных меню */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none; 
+}
+
         #control-panel { 
             position: fixed; 
             bottom: 50px; 
@@ -313,16 +328,32 @@
   }
 });
 
-        window.addEventListener('click', (event) => {
-            if (event.target.tagName !== 'BUTTON' && !isFreeMode) {
-                if (isThrowMode) {
-                    createObject();
-                } else {
-                    pickUpObject();
-                }
-            }
-        });
+// Заменяем клик на pointerdown для мгновенной блокировки системных реакций
+window.addEventListener('pointerdown', (event) => {
+    // Если нажатие на кнопки управления или ссылку, разрешаем стандартное поведение
+    if (event.target.tagName === 'P' || 
+        event.target.tagName === 'BUTTON' || 
+        event.target.tagName === 'A' ||
+        event.target.closest('#control-panel')) {
+        return;
+    }
 
+    // Блокируем выделение экрана
+    if (event.cancelable) event.preventDefault();
+
+    // Выполняем логику взаимодействия с миром
+    if (!isFreeMode) {
+        if (isThrowMode) {
+            createObject();
+        } else {
+            // Передаем событие в pickUpObject, если нужно
+            pickUpObject(event);
+        }
+    }
+}, { passive: false });
+
+
+               
         // Выбор объекта для Pick Up
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
