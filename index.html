@@ -58,122 +58,193 @@
         </nav>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
-    <script>
-        const scene = new THREE.Scene();
-        const colorStart = new THREE.Color(0x000088);
-        const colorEnd = new THREE.Color(0x000000);
-        scene.background = colorStart.clone();
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 35;
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+<script>
+/* ---------- Сцена ---------- */
+const scene = new THREE.Scene();
+const colorStart = new THREE.Color(0x000088);
+const colorEnd = new THREE.Color(0x000000);
+scene.background = colorStart.clone();
 
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
+/* ---------- Камера ---------- */
+const camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+);
+camera.position.z = 35;
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+/* ---------- Рендер ---------- */
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-        // Цветные источники света, вынесенные вперед
-        const lightRed = new THREE.PointLight(0xff0000, 2.5, 150);
-        lightRed.position.set(20, 15, 25);
-        scene.add(lightRed);
+/* ---------- Контролы ---------- */
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
 
-        const lightGreen = new THREE.PointLight(0x00ff00, 2.5, 150);
-        lightGreen.position.set(-20, 15, 25);
-        scene.add(lightGreen);
+/* ---------- Свет ---------- */
+scene.add(new THREE.AmbientLight(0xffffff, 0.4));
 
-        const lightBlue = new THREE.PointLight(0x0000ff, 2.5, 150);
-        lightBlue.position.set(0, -25, 25);
-        scene.add(lightBlue);
+const lightRed = new THREE.PointLight(0xff0000, 2.5, 150);
+lightRed.position.set(20, 15, 25);
+scene.add(lightRed);
 
-        const denseObjects = [];
-        let pressStartTime = 0;
-        let currentMouse = new THREE.Vector2();
+const lightGreen = new THREE.PointLight(0x00ff00, 2.5, 150);
+lightGreen.position.set(-20, 15, 25);
+scene.add(lightGreen);
 
-        const createDenseObject = (position, velocity) => {
-            const geometry = new THREE.IcosahedronGeometry(Math.random() * 0.5 + 0.4, 0);
-            const randomOpacity = Math.random() * 0.6 + 0.3;
-            
-            const material = new THREE.MeshPhongMaterial({
-                color: Math.random() * 0xffffff,
-                specular: 0xffffff,
-                shininess: 120,
-                transparent: true,
-                opacity: randomOpacity,
-                side: THREE.DoubleSide
-            });
-            
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.copy(position);
-            mesh.userData = { velocity: velocity };
-            scene.add(mesh);
-            denseObjects.push(mesh);
-        };
+const lightBlue = new THREE.PointLight(0x0000ff, 2.5, 150);
+lightBlue.position.set(0, -25, 25);
+scene.add(lightBlue);
 
-        window.addEventListener('pointerdown', (event) => {
-            if (event.target.closest('.menu-item')) return;
-            // Блокируем стандартные реакции браузера
-            if (event.cancelable) event.preventDefault();
+/* ---------- Параметры ---------- */
+const denseObjects = [];
+let previewObject = null;
+let directionLine = null;
+let isHolding = false;
 
-            pressStartTime = performance.now();
-            currentMouse.set(
-                (event.clientX / window.innerWidth) * 2 - 1,
-                -(event.clientY / window.innerHeight) * 2 + 1
-            );
-        }, { passive: false });
+const currentMouse = new THREE.Vector2();
 
-        window.addEventListener('pointerup', (event) => {
-            if (pressStartTime === 0) return;
-            const duration = (performance.now() - pressStartTime) / 1000;
-            pressStartTime = 0;
+const maxScale = 3.5;
+const growthSpeed = 0.03;
+const pulseSpeed = 0.08;
 
-            const vector = new THREE.Vector3(currentMouse.x, currentMouse.y, 0.5);
-            vector.unproject(camera);
-            const dir = vector.sub(camera.position).normalize();
-            const pos = camera.position.clone().add(dir.multiplyScalar(10));
-            
-            // Плавная скорость без дискомфорта
-            const speed = 0.05 + Math.min(duration * 0.1, 0.13);
-            const velocity = dir.multiplyScalar(speed);
-            
-            createDenseObject(pos, velocity);
-        });
+const minOpacity = 0.25;
+const maxOpacity = 0.9;
 
-        const animate = () => {
-            requestAnimationFrame(animate);
-            const time = performance.now() * 0.0002;
-            const cycle = (Math.sin(time) + 1) / 2;
-            scene.background.lerpColors(colorEnd, colorStart, cycle);
+/* ---------- Pointer Down ---------- */
+window.addEventListener('pointerdown', (event) => {
+    if (event.cancelable) event.preventDefault();
 
-            denseObjects.forEach((obj) => {
-                if (obj.userData.velocity) {
-                    obj.position.add(obj.userData.velocity);
-                    obj.userData.velocity.multiplyScalar(0.998);
-                }
-                obj.rotation.x += 0.01;
-                obj.rotation.y += 0.01;
+    isHolding = true;
 
-                if (obj.position.length() > 65) {
-                    obj.userData.velocity.multiplyScalar(-1);
-                }
-            });
-            
-            controls.update();
-            renderer.render(scene, camera);
-        };
+    currentMouse.set(
+        (event.clientX / window.innerWidth) * 2 - 1,
+        -(event.clientY / window.innerHeight) * 2 + 1
+    );
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+    const vector = new THREE.Vector3(currentMouse.x, currentMouse.y, 0.5);
+    vector.unproject(camera);
+    const dir = vector.sub(camera.position).normalize();
+    const pos = camera.position.clone().add(dir.multiplyScalar(10));
 
-        animate();
-    </script>
+    const geometry = new THREE.IcosahedronGeometry(0.5, 0);
+    const material = new THREE.MeshPhongMaterial({
+        color: Math.random() * 0xffffff,
+        transparent: true,
+        opacity: minOpacity,
+        shininess: 140,
+        side: THREE.DoubleSide
+    });
+
+    previewObject = new THREE.Mesh(geometry, material);
+    previewObject.position.copy(pos);
+    previewObject.scale.setScalar(0.3);
+    previewObject.userData.direction = dir;
+
+    scene.add(previewObject);
+
+    /* Линия направления */
+    const points = [
+        camera.position.clone(),
+        pos.clone()
+    ];
+
+    const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+    const lineMaterial = new THREE.LineBasicMaterial({
+        transparent: true,
+        opacity: 0.4
+    });
+
+    directionLine = new THREE.Line(lineGeometry, lineMaterial);
+    scene.add(directionLine);
+}, { passive: false });
+
+/* ---------- Pointer Up ---------- */
+window.addEventListener('pointerup', () => {
+    if (!previewObject) return;
+
+    isHolding = false;
+
+    const scale = previewObject.scale.x;
+    const speed = 0.04 + scale * 0.05;
+
+    previewObject.userData.velocity =
+        previewObject.userData.direction.clone().multiplyScalar(speed);
+
+    denseObjects.push(previewObject);
+    previewObject = null;
+
+    if (directionLine) {
+        scene.remove(directionLine);
+        directionLine = null;
+    }
+});
+
+/* ---------- Анимация ---------- */
+const animate = () => {
+    requestAnimationFrame(animate);
+
+    /* Фон */
+    const time = performance.now() * 0.0002;
+    const cycle = (Math.sin(time) + 1) / 2;
+    scene.background.lerpColors(colorEnd, colorStart, cycle);
+
+    /* Запущенные объекты */
+    denseObjects.forEach(obj => {
+        obj.position.add(obj.userData.velocity);
+        obj.userData.velocity.multiplyScalar(0.998);
+
+        obj.rotation.x += 0.01;
+        obj.rotation.y += 0.01;
+
+        if (obj.position.length() > 65) {
+            obj.userData.velocity.multiplyScalar(-1);
+        }
+    });
+
+    /* Превью-объект */
+    if (isHolding && previewObject) {
+        let s = previewObject.scale.x;
+        if (s < maxScale) s += growthSpeed;
+
+        const pulse = Math.sin(performance.now() * 0.01) * pulseSpeed;
+        const finalScale = s + pulse;
+
+        previewObject.scale.setScalar(finalScale);
+
+        const t = THREE.MathUtils.clamp(s / maxScale, 0, 1);
+        previewObject.material.opacity =
+            THREE.MathUtils.lerp(minOpacity, maxOpacity, t);
+
+        previewObject.rotation.x += 0.03;
+        previewObject.rotation.y += 0.02;
+
+        /* Обновление линии */
+        const posAttr = directionLine.geometry.attributes.position.array;
+        posAttr[3] = previewObject.position.x;
+        posAttr[4] = previewObject.position.y;
+        posAttr[5] = previewObject.position.z;
+        directionLine.geometry.attributes.position.needsUpdate = true;
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+};
+
+/* ---------- Resize ---------- */
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+animate();
+</script>
 </body>
 </html>
