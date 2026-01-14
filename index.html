@@ -116,38 +116,39 @@ canvas {
 <script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
 
 <script>
-/* ---------- Сцена ---------- */
+/* ================== СЦЕНА ================== */
 const scene = new THREE.Scene();
 const colorStart = new THREE.Color(0x000088);
-const colorEnd   = new THREE.Color(0x000000);
+const colorEnd = new THREE.Color(0x000000);
 scene.background = colorStart.clone();
 
-/* ---------- Камера ---------- */
-const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+/* ================== КАМЕРА ================== */
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.z = 35;
 
-/* ---------- Рендер ---------- */
+/* ================== РЕНДЕР ================== */
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(innerWidth, innerHeight);
+renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-/* ---------- Контролы ---------- */
+/* ================== КОНТРОЛЫ ================== */
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-/* ---------- Свет ---------- */
-scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+/* ================== СВЕТ ================== */
+scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+
 [
-    [0xff0000,  20,  15, 25],
-    [0x00ff00, -20,  15, 25],
-    [0x0000ff,   0, -25, 25]
+    [0xff0000, 20, 15, 25],
+    [0x00ff00, -20, 15, 25],
+    [0x0000ff, 0, -25, 25]
 ].forEach(l => {
-    const p = new THREE.PointLight(l[0], 2.5, 150);
-    p.position.set(l[1], l[2], l[3]);
-    scene.add(p);
+    const light = new THREE.PointLight(l[0], 2.5, 150);
+    light.position.set(l[1], l[2], l[3]);
+    scene.add(light);
 });
 
-/* ---------- Параметры ---------- */
+/* ================== ПАРАМЕТРЫ ================== */
 const denseObjects = [];
 let previewObject = null;
 let directionLine = null;
@@ -158,22 +159,65 @@ const mouse = new THREE.Vector2();
 const maxScale = 3.5;
 const growthSpeed = 0.03;
 const pulseSpeed = 0.08;
+
 const minOpacity = 0.25;
 const maxOpacity = 0.9;
 
-/* расталкивание */
-const repelRadiusSq = 4.0;
-const repelStrength = 0.002;
-const boundsSq = 65 * 65;
+const breakSpeed = 0.35;
 
-/* ---------- Pointer Down ---------- */
-window.addEventListener('pointerdown', e => {
+/* ================== ЗВУК ================== */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playLaunchSound(power) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = "sawtooth";
+    osc.frequency.value = 180 + power * 220;
+
+    gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.2, audioCtx.currentTime + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.26);
+}
+
+/* ================== СОЗДАНИЕ ФРАГМЕНТОВ ================== */
+function explodeObject(obj) {
+    const fragments = 8;
+    const basePos = obj.position.clone();
+
+    for (let i = 0; i < fragments; i++) {
+        const geom = new THREE.IcosahedronGeometry(0.25, 0);
+        const mat = obj.material.clone();
+        const piece = new THREE.Mesh(geom, mat);
+
+        piece.position.copy(basePos);
+        piece.userData.velocity = new THREE.Vector3(
+            (Math.random() - 0.5) * 0.4,
+            (Math.random() - 0.5) * 0.4,
+            (Math.random() - 0.5) * 0.4
+        );
+
+        scene.add(piece);
+        denseObjects.push(piece);
+    }
+
+    scene.remove(obj);
+}
+
+/* ================== POINTER DOWN ================== */
+window.addEventListener("pointerdown", e => {
     if (e.cancelable) e.preventDefault();
     isHolding = true;
 
     mouse.set(
-        (e.clientX / innerWidth) * 2 - 1,
-        -(e.clientY / innerHeight) * 2 + 1
+        (e.clientX / window.innerWidth) * 2 - 1,
+        -(e.clientY / window.innerHeight) * 2 + 1
     );
 
     const v = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
@@ -185,26 +229,38 @@ window.addEventListener('pointerdown', e => {
         color: Math.random() * 0xffffff,
         transparent: true,
         opacity: minOpacity,
-        shininess: 140,
-        side: THREE.DoubleSide
+        shininess: 160,
+        emissive: new THREE.Color(0xffffff),
+        emissiveIntensity: 0.4,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        depthWrite: false
     });
 
     previewObject = new THREE.Mesh(geom, mat);
     previewObject.position.copy(pos);
     previewObject.scale.setScalar(0.3);
     previewObject.userData.direction = dir;
+
     scene.add(previewObject);
 
+    const lineGeom = new THREE.BufferGeometry().setFromPoints([
+        camera.position.clone(),
+        pos.clone()
+    ]);
+
     directionLine = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([camera.position.clone(), pos.clone()]),
+        lineGeom,
         new THREE.LineBasicMaterial({ transparent: true, opacity: 0.4 })
     );
+
     scene.add(directionLine);
 }, { passive: false });
 
-/* ---------- Pointer Up ---------- */
-window.addEventListener('pointerup', () => {
+/* ================== POINTER UP ================== */
+window.addEventListener("pointerup", () => {
     if (!previewObject) return;
+
     isHolding = false;
 
     const scale = previewObject.scale.x;
@@ -212,6 +268,8 @@ window.addEventListener('pointerup', () => {
 
     previewObject.userData.velocity =
         previewObject.userData.direction.clone().multiplyScalar(speed);
+
+    playLaunchSound(scale / maxScale);
 
     denseObjects.push(previewObject);
     previewObject = null;
@@ -222,57 +280,47 @@ window.addEventListener('pointerup', () => {
     }
 });
 
-/* ---------- Анимация ---------- */
+/* ================== АНИМАЦИЯ ================== */
 function animate() {
     requestAnimationFrame(animate);
 
-    /* фон */
     const t = performance.now() * 0.0002;
     scene.background.lerpColors(colorEnd, colorStart, (Math.sin(t) + 1) / 2);
 
-    /* объекты + расталкивание */
-    for (let i = 0; i < denseObjects.length; i++) {
-        const a = denseObjects[i];
-        a.position.add(a.userData.velocity);
-        a.userData.velocity.multiplyScalar(0.998);
-        a.rotation.x += 0.01;
-        a.rotation.y += 0.01;
+    denseObjects.forEach((obj, i) => {
+        if (!obj.userData.velocity) return;
 
-        if (a.position.lengthSq() > boundsSq) {
-            a.userData.velocity.multiplyScalar(-1);
+        obj.position.add(obj.userData.velocity);
+        obj.userData.velocity.multiplyScalar(0.995);
+
+        obj.rotation.x += 0.01;
+        obj.rotation.y += 0.015;
+
+        if (obj.userData.velocity.length() > breakSpeed) {
+            explodeObject(obj);
+            denseObjects.splice(i, 1);
         }
 
-        for (let j = i + 1; j < denseObjects.length; j++) {
-            const b = denseObjects[j];
-            const dx = a.position.x - b.position.x;
-            const dy = a.position.y - b.position.y;
-            const dz = a.position.z - b.position.z;
-            const d2 = dx*dx + dy*dy + dz*dz;
-            if (d2 > repelRadiusSq) continue;
-
-            const f = repelStrength / (d2 + 0.0001);
-            a.userData.velocity.x += dx * f;
-            a.userData.velocity.y += dy * f;
-            a.userData.velocity.z += dz * f;
-            b.userData.velocity.x -= dx * f;
-            b.userData.velocity.y -= dy * f;
-            b.userData.velocity.z -= dz * f;
+        if (obj.position.length() > 70) {
+            obj.userData.velocity.multiplyScalar(-1);
         }
-    }
+    });
 
-    /* превью */
     if (isHolding && previewObject) {
         let s = previewObject.scale.x;
         if (s < maxScale) s += growthSpeed;
+
         const pulse = Math.sin(performance.now() * 0.01) * pulseSpeed;
         previewObject.scale.setScalar(s + pulse);
 
         const k = THREE.MathUtils.clamp(s / maxScale, 0, 1);
         previewObject.material.opacity =
-            THREE.MathUtils.lerp(maxOpacity, minOpacity, k);
+            THREE.MathUtils.lerp(minOpacity, maxOpacity, k);
+
+        previewObject.material.emissiveIntensity = 0.4 + k * 0.8;
 
         previewObject.rotation.x += 0.03;
-        previewObject.rotation.y += 0.02;
+        previewObject.rotation.y += 0.025;
 
         const arr = directionLine.geometry.attributes.position.array;
         arr[3] = previewObject.position.x;
@@ -285,14 +333,14 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-animate();
-
-/* ---------- Resize ---------- */
-window.addEventListener('resize', () => {
-    camera.aspect = innerWidth / innerHeight;
+/* ================== RESIZE ================== */
+window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
+    renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+animate();
 </script>
 
 </body>
