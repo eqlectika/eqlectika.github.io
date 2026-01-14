@@ -168,12 +168,12 @@ function playSpawnSound() {
     osc.type = "triangle";
     osc.frequency.value = 420 + Math.random() * 180;
     gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.12, audioCtx.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+    gain.gain.exponentialRampToValueAtTime(0.1, audioCtx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.2);
+    osc.stop(audioCtx.currentTime + 0.22);
 }
 
 /* ===== ДАННЫЕ ===== */
@@ -182,6 +182,7 @@ let preview = null;
 let directionLine = null;
 let isHolding = false;
 let holdStart = 0;
+let lastUserActivity = performance.now();
 const mouse = new THREE.Vector2();
 
 const minScale = 0.4;
@@ -193,11 +194,14 @@ const maxOpacity = 0.9;
 function explode(obj) {
     const basePos = obj.position.clone();
     const baseMat = obj.material;
+    const baseScale = obj.scale.x;
+
     for (let i = 0; i < 8; i++) {
-        const geom = new THREE.IcosahedronGeometry(0.25, 0);
+        const geom = new THREE.IcosahedronGeometry(0.5, 0);
         const mat  = baseMat.clone();
         const piece = new THREE.Mesh(geom, mat);
         piece.position.copy(basePos);
+        piece.scale.setScalar(baseScale);
         piece.userData.velocity = new THREE.Vector3(
             (Math.random() - 0.5) * 0.35,
             (Math.random() - 0.5) * 0.35,
@@ -211,6 +215,7 @@ function explode(obj) {
 
 /* ===== POINTER DOWN ===== */
 window.addEventListener("pointerdown", e => {
+    lastUserActivity = performance.now();
     isHolding = true;
     holdStart = performance.now();
 
@@ -239,27 +244,29 @@ window.addEventListener("pointerdown", e => {
     preview.position.copy(pos);
     preview.scale.setScalar(minScale);
     preview.userData.dir = dir;
-
     scene.add(preview);
 
     directionLine = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([camera.position.clone(), pos.clone()]),
-        new THREE.LineBasicMaterial({ transparent: true, opacity: 0.35 })
+        new THREE.BufferGeometry().setFromPoints([
+            pos.clone(),
+            pos.clone().add(dir.clone().multiplyScalar(6))
+        ]),
+        new THREE.LineBasicMaterial({ transparent: true, opacity: 0.4 })
     );
     scene.add(directionLine);
-}, { passive: false });
+});
 
 /* ===== POINTER UP ===== */
 window.addEventListener("pointerup", () => {
     if (!preview) return;
     isHolding = false;
+    lastUserActivity = performance.now();
 
     const holdTime = Math.min((performance.now() - holdStart) / 1000, 2);
     const power = holdTime / 2;
 
-    const speed = 0.1 + power * 0.35;
     preview.userData.velocity =
-        preview.userData.dir.clone().multiplyScalar(speed);
+        preview.userData.dir.clone().multiplyScalar(0.12 + power * 0.35);
 
     playLaunchSound(power);
 
@@ -286,7 +293,7 @@ function spawnRandomObject() {
         Math.random() * 2 - 1
     ).normalize();
 
-    const pos = dir.clone().multiplyScalar(12);
+    const pos = dir.clone().multiplyScalar(14);
 
     const geom = new THREE.IcosahedronGeometry(0.5, 0);
     const mat = new THREE.MeshPhongMaterial({
@@ -299,7 +306,8 @@ function spawnRandomObject() {
 
     const obj = new THREE.Mesh(geom, mat);
     obj.position.copy(pos);
-    obj.userData.velocity = dir.multiplyScalar(0.18 + Math.random() * 0.2);
+    obj.scale.setScalar(0.8);
+    obj.userData.velocity = dir.multiplyScalar(0.18);
 
     scene.add(obj);
     objects.push(obj);
@@ -311,9 +319,12 @@ function spawnRandomObject() {
     }, 2000);
 }
 
+/* ===== АДАПТИВНЫЙ СПАВН ===== */
 setInterval(() => {
-    if (Math.random() < 0.6) spawnRandomObject();
-}, 1800);
+    const idleTime = (performance.now() - lastUserActivity) / 1000;
+    const probability = THREE.MathUtils.clamp(1 / (1 + idleTime * 0.6), 0.05, 0.6);
+    if (Math.random() < probability) spawnRandomObject();
+}, 1600);
 
 /* ===== АНИМАЦИЯ ===== */
 function animate() {
@@ -335,6 +346,12 @@ function animate() {
             THREE.MathUtils.lerp(maxOpacity, minOpacity, t);
         preview.rotation.x += 0.03;
         preview.rotation.y += 0.02;
+
+        if (directionLine) {
+            const p0 = preview.position;
+            const p1 = p0.clone().add(preview.userData.dir.clone().multiplyScalar(6));
+            directionLine.geometry.setFromPoints([p0, p1]);
+        }
     }
 
     controls.update();
