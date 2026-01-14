@@ -116,221 +116,232 @@ canvas {
 <script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
 
 <script>
-/* ================== СЦЕНА ================== */
+/* ===== СЦЕНА ===== */
 const scene = new THREE.Scene();
-const colorStart = new THREE.Color(0x000088);
-const colorEnd   = new THREE.Color(0x000000);
-scene.background = colorStart.clone();
+scene.background = new THREE.Color(0x000088);
 
-/* ================== КАМЕРА ================== */
+/* ===== КАМЕРА ===== */
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
 camera.position.z = 35;
 
-/* ================== РЕНДЕР ================== */
+/* ===== РЕНДЕР ===== */
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
-/* ================== КОНТРОЛЫ ================== */
+/* ===== КОНТРОЛЫ ===== */
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-/* ================== СВЕТ ================== */
+/* ===== СВЕТ ===== */
 scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-
 [
     [0xff0000,  20,  15, 25],
     [0x00ff00, -20,  15, 25],
     [0x0000ff,   0, -25, 25]
 ].forEach(l => {
-    const p = new THREE.PointLight(l[0], 2.5, 150);
-    p.position.set(l[1], l[2], l[3]);
-    scene.add(p);
+    const light = new THREE.PointLight(l[0], 2.5, 150);
+    light.position.set(l[1], l[2], l[3]);
+    scene.add(light);
 });
 
-/* ================== ПАРАМЕТРЫ ================== */
-const denseObjects = [];
-let previewObject = null;
-let directionLine = null;
-let isHolding = false;
-
-const mouse = new THREE.Vector2();
-
-const maxScale     = 3.5;
-const growthSpeed  = 0.03;
-const pulseSpeed   = 0.08;
-
-const minOpacity = 0.25;
-const maxOpacity = 0.9;
-
-const breakSpeed = 0.35;
-
-/* ================== ЗВУК ================== */
+/* ===== ЗВУК ===== */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playLaunchSound(power) {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-
     osc.type = "sawtooth";
-    osc.frequency.value = 180 + power * 220;
-
+    osc.frequency.value = 160 + power * 260;
     gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.15, audioCtx.currentTime + 0.03);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
-
+    gain.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.28);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
-
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.26);
+    osc.stop(audioCtx.currentTime + 0.3);
 }
 
-/* ================== РАЗРЫВ ================== */
-function explodeObject(obj) {
-    const fragments = 8;
+function playSpawnSound() {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = 420 + Math.random() * 180;
+    gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.12, audioCtx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.2);
+}
+
+/* ===== ДАННЫЕ ===== */
+const objects = [];
+let preview = null;
+let directionLine = null;
+let isHolding = false;
+let holdStart = 0;
+const mouse = new THREE.Vector2();
+
+const minScale = 0.4;
+const maxScale = 3.6;
+const minOpacity = 0.25;
+const maxOpacity = 0.9;
+
+/* ===== РАЗРЫВ ===== */
+function explode(obj) {
     const basePos = obj.position.clone();
     const baseMat = obj.material;
-
-    for (let i = 0; i < fragments; i++) {
+    for (let i = 0; i < 8; i++) {
         const geom = new THREE.IcosahedronGeometry(0.25, 0);
         const mat  = baseMat.clone();
-
         const piece = new THREE.Mesh(geom, mat);
         piece.position.copy(basePos);
-
         piece.userData.velocity = new THREE.Vector3(
-            (Math.random() - 0.5) * 0.25,
-            (Math.random() - 0.5) * 0.25,
-            (Math.random() - 0.5) * 0.25
+            (Math.random() - 0.5) * 0.35,
+            (Math.random() - 0.5) * 0.35,
+            (Math.random() - 0.5) * 0.35
         );
-
-        piece.userData.canBreak = false; // фрагменты не рвутся
         scene.add(piece);
-        denseObjects.push(piece);
+        objects.push(piece);
     }
-
     scene.remove(obj);
 }
 
-/* ================== POINTER DOWN ================== */
+/* ===== POINTER DOWN ===== */
 window.addEventListener("pointerdown", e => {
-    if (e.cancelable) e.preventDefault();
     isHolding = true;
+    holdStart = performance.now();
 
     mouse.set(
         (e.clientX / innerWidth) * 2 - 1,
         -(e.clientY / innerHeight) * 2 + 1
     );
 
-    const v = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
-    const dir = v.sub(camera.position).normalize();
-    const pos = camera.position.clone().add(dir.multiplyScalar(10));
+    const dir = new THREE.Vector3(mouse.x, mouse.y, 0.5)
+        .unproject(camera)
+        .sub(camera.position)
+        .normalize();
+
+    const pos = camera.position.clone().add(dir.clone().multiplyScalar(10));
 
     const geom = new THREE.IcosahedronGeometry(0.5, 0);
     const mat = new THREE.MeshPhongMaterial({
         color: Math.random() * 0xffffff,
         transparent: true,
         opacity: minOpacity,
-        shininess: 140,
+        shininess: 120,
         side: THREE.DoubleSide
     });
 
-    previewObject = new THREE.Mesh(geom, mat);
-    previewObject.position.copy(pos);
-    previewObject.scale.setScalar(0.3);
-    previewObject.userData.direction = dir;
+    preview = new THREE.Mesh(geom, mat);
+    preview.position.copy(pos);
+    preview.scale.setScalar(minScale);
+    preview.userData.dir = dir;
 
-    scene.add(previewObject);
+    scene.add(preview);
 
     directionLine = new THREE.Line(
         new THREE.BufferGeometry().setFromPoints([camera.position.clone(), pos.clone()]),
-        new THREE.LineBasicMaterial({ transparent: true, opacity: 0.4 })
+        new THREE.LineBasicMaterial({ transparent: true, opacity: 0.35 })
     );
     scene.add(directionLine);
 }, { passive: false });
 
-/* ================== POINTER UP ================== */
+/* ===== POINTER UP ===== */
 window.addEventListener("pointerup", () => {
-    if (!previewObject) return;
+    if (!preview) return;
     isHolding = false;
 
-    const scale = previewObject.scale.x;
-    const speed = 0.04 + scale * 0.05;
+    const holdTime = Math.min((performance.now() - holdStart) / 1000, 2);
+    const power = holdTime / 2;
 
-    previewObject.userData.velocity =
-        previewObject.userData.direction.clone().multiplyScalar(speed);
+    const speed = 0.1 + power * 0.35;
+    preview.userData.velocity =
+        preview.userData.dir.clone().multiplyScalar(speed);
 
-    previewObject.userData.canBreak = false;
+    playLaunchSound(power);
 
-    playLaunchSound(scale / maxScale);
+    const obj = preview;
+    objects.push(obj);
 
-    denseObjects.push(previewObject);
-    previewObject = null;
+    setTimeout(() => {
+        if (scene.children.includes(obj)) explode(obj);
+    }, 2000);
 
     if (directionLine) {
         scene.remove(directionLine);
         directionLine = null;
     }
+
+    preview = null;
 });
 
-/* ================== АНИМАЦИЯ ================== */
+/* ===== СПОНТАННЫЕ ОБЪЕКТЫ ===== */
+function spawnRandomObject() {
+    const dir = new THREE.Vector3(
+        Math.random() * 2 - 1,
+        Math.random() * 2 - 1,
+        Math.random() * 2 - 1
+    ).normalize();
+
+    const pos = dir.clone().multiplyScalar(12);
+
+    const geom = new THREE.IcosahedronGeometry(0.5, 0);
+    const mat = new THREE.MeshPhongMaterial({
+        color: Math.random() * 0xffffff,
+        transparent: true,
+        opacity: 0.6,
+        shininess: 120,
+        side: THREE.DoubleSide
+    });
+
+    const obj = new THREE.Mesh(geom, mat);
+    obj.position.copy(pos);
+    obj.userData.velocity = dir.multiplyScalar(0.18 + Math.random() * 0.2);
+
+    scene.add(obj);
+    objects.push(obj);
+
+    playSpawnSound();
+
+    setTimeout(() => {
+        if (scene.children.includes(obj)) explode(obj);
+    }, 2000);
+}
+
+setInterval(() => {
+    if (Math.random() < 0.6) spawnRandomObject();
+}, 1800);
+
+/* ===== АНИМАЦИЯ ===== */
 function animate() {
     requestAnimationFrame(animate);
 
-    const t = performance.now() * 0.0002;
-    scene.background.lerpColors(colorEnd, colorStart, (Math.sin(t) + 1) / 2);
-
-    for (let i = denseObjects.length - 1; i >= 0; i--) {
-        const obj = denseObjects[i];
-        if (!obj.userData.velocity) continue;
-
+    objects.forEach(obj => {
+        if (!obj.userData.velocity) return;
         obj.position.add(obj.userData.velocity);
-        obj.userData.velocity.multiplyScalar(0.995);
-
+        obj.userData.velocity.multiplyScalar(0.99);
         obj.rotation.x += 0.01;
         obj.rotation.y += 0.015;
+    });
 
-        if (!obj.userData.canBreak) {
-            obj.userData.canBreak = true;
-        } else if (obj.userData.velocity.length() > breakSpeed) {
-            explodeObject(obj);
-            denseObjects.splice(i, 1);
-            continue;
-        }
-
-        if (obj.position.length() > 70) {
-            obj.userData.velocity.multiplyScalar(-1);
-        }
-    }
-
-    /* превью */
-    if (isHolding && previewObject) {
-        let s = previewObject.scale.x;
-        if (s < maxScale) s += growthSpeed;
-
-        const pulse = Math.sin(performance.now() * 0.01) * pulseSpeed;
-        previewObject.scale.setScalar(s + pulse);
-
-        const k = THREE.MathUtils.clamp(s / maxScale, 0, 1);
-        previewObject.material.opacity =
-            THREE.MathUtils.lerp(maxOpacity, minOpacity, k);
-
-        previewObject.rotation.x += 0.03;
-        previewObject.rotation.y += 0.025;
-
-        const arr = directionLine.geometry.attributes.position.array;
-        arr[3] = previewObject.position.x;
-        arr[4] = previewObject.position.y;
-        arr[5] = previewObject.position.z;
-        directionLine.geometry.attributes.position.needsUpdate = true;
+    if (isHolding && preview) {
+        const t = Math.min((performance.now() - holdStart) / 2000, 1);
+        const scale = THREE.MathUtils.lerp(minScale, maxScale, t);
+        preview.scale.setScalar(scale);
+        preview.material.opacity =
+            THREE.MathUtils.lerp(maxOpacity, minOpacity, t);
+        preview.rotation.x += 0.03;
+        preview.rotation.y += 0.02;
     }
 
     controls.update();
     renderer.render(scene, camera);
 }
 
-/* ================== RESIZE ================== */
+/* ===== RESIZE ===== */
 window.addEventListener("resize", () => {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
