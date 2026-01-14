@@ -162,6 +162,8 @@ function playLaunchSound(power) {
     osc.stop(audioCtx.currentTime + 0.3);
 }
 
+let firstAutoSpawn = true;
+
 function playSpawnSound() {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -286,14 +288,29 @@ window.addEventListener("pointerup", () => {
 });
 
 /* ===== СПОНТАННЫЕ ОБЪЕКТЫ ===== */
-function spawnRandomObject() {
-    const dir = new THREE.Vector3(
-        Math.random() * 2 - 1,
-        Math.random() * 2 - 1,
-        Math.random() * 2 - 1
-    ).normalize();
 
-    const pos = dir.clone().multiplyScalar(14);
+function spawnRandomObject() {
+
+    let dir, pos;
+
+    if (firstAutoSpawn) {
+        // первый объект — в центре сцены
+        pos = new THREE.Vector3(0, 0, 0);
+
+        // направление — от камеры в центр
+        dir = camera.getWorldDirection(new THREE.Vector3()).normalize();
+
+        firstAutoSpawn = false;
+    } else {
+        // все остальные — как раньше
+        dir = new THREE.Vector3(
+            Math.random() * 2 - 1,
+            Math.random() * 2 - 1,
+            Math.random() * 2 - 1
+        ).normalize();
+
+        pos = dir.clone().multiplyScalar(14);
+    }
 
     const geom = new THREE.IcosahedronGeometry(0.5, 0);
     const mat = new THREE.MeshPhongMaterial({
