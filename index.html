@@ -188,7 +188,7 @@ let lastUserActivity = performance.now();
 const mouse = new THREE.Vector2();
 
 const minScale = 0.4;
-const maxScale = 3.6;
+const maxScale = 8;
 const minOpacity = 0.25;
 const maxOpacity = 0.9;
 
@@ -337,11 +337,24 @@ function spawnRandomObject() {
 }
 
 /* ===== АДАПТИВНЫЙ СПАВН ===== */
-setInterval(() => {
+function spawnLoop() {
     const idleTime = (performance.now() - lastUserActivity) / 1000;
-    const probability = THREE.MathUtils.clamp(1 / (1 + idleTime * 0.6), 0.05, 0.6);
-    if (Math.random() < probability) spawnRandomObject();
-}, 1600);
+    
+    // Вероятность появления: чем выше активность, тем охотнее рождаются объекты
+    const probability = THREE.MathUtils.clamp(1 / (1 + idleTime * 0.4), 0.2, 0.8);
+
+    if (Math.random() < probability) {
+        spawnRandomObject();
+    }
+
+    // Спонтанный интервал: от короткой вспышки (0.3с) до долгой паузы (4с)
+    const randomInterval = 300 + Math.random() * 3700;
+
+    setTimeout(spawnLoop, randomInterval);
+}
+
+spawnLoop();
+
 
 /* ===== АНИМАЦИЯ ===== */
 function animate() {
