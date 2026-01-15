@@ -1,135 +1,123 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
   <meta name="description" content="Simple Code Editor" />
-  <link rel="manifest" href="manifest.json" />
   <title>Code Viewer</title>
   <style>
-    html, body { overscroll-behavior: none; }
+    html, body { overscroll-behavior: none; margin: 0; height: 100vh; }
     body {
-      margin: 0; display: flex; flex-direction: row; height: 100vh;
-      font-family: Arial, sans-serif; background-color: black; color: white; position: relative;
-
-              /* защита от выделения и системных меню */
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-
-    -webkit-touch-callout: none;
-    -webkit-tap-highlight-color: transparent;
-    }
-
-    #editorContainer { flex: 38.2; display: flex; position: relative; background-color: black; min-width: 0; }
-    #preview { flex: 61.8; border: none; background-color: #333333; overflow: auto; min-width: 0; }
-
-#controlPanel { 
-  flex: 0 0 auto; /* Здесь мы заставляем колонку быть ровно 80 пикселей в ширину */
-  min-width: 80px; 
-  background-color: black; flex-direction: column;
-}
-
-    #lineNumbering {
-      width: 40px; 
-      padding: 10px 5px; 
-      text-align: right; 
-      font-family: monospace;
-      font-size: 14px; 
-      line-height: 1.2; 
-      color: #666; 
-      background-color: #111;
-      user-select: none; 
-      white-space: pre; /* Заменяем pre-wrap на pre */
-      overflow: hidden; /* Номера не должны прокручиваться отдельно */
-      box-sizing: border-box;
-      flex-shrink: 0;
-    }
-
-    #lineNumbering::-webkit-scrollbar { display: none; width: 0; height: 0; }
-    #controlPanel > div {
-      display: flex; gap: 15px; align-items: center; justify-content: flex-start;
-      padding: 10px; background-color: black;
-      flex-direction: column;
-    }
-    #fileActions { display: flex; gap: 10px; flex-direction: column; align-items: center; flex-shrink: 0; }
-    #searchControls { display: flex; gap: 10px; flex-direction: column; align-items: center; flex-shrink: 0; }
-    #preview, #controlPanel { touch-action: manipulation; }
-
-      #editor {
-      flex: 1; 
-      padding: 10px; 
-      border: none; 
-      resize: none; 
-      font-family: monospace;
-      font-size: 14px; 
-      line-height: 1.2;
+      display: flex; 
+      flex-direction: row; /* Горизонтально по умолчанию (Desktop) */
+      font-family: Arial, sans-serif; 
       background-color: black; 
       color: white; 
-      outline: none;
-      caret-color: white; 
-      position: relative; 
-      box-sizing: border-box; 
-      overflow: auto; /* Включает прокрутку в обе стороны */
-      white-space: pre; /* Запрещает перенос строк, сохраняя ритм нумерации */
-      min-width: 0;
+      position: relative;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Основные блоки */
+    #editorContainer { flex: 38.2; display: flex; position: relative; background-color: black; min-width: 0; }
+    #preview { flex: 61.8; border: none; background-color: #333333; overflow: auto; min-width: 0; }
+    
+    /* Панель управления */
+    #controlPanel { 
+      flex: 0 0 auto; 
+      background-color: black; 
+      border-left: 1px solid #222; 
     }
     
+    #controlPanel > div {
+      display: flex; 
+      flex-direction: column; /* Элементы в колонну в горизонтальном режиме */
+      gap: 12px; 
+      align-items: center; 
+      justify-content: flex-start; 
+      padding: 15px 10px; 
+      box-sizing: border-box; 
+      height: 100%;
+    }
+
+    #lineNumbering {
+      width: 40px; padding: 10px 5px; text-align: right; font-family: monospace;
+      font-size: 14px; line-height: 1.2; color: #666; background-color: #111;
+      user-select: none; white-space: pre; overflow: hidden; box-sizing: border-box; flex-shrink: 0;
+    }
+
+    #editor {
+      flex: 1; padding: 10px; border: none; resize: none; font-family: monospace;
+      font-size: 14px; line-height: 1.2; background-color: black; color: white; 
+      outline: none; caret-color: white; position: relative; box-sizing: border-box; 
+      overflow: auto; white-space: pre; min-width: 0;
+    }
+
+    /* Стили элементов управления */
+    #searchField {
+      padding: 5px; font-size: 14px; border: 1px solid #555; background-color: #333333;
+      color: white; height: 35px; box-sizing: border-box; border-radius: 5px; width: 80px;
+    }
     #prevMatchButton, #nextMatchButton {
       width: 40px; height: 40px; background-color: #333333; color: white;
-      border: none; cursor: pointer; font-size: 18px; line-height: 40px;
-      text-align: center; border-radius: 5px; padding: 0; flex-shrink: 0;
+      border: none; cursor: pointer; font-size: 18px; border-radius: 5px; flex-shrink: 0;
     }
-    #prevMatchButton:hover, #nextMatchButton:hover { background-color: #555555;}
-    #fileFormat { font-size: 14px; padding: 5px; width: 70px; }
+    #fileFormat { font-size: 14px; padding: 5px; width: 80px; height: 35px; }
     #saveButton {
-      width: 70px; height: 40px; background-color: #007bff; color: white;
-      border: none; cursor: pointer; font-size: 14px;
+      width: 80px; height: 40px; background-color: #007bff; color: white;
+      border: none; cursor: pointer; font-size: 14px; border-radius: 5px;
     }
-    #saveButton:hover { background-color: #0056b3; }
-    #searchField { 
 
-      padding: 5px; font-size: 14px; border: 1px solid #555; background-color: #333333;
-      color: white; height: 30px; box-sizing: border-box; border-radius: 5px;
-      width: 12ch; min-width: 12ch; flex-grow: 0; flex-shrink: 0;
-    }
+    /* Адаптация под вертикальный экран (Portrait) */
     @media (orientation: portrait) {
       body { flex-direction: column; }
-      #editorContainer { flex: 38.2 1 0; min-height: 0; min-width: auto; }
-      #preview { flex: 61.8 1 0; min-height: 0; min-width: auto; }
-      #controlPanel > div { flex-direction: row; justify-content: space-between; flex-wrap: wrap; align-items: center; width: 100%; }
-      #searchControls { flex-grow: 1; }
-      #searchField { flex-grow: 1; width: auto; min-width: 40px; }
-      #fileActions { flex-shrink: 0; }
+      #editorContainer { flex: 40; min-height: 0; }
+      #preview { flex: 50; min-height: 0; }
+      #controlPanel { border-left: none; border-top: 1px solid #222; }
+      #controlPanel > div {
+        flex-direction: row; /* Элементы в ряд в портретном режиме */
+        justify-content: space-evenly; 
+        padding: 10px; 
+        height: auto; 
+        width: 100%;
+        flex-wrap: wrap;
+      }
+      #searchField { width: 100px; flex-grow: 1; }
     }
   </style>
 </head>
 <body>
+
   <div id="editorContainer">
     <div id="lineNumbering">1</div>
     <textarea id="editor" placeholder="Type to see your code here..."></textarea>
   </div>
+
   <iframe id="preview" title="Preview"></iframe>
+
   <div id="controlPanel">
     <div>
-      <div id="searchControls">
-        <input type="text" id="searchField" placeholder="Search">
-        <button id="prevMatchButton" title="Previous Match">▲</button>
-        <button id="nextMatchButton" title="Next Match">▼</button>
-      </div>
-      <div id="fileActions">
-        <select id="fileFormat">
-          <option value="html">HTML</option>
-          <option value="json">JSON</option>
-          <option value="txt">TXT</option>
-          <option value="js">JS</option>
-          <option value="css">CSS</option>
-        </select>
-        <button id="saveButton">Save</button>
-<a href="index.html" style="display: flex; align-items: center;">
-  <img src="logo.png" alt="Feedback" style="height: 48px; opacity: 0.8; width: auto; display: block;">
-</a>
-      </div>
+      <input type="text" id="searchField" placeholder="Search">
+      <button id="prevMatchButton" title="Previous Match">▲</button>
+      <button id="nextMatchButton" title="Next Match">▼</button>
+      
+      <select id="fileFormat">
+        <option value="html">HTML</option>
+        <option value="json">JSON</option>
+        <option value="txt">TXT</option>
+        <option value="js">JS</option>
+        <option value="css">CSS</option>
+      </select>
+      
+      <button id="saveButton">Save</button>
+
+      <a href="index.html" style="display: flex; align-items: center;">
+        <img src="logo.png" alt="Feedback" style="height: 40px; opacity: 0.3; width: auto;">
+      </a>
     </div>
   </div>
 
@@ -150,153 +138,69 @@
       js: "application/javascript", css: "text/css",
     };
 
-        function updateLineNumbers() {
+    function updateLineNumbers() {
         const lines = editor.value.split('\n');
-        const lineCount = lines.length;
-        const numbers = Array.from({ length: lineCount }, (_, i) => i + 1).join('\n');
-        lineNumbering.textContent = numbers;
+        lineNumbering.textContent = Array.from({ length: lines.length }, (_, i) => i + 1).join('\n');
     }
 
     editor.addEventListener('input', () => {
-        const start = editor.selectionStart;
-        const end = editor.selectionEnd;
         preview.srcdoc = editor.value;
         updateLineNumbers();
-        editor.setSelectionRange(start, end);
     });
+
     editor.addEventListener('scroll', () => { lineNumbering.scrollTop = editor.scrollTop; });
     updateLineNumbers();
 
     saveButton.addEventListener("click", () => {
       const format = fileFormat.value;
-      const mimeType = mimeTypes[format] || "text/plain";
-      const blob = new Blob([editor.value], { type: mimeType });
+      const blob = new Blob([editor.value], { type: mimeTypes[format] || "text/plain" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `code.${format}`;
-      a.style.display = "none";
-      document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
     });
 
-    // ←←← ЭТО ЕДИНСТВЕННОЕ ИЗМЕНЕНИЕ В КОДЕ ←←←
     function highlightMatch(index) {
-        if (index === -1 || searchMatches.length === 0) {
-            clearSelection(editor);
-            return;
-        }
+        if (index === -1 || searchMatches.length === 0) return;
         const start = searchMatches[index];
         const end = start + currentSearchTerm.length;
-
         editor.focus();
         editor.setSelectionRange(start, end);
-
-        // Надёжная прокрутка на всех устройствах (включая iOS и Android)
-        const dummy = document.createElement('span');
-        dummy.style.cssText = 'position:absolute;opacity:0;height:1px;pointer-events:none;';
-        const range = new Range();
-        try {
-            range.setStart(editor.firstChild || editor, start);
-            range.collapse(true);
-            range.insertNode(dummy);
-            dummy.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            requestAnimationFrame(() => dummy.remove());
-        } catch (e) {
-            // fallback
-            const linesBefore = editor.value.substring(0, start).split('\n').length - 1;
-            editor.scrollTop = Math.max(0, (linesBefore - 2) * 16.8);
-        }
-
-        setTimeout(() => editor.setSelectionRange(start, end), 100);
-    }
-    // ←←← КОНЕЦ ИЗМЕНЕНИЯ ←←←
-
-    function resetSearch() {
-        searchMatches = [];
-        currentMatchIndex = -1;
-        currentSearchTerm = "";
-        clearSelection(editor);
-    }
-   
-    function findAllMatches(searchText) {
-        searchMatches = [];
-        currentSearchTerm = searchText;
-        if (searchText === "") return;
-        const editorContent = editor.value;
-        const normalizedContent = editorContent.toLowerCase();
-        const normalizedSearchText = searchText.toLowerCase();
-        const len = normalizedSearchText.length;
-        let index = normalizedContent.indexOf(normalizedSearchText, 0);
-        while (index !== -1) {
-            searchMatches.push(index);
-            index = normalizedContent.indexOf(normalizedSearchText, index + len);
-        }
+        
+        const linesBefore = editor.value.substring(0, start).split('\n').length - 1;
+        editor.scrollTop = Math.max(0, (linesBefore - 2) * 16.8);
     }
 
     function startSearch(searchText) {
-        const trimmedText = searchText.trim();
-        if (trimmedText === "") {
-            resetSearch();
-            searchField.style.backgroundColor = '#333333';
-            return;
+        const trimmed = searchText.trim();
+        if (trimmed === "") { searchMatches = []; currentSearchTerm = ""; return; }
+        
+        searchMatches = [];
+        currentSearchTerm = trimmed;
+        const content = editor.value.toLowerCase();
+        const term = trimmed.toLowerCase();
+        let index = content.indexOf(term, 0);
+        
+        while (index !== -1) {
+            searchMatches.push(index);
+            index = content.indexOf(term, index + term.length);
         }
-        if (trimmedText === currentSearchTerm && searchMatches.length > 0) {
-            nextMatch();
-            return;
-        }
-        resetSearch();
-        findAllMatches(trimmedText);
+
         if (searchMatches.length > 0) {
             currentMatchIndex = 0;
             highlightMatch(currentMatchIndex);
-            searchField.style.backgroundColor = '#333333';
-        } else {
-            searchField.style.backgroundColor = 'red';
-            setTimeout(() => { searchField.style.backgroundColor = '#333333'; }, 300);
         }
     }
 
-    function nextMatch() {
-        if (searchMatches.length === 0) return;
-        currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
-        highlightMatch(currentMatchIndex);
-    }
-    function prevMatch() {
-        if (searchMatches.length === 0) return;
-        currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
-        highlightMatch(currentMatchIndex);
-    }
-
-    searchField.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            startSearch(searchField.value);
-        }
+    searchField.addEventListener("keydown", (e) => { if (e.key === "Enter") startSearch(searchField.value); });
+    nextMatchButton.addEventListener("click", () => {
+        if (searchField.value !== currentSearchTerm) startSearch(searchField.value);
+        else if (searchMatches.length) { currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length; highlightMatch(currentMatchIndex); }
     });
-   
-    nextMatchButton.addEventListener("click", (e) => {
-        e.preventDefault();
-        if (searchField.value.trim() !== currentSearchTerm) {
-            startSearch(searchField.value);
-        } else {
-            nextMatch();
-        }
+    prevMatchButton.addEventListener("click", () => {
+        if (searchField.value !== currentSearchTerm) startSearch(searchField.value);
+        else if (searchMatches.length) { currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length; highlightMatch(currentMatchIndex); }
     });
-    prevMatchButton.addEventListener("click", (e) => {
-        e.preventDefault();
-        if (searchField.value.trim() !== currentSearchTerm) {
-            startSearch(searchField.value);
-        } else {
-            prevMatch();
-        }
-    });
-
-    function clearSelection(textarea) {
-        const start = textarea.selectionStart;
-        textarea.setSelectionRange(start, start);
-    }
   </script>
-
 </body>
 </html>
