@@ -5,7 +5,7 @@ const ASSETS = [
   './flash.html',
   './about.html',
   './book.html',
-  './me.JPG',
+  './me.jpeg',
   './3d.html',
   './print.html',
   './smart.html',
