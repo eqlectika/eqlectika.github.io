@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        :root { --t: 0.5s; --btn: 56px; }
+        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; font-family: serif; font-size: 18px; }
+        
+        /* State 0: Gateway */
+        #gateway { display: grid; grid-template-columns: 1fr 2px 1fr; height: 100%; width: 100%; position: absolute; z-index: 1000; transition: transform var(--t) ease; background: #000; border-bottom: 1px solid #444; }
+        .input-pane { border: none; padding: 40px 20px; font-size: 1.2rem; font-family: serif; resize: none; height: 100%; width: 100%; outline: none; }
+        .light { background: #fff; color: #000; }
+        .dark { background: #000; color: #fff; }
+
+        .master-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: var(--btn); height: var(--btn); border-radius: 50%; border: 1px solid #888; background: #222; color: #fff; cursor: pointer; z-index: 2000; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; }
+
+        /* Main Layout */
+        .app-container { display: grid; height: 100vh; grid-template-columns: 1fr 0fr 1fr; transition: grid-template-columns var(--t) ease; }
+        .pane { overflow-y: auto; padding: 25px; line-height: 1.6; }
+        .central-col { display: grid; grid-template-rows: 1fr 1fr; overflow: hidden; border-left: 1px solid #444; border-right: 1px solid #444; transition: grid-template-rows var(--t) ease; }
+        
+        /* Final state layout */
+        .central-col.final { grid-template-rows: 1fr 1fr 1fr; }
+        .final-row { display: none; grid-template-columns: 1fr 1fr; border-top: 1px solid #444; border-bottom: 1px solid #444; }
+        .central-col.final .final-row { display: grid; }
+
+        /* Typography & Effects */
+        .word { cursor: pointer; padding: 0 2px; border-radius: 2px; }
+        .light .word.active { background: #000; color: #fff; }
+        .dark .word.active { background: #fff; color: #000; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="gateway">
+    <textarea id="inL" class="input-pane light" placeholder="Text A... (try: hello)"></textarea>
+    <div style="background: #444; position: relative;"><div class="master-btn" onclick="launchApp()">SYNC</div></div>
+    <textarea id="inD" class="input-pane dark" placeholder="Text B... (try: привет)"></textarea>
+</div>
+
+<div class="master-btn hidden" id="uiBtn" onclick="handleUIBtn()">GATE</div>
+
+<div class="app-container" id="main">
+    <div class="pane light" id="outL"></div>
+    <div class="central-col" id="center">
+        <div class="pane light" id="s2-top"></div>
+        <div class="final-row" id="s3-row">
+            <div class="pane light" id="s3-L"></div>
+            <div class="pane dark" id="s3-D"></div>
+        </div>
+        <div class="pane dark" id="s2-bot"></div>
+    </div>
+    <div class="pane dark" id="outD"></div>
+</div>
+
+
+
+<script>
+let state = 0; // 0: Gate, 1: Reading, 2: Analysis, 3: Final
+
+const db = {
+    "hello": { 
+        l1: ["Hello: a greeting.", "Привет: приветствие."], 
+        l2: ["From 'hallo'.", "Из 'привѣтъ'."] 
+    },
+    "world": { 
+        l1: ["World: the planet.", "Мир: планета."], 
+        l2: ["Old English.", "Славянский."] 
+    }
+};
+
+function tokenize(t) {
+    return t.split(/(\s+|[.!,?;:])/).map(p => {
+        if (/[\s+.!,?;:]/.test(p)) return p;
+        let id = btoa(encodeURIComponent(p.toLowerCase())).substring(0,6);
+        return `<span class="word" data-id="${id}" data-raw="${p.toLowerCase()}">${p}</span>`;
+    }).join('');
+}
+
+function launchApp() {
+    document.getElementById('outL').innerHTML = tokenize(document.getElementById('inL').value);
+    document.getElementById('outD').innerHTML = tokenize(document.getElementById('inD').value);
+    document.getElementById('gateway').style.transform = 'translateY(-100%)';
+    document.getElementById('uiBtn').classList.remove('hidden');
+    state = 1;
+}
+
+document.addEventListener('click', (e) => {
+    let w = e.target.closest('.word');
+    if (!w || state === 0 || state === 3) return;
+
+    let id = w.dataset.id;
+    let raw = w.dataset.raw;
+
+    // Сквозная инверсия
+    document.querySelectorAll('.word').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll(`[data-id="${id}"]`).forEach(el => el.classList.add('active'));
+
+    if (state === 1) {
+        document.getElementById('main').style.gridTemplateColumns = '1fr 1.5fr 1fr';
+        let entry = db[raw] || { l1: [`Def: ${raw}`, `Толк: ${raw}`], l2: ["...", "..."] };
+        document.getElementById('s2-top').innerHTML = tokenize(entry.l1[0]);
+        document.getElementById('s2-bot').innerHTML = tokenize(entry.l1[1]);
+        document.getElementById('uiBtn').innerText = "CLOSE";
+        state = 2;
+    } 
+    else if (state === 2 && e.target.closest('#center')) {
+        document.getElementById('center').classList.add('final');
+        let entry = db[raw] || { l2: ["Final A", "Финал Б"] };
+        document.getElementById('s3-L').innerHTML = tokenize(entry.l2 ? entry.l2[0] : "...");
+        document.getElementById('s3-D').innerHTML = tokenize(entry.l2 ? entry.l2[1] : "...");
+        document.getElementById('uiBtn').innerText = "RESET";
+        state = 3;
+    }
+});
+
+function handleUIBtn() {
+    if (state >= 2) {
+        document.getElementById('main').style.gridTemplateColumns = '1fr 0fr 1fr';
+        document.getElementById('center').classList.remove('final');
+        document.querySelectorAll('.word').forEach(el => el.classList.remove('active'));
+        document.getElementById('uiBtn').innerText = "GATE";
+        state = 1;
+    } else if (state === 1) {
+        document.getElementById('gateway').style.transform = 'translateY(0)';
+        document.getElementById('uiBtn').classList.add('hidden');
+        state = 0;
+    }
+}
+</script>
+</body>
+</html>
