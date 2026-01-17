@@ -31,8 +31,29 @@
         .light .word.active { background: #000; color: #fff; }
         .dark .word.active { background: #fff; color: #000; }
         .hidden { display: none; }
+        
+    .footer-logo {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 3000;
+        transition: opacity 0.3s;
+        display: block;
+    }
+    .footer-logo img {
+        height: 40px; /* Оптимальный размер для мобильного интерфейса */
+        width: auto;
+        opacity: 1.0;
+        filter: grayscale(100%); /* Сохраняем монохромный канон */
+    }
+    .footer-logo:hover img {
+        opacity: 0.9;
+    }
+
     </style>
 </head>
+
 <body>
 
 <div id="gateway">
@@ -56,9 +77,29 @@
     <div class="pane dark" id="outD"></div>
 </div>
 
-
+<a href="/index.html" class="footer-logo"><img src="logo.png" alt="Monolith Logo"></a>
 
 <script>
+    // Добавьте это в начало вашего <script>, чтобы текст сохранялся
+    window.onload = () => {
+        if (localStorage.getItem('textL')) document.getElementById('inL').value = localStorage.getItem('textL');
+        if (localStorage.getItem('textD')) document.getElementById('inD').value = localStorage.getItem('textD');
+    };
+
+    // Обновите функцию launchApp, чтобы она запоминала ввод
+    function launchApp() {
+        const valL = document.getElementById('inL').value;
+        const valD = document.getElementById('inD').value;
+        
+        localStorage.setItem('textL', valL);
+        localStorage.setItem('textD', valD);
+
+        document.getElementById('outL').innerHTML = tokenize(valL);
+        document.getElementById('outD').innerHTML = tokenize(valD);
+        document.getElementById('gateway').style.transform = 'translateY(-100%)';
+        document.getElementById('uiBtn').classList.remove('hidden');
+        state = 1;
+    }
 let state = 0; // 0: Gate, 1: Reading, 2: Analysis, 3: Final
 
 const db = {
