@@ -4,62 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        :root { --t: 0.5s; --btn: 56px; }
-        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; font-family: serif; font-size: 18px; }
+        :root { --t: 0.4s; --btn: 56px; }
+        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; box-sizing: border-box; border-radius: 0 !important; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; font-family: "Times New Roman", serif; font-size: 16px; }
         
-        /* State 0: Gateway */
-        #gateway { display: grid; grid-template-columns: 1fr 2px 1fr; height: 100%; width: 100%; position: absolute; z-index: 1000; transition: transform var(--t) ease; background: #000; border-bottom: 1px solid #444; }
-        .input-pane { border: none; padding: 40px 20px; font-size: 1.2rem; font-family: serif; resize: none; height: 100%; width: 100%; outline: none; }
+        #gateway { display: grid; grid-template-columns: 1fr 1fr; height: 100%; width: 100%; position: absolute; z-index: 1000; transition: transform var(--t) ease; background: #000; }
+        .input-pane { border: none; padding: 20px; font-size: 1.1rem; font-family: serif; resize: none; height: 100%; width: 100%; outline: none; }
         .light { background: #fff; color: #000; }
         .dark { background: #000; color: #fff; }
 
-        .master-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: var(--btn); height: var(--btn); border-radius: 50%; border: 1px solid #888; background: #222; color: #fff; cursor: pointer; z-index: 2000; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; }
+        .master-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: var(--btn); height: var(--btn); border-radius: 50% !important; border: 1px solid #666; background: #111; color: #fff; cursor: pointer; z-index: 2000; display: flex; align-items: center; justify-content: center; font-size: 9px; letter-spacing: 1px; }
 
-        /* Main Layout */
         .app-container { display: grid; height: 100vh; grid-template-columns: 1fr 0fr 1fr; transition: grid-template-columns var(--t) ease; }
-        .pane { overflow-y: auto; padding: 25px; line-height: 1.6; }
-        .central-col { display: grid; grid-template-rows: 1fr 1fr; overflow: hidden; border-left: 1px solid #444; border-right: 1px solid #444; transition: grid-template-rows var(--t) ease; }
+        .pane { overflow-y: auto; padding: 15px; line-height: 1.4; border: none; }
+        .central-col { display: grid; grid-template-rows: 1fr 1fr; overflow: hidden; background: transparent; }
         
-        /* Final state layout */
         .central-col.final { grid-template-rows: 1fr 1fr 1fr; }
-        .final-row { display: none; grid-template-columns: 1fr 1fr; border-top: 1px solid #444; border-bottom: 1px solid #444; }
+        .final-row { display: none; grid-template-columns: 1fr 1fr; height: 100%; }
         .central-col.final .final-row { display: grid; }
 
-        /* Typography & Effects */
-        .word { cursor: pointer; padding: 0 2px; border-radius: 2px; }
+        .word { cursor: pointer; padding: 0 1px; }
         .light .word.active { background: #000; color: #fff; }
         .dark .word.active { background: #fff; color: #000; }
-        .hidden { display: none; }
         
-    .footer-logo {
-        position: absolute;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 3000;
-        transition: opacity 0.3s;
-        display: block;
-    }
-    .footer-logo img {
-        height: 40px; /* Оптимальный размер для мобильного интерфейса */
-        width: auto;
-        opacity: 1.0;
-        filter: grayscale(100%); /* Сохраняем монохромный канон */
-    }
-    .footer-logo:hover img {
-        opacity: 0.9;
-    }
-
+        .footer-logo { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 3000; }
+        .footer-logo img { height: 35px; width: auto; display: block; opacity: 1; filter: grayscale(100%); }
+        .hidden { display: none; }
+        .example { display: block; margin-top: 8px; font-style: italic; opacity: 0.9; }
     </style>
 </head>
-
 <body>
 
 <div id="gateway">
-    <textarea id="inL" class="input-pane light" placeholder="Text A... (try: hello)"></textarea>
-    <div style="background: #444; position: relative;"><div class="master-btn" onclick="launchApp()">SYNC</div></div>
-    <textarea id="inD" class="input-pane dark" placeholder="Text B... (try: привет)"></textarea>
+    <textarea id="inL" class="input-pane light">Привет, мир!</textarea>
+    <div style="position: absolute; left: 50%; height: 100%; width: 0; background: transparent;"><div class="master-btn" onclick="launchApp()">SYNC</div></div>
+    <textarea id="inD" class="input-pane dark">Hello, world!</textarea>
 </div>
 
 <div class="master-btn hidden" id="uiBtn" onclick="handleUIBtn()">GATE</div>
@@ -68,56 +47,48 @@
     <div class="pane light" id="outL"></div>
     <div class="central-col" id="center">
         <div class="pane light" id="s2-top"></div>
-        <div class="final-row" id="s3-row">
-            <div class="pane light" id="s3-L"></div>
-            <div class="pane dark" id="s3-D"></div>
-        </div>
+        <div class="final-row" id="s3-row"><div class="pane light" id="s3-L"></div><div class="pane dark" id="s3-D"></div></div>
         <div class="pane dark" id="s2-bot"></div>
     </div>
     <div class="pane dark" id="outD"></div>
 </div>
 
-<a href="/index.html" class="footer-logo"><img src="logo.png" alt="Monolith Logo"></a>
+<a href="/index.html" class="footer-logo"><img src="logo.png" alt="logo"></a>
 
 <script>
-    // Добавьте это в начало вашего <script>, чтобы текст сохранялся
-    window.onload = () => {
-        if (localStorage.getItem('textL')) document.getElementById('inL').value = localStorage.getItem('textL');
-        if (localStorage.getItem('textD')) document.getElementById('inD').value = localStorage.getItem('textD');
-    };
-
-    // Обновите функцию launchApp, чтобы она запоминала ввод
-    function launchApp() {
-        const valL = document.getElementById('inL').value;
-        const valD = document.getElementById('inD').value;
-        
-        localStorage.setItem('textL', valL);
-        localStorage.setItem('textD', valD);
-
-        document.getElementById('outL').innerHTML = tokenize(valL);
-        document.getElementById('outD').innerHTML = tokenize(valD);
-        document.getElementById('gateway').style.transform = 'translateY(-100%)';
-        document.getElementById('uiBtn').classList.remove('hidden');
-        state = 1;
-    }
-let state = 0; // 0: Gate, 1: Reading, 2: Analysis, 3: Final
+let state = 0;
 
 const db = {
+    "привет": { 
+        l1: ["Приветствие (межд.).", "Пример: Привет, друг!", "Greeting (intj.).", "Example: Hello, friend!"], 
+        l2: ["От др.-русск. привѣтъ (совет).", "Пример: Добрый привет.", "From Old Slavic 'privet'.", "Example: Kind greeting."],
+        pair: "hello" 
+    },
     "hello": { 
-        l1: ["Hello: a greeting.", "Привет: приветствие."], 
-        l2: ["From 'hallo'.", "Из 'привѣтъ'."] 
+        l1: ["Greeting (intj.).", "Example: Hello, friend!", "Приветствие (межд.).", "Пример: Привет, друг!"], 
+        l2: ["From Old German 'hallo'.", "Example: Say hello.", "От др.-герм. hallo.", "Пример: Скажи привет."],
+        pair: "привет" 
+    },
+    "мир": { 
+        l1: ["Вселенная (сущ.).", "Пример: Наш мир велик.", "Universe (noun).", "Example: Our world is big."], 
+        l2: ["От праслав. mirъ (покой).", "Пример: Жить в мире.", "From Proto-Slavic mir (peace).", "Example: Live in peace."],
+        pair: "world" 
     },
     "world": { 
-        l1: ["World: the planet.", "Мир: планета."], 
-        l2: ["Old English.", "Славянский."] 
+        l1: ["Universe (noun).", "Example: Our world is big.", "Вселенная (сущ.).", "Пример: Наш мир велик."], 
+        l2: ["From Old English 'weorold'.", "Example: Whole world.", "От др.-англ. weorold.", "Пример: Весь мир."],
+        pair: "мир" 
     }
 };
 
 function tokenize(t) {
-    return t.split(/(\s+|[.!,?;:])/).map(p => {
-        if (/[\s+.!,?;:]/.test(p)) return p;
-        let id = btoa(encodeURIComponent(p.toLowerCase())).substring(0,6);
-        return `<span class="word" data-id="${id}" data-raw="${p.toLowerCase()}">${p}</span>`;
+    if (!t) return "";
+    if (Array.isArray(t)) {
+        return `<div>${tokenize(t[0])}</div><div class="example">${tokenize(t[1])}</div>`;
+    }
+    return t.split(/(\s+|[,!?.])/).map(p => {
+        if (/[\s+,!?. ]/.test(p) || p === "") return p;
+        return `<span class="word" data-raw="${p.toLowerCase().replace(/[.,!?]/g, '')}">${p}</span>`;
     }).join('');
 }
 
@@ -130,29 +101,38 @@ function launchApp() {
 }
 
 document.addEventListener('click', (e) => {
-    let w = e.target.closest('.word');
-    if (!w || state === 0 || state === 3) return;
+    const w = e.target.closest('.word');
+    if (!w || state === 0) return;
 
-    let id = w.dataset.id;
-    let raw = w.dataset.raw;
+    const raw = w.dataset.raw;
+    const pane = w.closest('.pane');
+    if (!pane) return;
 
-    // Сквозная инверсия
+    // Сброс и инверсия
     document.querySelectorAll('.word').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll(`[data-id="${id}"]`).forEach(el => el.classList.add('active'));
+    
+    // Сквозной поиск по всему документу (для гарантии отзыва)
+    document.querySelectorAll(`.word[data-raw="${raw}"]`).forEach(el => el.classList.add('active'));
+    
+    // Поиск партнера только для Уровня 0
+    if (pane.id === 'outL' || pane.id === 'outD') {
+        const partnerRaw = db[raw]?.pair;
+        if (partnerRaw) document.querySelectorAll(`.word[data-raw="${partnerRaw}"]`).forEach(el => el.classList.add('active'));
 
-    if (state === 1) {
         document.getElementById('main').style.gridTemplateColumns = '1fr 1.5fr 1fr';
-        let entry = db[raw] || { l1: [`Def: ${raw}`, `Толк: ${raw}`], l2: ["...", "..."] };
-        document.getElementById('s2-top').innerHTML = tokenize(entry.l1[0]);
-        document.getElementById('s2-bot').innerHTML = tokenize(entry.l1[1]);
+        const entry = db[raw] || { l1: [`Толкование: ${raw}`, `Пример: ...`, `Definition: ${raw}`, `Example: ...`] };
+        document.getElementById('s2-top').innerHTML = tokenize([entry.l1[0], entry.l1[1]]);
+        document.getElementById('s2-bot').innerHTML = tokenize([entry.l1[2], entry.l1[3]]);
+        
+        document.getElementById('center').classList.remove('final');
         document.getElementById('uiBtn').innerText = "CLOSE";
         state = 2;
     } 
-    else if (state === 2 && e.target.closest('#center')) {
+    else if (pane.id === 's2-top' || pane.id === 's2-bot') {
+        const entry = db[raw] || { l2: [`Этимология: ${raw}`, `Пример: ...`, `Etymology: ${raw}`, `Example: ...`] };
         document.getElementById('center').classList.add('final');
-        let entry = db[raw] || { l2: ["Final A", "Финал Б"] };
-        document.getElementById('s3-L').innerHTML = tokenize(entry.l2 ? entry.l2[0] : "...");
-        document.getElementById('s3-D').innerHTML = tokenize(entry.l2 ? entry.l2[1] : "...");
+        document.getElementById('s3-L').innerHTML = tokenize([entry.l2 ? entry.l2[0] : "Этимология", entry.l2 ? entry.l2[1] : "Пример"]);
+        document.getElementById('s3-D').innerHTML = tokenize([entry.l2 ? entry.l2[2] : "Etymology", entry.l2 ? entry.l2[3] : "Example"]);
         document.getElementById('uiBtn').innerText = "RESET";
         state = 3;
     }
