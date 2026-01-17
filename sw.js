@@ -9,7 +9,7 @@ const ASSETS = [
   './me.jpeg',
   './3d.html',
   './print.html',
-  './smart.html',
+  './calm.html',
   './size.html',
   './index.html',
   './code.html',
