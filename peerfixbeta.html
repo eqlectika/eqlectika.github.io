@@ -69,7 +69,7 @@ body {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
     <script>
-            let nodeId = Math.random().toString(36).substr(2, 9);
+        let nodeId = Math.random().toString(36).substr(2, 9);
         let peers = {};
         let objects = [];
         let isThrowMode = true;
@@ -161,10 +161,10 @@ body {
         }
 
         function updateObjectCounter() {
-            document.getElementById('object-counter').innerText = `Objects: ${personalObjects}`;
+            document.getElementById('object-counter').innerText = `Tokens: ${personalObjects}`;
         }
 
-        // --- Единое Управление (Pointer Events) ---
+        // --- Управление с разделением Zoom и Pan ---
         let isDragging = false, isRotating = false;
         let previousMousePosition = { x: 0, y: 0, midX: null, midY: null };
         let cameraRotationVelocity = { x: 0, y: 0 };
@@ -183,9 +183,7 @@ body {
             if (e.pointerType === 'mouse') {
                 if (e.button === 2) isDragging = true;
                 else if (e.button === 0) isRotating = true;
-            } else if (activePointers.length === 1) {
-                isRotating = true;
-            }
+            } else if (activePointers.length === 1) isRotating = true;
 
             if (activePointers.length === 1 && !isFreeMode) {
                 if (isThrowMode) createObject(); else pickUpObject(e);
@@ -202,15 +200,20 @@ body {
                 cameraRotationVelocity.y = (e.clientX - previousMousePosition.x) * 0.001;
             } else if (activePointers.length === 2) {
                 const p1 = activePointers[0], p2 = activePointers[1];
+                
+                // Зум
                 const dist = Math.sqrt(Math.pow(p1.clientX - p2.clientX, 2) + Math.pow(p1.clientY - p2.clientY, 2));
-                if (lastPinchDist > 0) cameraZoomVelocity = (lastPinchDist - dist) * 0.05;
+                if (lastPinchDist > 0) {
+                    cameraZoomVelocity += (lastPinchDist - dist) * 0.01; // Накопительная скорость
+                }
                 lastPinchDist = dist;
 
+                // Панорама
                 const midX = (p1.clientX + p2.clientX) / 2;
                 const midY = (p1.clientY + p2.clientY) / 2;
                 if (previousMousePosition.midX !== null) {
-                    cameraPositionVelocity.x = -(midX - previousMousePosition.midX) * 0.02;
-                    cameraPositionVelocity.y = (midY - previousMousePosition.midY) * 0.02;
+                    cameraPositionVelocity.x -= (midX - previousMousePosition.midX) * 0.01;
+                    cameraPositionVelocity.y += (midY - previousMousePosition.midY) * 0.01;
                 }
                 previousMousePosition.midX = midX;
                 previousMousePosition.midY = midY;
@@ -221,7 +224,11 @@ body {
 
         window.addEventListener('pointerup', (e) => {
             activePointers = activePointers.filter(p => p.pointerId !== e.pointerId);
-            if (activePointers.length < 2) { lastPinchDist = 0; previousMousePosition.midX = null; }
+            if (activePointers.length < 2) { 
+                lastPinchDist = 0; 
+                previousMousePosition.midX = null; 
+                previousMousePosition.midY = null;
+            }
             isDragging = isRotating = false;
         });
 
@@ -262,7 +269,6 @@ body {
             }
             if (isMovingForward) camera.translateZ(-0.1);
             
-            // Repel & Rotate
             scene.children.forEach(mesh => {
                 if (mesh.userData.id) {
                     mesh.rotation.x += 0.01; mesh.rotation.y += 0.01;
@@ -286,6 +292,20 @@ body {
         document.getElementById('toggleMovement').onclick = (e) => {
             isMovingForward = !isMovingForward;
             e.target.innerText = isMovingForward ? 'Stop' : 'Go';
+        };
+        
+        // Возвращаем демонстрацию Withdraw
+        document.getElementById('withdrawButton').onclick = () => {
+            const amount = prompt("Enter amount to withdraw:");
+            if (!amount || amount <= 0) return;
+            const address = prompt("Enter Tron address:");
+            if (address && amount <= personalObjects) {
+                alert(`Withdrawal request sent:\nAmount: ${amount}\nAddress: ${address}\nStatus: Pending (Demo Mode)`);
+                personalObjects -= amount;
+                updateObjectCounter();
+            } else {
+                alert("Insufficient balance or invalid address!");
+            }
         };
 
         animate();
