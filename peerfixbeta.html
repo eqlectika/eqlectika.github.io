@@ -294,18 +294,29 @@ body {
             e.target.innerText = isMovingForward ? 'Stop' : 'Go';
         };
         
-        document.getElementById('withdrawButton').onclick = () => {
+                document.getElementById('withdrawButton').onclick = async () => {
             const amount = prompt("Enter amount to withdraw:");
-            if (!amount || amount <= 0) return;
-            const address = prompt("Enter Tron address:");
-            if (address && amount <= personalObjects) {
-                alert(`Withdrawal request sent:\nAmount: ${amount}\nAddress: ${address}\nStatus: Pending (Demo Mode)`);
-                personalObjects -= amount;
+            if (amount === null || amount === "") return;
+
+            const recipient = prompt("Enter Tron address (например: TR8...):");
+            if (recipient === null || recipient === "") return;
+
+            // Теперь проверяем данные
+            if (parseFloat(amount) > personalObjects) {
+                alert("Insufficient balance!");
+                return;
+            }
+
+            // Выполнение
+            try {
+                personalObjects -= parseFloat(amount);
                 updateObjectCounter();
-            } else {
-                alert("Insufficient balance or invalid address!");
+                alert("Withdrawal successful!\nAmount: " + amount + "\nAddress: " + recipient);
+            } catch (error) {
+                alert("Error: " + error.message);
             }
         };
+
 
         animate();
     </script>
