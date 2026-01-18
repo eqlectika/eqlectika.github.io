@@ -1,4 +1,4 @@
-const CACHE_NAME = 'polarity-sanctuary-v18';
+const CACHE_NAME = 'polarity-sanctuary-v19';
 
 const ASSETS = [
   './beta.html',
