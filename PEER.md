@@ -1,3 +1,5 @@
+<a href="https://eqlectika.github.io"><img src="logo.png" width="48" height="48" alt="logo"></a>
+#Peer Visual Exchange
 This is an experimental demo model of a decentralized node that can be instantly deployed to test the mechanics of real-time P2P interaction.
 To test the system, simply open the link in two different browser windows and establish a direct connection between the windows using password exchange without the need for a server.
 Technical Framework
