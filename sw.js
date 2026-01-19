@@ -1,4 +1,4 @@
-const CACHE_NAME = 'polarity-sanctuary-v27';
+const CACHE_NAME = 'polarity-sanctuary-v28';
 
 const ASSETS = [
   './beta.html',
@@ -7,7 +7,7 @@ const ASSETS = [
   './about.html',
   './book.html',
   './me.jpeg',
-  './3d.html',
+  './cube.html',
   './print.html',
   './spark.html',
   './size.html',
@@ -21,8 +21,6 @@ const ASSETS = [
   './manifest.json',
   './icon-192x192.png', 
   './icon-512x512.png', 
-  './WORD.md',
-  './PEER.md',
   
   'https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
