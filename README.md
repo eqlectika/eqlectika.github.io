@@ -1,4 +1,4 @@
-# eqlectika.github.is
+<a href="https://eqlectika.github.io"><img src="logo.png" width="48" height="48" alt="logo"></a>
 # The Concept of Semantic Field Core
 In the context of singularity, beyond the dualism of matter and consciousness, a third force emerges—Information. This is not simply a collection of data, but a stable, decentralized environment with its own gravity. In this system, information is viewed not as dry concepts, but as an arrangement of the statics of space and the dynamics of free geometric forms, possessing the phenomenal right of spontaneity.
 This is the visual, symbolic core of the internet, operating on the principle of an immutable chain without a central server. The basis of the universal node (decentralized terminal) is the Cube. Any user can expand it from within, thus creating their own unique 3D symbol. Each such arrangement is stored as hash blocks, ensuring user independence.
