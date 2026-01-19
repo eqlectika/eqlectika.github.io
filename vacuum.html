@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Nomad Void: Focus Protocol</title>
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; width: 100%; height: 100%; position: fixed; touch-action: none; -webkit-user-select: none; user-select: none; }
+        canvas { display: block; -webkit-tap-highlight-color: transparent; }
+        #ui { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 100; }
+        .btn { padding: 10px 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; font-family: monospace; font-size: 12px; border-radius: 5px; pointer-events: auto; }
+        .btn.active { background: rgba(0,255,100,0.3); }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div id="flyBtn" class="btn">FLY</div>
+        <div id="bypassBtn" class="btn">BYPASS</div>
+    </div>
+
+<script type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } } </script>
+<script type="module">
+    import * as THREE from 'three';
+
+    let scene, camera, renderer, pivot;
+    let cubes = [];
+
+let isDoubleTap = false;
+let dronePosition = new THREE.Vector3(0, 0, 10);
+let droneTarget = new THREE.Vector3(0, 0, 0);
+let panVelocity = new THREE.Vector3(0, 0, 0); // Если этой переменной еще нет
+
+    let currentPropIndex = 0;
+    
+    // Динамика
+    let rotationVelocity = new THREE.Vector2(0, 0);
+    let panVelocity = new THREE.Vector3(0, 0, 0);
+    let flyVelocity = new THREE.Vector3(0, 0, 0);
+    let distance = 10, targetDistance = 10;
+    const FRICTION = 0.94, ACCEL = 0.004;
+
+    let isFlyMode = false;
+    let isBypassMode = false;
+
+    init();
+
+    function init() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        pivot = new THREE.Group(); // Центр сцены (точка фокуса)
+        scene.add(pivot);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const lights = [[10,10,10, 0xff0000], [-10,10,10, 0x00ff00], [0,10,-10, 0x0000ff]];
+        lights.forEach(l => {
+            const light = new THREE.DirectionalLight(l[3], 2);
+            light.position.set(l[0], l[1], l[2]);
+            scene.add(light);
+        });
+
+        createCube(new THREE.Vector3(0,0,0));
+        setupInputs();
+        setupModes();
+        animate();
+    }
+
+    function createMaterial(index) {
+        const colors = [0x0000ff, 0x00ff00, 0xff0000];
+        const props = [{ t: true, o: 0.5, s: 0 }, { t: true, o: 0.5, s: 100 }, { t: false, o: 1.0, s: 0 }, { t: false, o: 1.0, s: 100 }];
+        return new THREE.MeshPhongMaterial({
+            color: colors[Math.floor(index / 4)], transparent: props[index % 4].t, opacity: props[index % 4].o,
+            shininess: props[index % 4].s, specular: 0xffffff, side: THREE.DoubleSide
+        });
+    }
+
+    function createCube(pos) {
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.98, 0.98), createMaterial(currentPropIndex));
+        mesh.position.copy(pos);
+        pivot.add(mesh);
+        cubes.push(mesh);
+    }
+
+    function setupModes() {
+        document.getElementById('flyBtn').addEventListener('pointerdown', (e) => {
+            isFlyMode = !isFlyMode;
+            e.target.classList.toggle('active');
+        });
+        document.getElementById('bypassBtn').addEventListener('pointerdown', (e) => {
+            isBypassMode = !isBypassMode;
+            e.target.classList.toggle('active');
+        });
+    }
+
+    
+() {
+        const el = renderer.domElement;
+        let lastTapTime = 0, touchStartTime = 0, initialPinchDist = 0;
+        let isPanning = false, prevPoint = { x: 0, y: 0 };
+        let longPressTimer;
+
+        el.addEventListener('touchstart', e => {
+            const now = Date.now();
+            if (e.touches.length === 1) {
+                prevPoint = { x: e.touches[0].pageX, y: e.touches[0].pageY };
+                touchStartTime = now;
+                if (now - lastTapTime < 300) {
+                    isPanning = true; // Double Tap активирует перемещение фокуса
+                    clearTimeout(longPressTimer);
+                } else {
+                    isPanning = false;
+                    longPressTimer = setTimeout(() => {
+                        const lastPos = cubes[cubes.length-1].position.clone();
+                        createCube(lastPos.add(new THREE.Vector3(1, 0, 0)));
+                        createCube(lastPos.add(new THREE.Vector3(-2, 0, 0)));
+                    }, 600);
+                }
+                lastTapTime = now;
+            } else if (e.touches.length === 2) {
+                initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        el.addEventListener('touchmove', e => {
+            if (e.touches.length === 1) {
+                const dx = e.touches[0].pageX - prevPoint.x;
+                const dy = e.touches[0].pageY - prevPoint.y;
+                if (isPanning) {
+                    // Перемещаем центр сцены (фокус)
+                    const s = distance * 0.0015;
+                    panVelocity.x += dx * s;
+                    panVelocity.y -= dy * s;
+                } else {
+                    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) clearTimeout(longPressTimer);
+                    rotationVelocity.x += dy * ACCEL;
+                    rotationVelocity.y += dx * ACCEL;
+                }
+                prevPoint = { x: e.touches[0].pageX, y: e.touches[0].pageY };
+            } else if (e.touches.length === 2) {
+                // Изменяем дистанцию до фокуса (Zoom фокуса)
+                const d = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                targetDistance += (initialPinchDist - d) * 0.05;
+                initialPinchDist = d;
+            }
+        }, { passive: false });
+
+        el.addEventListener('touchend', e => {
+            if (Date.now() - touchStartTime < 200 && !isPanning && e.touches.length === 0) {
+                currentPropIndex = (currentPropIndex + 1) % 12;
+                const mat = createMaterial(currentPropIndex);
+                cubes.forEach(c => c.material = mat);
+            }
+            clearTimeout(longPressTimer);
+            isPanning = false;
+        });
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        // 1. Вращение сцены вокруг фокуса
+        pivot.rotation.x += rotationVelocity.x;
+        pivot.rotation.y += rotationVelocity.y;
+        rotationVelocity.multiplyScalar(FRICTION);
+
+        // 2. Перемещение центра сцены (Pan)
+        pivot.position.add(panVelocity);
+        panVelocity.multiplyScalar(FRICTION);
+
+        // 3. Zoom (дистанция камеры до фокуса)
+        distance += (targetDistance - distance) * 0.1;
+        camera.position.z = distance;
+
+        // 4. Движение Дрона (Fly / Bypass)
+        if (isFlyMode || isBypassMode) {
+            // В этих режимах камера или pivot могут получать дополнительный вектор движения
+            // Bypass может использовать рейкастинг для прохода сквозь грани
+            pivot.position.z -= 0.02; // Пример постоянного движения вперед
+        }
+
+        renderer.render(scene, camera);
+    }
+</script>
+</body>
+</html>
