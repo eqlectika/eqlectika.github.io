@@ -390,24 +390,16 @@ function spawnRandomObject() {
     }, 2000);
 }
 
-/* ===== АДАПТИВНЫЙ СПАВН ===== */
-function spawnLoop() {
-    const idleTime = (performance.now() - lastUserActivity) / 1000;
-    
-    // Вероятность появления: чем выше активность, тем охотнее рождаются объекты
-    const probability = THREE.MathUtils.clamp(1 / (1 + idleTime * 0.4), 0.2, 0.8);
+// Первый импульс — при старте
+window.addEventListener('load', () => {
+    spawnRandomObject(); 
+});
 
-    if (Math.random() < probability) {
-        spawnRandomObject();
-    }
+// Второй импульс — строго один раз после первого действия пользователя
+window.addEventListener('pointerup', () => {
+    setTimeout(spawnRandomObject, 2500);
+}, { once: false });
 
-    // Спонтанный интервал: от короткой вспышки (0.3с) до долгой паузы (4с)
-    const randomInterval = 300 + Math.random() * 3700;
-
-    setTimeout(spawnLoop, randomInterval);
-}
-
-spawnLoop();
 
 
 /* ===== АНИМАЦИЯ ===== */
