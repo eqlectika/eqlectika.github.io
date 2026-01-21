@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Polarity Universe: The Nomad Era</title>
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <style>
+        * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Luckiest Guy', cursive; }
+        .top-control, .control-button { position: fixed; z-index: 1000; cursor: pointer; color: #fff; text-transform: uppercase; font-size: 20px; }
+        .mode-toggle { left: 3%; top: 20px; }
+        .strike-button { right: 3%; top: 20px; }
+        .logo-link { left: 50%; transform: translateX(-50%); top: 15px; }
+        .logo-image { height: 48px; opacity: 0.8; }
+        .further-button { left: 3%; bottom: 20px; }
+        .closer-button { right: 3%; bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="top-control mode-toggle" id="main-mode">Create</div>
+    <div class="top-control strike-button" id="btn-strike">Strike</div>
+    <div class="top-control logo-link" onclick="location.href='index.html'"><img src="logo.png" class="logo-image"></div>
+    <div class="control-button further-button" id="btn-bypass">Bypass</div>
+    <div class="control-button closer-button" id="btn-fly">Fly</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script type="module">
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    // Оригинальное освещение
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+    const pointLight = new THREE.PointLight(0xffffff, 1.2, 2000);
+    camera.add(pointLight);
+    scene.add(camera);
+
+    // Состояния управления из 3d.html
+    let target = new THREE.Vector3(0, 0, 0);
+    let zoomDist = 200;
+    let rotationQuat = new THREE.Quaternion();
+    let isDragging = false;
+    let prevMouse = { x: 0, y: 0 };
+    let rotationVelocity = new THREE.Vector2(0, 0);
+    let zoomVelocity = 0;
+    let panVelocity = new THREE.Vector2(0, 0);
+
+    const GRID = 50;
+    const cubesMap = new Map();
+    let mode = 'Create', isBypass = false, isFly = false;
+    let flySpeed = 0, nomadSteps = 0, nomadActive = false;
+    const colors = [0xff4444, 0x44ff44, 0x4444ff];
+
+    // --- Логика граней (12 шагов) ---
+    function setFaceStyle(m, s) {
+        m.material.color.setHex(colors[s % 3]);
+        m.material.opacity = (s < 6) ? 0.4 : 1.0;
+        m.material.metalness = ((s >= 3 && s < 6) || s >= 9) ? 0.9 : 0.1;
+        m.material.roughness = ((s >= 3 && s < 6) || s >= 9) ? 0.2 : 0.8;
+        m.material.transparent = true;
+        m.material.needsUpdate = true;
+    }
+
+    function buildCube(pos) {
+        const key = `${Math.round(pos.x)},${Math.round(pos.y)},${Math.round(pos.z)}`;
+        if (cubesMap.has(key)) return;
+        const group = new THREE.Group();
+        group.position.copy(pos);
+        const faces = [
+            {n:[1,0,0], r:[0,1.57,0]}, {n:[-1,0,0], r:[0,-1.57,0]},
+            {n:[0,1,0], r:[-1.57,0,0]}, {n:[0,-1,0], r:[1.57,0,0]},
+            {n:[0,0,1], r:[0,0,0]}, {n:[0,0,-1], r:[0,3.14,0]}
+        ];
+        faces.forEach(d => {
+            const nKey = `${Math.round(pos.x+d.n[0]*GRID)},${Math.round(pos.y+d.n[1]*GRID)},${Math.round(pos.z+d.n[2]*GRID)}`;
+            if (!cubesMap.has(nKey)) {
+                const mesh = new THREE.Mesh(new THREE.PlaneGeometry(GRID, GRID), new THREE.MeshStandardMaterial({side: THREE.DoubleSide}));
+                mesh.position.set(d.n[0]*GRID/2, d.n[1]*GRID/2, d.n[2]*GRID/2);
+                mesh.rotation.set(d.r[0], d.r[1], d.r[2]);
+                mesh.userData = { stage: 0, normal: new THREE.Vector3(...d.n), isFace: true };
+                setFaceStyle(mesh, 0);
+                group.add(mesh);
+            }
+        });
+        scene.add(group);
+        cubesMap.set(key, group);
+    }
+
+    // --- Управление из 3d.html ---
+    renderer.domElement.addEventListener('pointerdown', e => {
+        isDragging = true;
+        prevMouse = { x: e.clientX, y: e.clientY };
+        startHold(e);
+    });
+
+    window.addEventListener('pointermove', e => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevMouse.x;
+        const dy = e.clientY - prevMouse.y;
+        if (e.shiftKey || e.button === 1) {
+            panVelocity.x = dx * 0.5; panVelocity.y = dy * 0.5;
+        } else {
+            rotationVelocity.x = dx * 0.005; rotationVelocity.y = dy * 0.005;
+        }
+        prevMouse = { x: e.clientX, y: e.clientY };
+    });
+
+    window.addEventListener('pointerup', e => {
+        isDragging = false;
+        if (Math.abs(e.clientX - prevMouse.x) < 5) handleTap(e);
+        endHold();
+    });
+
+    window.addEventListener('wheel', e => { zoomVelocity -= e.deltaY * 0.05; }, { passive: false });
+
+    let holdTimer;
+    const startHold = (e) => {
+        holdTimer = setTimeout(() => {
+            const ray = new THREE.Raycaster();
+            const m = new THREE.Vector2((e.clientX/window.innerWidth)*2-1, -(e.clientY/window.innerHeight)*2+1);
+            ray.setFromCamera(m, camera);
+            const hit = ray.intersectObjects(scene.children, true).find(h => h.object.userData.isFace);
+            if (hit && mode === 'Create') {
+                buildCube(hit.object.parent.position.clone().add(hit.object.userData.normal.clone().multiplyScalar(GRID)));
+                nomadSteps++;
+            }
+        }, 600);
+    };
+    const endHold = () => clearTimeout(holdTimer);
+
+    const handleTap = (e) => {
+        const ray = new THREE.Raycaster();
+        const m = new THREE.Vector2((e.clientX/window.innerWidth)*2-1, -(e.clientY/window.innerHeight)*2+1);
+        ray.setFromCamera(m, camera);
+        const hit = ray.intersectObjects(scene.children, true).find(h => h.object.userData.isFace);
+        if (hit) {
+            if (mode === 'Delete') {
+                hit.object.parent.remove(hit.object);
+                nomadSteps++;
+            } else {
+                hit.object.userData.stage = (hit.object.userData.stage + 1) % 12;
+                setFaceStyle(hit.object, hit.object.userData.stage);
+            }
+        }
+    };
+
+    // --- Оригинальный фон ---
+    const bgCanvas = document.createElement('canvas');
+    bgCanvas.width = 2; bgCanvas.height = 2;
+    const bgCtx = bgCanvas.getContext('2d');
+    const bgTexture = new THREE.CanvasTexture(bgCanvas);
+    scene.background = bgTexture;
+
+    // --- Nomad Ghost ---
+    let ghostP = new THREE.Vector3(GRID*10, 0, 0);
+    function nomadAction() {
+        if (nomadSteps > 0) {
+            const d = [new THREE.Vector3(1,0,0), new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,1)][Math.floor(Math.random()*3)];
+            ghostP.add(d.multiplyScalar(GRID * (Math.random()>0.5?1:-1)));
+            buildCube(ghostP); nomadSteps--;
+        }
+        if (Math.random() > 0.98 && cubesMap.size > 0) {
+            const keys = Array.from(cubesMap.keys());
+            const g = cubesMap.get(keys[Math.floor(Math.random()*keys.length)]);
+            if (g && g.children.length > 0) {
+                const f = g.children[Math.floor(Math.random()*g.children.length)];
+                if (Math.random() > 0.9) g.remove(f);
+                else { f.userData.stage = Math.floor(Math.random()*12); setFaceStyle(f, f.userData.stage); }
+            }
+        }
+    }
+
+    const animate = (t) => {
+        // Инерция из 3d.html
+        if (!isDragging) {
+            rotationVelocity.multiplyScalar(0.9);
+            panVelocity.multiplyScalar(0.9);
+        }
+        zoomVelocity *= 0.85;
+
+        const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), rotationVelocity.y);
+        const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationVelocity.x);
+        rotationQuat.multiplyQuaternions(qY, rotationQuat).multiply(qX);
+
+        target.add(new THREE.Vector3(-panVelocity.x, panVelocity.y, 0).applyQuaternion(rotationQuat));
+        zoomDist += zoomVelocity;
+
+        // Fly & Bypass
+        if (isFly) flySpeed = Math.min(flySpeed + 0.2, 8); else flySpeed *= 0.9;
+        target.add(new THREE.Vector3(0,0,-1).applyQuaternion(rotationQuat).multiplyScalar(flySpeed));
+
+        if (!isBypass) {
+            const cx = Math.round(target.x/GRID)*GRID, cy = Math.round(target.y/GRID)*GRID, cz = Math.round(target.z/GRID)*GRID;
+            const cube = cubesMap.get(`${cx},${cy},${cz}`);
+            if (cube) {
+                const lim = GRID/2 - 10;
+                target.x = Math.max(cx-lim, Math.min(cx+lim, target.x));
+                target.y = Math.max(cy-lim, Math.min(cy+lim, target.y));
+                target.z = Math.max(cz-lim, Math.min(cz+lim, target.z));
+            }
+        }
+
+        camera.position.copy(target).add(new THREE.Vector3(0,0,zoomDist).applyQuaternion(rotationQuat));
+        camera.lookAt(target);
+        pointLight.position.copy(camera.position);
+
+        // Фон
+        const c = Math.floor(Math.sin(t*0.0005)*20 + 60);
+        bgCtx.fillStyle = `rgb(${c},${c-10},${c+20})`; bgCtx.fillRect(0,0,2,2); bgTexture.needsUpdate = true;
+
+        nomadAction();
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+    };
+
+    // UI
+    document.getElementById('main-mode').onclick = (e) => { mode = (mode==='Create'?'Delete':'Create'); e.target.innerText = mode; };
+    document.getElementById('btn-bypass').onclick = (e) => { isBypass = !isBypass; e.target.innerText = isBypass?'Stop':'Bypass'; };
+    document.getElementById('btn-fly').onclick = (e) => { isFly = !isFly; e.target.innerText = isFly?'Stop':'Fly'; };
+    document.getElementById('btn-strike').onclick = () => {
+        cubesMap.forEach((g, k) => { if (g.position.distanceTo(target) < GRID*2) { scene.remove(g); cubesMap.delete(k); } });
+    };
+
+    buildCube(new THREE.Vector3(0,0,0));
+    animate(0);
+</script>
+</body>
+</html>
