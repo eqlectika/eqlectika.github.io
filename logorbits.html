@@ -3,314 +3,77 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Solar System Orbital Trajectories Animation</title>
-  <link rel="manifest" href="manifest.json">
+  <title>Solar System Orbital Trajectories</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
-      margin: 0;
-      padding: 0;
-      background-color: #000;
-      color: #fff;
-      font-family: monospace;
-      overflow: hidden;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-                    /* защита от выделения и системных меню */
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-
-    -webkit-touch-callout: none;
-    -webkit-tap-highlight-color: transparent;
+      margin: 0; padding: 0;
+      background-color: #000; color: #fff;
+      font-family: monospace; overflow: hidden;
+      height: 100vh; display: flex; flex-direction: column;
+      user-select: none; -webkit-tap-highlight-color: transparent;
     }
-    h1 {
-      margin: 15px;
-      font-size: 1.2rem;
-      text-align: center;
-    }
-
-    .footer-logo-container {
-    text-align: center;
-    width: 100%;
-    padding: 10px 0;
-    margin-top: auto; /* Прижимает блок к самому низу, если контента мало */
-  }
-
-  .logo-image {
-    display: inline-block;
-    opacity: 0.8;
-    max-width: 48px;
-    transition: opacity 0.3s, transform 0.3s;
-    vertical-align: middle;
-  }
-
-  .logo-image:hover {
-    opacity: 0.8;
-    transform: scale(1.1);
-  }
+    h1 { margin: 10px 0; font-size: 1.1rem; text-align: center; flex-shrink: 0; }
     
-    #controls {
-      display: flex;
-      font-family: monospace;
-      justify-content: center;
-      gap: 15px;
-      padding-bottom: 5px;
-      flex-wrap: wrap;
-      margin-bottom: 5px;
-    }
-    #controls label {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 0.9rem;
-    }
+    #top-controls { padding: 5px; flex-shrink: 0; text-align: center; }
+    .control-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 5px; }
+    #date-picker, #pause-btn { background: #222; color: #fff; border: 1px solid #444; padding: 5px; font-family: monospace; }
+    .speed-slider { width: 70%; max-width: 300px; }
+
     #canvas-wrapper {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
+      flex: 1; /* Занимает всё свободное место */
+      position: relative;
+      display: flex; justify-content: center; align-items: center;
       overflow: hidden;
-      position: relative;
-      margin: 5px;
     }
-    #orbitCanvas {
-      background-color: #000;
-      display: block;
-      max-width: 100%;
-      max-height: 110%;
-      touch-action: none;
-    }
-    
-    .nav-icon {
-      position: absolute;
-      bottom: 0px; /* Максимально низко */
-      font-size: 1.1rem;
-      font-weight: bold;
-      cursor: pointer;
-      color: #444; /* Приглушенный цвет в покое */
-      transition: color 0.3s, text-shadow 0.3s;
-      z-index: 100;
-      background: transparent; /* Без фона */
-      padding: 5px;
-      border: none; /* Без рамок */
-    }
-    .nav-icon:hover {
-      color: #0077ff; /* Синий при наведении */
-    }
-    #event-link { left: 10px; }
-    #log-toggle { right: 10px; }
-    
-    /* Синий цвет при включении для обоих */
-    .active-mode { 
-      color: #0077ff !important; 
-      text-shadow: 0 0 10px #0055ff; 
-    }
+    #orbitCanvas { background-color: #000; touch-action: none; cursor: move; }
 
-    /* Стили для верхних кнопок */
-    .top-nav {
-      position: absolute;
-      top: 15px;
-      font-size: 0.9rem;
-      font-weight: bold;
-      cursor: pointer;
-      color: #444;
-      transition: color 0.3s;
-      z-index: 100;
-      background: transparent;
-      padding: 5px;
-      border: none;
-    }
-    .top-nav:hover { color: #0077ff; }
-    #stop-link { left: 10px; }
-    #now-link { right: 10px; }
-    
-    /* Позиции для четырех углов */
-    #spark-link { top: 10px; left: 10px; }   /* Слева вверху: Vital Spark (=) */
-    #now-link { top: 10px; right: 10px; }    /* Справа вверху: NOW */
-    #event-link { bottom: 5px; left: 10px; } /* Слева внизу: £ */
-    #log-toggle { bottom: 5px; right: 10px; }/* Справа внизу: LOG */
+    #bottom-ui { flex-shrink: 0; padding: 10px; background: rgba(0,0,0,0.8); }
+    #controls { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; }
+    #legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; font-size: 0.75rem; }
+    .legend-item { display: flex; align-items: center; gap: 5px; cursor: pointer; transition: opacity 0.2s; }
+    .color-box { width: 10px; height: 10px; border-radius: 50%; }
+    .hidden-planet { opacity: 0.3; }
 
-    .active-mode { 
-      color: #0077ff !important; 
-      text-shadow: 0 0 10px #0055ff; 
-    }
-
-
-    #legend {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin: 5px;
-      font-size: 0.8rem;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      cursor: pointer;
-    }
-    .color-box {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      position: relative;
-    }
-    .color-box input {
-      position: absolute;
-      opacity: 0;
-      width: 100%;
-      height: 100%;
-      cursor: pointer;
-    }
-    #info {
-      text-align: center;
-      font-size: 0.8rem;
-      margin: 0px;
-      padding: 0 10px;
-    }
-    .help-link {
-      position: center;
-      text-align: center;
-      margin: 5px;
-      top: 70px;
-      color: #777;
-      font-size: 18px;
-      text-decoration: none;
-      font-family: monospace;
-    }
-    .hidden-planet {
-      opacity: 0.3;
-    }
-    .speed-control {
-      width: 100%;
-      padding: 0 0px;
-      margin-top: 5px;
-      text-align: center;
-    }
-    .speed-control label {
-      display: block;
-      margin-bottom: 5px;
-    }
-    .speed-slider {
-      width: 80%;
-      margin-bottom: 0px;
-    }
-    #pause-btn {
-      margin-bottom: 5px;
-      padding: 5px 10px;
-      background: #333;
-      color: white;
-      border: none;
-      border-radius: 0px;
-      cursor: pointer;
-    }
-    #date-picker {
-      margin: 5px 5px;
-      background: #333;
-      color: white;
-      border: none;
-      padding: 5px;
-      font-family: monospace;
-    }
-    .control-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 5px;
-    }
+    .footer-logo-container { text-align: center; padding: 5px; flex-shrink: 0; }
+    .logo-image { max-width: 40px; opacity: 0.6; }
   </style>
 </head>
 <body>
+
   <h1>Solar System Trajectories</h1>
-  <div class="speed-control">
+
+  <div id="top-controls">
     <div class="control-container">
-      <label for="date-picker">Date:</label>
-<input type="date" id="date-picker" value="2000-01-01">
+      <input type="date" id="date-picker" value="2000-01-01">
       <button id="pause-btn">Pause</button>
-</div>
-    <input type="range" id="speed-slider" class="speed-slider" min="0.1" max="1" step="0.1" value="0.3">
+    </div>
+    <input type="range" id="speed-slider" class="speed-slider" min="0" max="2" step="0.1" value="0.3">
   </div>
-<div id="canvas-wrapper">
-  <div id="spark-link" class="top-nav" title="Vital Spark">=</div>
-  <div id="now-link" class="top-nav" title="Jump to Now">NOW</div>
-  <div id="event-link" class="nav-icon" title="Market Astrology">£</div>
-  <canvas id="orbitCanvas"></canvas>
-  <div id="log-toggle" class="nav-icon" title="Scale Mode">LOG</div>
-</div>
 
-
-
-
-
-  <div id="controls">
-    <label><input type="radio" name="frame" value="sun" checked> Sun</label>
-    <label><input type="radio" name="frame" value="earth"> Earth</label>
+  <div id="canvas-wrapper">
+    <canvas id="orbitCanvas"></canvas>
   </div>
-  <div id="legend"></div>
 
-  <div id="info"></div>
-  
-<div class="footer-logo-container">
-    <a href="index.html">
-      <img src="logo.png" alt="Logo" class="logo-image">
-    </a>
+  <div id="bottom-ui">
+    <div id="controls">
+      <label><input type="radio" name="frame" value="sun" checked> Sun Focus</label>
+      <label><input type="radio" name="frame" value="earth"> Earth Focus</label>
+    </div>
+    <div id="legend"></div>
   </div>
-  
+
+  <div class="footer-logo-container">
+    <img src="logo.png" alt="Logo" class="logo-image">
+  </div>
+
   <script>
-
-    let isLogScale = false;
-    let marketEvents = [];
-    let isDragging = false;
-    let lastX, lastY;
-    let lastTouchDistance = null;
-    let isPaused = false;
-
-    async function loadEvents() {
-      try {
-        const response = await fetch('events.json');
-        if (!response.ok) throw new Error('File not found');
-        const data = await response.json();
-        marketEvents = data.market_events;
-        console.log("Market Astrology data synchronized.");
-      } catch (e) {
-        console.log("Waiting for events.json... Visual alerts disabled.");
-        marketEvents = []; 
-      }
-    }
-    loadEvents();
-      
-    function getEffectiveRadius(ae) {
-      if (!isLogScale) return (ae / maxDistance) * maxOrbitRadius;
-      const logMax = Math.log(1 + maxDistance);
-      const logCurrent = Math.log(1 + ae);
-      return (logCurrent / logMax) * maxOrbitRadius;
-    }
-
     const canvas = document.getElementById('orbitCanvas');
     const ctx = canvas.getContext('2d');
     const legendDiv = document.getElementById('legend');
-    
-    function initCanvas() {
-      const wrapper = document.getElementById('canvas-wrapper');
-      const size = Math.min(wrapper.clientWidth, wrapper.clientHeight) * 0.9;
-      canvas.width = size;
-      canvas.height = size;
-      canvas.style.width = `${size}px`;
-      canvas.style.height = `${size}px`;
-    }
-    
-    window.addEventListener('resize', () => {
-      initCanvas();
-      trajectories.forEach(arr => arr.length = 0);
-    });
-    
+    const datePicker = document.getElementById('date-picker');
+    const pauseBtn = document.getElementById('pause-btn');
+
     const planets = [
       {name: 'Mercury', distance: 0.387, period: 88, color: '#1e90ff', eccentricity: 0.2056, inclination: 0.1222},
       {name: 'Venus', distance: 0.723, period: 225, color: '#8F00FF', eccentricity: 0.0068, inclination: 0.0593},
@@ -321,123 +84,52 @@
       {name: 'Uranus', distance: 19.191, period: 30687, color: '#40e0d0', eccentricity: 0.0464, inclination: 0.0135},
       {name: 'Neptune', distance: 30.068, period: 60190, color: '#4169e1', eccentricity: 0.0095, inclination: 0.0309}
     ];
-    
+
     let planetVisibility = planets.map(() => true);
-    
-    function createLegend() {
-      legendDiv.innerHTML = '';
-      planets.forEach((planet, index) => {
-        const item = document.createElement('div');
-        item.className = 'legend-item';
-        const colorBox = document.createElement('div');
-        colorBox.className = 'color-box';
-        colorBox.style.backgroundColor = planet.color;
-        if (!planetVisibility[index]) colorBox.classList.add('hidden-planet');
-        const label = document.createElement('span');
-        label.textContent = planet.name;
-        if (!planetVisibility[index]) label.classList.add('hidden-planet');
-        item.append(colorBox, label);
-        legendDiv.appendChild(item);
-        item.addEventListener('click', () => {
-          planetVisibility[index] = !planetVisibility[index];
-          createLegend();
-          trajectories.forEach(arr => arr.length = 0);
-          if (isPaused) renderStaticFrame();
-        });
-      });
-    }
-    
-    initCanvas();
-    createLegend();
-    
-    const maxDistance = planets[planets.length - 1].distance;
-    const margin = 40;
-    let maxOrbitRadius;
     const J2000 = new Date('2000-01-01T12:00:00Z');
     let t = 0;
     let dt = 0.3;
     let frame = 'sun';
     const earthIndex = planets.findIndex(p => p.name === 'Earth');
     const trajectories = planets.map(() => []);
-    let scale = 5;
+    
+    let scale = 1.0; 
     let offsetX = 0;
     let offsetY = 0;
+    let isPaused = false;
+    let isDragging = false;
+    let lastX, lastY;
 
-    document.getElementById('controls').addEventListener('change', (e) => {
-      if (e.target.name === 'frame') {
-        frame = e.target.value;
-        if (frame === 'earth') planetVisibility[earthIndex] = true;
-        trajectories.forEach(arr => arr.length = 0);
-        offsetX = 0; offsetY = 0;
-        createLegend();
-        if (isPaused) renderStaticFrame();
-      }
-    });
-
-    const speedSlider = document.getElementById('speed-slider');
-    speedSlider.addEventListener('input', (e) => { dt = parseFloat(e.target.value); });
-
-    const datePicker = document.getElementById('date-picker');
-    datePicker.addEventListener('change', (e) => {
-      const selectedDate = new Date(e.target.value + 'T12:00:00Z');
-      t = (selectedDate.getTime() - J2000.getTime()) / 86400000;
-      isPaused = true;
-      document.getElementById('pause-btn').textContent = 'Resume';
-      renderStaticFrame();
-    });
-
-    document.getElementById('pause-btn').addEventListener('click', function() {
-      isPaused = !isPaused;
-      this.textContent = isPaused ? 'Resume' : 'Pause';
-      if (!isPaused) animate();
-    });
-
-    // Mouse & Touch Controls
-    canvas.addEventListener('mousedown', e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
-    window.addEventListener('mouseup', () => { isDragging = false; });
-    canvas.addEventListener('wheel', e => {
-      e.preventDefault();
-      const prevScale = scale;
-      scale += e.deltaY * -0.001 * scale;
-      scale = Math.max(0.1, Math.min(scale, 50));
-      offsetX *= (scale / prevScale);
-      offsetY *= (scale / prevScale);
-      trajectories.forEach(arr => arr.length = 0);
-      if (isPaused) renderStaticFrame();
-    }, {passive: false});
-
-    window.addEventListener('mousemove', e => {
-      if (!isDragging) return;
-      offsetX += e.clientX - lastX;
-      offsetY += e.clientY - lastY;
-      lastX = e.clientX; lastY = e.clientY;
-      trajectories.forEach(arr => arr.length = 0);
-      if (isPaused) renderStaticFrame();
-    });
-
-    function drawPoint(x, y, color, size = 4, planetName = null) {
-      ctx.beginPath();
-      let finalColor = color;
-      if (document.getElementById('event-link').classList.contains('active-mode') && planetName) {
-        const upcomingEvent = marketEvents.find(e => {
-          const daysToEvent = ((new Date(e.date + 'T12:00:00Z').getTime() - J2000.getTime()) / 86400000) - t;
-          return e.planet === planetName && daysToEvent > 0 && daysToEvent <= 10;
-        });
-        if (upcomingEvent) {
-          ctx.shadowColor = '#0077ff';
-          ctx.shadowBlur = 15 + (Math.sin(Date.now() / 200) * 5);
-          finalColor = '#0077ff';
-        }
-      }
-      ctx.fillStyle = finalColor;
-      ctx.arc(x, y, size, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
+    function initCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      const size = Math.min(wrapper.clientWidth, wrapper.clientHeight);
+      canvas.width = size;
+      canvas.height = size;
     }
 
+    function createLegend() {
+      legendDiv.innerHTML = '';
+      planets.forEach((planet, index) => {
+        const item = document.createElement('div');
+        item.className = 'legend-item' + (planetVisibility[index] ? '' : ' hidden-planet');
+        item.innerHTML = `<div class="color-box" style="background:${planet.color}"></div><span>${planet.name}</span>`;
+        item.onclick = () => {
+          planetVisibility[index] = !planetVisibility[index];
+          createLegend();
+          trajectories[index] = [];
+          if (isPaused) renderStaticFrame();
+        };
+        legendDiv.appendChild(item);
+      });
+    }
+
+    // --- Инструментарий отрисовки ---
     function solveKepler(M, e) {
       let E = M, delta;
-      do { delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E)); E -= delta; } while (Math.abs(delta) > 1e-6);
+      for(let i=0; i<6; i++) {
+        delta = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+        E -= delta;
+      }
       return E;
     }
 
@@ -445,99 +137,142 @@
       return Math.atan2(Math.sqrt(1 - e * e) * Math.sin(E), Math.cos(E) - e);
     }
 
-    function renderStaticFrame() { if (isPaused) requestAnimationFrame(animate); }
-
-    function getSparkInfo() {
-      if (!document.getElementById('spark-link').classList.contains('active-mode')) return null;
-      return marketEvents.find(e => e.date === datePicker.value && e.type === "Vital Spark");
+    function getPos(planet, time) {
+      const maxDistance = planets[planets.length - 1].distance;
+      const maxOrbitRadius = (canvas.width / 2) - 30;
+      const a = (planet.distance / maxDistance) * maxOrbitRadius;
+      const M = (2 * Math.PI * time) / planet.period;
+      const E = solveKepler(M, planet.eccentricity);
+      const theta = getTrueAnomaly(E, planet.eccentricity);
+      const r = a * (1 - planet.eccentricity**2) / (1 + planet.eccentricity * Math.cos(theta));
+      return {
+        x: r * Math.cos(theta) * scale,
+        y: r * Math.sin(theta) * Math.cos(planet.inclination) * scale,
+        a: a * scale,
+        e: planet.eccentricity,
+        incl: planet.inclination
+      };
     }
 
+    function renderStaticFrame() {
+      if (isPaused) requestAnimationFrame(animate);
+    }
+
+    // --- События ---
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const zoomSpeed = 0.001;
+      scale *= (1 - e.deltaY * zoomSpeed);
+      scale = Math.max(0.1, Math.min(scale, 20));
+      trajectories.forEach(arr => arr.length = 0);
+      if (isPaused) renderStaticFrame();
+    }, {passive: false});
+
+    canvas.addEventListener('mousedown', e => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
+    window.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      offsetX += (e.clientX - lastX);
+      offsetY += (e.clientY - lastY);
+      lastX = e.clientX; lastY = e.clientY;
+      trajectories.forEach(arr => arr.length = 0);
+      if (isPaused) renderStaticFrame();
+    });
+    window.addEventListener('mouseup', () => isDragging = false);
+
+    datePicker.onchange = (e) => {
+      t = (new Date(e.target.value) - J2000) / 86400000;
+      isPaused = true; pauseBtn.textContent = 'Resume';
+      trajectories.forEach(arr => arr.length = 0);
+      renderStaticFrame();
+    };
+
+    pauseBtn.onclick = () => {
+      isPaused = !isPaused;
+      pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+      if (!isPaused) animate();
+    };
+
+    document.getElementsByName('frame').forEach(r => r.onchange = (e) => {
+      frame = e.target.value;
+      trajectories.forEach(arr => arr.length = 0);
+      if (isPaused) renderStaticFrame();
+    });
+
     function animate() {
-      maxOrbitRadius = (canvas.width / 2) - margin;
       const centerX = canvas.width / 2 + offsetX;
       const centerY = canvas.height / 2 + offsetY;
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      
+      ctx.fillStyle = 'black';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      const positions = planets.map(p => {
-        const a = getEffectiveRadius(p.distance) * scale;
-        const M = (2 * Math.PI * t) / p.period;
-        const E = solveKepler(M, p.eccentricity);
-        const theta = getTrueAnomaly(E, p.eccentricity);
-        const r = a * (1 - p.eccentricity**2) / (1 + p.eccentricity * Math.cos(theta));
-        return { x: centerX + r * Math.cos(theta), y: centerY + r * Math.sin(theta) * Math.cos(p.inclination), color: p.color, name: p.name };
-      });
+      const planetPositions = planets.map(p => getPos(p, t));
+      const earthPos = planetPositions[earthIndex];
 
-      const earthPos = positions[earthIndex];
-      ctx.strokeStyle = '#333'; ctx.setLineDash([3, 3]);
+      // Отрисовка орбит
+      ctx.strokeStyle = '#222';
+      ctx.setLineDash([2, 4]);
       planets.forEach((p, i) => {
         if (!planetVisibility[i]) return;
-        const a = getEffectiveRadius(p.distance) * scale;
-        const b = a * Math.sqrt(1 - p.eccentricity**2) * Math.cos(p.inclination);
+        const pos = planetPositions[i];
+        const b = pos.a * Math.sqrt(1 - pos.e**2) * Math.cos(pos.incl);
         ctx.beginPath();
-        if (frame === 'sun') ctx.ellipse(centerX + a * p.eccentricity, centerY, a, b, 0, 0, Math.PI * 2);
-        else ctx.ellipse(earthPos.x, earthPos.y, a, b, 0, 0, Math.PI * 2);
+        if (frame === 'sun') {
+          ctx.ellipse(centerX + pos.a * pos.e, centerY, pos.a, b, 0, 0, Math.PI * 2);
+        } else {
+          ctx.ellipse(centerX + (pos.a * pos.e) - (earthPos.x), centerY - earthPos.y, pos.a, b, 0, 0, Math.PI * 2);
+        }
         ctx.stroke();
       });
       ctx.setLineDash([]);
 
-      if (frame === 'sun') drawPoint(centerX, centerY, '#ffff00', 6);
-      else drawPoint(centerX - (earthPos.x - centerX), centerY - (earthPos.y - centerY), '#ffff00', 6);
-
-      positions.forEach((pos, i) => {
+      // Отрисовка планет
+      planetPositions.forEach((pos, i) => {
         if (!planetVisibility[i]) return;
-        let dx = (frame === 'earth') ? centerX + (pos.x - earthPos.x) : pos.x;
-        let dy = (frame === 'earth') ? centerY + (pos.y - earthPos.y) : pos.y;
+        let dx = centerX + pos.x;
+        let dy = centerY + pos.y;
+        
+        if (frame === 'earth') {
+          dx = centerX + (pos.x - earthPos.x);
+          dy = centerY + (pos.y - earthPos.y);
+        }
+
+        // Траектории
         trajectories[i].push({x: dx, y: dy});
-        if (trajectories[i].length > 300) trajectories[i].shift();
-        ctx.beginPath(); ctx.strokeStyle = pos.color;
-        trajectories[i].forEach((p, j) => { if (j === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+        if (trajectories[i].length > 200) trajectories[i].shift();
+        ctx.beginPath();
+        ctx.strokeStyle = planets[i].color;
+        trajectories[i].forEach((p, idx) => {
+          if (idx === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
         ctx.stroke();
-        drawPoint(dx, dy, pos.color, 3, pos.name);
+
+        // Тело планеты
+        ctx.beginPath();
+        ctx.fillStyle = planets[i].color;
+        ctx.arc(dx, dy, 4, 0, Math.PI*2);
+        ctx.fill();
       });
 
-      ctx.fillStyle = '#fff'; ctx.font = '14px monospace'; ctx.textAlign = 'center';
-      ctx.fillText(`Scale: ${scale.toFixed(2)}x | Speed: ${dt.toFixed(1)}dpf`, canvas.width / 2, 12);
+      // Солнце
+      let sX = centerX, sY = centerY;
+      if (frame === 'earth') { sX -= earthPos.x; sY -= earthPos.y; }
+      ctx.beginPath(); ctx.fillStyle = 'yellow';
+      ctx.arc(sX, sY, 6, 0, Math.PI*2); ctx.fill();
 
-      const spark = getSparkInfo();
-      if (spark) {
-        ctx.fillStyle = '#0077ff'; ctx.font = 'bold 12px monospace';
-        ctx.fillText(`[VITAL SPARK: ${spark.asset}]`, canvas.width / 2, 35);
-        ctx.font = '10px monospace'; ctx.fillText(spark.description, canvas.width / 2, 50);
-        datePicker.style.backgroundColor = '#002244';
-      } else { datePicker.style.backgroundColor = '#333'; }
+      // Инфо
+      ctx.fillStyle = 'white'; ctx.font = '12px monospace';
+      ctx.fillText(`Scale: ${scale.toFixed(2)}x | Date: ${new Date(J2000.getTime() + t * 86400000).toISOString().split('T')[0]}`, 10, 20);
 
       if (!isPaused) {
         t += dt;
-        datePicker.value = new Date(J2000.getTime() + t * 86400000).toISOString().split('T')[0];
         requestAnimationFrame(animate);
       }
     }
 
+    initCanvas();
+    createLegend();
     animate();
-
-    // UI Listeners
-    document.getElementById('log-toggle').addEventListener('click', function() {
-      isLogScale = !isLogScale; this.classList.toggle('active-mode');
-      trajectories.forEach(arr => arr.length = 0); if (isPaused) renderStaticFrame();
-    });
-    document.getElementById('event-link').addEventListener('click', function() {
-      this.classList.toggle('active-mode'); if (isPaused) renderStaticFrame();
-    });
-    document.getElementById('spark-link').addEventListener('click', function() {
-      this.classList.toggle('active-mode'); if (isPaused) renderStaticFrame();
-    });
-    document.getElementById('now-link').addEventListener('click', function() {
-      const today = new Date('2026-01-21T12:00:00Z');
-      t = (today.getTime() - J2000.getTime()) / 86400000;
-      datePicker.value = today.toISOString().split('T')[0];
-      this.classList.add('active-mode');
-      setTimeout(() => this.classList.remove('active-mode'), 200);
-      trajectories.forEach(arr => arr.length = 0); if (isPaused) renderStaticFrame();
-    });
-
-
   </script>
-
 </body>
 </html>
