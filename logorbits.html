@@ -114,7 +114,7 @@
     /* Стили для верхних кнопок */
     .top-nav {
       position: absolute;
-      top: 5px;
+      top: 10px;
       font-size: 0.9rem;
       font-weight: bold;
       cursor: pointer;
@@ -250,6 +250,25 @@
   
   <script>
       let isLogScale = false;
+      
+          let marketEvents = [];
+
+    async function loadEvents() {
+      try {
+        // Пытаемся загрузить данные из внешнего файла
+        const response = await fetch('events.json');
+        if (!response.ok) throw new Error('File not found');
+        const data = await response.json();
+        marketEvents = data.market_events;
+        console.log("Market Astrology data synchronized.");
+      } catch (e) {
+        // Если файла нет, используем пустой массив, чтобы код не ломался
+        console.log("Waiting for events.json... Visual alerts disabled.");
+        marketEvents = []; 
+      }
+    }
+    loadEvents();
+      
     function getEffectiveRadius(ae) {
       if (!isLogScale) {
         return (ae / maxDistance) * maxOrbitRadius;
@@ -597,7 +616,7 @@ const a = getEffectiveRadius(planet.distance) * scale;
           }
           ctx.stroke();
         }
-        drawPoint(drawX, drawY, pos.color, 3);
+        drawPoint(drawX, drawY, pos.color, 3, pos.name);
       });
       
       ctx.fillStyle = '#fff';
@@ -624,11 +643,22 @@ const a = getEffectiveRadius(planet.distance) * scale;
     });
 
 
-    document.getElementById('event-link').addEventListener('click', () => {
-      // Здесь будет логика перехода к events.json или вызова модального окна
-      console.log("Portal to Market Astrology opened.");
-      alert("Переход к анализу аномалий и графику разблокировок (£)...");
+        document.getElementById('event-link').addEventListener('click', function() {
+      // Переключаем режим (синее свечение кнопки)
+      this.classList.toggle('active-mode');
+      
+      // Логика проверки события на текущую дату
+      if (this.classList.contains('active-mode')) {
+        const currentDate = datePicker.value;
+        // marketEvents должен быть загружен из JSON
+        const todayEvent = (typeof marketEvents !== 'undefined') ? marketEvents.find(e => e.date === currentDate) : null;
+        
+        if (todayEvent) {
+          alert(`[${todayEvent.asset}] ${todayEvent.type}: ${todayEvent.description}`);
+        }
+      }
     });
+
 
     // Кнопка STOP: полная остановка времени
     document.getElementById('stop-link').addEventListener('click', function() {
