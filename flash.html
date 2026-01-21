@@ -177,6 +177,9 @@ if (txt === " ") delay *= 2.5;
 
 
       index++;
+
+localStorage.setItem('last_index', index);
+
       timer = setTimeout(showNext, delay);
     }
 
@@ -197,6 +200,26 @@ if (txt === " ") delay *= 2.5;
         if (e.touches.length > 1) e.preventDefault();
       }
     }, { passive: false });
+    
+    // Автоматическое сохранение текста при наборе
+inputText.addEventListener('input', () => {
+  localStorage.setItem('saved_text', inputText.value);
+});
+
+// Восстановление текста при загрузке страницы
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('saved_text');
+  if (saved) inputText.value = saved;
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    // Сохраняем всё самое важное, пока нас не "прибили"
+    localStorage.setItem('saved_text', inputText.value);
+    localStorage.setItem('saved_interval', interval);
+  }
+});
+
   </script>
 </body>
 </html>
