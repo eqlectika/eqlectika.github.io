@@ -56,12 +56,14 @@
       flex-grow: 1; display: flex; justify-content: center; align-items: center;
       position: relative; margin: 40px 0;
     }
+    
+.word-layer {
+  position: absolute; text-align: center; font-weight: bold;
+  white-space: nowrap; 
+  transition: opacity 0.1s ease-out, transform 0.1s ease-out; /* Было 0.18s */
+  will-change: transform, opacity;
+}
 
-    .word-layer {
-      position: absolute; text-align: center; font-weight: bold;
-      white-space: nowrap; transition: opacity 0.18s ease-out, transform 0.18s ease-out;
-      will-change: transform, opacity;
-    }
 
     .word-enter { opacity: 0; transform: scale(1.1); }
     .word-active { opacity: 1; transform: scale(1); }
@@ -164,9 +166,15 @@
       newEl.offsetHeight;
       newEl.classList.replace('word-enter', 'word-active');
 
-      let delay = interval + (txt.length * 8);
-      if (/[.,—:;!?]/.test(txt)) delay *= 2.5;
-      if (txt === " ") delay *= 4.5;
+
+let delay = interval;
+// Коэффициент за длину слова (динамический)
+delay += (txt.length * (interval * 0.1)); 
+// Коэффициент за знаки препинания
+if (/[.,—:;!?]/.test(txt)) delay *= 2.0; 
+// Коэффициент за пробел (теперь привязан к интервалу)
+if (txt === " ") delay *= 2.5; 
+
 
       index++;
       timer = setTimeout(showNext, delay);
