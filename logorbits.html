@@ -331,15 +331,23 @@
     let offsetX = 0;
     let offsetY = 0;
     
-    document.getElementById('controls').addEventListener('change', (e) => {
+        document.getElementById('controls').addEventListener('change', (e) => {
       if (e.target.name === 'frame') {
         frame = e.target.value;
+        
+        // СИНХРОНИЗАЦИЯ: Если выбран режим Earth, принудительно включаем её видимость
+        if (frame === 'earth') {
+          planetVisibility[earthIndex] = true;
+        }
+
         trajectories.forEach(arr => arr.length = 0);
         offsetX = 0;
         offsetY = 0;
-        scale = 10;
+        // Перерисовываем легенду, чтобы выключатель вернулся в активное состояние
+        createLegend();
       }
     });
+
     
     const speedSlider = document.getElementById('speed-slider');
     speedSlider.addEventListener('input', (e) => {
