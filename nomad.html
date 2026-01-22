@@ -29,11 +29,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-    // Проверка, что THREE загрузился
-    if (typeof THREE === 'undefined') {
-        console.error("Three.js не загружен. Проверьте интернет-соединение.");
-    }
-
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -77,6 +72,7 @@
     function buildCube(pos) {
         const key = `${Math.round(pos.x)},${Math.round(pos.y)},${Math.round(pos.z)}`;
         if (cubesMap.has(key)) return;
+
         const group = new THREE.Group();
         group.position.copy(pos);
         const faces = [
@@ -84,9 +80,22 @@
             {n:[0,1,0], r:[-1.57,0,0]}, {n:[0,-1,0], r:[1.57,0,0]},
             {n:[0,0,1], r:[0,0,0]}, {n:[0,0,-1], r:[0,3.14,0]}
         ];
+
         faces.forEach(d => {
-            const nKey = `${Math.round(pos.x+d.n[0]*GRID)},${Math.round(pos.y+d.n[1]*GRID)},${Math.round(pos.z+d.n[2]*GRID)}`;
-            if (!cubesMap.has(nKey)) {
+            const neighborPos = pos.clone().add(new THREE.Vector3(...d.n).multiplyScalar(GRID));
+            const nKey = `${Math.round(neighborPos.x)},${Math.round(neighborPos.y)},${Math.round(neighborPos.z)}`;
+            
+            const neighbor = cubesMap.get(nKey);
+            if (neighbor) {
+                // Если сосед есть, удаляем его грань, смотрящую на нас
+                const invN = [-d.n[0], -d.n[1], -d.n[2]];
+                const backFace = neighbor.children.find(f => 
+                    f.userData.normal && f.userData.normal.x === invN[0] && 
+                    f.userData.normal.y === invN[1] && f.userData.normal.z === invN[2]
+                );
+                if (backFace) neighbor.remove(backFace);
+            } else {
+                // Если соседа нет, создаем грань
                 const mesh = new THREE.Mesh(new THREE.PlaneGeometry(GRID, GRID), new THREE.MeshStandardMaterial({side: THREE.DoubleSide}));
                 mesh.position.set(d.n[0]*GRID/2, d.n[1]*GRID/2, d.n[2]*GRID/2);
                 mesh.rotation.set(d.r[0], d.r[1], d.r[2]);
@@ -95,6 +104,7 @@
                 group.add(mesh);
             }
         });
+
         scene.add(group);
         cubesMap.set(key, group);
     }
@@ -104,10 +114,9 @@
     renderer.domElement.addEventListener('pointerdown', e => {
         activePointers.set(e.pointerId, e);
         isDragging = true;
-        if (activePointers.size === 1) {
-            prevMouse = { x: e.clientX, y: e.clientY };
-            startHold(e);
-        } else if (activePointers.size === 2) {
+        prevMouse = { x: e.clientX, y: e.clientY };
+        if (activePointers.size === 1) startHold(e);
+        else if (activePointers.size === 2) {
             const pts = Array.from(activePointers.values());
             initialPinchDist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
         }
@@ -116,39 +125,37 @@
     window.addEventListener('pointermove', e => {
         if (!isDragging) return;
         activePointers.set(e.pointerId, e);
-
         if (activePointers.size === 1) {
             const dx = e.clientX - prevMouse.x;
             const dy = e.clientY - prevMouse.y;
             if (e.buttons === 2 || e.shiftKey) {
-                panVelocity.x = dx * 0.5;
-                panVelocity.y = dy * 0.5;
+                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(rotationQuat);
+                const up = new THREE.Vector3(0, 1, 0).applyQuaternion(rotationQuat);
+                target.add(right.multiplyScalar(-dx * 0.5)).add(up.multiplyScalar(dy * 0.5));
             } else {
                 rotationVelocity.x = dx * 0.005;
                 rotationVelocity.y = dy * 0.005;
             }
             prevMouse = { x: e.clientX, y: e.clientY };
         } else if (activePointers.size === 2) {
+            e.preventDefault();
             const pts = Array.from(activePointers.values());
             const dist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
             zoomVelocity -= (dist - initialPinchDist) * 0.1;
             initialPinchDist = dist;
         }
-    });
+    }, { passive: false });
 
     window.addEventListener('pointerup', e => {
-        activePointers.delete(e.pointerId);
-        if (activePointers.size === 0) {
-            isDragging = false;
-            // Исправленная проверка тапа
-            if (prevMouse.x && Math.abs(e.clientX - prevMouse.x) < 5) handleTap(e);
-            endHold();
+        if (activePointers.size === 1 && !panVelocity.lengthSq()) {
+            if (Math.abs(e.clientX - prevMouse.x) < 5) handleTap(e);
         }
+        activePointers.delete(e.pointerId);
+        if (activePointers.size === 0) { isDragging = false; endHold(); }
     });
 
     window.addEventListener('wheel', e => { 
         e.preventDefault();
-        // Уменьшен коэффициент влияния скролла
         zoomVelocity += e.deltaY * 0.02; 
     }, { passive: false });
 
@@ -189,78 +196,57 @@
     const bgTexture = new THREE.CanvasTexture(bgCanvas);
     scene.background = bgTexture;
 
-    let ghostP = new THREE.Vector3(GRID*10, 0, 0);
+    let ghostP = new THREE.Vector3(0, 0, 0);
     function nomadAction() {
         if (nomadSteps > 0) {
             const d = [new THREE.Vector3(1,0,0), new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,1)][Math.floor(Math.random()*3)];
             ghostP.add(d.multiplyScalar(GRID * (Math.random()>0.5?1:-1)));
-            buildCube(ghostP); nomadSteps--;
+            buildCube(ghostP); 
+            nomadSteps--;
+        }
+        if (Math.random() > 0.98 && cubesMap.size > 0) {
+            const keys = Array.from(cubesMap.keys());
+            const g = cubesMap.get(keys[Math.floor(Math.random()*keys.length)]);
+            if (g && g.children.length > 0) {
+                const f = g.children[Math.floor(Math.random()*g.children.length)];
+                f.userData.stage = Math.floor(Math.random()*12); 
+                setFaceStyle(f, f.userData.stage);
+            }
         }
     }
 
     const animate = (t) => {
-        if (!isDragging) {
-            rotationVelocity.multiplyScalar(0.9);
-            panVelocity.multiplyScalar(0.9);
-        }
+        if (!isDragging) rotationVelocity.multiplyScalar(0.9);
         zoomVelocity *= 0.85;
-
         const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), rotationVelocity.y);
         const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationVelocity.x);
         rotationQuat.multiplyQuaternions(qY, rotationQuat).multiply(qX);
 
-        target.add(new THREE.Vector3(-panVelocity.x, panVelocity.y, 0).applyQuaternion(rotationQuat));
-        zoomDist += zoomVelocity;
-
-        // Ограничение зума, чтобы не улетать в черноту
-        zoomDist = Math.max(50, Math.min(zoomDist, 5000));
-
+        zoomDist = Math.max(50, Math.min(zoomDist + zoomVelocity, 5000));
         if (isFly) flySpeed = Math.min(flySpeed + 0.2, 8);
         else flySpeed *= 0.9;
         target.add(new THREE.Vector3(0,0,-1).applyQuaternion(rotationQuat).multiplyScalar(flySpeed));
-
-        if (!isBypass) {
-            const cx = Math.round(target.x/GRID)*GRID, cy = Math.round(target.y/GRID)*GRID, cz = Math.round(target.z/GRID)*GRID;
-            const cube = cubesMap.get(`${cx},${cy},${cz}`);
-            if (cube) {
-                const lim = GRID/2 - 10;
-                target.x = Math.max(cx-lim, Math.min(cx+lim, target.x));
-                target.y = Math.max(cy-lim, Math.min(cy+lim, target.y));
-                target.z = Math.max(cz-lim, Math.min(cz+lim, target.z));
-            }
-        }
 
         camera.position.copy(target).add(new THREE.Vector3(0,0,zoomDist).applyQuaternion(rotationQuat));
         camera.lookAt(target);
         pointLight.position.copy(camera.position);
 
         const c = Math.floor(Math.sin(t*0.0005)*20 + 60);
-        bgCtx.fillStyle = `rgb(${c},${c-10},${c+20})`; 
-        bgCtx.fillRect(0,0,2,2);
-        bgTexture.needsUpdate = true;
-
+        bgCtx.fillStyle = `rgb(${c},${c-10},${c+20})`; bgCtx.fillRect(0,0,2,2); bgTexture.needsUpdate = true;
         nomadAction();
         renderer.render(scene, camera);
         requestAnimationFrame(animate);
     };
 
-    document.getElementById('main-mode').onclick = (e) => { 
-        mode = (mode==='Create'?'Delete':'Create');
-        e.target.innerText = mode; 
-    };
-    document.getElementById('btn-bypass').onclick = (e) => { 
-        isBypass = !isBypass; e.target.innerText = isBypass?'Stop':'Bypass'; 
-    };
-    document.getElementById('btn-fly').onclick = (e) => { 
-        isFly = !isFly; e.target.innerText = isFly?'Stop':'Fly'; 
-    };
+    document.getElementById('main-mode').onclick = (e) => { mode = (mode==='Create'?'Delete':'Create'); e.target.innerText = mode; };
+    document.getElementById('btn-bypass').onclick = (e) => { isBypass = !isBypass; e.target.innerText = isBypass?'Stop':'Bypass'; };
+    document.getElementById('btn-fly').onclick = (e) => { isFly = !isFly; e.target.innerText = isFly?'Stop':'Fly'; };
     document.getElementById('btn-strike').onclick = () => {
         cubesMap.forEach((g, k) => { if (g.position.distanceTo(target) < GRID*2) { scene.remove(g); cubesMap.delete(k); } });
     };
 
     buildCube(new THREE.Vector3(0,0,0));
     animate(0);
-</script>
 
 
 </body>
