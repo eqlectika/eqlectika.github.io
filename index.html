@@ -192,21 +192,25 @@ const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
 /* ===== СВЕТ ===== */
-scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-const lightGroup = new THREE.Group();
+// Общий заполняющий свет, чтобы сцена не была слишком контрастной
+const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+scene.add(ambient);
 
-const rigLeft = new THREE.PointLight(0xff0000, 2.5, 150);
-rigLeft.position.set(-15, 10, 10);
+// Красный свет слева
+const redSun = new THREE.DirectionalLight(0xff0000, 1.5);
+redSun.position.set(-50, 20, 20);
+scene.add(redSun);
 
-const rigRight = new THREE.PointLight(0x00ff00, 2.5, 150);
-rigRight.position.set(15, 10, 10);
+// Зеленый свет справа
+const greenSun = new THREE.DirectionalLight(0x00ff00, 1.5);
+greenSun.position.set(50, 20, 20);
+scene.add(greenSun);
 
-const rigTop = new THREE.PointLight(0x0000ff, 2.5, 150);
-rigTop.position.set(0, 20, 5);
+// Синий свет снизу или сзади
+const blueSun = new THREE.DirectionalLight(0x0000ff, 1.5);
+blueSun.position.set(0, -50, 20);
+scene.add(blueSun);
 
-lightGroup.add(rigLeft, rigRight, rigTop);
-camera.add(lightGroup);
-scene.add(camera);
 
 
 /* ===== ЗВУК ===== */
