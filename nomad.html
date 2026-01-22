@@ -26,74 +26,79 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-<script type="module">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+    // Проверка, что THREE загрузился
+    if (typeof THREE === 'undefined') {
+        console.error("Three.js не загружен. Проверьте интернет-соединение.");
+    }
+
     const scene = new THREE.Scene();
-    [span_0](start_span)const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);[span_0](end_span)
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    [span_1](start_span)renderer.setSize(window.innerWidth, window.innerHeight);[span_1](end_span)
-    [span_2](start_span)renderer.setPixelRatio(window.devicePixelRatio);[span_2](end_span)
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
     document.body.appendChild(renderer.domElement);
 
-    [span_3](start_span)const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);[span_3](end_span)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
-    [span_4](start_span)const pointLight = new THREE.PointLight(0xffffff, 1.2, 2000);[span_4](end_span)
+    const pointLight = new THREE.PointLight(0xffffff, 1.2, 2000);
     camera.add(pointLight);
     scene.add(camera);
 
-    [span_5](start_span)let target = new THREE.Vector3(0, 0, 0);[span_5](end_span)
-    [span_6](start_span)let zoomDist = 200;[span_6](end_span)
-    [span_7](start_span)let rotationQuat = new THREE.Quaternion();[span_7](end_span)
-    [span_8](start_span)let isDragging = false;[span_8](end_span)
-    [span_9](start_span)let prevMouse = { x: 0, y: 0 };[span_9](end_span)
-    [span_10](start_span)let rotationVelocity = new THREE.Vector2(0, 0);[span_10](end_span)
-    [span_11](start_span)let zoomVelocity = 0;[span_11](end_span)
-    [span_12](start_span)let panVelocity = new THREE.Vector2(0, 0);[span_12](end_span)
+    let target = new THREE.Vector3(0, 0, 0);
+    let zoomDist = 200;
+    let rotationQuat = new THREE.Quaternion();
+    let isDragging = false;
+    let prevMouse = { x: 0, y: 0 };
+    let rotationVelocity = new THREE.Vector2(0, 0);
+    let zoomVelocity = 0;
+    let panVelocity = new THREE.Vector2(0, 0);
 
-    [span_13](start_span)const GRID = 50;[span_13](end_span)
-    [span_14](start_span)const cubesMap = new Map();[span_14](end_span)
-    [span_15](start_span)let mode = 'Create', isBypass = false, isFly = false;[span_15](end_span)
-    [span_16](start_span)let flySpeed = 0, nomadSteps = 0;[span_16](end_span)
-    [span_17](start_span)const colors = [0xff4444, 0x44ff44, 0x4444ff];[span_17](end_span)
+    const GRID = 50;
+    const cubesMap = new Map();
+    let mode = 'Create', isBypass = false, isFly = false;
+    let flySpeed = 0, nomadSteps = 0;
+    const colors = [0xff4444, 0x44ff44, 0x4444ff];
 
-    // Состояния для мультитача
     let activePointers = new Map();
     let initialPinchDist = 0;
 
     function setFaceStyle(m, s) {
-        [span_18](start_span)m.material.color.setHex(colors[s % 3]);[span_18](end_span)
-        m.material.opacity = (s < 6) ? [span_19](start_span)0.4 : 1.0;[span_19](end_span)
-        m.material.metalness = ((s >= 3 && s < 6) || s >= 9) ? [span_20](start_span)0.9 : 0.1;[span_20](end_span)
-        m.material.roughness = ((s >= 3 && s < 6) || s >= 9) ? [span_21](start_span)0.2 : 0.8;[span_21](end_span)
-        [span_22](start_span)m.material.transparent = true;[span_22](end_span)
-        [span_23](start_span)m.material.needsUpdate = true;[span_23](end_span)
+        m.material.color.setHex(colors[s % 3]);
+        m.material.opacity = (s < 6) ? 0.4 : 1.0;
+        m.material.metalness = ((s >= 3 && s < 6) || s >= 9) ? 0.9 : 0.1;
+        m.material.roughness = ((s >= 3 && s < 6) || s >= 9) ? 0.2 : 0.8;
+        m.material.transparent = true;
+        m.material.needsUpdate = true;
     }
 
     function buildCube(pos) {
-        [span_24](start_span)const key = `${Math.round(pos.x)},${Math.round(pos.y)},${Math.round(pos.z)}`;[span_24](end_span)
-        [span_25](start_span)if (cubesMap.has(key)) return;[span_25](end_span)
+        const key = `${Math.round(pos.x)},${Math.round(pos.y)},${Math.round(pos.z)}`;
+        if (cubesMap.has(key)) return;
         const group = new THREE.Group();
-        [span_26](start_span)group.position.copy(pos);[span_26](end_span)
+        group.position.copy(pos);
         const faces = [
             {n:[1,0,0], r:[0,1.57,0]}, {n:[-1,0,0], r:[0,-1.57,0]},
             {n:[0,1,0], r:[-1.57,0,0]}, {n:[0,-1,0], r:[1.57,0,0]},
             {n:[0,0,1], r:[0,0,0]}, {n:[0,0,-1], r:[0,3.14,0]}
-        [span_27](start_span)];[span_27](end_span)
+        ];
         faces.forEach(d => {
-            [span_28](start_span)const nKey = `${Math.round(pos.x+d.n[0]*GRID)},${Math.round(pos.y+d.n[1]*GRID)},${Math.round(pos.z+d.n[2]*GRID)}`;[span_28](end_span)
+            const nKey = `${Math.round(pos.x+d.n[0]*GRID)},${Math.round(pos.y+d.n[1]*GRID)},${Math.round(pos.z+d.n[2]*GRID)}`;
             if (!cubesMap.has(nKey)) {
-                [span_29](start_span)const mesh = new THREE.Mesh(new THREE.PlaneGeometry(GRID, GRID), new THREE.MeshStandardMaterial({side: THREE.DoubleSide}));[span_29](end_span)
-                [span_30](start_span)mesh.position.set(d.n[0]*GRID/2, d.n[1]*GRID/2, d.n[2]*GRID/2);[span_30](end_span)
-                [span_31](start_span)mesh.rotation.set(d.r[0], d.r[1], d.r[2]);[span_31](end_span)
-                [span_32](start_span)mesh.userData = { stage: 0, normal: new THREE.Vector3(...d.n), isFace: true };[span_32](end_span)
-                [span_33](start_span)setFaceStyle(mesh, 0);[span_33](end_span)
-                [span_34](start_span)group.add(mesh);[span_34](end_span)
+                const mesh = new THREE.Mesh(new THREE.PlaneGeometry(GRID, GRID), new THREE.MeshStandardMaterial({side: THREE.DoubleSide}));
+                mesh.position.set(d.n[0]*GRID/2, d.n[1]*GRID/2, d.n[2]*GRID/2);
+                mesh.rotation.set(d.r[0], d.r[1], d.r[2]);
+                mesh.userData = { stage: 0, normal: new THREE.Vector3(...d.n), isFace: true };
+                setFaceStyle(mesh, 0);
+                group.add(mesh);
             }
         });
-        [span_35](start_span)scene.add(group);[span_35](end_span)
-        [span_36](start_span)cubesMap.set(key, group);[span_36](end_span)
+        scene.add(group);
+        cubesMap.set(key, group);
     }
 
-    // --- ОБРАБОТКА СОБЫТИЙ ---
     window.addEventListener('contextmenu', e => e.preventDefault());
 
     renderer.domElement.addEventListener('pointerdown', e => {
@@ -101,7 +106,7 @@
         isDragging = true;
         if (activePointers.size === 1) {
             prevMouse = { x: e.clientX, y: e.clientY };
-            [span_37](start_span)startHold(e);[span_37](end_span)
+            startHold(e);
         } else if (activePointers.size === 2) {
             const pts = Array.from(activePointers.values());
             initialPinchDist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
@@ -115,15 +120,14 @@
         if (activePointers.size === 1) {
             const dx = e.clientX - prevMouse.x;
             const dy = e.clientY - prevMouse.y;
-            // ПКМ (2) или Shift + ЛКМ для панорамирования
             if (e.buttons === 2 || e.shiftKey) {
-                [span_38](start_span)panVelocity.x = dx * 0.5;[span_38](end_span)
-                [span_39](start_span)panVelocity.y = dy * 0.5;[span_39](end_span)
+                panVelocity.x = dx * 0.5;
+                panVelocity.y = dy * 0.5;
             } else {
-                [span_40](start_span)rotationVelocity.x = dx * 0.005;[span_40](end_span)
-                [span_41](start_span)rotationVelocity.y = dy * 0.005;[span_41](end_span)
+                rotationVelocity.x = dx * 0.005;
+                rotationVelocity.y = dy * 0.005;
             }
-            [span_42](start_span)prevMouse = { x: e.clientX, y: e.clientY };[span_42](end_span)
+            prevMouse = { x: e.clientX, y: e.clientY };
         } else if (activePointers.size === 2) {
             const pts = Array.from(activePointers.values());
             const dist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
@@ -136,130 +140,128 @@
         activePointers.delete(e.pointerId);
         if (activePointers.size === 0) {
             isDragging = false;
-            [span_43](start_span)if (Math.abs(e.clientX - (prevMouse.x || 0)) < 5) handleTap(e);[span_43](end_span)
-            [span_44](start_span)endHold();[span_44](end_span)
+            // Исправленная проверка тапа
+            if (prevMouse.x && Math.abs(e.clientX - prevMouse.x) < 5) handleTap(e);
+            endHold();
         }
     });
 
     window.addEventListener('wheel', e => { 
         e.preventDefault();
-        [span_45](start_span)zoomVelocity += e.deltaY * 0.05;[span_45](end_span)
+        // Уменьшен коэффициент влияния скролла
+        zoomVelocity += e.deltaY * 0.02; 
     }, { passive: false });
 
     let holdTimer;
     const startHold = (e) => {
         holdTimer = setTimeout(() => {
             const ray = new THREE.Raycaster();
-            [span_46](start_span)const m = new THREE.Vector2((e.clientX/window.innerWidth)*2-1, -(e.clientY/window.innerHeight)*2+1);[span_46](end_span)
-            [span_47](start_span)ray.setFromCamera(m, camera);[span_47](end_span)
-            [span_48](start_span)const hit = ray.intersectObjects(scene.children, true).find(h => h.object.userData.isFace);[span_48](end_span)
+            const m = new THREE.Vector2((e.clientX/window.innerWidth)*2-1, -(e.clientY/window.innerHeight)*2+1);
+            ray.setFromCamera(m, camera);
+            const hit = ray.intersectObjects(scene.children, true).find(h => h.object.userData.isFace);
             if (hit && mode === 'Create') {
-                [span_49](start_span)buildCube(hit.object.parent.position.clone().add(hit.object.userData.normal.clone().multiplyScalar(GRID)));[span_49](end_span)
-                [span_50](start_span)nomadSteps++;[span_50](end_span)
+                buildCube(hit.object.parent.position.clone().add(hit.object.userData.normal.clone().multiplyScalar(GRID)));
+                nomadSteps++;
             }
-        [span_51](start_span)}, 600);[span_51](end_span)
+        }, 600);
     };
-    [span_52](start_span)const endHold = () => clearTimeout(holdTimer);[span_52](end_span)
+    const endHold = () => clearTimeout(holdTimer);
 
     const handleTap = (e) => {
         const ray = new THREE.Raycaster();
-        [span_53](start_span)const m = new THREE.Vector2((e.clientX/window.innerWidth)*2-1, -(e.clientY/window.innerHeight)*2+1);[span_53](end_span)
-        [span_54](start_span)ray.setFromCamera(m, camera);[span_54](end_span)
-        [span_55](start_span)const hit = ray.intersectObjects(scene.children, true).find(h => h.object.userData.isFace);[span_55](end_span)
+        const m = new THREE.Vector2((e.clientX/window.innerWidth)*2-1, -(e.clientY/window.innerHeight)*2+1);
+        ray.setFromCamera(m, camera);
+        const hit = ray.intersectObjects(scene.children, true).find(h => h.object.userData.isFace);
         if (hit) {
             if (mode === 'Delete') {
-                [span_56](start_span)hit.object.parent.remove(hit.object);[span_56](end_span)
-                [span_57](start_span)nomadSteps++;[span_57](end_span)
+                hit.object.parent.remove(hit.object);
+                nomadSteps++;
             } else {
-                [span_58](start_span)hit.object.userData.stage = (hit.object.userData.stage + 1) % 12;[span_58](end_span)
-                [span_59](start_span)setFaceStyle(hit.object, hit.object.userData.stage);[span_59](end_span)
+                hit.object.userData.stage = (hit.object.userData.stage + 1) % 12;
+                setFaceStyle(hit.object, hit.object.userData.stage);
             }
         }
     };
 
     const bgCanvas = document.createElement('canvas');
-    [span_60](start_span)bgCanvas.width = 2; bgCanvas.height = 2;[span_60](end_span)
-    [span_61](start_span)const bgCtx = bgCanvas.getContext('2d');[span_61](end_span)
-    [span_62](start_span)const bgTexture = new THREE.CanvasTexture(bgCanvas);[span_62](end_span)
-    [span_63](start_span)scene.background = bgTexture;[span_63](end_span)
+    bgCanvas.width = 2; bgCanvas.height = 2;
+    const bgCtx = bgCanvas.getContext('2d');
+    const bgTexture = new THREE.CanvasTexture(bgCanvas);
+    scene.background = bgTexture;
 
-    [span_64](start_span)let ghostP = new THREE.Vector3(GRID*10, 0, 0);[span_64](end_span)
+    let ghostP = new THREE.Vector3(GRID*10, 0, 0);
     function nomadAction() {
         if (nomadSteps > 0) {
-            [span_65](start_span)const d = [new THREE.Vector3(1,0,0), new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,1)][Math.floor(Math.random()*3)];[span_65](end_span)
-            [span_66](start_span)ghostP.add(d.multiplyScalar(GRID * (Math.random()>0.5?1:-1)));[span_66](end_span)
-            [span_67](start_span)buildCube(ghostP); nomadSteps--;[span_67](end_span)
-        }
-        if (Math.random() > 0.98 && cubesMap.size > 0) {
-            [span_68](start_span)const keys = Array.from(cubesMap.keys());[span_68](end_span)
-            [span_69](start_span)const g = cubesMap.get(keys[Math.floor(Math.random()*keys.length)]);[span_69](end_span)
-            if (g && g.children.length > 0) {
-                [span_70](start_span)const f = g.children[Math.floor(Math.random()*g.children.length)];[span_70](end_span)
-                [span_71](start_span)if (Math.random() > 0.9) g.remove(f);[span_71](end_span)
-                else { f.userData.stage = Math.floor(Math.random()*12); setFaceStyle(f, f.userData.stage); [span_72](start_span)}
-            }
+            const d = [new THREE.Vector3(1,0,0), new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,1)][Math.floor(Math.random()*3)];
+            ghostP.add(d.multiplyScalar(GRID * (Math.random()>0.5?1:-1)));
+            buildCube(ghostP); nomadSteps--;
         }
     }
 
     const animate = (t) => {
         if (!isDragging) {
-            rotationVelocity.multiplyScalar(0.9);[span_72](end_span)
-            [span_73](start_span)panVelocity.multiplyScalar(0.9);[span_73](end_span)
+            rotationVelocity.multiplyScalar(0.9);
+            panVelocity.multiplyScalar(0.9);
         }
-        [span_74](start_span)zoomVelocity *= 0.85;[span_74](end_span)
+        zoomVelocity *= 0.85;
 
-        [span_75](start_span)const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), rotationVelocity.y);[span_75](end_span)
-        [span_76](start_span)const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationVelocity.x);[span_76](end_span)
-        [span_77](start_span)rotationQuat.multiplyQuaternions(qY, rotationQuat).multiply(qX);[span_77](end_span)
+        const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), rotationVelocity.y);
+        const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationVelocity.x);
+        rotationQuat.multiplyQuaternions(qY, rotationQuat).multiply(qX);
 
-        [span_78](start_span)target.add(new THREE.Vector3(-panVelocity.x, panVelocity.y, 0).applyQuaternion(rotationQuat));[span_78](end_span)
-        [span_79](start_span)zoomDist += zoomVelocity;[span_79](end_span)
+        target.add(new THREE.Vector3(-panVelocity.x, panVelocity.y, 0).applyQuaternion(rotationQuat));
+        zoomDist += zoomVelocity;
 
-        [span_80](start_span)if (isFly) flySpeed = Math.min(flySpeed + 0.2, 8);[span_80](end_span)
-        [span_81](start_span)else flySpeed *= 0.9;[span_81](end_span)
-        [span_82](start_span)target.add(new THREE.Vector3(0,0,-1).applyQuaternion(rotationQuat).multiplyScalar(flySpeed));[span_82](end_span)
+        // Ограничение зума, чтобы не улетать в черноту
+        zoomDist = Math.max(50, Math.min(zoomDist, 5000));
+
+        if (isFly) flySpeed = Math.min(flySpeed + 0.2, 8);
+        else flySpeed *= 0.9;
+        target.add(new THREE.Vector3(0,0,-1).applyQuaternion(rotationQuat).multiplyScalar(flySpeed));
 
         if (!isBypass) {
-            [span_83](start_span)const cx = Math.round(target.x/GRID)*GRID, cy = Math.round(target.y/GRID)*GRID, cz = Math.round(target.z/GRID)*GRID;[span_83](end_span)
-            [span_84](start_span)const cube = cubesMap.get(`${cx},${cy},${cz}`);[span_84](end_span)
+            const cx = Math.round(target.x/GRID)*GRID, cy = Math.round(target.y/GRID)*GRID, cz = Math.round(target.z/GRID)*GRID;
+            const cube = cubesMap.get(`${cx},${cy},${cz}`);
             if (cube) {
-                [span_85](start_span)const lim = GRID/2 - 10;[span_85](end_span)
-                [span_86](start_span)target.x = Math.max(cx-lim, Math.min(cx+lim, target.x));[span_86](end_span)
-                [span_87](start_span)target.y = Math.max(cy-lim, Math.min(cy+lim, target.y));[span_87](end_span)
-                [span_88](start_span)target.z = Math.max(cz-lim, Math.min(cz+lim, target.z));[span_88](end_span)
+                const lim = GRID/2 - 10;
+                target.x = Math.max(cx-lim, Math.min(cx+lim, target.x));
+                target.y = Math.max(cy-lim, Math.min(cy+lim, target.y));
+                target.z = Math.max(cz-lim, Math.min(cz+lim, target.z));
             }
         }
 
-        [span_89](start_span)camera.position.copy(target).add(new THREE.Vector3(0,0,zoomDist).applyQuaternion(rotationQuat));[span_89](end_span)
-        [span_90](start_span)camera.lookAt(target);[span_90](end_span)
-        [span_91](start_span)pointLight.position.copy(camera.position);[span_91](end_span)
+        camera.position.copy(target).add(new THREE.Vector3(0,0,zoomDist).applyQuaternion(rotationQuat));
+        camera.lookAt(target);
+        pointLight.position.copy(camera.position);
 
-        [span_92](start_span)const c = Math.floor(Math.sin(t*0.0005)*20 + 60);[span_92](end_span)
-        [span_93](start_span)bgCtx.fillStyle = `rgb(${c},${c-10},${c+20})`; bgCtx.fillRect(0,0,2,2);[span_93](end_span)
-        [span_94](start_span)bgTexture.needsUpdate = true;[span_94](end_span)
+        const c = Math.floor(Math.sin(t*0.0005)*20 + 60);
+        bgCtx.fillStyle = `rgb(${c},${c-10},${c+20})`; 
+        bgCtx.fillRect(0,0,2,2);
+        bgTexture.needsUpdate = true;
 
-        [span_95](start_span)nomadAction();[span_95](end_span)
-        [span_96](start_span)renderer.render(scene, camera);[span_96](end_span)
-        [span_97](start_span)requestAnimationFrame(animate);[span_97](end_span)
+        nomadAction();
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
     };
 
     document.getElementById('main-mode').onclick = (e) => { 
-        [span_98](start_span)mode = (mode==='Create'?'Delete':'Create');[span_98](end_span)
+        mode = (mode==='Create'?'Delete':'Create');
         e.target.innerText = mode; 
     };
     document.getElementById('btn-bypass').onclick = (e) => { 
         isBypass = !isBypass; e.target.innerText = isBypass?'Stop':'Bypass'; 
-    [span_99](start_span)};[span_99](end_span)
+    };
     document.getElementById('btn-fly').onclick = (e) => { 
         isFly = !isFly; e.target.innerText = isFly?'Stop':'Fly'; 
-    [span_100](start_span)};[span_100](end_span)
+    };
     document.getElementById('btn-strike').onclick = () => {
-        [span_101](start_span)cubesMap.forEach((g, k) => { if (g.position.distanceTo(target) < GRID*2) { scene.remove(g); cubesMap.delete(k); } });[span_101](end_span)
+        cubesMap.forEach((g, k) => { if (g.position.distanceTo(target) < GRID*2) { scene.remove(g); cubesMap.delete(k); } });
     };
 
-    [span_102](start_span)buildCube(new THREE.Vector3(0,0,0));[span_102](end_span)
-    [span_103](start_span)animate(0);[span_103](end_span)
+    buildCube(new THREE.Vector3(0,0,0));
+    animate(0);
 </script>
+
 
 </body>
 </html>
