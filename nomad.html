@@ -30,31 +30,27 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-    // Проверка фундаментальных констант
-    if (typeof THREE === 'undefined') {
-        document.body.innerHTML = '<div style="color:white;text-align:center;margin-top:20%;">Vital Spark Error: THREE is not defined. Check your connection.</div>';
-    }
-
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(window.devicePixelRatio);
     document.body.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
     const pointLight = new THREE.PointLight(0xffffff, 1.2, 2000);
     camera.add(pointLight);
     scene.add(camera);
 
     let target = new THREE.Vector3(0, 0, 0);
-    let zoomDist = 300;
+    let zoomDist = 200;
     let rotationQuat = new THREE.Quaternion();
     let isDragging = false;
     let prevMouse = { x: 0, y: 0 };
     let rotationVelocity = new THREE.Vector2(0, 0);
     let zoomVelocity = 0;
+    let panVelocity = new THREE.Vector2(0, 0);
 
     const GRID = 50;
     const cubesMap = new Map();
@@ -89,9 +85,10 @@
         faces.forEach(d => {
             const neighborPos = pos.clone().add(new THREE.Vector3(...d.n).multiplyScalar(GRID));
             const nKey = `${Math.round(neighborPos.x)},${Math.round(neighborPos.y)},${Math.round(neighborPos.z)}`;
+            
             const neighbor = cubesMap.get(nKey);
-
             if (neighbor) {
+                // Если сосед есть, удаляем его грань, смотрящую на нас
                 const invN = [-d.n[0], -d.n[1], -d.n[2]];
                 const backFace = neighbor.children.find(f => 
                     f.userData.normal && f.userData.normal.x === invN[0] && 
@@ -99,7 +96,8 @@
                 );
                 if (backFace) neighbor.remove(backFace);
             } else {
-                const mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(GRID, GRID), new THREE.MeshStandardMaterial({side: THREE.DoubleSide}));
+                // Если соседа нет, создаем грань
+                const mesh = new THREE.Mesh(new THREE.PlaneGeometry(GRID, GRID), new THREE.MeshStandardMaterial({side: THREE.DoubleSide}));
                 mesh.position.set(d.n[0]*GRID/2, d.n[1]*GRID/2, d.n[2]*GRID/2);
                 mesh.rotation.set(d.r[0], d.r[1], d.r[2]);
                 mesh.userData = { stage: 0, normal: new THREE.Vector3(...d.n), isFace: true };
@@ -128,14 +126,13 @@
     window.addEventListener('pointermove', e => {
         if (!isDragging) return;
         activePointers.set(e.pointerId, e);
-
         if (activePointers.size === 1) {
             const dx = e.clientX - prevMouse.x;
             const dy = e.clientY - prevMouse.y;
             if (e.buttons === 2 || e.shiftKey) {
                 const right = new THREE.Vector3(1, 0, 0).applyQuaternion(rotationQuat);
                 const up = new THREE.Vector3(0, 1, 0).applyQuaternion(rotationQuat);
-                target.add(right.multiplyScalar(-dx * 0.6)).add(up.multiplyScalar(dy * 0.6));
+                target.add(right.multiplyScalar(-dx * 0.5)).add(up.multiplyScalar(dy * 0.5));
             } else {
                 rotationVelocity.x = dx * 0.005;
                 rotationVelocity.y = dy * 0.005;
@@ -145,14 +142,14 @@
             e.preventDefault();
             const pts = Array.from(activePointers.values());
             const dist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
-            zoomVelocity -= (dist - initialPinchDist) * 0.2;
+            zoomVelocity -= (dist - initialPinchDist) * 0.1;
             initialPinchDist = dist;
         }
     }, { passive: false });
 
     window.addEventListener('pointerup', e => {
-        if (activePointers.size === 1) {
-            if (Math.abs(e.clientX - (prevMouse.x || 0)) < 5) handleTap(e);
+        if (activePointers.size === 1 && !panVelocity.lengthSq()) {
+            if (Math.abs(e.clientX - prevMouse.x) < 5) handleTap(e);
         }
         activePointers.delete(e.pointerId);
         if (activePointers.size === 0) { isDragging = false; endHold(); }
@@ -160,7 +157,7 @@
 
     window.addEventListener('wheel', e => { 
         e.preventDefault();
-        zoomVelocity += e.deltaY * 0.03; 
+        zoomVelocity += e.deltaY * 0.02; 
     }, { passive: false });
 
     let holdTimer;
@@ -205,20 +202,28 @@
         if (nomadSteps > 0) {
             const d = [new THREE.Vector3(1,0,0), new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,1)][Math.floor(Math.random()*3)];
             ghostP.add(d.multiplyScalar(GRID * (Math.random()>0.5?1:-1)));
-            buildCube(ghostP); nomadSteps--;
+            buildCube(ghostP); 
+            nomadSteps--;
+        }
+        if (Math.random() > 0.98 && cubesMap.size > 0) {
+            const keys = Array.from(cubesMap.keys());
+            const g = cubesMap.get(keys[Math.floor(Math.random()*keys.length)]);
+            if (g && g.children.length > 0) {
+                const f = g.children[Math.floor(Math.random()*g.children.length)];
+                f.userData.stage = Math.floor(Math.random()*12); 
+                setFaceStyle(f, f.userData.stage);
+            }
         }
     }
 
     const animate = (t) => {
         if (!isDragging) rotationVelocity.multiplyScalar(0.9);
         zoomVelocity *= 0.85;
-
         const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), rotationVelocity.y);
         const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationVelocity.x);
         rotationQuat.multiplyQuaternions(qY, rotationQuat).multiply(qX);
 
-        zoomDist = Math.max(50, Math.min(zoomDist + zoomVelocity, 8000));
-        
+        zoomDist = Math.max(50, Math.min(zoomDist + zoomVelocity, 5000));
         if (isFly) flySpeed = Math.min(flySpeed + 0.2, 8);
         else flySpeed *= 0.9;
         target.add(new THREE.Vector3(0,0,-1).applyQuaternion(rotationQuat).multiplyScalar(flySpeed));
@@ -229,7 +234,6 @@
 
         const c = Math.floor(Math.sin(t*0.0005)*20 + 60);
         bgCtx.fillStyle = `rgb(${c},${c-10},${c+20})`; bgCtx.fillRect(0,0,2,2); bgTexture.needsUpdate = true;
-        
         nomadAction();
         renderer.render(scene, camera);
         requestAnimationFrame(animate);
@@ -244,6 +248,7 @@
 
     buildCube(new THREE.Vector3(0,0,0));
     animate(0);
+
 </script>
 
 
