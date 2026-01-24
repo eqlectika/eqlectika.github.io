@@ -24,23 +24,25 @@
       touch-action: pan-y;
     }
 
-    /* Группы элементов, которые будут затеняться */
-    #inputContainer, #colorControl, .footer-block, .header-block {
-      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-      opacity: 1;
+    /* Анимация тотального исчезновения */
+    @keyframes fadeOutUI {
+      from { opacity: 1; visibility: visible; }
+      to { opacity: 0; visibility: hidden; }
     }
 
-    /* Состояние глубокого погружения */
-    body.is-reading #inputContainer,
-    body.is-reading #colorControl,
-    body.is-reading .footer-block,
-    body.is-reading .header-block {
-      opacity: 0;
+    @keyframes fadeInUI {
+      from { opacity: 0; visibility: hidden; }
+      to { opacity: 1; visibility: visible; }
+    }
+
+    .ui-element {
+      animation: fadeInUI 0.2s forwards;
+    }
+
+    body.is-reading .ui-element {
+      animation: fadeOutUI 0.2s forwards;
       pointer-events: none;
     }
-
-    .header-block { flex-shrink: 0; padding-top: env(safe-area-inset-top, 20px); text-align: center; margin-top: 10px; }
-    .logo-image { opacity: 0.8; max-width: 48px; }
 
     #inputContainer { padding: 15px 15px; text-align: center; flex-shrink: 0; }
     
@@ -62,7 +64,7 @@
     }
 
     .word-layer {
-      position: absolute; text-align: center; font-weight: bold; margin-top: 10px;
+      position: absolute; text-align: center; font-weight: bold;
       white-space: nowrap; 
       transition: opacity 0.3s ease-out, transform 0.3s ease-out;
       will-change: transform, opacity;
@@ -72,7 +74,7 @@
     .word-active { opacity: 1; transform: scale(1); }
     .word-exit { opacity: 0; transform: scale(0.5); }
 
-    .footer-block { flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 20px); text-align: center; margin-top: 30px; }
+    .footer-block { flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 20px); text-align: center; }
 
     #buttonsContainer { padding: 8px; margin-bottom: 30px; }
     button {
@@ -84,29 +86,29 @@
 </head>
 <body oncontextmenu="return false;">
 
-  <div class="header-block">
+<div id="inputContainer" class="ui-element">
+  <input type="text" id="inputText" placeholder="Paste your text here..." />
+</div>
+
+<div id="colorControl" class="ui-element">Background Color</div>
+
+<div id="container"></div>
+
+<div class="footer-block ui-element">
+  <div class="logo-container" style="margin-bottom: 25px;">
     <a href="index.html" style="-webkit-user-drag: none;">
-      <img src="logo.png" alt="Logo" class="logo-image">
+      <img src="logo.png" alt="Logo" class="logo-image" style="max-width: 48px; opacity: 0.8;">
     </a>
   </div>
-
-  <div id="inputContainer">
-    <input type="text" id="inputText" placeholder="Paste your text here..." />
-  </div>
-
-  <div id="colorControl">Background Color</div>
   
-  <div id="container"></div>
-  
-  <div class="footer-block">
-    <div id="buttonsContainer">
-      <button id="fasterBtn">Faster</button>
-      <button id="startBtn">Start</button>
-      <button id="slowerBtn">Slower</button>
-    </div>
+  <div id="buttonsContainer">
+    <button id="fasterBtn">Faster</button>
+    <button id="startBtn">Start</button>
+    <button id="slowerBtn">Slower</button>
   </div>
+</div>
 
-  <script>
+<script>
     const container = document.getElementById('container');
     const inputText = document.getElementById('inputText');
     const startBtn = document.getElementById('startBtn');
@@ -121,9 +123,8 @@
     let interval = parseInt(localStorage.getItem('reading_interval')) || 500; 
     let timer = null;
 
-    // Инициализация сохраненных данных
     document.body.style.backgroundColor = colors[colorIndex];
-    inputText.value = localStorage.getItem('reading_text') || "Paste your text into this field (top) and tap 'Start' (bottom) to begin reading.";
+    inputText.value = localStorage.getItem('reading_text') || "Paste your text into this field.";
 
     function saveData() {
         localStorage.setItem('reading_text', inputText.value);
@@ -150,23 +151,17 @@
       saveData();
     };
 
-    function getFontSize(word) {
-      const baseSize = window.innerWidth / 9;
-      return word.length > 15 ? baseSize / 1.6 : baseSize;
-    }
-
     function showNext() {
       if (index >= words.length) { 
         index = 0;
         toggleUI(true);
         return; 
       }
-
       const txt = words[index];
       const newEl = document.createElement('div');
       newEl.className = 'word-layer word-enter';
       newEl.textContent = txt === " " ? "" : txt;
-      newEl.style.fontSize = getFontSize(txt) + 'px';
+      newEl.style.fontSize = (window.innerWidth / 9) + 'px';
       
       const oldEl = container.querySelector('.word-active');
       if (oldEl) {
@@ -188,30 +183,17 @@
 
     startBtn.onclick = (e) => {
       e.stopPropagation();
-      saveData(); // Сохраняем текст перед стартом
+      inputText.blur(); // Скрываем клавиатуру немедленно
+      saveData();
       words = inputText.value.trim().split(/(\s{2,})|\s+/).filter(Boolean).map(w => w.trim() === "" ? " " : w);
       index = 0;
       container.innerHTML = '';
       toggleUI(false);
-      setTimeout(showNext, 500);
+      setTimeout(showNext, 400); // Даем время интерфейсу исчезнуть
     };
 
-    fasterBtn.onclick = (e) => { 
-        e.stopPropagation(); 
-        interval = Math.max(5, interval - 10); 
-        saveData();
-    };
-    slowerBtn.onclick = (e) => { 
-        e.stopPropagation(); 
-        interval += 10; 
-        saveData();
-    };
-
-    document.addEventListener('touchstart', (e) => {
-      if (!['INPUT', 'BUTTON'].includes(e.target.tagName)) {
-        if (e.touches.length > 1) e.preventDefault();
-      }
-    }, { passive: false });
-  </script>
+    fasterBtn.onclick = (e) => { e.stopPropagation(); interval = Math.max(5, interval - 10); saveData(); };
+    slowerBtn.onclick = (e) => { e.stopPropagation(); interval += 10; saveData(); };
+</script>
 </body>
 </html>
