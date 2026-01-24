@@ -294,12 +294,24 @@ margib: 15px;
     document.getElementById('controls').addEventListener('change', (e) => {
       if (e.target.name === 'frame') {
         frame = e.target.value;
+
+        // Если выбрали Землю, принудительно включаем её видимость
+        if (frame === 'earth') {
+          const earthIdx = planets.findIndex(p => p.name === 'Earth');
+          if (!planetVisibility[earthIdx]) {
+            planetVisibility[earthIdx] = true;
+            // Обновляем визуальное состояние в легенде, чтобы не вводить в заблуждение
+            createLegend(); 
+          }
+        }
+
         trajectories.forEach(arr => arr.length = 0);
         offsetX = 0;
         offsetY = 0;
         scale = 10;
       }
     });
+
     
     const speedSlider = document.getElementById('speed-slider');
     speedSlider.addEventListener('input', (e) => {
