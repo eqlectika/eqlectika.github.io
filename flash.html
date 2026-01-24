@@ -7,104 +7,100 @@
   <title>Fast Reading Converter</title>
   <style>
     html, body {
-      overscroll-behavior: none;
-      height: 100vh;
-      margin: 0;
-      padding: 0;
-      background-color: #000000;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-      -webkit-user-select: none;
-      user-select: none;
-      -webkit-touch-callout: none;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: pan-y;
+      overscroll-behavior: none; height: 100vh; margin: 0; padding: 0;
+      background-color: #000000; color: #fff; font-family: Arial, sans-serif;
+      display: flex; flex-direction: column; overflow: hidden;
+      -webkit-user-select: none; user-select: none;
     }
 
-    /* Анимация тотального исчезновения */
-    @keyframes fadeOutUI {
-      from { opacity: 1; visibility: visible; }
-      to { opacity: 0; visibility: hidden; }
+    #inputContainer { 
+      padding: 15px; width: 100%; display: flex; flex-direction: column; 
+      align-items: center; box-sizing: border-box; transition: opacity 0.5s ease; 
     }
 
-    @keyframes fadeInUI {
-      from { opacity: 0; visibility: hidden; }
-      to { opacity: 1; visibility: visible; }
-    }
-
-    .ui-element {
-      animation: fadeInUI 0.2s forwards;
-    }
-
-    body.is-reading .ui-element {
-      animation: fadeOutUI 0.2s forwards;
-      pointer-events: none;
-    }
-
-    #inputContainer { padding: 15px 15px; text-align: center; flex-shrink: 0; }
-    
     #inputText {
-      width: 90%; max-width: 600px; padding: 12px; font-size: 16px;
-      background: #111; color: #fff; border: 1px solid #444; border-radius: 0px;
-      outline: none; -webkit-user-select: text; user-select: text; touch-action: pan-y;
+      width: 85%; max-width: 600px; padding: 12px; background: #111; 
+      color: #fff; border: 1px solid #444; border-radius: 8px; font-size: 16px; 
+      outline: none; box-sizing: border-box;
     }
 
+    /* Стиль кнопки смены фона */
     #colorControl {
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      border-radius: 12px; padding: 10px 20px; font-size: 14px;
-      cursor: pointer; margin: 10px auto; display: block; width: fit-content;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 12px; padding: 8px 15px; font-size: 14px;
+      cursor: pointer; margin-top: 10px; color: rgba(255, 255, 255, 0.7);
+      background: transparent; transition: all 0.3s;
     }
+
+    #logoContainer { transition: opacity 0.5s ease; text-align: center; }
+
+    /* Прячем всё лишнее при чтении */
+    body.is-reading #inputContainer, 
+    body.is-reading #logoContainer { opacity: 0 !important; pointer-events: none; }
 
     #container {
       flex-grow: 1; display: flex; justify-content: center; align-items: center;
-      position: relative; margin: 20px 0;
+      position: relative; width: 100%; cursor: pointer;
     }
 
     .word-layer {
       position: absolute; text-align: center; font-weight: bold;
-      white-space: nowrap; 
-      transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-      will-change: transform, opacity;
+      white-space: nowrap; width: 90%; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
     }
 
-    .word-enter { opacity: 0; transform: scale(1.1); }
-    .word-active { opacity: 1; transform: scale(1); }
-    .word-exit { opacity: 0; transform: scale(0.5); }
+    .word-enter { opacity: 0; transform: translate(-50%, -50%) scale(1.15); filter: blur(8px); }
+    .word-active { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+    .word-exit { opacity: 0; transform: translate(-50%, -50%) scale(0.9); filter: blur(4px); }
 
     .footer-block { flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 20px); text-align: center; }
-
-    #buttonsContainer { padding: 8px; margin-bottom: 30px; }
+    
     button {
-      font-size: 16px; background-color: transparent; color: white;
-      border-radius: 10px; border: 1px solid #fff; padding: 8px 13px;
-      margin: 0 5px; cursor: pointer; min-width: 62px; touch-action: manipulation;
+      font-size: 14px; background: transparent; color: white;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,0.4); 
+      padding: 10px 20px; cursor: pointer; touch-action: manipulation;
+      transition: opacity 0.4s ease, background 0.4s ease;
     }
+
+    #backBtn { 
+      display: none; margin: 0 auto 15px; 
+      background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4);
+    }
+    body.is-paused #backBtn { display: block; opacity: 1; }
+
+    #startBtn { background: #fff; color: #000; font-weight: bold; border: none; min-width: 100px; }
+    
+    body.is-reading #startBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn { 
+      opacity: 0.38; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.4); 
+    }
+
+    body.is-paused #startBtn { background: #fff; color: #000; opacity: 1; border: none; }
   </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
 
-<div id="inputContainer" class="ui-element">
+<div id="inputContainer">
   <input type="text" id="inputText" placeholder="Paste your text here..." />
+  <div id="colorControl">Background Color</div>
 </div>
-
-<div id="colorControl" class="ui-element">Background Color</div>
 
 <div id="container"></div>
 
-<div class="footer-block ui-element">
-  <div class="logo-container" style="margin-bottom: 25px;">
-    <a href="index.html" style="-webkit-user-drag: none;">
-      <img src="logo.png" alt="Logo" class="logo-image" style="max-width: 48px; opacity: 0.8;">
+<div class="footer-block">
+  <div id="logoContainer" style="margin-bottom: 20px;">
+    <a href="index.html" style="-webkit-user-drag: none; text-decoration: none;">
+      <img src="logo.png" alt="Logo" style="max-width: 40px; opacity: 0.4;">
     </a>
   </div>
+
+  <button id="backBtn">← One Word Back</button>
   
-  <div id="buttonsContainer">
-    <button id="fasterBtn">Faster</button>
-    <button id="startBtn">Start</button>
+  <div id="mainButtons" style="margin-bottom: 10px;">
     <button id="slowerBtn">Slower</button>
+    <button id="startBtn">Start</button>
+    <button id="fasterBtn">Faster</button>
   </div>
 </div>
 
@@ -112,88 +108,126 @@
     const container = document.getElementById('container');
     const inputText = document.getElementById('inputText');
     const startBtn = document.getElementById('startBtn');
+    const backBtn = document.getElementById('backBtn');
     const fasterBtn = document.getElementById('fasterBtn');
     const slowerBtn = document.getElementById('slowerBtn');
     const colorControl = document.getElementById('colorControl');
 
     const colors = ['#000000', '#450a0a', '#0a0a45', '#0a450a', '#222222'];
     let colorIndex = parseInt(localStorage.getItem('reading_colorIndex')) || 0;
-    let words = [];
-    let index = 0;
-    let interval = parseInt(localStorage.getItem('reading_interval')) || 300; 
-    let timer = null;
+    let words = [], index = 0, timer = null, isPaused = false, isReading = false;
+    let interval = parseInt(localStorage.getItem('reading_interval')) || 300;
 
+    // Инициализация
     document.body.style.backgroundColor = colors[colorIndex];
-    inputText.value = localStorage.getItem('reading_text') || "Paste your text here...";
+    inputText.value = localStorage.getItem('reading_text') || "";
 
-    function saveData() {
-        localStorage.setItem('reading_text', inputText.value);
-        localStorage.setItem('reading_interval', interval);
-        localStorage.setItem('reading_colorIndex', colorIndex);
+    function updateFontSize(text, el) {
+        const maxWidth = window.innerWidth * 0.85;
+        const maxHeight = window.innerHeight * 0.35;
+        let fontSize = maxWidth / (text.length * 0.6);
+        const absoluteMax = Math.min(window.innerWidth / 4, 85); 
+        if (fontSize > absoluteMax) fontSize = absoluteMax;
+        if (fontSize > maxHeight) fontSize = maxHeight;
+        el.style.fontSize = fontSize + 'px';
     }
 
-    function toggleUI(show) {
-      if (show) document.body.classList.remove('is-reading');
-      else document.body.classList.add('is-reading');
+    function clearOldWord() {
+        const oldEl = container.querySelector('.word-active');
+        if (oldEl) {
+            oldEl.classList.replace('word-active', 'word-exit');
+            setTimeout(() => oldEl.remove(), 250);
+        }
     }
-
-    document.body.addEventListener('touchstart', (e) => {
-      if (document.body.classList.contains('is-reading')) {
-        toggleUI(true);
-        clearTimeout(timer);
-      }
-    }, { passive: false });
-
-    colorControl.onclick = (e) => {
-      e.stopPropagation();
-      colorIndex = (colorIndex + 1) % colors.length;
-      document.body.style.backgroundColor = colors[colorIndex];
-      saveData();
-    };
 
     function showNext() {
-      if (index >= words.length) { 
-        index = 0;
-        toggleUI(true);
-        return; 
-      }
-      const txt = words[index];
-      const newEl = document.createElement('div');
-      newEl.className = 'word-layer word-enter';
-      newEl.textContent = txt === " " ? "" : txt;
-      newEl.style.fontSize = (window.innerWidth / 9) + 'px';
-      
-      const oldEl = container.querySelector('.word-active');
-      if (oldEl) {
-        oldEl.classList.replace('word-active', 'word-exit');
-        setTimeout(() => oldEl.remove(), 300);
-      }
-
-      container.appendChild(newEl);
-      newEl.offsetHeight;
-      newEl.classList.replace('word-enter', 'word-active');
-
-      let delay = interval + (txt.length * 8);
-      if (/[.,—:;!?]/.test(txt)) delay *= 2.5;
-      if (txt === " ") delay *= 4.5;
-
-      index++;
-      timer = setTimeout(showNext, delay);
+        if (index >= words.length || isPaused || !isReading) {
+            if (index >= words.length) stopReading();
+            return;
+        }
+        clearOldWord();
+        const txt = words[index];
+        if (txt !== " ") {
+            const newEl = document.createElement('div');
+            newEl.className = 'word-layer word-enter';
+            newEl.textContent = txt;
+            updateFontSize(txt, newEl);
+            container.appendChild(newEl);
+            requestAnimationFrame(() => { setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20); });
+        }
+        let delay = interval + (txt.length * 10);
+        if (/[.,!?;—:-]/.test(txt)) delay *= 2.5; 
+        if (txt === " ") delay *= 4.5; 
+        index++;
+        timer = setTimeout(showNext, delay);
     }
 
-    startBtn.onclick = (e) => {
-      e.stopPropagation();
-      inputText.blur(); // Скрываем клавиатуру немедленно
-      saveData();
-      words = inputText.value.trim().split(/(\s{2,})|\s+/).filter(Boolean).map(w => w.trim() === "" ? " " : w);
-      index = 0;
-      container.innerHTML = '';
-      toggleUI(false);
-      setTimeout(showNext, 400); // Даем время интерфейсу исчезнуть
+    function stopReading() {
+        clearTimeout(timer);
+        isReading = false; isPaused = false;
+        document.body.classList.remove('is-reading', 'is-paused');
+        startBtn.textContent = 'Start';
+        container.innerHTML = '';
+    }
+
+    colorControl.onclick = (e) => {
+        e.stopPropagation();
+        colorIndex = (colorIndex + 1) % colors.length;
+        document.body.style.backgroundColor = colors[colorIndex];
+        localStorage.setItem('reading_colorIndex', colorIndex);
     };
 
-    fasterBtn.onclick = (e) => { e.stopPropagation(); interval = Math.max(5, interval - 50); saveData(); };
-    slowerBtn.onclick = (e) => { e.stopPropagation(); interval += 50; saveData(); };
+    startBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (!isReading) {
+            const text = inputText.value.trim();
+            if (!text) return;
+            localStorage.setItem('reading_text', text);
+            words = text.split(/(\s{2,})|\s+/).filter(Boolean).map(w => w.trim() === "" ? " " : w);
+            index = 0; isReading = true; isPaused = false;
+            document.body.classList.add('is-reading');
+            startBtn.textContent = 'Pause';
+            showNext();
+        } else {
+            isPaused = !isPaused;
+            if (isPaused) {
+                document.body.classList.add('is-paused');
+                startBtn.textContent = 'Continue';
+                clearTimeout(timer);
+            } else {
+                document.body.classList.remove('is-paused');
+                startBtn.textContent = 'Pause';
+                showNext();
+            }
+        }
+    };
+
+    backBtn.onclick = (e) => {
+        e.stopPropagation();
+        index = Math.max(0, index - 2);
+        clearOldWord();
+        if (isPaused) {
+            const wasPaused = isPaused;
+            isPaused = false;
+            showNext();
+            clearTimeout(timer);
+            isPaused = wasPaused;
+        }
+    };
+
+    container.onclick = stopReading;
+    
+    fasterBtn.onclick = (e) => { 
+        e.stopPropagation(); 
+        interval = Math.max(50, interval - 50); 
+        localStorage.setItem('reading_interval', interval); 
+    };
+    
+    slowerBtn.onclick = (e) => { 
+        e.stopPropagation(); 
+        interval += 50; 
+        localStorage.setItem('reading_interval', interval); 
+    };
 </script>
 </body>
 </html>
