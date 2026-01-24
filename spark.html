@@ -268,8 +268,14 @@ Only when your internal metrics form a synchronized plateau of stability. Be hon
 </p>
 <p>
 <strong>Refrain from Action: </strong> 
-Avoid trading if the readings are scattered across the entire scale. 
+Avoid action if the readings are scattered across the entire scale. 
 </p>
+
+<strong> The Risk Readiness Index (Rq) indicator </strong> 
+is your digital failsafe. It analyzes the gap between your biological state and market chaos: the higher the value, the higher the probability of success.
+</p>
+
+
 </div>
 </details>
 
@@ -335,6 +341,23 @@ Avoid trading if the readings are scattered across the entire scale.
   <canvas id="chart"></canvas>
 </div>
 
+  <div id="risk-container" style="margin-top: 20px; border: 1px solid #333; padding: 15px;">
+  <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
+    <span>Risk Readiness (Rq)</span>
+    <span id="risk-value">0.00</span>
+  </div>
+  <div style="width: 100%; background: #111; height: 8px; border-radius: 4px; overflow: hidden;">
+    <div id="risk-bar" style="width: 0%; height: 100%; background: var(--emotion-color); transition: all 0.5s;"></div>
+  </div>
+
+<div style="display: flex; justify-content: space-between; font-size: 9px; color: #bef0ff	; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px;">
+  <span>⬅️ Unreal</span>
+  <span>Real ➡️</span>
+</div>
+
+  <p id="risk-advice" style="font-size: 10px; color: #666; margin-top: 8px; font-style: italic;">Fill metrics to calculate...</p>
+</div>
+
 <div class="buttons">
   <button class="ui-btn" onclick="toggleData()">JSON Archive</button>
   <button class="ui-btn" onclick="if(confirm('Clear data?')) { localStorage.clear(); location.reload(); }">Reset</button>
@@ -361,7 +384,6 @@ Avoid trading if the readings are scattered across the entire scale.
     time: '#8493d6',  breath: '#ffffff', pulse: '#ff1493', emotion: '#ff5252', dopamine: '#ff00ff',
     load: '#adff2f', tension: '#cccccc', energy: '#ff9800', focus: '#ffeb3b',
     creativity: '#00ff00', vision: '#0000ff', hearing: '#9c27b0', smell: '#00bcd4', vesting: '#ff0000', hype: '#00ffff', squeeze: '#ffff00', supply: '#ffa500', audit: '#7cfc00'
-
   };
   const categoryNames = {
     time: 'Timeframe',  breath: 'Breath', pulse: 'Pulse', emotion: 'Emotions', dopamine: 'Anticipation',
@@ -397,14 +419,67 @@ Avoid trading if the readings are scattered across the entire scale.
     }
   });
 
+  // Основная функция логирования
   function log(key) {
     const val = +document.getElementById(key).value;
     let col = chart.data.labels.length;
+    
+    // Проверяем, нужно ли создать новую колонку данных
     const isColumnFull = col > 0 && chart.data.datasets.every(ds => ds.data[col - 1] != null);
-    if (isColumnFull || col === 0) chart.data.labels.push(++col);
+    
+    if (isColumnFull || col === 0) {
+      chart.data.labels.push(++col);
+    }
+    
     chart.data.datasets[rows.indexOf(key)].data[col - 1] = val;
     chart.update();
     saveToStorage();
+    updateRiskIndicator(); // Обновляем шкалу сразу после ввода
+  }
+
+  function calculateRiskQuine() {
+    const data = chart.data.datasets;
+    const lastIdx = chart.data.labels.length - 1;
+    if (lastIdx < 0) return 0;
+
+    const internalKeys = [1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12];
+    const internalValues = internalKeys.map(i => data[i].data[lastIdx]).filter(v => v != null);
+
+    const externalKeys = [13, 14, 15, 16, 17];
+    const externalValues = externalKeys.map(i => data[i].data[lastIdx]).filter(v => v != null);
+
+    if (internalValues.length === 0) return 0;
+
+    const avgInternal = internalValues.reduce((a, b) => a + b, 0) / internalValues.length;
+    const avgExternal = externalValues.length > 0 
+        ? externalValues.reduce((a, b) => a + b, 0) / externalValues.length 
+        : 3;
+
+    return Math.min((avgInternal * Math.log1p(avgExternal)) / 10, 1).toFixed(2);
+  }
+
+  function updateRiskIndicator() {
+    const score = calculateRiskQuine();
+    const bar = document.getElementById('risk-bar');
+    const valText = document.getElementById('risk-value');
+    const advice = document.getElementById('risk-advice');
+    
+    if (!bar || !valText) return;
+
+    const percentage = score * 100;
+    bar.style.width = percentage + '%';
+    valText.innerText = score;
+
+    if (score < 0.45) {
+      bar.style.background = '#ff1493';
+      advice.innerText = "Keep your distance. Call Vital Spark if you're tempted to click 'Buy'.";
+    } else if (score < 0.75) {
+      bar.style.background = '#ff9800';
+      advice.innerText = "Stability is mediocre. Reduce position size, avoid leverage.";
+    } else {
+      bar.style.background = '#00ff00';
+      advice.innerText = "Synchronized plateau achieved. Proceed with clinical precision.";
+    }
   }
 
   function saveToStorage() {
@@ -417,10 +492,13 @@ Avoid trading if the readings are scattered across the entire scale.
   function loadFromStorage() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) return;
-    const { labels, data } = JSON.parse(saved);
-    chart.data.labels = labels;
-    data.forEach((d, i) => { if(chart.data.datasets[i]) chart.data.datasets[i].data = d; });
-    chart.update();
+    try {
+      const { labels, data } = JSON.parse(saved);
+      chart.data.labels = labels;
+      data.forEach((d, i) => { if(chart.data.datasets[i]) chart.data.datasets[i].data = d; });
+      chart.update();
+      updateRiskIndicator();
+    } catch(e) { console.error("Data corruption", e); }
   }
 
   function toggleData() {
@@ -441,11 +519,10 @@ Avoid trading if the readings are scattered across the entire scale.
     const addr = document.getElementById("cryptoAddr");
     const text = addr.innerText;
     navigator.clipboard.writeText(text).then(() => {
-      const originalText = text;
       addr.innerText = "Address Copied!";
       addr.style.color = "#00ff00";
       setTimeout(() => {
-        addr.innerText = originalText;
+        addr.innerText = text;
         addr.style.color = "#fff";
       }, 1500);
     });
@@ -453,6 +530,7 @@ Avoid trading if the readings are scattered across the entire scale.
 
   window.addEventListener("DOMContentLoaded", loadFromStorage);
 </script>
+
 
 </body>
 </html>
