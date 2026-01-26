@@ -123,28 +123,28 @@ body.is-reading .footer-block {
       position: relative; z-index: 110;
     }
 
-
 #colorControl {
-  display: inline-flex; /* Позволяет центрировать текст внутри */
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: auto; 
-  min-width: 120px; /* Даем кнопке четкие границы */
-  
+  min-width: 120px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 20px; 
   padding: 10px 15px; 
   font-size: 11px;
   cursor: pointer; 
-  margin-top: 25px; /* Отступ от блока кнопок Start/Faster/Slower */
   color: rgba(255, 255, 255, 0.4);
   background: transparent; 
   transition: opacity 0.6s ease;
-  position: relative; 
+
+  /* Новое позиционирование */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 110;
 }
-
-
 
     body.is-reading #colorControl { opacity: 0; pointer-events: none; }
 
@@ -204,14 +204,22 @@ body.is-reading .footer-block {
     inputText.value = localStorage.getItem('reading_text') || "";
 
     function updateFontSize(text, el) {
-        const maxWidth = window.innerWidth * 0.85;
-        const maxHeight = window.innerHeight * 0.35;
-        let fontSize = maxWidth / (text.length * 0.6);
-        const absoluteMax = Math.min(window.innerWidth / 4, 85); 
-        if (fontSize > absoluteMax) fontSize = absoluteMax;
-        if (fontSize > maxHeight) fontSize = maxHeight;
-        el.style.fontSize = fontSize + 'px';
+    const maxWidth = window.innerWidth * 0.9; // Оставляем 5% запаса с боков
+    const standardSize = 36; // Ваш идеальный размер для большинства слов
+    
+    el.style.fontSize = standardSize + 'px';
+    
+    // Проверяем, не слишком ли разрослось слово
+    // Создаем временный замер, если слово не влезает в экран
+    let currentWidth = text.length * (standardSize * 0.6); 
+
+    if (currentWidth > maxWidth) {
+        // Уменьшаем шрифт только для этого конкретного длинного слова
+        const reducedSize = (maxWidth / text.length) / 0.6;
+        el.style.fontSize = reducedSize + 'px';
     }
+}
+
 
     function clearOldWord() {
         const oldEl = container.querySelector('.word-active');
