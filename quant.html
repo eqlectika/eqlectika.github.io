@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+  cover">
+  <link rel="manifest" href="manifest.json">
+    <title>Quantum Risk Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #050505; color: #fff; font-family: 'Courier New', Courier, monospace; margin: 0; padding: 0; }
+        
+        /* Header & Logo */
+        header { 
+            display: flex; 
+            align-items: center; 
+            padding: 20px 40px; 
+            background: #0a0a0a; 
+            border-bottom: 1px solid #222; 
+        }
+        .logo-link { display: flex; align-items: center; text-decoration: none; color: inherit; }
+        .logo-link img { height: 40px; margin-right: 20px; border: 1px solid #333; }
+        .header-title { font-size: 1.5em; letter-spacing: 2px; text-transform: uppercase; color: #00ff00; }
+
+        .container { max-width: 900px; margin: 40px auto; padding: 20px; border: 1px solid #222; background: #080808; }
+        
+        .controls { display: flex; justify-content: space-between; margin-bottom: 30px; background: #111; padding: 20px; border: 1px solid #333; }
+        .slider-unit { width: 45%; }
+        .label { color: #888; font-size: 11px; text-transform: uppercase; margin-bottom: 10px; display: block; }
+        
+        input[type="range"] { 
+            width: 100%; -webkit-appearance: none; background: #333; height: 2px; outline: none; 
+        }
+        input[type="range"]::-webkit-slider-thumb { 
+            -webkit-appearance: none; width: 12px; height: 12px; background: #00ff00; border-radius: 50%; cursor: pointer; 
+        }
+
+        .val-display { color: #00ff00; margin-top: 8px; font-size: 0.9em; }
+        .gap-warning { text-align: center; font-size: 1em; color: #ff0055; margin-bottom: 20px; min-height: 1.5em; border: 1px solid #411; padding: 10px; background: rgba(255,0,85,0.05); }
+        
+        canvas { filter: brightness(1.1); }
+        .footer { text-align: center; color: #444; font-size: 0.8em; margin-top: 40px; border-top: 1px solid #222; padding-top: 20px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="index.html" class="logo-link">
+        <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
+        <div class="header-title">Quantum Risk Simulator</div>
+    </a>
+</header>
+
+<div class="container">
+    <div id="gapAlert" class="gap-warning">ANALYZING MARKET VULNERABILITY...</div>
+
+    <div class="controls">
+        <div class="slider-unit">
+            <span class="label">Quantum Breakthrough (Years from now)</span>
+            <input type="range" id="qTime" min="3" max="20" step="1" value="10">
+            <div id="qTimeVal" class="val-display">Target: T + 10 yrs</div>
+        </div>
+        <div class="slider-unit">
+            <span class="label">Migration Response Lag (Years)</span>
+            <input type="range" id="mDelay" min="0" max="8" step="1" value="2">
+            <div id="mDelayVal" class="val-display" style="color:#0088ff">Lag: 2 years</div>
+        </div>
+    </div>
+
+    <canvas id="mainChart"></canvas>
+
+    <div class="footer">
+        <p>Simulation accurate as of January 2026. Keep your distance from unencrypted data.</p>
+    </div>
+</div>
+
+<script>
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    const qIn = document.getElementById('qTime');
+    const mIn = document.getElementById('mDelay');
+
+    let chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 22}, (_, i) => 2026 + i),
+            datasets: [{
+                label: 'Quantum Computational Power (Threat)',
+                borderColor: '#00ff00',
+                backgroundColor: 'rgba(0, 255, 0, 0.03)',
+                data: [],
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: true,
+                tension: 0.3
+            }, {
+                label: 'Market Post-Quantum Resilience',
+                borderColor: '#0088ff',
+                data: [],
+                borderWidth: 2,
+                borderDash: [10, 5],
+                pointRadius: 0,
+                tension: 0.3
+            }]
+        },
+        options: {
+            scales: {
+                y: { display: true, max: 105, min: 0, grid: { color: '#111' }, ticks: { display: false } },
+                x: { grid: { color: '#111' }, ticks: { color: '#444' } }
+            },
+            plugins: { 
+                legend: { position: 'bottom', labels: { color: '#888', font: { family: 'monospace', size: 10 } } }
+            }
+        }
+    });
+
+    function update() {
+        const tBreak = parseInt(qIn.value);
+        const delay = parseInt(mIn.value);
+        
+        const qData = [];
+        const mData = [];
+        let maxGap = 0;
+
+        for (let x = 0; x <= 21; x++) {
+            // Оптимизированная логистическая кривая
+            let qVal = 100 / (1 + Math.exp(-1.2 * (x - tBreak)));
+            let mVal = 100 / (1 + Math.exp(-1.2 * (x - (tBreak + delay))));
+            
+            qData.push(qVal);
+            mData.push(mVal);
+
+            if (qVal - mVal > maxGap) maxGap = qVal - mVal;
+        }
+
+        chart.data.datasets[0].data = qData;
+        chart.data.datasets[1].data = mData;
+        chart.update();
+
+        document.getElementById('qTimeVal').innerText = `Breakthrough: 20${26 + tBreak}`;
+        document.getElementById('mDelayVal').innerText = `Latency: ${delay} years`;
+        
+        const alert = document.getElementById('gapAlert');
+        if (maxGap > 45) {
+            alert.innerText = "CRITICAL VULNERABILITY: SYSTEMIC COLLAPSE LIKELY";
+            alert.style.color = "#ff0055";
+        } else if (maxGap > 20) {
+            alert.innerText = "WARNING: UNSECURED ASSETS AT HIGH RISK";
+            alert.style.color = "#ffaa00";
+        } else {
+            alert.innerText = "STABLE: QUANTUM TRANSITION IN PROGRESS";
+            alert.style.color = "#00ff00";
+        }
+    }
+
+    qIn.oninput = update;
+    mIn.oninput = update;
+    update();
+</script>
+
+</body>
+</html>
