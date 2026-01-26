@@ -2,42 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <link rel="manifest" href="manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
     <title>Quantum Risk Simulator</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background: #050505; color: #fff; font-family: 'Courier New', Courier, monospace; margin: 0; padding: 0; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 0; }
         
-        /* Header & Logo */
-        header { 
-            display: flex; 
-            align-items: center; 
-            padding: 20px 40px; 
-            background: #0a0a0a; 
-            border-bottom: 1px solid #222; 
-        }
-        .logo-link { display: flex; align-items: center; text-decoration: none; color: inherit; }
-        .logo-link img { height: 40px; margin-right: 20px; border: 1px solid #333; }
-        .header-title { font-size: 1.5em; letter-spacing: 2px; text-transform: uppercase; color: #00ff00; }
+        header { padding: 40px 20px; text-align: center; }
+        .logo-link img { height: 50px; margin-bottom: 15px; }
+        .header-title { display: block; font-size: 1.4em; letter-spacing: 4px; text-transform: uppercase; color: #fff; margin-bottom: 10px; }
 
-        .container { max-width: 900px; margin: 40px auto; padding: 20px; border: 1px solid #222; background: #080808; }
+        .container { width: 90%; max-width: 800px; margin: 0 auto; padding: 10px; }
         
-        .controls { display: flex; justify-content: space-between; margin-bottom: 30px; background: #111; padding: 20px; border: 1px solid #333; }
-        .slider-unit { width: 45%; }
-        .label { color: #888; font-size: 11px; text-transform: uppercase; margin-bottom: 10px; display: block; }
-        
-        input[type="range"] { 
-            width: 100%; -webkit-appearance: none; background: #333; height: 2px; outline: none; 
-        }
-        input[type="range"]::-webkit-slider-thumb { 
-            -webkit-appearance: none; width: 12px; height: 12px; background: #00ff00; border-radius: 50%; cursor: pointer; 
+        .controls { display: flex; flex-direction: column; gap: 40px; margin: 40px 0; }
+
+        @media (min-width: 600px) {
+            .controls { flex-direction: row; justify-content: space-between; }
+            .slider-unit { width: 45%; }
         }
 
-        .val-display { color: #00ff00; margin-top: 8px; font-size: 0.9em; }
-        .gap-warning { text-align: center; font-size: 1em; color: #ff0055; margin-bottom: 20px; min-height: 1.5em; border: 1px solid #411; padding: 10px; background: rgba(255,0,85,0.05); }
+        /* Detail/Summary Styling */
+        details { margin-top: 10px; cursor: pointer; border-top: 1px solid #111; padding-top: 8px; }
+        summary { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #333; list-style: none; transition: color 0.3s; outline: none; }
+        summary:hover { color: #888; }
+        summary::-webkit-details-marker { display: none; }
+        .details-content { font-size: 11px; color: #555; line-height: 1.6; padding-top: 8px; font-family: monospace; }
+
+        .label { color: #555; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; display: block; }
+        input[type="range"] { width: 100%; -webkit-appearance: none; background: #222; height: 1px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #00ff00; border-radius: 50%; cursor: pointer; }
+
+        .val-display { color: #00ff00; margin-top: 10px; font-family: monospace; font-size: 13px; }
+        .gap-warning { text-align: center; font-size: 11px; letter-spacing: 2px; margin-bottom: 30px; font-weight: bold; min-height: 1.5em; }
         
-        canvas { filter: brightness(1.1); }
-        .footer { text-align: center; color: #444; font-size: 0.8em; margin-top: 40px; border-top: 1px solid #222; padding-top: 20px; }
+        canvas { max-width: 100% !important; height: auto !important; margin-bottom: 20px; }
+        .footer { text-align: center; color: #222; font-size: 9px; margin-top: 60px; padding-bottom: 40px; }
     </style>
 </head>
 <body>
@@ -45,30 +45,58 @@
 <header>
     <a href="index.html" class="logo-link">
         <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
-        <div class="header-title">Quantum Risk Simulator</div>
+        <span class="header-title">Quantum Risk Simulator</span>
     </a>
+    <div style="max-width: 600px; margin: 0 auto;">
+        <details>
+            <summary>Platform Overview</summary>
+            <div class="details-content">
+                A probabilistic model designed to visualize the systemic gap between quantum cryptanalysis development and market-wide post-quantum migration.
+            </div>
+        </details>
+    </div>
 </header>
 
 <div class="container">
-    <div id="gapAlert" class="gap-warning">ANALYZING MARKET VULNERABILITY...</div>
+    <div id="gapAlert" class="gap-warning">SYSTEM ONLINE</div>
 
     <div class="controls">
         <div class="slider-unit">
-            <span class="label">Quantum Breakthrough (Years from now)</span>
-            <input type="range" id="qTime" min="3" max="20" step="1" value="10">
-            <div id="qTimeVal" class="val-display">Target: T + 10 yrs</div>
+            <span class="label">Breakthrough Horizon</span>
+            <input type="range" id="qTime" min="3" max="25" step="1" value="12">
+            <div id="qTimeVal" class="val-display">Target: 2038</div>
+            <details>
+                <summary>Parameter Info</summary>
+                <div class="details-content">
+                    <strong>Variable Logic:</strong> Estimated year when a Cryptographically Relevant Quantum Computer (CRQC) achieves the capacity to compromise ECDSA-256 via Shor's algorithm. This is the "T-Zero" event where current public-key infrastructure is mathematically compromised.
+                </div>
+            </details>
         </div>
         <div class="slider-unit">
-            <span class="label">Migration Response Lag (Years)</span>
-            <input type="range" id="mDelay" min="0" max="8" step="1" value="2">
-            <div id="mDelayVal" class="val-display" style="color:#0088ff">Lag: 2 years</div>
+            <span class="label">Adaptation Latency</span>
+            <input type="range" id="mDelay" min="0" max="10" step="1" value="3">
+            <div id="mDelayVal" class="val-display" style="color:#0088ff">Lag: 3 years</div>
+            <details>
+                <summary>Parameter Info</summary>
+                <div class="details-content">
+                    <strong>Market Inertia:</strong> The duration between the initial quantum threat manifestation and the achievement of critical mass in post-quantum migration. High latency indicates a slow institutional response, leading to a wider "Vulnerability Gap."
+                </div>
+            </details>
         </div>
     </div>
 
     <canvas id="mainChart"></canvas>
+    
+    <details style="text-align: center;">
+        <summary>Visual Data Legend</summary>
+        <div class="details-content">
+            Solid line (Green): Quantum computational advantage progression.<br>
+            Dashed line (Blue): Global institutional resilience and PQC adoption rate.
+        </div>
+    </details>
 
     <div class="footer">
-        <p>Simulation accurate as of January 2026. Keep your distance from unencrypted data.</p>
+        Simulation model accurate as of Jan 2026. Keep your distance from unencrypted data.
     </div>
 </div>
 
@@ -80,53 +108,35 @@
     let chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: Array.from({length: 22}, (_, i) => 2026 + i),
+            labels: Array.from({length: 25}, (_, i) => 2026 + i),
             datasets: [{
-                label: 'Quantum Computational Power (Threat)',
-                borderColor: '#00ff00',
-                backgroundColor: 'rgba(0, 255, 0, 0.03)',
-                data: [],
-                borderWidth: 2,
-                pointRadius: 0,
-                fill: true,
-                tension: 0.3
+                label: 'Threat', borderColor: '#00ff00', data: [], borderWidth: 1.5, pointRadius: 0, tension: 0.4
             }, {
-                label: 'Market Post-Quantum Resilience',
-                borderColor: '#0088ff',
-                data: [],
-                borderWidth: 2,
-                borderDash: [10, 5],
-                pointRadius: 0,
-                tension: 0.3
+                label: 'Resilience', borderColor: '#0088ff', data: [], borderWidth: 1.5, borderDash: [5, 5], pointRadius: 0, tension: 0.4
             }]
         },
         options: {
+            responsive: true,
             scales: {
-                y: { display: true, max: 105, min: 0, grid: { color: '#111' }, ticks: { display: false } },
-                x: { grid: { color: '#111' }, ticks: { color: '#444' } }
+                y: { display: false, max: 100, min: 0 },
+                x: { grid: { display: false }, ticks: { color: '#333', font: { size: 10 } } }
             },
-            plugins: { 
-                legend: { position: 'bottom', labels: { color: '#888', font: { family: 'monospace', size: 10 } } }
-            }
+            plugins: { legend: { display: false } }
         }
     });
 
     function update() {
         const tBreak = parseInt(qIn.value);
         const delay = parseInt(mIn.value);
-        
         const qData = [];
         const mData = [];
         let maxGap = 0;
 
-        for (let x = 0; x <= 21; x++) {
-            // Оптимизированная логистическая кривая
-            let qVal = 100 / (1 + Math.exp(-1.2 * (x - tBreak)));
-            let mVal = 100 / (1 + Math.exp(-1.2 * (x - (tBreak + delay))));
-            
+        for (let x = 0; x < 25; x++) {
+            let qVal = 100 / (1 + Math.exp(-0.85 * (x - tBreak)));
+            let mVal = 100 / (1 + Math.exp(-0.85 * (x - (tBreak + delay))));
             qData.push(qVal);
             mData.push(mVal);
-
             if (qVal - mVal > maxGap) maxGap = qVal - mVal;
         }
 
@@ -134,26 +144,18 @@
         chart.data.datasets[1].data = mData;
         chart.update();
 
-        document.getElementById('qTimeVal').innerText = `Breakthrough: 20${26 + tBreak}`;
-        document.getElementById('mDelayVal').innerText = `Latency: ${delay} years`;
+        document.getElementById('qTimeVal').innerText = `Target: ${2026 + tBreak}`;
+        document.getElementById('mDelayVal').innerText = `Lag: ${delay} YR`;
         
         const alert = document.getElementById('gapAlert');
-        if (maxGap > 45) {
-            alert.innerText = "CRITICAL VULNERABILITY: SYSTEMIC COLLAPSE LIKELY";
-            alert.style.color = "#ff0055";
-        } else if (maxGap > 20) {
-            alert.innerText = "WARNING: UNSECURED ASSETS AT HIGH RISK";
-            alert.style.color = "#ffaa00";
-        } else {
-            alert.innerText = "STABLE: QUANTUM TRANSITION IN PROGRESS";
-            alert.style.color = "#00ff00";
-        }
+        alert.innerText = maxGap > 40 ? "CRITICAL VULNERABILITY" : (maxGap > 15 ? "ELEVATED RISK" : "STABLE TRANSITION");
+        alert.style.color = maxGap > 40 ? "#ff0055" : (maxGap > 15 ? "#ffaa00" : "#00ff00");
     }
 
     qIn.oninput = update;
     mIn.oninput = update;
     update();
 </script>
-
 </body>
+</html>
 </html>
