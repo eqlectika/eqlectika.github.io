@@ -1,4 +1,4 @@
-const CACHE_NAME = 'polarity-sanctuary-v25';
+const CACHE_NAME = 'polarity-sanctuary-v26';
 
 const ASSETS = [
   './beta.html',
@@ -23,10 +23,12 @@ const ASSETS = [
   './manifestflash.json',
   './icon-192x192.png', 
   './icon-512x512.png', 
+  './quant.html',
   
   'https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
-  'https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js'
+  'https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js',
+  'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 
 self.addEventListener('install', (event) => {
