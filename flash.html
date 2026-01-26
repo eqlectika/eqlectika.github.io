@@ -7,11 +7,19 @@
   <title>Fast Reading Converter</title>
   <style>
     html, body {
-      overscroll-behavior: none; height: 100dvh; margin: 0; padding: 0;
-      background-color: #000000; color: #fff; font-family: Arial, sans-serif;
-      display: flex; flex-direction: column; overflow: hidden;
-      -webkit-user-select: none; user-select: none;
-    }
+  overscroll-behavior: none; height: 100dvh; margin: 0; padding: 0;
+  background-color: #000000; color: #fff; font-family: Arial, sans-serif;
+  overflow: hidden; /* Убрали display: flex */
+  -webkit-user-select: none; user-select: none;
+}
+
+#container {
+  position: fixed; /* Теперь это просто холст на весь экран */
+  top: 0; left: 0; width: 100%; height: 100%;
+  display: flex; justify-content: center; align-items: center;
+  z-index: 10;
+}
+
 
     #inputContainer { 
       flex-shrink: 0; padding: 40px 5px 10px; 
@@ -23,12 +31,6 @@
       width: 85%; max-width: 600px; padding: 10px 14px; background: rgba(255,255,255,0.05); 
       color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 0px; font-size: 16px; 
       outline: none; box-sizing: border-box;
-    }
-
-    #container {
-      flex: 1 1 auto; min-height: 0; display: flex; 
-      justify-content: center; align-items: center;
-      position: relative; width: 100%;
     }
 
     /* Тот самый "Щит" для клика во время чтения */
@@ -49,23 +51,60 @@ body.is-reading .footer-block {
     perspective: 1000px; /* Для плавности анимаций */
 }
 
+/* Убираем все старые правила для .footer-block и заменяем этим */
+.footer-block { 
+  flex-shrink: 0; 
+  z-index: 100;
+  width: 100%;
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  justify-content: flex-end;
+  /* Фиксируем позицию в самом низу, чтобы не мешать центру */
+  position: absolute;
+  bottom: 0;
+  padding-bottom: calc(env(safe-area-inset-bottom, 15px) + 20px);
+  pointer-events: none; /* Пропускаем клики сквозь фон футера */
+}
+
+/* Возвращаем кликабельность только самим кнопкам */
+.footer-block > *, #mainButtons > button {
+  pointer-events: auto;
+}
+
+/* Стабилизируем высоту для кнопок, чтобы они не дергались при паузе */
+#mainButtons {
+  min-height: 45px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Слово остается в абсолютном центре экрана */
 .word-layer {
-  /* Фиксируем относительно экрана, а не контейнера */
   position: fixed; 
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  
   text-align: center;
   font-weight: 700;
   white-space: nowrap;
   width: 90%;
   z-index: 60;
   pointer-events: none;
-  
-  /* Плавность переходов */
   transition: all 0.28s cubic-bezier(0.23, 1, 0.32, 1);
 }
+
+
+/* Запрещаем футеру менять размер и влиять на геометрию */
+body.is-reading .footer-block {
+  height: 140px; /* Фиксированная высота предотвращает "скачок" */
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end; /* Кнопки всегда прижаты к низу */
+}
+
 
 
     .word-enter { opacity: 0; transform: translate(-50%, -50%) scale(1.3); filter: blur(12px); }
@@ -84,16 +123,6 @@ body.is-reading .footer-block {
       position: relative; z-index: 110;
     }
 
-.footer-block { 
-  flex-shrink: 0; 
-  z-index: 100;
-  padding-bottom: calc(env(safe-area-inset-bottom, 15px) + 20px); 
-  width: 100%;
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; /* Центрирует всё содержимое по горизонтали */
-  justify-content: center;
-}
 
 #colorControl {
   display: inline-flex; /* Позволяет центрировать текст внутри */
