@@ -85,11 +85,13 @@
   <div class="donate-box">
     <button class="donate-btn" onclick="toggleDonate()">Support</button>
     <div id="cryptoInfo" class="crypto-info">
-      <span style="font-size: 10px; color: var(--light-gray);">Tron (TRC20)</span>
+      <span style="font-size: 10px; color: var(--light-gray); margin-bottom: 4px;">Network: Tron (TRC20)</span>
       <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">TBL5FqL1zSGdP9k6nGkakxmPM26ttcJ496</div>
+      <span id="copyHint" style="font-size: 9px; color: #666; margin-top: 4px;">Click address to copy</span>
     </div>
   </div>
 </footer>
+
 
 <script>
   const rows = ['time', 'breath', 'pulse', 'emotion', 'dopamine', 'load', 'tension', 'energy', 'focus', 'creativity', 'vision', 'hearing', 'smell', 'boomerang'];
@@ -156,20 +158,24 @@
 
   function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = (info.style.display === "flex") ? "none" : "flex"; }
 
-function copyToClipboard() { 
-  const addr = document.getElementById("cryptoAddr"); 
-  const text = addr.innerText; 
+function copyToClipboard() {
+  const addr = document.getElementById("cryptoAddr");
+  const hint = document.getElementById("copyHint");
+  const text = addr.innerText;
   
-  navigator.clipboard.writeText(text).then(() => { 
-    addr.innerText = "Copied!"; 
-    addr.style.color = "#00ff00"; // Здесь вы задаете цвет (например, зеленый)
+  navigator.clipboard.writeText(text).then(() => {
+    addr.innerText = "Copied!";
+    addr.style.color = "var(--creativity-color)"; // Текст становится зеленым
+    if (hint) hint.innerText = "Address saved to clipboard";
 
-    setTimeout(() => { 
-      addr.innerText = text; 
-      addr.style.color = "#fff"; // Возврат к исходному белому цвету
-    }, 1500); 
-  }); 
+    setTimeout(() => {
+      addr.innerText = text;
+      addr.style.color = "#fff"; // Возврат к белому
+      if (hint) hint.innerText = "Click address to copy";
+    }, 1500);
+  });
 }
+
 
   function saveToStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ labels: chart.data.labels, data: chart.data.datasets.map(ds => ds.data) })); }
   function loadFromStorage() { const saved = localStorage.getItem(STORAGE_KEY); if (!saved) return; try { const { labels, data } = JSON.parse(saved); chart.data.labels = labels; data.forEach((d, i) => { if(chart.data.datasets[i]) chart.data.datasets[i].data = d; }); chart.update(); updateRiskIndicator(); } catch(e) {} }
