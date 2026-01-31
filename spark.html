@@ -13,6 +13,7 @@
       --dopamine-color: #ff00ff; --boomerang-color: #ff4500; --load-color: #adff2f;
       --tension-color: #cccccc; --light-gray: #aaaaaa;
     }
+    
     body { background: var(--bg-color); color: #fff; font-family: var(--main-font); padding: 20px; margin: 0; display: flex; flex-direction: column; min-height: 100vh; user-select: none; }
     .header-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
     .logo-image { max-width: 48px; opacity: 0.9; }
@@ -26,6 +27,13 @@
     #risk-container { margin-top: 20px; border: 1px solid #333; padding: 15px; }
     .buttons { margin-top: 20px; display: flex; gap: 10px; }
     button.ui-btn { background: #111; color: var(--light-gray); border: 1px solid #444; padding: 8px 12px; font-family: var(--main-font); cursor: pointer; font-size: 11px; }
+    
+    #savedDataView { 
+      background: #0a0a0a; color: var(--creativity-color); padding: 15px; font-size: 11px; 
+      border: 1px solid #222; margin-top: 10px; max-height: 300px; overflow-y: auto; 
+      white-space: pre-wrap; font-family: var(--main-font); display: none;
+    }
+
     footer { margin-top: auto; padding: 40px 0 20px; }
     .donate-box { display: flex; flex-direction: column; gap: 10px; }
     .donate-btn { color: var(--light-gray); border: 1px solid var(--light-gray); padding: 5px 15px; background: transparent; cursor: pointer; font-family: var(--main-font); width: fit-content; transition: 0.3s; }
@@ -43,21 +51,26 @@
   <div><h2 style="margin: 0;">Vital Spark</h2><p style="margin: 4px 0 0;">Personal state protocol</p></div>
 </div>
 
-</div>
-
 <details class="protocol-details">
   <summary>Help mindset [?]</summary>
   <div class="protocol-content">
     <p>The essence is not to avoid or adapt, but to master the psyche: resolve the triggers to the core, again and again — perhaps, many times over.</p>
-    <p><strong>The Boomerang Logic:</strong> Analyzing triggers during madness is a nonsense paradox. Any impulsive intervention in the storm will inevitably return as a blow. In the tempest — follow only the protocol.</p>
+    <p><strong>The Boomerang Logic:</strong></p>
+    <ul style="list-style: none; padding-left: 0; font-size: 11px; color: #aaa;">
+      <li style="margin-bottom: 8px;"><strong>Impact</strong> - Blind impulse. A strike aimed at the void that inevitably hits back.</li>
+      <li style="margin-bottom: 8px;"><strong>Magnetism</strong> - False patterns. When systemic noise begins to masquerade as logic.</li>
+      <li style="margin-bottom: 8px;"><strong>Gravity</strong> - Grounding. Recognizing the heavy weight of hidden risks and total supply.</li>
+      <li style="margin-bottom: 8px;"><strong>Cooling</strong> - Intellectual ice. The emotional charge is gone; only the anatomy of facts remains.</li>
+      <li style="margin-bottom: 8px;"><strong>Ejection</strong> - Absolute exit. You are no longer part of the equation. Action is effortless or unnecessary.</li>
+    </ul>
+    <p style="margin-top: 15px; border-top: 1px solid #222; padding-top: 10px; font-style: italic;">In the tempest — follow only the protocol.</p>
   </div>
 </details>
-
 
 <div class="select-container">
   <div class="select-group"><label for="time" style="color: var(--time-color);">Timeframe</label><select id="time" onchange="log('time')"><option selected disabled>—</option><option value="1">Minute</option><option value="2">Hour</option><option value="3">Day</option><option value="4">Week</option><option value="5">Month</option></select></div>
   <div class="select-group"><label for="breath" style="color: var(--breath-color);">Breathing</label><select id="breath" onchange="log('breath')"><option selected disabled>—</option><option value="1">Mouth in/out</option><option value="2">Mouth in, nose out</option><option value="3">Sensing...</option><option value="4">Nose in/out</option><option value="5">Nose in, mouth out</option></select></div>
-  <div class="select-group"><label for="pulse" style="color: var(--pulse-color);">Pulse</label><select id="pulse" onchange="log('pulse')"><option selected disabled>—</option><option value="1">< 60</option><option value="2">60-80</option><option value="3">80-100</option><option value="4">100-120</option><option value="5">> 120</option></select></div>
+  <div class="select-group"><label for="pulse" style="color: var(--pulse-color);">Pulse</label><select id="pulse" onchange="log('pulse')"><option selected disabled>—</option><option value="1">&lt; 60</option><option value="2">60-80</option><option value="3">80-100</option><option value="4">100-120</option><option value="5">&gt; 120</option></select></div>
   <div class="select-group"><label for="emotion" style="color: var(--emotion-color);">Emotions</label><select id="emotion" onchange="log('emotion')"><option selected disabled>—</option><option value="1">Anxiety</option><option value="2">Harmony</option><option value="3">Calmness</option><option value="4">Joy</option><option value="5">Serenity</option></select></div>
   <div class="select-group"><label for="dopamine" style="color: var(--dopamine-color);">Anticipation</label><select id="dopamine" onchange="log('dopamine')"><option selected disabled>—</option><option value="1">Urgency</option><option value="2">Excited</option><option value="3">Neutral</option><option value="4">Patient</option><option value="5">Stoic</option></select></div>
   <div class="select-group"><label for="load" style="color: var(--load-color);">Cognitive Load</label><select id="load" onchange="log('load')"><option selected disabled>—</option><option value="1">Overloaded</option><option value="2">Tired</option><option value="3">Stable</option><option value="4">Fresh</option><option value="5">Hyper-aware</option></select></div>
@@ -76,15 +89,15 @@
 <div id="risk-container">
   <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;"><span>State Index (Rq)</span><span id="risk-value">0.00</span></div>
   <div style="width: 100%; background: #111; height: 8px; border-radius: 4px; overflow: hidden;"><div id="risk-bar" style="width: 0%; height: 100%; background: #ff5252; transition: 0.5s;"></div></div>
- <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 5px; color: #333;"><span id="unreal-indicator">Unreal ←</span><span id="real-indicator">→ Real</span></div>
-   <p id="risk-advice" style="font-size: 10px; color: #666; margin-top: 8px; font-style: italic;">Calibrate metrics...</p>
+  <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 5px; color: #333;"><span id="unreal-indicator">Unreal ←</span><span id="real-indicator">→ Real</span></div>
+  <p id="risk-advice" style="font-size: 10px; color: #666; margin-top: 8px; font-style: italic;">Calibrate metrics...</p>
 </div>
 
 <div class="buttons">
   <button class="ui-btn" onclick="toggleData()">Archive</button>
   <button class="ui-btn" onclick="if(confirm('Reset?')) { localStorage.clear(); location.reload(); }">Reset</button>
 </div>
-<pre id="savedDataView" style="display:none"></pre>
+<pre id="savedDataView"></pre>
 
 <footer>
   <div class="donate-box">
@@ -96,7 +109,6 @@
     </div>
   </div>
 </footer>
-
 
 <script>
   const rows = ['time', 'breath', 'pulse', 'emotion', 'dopamine', 'load', 'tension', 'energy', 'focus', 'creativity', 'vision', 'hearing', 'smell', 'boomerang'];
@@ -130,64 +142,107 @@
   }
 
   function calculateRiskQuine() {
-    const data = chart.data.datasets; const lastIdx = chart.data.labels.length - 1;
-    if (lastIdx < 0) return 0;
-    const vals = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map(i => data[i]?.data[lastIdx]).filter(v => v != null);
-    if (vals.length === 0) return 0;
+    const data = chart.data.datasets; 
+    const lastIdx = chart.data.labels.length - 1;
+    if (lastIdx < 0) return "0.00";
+    const vals = data.map(ds => ds.data[lastIdx]).filter(v => v != null);
+    if (vals.length === 0) return "0.00";
     const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
     return Math.min(avg / 5, 1).toFixed(2);
   }
 
-    function updateRiskIndicator() {
+  function updateRiskIndicator() {
     const score = calculateRiskQuine();
     const bar = document.getElementById('risk-bar');
     const advice = document.getElementById('risk-advice');
     
     document.getElementById('risk-value').innerText = score;
     bar.style.width = (score * 100) + '%';
-document.getElementById('unreal-indicator').style.color = (score > 0 && score < 0.45) ? '#ff1493' : '#333';
-document.getElementById('real-indicator').style.color = (score >= 0.75) ? '#00ff00' : '#333';
+    
+    document.getElementById('unreal-indicator').style.color = (score > 0 && score < 0.45) ? '#ff1493' : '#333';
+    document.getElementById('real-indicator').style.color = (score >= 0.75) ? '#00ff00' : '#333';
 
     if (score < 0.45) { 
       bar.style.background = '#ff1493'; 
-      advice.innerText = "Systemic noise is too high. Maintain total distance or initiate a fresh calibration."; 
+      advice.innerText = "Systemic noise - High. Maintain total distance or initiate a fresh calibration."; 
     }
     else if (score < 0.75) { 
       bar.style.background = '#ff9800'; 
-      advice.innerText = "Surface calm only. De-escalate your involvement and lower the stakes."; 
+      advice.innerText = "Surface calm - De-escalate your involvement and lower the stakes."; 
     }
     else { 
       bar.style.background = '#00ff00'; 
-      advice.innerText = "Clarity is absolute. Your focus is sharp; proceed with effortless intent."; 
+      advice.innerText = "Clarity - Absolute. Your focus is sharp; proceed with effortless intent."; 
     }
   }
 
-
   function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = (info.style.display === "flex") ? "none" : "flex"; }
 
-function copyToClipboard() {
-  const addr = document.getElementById("cryptoAddr");
-  const hint = document.getElementById("copyHint");
-  const text = addr.innerText;
-  
-  navigator.clipboard.writeText(text).then(() => {
-    addr.innerText = "Copied!";
-    addr.style.color = "var(--creativity-color)"; // Текст становится зеленым
-    if (hint) hint.innerText = "Address saved to clipboard";
+  function copyToClipboard() {
+    const addr = document.getElementById("cryptoAddr");
+    const hint = document.getElementById("copyHint");
+    const text = addr.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      addr.innerText = "Copied!";
+      addr.style.color = "var(--creativity-color)";
+      if (hint) hint.innerText = "Address saved to clipboard";
+      setTimeout(() => {
+        addr.innerText = text;
+        addr.style.color = "#fff";
+        if (hint) hint.innerText = "Click address to copy";
+      }, 1500);
+    });
+  }
 
-    setTimeout(() => {
-      addr.innerText = text;
-      addr.style.color = "#fff"; // Возврат к белому
-      if (hint) hint.innerText = "Click address to copy";
-    }, 1500);
+  function saveToStorage() {
+    const score = calculateRiskQuine();
+    let verdict = "";
+    if (score < 0.45) verdict = "SYSTEMIC NOISE - High. Distance mandatory.";
+    else if (score < 0.75) verdict = "SURFACE CALM - De-escalate involvement.";
+    else verdict = "CLARITY - Absolute. Effortless intent.";
+
+    const logEntry = {
+      timestamp: new Date().toLocaleString('en-GB'),
+      score: score,
+      verdict: verdict,
+      labels: chart.data.labels,
+      data: chart.data.datasets.map(ds => ds.data)
+    };
+
+    let history = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (!Array.isArray(history)) history = [];
+    history.push(logEntry);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  }
+
+  function loadFromStorage() { 
+    const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (history.length === 0) return;
+    const last = history[history.length - 1];
+    try { 
+      chart.data.labels = last.labels || []; 
+      last.data.forEach((d, i) => { if(chart.data.datasets[i]) chart.data.datasets[i].data = d; }); 
+      chart.update(); 
+    } catch(e) {} 
+  }
+
+  function toggleData() {
+    const pre = document.getElementById("savedDataView");
+    if (pre.style.display === "none" || pre.style.display === "") {
+      const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      pre.textContent = history.slice().reverse().map(entry => 
+        `[${entry.timestamp}] Rq: ${entry.score}\nVerdict: ${entry.verdict}\n---`
+      ).join('\n');
+      pre.style.display = "block";
+    } else {
+      pre.style.display = "none";
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    loadFromStorage();
+    setTimeout(updateRiskIndicator, 100);
   });
-}
-
-
-  function saveToStorage() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ labels: chart.data.labels, data: chart.data.datasets.map(ds => ds.data) })); }
-  function loadFromStorage() { const saved = localStorage.getItem(STORAGE_KEY); if (!saved) return; try { const { labels, data } = JSON.parse(saved); chart.data.labels = labels; data.forEach((d, i) => { if(chart.data.datasets[i]) chart.data.datasets[i].data = d; }); chart.update(); updateRiskIndicator(); } catch(e) {} }
-  function toggleData() { const pre = document.getElementById("savedDataView"); pre.style.display = pre.style.display === "none" ? "block" : "none"; pre.textContent = JSON.stringify(JSON.parse(localStorage.getItem(STORAGE_KEY)), null, 2); }
-  window.addEventListener("DOMContentLoaded", loadFromStorage);
 </script>
 </body>
 </html>
