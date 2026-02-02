@@ -246,6 +246,96 @@
     loadFromStorage();
     setTimeout(updateRiskIndicator, 100);
   });
+
+/* Обновленная магия кликабельных слов */
+document.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('magic-word')) {
+    const word = e.target.innerText.toLowerCase().replace(/[^\w]/g, '');
+    
+    // Вместо alert создаем стильный тултип
+    showMagicTooltip(e, `Definition for "${word}" will appear here.`);
+  } else {
+    // Убираем окно при клике в любое другое место
+    const oldTip = document.querySelector('.magic-tooltip');
+    if (oldTip) oldTip.remove();
+  }
+});
+
+function showMagicTooltip(event, text) {
+  const oldTip = document.querySelector('.magic-tooltip');
+  if (oldTip) oldTip.remove();
+
+  const tip = document.createElement('div');
+  tip.className = 'magic-tooltip';
+  tip.innerText = text;
+
+  // Стили, соответствующие вашему темному неоновому интерфейсу
+  Object.assign(tip.style, {
+    position: 'fixed',
+    top: `${event.clientY + 15}px`,
+    left: `${event.clientX}px`,
+    background: '#0a0a0a',
+    color: 'var(--creativity-color)',
+    padding: '10px 15px',
+    border: '1px solid #333',
+    fontSize: '11px',
+    zIndex: '10000',
+    pointerEvents: 'none',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+    fontFamily: 'var(--main-font)'
+  });
+
+  document.body.appendChild(tip);
+  
+  // Автоматическое исчезновение через 4 секунды
+  setTimeout(() => { if(tip) tip.remove(); }, 4000);
+}
+
+
+/* Магия кликабельных слов */
+const dictionaryUrl = 'lexicon.json'; // Тот самый внешний адрес
+
+function enchantText(selector) {
+  const element = document.querySelector(selector);
+  if (!element) return;
+
+  // Рекурсивно проходим по текстовым узлам, чтобы не сломать HTML-теги
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+  let node;
+  const nodesToReplace = [];
+
+  while (node = walker.nextNode()) {
+    if (node.parentElement.tagName !== 'SCRIPT' && node.textContent.trim().length > 0) {
+      nodesToReplace.push(node);
+    }
+  }
+
+  nodesToReplace.forEach(textNode => {
+    const wrapper = document.createElement('span');
+    wrapper.innerHTML = textNode.textContent.replace(/(\w+)/g, '<span class="magic-word" style="cursor: pointer; border-bottom: 1px dotted #444;">$1</span>');
+    textNode.parentNode.replaceChild(wrapper, textNode);
+  });
+}
+
+document.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('magic-word')) {
+    const word = e.target.innerText.toLowerCase();
+    
+    // Имитация обращения к JSON/PY
+    // const response = await fetch(`${dictionaryUrl}?word=${word}`);
+    // const data = await response.json();
+    
+    alert(`Значение "${word}": Здесь будет ответ из вашего JSON`); 
+    // В будущем заменим alert на стильное всплывающее окно
+  }
+});
+
+// Активация магии
+window.addEventListener("DOMContentLoaded", () => {
+  enchantText('.protocol-content');
+});
+
+
 </script>
 </body>
 </html>
