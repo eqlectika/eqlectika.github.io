@@ -1,3 +1,4 @@
+Отлично. Можем ли мы теперь реализовать эту идею для загружаемого в reader текста?
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,6 +28,13 @@
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
     }
+
+.clickable-word {
+  transition: color 0.3s ease;
+  cursor: pointer;
+  display: inline-block; /* Помогает избежать проблем с кликами на мобильных */
+}
+
 
     h1 {
       color: #fff;
@@ -283,9 +291,20 @@
                 contentDiv.innerHTML += `<div class="section-title">${sectionTitle}</div>`;
               }
 
-              section.querySelectorAll("p").forEach(paragraph => {
-                contentDiv.innerHTML += `<div class="paragraph">${paragraph.textContent}</div>`;
-              });
+section.querySelectorAll("p").forEach(paragraph => {
+  const pDiv = document.createElement('div');
+  pDiv.className = 'paragraph';
+  
+  // Разбиваем текст параграфа на слова и оборачиваем их
+  pDiv.innerHTML = paragraph.textContent.split(/(\s+)/).map(part => {
+    if (part.trim().length === 0) return part; // Возвращаем пробелы как есть
+    return `<span class="clickable-word">${part}</span>`;
+  }).join('');
+  
+  contentDiv.appendChild(pDiv);
+});
+
+
             });
           } else {
             contentDiv.innerHTML = "Не удалось найти содержимое книги.";
@@ -326,7 +345,26 @@
         if (!fontSelectMenu.contains(event.target) && !changeFontButton.contains(event.target)) {
             fontSelectMenu.style.display = 'none';
         }
-    });
+    }); 
+
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('clickable-word')) {
+    e.preventDefault();
+    
+    // Определяем целевой цвет: ваш зеленый из предыдущего проекта или стандартный
+    const targetGreen = '#00ff00'; 
+    const currentStyle = window.getComputedStyle(e.target).color;
+    
+    // Переключение: Белый (или серый) <-> Зеленый
+    // Браузер часто возвращает цвет в формате rgb
+    if (e.target.style.color === 'rgb(0, 255, 0)' || e.target.style.color === targetGreen) {
+      e.target.style.color = ''; // Возвращает к цвету из CSS (.paragraph { color: #ddd; })
+    } else {
+      e.target.style.color = targetGreen;
+    }
+  }
+}, true);
+
 
   </script>
 
