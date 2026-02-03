@@ -31,8 +31,14 @@
 .clickable-word {
   transition: color 0.3s ease;
   cursor: pointer;
-  display: inline-block; /* Помогает избежать проблем с кликами на мобильных */
+  display: inline-block;
+  /* Новые свойства: */
+  -webkit-touch-callout: none; 
+  -webkit-user-select: none;   
+  user-select: none;
+  touch-action: manipulation;  
 }
+
 
 
     h1 {
@@ -336,33 +342,50 @@ section.querySelectorAll("p").forEach(paragraph => {
       });
     });
 
-    // 6. Скрываем оба меню при клике вне них
-    document.addEventListener('click', function(event) {
-        if (!leftMenuSelectMenu.contains(event.target) && !loadFileButton.contains(event.target)) {
+    // 6. Скрытие меню и логика кликов по словам
+    const GREEN = 'rgb(0, 255, 0)';
+    const GOLD = 'rgb(255, 215, 0)';
+    let pressTimer;
+
+    document.addEventListener('pointerdown', function(e) {
+        // Скрытие меню при клике вне
+        if (!leftMenuSelectMenu.contains(e.target) && !loadFileButton.contains(e.target)) {
             leftMenuSelectMenu.style.display = 'none';
         }
-        if (!fontSelectMenu.contains(event.target) && !changeFontButton.contains(event.target)) {
+        if (!fontSelectMenu.contains(e.target) && !changeFontButton.contains(e.target)) {
             fontSelectMenu.style.display = 'none';
         }
-    }); 
 
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('clickable-word')) {
-    e.preventDefault();
-    
-    // Определяем целевой цвет: ваш зеленый из предыдущего проекта или стандартный
-    const targetGreen = '#00ff00'; 
-    const currentStyle = window.getComputedStyle(e.target).color;
-    
-    // Переключение: Белый (или серый) <-> Зеленый
-    // Браузер часто возвращает цвет в формате rgb
-    if (e.target.style.color === 'rgb(0, 255, 0)' || e.target.style.color === targetGreen) {
-      e.target.style.color = ''; // Возвращает к цвету из CSS (.paragraph { color: #ddd; })
-    } else {
-      e.target.style.color = targetGreen;
+        // Логика слов: начало нажатия
+        if (e.target.classList.contains('clickable-word')) {
+            pressTimer = setTimeout(() => {
+                toggleWordColor(e.target, GOLD);
+                pressTimer = null;
+            }, 400); // Время удержания для золотого цвета
+        }
+    }, true);
+
+    document.addEventListener('pointerup', function(e) {
+        if (e.target.classList.contains('clickable-word') && pressTimer) {
+            clearTimeout(pressTimer);
+            toggleWordColor(e.target, GREEN);
+            pressTimer = null;
+        }
+    }, true);
+
+    document.addEventListener('pointercancel', () => {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+    });
+
+    function toggleWordColor(element, targetColor) {
+        if (element.style.color === targetColor) {
+            element.style.color = ''; 
+        } else {
+            element.style.color = targetColor;
+        }
     }
-  }
-}, true);
+
 
 
   </script>
