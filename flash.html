@@ -7,116 +7,80 @@
   <title>Fast Reading Converter</title>
   <style>
     html, body {
-  overscroll-behavior: none; height: 100dvh; margin: 0; padding: 0;
-  background-color: #000000; color: #fff; font-family: Arial, sans-serif;
-  overflow: hidden; /* Убрали display: flex */
-  -webkit-user-select: none; user-select: none;
-}
+      overscroll-behavior: none; height: 100dvh; margin: 0; padding: 0;
+      background-color: #000000; color: #fff; font-family: Arial, sans-serif;
+      overflow: hidden;
+      -webkit-user-select: none; user-select: none;
+    }
 
-#container {
-  position: fixed; /* Теперь это просто холст на весь экран */
-  top: 0; left: 0; width: 100%; height: 100%;
-  display: flex; justify-content: center; align-items: center;
-  z-index: 10;
-}
-
+    #container {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; justify-content: center; align-items: center;
+      z-index: 10;
+      perspective: 1000px;
+    }
 
     #inputContainer { 
       position: relative; flex-shrink: 0; padding: 40px 5px 10px; 
-      z-index: 100;
-width: 100%; display: flex; flex-direction: column; align-items: center; 
-      box-sizing: border-box; transition: opacity 0.6s ease;
+      z-index: 100; width: 100%; display: flex; flex-direction: column; 
+      align-items: center; box-sizing: border-box; transition: opacity 0.6s ease;
     }
 
-#inputText {
-  -webkit-user-select: text !important; /* РАЗРЕШАЕМ ВВОД */
-  user-select: text !important;         /* РАЗРЕШАЕМ ВВОД */
-
+    #inputText {
+      -webkit-user-select: text !important;
+      user-select: text !important;
       width: 85%; max-width: 600px; padding: 10px 14px; background: rgba(255,255,255,0.05); 
       color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 0px; font-size: 16px; 
       outline: none; box-sizing: border-box;
     }
 
-    /* Тот самый "Щит" для клика во время чтения */
     #clickShield {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       z-index: 50; display: none; cursor: pointer;
     }
     body.is-reading #clickShield { display: block; }
 
-/* Фиксируем высоту футера во время чтения, чтобы центр не гулял */
-body.is-reading .footer-block {
-    min-height: 160px; /* Подберите высоту так, чтобы вмещались все кнопки паузы */
-    justify-content: flex-start; /* Удерживаем кнопки на одной линии */
-}
+    .footer-block { 
+      flex-shrink: 0; z-index: 100; width: 100%;
+      display: flex; flex-direction: column; align-items: center; 
+      justify-content: flex-end; position: absolute; bottom: 0;
+      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 10px);
+      pointer-events: none;
+    }
 
-/* Либо радикальный метод: абсолютное позиционирование слова */
-#container {
-    perspective: 1000px; /* Для плавности анимаций */
-}
+    .footer-block > *, #mainButtons > button { pointer-events: auto; }
 
-/* Убираем все старые правила для .footer-block и заменяем этим */
-.footer-block { 
-  flex-shrink: 0; 
-  z-index: 100;
-  width: 100%;
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; 
-  justify-content: flex-end;
-  /* Фиксируем позицию в самом низу, чтобы не мешать центру */
-  position: absolute;
-  bottom: 0;
-  padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 10px);
-  pointer-events: none; /* Пропускаем клики сквозь фон футера */
-}
+    #mainButtons { display: flex; align-items: center; gap: 5px; }
 
-/* Возвращаем кликабельность только самим кнопкам */
-.footer-block > *, #mainButtons > button {
-  pointer-events: auto;
-}
+    .word-layer {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center; font-weight: 700; white-space: nowrap;
+      width: 90%; z-index: 60; pointer-events: none;
+    }
 
-/* Стабилизируем высоту для кнопок, чтобы они не дергались при паузе */
-#mainButtons {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-/* Слово остается в абсолютном центре экрана */
-.word-layer {
-  position: fixed; 
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  font-weight: 700;
-  white-space: nowrap;
-  width: 90%;
-  z-index: 60;
-  pointer-events: none;
-  transition: all 0.28s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-
-/* Запрещаем футеру менять размер и влиять на геометрию */
-body.is-reading .footer-block {
-  height: 140px; /* Фиксированная высота предотвращает "скачок" */
-  min-height: 140px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end; /* Кнопки всегда прижаты к низу */
-}
-
-
-
+    /* Анимации появления и исчезновения */
     .word-enter { opacity: 0; transform: translate(-50%, -50%) scale(1.3); filter: blur(12px); }
-    .word-active { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
-    .word-exit { opacity: 0; transform: translate(-50%, -50%) scale(0.85); filter: blur(6px); }
-
+    .word-active { 
+      opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); 
+      transition: all 0.28s cubic-bezier(0.23, 1, 0.32, 1);
+    }
     
-    #logoContainer { transition: opacity 0.6s ease; margin-bottom: 20px; }
+    /* Обычный уход слова */
+    .word-exit { 
+      opacity: 0; transform: translate(-50%, -50%) scale(0.85); filter: blur(6px); 
+      transition: all 0.25s ease-in;
+    }
 
+    /* Тот самый "шлейф мысли" для слов со слэшем / */
+    .word-exit-long { 
+      opacity: 0; transform: translate(-50%, -50%) scale(0.95); filter: blur(15px); 
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body.is-reading .footer-block { height: 140px; min-height: 140px; display: flex; flex-direction: column; justify-content: flex-end; }
+    #logoContainer { transition: opacity 0.6s ease; margin-bottom: 20px; }
     body.is-reading #inputContainer, body.is-reading #logoContainer { opacity: 0 !important; pointer-events: none; }
 
     button {
@@ -126,36 +90,19 @@ body.is-reading .footer-block {
       position: relative; z-index: 110;
     }
 
-#colorControl {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: auto; 
-  min-width: 120px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px; 
-  padding: 10px 15px; 
-  font-size: 11px;
-  cursor: pointer; 
-  color: rgba(255, 255, 255, 0.4);
-  background: transparent; 
-  transition: opacity 0.6s ease;
-
-  /* Новое позиционирование */
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 110;
-}
+    #colorControl {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: auto; min-width: 120px; border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px; padding: 10px 15px; font-size: 11px;
+      cursor: pointer; color: rgba(255, 255, 255, 0.4);
+      background: transparent; transition: opacity 0.6s ease;
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 110;
+    }
 
     body.is-reading #colorControl { opacity: 0; pointer-events: none; }
-
     #backBtn { display: none; margin-bottom: 15px; background: rgba(255,255,255,0.1); }
     body.is-paused #backBtn { display: block; }
-
     #startBtn { background: #fff; color: #000; font-weight: bold; border: none; min-width: 100px; }
-    
     body.is-reading #startBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn { 
       opacity: 0.38; background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.2); 
     }
@@ -166,11 +113,9 @@ body.is-reading .footer-block {
 <body>
 
 <div id="clickShield"></div>
-
 <div id="inputContainer">
   <input type="text" id="inputText" placeholder="Paste your text here..." />
 </div>
-
 <div id="container"></div>
 
 <div class="footer-block">
@@ -207,28 +152,22 @@ body.is-reading .footer-block {
     inputText.value = localStorage.getItem('reading_text') || "";
 
     function updateFontSize(text, el) {
-    const maxWidth = window.innerWidth * 0.9; // Оставляем 5% запаса с боков
-    const standardSize = 36; // Ваш идеальный размер для большинства слов
-    
-    el.style.fontSize = standardSize + 'px';
-    
-    // Проверяем, не слишком ли разрослось слово
-    // Создаем временный замер, если слово не влезает в экран
-    let currentWidth = text.length * (standardSize * 0.6); 
-
-    if (currentWidth > maxWidth) {
-        // Уменьшаем шрифт только для этого конкретного длинного слова
-        const reducedSize = (maxWidth / text.length) / 0.6;
-        el.style.fontSize = reducedSize + 'px';
+        const maxWidth = window.innerWidth * 0.9;
+        const standardSize = 36;
+        el.style.fontSize = standardSize + 'px';
+        let currentWidth = text.length * (standardSize * 0.6); 
+        if (currentWidth > maxWidth) {
+            const reducedSize = (maxWidth / text.length) / 0.6;
+            el.style.fontSize = reducedSize + 'px';
+        }
     }
-}
 
-
-    function clearOldWord() {
+    function clearOldWord(isLongExit = false) {
         const oldEl = container.querySelector('.word-active');
         if (oldEl) {
-            oldEl.classList.replace('word-active', 'word-exit');
-            setTimeout(() => oldEl.remove(), 250);
+            const exitClass = isLongExit ? 'word-exit-long' : 'word-exit';
+            oldEl.classList.replace('word-active', exitClass);
+            setTimeout(() => oldEl.remove(), isLongExit ? 850 : 250);
         }
     }
 
@@ -237,19 +176,36 @@ body.is-reading .footer-block {
             if (index >= words.length) stopReading();
             return;
         }
-        clearOldWord();
-        const txt = words[index];
-        if (txt !== " ") {
+
+        let rawTxt = words[index];
+        let displayTxt = rawTxt;
+        let isLongHold = false;
+
+        // Элемент ручного катализатора внимания
+        if (displayTxt.includes('/')) {
+            isLongHold = true;
+            displayTxt = displayTxt.replace(/\//g, '');
+        }
+
+        clearOldWord(isLongHold);
+
+        if (displayTxt !== " ") {
             const newEl = document.createElement('div');
             newEl.className = 'word-layer word-enter';
-            newEl.textContent = txt;
-            updateFontSize(txt, newEl);
+            newEl.textContent = displayTxt;
+            updateFontSize(displayTxt, newEl);
             container.appendChild(newEl);
-            requestAnimationFrame(() => { setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20); });
+            requestAnimationFrame(() => { 
+                setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20); 
+            });
         }
-        let delay = interval + (txt.length * 10);
-        if (/[.:!?]/.test(txt)) delay *= 2.5; 
-        if (txt === " ") delay *= 5; 
+
+        // Динамика задержки
+        let delay = interval + (displayTxt.length * 12);
+        if (/[.:!?]/.test(displayTxt)) delay *= 2.5; 
+        if (isLongHold) delay *= 3.0; // Задержка для слов с /
+        if (rawTxt === " ") delay = interval * 3.0; // Задержка для лишних пробелов
+
         index++;
         timer = setTimeout(showNext, delay);
     }
@@ -262,7 +218,6 @@ body.is-reading .footer-block {
         container.innerHTML = '';
     }
 
-    // Тот самый "Стоп-кран" через невидимый щит
     clickShield.onclick = stopReading;
 
     colorControl.onclick = (e) => {
@@ -278,7 +233,8 @@ body.is-reading .footer-block {
             const text = inputText.value.trim();
             if (!text) return;
             localStorage.setItem('reading_text', text);
-            words = text.split(/(\s{2,})|\s+/).filter(Boolean).map(w => w.trim() === "" ? " " : w);
+            // Сохраняем структуру пробелов и спецсимволов
+            words = text.split(/(\s{2,})|\s+/).filter(w => w !== undefined && w !== "").map(w => w.trim() === "" ? " " : w);
             index = 0; isReading = true; isPaused = false;
             document.body.classList.add('is-reading');
             startBtn.textContent = 'Pause';
