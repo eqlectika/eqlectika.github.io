@@ -28,6 +28,12 @@
     }
 
 
+/* Скрываем при чтении */
+body.is-reading .donate-box { 
+  opacity: 0 !important; 
+  pointer-events: none; 
+}
+
 
     #clickShield {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -155,14 +161,24 @@
 
 
 /* Стили для доната, перенесенные из spark.html */
+
+/* Найдите этот блок и добавьте transition */
 .donate-box { 
   display: flex; 
   flex-direction: column; 
   gap: 10px; 
   margin-top: 15px; 
   width: 100%; 
-  align-items: center; 
+  align-items: center;
+  transition: opacity 0.6s ease; /* Это обеспечит плавный возврат кнопки */
 }
+
+/* Это правило у вас уже есть, оно работает в паре с верхним */
+body.is-reading .donate-box { 
+  opacity: 0 !important; 
+  pointer-events: none; 
+}
+ 
 .donate-btn { 
   color: rgba(255,255,255,0.6); 
   border: 1px solid rgba(255,255,255,0.3); 
@@ -231,13 +247,10 @@
       <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">TBL5FqL1zSGdP9k6nGkakxmPM26ttcJ496</div>
       <span id="copyHint" style="font-size: 12px; color: #777; margin-top: 4px;">Click address to copy</span>
     </div>
-
-</div>
-
-</div>
-
+  </div> </div> 
 
 <script>
+
     const container = document.getElementById('container');
     const inputText = document.getElementById('inputText');
     const startBtn = document.getElementById('startBtn');
