@@ -261,7 +261,12 @@ function clearOldWord(isLongExit = false) {
             if (!text) return;
             localStorage.setItem('reading_text', text);
             // Сохраняем структуру пробелов и спецсимволов
-            words = text.split(/(\s{2,})|\s+/).filter(w => w !== undefined && w !== "").map(w => w.trim() === "" ? " " : w);
+words = text.split(/(\s{2,})|\s+/).filter(w => w !== undefined && w !== "").map(w => {
+    if (w.trim() === "") return " ";
+    // Заменяем все подчеркивания на пробелы внутри одного "слова"
+    return w.replace(/_/g, ' ');
+});
+
             index = 0; isReading = true; isPaused = false;
             document.body.classList.add('is-reading');
             startBtn.textContent = 'Pause';
