@@ -151,10 +151,10 @@
             text-align: center;
         }
 
-        footer {
-            margin-top: auto;
-            padding: 20px 0;
-        }
+footer {
+    padding: 40px 0 20px; /* Увеличили верхний отступ для воздуха */
+    flex-shrink: 0;
+}
 
         .footer-logo {
             width: 54px;
@@ -279,10 +279,20 @@
 }
 
 
-        function toggleDonate() { 
-            const info = document.getElementById("cryptoInfo"); 
-            info.style.display = (info.style.display === "flex") ? "none" : "flex"; 
-        }
+function toggleDonate() { 
+    const info = document.getElementById("cryptoInfo"); 
+    const isOpening = (info.style.display !== "flex");
+    
+    info.style.display = isOpening ? "flex" : "none"; 
+
+    // Если открываем, плавно прокручиваем к самому низу
+    if (isOpening) {
+        setTimeout(() => {
+            info.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 50); // Небольшая задержка, чтобы браузер успел отрисовать блок
+    }
+}
+
 
         function copyToClipboard() {
             const addr = document.getElementById("cryptoAddr");
