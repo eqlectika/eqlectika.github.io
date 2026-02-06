@@ -6,24 +6,28 @@
     <link rel="manifest" href="manifest.json"> <!-- Ссылка на манифест -->
     <title>Precision Image Resizer</title>
     <style>
-        body {
+                body {
             font-family: Arial, sans-serif;
             max-width: 800px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 20px 20px 80px 20px; /* Сверху, по бокам, снизу (запас для доната) */
             text-align: center;
-            align-items: center;
             background-color: #333;
             color: #fff;
-                 /* защита от выделения и системных меню */
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-
-    -webkit-touch-callout: none;
-    -webkit-tap-highlight-color: transparent;
+            
+            /* защита от выделения */
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
         }
+
+        /* Добавим немного пространства перед донатом */
+        .footer-block {
+            margin-top: 40px;
+            padding-bottom: 20px;
+        }
+
 
         .image-container {
             margin: 20px 0;
@@ -167,6 +171,14 @@
         input[type="file"]::file-selector-button {
             display: none;
         }
+        
+            /* Стили для блока доната и адреса */
+    .donate-box { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; width: 100%; align-items: center; }
+    .donate-btn { color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.3); padding: 5px 15px; background: transparent; cursor: pointer; font-family: Arial, sans-serif; font-size: 11px; transition: 0.3s; border-radius: 10px; }
+    .donate-btn:hover { background: #fff; color: #000; }
+    .crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; align-items: center; }
+    .crypto-address-display { font-size: 10px; color: #fff; background: rgba(255,255,255,0.1); padding: 8px 12px; border: 1px dashed #555; cursor: copy; word-break: break-all; max-width: 260px; pointer-events: auto !important; }
+
     </style>
 </head>
 <body>
@@ -206,6 +218,16 @@
     <div>Width (px)</div>
 
     <button id="download-btn">Save Image</button>
+<div class="footer-block">
+  <div class="donate-box">
+    <button class="donate-btn" onclick="toggleDonate()">Support</button>
+    <div id="cryptoInfo" class="crypto-info">
+      <span style="font-size: 12px; color: #999; margin-bottom: 4px;">Network: Tron (TRC20)</span>
+      <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">TBL5FqL1zSGdP9k6nGkakxmPM26ttcJ496</div>
+      <span id="copyHint" style="font-size: 12px; color: #777; margin-top: 4px;">Click address to copy</span>
+    </div>
+  </div>
+</div>
 
     <script>
         const image = document.getElementById('resizable-image');
@@ -341,6 +363,53 @@
         
         // Инициализация
         updateControls();
+
+function toggleDonate() { 
+    const info = document.getElementById("cryptoInfo"); 
+    const isOpening = info.style.display !== "flex";
+    
+    info.style.display = isOpening ? "flex" : "none"; 
+
+    if (isOpening) {
+        // Скроллим так, чтобы блок плавно вошел в поле зрения
+        setTimeout(() => {
+            info.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
+    }
+}
+
+
+
+    function copyToClipboard() {
+        const addr = document.getElementById("cryptoAddr");
+        const hint = document.getElementById("copyHint");
+        const text = addr.innerText;
+        
+        // Используем современный API или fallback для старых браузеров
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => showSuccess(addr, hint, text));
+        } else {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            textArea.remove();
+            showSuccess(addr, hint, text);
+        }
+    }
+
+    function showSuccess(addr, hint, originalText) {
+        addr.innerText = "Copied!";
+        addr.style.color = "#00ff00"; // Цвет успеха из spark
+        if (hint) hint.innerText = "Address saved to clipboard";
+        setTimeout(() => {
+            addr.innerText = originalText;
+            addr.style.color = "#fff";
+            if (hint) hint.innerText = "Click address to copy";
+        }, 1500);
+    }
+
     </script>
 </body>
-</html>
+</html> 
