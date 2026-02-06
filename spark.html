@@ -179,7 +179,22 @@
     }
   }
 
-  function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = (info.style.display === "flex") ? "none" : "flex"; }
+function toggleDonate() { 
+  const info = document.getElementById("cryptoInfo"); 
+  const isOpening = info.style.display !== "flex";
+  
+  info.style.display = isOpening ? "flex" : "none"; 
+
+  if (isOpening) {
+    // Плавная прокрутка к блоку с небольшой задержкой для отрисовки
+    setTimeout(() => {
+      info.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }
+}
+
+
+
 
   function copyToClipboard() {
     const addr = document.getElementById("cryptoAddr");
