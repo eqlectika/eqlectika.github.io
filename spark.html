@@ -41,7 +41,21 @@
     .donate-btn:hover { background: var(--light-gray); color: #000; }
     .crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; }
     .crypto-address-display { font-size: 11px; color: #fff; background: #111; padding: 8px 12px; border: 1px dashed #555; cursor: copy; word-break: break-all; max-width: 280px; }
-  </style>
+
+.butterfly-shadow {
+  position: fixed;
+  width: 50px;
+  height: 50px;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.15;
+  filter: blur(4px);
+  background: radial-gradient(circle, #fff 20%, transparent 70%); /* В обычном режиме тень светлая на темном */
+  clip-path: polygon(50% 50%, 0% 0%, 30% 50%, 0% 100%, 50% 50%, 100% 100%, 70% 50%, 100% 0%);
+  transition: transform 0.1s linear;
+}
+
+ </style>
 </head>
 <body>
 
@@ -49,7 +63,12 @@
   <a href="index.html" style="width: fit-content; line-height: 0;">
     <img src="logo.png" alt="Logo" class="logo-image">
   </a>
-  <div><h2 style="margin: 0;">Vital Spark</h2><p style="margin: 4px 0 0;">Personal state protocol</p></div>
+
+<div>
+  <h2 id="spark-trigger" style="margin: 0; cursor: pointer; transition: opacity 0.3s;" onclick="toggleMetamorphosis()">Vital Spark</h2>
+  <p style="margin: 4px 0 0;">Personal state protocol</p>
+</div>
+
 </div>
 
 <details class="protocol-details">
@@ -116,6 +135,7 @@ The world, in truth, is composed not of atoms or electromagnetic waves, but of l
 </footer>
 
 <script>
+
   const rows = ['time', 'breath', 'pulse', 'emotion', 'dopamine', 'load', 'tension', 'energy', 'focus', 'creativity', 'vision', 'hearing', 'smell', 'boomerang'];
   const colors = {
     time: '#8493d6', breath: '#ffffff', pulse: '#ff1493', emotion: '#ff5252', dopamine: '#ff00ff',
@@ -135,6 +155,51 @@ The world, in truth, is composed not of atoms or electromagnetic waves, but of l
     data: { labels: [], datasets: rows.map(key => ({ label: categoryNames[key], data: [], borderColor: colors[key], borderWidth: 2, pointRadius: 2, fill: false, tension: 0.3 })) },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0.8, max: 5.2, display: false }, x: { display: false } } }
   });
+
+  // Логика метаморфозы
+  let inversionActive = false;
+  let transitionInterval = null;
+  let inversionLevel = 0; 
+
+  function toggleMetamorphosis() {
+    if (transitionInterval) clearInterval(transitionInterval);
+    inversionActive = !inversionActive;
+    
+    const target = inversionActive ? 100 : 0;
+    const trigger = document.getElementById('spark-trigger');
+    
+    trigger.style.opacity = '0.5';
+    setTimeout(() => trigger.style.opacity = '1', 200);
+
+    transitionInterval = setInterval(() => {
+        if (inversionLevel === target) {
+            clearInterval(transitionInterval);
+            return;
+        }
+        
+        inversionLevel += (inversionActive ? 1 : -1);
+        
+        const bgVal = Math.floor((inversionLevel / 100) * 255);
+        const textVal = 255 - bgVal;
+        const grayVal = Math.floor(170 - (inversionLevel / 100) * 100);
+
+        document.documentElement.style.setProperty('--bg-color', `rgb(${bgVal}, ${bgVal}, ${bgVal})`);
+        document.body.style.color = `rgb(${textVal}, ${textVal}, ${textVal})`;
+        document.documentElement.style.setProperty('--light-gray', `rgb(${grayVal}, ${grayVal}, ${grayVal})`);
+        
+
+document.querySelectorAll('select, .ui-btn').forEach(el => {
+
+            el.style.backgroundColor = `rgb(${bgVal}, ${bgVal}, ${bgVal})`;
+            el.style.color = `rgb(${textVal}, ${textVal}, ${textVal})`;
+            el.style.borderColor = `rgb(${grayVal}, ${grayVal}, ${grayVal})`;
+        });
+
+        const chartCanvas = document.getElementById('chart');
+        if (chartCanvas) chartCanvas.style.filter = `invert(${inversionLevel}%)`;
+        
+    }, 15);
+  }
 
   function log(key) {
     const val = +document.getElementById(key).value;
@@ -181,22 +246,14 @@ The world, in truth, is composed not of atoms or electromagnetic waves, but of l
     }
   }
 
-function toggleDonate() { 
-  const info = document.getElementById("cryptoInfo"); 
-  const isOpening = info.style.display !== "flex";
-  
-  info.style.display = isOpening ? "flex" : "none"; 
-
-  if (isOpening) {
-    // Плавная прокрутка к блоку с небольшой задержкой для отрисовки
-    setTimeout(() => {
-      info.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 50);
+  function toggleDonate() { 
+    const info = document.getElementById("cryptoInfo"); 
+    const isOpening = info.style.display !== "flex";
+    info.style.display = isOpening ? "flex" : "none"; 
+    if (isOpening) {
+      setTimeout(() => info.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+    }
   }
-}
-
-
-
 
   function copyToClipboard() {
     const addr = document.getElementById("cryptoAddr");
@@ -216,11 +273,7 @@ function toggleDonate() {
 
   function saveToStorage() {
     const score = calculateRiskQuine();
-    let verdict = "";
-    if (score < 0.45) verdict = "SYSTEMIC NOISE - High. Distance mandatory.";
-    else if (score < 0.75) verdict = "SURFACE CALM - De-escalate involvement.";
-    else verdict = "CLARITY - Absolute. Effortless intent.";
-
+    let verdict = (score < 0.45) ? "SYSTEMIC NOISE - High." : (score < 0.75) ? "SURFACE CALM." : "CLARITY - Absolute.";
     const logEntry = {
       timestamp: new Date().toLocaleString('en-GB'),
       score: score,
@@ -228,9 +281,7 @@ function toggleDonate() {
       labels: chart.data.labels,
       data: chart.data.datasets.map(ds => ds.data)
     };
-
     let history = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    if (!Array.isArray(history)) history = [];
     history.push(logEntry);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
   }
@@ -250,64 +301,41 @@ function toggleDonate() {
     const pre = document.getElementById("savedDataView");
     if (pre.style.display === "none" || pre.style.display === "") {
       const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      pre.textContent = history.slice().reverse().map(entry => 
-        `[${entry.timestamp}] Rq: ${entry.score}\nVerdict: ${entry.verdict}\n---`
-      ).join('\n');
+      pre.textContent = history.slice().reverse().map(entry => `[${entry.timestamp}] Rq: ${entry.score}\nVerdict: ${entry.verdict}\n---`).join('\n');
       pre.style.display = "block";
     } else {
       pre.style.display = "none";
     }
   }
 
+  function makeWordsClickable() {
+    const container = document.querySelector('.protocol-content');
+    const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    const nodesToReplace = [];
+    while(node = walk.nextNode()) if (node.textContent.trim().length > 0) nodesToReplace.push(node);
+    nodesToReplace.forEach(textNode => {
+      const span = document.createElement('span');
+      span.innerHTML = textNode.textContent.split(/(\s+)/).map(part => {
+        if (part.trim().length === 0) return part;
+        return `<span class="clickable-word" style="transition: color 0.3s; cursor: pointer;">${part}</span>`;
+      }).join('');
+      textNode.parentNode.replaceChild(span, textNode);
+    });
+  }
+
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('clickable-word')) {
+      e.target.style.color = (e.target.style.color === 'var(--creativity-color)') ? '#aaa' : 'var(--creativity-color)';
+    }
+  }, true);
+
   window.addEventListener("DOMContentLoaded", () => {
     loadFromStorage();
+    makeWordsClickable();
     setTimeout(updateRiskIndicator, 100);
   });
 
-function makeWordsClickable() {
-  const container = document.querySelector('.protocol-content');
-  const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
-  let node;
-  const nodesToReplace = [];
-
-  while(node = walk.nextNode()) {
-    if (node.textContent.trim().length > 0) nodesToReplace.push(node);
-  }
-
-  nodesToReplace.forEach(textNode => {
-    const span = document.createElement('span');
-    span.innerHTML = textNode.textContent.split(/(\s+)/).map(part => {
-      if (part.trim().length === 0) return part;
-      return `<span class="clickable-word" style="transition: color 0.3s; cursor: pointer;">${part}</span>`;
-    }).join('');
-    textNode.parentNode.replaceChild(span, textNode);
-  });
-}
-
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('clickable-word')) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Получаем значение цвета из CSS-переменной
-    const green = 'var(--creativity-color)';
-    const white = 'rgb(255, 255, 255)';
-
-    // Проверяем текущее состояние и переключаем
-    if (e.target.style.color === 'var(--creativity-color)') {
-      e.target.style.color = '#aaa'; // Возвращаем к исходному серому или белому
-    } else {
-      e.target.style.color = green;
-    }
-  }
-}, true);
-
-
-window.addEventListener("DOMContentLoaded", () => {
-  loadFromStorage();
-  makeWordsClickable(); // Запускаем трансформацию слов
-  setTimeout(updateRiskIndicator, 100);
-});
 
 </script>
 </body>
