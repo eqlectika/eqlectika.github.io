@@ -42,14 +42,14 @@
    
 
 /* В блоке #outD добавляем центрирование */
-#outD {
+#outL, #outD {
     display: flex;
     flex-direction: column;
     height: 100%;
     text-align: center; /* Центрируем текст внутри всей колонки */
 }
 
-.outD-content {
+.outD-content, .outL-content {
     flex: 1;
     overflow-y: auto;
     width: 100%; /* Занимаем всю ширину */
@@ -111,7 +111,11 @@
 <div class="master-btn hidden" id="uiBtn" onclick="handleUIBtn()">GATE</div>
 
 <div class="app-container" id="main">
-    <div class="pane light" id="outL"></div>
+
+<div class="pane light" id="outL">
+    <div class="outL-content" id="outL-inner"></div>
+</div>
+
     <div class="central-col" id="center">
         <div class="pane light" id="s2-top"></div>
         <div class="final-row" id="s3-row"><div class="pane light" id="s3-L"></div><div class="pane dark" id="s3-D"></div></div>
@@ -172,7 +176,8 @@ function tokenize(t) {
 }
 
 function launchApp() {
-    document.getElementById('outL').innerHTML = tokenize(document.getElementById('inL').value);
+
+document.getElementById('outL-inner').innerHTML = tokenize(document.getElementById('inL').value);
     document.getElementById('outD-inner').innerHTML = tokenize(document.getElementById('inD').value);
     document.getElementById('gateway').style.transform = 'translateY(-100%)';
     document.getElementById('uiBtn').classList.remove('hidden');
