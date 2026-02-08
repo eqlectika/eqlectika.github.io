@@ -39,7 +39,66 @@
         .footer-logo img { height: 35px; width: auto; display: block; opacity: 1; filter: grayscale(100%); }
         .hidden { display: none; }
         .example { display: block; margin-top: 8px; font-style: italic; opacity: 0.9; }
-    </style>
+   
+
+/* В блоке #outD добавляем центрирование */
+#outD {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    text-align: center; /* Центрируем текст внутри всей колонки */
+}
+
+.outD-content {
+    flex: 1;
+    overflow-y: auto;
+    width: 100%; /* Занимаем всю ширину */
+    padding: 15px; /* Возвращаем внутренний отступ для текста */
+}
+
+/* Центрируем кнопку и адрес */
+.donate-box { 
+    padding: 20px 15px; 
+    flex-shrink: 0; 
+    border-top: 1px solid rgba(255,255,255,0.1) !important;
+    margin-top: auto; /* Прижимаем к низу */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Центрируем кнопку по горизонтали */
+}
+
+
+.donate-btn { 
+    color: rgba(255,255,255,0.4); 
+    border: 1px solid rgba(255,255,255,0.2) !important; 
+    padding: 8px 20px; 
+    background: transparent; 
+    cursor: pointer; 
+    font-size: 11px; 
+    letter-spacing: 1px;
+    transition: 0.3s;
+}
+
+.donate-btn:hover { background: #fff; color: #000; }
+
+.crypto-info { 
+    display: none; 
+    flex-direction: column; 
+    gap: 8px; 
+    margin-top: 15px;
+}
+
+.crypto-address-display { 
+    font-size: 10px; 
+    color: #fff; 
+    background: rgba(255,255,255,0.05); 
+    padding: 10px; 
+    border: 1px dashed #444 !important; 
+    cursor: copy; 
+    word-break: break-all; 
+}
+
+ </style>
 </head>
 <body>
 
@@ -58,8 +117,20 @@
         <div class="final-row" id="s3-row"><div class="pane light" id="s3-L"></div><div class="pane dark" id="s3-D"></div></div>
         <div class="pane dark" id="s2-bot"></div>
     </div>
-    <div class="pane dark" id="outD"></div>
+
+<div class="pane dark" id="outD">
+    <div class="outD-content" id="outD-inner"></div>
+    
+    <div class="donate-box">
+        <button class="donate-btn" onclick="toggleDonate()">Support</button>
+        <div id="cryptoInfo" class="crypto-info">
+            <span style="font-size: 11px; color: #999;">Network: Tron (TRC20)</span>
+            <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">TBL5FqL1zSGdP9k6nGkakxmPM26ttcJ496</div>
+            <span id="copyHint" style="font-size: 10px; color: #777;">Click to copy address</span>
+        </div>
+    </div>
 </div>
+
 
 <a href="/index.html" class="footer-logo"><img src="logo.png" alt="logo"></a>
 
@@ -102,7 +173,7 @@ function tokenize(t) {
 
 function launchApp() {
     document.getElementById('outL').innerHTML = tokenize(document.getElementById('inL').value);
-    document.getElementById('outD').innerHTML = tokenize(document.getElementById('inD').value);
+    document.getElementById('outD-inner').innerHTML = tokenize(document.getElementById('inD').value);
     document.getElementById('gateway').style.transform = 'translateY(-100%)';
     document.getElementById('uiBtn').classList.remove('hidden');
     state = 1;
@@ -165,6 +236,33 @@ function handleUIBtn() {
         state = 0;
     }
 }
+
+function toggleDonate() { 
+    const info = document.getElementById("cryptoInfo"); 
+    const isOpening = (info.style.display !== "flex");
+    info.style.display = isOpening ? "flex" : "none"; 
+    
+    if (isOpening) {
+        setTimeout(() => {
+            info.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 50);
+    }
+}
+
+function copyToClipboard() {
+    const addr = document.getElementById("cryptoAddr");
+    const text = addr.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        const oldText = addr.innerText;
+        addr.innerText = "Copied!";
+        addr.style.color = "#00ff00";
+        setTimeout(() => {
+            addr.innerText = oldText;
+            addr.style.color = "#fff";
+        }, 1500);
+    });
+}
+
 </script>
 </body>
 </html>
