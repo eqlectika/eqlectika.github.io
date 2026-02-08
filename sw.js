@@ -27,6 +27,7 @@ const ASSETS = [
   './quant.html',
   './nomad.html',
   
+  'https://telegra.ph/The-Crew-of-Samsara-in-the-London-Fog-01-13',
   'https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
   'https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js',
