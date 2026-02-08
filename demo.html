@@ -35,6 +35,22 @@
         .app-container { display: grid; height: 100vh; grid-template-columns: 1fr 0fr 2fr; transition: grid-template-columns var(--t) ease; }
         .pane { overflow-y: auto; position: relative; }
 
+#area-concept {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden; /* Скроллить будем только внутренний контент */
+}
+
+#concept-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 25px;
+}
+
+
+
+
         /* Area A: Navigator */
         #area-a { padding: 25px; z-index: 10; }
 
@@ -264,6 +280,20 @@ function copyToClipboard() {
             addr.style.color = "#fff";
         }, 1500);
     });
+}
+
+function toggleDonate() { 
+    const info = document.getElementById("cryptoInfo"); 
+    const isOpening = (info.style.display !== "flex");
+    
+    info.style.display = isOpening ? "flex" : "none"; 
+
+    if (isOpening) {
+        // Даем браузеру мгновение на отрисовку, затем скроллим
+        setTimeout(() => {
+            info.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 50);
+    }
 }
 
 </script>
