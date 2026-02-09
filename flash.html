@@ -308,7 +308,8 @@ function clearOldWord(isLongExit = false) {
 
         clearOldWord(isLongHold);
 
-        if (displayTxt !== " ") {
+if (displayTxt !== " " && !displayTxt.includes('|')) {
+
             const newEl = document.createElement('div');
             newEl.className = 'word-layer word-enter';
             newEl.textContent = displayTxt;
@@ -319,11 +320,18 @@ function clearOldWord(isLongExit = false) {
             });
         }
 
+
         // Динамика задержки
         let delay = interval + (displayTxt.length * 12);
+
+
+if (displayTxt.includes('|')) {
+    delay = 1800; // Ваша специфическая задержка в миллисекундах
+}
+
         if (/[.:!?]/.test(displayTxt)) delay *= 2.5; 
         if (isLongHold) delay *= 3.0; // Задержка для слов с /
-        if (rawTxt === " ") delay = interval * 3.0; // Задержка для лишних пробелов
+        if (rawTxt === " ") delay = interval * 5.0; // Задержка для лишних пробелов
 
         index++;
         timer = setTimeout(showNext, delay);
