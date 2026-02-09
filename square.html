@@ -1,318 +1,318 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Schulte Elite Square</title>
-    <link rel="manifest" href="manifestsquare.json">
-    <style>
-        * { box-sizing: border-box; touch-action: manipulation; }
-        
-        body {
-            background-color: #000;
-            color: #fff;
-            margin: 0;
-            padding: 20px 10px;
-            font-family: 'Georgia', serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            overflow-y: auto; 
-            overflow-x: hidden;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Schulte Elite Square</title>
+    <link rel="manifest" href="manifestsquare.json">
+    <style>
+        * { box-sizing: border-box; touch-action: manipulation; }
+        
+        body {
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 20px 10px;
+            font-family: 'Georgia', serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-y: auto; 
+            overflow-x: hidden;
+        }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            width: 90vmin;
-            height: 90vmin;
-            max-width: 400px;
-            max-height: 400px;
-            border: 1px solid #fff;
-            margin: 20px 0;
-            flex-shrink: 0;
-        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            width: 90vmin;
+            height: 90vmin;
+            max-width: 400px;
+            max-height: 400px;
+            border: 1px solid #fff;
+            margin: 20px 0;
+            flex-shrink: 0;
+        }
 
-        .cell {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #fff;
-            font-size: clamp(18px, 6vmin, 32px);
-            user-select: none;
-        }
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #fff;
+            font-size: clamp(18px, 6vmin, 32px);
+            user-select: none;
+        }
 
-        .timer-container {
-            text-align: center;
-            width: 100%;
-            margin-bottom: 20px;
-        }
+        .timer-container {
+            text-align: center;
+            width: 100%;
+            margin-bottom: 20px;
+        }
 
-        #display {
-            font-family: 'Georgia', serif;
-            font-size: clamp(24px, 8vmin, 42px);
-            font-variant-numeric: tabular-nums;
-            display: block;
-            margin-bottom: 20px;
-        }
+        #display {
+            font-family: 'Georgia', serif;
+            font-size: clamp(24px, 8vmin, 42px);
+            font-variant-numeric: tabular-nums;
+            display: block;
+            margin-bottom: 20px;
+        }
 
-        .controls {
-            font-family: 'Georgia', serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 0px;
-        }
+        .controls {
+            font-family: 'Georgia', serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 0px;
+        }
 
-        .btn-symbol {
-            background: transparent;
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.3);
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: 0.3s;
-            font-family: 'Georgia', serif;
-        }
+        .btn-symbol {
+            background: transparent;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.3s;
+            font-family: 'Georgia', serif;
+        }
 
-        #toggleBtn {
-            background: #fff;
-            color: #000;
-            border: none;
-            padding: 0 30px;
-            height: 50px;
-            border-radius: 25px;
-            font-size: 14px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            cursor: pointer;
-            min-width: 120px;
-            font-family: 'Georgia', serif;
-        }
+        #toggleBtn {
+            background: #fff;
+            color: #000;
+            border: none;
+            padding: 0 30px;
+            height: 50px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            min-width: 120px;
+            font-family: 'Georgia', serif;
+        }
 
-        /* Стиль для лучшего времени */
-        #bestTimeDisplay {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.5);
-            margin: 10px 0;
-            letter-spacing: 1px;
-        }
+        /* Стиль для лучшего времени */
+        #bestTimeDisplay {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            margin: 10px 0;
+            letter-spacing: 1px;
+        }
 
-        .btn-symbol:active, #toggleBtn:active {
-            opacity: 0.7;
-            transform: scale(0.95);
-        }
+        .btn-symbol:active, #toggleBtn:active {
+            opacity: 0.7;
+            transform: scale(0.95);
+        }
 
-        .donate-box { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px; 
-            margin: 10px 0 20px;
-            width: 100%; 
-            align-items: center;
-        }
+        .donate-box { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            margin: 10px 0 20px;
+            width: 100%; 
+            align-items: center;
+        }
 
-        .donate-btn { 
-            color: rgba(255,255,255,0.4); 
-            border: 1px solid rgba(255,255,255,0.2); 
-            padding: 8px 20px; 
-            background: transparent; 
-            cursor: pointer; 
-            font-size: 11px; 
-            transition: 0.3s; 
-            border-radius: 14px; 
-        }
+        .donate-btn { 
+            color: rgba(255,255,255,0.4); 
+            border: 1px solid rgba(255,255,255,0.2); 
+            padding: 8px 20px; 
+            background: transparent; 
+            cursor: pointer; 
+            font-size: 11px; 
+            transition: 0.3s; 
+            border-radius: 14px; 
+        }
 
-        .donate-btn:hover { background: #fff; color: #000; }
+        .donate-btn:hover { background: #fff; color: #000; }
 
-        .crypto-info { 
-            display: none; 
-            flex-direction: column; 
-            gap: 5px; 
-            align-items: center; 
-        }
+        .crypto-info { 
+            display: none; 
+            flex-direction: column; 
+            gap: 5px; 
+            align-items: center; 
+        }
 
-        .crypto-address-display { 
-            font-size: 11px; 
-            color: #fff; 
-            background: rgba(255,255,255,0.1); 
-            padding: 10px; 
-            border: 1px dashed #555; 
-            cursor: copy; 
-            word-break: break-all; 
-            max-width: 280px; 
-            text-align: center;
-        }
+        .crypto-address-display { 
+            font-size: 11px; 
+            color: #fff; 
+            background: rgba(255,255,255,0.1); 
+            padding: 10px; 
+            border: 1px dashed #555; 
+            cursor: copy; 
+            word-break: break-all; 
+            max-width: 280px; 
+            text-align: center;
+        }
 
 footer {
-    padding: 40px 0 20px; /* Увеличили верхний отступ для воздуха */
-    flex-shrink: 0;
+    padding: 20px 0 0px; /* Увеличили верхний отступ для воздуха */
+    flex-shrink: 0;
 }
 
-        .footer-logo {
-            width: 54px;
-            opacity: 0.9;
-        }
-    </style>
-</head>
+        .footer-logo {
+            width: 54px;
+            opacity: 0.9;
+        }
+    </style>
+</head> 
 <body>
-    <footer>
-        <a href="index.html">
-            <img src="logo.png" alt="Logo" class="footer-logo">
-        </a>
-    </footer>
-    <div class="grid" id="schulteGrid"></div>
 
-    <div class="timer-container">
-        <span id="display">00:00.0</span>
-        <div class="controls">
-            <button id="mixBtn" class="btn-symbol" title="Mix">Mix</button>
-            <button id="toggleBtn">Start</button>
-            <button id="resetBtn" class="btn-symbol" title="Reset">Rst</button>
-        </div>
-    </div>
+    <footer>
+        <a href="index.html">
+            <img src="logo.png" alt="Logo" class="footer-logo">
+        </a>
+    </footer>
 
-    <div id="bestTimeDisplay">Best: --:--.-</div>
+    <div class="grid" id="schulteGrid"></div>
 
-    <div class="donate-box">
-        <button class="donate-btn" onclick="toggleDonate()">Support</button>
-        <div id="cryptoInfo" class="crypto-info">
-            <span style="font-size: 11px; color: #999;">USDT BSC (BEP20)</span>
-            <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
-            <span id="copyHint" style="font-size: 10px; color: #777;">Click to copy address</span>
-        </div>
-    </div>
+    <div class="timer-container">
+        <span id="display">00:00.0</span>
+        <div class="controls">
+            <button id="mixBtn" class="btn-symbol" title="Mix">Mix</button>
+            <button id="toggleBtn">Start</button>
+            <button id="resetBtn" class="btn-symbol" title="Reset">Rst</button>
+        </div>
+    </div>
 
+    <div id="bestTimeDisplay">Best: --:--.-</div>
 
+    <div class="donate-box">
+        <button class="donate-btn" onclick="toggleDonate()">Support</button>
+        <div id="cryptoInfo" class="crypto-info">
+            <span style="font-size: 11px; color: #999;">USDT BSC (BEP20)</span>
+            <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
+            <span id="copyHint" style="font-size: 10px; color: #777;">Click to copy address</span>
+        </div>
+    </div>
 
-    <script>
-        let startTime, elapsedTime = 0, timerInterval;
-        const gridElement = document.getElementById("schulteGrid");
-        const toggleBtn = document.getElementById("toggleBtn");
-        const bestDisplay = document.getElementById("bestTimeDisplay");
-        let numbers = Array.from({length: 25}, (_, i) => i + 1);
+    <script>
+        let startTime, elapsedTime = 0, timerInterval;
+        const gridElement = document.getElementById("schulteGrid");
+        const toggleBtn = document.getElementById("toggleBtn");
+        const bestDisplay = document.getElementById("bestTimeDisplay");
+        let numbers = Array.from({length: 25}, (_, i) => i + 1);
 
-        // Загрузка рекорда из памяти
-        let bestTime = localStorage.getItem('schulte_best') || Infinity;
-        if (bestTime !== Infinity) bestDisplay.innerText = "Best: " + timeToString(parseInt(bestTime));
+        // Загрузка рекорда из памяти
+        let bestTime = localStorage.getItem('schulte_best') || Infinity;
+        if (bestTime !== Infinity) bestDisplay.innerText = "Best: " + timeToString(parseInt(bestTime));
 
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
 
-        function renderGrid() {
-            gridElement.innerHTML = '';
-            numbers.forEach(num => {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                cell.textContent = num;
-                gridElement.appendChild(cell);
-            });
-        }
+        function renderGrid() {
+            gridElement.innerHTML = '';
+            numbers.forEach(num => {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.textContent = num;
+                gridElement.appendChild(cell);
+            });
+        }
 
-        function timeToString(time) {
-            let mm = Math.floor(time / 60000);
-            let ss = Math.floor((time % 60000) / 1000);
-            let ms = Math.floor((time % 1000) / 100);
-            return `${mm.toString().padStart(2, "0")}:${ss.toString().padStart(2, "0")}.${ms}`;
-        }
+        function timeToString(time) {
+            let mm = Math.floor(time / 60000);
+            let ss = Math.floor((time % 60000) / 1000);
+            let ms = Math.floor((time % 1000) / 100);
+            return `${mm.toString().padStart(2, "0")}:${ss.toString().padStart(2, "0")}.${ms}`;
+        }
 
-        function toggleTimer() {
-            if (!timerInterval) {
-                startTime = Date.now() - elapsedTime;
-                timerInterval = setInterval(() => {
-                    elapsedTime = Date.now() - startTime;
-                    document.getElementById("display").innerText = timeToString(elapsedTime);
-                }, 100);
-                toggleBtn.innerText = "Stop";
-                toggleBtn.style.background = "transparent";
-                toggleBtn.style.color = "#fff";
-                toggleBtn.style.border = "1px solid #fff";
-            } else {
-                clearInterval(timerInterval);
-                timerInterval = null;
-                toggleBtn.innerText = "Start";
-                toggleBtn.style.background = "#fff";
-                toggleBtn.style.color = "#000";
-                
-                // Проверка и сохранение рекорда
-                if (elapsedTime > 0 && elapsedTime < bestTime) {
-                    bestTime = elapsedTime;
-                    localStorage.setItem('schulte_best', bestTime);
-                    bestDisplay.innerText = "Best: " + timeToString(bestTime);
-                }
-            }
-        }
+        function toggleTimer() {
+            if (!timerInterval) {
+                startTime = Date.now() - elapsedTime;
+                timerInterval = setInterval(() => {
+                    elapsedTime = Date.now() - startTime;
+                    document.getElementById("display").innerText = timeToString(elapsedTime);
+                }, 100);
+                toggleBtn.innerText = "Stop";
+                toggleBtn.style.background = "transparent";
+                toggleBtn.style.color = "#fff";
+                toggleBtn.style.border = "1px solid #fff";
+            } else {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                toggleBtn.innerText = "Start";
+                toggleBtn.style.background = "#fff";
+                toggleBtn.style.color = "#000";
+                
+                // Проверка и сохранение рекорда
+                if (elapsedTime > 0 && elapsedTime < bestTime) {
+                    bestTime = elapsedTime;
+                    localStorage.setItem('schulte_best', bestTime);
+                    bestDisplay.innerText = "Best: " + timeToString(bestTime);
+                }
+            }
+        }
 
-        function reset() {
-            clearInterval(timerInterval);
-            timerInterval = null;
-            elapsedTime = 0;
-            document.getElementById("display").innerText = "00:00.0";
-            toggleBtn.innerText = "Start";
-            toggleBtn.style.background = "#fff";
-            toggleBtn.style.color = "#000";
-        }
+        function reset() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            elapsedTime = 0;
+            document.getElementById("display").innerText = "00:00.0";
+            toggleBtn.innerText = "Start";
+            toggleBtn.style.background = "#fff";
+            toggleBtn.style.color = "#000";
+        }
 
-        function mix() {
-    // Перемешиваем числа
-    shuffle(numbers);
-    renderGrid();
-    
-    // Сбрасываем рекорд в памяти
-    bestTime = Infinity;
-    localStorage.removeItem('schulte_best');
-    
-    // Обновляем визуальное отображение
-    bestDisplay.innerText = "Best: --:--.-";
+        function mix() {
+    // Перемешиваем числа
+    shuffle(numbers);
+    renderGrid();
+    
+    // Сбрасываем рекорд в памяти
+    bestTime = Infinity;
+    localStorage.removeItem('schulte_best');
+    
+    // Обновляем визуальное отображение
+    bestDisplay.innerText = "Best: --:--.-";
 }
 
 
 function toggleDonate() { 
-    const info = document.getElementById("cryptoInfo"); 
-    const isOpening = (info.style.display !== "flex");
-    
-    info.style.display = isOpening ? "flex" : "none"; 
+    const info = document.getElementById("cryptoInfo"); 
+    const isOpening = (info.style.display !== "flex");
+    
+    info.style.display = isOpening ? "flex" : "none"; 
 
-    // Если открываем, плавно прокручиваем к самому низу
-    if (isOpening) {
-        setTimeout(() => {
-            info.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }, 50); // Небольшая задержка, чтобы браузер успел отрисовать блок
-    }
+    // Если открываем, плавно прокручиваем к самому низу
+    if (isOpening) {
+        setTimeout(() => {
+            info.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 50); // Небольшая задержка, чтобы браузер успел отрисовать блок
+    }
 }
 
 
-        function copyToClipboard() {
-            const addr = document.getElementById("cryptoAddr");
-            const text = addr.innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                const oldText = addr.innerText;
-                addr.innerText = "Copied!";
-                addr.style.color = "#00ff00";
-                setTimeout(() => {
-                    addr.innerText = oldText;
-                    addr.style.color = "#fff";
-                }, 1500);
-            });
-        }
+        function copyToClipboard() {
+            const addr = document.getElementById("cryptoAddr");
+            const text = addr.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const oldText = addr.innerText;
+                addr.innerText = "Copied!";
+                addr.style.color = "#00ff00";
+                setTimeout(() => {
+                    addr.innerText = oldText;
+                    addr.style.color = "#fff";
+                }, 1500);
+            });
+        }
 
-        toggleBtn.onclick = toggleTimer;
-        document.getElementById("resetBtn").onclick = reset;
-        document.getElementById("mixBtn").onclick = mix;
+        toggleBtn.onclick = toggleTimer;
+        document.getElementById("resetBtn").onclick = reset;
+        document.getElementById("mixBtn").onclick = mix;
 
-        renderGrid();
-    </script>
+        renderGrid();
+    </script>
 </body>
 </html>
