@@ -152,6 +152,105 @@ canvas {
     display: block;
 }
 
+/* Стили для блока Support */
+.donate-box { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+    margin-top: 20px;
+    width: fit-content;
+    pointer-events: auto; /* Важно: разрешаем клики */
+}
+
+.donate-btn { 
+    color: rgba(255,255,255,0.6); 
+    border: 1px solid rgba(255,255,255,0.3); 
+    padding: 8px 16px; 
+    background: transparent; 
+    cursor: pointer; 
+    font-size: 12px; 
+    font-family: 'Luckiest Guy';
+    transition: 0.3s; 
+    border-radius: 8px; 
+    width: fit-content;
+}
+
+.donate-btn:hover { 
+    background: #ffeb3b; 
+    color: #000; 
+    border-color: #ffeb3b;
+}
+
+.crypto-info { 
+    display: none; 
+    flex-direction: column; 
+    gap: 8px; 
+    padding: 10px 0;
+}
+
+.crypto-address-display { 
+    font-size: 10px; 
+    color: #fff; 
+    background: rgba(255,255,255,0.05); 
+    padding: 8px; 
+    border: 1px dashed rgba(255,255,255,0.3); 
+    cursor: copy; 
+    word-break: break-all; 
+    max-width: 200px;
+}
+
+/* Контейнер для выравнивания */
+.donate-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+/* Скрытый блок с реквизитами */
+.crypto-info { 
+    display: none; 
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 0 20px 0;
+    pointer-events: auto;
+}
+
+.crypto-address-display { 
+    font-size: 10px; 
+    color: #fff; 
+    background: rgba(255,255,255,0.05); 
+    padding: 8px; 
+    border: 1px dashed rgba(255,255,255,0.3); 
+    cursor: copy; 
+    word-break: break-all; 
+    max-width: 200px;
+    font-family: helvetica, sans-serif;
+}
+
+/* Разрешаем скролл, когда нужно */
+body.allow-scroll {
+    overflow-y: auto;
+    touch-action: auto;
+}
+
+#ui-layer {
+    height: auto;
+    min-height: 100vh;
+}
+
+/* Изменения для прокрутки */
+body.allow-scroll {
+    overflow-y: auto;
+    touch-action: auto;
+}
+
+#ui-layer {
+    /* Чтобы UI не перекрывал всё, если появится скролл */
+    min-height: 100vh;
+    height: auto;
+    padding-bottom: 50px;
+}
+
 </style>
 </head>
 
@@ -172,6 +271,8 @@ canvas {
     <a href="quant.html" class="menu-item">Quant</a>
     <a href="resume.html" class="menu-item">Resume</a>
 
+
+
     <div class="menu-item-container">
         <span class="menu-item">More</span>
         <div class="submenu">
@@ -181,6 +282,16 @@ canvas {
                 <a href="demo.html" class="menu-item">Demo</a>
         </div>
     </div> 
+    <a href="https://t.me/eugenebox" class="menu-item">Feedback</a>
+<div class="menu-item-container donate-container">
+    <span class="menu-item" onclick="toggleDonate()">Support</span>
+    <div id="cryptoInfo" class="crypto-info">
+        <span style="font-size: 11px; color: #999;">USDT BSC (BEP20)</span>
+        <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
+        <span id="copyHint" style="font-size: 10px; color: #777;">Click to copy address</span>
+    </div>
+</div>
+
 
 </nav>
 </div> 
@@ -481,7 +592,41 @@ document.addEventListener('touchend', (event) => {
     lastTouchEnd = now;
 }, false);
 
+function toggleDonate() { 
+    const info = document.getElementById("cryptoInfo"); 
+    const body = document.body;
+    const isOpening = (window.getComputedStyle(info).display === "none");
+    
+    if (isOpening) {
+        info.style.display = "flex";
+        body.classList.add('allow-scroll');
+        
+        // Плавная прокрутка к появившемуся адресу
+        setTimeout(() => {
+            info.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 100);
+    } else {
+        info.style.display = "none";
+        body.classList.remove('allow-scroll');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
 
+function copyToClipboard() {
+    const addr = document.getElementById("cryptoAddr");
+    const text = addr.innerText;
+    if (text === "Copied!") return;
+
+    navigator.clipboard.writeText(text).then(() => {
+        const oldText = text;
+        addr.innerText = "Copied!";
+        addr.style.color = "#ffeb3b";
+        setTimeout(() => {
+            addr.innerText = oldText;
+            addr.style.color = "#fff";
+        }, 1500);
+    });
+}
 </script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
