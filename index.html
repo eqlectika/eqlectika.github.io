@@ -381,8 +381,8 @@ let holdStart = 0;
 let lastUserActivity = performance.now();
 const mouse = new THREE.Vector2();
 
-const minScale = 0.4;
-const maxScale = 8;
+const minScale = 0.01;
+const maxScale = 89;
 const minOpacity = 0.25;
 const maxOpacity = 0.9;
 
@@ -398,11 +398,15 @@ function explode(obj) {
         const piece = new THREE.Mesh(geom, mat);
         piece.position.copy(basePos);
         piece.scale.setScalar(baseScale);
-        piece.userData.velocity = new THREE.Vector3(
-            (Math.random() - 0.5) * 0.35,
-            (Math.random() - 0.5) * 0.35,
-            (Math.random() - 0.5) * 0.35
-        );
+     // Мы берем baseScale (масштаб объекта) и используем его как множитель энергии взрыва
+const power = baseScale * 0.15; 
+
+piece.userData.velocity = new THREE.Vector3(
+    (Math.random() - 0.5) * power,
+    (Math.random() - 0.5) * power,
+    (Math.random() - 0.5) * power
+);
+
         scene.add(piece);
         objects.push(piece);
     }
@@ -459,10 +463,15 @@ window.addEventListener("pointerup", () => {
     lastUserActivity = performance.now();
 
     const holdTime = Math.min((performance.now() - holdStart) / 1000, 2);
-    const power = holdTime / 2;
+    const power = holdTime / 8;
 
-    preview.userData.velocity =
-        preview.userData.dir.clone().multiplyScalar(0.12 + power * 0.35);
+    // Получаем текущий масштаб объекта (он уже вырос в функции animate)
+const currentScale = preview.scale.x;
+
+// Рассчитываем скорость: чем больше масштаб, тем выше множитель расстояния
+// 0.05 — базовый коэффициент, который можно подправить для нужной дальности
+preview.userData.velocity = 
+    preview.userData.dir.clone().normalize().multiplyScalar((0.12 + power * 0.35) * currentScale * 0.2);
 
     playLaunchSound(power);
 
