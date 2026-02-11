@@ -4,48 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <style>
-        * {
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            user-select: none;
+        * { 
+            -webkit-tap-highlight-color: transparent; 
+            touch-action: none !important; 
+            user-select: none !important; 
             -webkit-user-select: none;
-            touch-action: none;
-            -webkit-user-drag: none;
         }
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background: #000;
+            overflow: hidden; background: #000; position: fixed; 
         }
-        canvas { display: block; width: 100%; height: 100%; }
+        canvas { display: block; width: 100%; height: 100%; touch-action: none; }
     </style>
 </head>
-<body>
-    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<body oncontextmenu="return false;"> <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script>
         let scene, camera, renderer, mainGroup;
-        let droplets = []; 
+        let droplets = [];
+        let touches = {}; 
+        let prevTouchDist = null;
         let isDragging = false;
-        let previousMousePosition = { x: 0, y: 0 };
+        let longPressTimer = null;
+        let startPos = { x: 0, y: 0 };
+        
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-        // Материал с высокой пропускной способностью для блеска
-        const geo = new THREE.IcosahedronGeometry(0.7, 12);
+        const geo = new THREE.IcosahedronGeometry(0.6, 15);
         const mat = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff,
-            transmission: 1.0, 
-            thickness: 0.5,
-            roughness: 0.05,
-            metalness: 0.1,
-            transparent: true
+            color: 0x3399ff, metalness: 0.2, roughness: 0.1, transmission: 0.7, transparent: true
         });
 
         function createDroplet(x, y, z) {
-            const newDrop = new THREE.Mesh(geo, mat);
-            newDrop.position.set(x, y, z);
-            newDrop.userData = { targetScale: 1, reactionStrength: 0 };
-            mainGroup.add(newDrop);
-            droplets.push(newDrop);
+            const drop = new THREE.Mesh(geo, mat);
+            drop.position.set(x, y, z);
+            drop.userData = { targetScale: 1, reactionStrength: 0 };
+            mainGroup.add(drop);
+            droplets.push(drop);
         }
 
         function init() {
@@ -61,72 +56,139 @@
             mainGroup = new THREE.Group();
             scene.add(mainGroup);
 
-            // Освещение: теперь лампы ярче, чтобы капли точно были видны
-            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-            const lights = [
-                [0xff0000, [5, 5, 5]], 
-                [0x00ff00, [-5, 5, 5]], 
-                [0x0000ff, [0, -5, 5]]
-            ].forEach(([col, pos]) => {
-                const l = new THREE.PointLight(col, 10, 50);
-                l.position.set(...pos);
-                scene.add(l);
-            });
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const p1 = new THREE.PointLight(0xff0000, 10); p1.position.set(5, 5, 5); scene.add(p1);
+            const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.add(p2);
 
             createDroplet(0, 0, 0);
 
             const canvas = renderer.domElement;
-            canvas.addEventListener('pointerdown', (e) => {
-                isDragging = true;
-                previousMousePosition = { x: e.clientX, y: e.clientY };
-                
-                const rect = canvas.getBoundingClientRect();
-                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-                mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-                raycaster.setFromCamera(mouse, camera);
-                
-                const intersects = raycaster.intersectObjects(droplets);
-                if (intersects.length > 0) {
-                    intersects[0].object.userData.reactionStrength = 1.5;
-                    intersects[0].object.userData.targetScale = 1.8;
-                } else {
-                    const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
-                    const dir = vector.sub(camera.position).normalize();
-                    const distance = -camera.position.z / dir.z;
-                    const pos = camera.position.clone().add(dir.multiplyScalar(distance));
-                    
-                    // Ограничиваем координаты, чтобы капли не улетали за горизонт
-                    const localPos = mainGroup.worldToLocal(pos);
-                    createDroplet(localPos.x, localPos.y, localPos.z);
-                }
-            });
 
-            window.addEventListener('pointermove', (e) => {
-                if (!isDragging) return;
+            // Жесткая блокировка скролла и системных жестов
+            const preventAll = (e) => {
                 if (e.cancelable) e.preventDefault();
+                e.stopPropagation();
+            };
 
-                const delta = { x: e.clientX - previousMousePosition.x, y: e.clientY - previousMousePosition.y };
+            canvas.addEventListener('touchstart', (e) => {
+                preventAll(e);
+                isDragging = true;
+                const t = e.touches[0];
+                startPos = { x: t.clientX, y: t.clientY };
+                
+                for (let touch of e.touches) touches[touch.identifier] = { x: touch.clientX, y: touch.clientY };
 
-                mainGroup.rotation.y += delta.x * 0.01;
-                mainGroup.rotation.x += delta.y * 0.01;
+                if (e.touches.length === 1) {
+                    const rect = canvas.getBoundingClientRect();
+                    mouse.x = ((t.clientX - rect.left) / rect.width) * 2 - 1;
+                    mouse.y = -((t.clientY - rect.top) / rect.height) * 2 + 1;
 
-                previousMousePosition = { x: e.clientX, y: e.clientY };
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObjects(droplets);
+
+                    longPressTimer = setTimeout(() => {
+                        if (intersects.length > 0) {
+                            const obj = intersects[0].object;
+                            mainGroup.remove(obj);
+                            droplets = droplets.filter(d => d !== obj);
+                        }
+                        longPressTimer = null;
+                    }, 600);
+                }
             }, { passive: false });
 
-            window.addEventListener('pointerup', () => { isDragging = false; });
+            canvas.addEventListener('touchmove', (e) => {
+                preventAll(e);
+                if (!isDragging) return;
+                
+                const t0 = e.touches[0];
+                if (Math.hypot(t0.clientX - startPos.x, t0.clientY - startPos.y) > 10) {
+                    if (longPressTimer) {
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                    }
+                }
+
+                if (e.touches.length === 1) {
+                    const t = e.touches[0];
+                    const prev = touches[t.identifier];
+                    mainGroup.rotation.y += (t.clientX - prev.x) * 0.01;
+                    mainGroup.rotation.x += (t.clientY - prev.y) * 0.01;
+                } 
+                else if (e.touches.length === 2) {
+                    const t1 = e.touches[0], t2 = e.touches[1];
+                    const curDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                    const prev1 = touches[t1.identifier], prev2 = touches[t2.identifier];
+                    
+                    if (prevTouchDist && prev1 && prev2) {
+                        const zoom = (curDist - prevTouchDist) * 0.01;
+                        camera.position.z = Math.max(2, Math.min(15, camera.position.z - zoom));
+
+                        const midX = (t1.clientX + t2.clientX) / 2;
+                        const midY = (t1.clientY + t2.clientY) / 2;
+                        const prevMidX = (prev1.x + prev2.x) / 2;
+                        const prevMidY = (prev1.y + prev2.y) / 2;
+                        camera.position.x -= (midX - prevMidX) * 0.01;
+                        camera.position.y += (midY - prevMidY) * 0.01;
+                    }
+                    prevTouchDist = curDist;
+                }
+
+                for (let touch of e.touches) touches[touch.identifier] = { x: touch.clientX, y: touch.clientY };
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', (e) => {
+                preventAll(e);
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObjects(droplets);
+                    
+                    if (intersects.length > 0) {
+                        intersects[0].object.userData.reactionStrength = 1.0;
+                        intersects[0].object.userData.targetScale = 1.5;
+                    } else {
+                        const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+                        const dir = vector.sub(camera.position).normalize();
+                        const distance = -camera.position.z / dir.z;
+                        const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+                        const localPos = mainGroup.worldToLocal(pos);
+                        createDroplet(localPos.x, localPos.y, localPos.z);
+                    }
+                }
+
+                if (e.touches.length === 0) {
+                    isDragging = false;
+                    prevTouchDist = null;
+                    touches = {};
+                }
+                longPressTimer = null;
+            }, { passive: false });
+
             animate();
         }
 
         function animate() {
             requestAnimationFrame(animate);
             const time = performance.now() * 0.001;
+            const camPos = new THREE.Vector3();
+            camera.getWorldPosition(camPos);
 
             droplets.forEach((drop, index) => {
                 const d = drop.userData;
+                const dropPos = new THREE.Vector3();
+                drop.getWorldPosition(dropPos);
+                
+                const dist = dropPos.distanceTo(camPos);
+                if (dist < 4) {
+                    const force = (4 - dist) * 0.03;
+                    drop.position.add(dropPos.sub(camPos).normalize().multiplyScalar(force));
+                }
+                drop.position.multiplyScalar(0.99);
+
                 d.targetScale += (1.0 - d.targetScale) * 0.02;
                 drop.scale.lerp(new THREE.Vector3(d.targetScale, d.targetScale, d.targetScale), 0.1);
-                d.reactionStrength *= 0.95;
-
+                
                 const pos = drop.geometry.getAttribute('position');
                 const v = new THREE.Vector3();
                 for (let i = 0; i < pos.count; i++) {
@@ -137,7 +199,6 @@
                 }
                 pos.needsUpdate = true;
             });
-
             renderer.render(scene, camera);
         }
 
