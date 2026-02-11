@@ -13,10 +13,12 @@
 body { 
     margin: 0; 
     padding: 0; 
-    overflow-y: scroll; 
+    overflow: hidden; /* Запрещаем скролл всей страницы */
     background-color: #000088; 
-    font-family: helvetica; serif;
-    touch-action: pan-y;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+
 
 
     /* защита от выделения и системных меню */
@@ -29,36 +31,40 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
-
-
 #ui-layer { 
-    position: relative;
+    position: absolute;
+    inset: 0;
     z-index: 10;
-    pointer-events: none;
+    
+    /* ИЗМЕНИТЬ ЭТО: */
+    pointer-events: auto; /* Теперь слой ловит касания */
+    
     display: flex;
     flex-direction: column;
-    
-    /* Убираем justify-content: center; */
     justify-content: flex-start; 
+    padding: 40px 0 40px 3%; 
     
-    /* Добавляем симметричные отступы */
-    padding-top: 40px;    /* Отступ сверху */
-    padding-bottom: 60px; /* Отступ снизу */
-    padding-left: 3%;
+    overflow-y: auto; 
+    max-height: 100vh;
     
-    min-height: 100vh;
+    /* ДОБАВИТЬ ЭТО (важно для мобильных): */
+    touch-action: pan-y; 
+    -webkit-overflow-scrolling: touch;
 }
 
 
 nav {
     display: flex;
-    justify-content: center;
     flex-direction: column;
     gap: 8px;
     text-align: left;
-    pointer-events: none;
+    
+    /* ИЗМЕНИТЬ ЭТО: */
+    pointer-events: auto; 
+    
     width: fit-content;
 }
+
 
 /* Явно разрешаем клики только там, где есть контент */
 .logo, .menu-item, .submenu {
@@ -235,30 +241,6 @@ canvas {
     word-break: break-all; 
     max-width: 300px;
     font-family: helvetica, sans-serif;
-}
-
-/* Разрешаем скролл, когда нужно */
-body.allow-scroll {
-    overflow-y: auto;
-    touch-action: auto;
-}
-
-#ui-layer {
-    height: auto;
-    min-height: 100vh;
-}
-
-/* Изменения для прокрутки */
-body.allow-scroll {
-    overflow-y: auto;
-    touch-action: auto;
-}
-
-#ui-layer {
-    /* Чтобы UI не перекрывал всё, если появится скролл */
-    min-height: 100vh;
-    height: auto;
-
 }
 
 </style> 
