@@ -13,10 +13,10 @@
 body { 
     margin: 0; 
     padding: 0; 
-    overflow: hidden; 
+    overflow-y: scroll; 
     background-color: #000088; 
     font-family: helvetica; serif;
-    touch-action: none;
+    touch-action: pan-y;
 
 
     /* защита от выделения и системных меню */
@@ -32,15 +32,23 @@ body {
 
 
 #ui-layer { 
-    position: absolute;
-    inset: 0;
+    position: relative;
     z-index: 10;
     pointer-events: none;
     display: flex;
     flex-direction: column;
-    justify-content: center; /* Центрирует всё содержимое (лого + nav) по вертикали */
+    
+    /* Убираем justify-content: center; */
+    justify-content: flex-start; 
+    
+    /* Добавляем симметричные отступы */
+    padding-top: 40px;    /* Отступ сверху */
+    padding-bottom: 60px; /* Отступ снизу */
     padding-left: 3%;
+    
+    min-height: 100vh;
 }
+
 
 nav {
     display: flex;
@@ -637,7 +645,7 @@ function copyToClipboard() {
         }, 1500);
     });
 }
-</script>
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
@@ -645,6 +653,8 @@ if ('serviceWorker' in navigator) {
       .catch(err => console.log('Служба дала сбой:', err));
   });
 }
+
+</script>
 
 </body>
 </html>
