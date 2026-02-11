@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            -webkit-user-drag: none;
+        }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; background: #000;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+    <script>
+        let scene, camera, renderer, mainGroup;
+        let droplets = []; 
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        // Материал с высокой пропускной способностью для блеска
+        const geo = new THREE.IcosahedronGeometry(0.7, 12);
+        const mat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            transmission: 1.0, 
+            thickness: 0.5,
+            roughness: 0.05,
+            metalness: 0.1,
+            transparent: true
+        });
+
+        function createDroplet(x, y, z) {
+            const newDrop = new THREE.Mesh(geo, mat);
+            newDrop.position.set(x, y, z);
+            newDrop.userData = { targetScale: 1, reactionStrength: 0 };
+            mainGroup.add(newDrop);
+            droplets.push(newDrop);
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            mainGroup = new THREE.Group();
+            scene.add(mainGroup);
+
+            // Освещение: теперь лампы ярче, чтобы капли точно были видны
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            const lights = [
+                [0xff0000, [5, 5, 5]], 
+                [0x00ff00, [-5, 5, 5]], 
+                [0x0000ff, [0, -5, 5]]
+            ].forEach(([col, pos]) => {
+                const l = new THREE.PointLight(col, 10, 50);
+                l.position.set(...pos);
+                scene.add(l);
+            });
+
+            createDroplet(0, 0, 0);
+
+            const canvas = renderer.domElement;
+            canvas.addEventListener('pointerdown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+                
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                
+                const intersects = raycaster.intersectObjects(droplets);
+                if (intersects.length > 0) {
+                    intersects[0].object.userData.reactionStrength = 1.5;
+                    intersects[0].object.userData.targetScale = 1.8;
+                } else {
+                    const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+                    const dir = vector.sub(camera.position).normalize();
+                    const distance = -camera.position.z / dir.z;
+                    const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+                    
+                    // Ограничиваем координаты, чтобы капли не улетали за горизонт
+                    const localPos = mainGroup.worldToLocal(pos);
+                    createDroplet(localPos.x, localPos.y, localPos.z);
+                }
+            });
+
+            window.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                if (e.cancelable) e.preventDefault();
+
+                const delta = { x: e.clientX - previousMousePosition.x, y: e.clientY - previousMousePosition.y };
+
+                mainGroup.rotation.y += delta.x * 0.01;
+                mainGroup.rotation.x += delta.y * 0.01;
+
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            }, { passive: false });
+
+            window.addEventListener('pointerup', () => { isDragging = false; });
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now() * 0.001;
+
+            droplets.forEach((drop, index) => {
+                const d = drop.userData;
+                d.targetScale += (1.0 - d.targetScale) * 0.02;
+                drop.scale.lerp(new THREE.Vector3(d.targetScale, d.targetScale, d.targetScale), 0.1);
+                d.reactionStrength *= 0.95;
+
+                const pos = drop.geometry.getAttribute('position');
+                const v = new THREE.Vector3();
+                for (let i = 0; i < pos.count; i++) {
+                    v.fromBufferAttribute(pos, i);
+                    const noise = (0.05 + d.reactionStrength * 0.2) * Math.sin(v.x * 2 + time * 2 + v.y + index);
+                    v.normalize().multiplyScalar(1 + noise);
+                    pos.setXYZ(i, v.x, v.y, v.z);
+                }
+                pos.needsUpdate = true;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        init();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
