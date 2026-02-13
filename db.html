@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Database Billet</title>
+    <style>
+        body { font-family: serif; background: #000; color: #fff; padding: 20px; max-width: 600px; margin: auto; }
+        .field { margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        label { display: block; color: gold; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
+        input { width: 100%; background: #111; border: 1px solid #444; color: #fff; padding: 10px; margin-top: 5px; outline: none; }
+        input:focus { border-color: gold; }
+        button { background: gold; color: #000; border: none; padding: 15px; width: 100%; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        #output { margin-top: 20px; background: #111; padding: 15px; font-family: monospace; font-size: 0.85rem; border-left: 3px solid gold; white-space: pre-wrap; color: #88ff88; }
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center;">VOCABULARY BILLET</h2>
+    
+    <div class="field">
+        <label>The Word</label>
+        <input type="text" id="word" placeholder="e.g. Actually">
+        <label style="margin-top:5px;">Translation Pair</label>
+        <input type="text" id="pair" placeholder="e.g. На самом деле">
+    </div>
+    
+    <div class="field">
+        <label>Stage 2: Definition & Example (English / Russian)</label>
+        <input type="text" id="l1_0" placeholder="English Definition">
+        <input type="text" id="l1_1" placeholder="English Example">
+        <input type="text" id="l1_2" placeholder="Определение на русском">
+        <input type="text" id="l1_3" placeholder="Пример на русском">
+    </div>
+
+    <div class="field">
+        <label>Stage 3: Etymology (Russian / English)</label>
+        <input type="text" id="l2_0" placeholder="Этимология (Russian)">
+        <input type="text" id="l2_1" placeholder="Русский пример">
+        <input type="text" id="l2_2" placeholder="Etymology (English)">
+        <input type="text" id="l2_3" placeholder="English example">
+    </div>
+
+    <button onclick="generateJSON()">GENERATE CODE</button>
+
+    <div id="output">The magic code will appear here...</div>
+
+    <script>
+        function generateJSON() {
+            const word = document.getElementById('word').value.toLowerCase();
+            const entry = {
+                l1: [
+                    document.getElementById('l1_0').value,
+                    document.getElementById('l1_1').value,
+                    document.getElementById('l1_2').value,
+                    document.getElementById('l1_3').value
+                ],
+                l2: [
+                    document.getElementById('l2_0').value,
+                    document.getElementById('l2_1').value,
+                    document.getElementById('l2_2').value,
+                    document.getElementById('l2_3').value
+                ],
+                pair: document.getElementById('pair').value
+            };
+            
+            const finalOutput = `"${word}": ${JSON.stringify(entry, null, 8)},`;
+            document.getElementById('output').innerText = finalOutput;
+        }
+    </script>
+</body>
+</html>
