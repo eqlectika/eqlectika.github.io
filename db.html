@@ -28,7 +28,7 @@ body {
 </head>
 <body>
     <h2 style="text-align: center;">VOCABULARY BILLET</h2>
-    
+
 
     <div class="field">
         <label>The Word</label>
@@ -57,30 +57,74 @@ body {
 
     <button onclick="generateJSON()">GENERATE CODE</button>
 
-    <div id="output">The magic code will appear here...</div>
+<div style="margin-bottom: 20px; padding: 10px; border: 1px dashed gold; display: flex; gap: 10px;">
+    <input type="file" id="importFile" style="display: none;" onchange="importDatabase(this)">
+    <button onclick="document.getElementById('importFile').click()" style="padding: 10px; font-size: 0.7rem; width: auto; margin: 0;">OPEN DB</button>
+    <button onclick="copyToClipboard()" style="padding: 10px; font-size: 0.7rem; width: auto; margin: 0; background: #333; color: gold; border: 1px solid gold;">COPY JSON</button>
+</div>
+
+        <div id="output">The magic code will appear here...</div>
 
     <script>
-        function generateJSON() {
-            const word = document.getElementById('word').value.toLowerCase();
-            const entry = {
-                l1: [
-                    document.getElementById('l1_0').value,
-                    document.getElementById('l1_1').value,
-                    document.getElementById('l1_2').value,
-                    document.getElementById('l1_3').value
-                ],
-                l2: [
-                    document.getElementById('l2_0').value,
-                    document.getElementById('l2_1').value,
-                    document.getElementById('l2_2').value,
-                    document.getElementById('l2_3').value
-                ],
-                pair: document.getElementById('pair').value
-            };
-            
-            const finalOutput = `"${word}": ${JSON.stringify(entry, null, 8)},`;
-            document.getElementById('output').innerText = finalOutput;
+
+let currentDB = {};
+
+// 1. Загрузка существующей базы из файла
+function importDatabase(input) {
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = function() {
+        try {
+            // Ожидаем формат {"word": {...}, "word2": {...}}
+            currentDB = JSON.parse(reader.result);
+            alert("Database loaded: " + Object.keys(currentDB).length + " words.");
+            updateOutput();
+        } catch (e) {
+            alert("Error: Make sure the file is valid JSON (without the variable name)");
         }
+    };
+    reader.readAsText(file);
+}
+
+// 2. Генерация и добавление нового слова
+function generateJSON() {
+    const word = document.getElementById('word').value.toLowerCase().trim();
+    if (!word) return alert("Please enter the word");
+
+    const entry = {
+        l1: [
+            document.getElementById('l1_0').value,
+            document.getElementById('l1_1').value,
+            document.getElementById('l1_2').value,
+            document.getElementById('l1_3').value
+        ],
+        l2: [
+            document.getElementById('l2_0').value,
+            document.getElementById('l2_1').value,
+            document.getElementById('l2_2').value,
+            document.getElementById('l2_3').value
+        ],
+        pair: document.getElementById('pair').value
+    };
+    
+    currentDB[word] = entry; // Добавляем или обновляем
+    updateOutput();
+}
+
+// 3. Обновление текстового поля
+function updateOutput() {
+    const output = document.getElementById('output');
+    output.innerText = JSON.stringify(currentDB, null, 4);
+}
+
+// 4. Копирование в буфер обмена
+function copyToClipboard() {
+    const text = document.getElementById('output').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        alert("JSON copied to clipboard! You can now paste it into your db file.");
+    });
+}
+
     </script>
 </body>
 </html>
