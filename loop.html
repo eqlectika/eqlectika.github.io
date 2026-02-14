@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="manifest" href="manifestloop.json">
-      <title>Loop</title>
+    <link rel="manifest" href="manifestloop.json">
+    <title>Loop</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -13,7 +13,6 @@
             overflow: hidden; /* Strict no-scroll */
         }
         
-        /* Top: Input Dashboard */
         #dashboard { padding: 10px; background: #000; flex-shrink: 0; }
         textarea { 
             width: 100%; height: 70px; background: #111; color: #66ff00; 
@@ -23,30 +22,32 @@
         input { flex: 1; background: #111; color: #ff7700; padding: 10px; font-size: 16px; outline: none; min-width: 0; }
         button { background: gold; color: #000; border: 1px solid black; font-weight: bold; padding: 10px; text-transform: uppercase; cursor: pointer; }
 
-        /* Middle: Practice Cycle */
         #cycle { 
-            flex: 1; /* Occupies all remaining space */
-            padding: 15px; overflow-y: auto; /* Internal scroll only if text is huge */
+            flex: 1; 
+            padding: 15px; overflow-y: auto; 
             display: block; font-size: 1.4rem; line-height: 1.4;
         }
         .word { display: inline-block; cursor: pointer; margin-right: 4px; }
         .word.active { color: gold; border-bottom: 2px solid gold; }
         .known { border-bottom-color: #444; }
 
-        /* Bottom: Clarification Billet */
         #billet { 
             height: 70px; background: #000; 
             padding: 10px; flex-shrink: 0; display: flex; align-items: center;
         }
         #out-def { color: #eee; font-size: 1.2rem; }
-   :root { --creativity-color: #00ff00; }
-footer { margin-top: 20px; padding: 20px 0; border-top: 1px solid #222; }
-.donate-box { display: flex; flex-direction: column; gap: 10px; }
-.donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-family: monospace; width: fit-content; }
-.crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; }
-.crypto-address-display { font-size: 11px; color: #fff; background: #111; padding: 8px 12px; border: 1px dashed #fff; cursor: copy; word-break: break-all; }
 
-     </style>
+        /* Styles for new buttons below cycle */
+        .db-controls { padding: 0 15px; display: flex; gap: 5px; flex-shrink: 0; }
+        .btn-db { background: #222; color: gold; border: 1px solid #444; font-size: 10px; padding: 5px 10px; }
+
+        :root { --creativity-color: #00ff00; }
+        footer { margin-top: 10px; padding: 20px 0; border-top: 1px solid #222; flex-shrink: 0; }
+        .donate-box { display: flex; flex-direction: column; gap: 10px; padding: 0 15px; }
+        .donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-family: monospace; width: fit-content; }
+        .crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; }
+        .crypto-address-display { font-size: 11px; color: #fff; background: #111; padding: 8px 12px; border: 1px dashed #fff; cursor: copy; word-break: break-all; }
+    </style>
 </head>
 <body>
 
@@ -64,19 +65,29 @@ footer { margin-top: 20px; padding: 20px 0; border-top: 1px solid #222; }
     </div>
 
     <div id="cycle"></div>
-    <footer>
-  <div class="donate-box">
-    <button class="donate-btn" onclick="toggleDonate()">Support</button>
-    <div id="cryptoInfo" class="crypto-info">
-      <span style="font-size: 10px; color: #fff;">USDT BSC (BEP20)</span>
-      <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
-      <span id="copyHint" style="font-size: 9px; color: #aaa;">Click address to copy</span>
-    </div>
-  </div>
-</footer>
 
+    <div class="db-controls">
+        <button class="btn-db" onclick="exportFullData()">Export DB</button>
+        <button class="btn-db" onclick="document.getElementById('file-input').click()">Import DB</button>
+        <input type="file" id="file-input" style="display:none" onchange="importFullData(event)">
+    </div>
+
+    <footer>
+        <div class="donate-box">
+            <button class="donate-btn" onclick="toggleDonate()">Support</button>
+            <div id="cryptoInfo" class="crypto-info">
+                <span style="font-size: 10px; color: #fff;">USDT BSC (BEP20)</span>
+                <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
+                <span id="copyHint" style="font-size: 9px; color: #aaa;">Click address to copy</span>
+            </div>
+        </div>
+    </footer>
 
 <script>
+    if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persist();
+    }
+
     let db = JSON.parse(localStorage.getItem('loop_db')) || {};
     let txt = localStorage.getItem('loop_text') || "";
 
@@ -113,28 +124,60 @@ footer { margin-top: 20px; padding: 20px 0; border-top: 1px solid #222; }
         document.getElementById('out-def').innerText = db[k] || "Not defined.";
     }
 
+    function exportFullData() {
+        const backup = {
+            loop_db: JSON.parse(localStorage.getItem('loop_db')) || {},
+            loop_text: localStorage.getItem('loop_text') || ""
+        };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `loop_backup_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importFullData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.loop_db && data.loop_text !== undefined) {
+                    localStorage.setItem('loop_db', JSON.stringify(data.loop_db));
+                    localStorage.setItem('loop_text', data.loop_text);
+                    db = data.loop_db;
+                    txt = data.loop_text;
+                    document.getElementById('src-text').value = txt;
+                    render();
+                }
+            } catch (err) { alert("Invalid file format"); }
+        };
+        reader.readAsText(file);
+    }
+
+    function toggleDonate() { 
+        const info = document.getElementById("cryptoInfo"); 
+        info.style.display = info.style.display === "flex" ? "none" : "flex"; 
+    }
+
+    function copyToClipboard() {
+        const addr = document.getElementById("cryptoAddr");
+        const text = addr.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            addr.innerText = "Copied!";
+            addr.style.color = "var(--creativity-color)";
+            setTimeout(() => {
+                addr.innerText = text;
+                addr.style.color = "#fff";
+            }, 1500);
+        });
+    }
+
     document.getElementById('src-text').value = txt;
     render();
-    function toggleDonate() { 
-    const info = document.getElementById("cryptoInfo"); 
-    info.style.display = info.style.display === "flex" ? "none" : "flex"; 
-}
-
-function copyToClipboard() {
-    const addr = document.getElementById("cryptoAddr");
-    const hint = document.getElementById("copyHint");
-    const text = addr.innerText;
-    navigator.clipboard.writeText(text).then(() => {
-        addr.innerText = "Copied!";
-        addr.style.color = "var(--creativity-color)";
-        setTimeout(() => {
-            addr.innerText = text;
-            addr.style.color = "#fff";
-        }, 1500);
-    });
-}
-
 </script>
-
 </body>
 </html>
