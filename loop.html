@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Loop</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            background: #000; color: #fff; 
+            margin: 0; height: 100vh; display: flex; flex-direction: column; 
+            overflow: hidden; /* Strict no-scroll */
+        }
+        
+        /* Top: Input Dashboard */
+        #dashboard { padding: 10px; background: #000; flex-shrink: 0; }
+        textarea { 
+            width: 100%; height: 50px; background: #111; color: #66ff00; 
+            padding: 8px; font-size: 16px; margin-bottom: 5px; outline: none; resize: none;
+        }
+        .row { display: flex; gap: 5px; }
+        input { flex: 1; background: #111; color: #ff7700; padding: 10px; font-size: 16px; outline: none; min-width: 0; }
+        button { background: gold; color: #000; border: 1px solid black; font-weight: bold; padding: 10px; text-transform: uppercase; cursor: pointer; }
+
+        /* Middle: Practice Cycle */
+        #cycle { 
+            flex: 1; /* Occupies all remaining space */
+            padding: 15px; overflow-y: auto; /* Internal scroll only if text is huge */
+            display: block; font-size: 1.4rem; line-height: 1.4;
+        }
+        .word { display: inline-block; cursor: pointer; margin-right: 4px; }
+        .word.active { color: gold; border-bottom: 2px solid gold; }
+        .known { border-bottom-color: #444; }
+
+        /* Bottom: Clarification Billet */
+        #billet { 
+            height: 70px; background: #000; 
+            padding: 10px; flex-shrink: 0; display: flex; align-items: center;
+        }
+        #out-def { color: #eee; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+    <div id="dashboard">
+        <textarea id="src-text" oninput="saveText()" placeholder="Source Text..."></textarea>
+        <div class="row">
+            <input type="text" id="w-key" placeholder="Word">
+            <input type="text" id="w-def" placeholder="Definition">
+            <button onclick="saveWord()">Save</button>
+        </div>
+    </div>
+
+    <div id="billet">
+        <div id="out-def">Select word...</div>
+    </div>
+
+    <div id="cycle"></div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('loop_db')) || {};
+    let txt = localStorage.getItem('loop_text') || "";
+
+    function saveText() {
+        txt = document.getElementById('src-text').value;
+        localStorage.setItem('loop_text', txt);
+        render();
+    }
+
+    function saveWord() {
+        const k = document.getElementById('w-key').value.toLowerCase().trim();
+        const d = document.getElementById('w-def').value;
+        if(k) {
+            db[k] = d;
+            localStorage.setItem('loop_db', JSON.stringify(db));
+            document.getElementById('w-key').value = "";
+            document.getElementById('w-def').value = "";
+            render();
+        }
+    }
+
+    function render() {
+        const area = document.getElementById('cycle');
+        area.innerHTML = txt.split(/\s+/).map(w => {
+            const clean = w.replace(/[^a-zA-Z]/g, "").toLowerCase();
+            const cls = db[clean] ? 'known' : '';
+            return `<span class="word ${cls}" onclick="clarify('${clean}', this)">${w}</span>`;
+        }).join(' ');
+    }
+
+    function clarify(k, el) {
+        document.querySelectorAll('.word').forEach(w => w.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('out-def').innerText = db[k] || "Not defined.";
+    }
+
+    document.getElementById('src-text').value = txt;
+    render();
+</script>
+
+</body>
+</html>
