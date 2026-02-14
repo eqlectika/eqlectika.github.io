@@ -39,7 +39,14 @@
             padding: 10px; flex-shrink: 0; display: flex; align-items: center;
         }
         #out-def { color: #eee; font-size: 1.2rem; }
-    </style>
+   :root { --creativity-color: #00ff00; }
+footer { margin-top: 20px; padding: 20px 0; border-top: 1px solid #222; }
+.donate-box { display: flex; flex-direction: column; gap: 10px; }
+.donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-family: monospace; width: fit-content; }
+.crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; }
+.crypto-address-display { font-size: 11px; color: #fff; background: #111; padding: 8px 12px; border: 1px dashed #fff; cursor: copy; word-break: break-all; }
+
+     </style>
 </head>
 <body>
 
@@ -57,6 +64,17 @@
     </div>
 
     <div id="cycle"></div>
+    <footer>
+  <div class="donate-box">
+    <button class="donate-btn" onclick="toggleDonate()">Support</button>
+    <div id="cryptoInfo" class="crypto-info">
+      <span style="font-size: 10px; color: #fff;">USDT BSC (BEP20)</span>
+      <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
+      <span id="copyHint" style="font-size: 9px; color: #aaa;">Click address to copy</span>
+    </div>
+  </div>
+</footer>
+
 
 <script>
     let db = JSON.parse(localStorage.getItem('loop_db')) || {};
@@ -97,6 +115,25 @@
 
     document.getElementById('src-text').value = txt;
     render();
+    function toggleDonate() { 
+    const info = document.getElementById("cryptoInfo"); 
+    info.style.display = info.style.display === "flex" ? "none" : "flex"; 
+}
+
+function copyToClipboard() {
+    const addr = document.getElementById("cryptoAddr");
+    const hint = document.getElementById("copyHint");
+    const text = addr.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        addr.innerText = "Copied!";
+        addr.style.color = "var(--creativity-color)";
+        setTimeout(() => {
+            addr.innerText = text;
+            addr.style.color = "#fff";
+        }, 1500);
+    });
+}
+
 </script>
 
 </body>
