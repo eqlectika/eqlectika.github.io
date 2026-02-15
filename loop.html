@@ -182,6 +182,16 @@
 
     document.getElementById('src-text').value = txt;
     render();
+    const freeze = (e) => { if (e.target.tagName !== 'TEXTAREA' && e.target.id !== 'cycle') e.preventDefault(); };
+window.addEventListener('wheel', freeze, { passive: false });
+window.addEventListener('touchmove', freeze, { passive: false });
+
+document.getElementById('src-text').addEventListener('touchmove', (e) => {
+  const rect = e.target.getBoundingClientRect();
+  const touchY = e.touches[0].clientY;
+  if (touchY > rect.top + 30 && touchY < rect.bottom - 30) e.stopPropagation();
+}, { passive: false });
+
 </script>
 </body>
 </html>
