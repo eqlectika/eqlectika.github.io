@@ -66,20 +66,26 @@
 
     <div id="cycle"></div>
 
-    <div class="db-controls" style="align-items: center; margin-bottom: 15px;">
+    <div class="db-controls">
         <button class="btn-db" onclick="exportFullData()">Export DB</button>
         <button class="btn-db" onclick="document.getElementById('file-input').click()">Import DB</button>
-        <button class="btn-db" onclick="toggleDonate()">Support</button>
         <input type="file" id="file-input" style="display:none" onchange="importFullData(event)">
-        <div id="cryptoInfo" class="crypto-info" style="position: absolute; bottom: 50px; left: 15px; background: #111; z-index: 10;">
-            <span style="font-size: 10px; color: #fff;">USDT BSC (BEP20)</span>
-            <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
-        </div>
-        <a href="index.html" style="margin-left: auto;">
-            <img src="logo.png" alt="Feedback" style="height: 32px; opacity: 0.8;">
-        </a>
+<a href="index.html" style="float: right;">
+    <img src="logo.png" alt="Feedback" style="height: 32px; opacity: 0.8; width: auto;">
+</a>
+
     </div>
 
+    <footer>
+        <div class="donate-box">
+            <button class="donate-btn" onclick="toggleDonate()">Support</button>
+            <div id="cryptoInfo" class="crypto-info">
+                <span style="font-size: 10px; color: #fff;">USDT BSC (BEP20)</span>
+                <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
+                <span id="copyHint" style="font-size: 9px; color: #aaa;">Click address to copy</span>
+            </div>
+        </div>
+    </footer>
 
 <script>
     if (navigator.storage && navigator.storage.persist) {
@@ -176,16 +182,6 @@
 
     document.getElementById('src-text').value = txt;
     render();
-    const freeze = (e) => { if (e.target.tagName !== 'TEXTAREA' && e.target.id !== 'cycle') e.preventDefault(); };
-window.addEventListener('wheel', freeze, { passive: false });
-window.addEventListener('touchmove', freeze, { passive: false });
-
-document.getElementById('src-text').addEventListener('touchmove', (e) => {
-  const rect = e.target.getBoundingClientRect();
-  const touchY = e.touches[0].clientY;
-  if (touchY > rect.top + 30 && touchY < rect.bottom - 30) e.stopPropagation();
-}, { passive: false });
-
 </script>
 </body>
 </html>
