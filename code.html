@@ -222,20 +222,26 @@ body {
         if (searchField.value !== currentSearchTerm) startSearch(searchField.value);
         else if (searchMatches.length) { currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length; highlightMatch(currentMatchIndex); }
     });
-    editor.addEventListener('select', () => {
-  const checkBounds = () => {
-    const rect = editor.getBoundingClientRect();
-    const selection = window.getSelection();
-    if (!selection.rangeCount) return;
-    
-    // Принудительно ограничиваем область прокрутки
-    if (editor.scrollTop < 5) editor.scrollTop = 0;
-    if (editor.scrollHeight - editor.scrollTop - editor.clientHeight < 5) {
-      editor.scrollTop = editor.scrollHeight - editor.clientHeight;
-    }
-  };
-  editor.addEventListener('mousemove', checkBounds);
+    const stopGlobalScroll = (e) => {
+  if (e.target !== editor) e.preventDefault();
+};
+
+
+
+
+editor.addEventListener('pointerdown', () => {
+  window.addEventListener('wheel', stopGlobalScroll, { passive: false });
+  window.addEventListener('touchmove', stopGlobalScroll, { passive: false });
 });
+
+window.addEventListener('pointerup', () => {
+  window.removeEventListener('wheel', stopGlobalScroll);
+  window.removeEventListener('touchmove', stopGlobalScroll);
+});
+
+
+
+
 
   </script>
 </body>
