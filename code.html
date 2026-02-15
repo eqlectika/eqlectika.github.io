@@ -222,9 +222,23 @@ body {
         if (searchField.value !== currentSearchTerm) startSearch(searchField.value);
         else if (searchMatches.length) { currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length; highlightMatch(currentMatchIndex); }
     });
-    const stopGlobalScroll = (e) => {
-  if (e.target !== editor) e.preventDefault();
-};
+document.addEventListener('selectionchange', () => {
+  if (document.activeElement === editor) {
+    const rect = editor.getBoundingClientRect();
+    const cursor = window.getSelection(); // Для мобильных
+    // Здесь браузер исполняет свой танец, мы лишь можем 
+    // корректировать scrollTop, если он прыгает слишком рано.
+  }
+});
+
+editor.addEventListener('touchmove', (e) => {
+  const touchY = e.touches[0].clientY;
+  const rect = editor.getBoundingClientRect();
+  if (touchY > rect.top + 20 && touchY < rect.bottom - 20) {
+    e.stopPropagation(); 
+  }
+}, { passive: false });
+
 
 
 
