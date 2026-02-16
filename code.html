@@ -36,11 +36,12 @@ body {
     #preview { flex: 62; border: none; background-color: #333333; overflow: auto; min-width: 0; }
     
     /* Панель управления */
-    #controlPanel { 
-      flex: 0 0 auto; 
-      background-color: black; 
-      border-left: 1px solid #222; 
-    }
+#controlPanel { 
+  flex: 0 0 auto; 
+  background-color: black; 
+  border-left: 1px solid #222;
+  z-index: 10;
+}
     
     #controlPanel > div {
       display: flex; 
@@ -95,26 +96,24 @@ body {
 
     /* Адаптация под вертикальный экран (Portrait) */
 @media (orientation: portrait) {
-  body { flex-direction: column; }
-  #editorContainer { flex: 1; min-height: 0; order: 2; }
-  #preview { flex: 1; min-height: 0; order: 3; }
-  #controlPanel { 
-    order: 1; 
-    position: sticky; 
-    top: 0; 
-    z-index: 100; 
+  #controlPanel {
+    position: sticky;
+    bottom: 0;
+    width: 100%;
     background: black;
+    border-top: 1px solid #222;
+    order: 10; /* Гарантирует, что панель в конце потока */
   }
-  #controlPanel > div {
-    flex-direction: row;
-    justify-content: space-evenly; 
-    padding: 10px; 
-    flex-wrap: wrap;
+  
+  #editorContainer { flex: 1 1 40%; }
+  #preview { flex: 1 1 20%; min-height: 50px; }
+  
+  body { 
+    display: flex; 
+    flex-direction: column; 
+    height: 100dvh; /* Используем dynamic vh для учета клавиатуры */
   }
-  #searchField { flex-grow: 1; width: 120px; }
 }
-
-
   </style>
 </head>
 <body>
@@ -261,10 +260,6 @@ window.addEventListener('pointerup', () => {
 
 
 
-window.visualViewport?.addEventListener('resize', () => {
-  const cp = document.getElementById('controlPanel');
-  cp.style.top = `${window.visualViewport.offsetTop}px`;
-});
 
 
   </script>
