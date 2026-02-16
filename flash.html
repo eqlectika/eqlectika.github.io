@@ -120,7 +120,7 @@
       pointer-events: auto !important;
       width: 90%; 
       max-width: 650px; 
-      min-height: 120px;
+      min-height: 190px;
       padding: 10px 14px; 
       background: rgba(255,255,255,0.05); 
       color: #fff; 
@@ -403,6 +403,18 @@
             if (hint) hint.innerText = "Click address to copy";
         }, 1500);
     }
+    const freeze = (e) => { 
+  if (e.target.id !== 'inputText') e.preventDefault(); 
+};
+window.addEventListener('wheel', freeze, { passive: false });
+window.addEventListener('touchmove', freeze, { passive: false });
+
+document.getElementById('inputText').addEventListener('touchmove', (e) => {
+  const rect = e.target.getBoundingClientRect();
+  const touchY = e.touches[0].clientY;
+  if (touchY > rect.top + 30 && touchY < rect.bottom - 30) e.stopPropagation();
+}, { passive: false });
+
 </script> 
 </body>
 </html>
