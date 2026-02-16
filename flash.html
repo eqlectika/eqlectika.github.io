@@ -7,22 +7,31 @@
   <title>Fast Reading Converter</title>
   <style>
     html, body {
-      overscroll-behavior: none; height: 100dvh; margin: 0; padding: 0;
+      overscroll-behavior: none; min-height: 100dvh; margin: 0; padding: 0;
       background-color: #000000; color: #fff; font-family: Arial, sans-serif;
-      overflow: hidden;
+      overflow-y: auto; /* Разрешаем вертикальный скролл */
       -webkit-user-select: none; user-select: none;
     }
 
     #container {
-      position: fixed;
-      top: -10%; left: 0; width: 100%; height: 100%;
+      position: fixed; /* Оставляем фиксированным для отображения слов по центру */
+      top: 0; left: 0; width: 100%; height: 100%;
       display: flex; justify-content: center; align-items: center;
       z-index: 10;
       perspective: 1000px;
+      pointer-events: none;
+    }
+
+    .footer-block { 
+      z-index: 100; width: 100%;
+      display: flex; flex-direction: column; align-items: center; 
+      position: relative; /* Вместо absolute */
+      padding-top: 100px; /* Место под логотип */
+      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 20px);
     }
 
     #inputContainer { 
-      position: relative; flex-shrink: 0; padding: 90px 5px 10px; 
+      position: relative; flex-shrink: 0; padding: 0px 5px 10px; 
       z-index: 100; width: 100%; display: flex; flex-direction: column; 
       align-items: center; box-sizing: border-box; transition: opacity 0.6s ease;
     }
@@ -39,20 +48,12 @@
     }
     body.is-reading #clickShield { display: block; }
 
-    .footer-block { 
-      flex-shrink: 0; z-index: 100; width: 100%;
-      display: flex; flex-direction: column; align-items: center; 
-      justify-content: flex-end; position: absolute; bottom: 0;
-      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 10px);
-      pointer-events: none;
-    }
-
     .footer-block > *, #mainButtons > button { pointer-events: auto; }
 
     #mainButtons { display: flex; align-items: center; gap: 5px; }
 
     .word-layer {
-      position: fixed; top: 50%; left: 50%;
+      position: fixed; top: 50%; left: 50%; 
       transform: translate(-50%, -50%);
       text-align: center; font-weight: 700; white-space: nowrap;
       width: 90%; z-index: 60; pointer-events: none;
@@ -85,8 +86,8 @@
       transition: transform 1.5s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 1.5s linear, filter 0.7s 0.8s ease-in;
     }
 
-    body.is-reading .footer-block { height: 140px; min-height: 140px; display: flex; flex-direction: column; justify-content: flex-end; }
-    #logoContainer { transition: opacity 0.7s ease; }
+    body.is-reading .footer-block { height: 130px; min-height: 70px; display: flex; flex-direction: column; justify-content: flex-end; }
+    #logoCntainer { transition: opacity 0.7s ease; }
     body.is-reading #inputContainer, body.is-reading #logoContainer { opacity: 0 !important; pointer-events: none; }
 
     button {
@@ -102,12 +103,12 @@
   border-radius: 30px; padding: 15px 15px; font-size: 12px;
   cursor: pointer; color: rgba(255, 255, 255, 0.4);
   background: transparent; transition: opacity 0.6s ease;
-  margin: 15px; z-index: 110;
+  margin: 50px; z-index: 110;
 }
 
 
     body.is-reading #colorControl { opacity: 0; pointer-events: none; }
-    #backBtn { display: none; margin-bottom: 15px; background: rgba(255,255,255,0.1); }
+    #backBtn { display: none; margin-bottom: 55px; background: rgba(255,255,255,0.1); }
     body.is-paused #backBtn { display: block; }
     #startBtn { background: #fff; color: #000; font-weight: bold; border: none; min-width: 100px; }
     body.is-reading #startBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn { 
@@ -182,38 +183,39 @@
   </style>
 </head>
 <body>
-<div id="logoContainer" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 120;">
-  <a href="index.html" style="text-decoration: none;">
-    <img src="logo.png" alt="Logo" style="max-width: 56px; opacity: 0.7;">
-  </a>
-</div>
-
-<div id="inputContainer">
-  <textarea id="inputText" placeholder="Paste your text here..."></textarea>
-</div>
-
-<div id="clickShield"></div>
-<div id="container"></div>
-
-<div class="footer-block">
-    <div id="colorControl">Background Color</div>
-
-  <button id="backBtn">← One Word Back</button>
-  <div id="mainButtons">
-    <button id="slowerBtn">Slower</button>
-    <button id="startBtn">Start</button>
-    <button id="fasterBtn">Faster</button>
+  <div id="logoContainer" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 120;">
+    <a href="index.html" style="text-decoration: none;">
+      <img src="logo.png" alt="Logo" style="max-width: 56px; opacity: 0.7;">
+    </a>
   </div>
 
-  <div class="donate-box">
-    <button class="donate-btn" onclick="toggleDonate()">Support</button>
-    <div id="cryptoInfo" class="crypto-info">
-      <span style="font-size: 12px; color: #fff; margin-bottom: 4px;">USDT BSC (BEP20)</span>
-      <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
-      <span id="copyHint" style="font-size: 12px; color: #fff; margin-top: 4px;">Click address to copy</span>
+  <div id="container"></div>
+  <div id="clickShield"></div>
+
+  <div class="footer-block">
+    <div id="inputContainer">
+      <textarea id="inputText" placeholder="Paste your text here..."></textarea>
     </div>
-  </div> 
-</div> 
+
+    <div id="colorControl">Background Color</div>
+
+    <button id="backBtn">← One Word Back</button>
+    <div id="mainButtons">
+      <button id="slowerBtn">Slower</button>
+      <button id="startBtn">Start</button>
+      <button id="fasterBtn">Faster</button>
+    </div>
+
+    <div class="donate-box">
+      <button class="donate-btn" onclick="toggleDonate()">Support</button>
+      <div id="cryptoInfo" class="crypto-info">
+        <span style="font-size: 12px; color: #fff; margin-bottom: 4px;">USDT BSC (BEP20)</span>
+        <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
+        <span id="copyHint" style="font-size: 12px; color: #fff; margin-top: 4px;">Click address to copy</span>
+      </div>
+    </div> 
+  </div>
+
 
 <script>
     const container = document.getElementById('container');
@@ -377,6 +379,7 @@
     function toggleDonate() { 
         const info = document.getElementById("cryptoInfo"); 
         info.style.display = (info.style.display === "flex") ? "none" : "flex"; 
+info.scrollIntoView({ behavior: 'smooth' });
     }
 
     function copyToClipboard() {
@@ -406,11 +409,6 @@
             if (hint) hint.innerText = "Click address to copy";
         }, 1500);
     }
-    const freeze = (e) => { 
-  if (e.target.id !== 'inputText') e.preventDefault(); 
-};
-window.addEventListener('wheel', freeze, { passive: false });
-window.addEventListener('touchmove', freeze, { passive: false });
 
 document.getElementById('inputText').addEventListener('touchmove', (e) => {
   const rect = e.target.getBoundingClientRect();
