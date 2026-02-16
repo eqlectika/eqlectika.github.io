@@ -36,12 +36,11 @@ body {
     #preview { flex: 62; border: none; background-color: #333333; overflow: auto; min-width: 0; }
     
     /* Панель управления */
-#controlPanel { 
-  flex: 0 0 auto; 
-  background-color: black; 
-  border-left: 1px solid #222;
-  z-index: 10;
-}
+    #controlPanel { 
+      flex: 0 0 auto; 
+      background-color: black; 
+      border-left: 1px solid #222; 
+    }
     
     #controlPanel > div {
       display: flex; 
@@ -95,16 +94,21 @@ body {
     }
 
     /* Адаптация под вертикальный экран (Portrait) */
-@media (orientation: portrait) {
-  #controlPanel > div {
-    flex-direction: row !important; /* Принудительно в ряд */
-    flex-wrap: nowrap; /* Чтобы не разлетались на две строки */
-    overflow-x: auto; /* Позволит прокручивать кнопки, если экран узкий */
-    justify-content: space-between;
-    padding: 5px;
-  }
-}
-
+    @media (orientation: portrait) {
+      body { flex-direction: column; }
+      #editorContainer { flex: 40; min-height: 0; }
+      #preview { flex: 50; min-height: 0; }
+      #controlPanel { border-left: none; border-top: 1px solid #222; }
+      #controlPanel > div {
+        flex-direction: row; /* Элементы в ряд в портретном режиме */
+        justify-content: space-evenly; 
+        padding: 10px; 
+        height: auto; 
+        width: 100%;
+        flex-wrap: wrap;
+      }
+      #searchField { width: 100px; flex-grow: 1; }
+    }
   </style>
 </head>
 <body>
