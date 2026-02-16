@@ -94,21 +94,26 @@ body {
     }
 
     /* Адаптация под вертикальный экран (Portrait) */
-    @media (orientation: portrait) {
-      body { flex-direction: column; }
-      #editorContainer { flex: 40; min-height: 0; }
-      #preview { flex: 50; min-height: 0; }
-      #controlPanel { border-left: none; border-top: 1px solid #222; }
-      #controlPanel > div {
-        flex-direction: row; /* Элементы в ряд в портретном режиме */
-        justify-content: space-evenly; 
-        padding: 10px; 
-        height: auto; 
-        width: 100%;
-        flex-wrap: wrap;
-      }
-      #searchField { width: 100px; flex-grow: 1; }
-    }
+@media (orientation: portrait) {
+  body { flex-direction: column; }
+  #editorContainer { flex: 1; min-height: 0; order: 2; }
+  #preview { display: none; } /* Скрываем превью при вводе для экономии места */
+  #controlPanel { 
+    order: 1; 
+    position: sticky; 
+    top: 0; 
+    z-index: 100; 
+    background: black;
+  }
+  #controlPanel > div {
+    flex-direction: row;
+    justify-content: space-evenly; 
+    padding: 10px; 
+    flex-wrap: wrap;
+  }
+  #searchField { flex-grow: 1; width: 120px; }
+}
+
   </style>
 </head>
 <body>
@@ -255,6 +260,10 @@ window.addEventListener('pointerup', () => {
 
 
 
+window.visualViewport?.addEventListener('resize', () => {
+  const cp = document.getElementById('controlPanel');
+  cp.style.top = `${window.visualViewport.offsetTop}px`;
+});
 
 
   </script>
