@@ -9,12 +9,12 @@
     html, body {
       overscroll-behavior: none; min-height: 100dvh; margin: 0; padding: 0;
       background-color: #000000; color: #fff; font-family: Arial, sans-serif;
-      overflow-y: auto; /* Разрешаем вертикальный скролл */
+      overflow-y: auto;
       -webkit-user-select: none; user-select: none;
     }
 
     #container {
-      position: fixed; /* Оставляем фиксированным для отображения слов по центру */
+      position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
       display: flex; justify-content: center; align-items: center;
       z-index: 10;
@@ -25,8 +25,8 @@
     .footer-block { 
       z-index: 100; width: 100%;
       display: flex; flex-direction: column; align-items: center; 
-      position: relative; /* Вместо absolute */
-      padding-top: 100px; /* Место под логотип */
+      position: relative;
+      padding-top: 100px;
       padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 20px);
     }
 
@@ -34,12 +34,6 @@
       position: relative; flex-shrink: 0; padding: 0px 5px 0px; 
       z-index: 100; width: 100%; display: flex; flex-direction: column; 
       align-items: center; box-sizing: border-box; transition: opacity 0.6s ease;
-    }
-
-
-    body.is-reading .donate-box { 
-      opacity: 0 !important; 
-      pointer-events: none; 
     }
 
     #clickShield {
@@ -86,17 +80,16 @@
       transition: transform 1.5s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 1.5s linear, filter 0.7s 0.8s ease-in;
     }
 
-body.is-reading .footer-block { 
-  position: fixed; 
-  bottom: 0; 
-  height: 130px; 
-  min-height: 70px; 
-  display: flex; 
-  flex-direction: column; 
-  justify-content: flex-end; 
-}
+    body.is-reading .footer-block { 
+      position: fixed; 
+      bottom: 0; 
+      height: 130px; 
+      min-height: 70px; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: flex-end; 
+    }
 
-    #logoCntainer { transition: opacity 0.7s ease; }
     body.is-reading #inputContainer, body.is-reading #logoContainer { opacity: 0 !important; pointer-events: none; }
 
     button {
@@ -106,17 +99,27 @@ body.is-reading .footer-block {
       position: relative; z-index: 110;
     }
 
-#colorControl {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: auto; min-width: 120px; border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 30px; padding: 15px 15px; font-size: 12px;
-  cursor: pointer; color: rgba(255, 255, 255, 0.4);
-  background: transparent; transition: opacity 0.6s ease;
-  margin: 40px; z-index: 110;
-}
+    /* Вертикальный блок настроек */
+    #settingsContainer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin: 20px 0;
+      z-index: 110;
+      transition: opacity 0.6s ease;
+    }
 
+    .setting-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: auto; min-width: 150px; border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 30px; padding: 12px 20px; font-size: 12px;
+      cursor: pointer; color: rgba(255, 255, 255, 0.4);
+      background: transparent;
+    }
 
-    body.is-reading #colorControl { opacity: 0; pointer-events: none; }
+    body.is-reading #settingsContainer { opacity: 0; pointer-events: none; }
+
     #backBtn { display: none; margin-bottom: 55px; background: rgba(255,255,255,0.1); }
     body.is-paused #backBtn { display: block; }
     #startBtn { background: #fff; color: #000; font-weight: bold; border: none; min-width: 100px; }
@@ -130,65 +133,37 @@ body.is-reading .footer-block {
       -webkit-user-select: text !important;
       user-select: text !important;
       pointer-events: auto !important;
-      width: 90%; 
-      max-width: 650px; 
-      min-height: 190px;
-      padding: 10px 14px; 
-      background: rgba(255,255,255,0.05); 
-      color: #fff; 
-      border: 1px solid rgba(255,255,255,0.2); 
-      border-radius: 0px; 
-      font-size: 16px; 
-      outline: none; 
-      box-sizing: border-box;
-      resize: none;
-      display: block;
+      width: 90%; max-width: 650px; min-height: 190px;
+      padding: 10px 14px; background: rgba(255,255,255,0.05); 
+      color: #fff; border: 1px solid rgba(255,255,255,0.2); 
+      border-radius: 0px; font-size: 16px; outline: none; 
+      box-sizing: border-box; resize: none; display: block;
       font-family: Arial, sans-serif;
     }
 
     .donate-box { 
-      display: flex; 
-      flex-direction: column; 
-      gap: 10px; 
-      margin-top: 30px; 
-      width: 100%; 
-      align-items: center;
+      display: flex; flex-direction: column; gap: 10px; 
+      margin-top: 30px; width: 100%; align-items: center;
       transition: opacity 0.6s ease;
     }
+    body.is-reading .donate-box { opacity: 0 !important; pointer-events: none; }
 
     .donate-btn { 
-      color: rgba(255,255,255,0.7); 
-      border: 1px solid rgba(255,255,255,0.7); 
-      padding: 5px 15px; 
-      background: transparent; 
-      cursor: pointer; 
-      font-family: Arial, sans-serif; 
-      font-size: 11px; 
-      transition: 0.3s; 
-      border-radius: 12px; 
-      pointer-events: auto !important;
+      color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.7); 
+      padding: 5px 15px; background: transparent; cursor: pointer; 
+      font-size: 11px; border-radius: 12px;
     }
     .donate-btn:hover { background: #fff; color: #000; }
 
     .crypto-info { 
-      display: none; 
-      flex-direction: column; 
-      gap: 5px; 
-      margin-top: 10px; 
-      align-items: center; 
+      display: none; flex-direction: column; gap: 5px; 
+      margin-top: 10px; align-items: center; 
     }
     .crypto-address-display { 
-      font-size: 10px; 
-      color: #fff; 
-      background: rgba(255,255,255,0.1); 
-      padding: 8px 12px; 
-      border: 1px dashed #fff; 
-      cursor: copy; 
-      word-break: break-all; 
-      max-width: 360px; 
-      pointer-events: auto !important;
+      font-size: 10px; color: #fff; background: rgba(255,255,255,0.1); 
+      padding: 8px 12px; border: 1px dashed #fff; cursor: copy; 
+      word-break: break-all; max-width: 360px;
     }
-    #copyHint { font-size: 9px; color: #444; margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -206,7 +181,10 @@ body.is-reading .footer-block {
       <textarea id="inputText" placeholder="Paste your text here..."></textarea>
     </div>
 
-    <div id="colorControl">Background Color</div>
+    <div id="settingsContainer">
+        <div id="colorControl" class="setting-btn">Background Color</div>
+        <div id="textColorControl" class="setting-btn">Text Color</div>
+    </div>
 
     <button id="backBtn">← One Word Back</button>
     <div id="mainButtons">
@@ -225,7 +203,6 @@ body.is-reading .footer-block {
     </div> 
   </div>
 
-
 <script>
     const container = document.getElementById('container');
     const inputText = document.getElementById('inputText');
@@ -234,10 +211,15 @@ body.is-reading .footer-block {
     const fasterBtn = document.getElementById('fasterBtn');
     const slowerBtn = document.getElementById('slowerBtn');
     const colorControl = document.getElementById('colorControl');
+    const textColorControl = document.getElementById('textColorControl');
     const clickShield = document.getElementById('clickShield');
 
     const colors = ['#000000', '#2a0505', '#05052a', '#052a05', '#1a1a1a'];
+    const textColors = ['#ffffff', '#ffeb3b', '#00ff00', '#ff4444', '#80cbc4', '#ffa726'];
+    
     let colorIndex = parseInt(localStorage.getItem('reading_colorIndex')) || 0;
+    let textColorIndex = parseInt(localStorage.getItem('reading_textColorIndex')) || 0;
+    
     let words = [], index = 0, timer = null, isPaused = false, isReading = false;
     let interval = parseInt(localStorage.getItem('reading_interval')) || 600;
 
@@ -274,21 +256,18 @@ body.is-reading .footer-block {
         let displayTxt = rawTxt;
         let isLongHold = displayTxt.includes('/');
 
-        if (isLongHold) {
-            displayTxt = displayTxt.replace(/\//g, '');
-        }
+        if (isLongHold) displayTxt = displayTxt.replace(/\//g, '');
 
         clearOldWord(isLongHold);
 
-        // Определяем, является ли это чисто знаком препинания
         const isPunctuationOnly = /^[.,!?;:]+$/.test(displayTxt);
 
-        // Отрисовка: знаки невидимы, если после них нет /
         if (displayTxt !== " " && !displayTxt.includes('|')) {
             if (!isPunctuationOnly || (isPunctuationOnly && isLongHold)) {
                 const newEl = document.createElement('div');
                 newEl.className = 'word-layer word-enter';
                 newEl.textContent = displayTxt;
+                newEl.style.color = textColors[textColorIndex]; // Применяем цвет текста
                 updateFontSize(displayTxt, newEl);
                 container.appendChild(newEl);
                 requestAnimationFrame(() => {  
@@ -297,28 +276,18 @@ body.is-reading .footer-block {
             }
         }
 
-        // РАСЧЕТ ПАУЗ ПО ВАШЕЙ СИСТЕМЕ
-          // РАСЧЕТ ПАУЗ ПО ВАШЕЙ СИСТЕМЕ
         let pauses = 1; 
-
         if (displayTxt.includes('|')) {
             pauses = 5; 
         } else if (rawTxt === " ") {
             pauses = 3; 
         } else {
-            // Запятая, точка с запятой, тире — увеличиваем множитель (было 1.5)
             if (/[;,-]/.test(displayTxt)) pauses = 2.5; 
-            
-            // Точка, вопрос, восклицание — еще более долгая пауза (было 1.5)
             if (/[.:!?—]/.test(displayTxt)) pauses = 4;
-            
-            // Дополнительная задержка для символа /
             if (isLongHold) pauses += 2;
         }
 
-
         let delay = interval * pauses; 
-
         index++;
         timer = setTimeout(showNext, delay);
     }
@@ -340,6 +309,15 @@ body.is-reading .footer-block {
         localStorage.setItem('reading_colorIndex', colorIndex);
     };
 
+    textColorControl.onclick = (e) => {
+        e.stopPropagation();
+        textColorIndex = (textColorIndex + 1) % textColors.length;
+        localStorage.setItem('reading_textColorIndex', textColorIndex);
+        // Небольшой визуальный фидбек — меняем цвет текста самой кнопки
+        textColorControl.style.color = textColors[textColorIndex];
+        setTimeout(() => { textColorControl.style.color = 'rgba(255, 255, 255, 0.4)'; }, 300);
+    };
+
     startBtn.onclick = (e) => {
         e.stopPropagation();
         if (!isReading) {
@@ -350,7 +328,6 @@ body.is-reading .footer-block {
                 if (w.trim() === "") return " ";
                 return w.replace(/_/g, ' ');
             });
-
             index = 0; isReading = true; isPaused = false;
             document.body.classList.add('is-reading');
             startBtn.textContent = 'Pause';
@@ -388,24 +365,14 @@ body.is-reading .footer-block {
     function toggleDonate() { 
         const info = document.getElementById("cryptoInfo"); 
         info.style.display = (info.style.display === "flex") ? "none" : "flex"; 
-info.scrollIntoView({ behavior: 'smooth' });
+        info.scrollIntoView({ behavior: 'smooth' });
     }
 
     function copyToClipboard() {
         const addr = document.getElementById("cryptoAddr");
         const hint = document.getElementById("copyHint");
         const text = addr.innerText;
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(() => showSuccess(addr, hint, text));
-        } else {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand("copy");
-            textArea.remove();
-            showSuccess(addr, hint, text);
-        }
+        navigator.clipboard.writeText(text).then(() => showSuccess(addr, hint, text));
     }
 
     function showSuccess(addr, hint, originalText) {
@@ -419,12 +386,11 @@ info.scrollIntoView({ behavior: 'smooth' });
         }, 1500);
     }
 
-document.getElementById('inputText').addEventListener('touchmove', (e) => {
-  const rect = e.target.getBoundingClientRect();
-  const touchY = e.touches[0].clientY;
-  if (touchY > rect.top + 30 && touchY < rect.bottom - 30) e.stopPropagation();
-}, { passive: false });
-
+    document.getElementById('inputText').addEventListener('touchmove', (e) => {
+        const rect = e.target.getBoundingClientRect();
+        const touchY = e.touches[0].clientY;
+        if (touchY > rect.top + 30 && touchY < rect.bottom - 30) e.stopPropagation();
+    }, { passive: false });
 </script> 
 </body>
 </html>
