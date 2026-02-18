@@ -615,11 +615,18 @@ function animate() {
 }
 
 /* ===== RESIZE ===== */
+/* ===== RESIZE ===== */
 window.addEventListener("resize", () => {
-    camera.aspect = innerWidth / innerHeight;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
+    renderer.setSize(w, h);
+    // Принудительно обновляем стили холста, чтобы он не схлопнулся
+    renderer.domElement.style.width = '100vw';
+    renderer.domElement.style.height = '100vh';
 });
+
 
 animate();
 /* ===== БЛОКИРОВКА DOUBLE-TAP ZOOM ===== */
