@@ -99,6 +99,8 @@ body.is-reading #mainButtons > button {
   pointer-events: auto; 
 }
 
+body.is-paused #accelControl { display: inline-flex; }
+
 
     body.is-reading #inputContainer, body.is-reading #logoContainer { opacity: 0 !important; pointer-events: none; }
 
@@ -208,6 +210,9 @@ body.is-reading #mainButtons > button {
       <button id="startBtn">Start</button>
       <button id="fasterBtn">Faster</button>
     </div>
+    
+    <div id="accelControl" class="setting-btn" style="margin-top: 10px; display: none;">Acceleration: OFF</div>
+
 
     <div class="donate-box">
       <button class="donate-btn" onclick="toggleDonate()">Support</button>
@@ -238,6 +243,9 @@ body.is-reading #mainButtons > button {
     
     let words = [], index = 0, timer = null, isPaused = false, isReading = false;
     let interval = parseInt(localStorage.getItem('reading_interval')) || 600;
+let isAccel = localStorage.getItem('reading_accel') === 'true';
+const accelControl = document.getElementById('accelControl');
+accelControl.textContent = `Acceleration: ${isAccel ? 'ON' : 'OFF'}`;
 
     document.body.style.backgroundColor = colors[colorIndex];
     inputText.value = localStorage.getItem('reading_text') || "";
@@ -303,10 +311,13 @@ body.is-reading #mainButtons > button {
             if (isLongHold) pauses += 2;
         }
 
-        let delay = interval * pauses; 
-        index++;
-        timer = setTimeout(showNext, delay);
-    }
+        let currentInterval = interval;
+        if (isAccel && words.length > 0) {
+            const progress = index / words.length;
+            currentInterval = interval * (1 - (progress * 0.2));
+        }
+        let delay = currentInterval * pauses;
+
 
     function stopReading() {
         clearTimeout(timer);
@@ -333,6 +344,14 @@ body.is-reading #mainButtons > button {
         textColorControl.style.color = textColors[textColorIndex];
         setTimeout(() => { textColorControl.style.color = 'rgba(255, 255, 255, 0.4)'; }, 300);
     };
+
+    accelControl.onclick = (e) => {
+        e.stopPropagation();
+        isAccel = !isAccel;
+        accelControl.textContent = `Acceleration: ${isAccel ? 'ON' : 'OFF'}`;
+        localStorage.setItem('reading_accel', isAccel);
+    };
+
 
     startBtn.onclick = (e) => {
         e.stopPropagation();
