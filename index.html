@@ -14,24 +14,24 @@ body {
     margin: 0; 
     padding: 0; 
     background-color: #000088; 
-    width: 100vw;
-    height: 100vh;
     overflow: hidden; 
     position: fixed; 
+    inset: 0;
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
 
 canvas {
-    position: fixed; 
+    position: fixed !important; 
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    width: 100% !important;
+    height: 100% !important;
     z-index: 1; 
     display: block;
 }
+
 
 
 #ui-layer { 
@@ -334,9 +334,15 @@ const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 10
 camera.position.z = 35;
 
 /* ===== РЕНДЕР ===== */
+/* ===== РЕНДЕР ===== */
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(innerWidth, innerHeight);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.domElement.style.position = 'fixed';
+renderer.domElement.style.top = '0';
+renderer.domElement.style.left = '0';
+renderer.domElement.style.zIndex = '1';
 document.body.appendChild(renderer.domElement);
+
 
 /* ===== КОНТРОЛЫ ===== */
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
