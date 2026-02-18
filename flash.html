@@ -37,9 +37,10 @@
     }
 
     #clickShield {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      position: fixed; top: 0; left: 0; width: 100%; height: calc(100% - 130px);
       z-index: 150; display: none; cursor: pointer;
     }
+
     body.is-reading #clickShield { display: block; }
 
     .footer-block > *, #mainButtons > button { pointer-events: auto; }
@@ -80,15 +81,24 @@
       transition: transform 1.5s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 1.5s linear, filter 0.7s 0.8s ease-in;
     }
 
-    body.is-reading .footer-block { 
-      position: fixed; 
-      bottom: 0; 
-      height: 130px; 
-      min-height: 70px; 
-      display: flex; 
-      flex-direction: column; 
-      justify-content: flex-end; 
-    }
+body.is-reading .footer-block { 
+  position: fixed; 
+  bottom: 0; 
+  height: 130px; 
+  min-height: 70px; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: flex-end;
+  z-index: 200; /* Ставим выше щита (150) */
+  pointer-events: none; /* Пропускаем клики сквозь сам блок... */
+}
+
+/* ...но возвращаем их кнопкам внутри него */
+body.is-reading .footer-block > *, 
+body.is-reading #mainButtons > button { 
+  pointer-events: auto; 
+}
+
 
     body.is-reading #inputContainer, body.is-reading #logoContainer { opacity: 0 !important; pointer-events: none; }
 
@@ -120,7 +130,13 @@
 
     body.is-reading #settingsContainer { opacity: 0; pointer-events: none; }
 
-    #backBtn { display: none; margin-bottom: 55px; background: rgba(255,255,255,0.1); }
+#backBtn { 
+  display: none; 
+  margin-bottom: 20px; /* Уменьшил с 55px, чтобы она не вылетала слишком высоко */
+  background: rgba(255,255,255,0.1); 
+  z-index: 210;
+}
+
     body.is-paused #backBtn { display: block; }
     #startBtn { background: #fff; color: #000; font-weight: bold; border: none; min-width: 100px; }
     body.is-reading #startBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn { 
@@ -359,8 +375,18 @@
         }
     };
 
-    fasterBtn.onclick = (e) => { e.stopPropagation(); interval = Math.max(50, interval - 50); localStorage.setItem('reading_interval', interval); };
-    slowerBtn.onclick = (e) => { e.stopPropagation(); interval += 50; localStorage.setItem('reading_interval', interval); };
+    fasterBtn.onclick = (e) => { 
+        e.stopPropagation(); 
+        interval = Math.max(50, interval - 50); 
+        localStorage.setItem('reading_interval', interval); 
+    };
+    
+    slowerBtn.onclick = (e) => { 
+        e.stopPropagation(); 
+        interval += 50; 
+        localStorage.setItem('reading_interval', interval); 
+    };
+
 
     function toggleDonate() { 
         const info = document.getElementById("cryptoInfo"); 
