@@ -23,32 +23,52 @@ body {
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
 }
-
 #ui-layer { 
-    position: absolute;
-    inset: 0;
+    position: fixed; /* Фиксируем поверх всего */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     z-index: 10;
-    width: 100vw;
-    height: 100vh;
+    padding: 40px 0 40px 3%; 
+    pointer-events: none; /* Пропускаем клики к Canvas */
     display: flex;
     flex-direction: column;
-    justify-content: flex-start; 
-    padding: 40px 0 40px 3%; 
-    pointer-events: none; 
-    overflow: visible;
     box-sizing: border-box;
 }
-
 
 nav {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    text-align: left;
-    pointer-events: auto; 
     width: fit-content;
-    /* Убираем прокрутку здесь, она блокирует выпадающие элементы */
-    overflow: visible; 
+    pointer-events: none; /* Все еще пропускаем клики в пустых местах навигации */
+}
+
+.menu-item-container {
+    display: flex;
+    flex-direction: row; 
+    align-items: center;
+    position: relative; 
+    width: fit-content;
+    pointer-events: auto; /* А вот здесь — разрешаем клики (на кнопках и подменю) */
+}
+
+.menu-item { 
+    text-decoration: none;
+    color: #ffffff;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0px;
+    opacity: 0.8;
+    white-space: nowrap;
+    padding-left: 2px;
+    pointer-events: auto;
+    cursor: pointer;
+    display: block;
+
+    transition: transform 0.2s ease, color 0.2s ease;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5); 
 }
 
 
@@ -59,36 +79,10 @@ nav {
     pointer-events: auto;
 }
 
-/* ----- Пункты ----- */
-.menu-item { 
-    text-decoration: none;
-    color: #ffffff;
-    font-family: 'Ubuntu';
-    font-size: 18px;
-    letter-spacing: 0px;
-    opacity: 0.8;
-    white-space: nowrap;
-    padding-left: 2px;
-    pointer-events: auto;
-    cursor: pointer;
-
-    transition: transform 0.2s ease, color 0.2s ease;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5); 
-}
 
 .menu-item:hover {
     color: #ffeb3b;
     transform: scale(1.08);
-}
-
-/* ЕДИНЫЙ БЛОК ДЛЯ КОНТЕЙНЕРА И ПОДМЕНЮ */
-/* ОБНОВЛЕННЫЙ БЛОК КОНТЕЙНЕРА */
-.menu-item-container {
-    display: flex;
-    flex-direction: row; 
-    align-items: center;
-    position: relative; /* Теперь это якорь для подменю */
-    width: fit-content; /* Контейнер больше не растягивается на всю ширину */
 }
 
 /* ОБНОВЛЕННЫЙ БЛОК ПОДМЕНЮ */
