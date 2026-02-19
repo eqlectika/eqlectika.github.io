@@ -23,7 +23,7 @@
 
 #gateway { 
     display: grid; 
-    grid-template-columns: 45% 55%; /* Сетка по Фибоначчи */
+    grid-template-columns: 50% 50%; /* Сетка по Фибоначчи */
     height: 35%; 
     width: 100%; 
     position: relative; 
@@ -33,7 +33,7 @@
 
 #gate-btn {
     position: absolute; 
-    left: 45%; /* Линия четко на границе сечения */
+    left: 50%; /* Линия четко на границе сечения */
     top: 0; 
     bottom: 0; 
     width: 22px; 
@@ -189,13 +189,24 @@ footer { padding: 10px 0; flex-shrink: 0; }
 function toggleSystem() {
     const flash = document.getElementById('flash-zone');
     const btn = document.getElementById('gate-btn');
-    const hub = document.getElementById('control-hub'); // Добавляем переменную
+    const hub = document.getElementById('control-hub');
 
     if (!isRunning) {
-        // ... ваш код инициализации камеры и слов ...
+        // Инициализация камеры
+        navigator.mediaDevices.getUserMedia({video: true})
+            .then(s => { document.getElementById('video').srcObject = s; })
+            .catch(() => {});
+
+        // Чтение слов из SOURCE
+        words = document.getElementById('srcText').value.split(/\s+/).filter(w => w.length > 0);
         
+        if (words.length === 0) {
+            alert("Введите текст в SOURCE");
+            return;
+        }
+
         flash.style.display = 'flex'; 
-        hub.style.display = 'flex'; // Показываем панель
+        hub.style.display = 'flex'; 
         btn.classList.add('active');
         isRunning = true; 
         currentIdx = 0; 
@@ -207,12 +218,13 @@ function toggleSystem() {
         clearTimeout(timer);
         
         flash.style.display = 'none'; 
-        hub.style.display = 'none'; // Скрываем панель
+        hub.style.display = 'none'; 
         btn.classList.remove('active');
         document.getElementById('run-btn').innerText = 'RUN';
         document.getElementById('run-btn').style.color = '';
     }
 }
+
 
 
         function update() {
