@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -76,13 +76,32 @@
 
         /* BASEMENT (Фиксированная высота, прокрутка внутри) */
         #basement { height: 140px; width: 100%; background: #000; display: flex; flex-direction: column; flex-shrink: 0; border-top: 1px solid var(--dim); overflow-y: auto; }
-        #index-row {
-            width: 100%; min-height: 25px; display: flex; align-items: center; justify-content: center;
-            color: var(--accent); font-size: 0.8rem; letter-spacing: 12px; font-weight: bold; background: #000;
-        }
+#index-row {
+    width: 100%; 
+    min-height: 25px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; /* Центрирует текст по горизонтали */
+    color: var(--accent); 
+    font-size: 0.8rem; 
+    letter-spacing: 12px; 
+padding-left: 12px;
+    font-weight: bold; 
+    background: #000;
+}
+
         #monitor { min-height: 60px; width: 100%; position: relative; }
-        
-        #db-tools { min-height: 45px; display: flex; justify-content: center; gap: 20px; align-items: center; padding: 5px; }
+
+
+#db-tools { 
+    min-height: 45px; 
+    display: flex; 
+    justify-content: center; /* Центрирует всё содержимое */
+    align-items: center; 
+    gap: 20px; 
+    padding: 5px; 
+}
+
 .db-btn { 
     font-size: 0.7rem; 
     color: var(--accent); /* Изменили с #666 на ярко-зеленый */
@@ -93,6 +112,17 @@
     font-weight: bold;
     transition: 0.3s; /* Для плавного эффекта */
 }
+
+/* Центрирование самого логотипа как отдельного блока */
+.centered-logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 10px 0;
+    text-decoration: none;
+}
+
 
 
         video { position: fixed; width: 1px; height: 1px; opacity: 0; }
@@ -110,14 +140,33 @@
     overflow-y: auto; 
 }
 
+
 /* Стили из loop.html, адаптированные под Matrix */
 footer { padding: 10px 0; flex-shrink: 0; }
-.donate-box { display: flex; flex-direction: column; gap: 8px; padding: 0 15px; }
+
 .donate-btn { 
-    color: #888; border: 1px solid #444; padding: 5px 15px; 
-    background: transparent; cursor: pointer; font-size: 0.6rem; 
-    text-transform: uppercase; width: fit-content;
+    color: #888; 
+border: 1px solid #444; 
+padding: 5px 15px; 
+    background: transparent; 
+cursor: pointer; 
+font-size: 0.6rem; 
+text-transform: uppercase; 
+width: fit-content;
+    margin: 0 auto; 
 }
+
+
+.donate-box { 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; /* Центрирует кнопку и крипто-адрес */
+    gap: 8px; 
+    padding: 0 15px; 
+    text-align: center; /* Центрирует текст внутри блоков */
+}
+
+
 .crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; }
 .crypto-address-display { 
     font-size: 10px; color: var(--accent); background: #0a0a0a; 
@@ -152,17 +201,18 @@ footer { padding: 10px 0; flex-shrink: 0; }
     </div>
 
 <div id="basement">
-    <div id="index-row">RQ: 85</div>
+    <div id="index-row">RQ:85</div>
     <div id="monitor"><canvas id="sparkChart"></canvas></div>
     
     <div id="db-tools">
         <div class="db-btn" onclick="exportDB()">EXPORT DB</div>
         <div class="db-btn" onclick="document.getElementById('importInput').click()">IMPORT DB</div>
         <input type="file" id="importInput" style="display:none" onchange="importDB(event)">
-        <a href="index.html" style="margin-left: auto;">
-            <img src="logo.png" alt="Feedback" style="height: 24px; opacity: 0.6; width: auto;">
-        </a>
     </div>
+
+    <a href="index.html" class="centered-logo">
+        <img src="logo.png" alt="Feedback" style="height: 38px; opacity: 0.9; width: auto;">
+    </a>
 
     <footer>
         <div class="donate-box">
@@ -175,6 +225,7 @@ footer { padding: 10px 0; flex-shrink: 0; }
         </div>
     </footer>
 </div>
+
 
 
     <script>
@@ -281,13 +332,23 @@ function toggleSystem() {
         }
 
         setInterval(() => {
-            rq = Math.max(10, Math.min(100, rq + (Math.random() - 0.5) * 6));
-            chart.data.datasets[0].data.push(rq); chart.data.datasets[0].data.shift();
-            chart.update('none');
-            const c = rq > 50 ? '#00ff00' : '#ff1493';
-            document.getElementById('index-row').style.color = c;
-            chart.data.datasets[0].borderColor = c;
-        }, 1000);
+    // Вычисляем новое значение
+    rq = Math.max(10, Math.min(100, rq + (Math.random() - 0.5) * 6));
+    
+    // Обновляем график
+    chart.data.datasets[0].data.push(rq); 
+    chart.data.datasets[0].data.shift();
+    chart.update('none');
+    
+    // ДОБАВЬТЕ ЭТУ СТРОКУ: она обновляет цифру в блоке index-row
+    document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
+    
+    // Меняем цвет в зависимости от состояния
+    const c = rq > 50 ? '#00ff00' : '#ff1493';
+    document.getElementById('index-row').style.color = c;
+    chart.data.datasets[0].borderColor = c;
+}, 1000);
+
         
         function toggleDonate() { 
     const info = document.getElementById("cryptoInfo"); 
