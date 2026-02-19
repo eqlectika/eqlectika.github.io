@@ -62,10 +62,16 @@
         #word-stream { font-size: 2.8rem; font-weight: bold; text-align: center; cursor: pointer; width: 95%; color: var(--text); }
 
         /* PINK CONTROLS */
-        #control-hub {
-            height: 40px; width: 100%; display: flex; justify-content: space-around; align-items: center;
-            background: #000; flex-shrink: 0;
-        }
+#control-hub {
+    height: 40px; 
+    width: 100%; 
+    display: none; /* Скрыто */
+    justify-content: space-around; 
+    align-items: center;
+    background: #000; 
+    flex-shrink: 0;
+}
+
         .u-btn { color: var(--tension); font-size: 0.7rem; cursor: pointer; font-weight: bold; }
 
         /* BASEMENT (Фиксированная высота, прокрутка внутри) */
@@ -126,22 +132,34 @@
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false, max: 100, min: 0 }, x: { display: false } }, plugins: { legend: { display: false } } }
         });
 
-        function toggleSystem() {
-            const flash = document.getElementById('flash-zone');
-            const btn = document.getElementById('gate-btn');
-            if (!isRunning) {
-                navigator.mediaDevices.getUserMedia({video: true}).then(s => { document.getElementById('video').srcObject = s; }).catch(()=>{});
-                words = document.getElementById('srcText').value.split(/\s+/).filter(w => w.length > 0);
-                if (!words.length) return;
-                flash.style.display = 'flex'; btn.classList.add('active');
-                isRunning = true; currentIdx = 0; isPaused = true; update();
-            } else {
-                isRunning = false; isPaused = true; clearTimeout(timer);
-                flash.style.display = 'none'; btn.classList.remove('active');
-                document.getElementById('run-btn').innerText = 'RUN';
-                document.getElementById('run-btn').style.color = '';
-            }
-        }
+function toggleSystem() {
+    const flash = document.getElementById('flash-zone');
+    const btn = document.getElementById('gate-btn');
+    const hub = document.getElementById('control-hub'); // Добавляем переменную
+
+    if (!isRunning) {
+        // ... ваш код инициализации камеры и слов ...
+        
+        flash.style.display = 'flex'; 
+        hub.style.display = 'flex'; // Показываем панель
+        btn.classList.add('active');
+        isRunning = true; 
+        currentIdx = 0; 
+        isPaused = true; 
+        update();
+    } else {
+        isRunning = false; 
+        isPaused = true; 
+        clearTimeout(timer);
+        
+        flash.style.display = 'none'; 
+        hub.style.display = 'none'; // Скрываем панель
+        btn.classList.remove('active');
+        document.getElementById('run-btn').innerText = 'RUN';
+        document.getElementById('run-btn').style.color = '';
+    }
+}
+
 
         function update() {
             if (!words[currentIdx]) return;
