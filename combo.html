@@ -22,7 +22,7 @@
 #gateway { 
     display: grid; 
     grid-template-columns: 50% 50%; 
-    height: 60%; /* Увеличено до 60% для комфортной работы с текстом */
+    height: 45vh; /* Занимает почти половину экрана */
     width: 100%; 
     position: relative; 
     border-bottom: 1px solid var(--dim); 
@@ -30,8 +30,7 @@
 }
 
 #flash-zone { 
-    height: 15%; /* Ограничиваем высоту зоны Flash */
-    min-height: 80px; /* Минимальный порог, чтобы текст не слипался */
+    height: 20vh; /* Ровно 1/5 экрана */
     display: flex; 
     visibility: hidden; 
     flex-direction: column; 
@@ -40,8 +39,19 @@
     background: #050505; 
     position: relative; 
     border-bottom: 1px solid var(--dim);
-    flex-grow: 1; /* Позволяет занять остаток, если он есть */
+    flex-shrink: 0;
 }
+
+#basement { 
+    flex-grow: 1; /* Забирает весь остаток (примерно 35% экрана минус кнопки) */
+    width: 100%; 
+    background: #000; 
+    display: flex; 
+    flex-direction: column; 
+    border-top: 1px solid var(--dim); 
+    overflow-y: auto; 
+}
+
 
 
 #flash-zone.visible { visibility: visible; }
@@ -143,18 +153,7 @@ padding-left: 12px;
 
         video { position: fixed; width: 1px; height: 1px; opacity: 0; }
  
-/* Обновленный подвал теперь растет по контенту или скроллится */
-#basement { 
-    height: auto; 
-    max-height: 40vh; 
-    width: 100%; 
-    background: #000; 
-    display: flex; 
-    flex-direction: column; 
-    flex-shrink: 0; 
-    border-top: 1px solid var(--dim); 
-    overflow-y: auto; 
-}
+
 
 
 
@@ -371,16 +370,19 @@ function exportDB() {
         
 function toggleDonate() { 
     const info = document.getElementById("cryptoInfo"); 
+    const basement = document.getElementById("basement");
     const isOpening = info.style.display !== "flex";
+    
     info.style.display = isOpening ? "flex" : "none"; 
     
     if (isOpening) {
         setTimeout(() => {
-            // Скроллим само окно к нижней части блока доната
-            info.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }, 50);
+            // Центрируем блок доната в видимой области подвала
+            info.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
     }
 }
+
 
 
 
