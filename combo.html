@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>S.P.A.R.K. Matrix Final</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg: #000; --text: #fff; --accent: #00ff00; --tension: #ff1493; --dim: #111; }
+        * { box-sizing: border-box; font-family: 'Courier New', monospace; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; height: 100dvh; background: var(--bg); color: var(--text); overflow: hidden; display: flex; flex-direction: column; }
+
+        /* GATEWAY (35% высоты) */
+
+        .pane-wrap { position: relative; height: 100%; width: 100%; overflow: hidden; }
+        .pane { border: none; padding: 10px; font-size: 0.85rem; background: var(--bg); color: var(--text); outline: none; resize: none; width: 100%; height: 100%; }
+        .pane-l { color: #444; border-right: 1px solid var(--dim); }
+
+        #save-btn { 
+            position: absolute; bottom: 5px; right: 5px; background: var(--accent); color: #000; 
+            padding: 4px 10px; font-size: 0.6rem; font-weight: bold; cursor: pointer; display: none; z-index: 150;
+        }
+
+#gateway { 
+    display: grid; 
+    grid-template-columns: 45% 55%; /* Сетка по Фибоначчи */
+    height: 35%; 
+    width: 100%; 
+    position: relative; 
+    border-bottom: 1px solid var(--dim); 
+    flex-shrink: 0; 
+}
+
+#gate-btn {
+    position: absolute; 
+    left: 45%; /* Линия четко на границе сечения */
+    top: 0; 
+    bottom: 0; 
+    width: 22px; 
+    transform: translateX(-50%); 
+    z-index: 200; 
+    cursor: pointer;
+    background: var(--accent); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+}
+
+#digText {
+    padding-left: 25px; /* Комфортный зазор для Digest */
+}
+
+        #gate-btn span { writing-mode: vertical-rl; text-orientation: upright; color: #000; font-weight: 900; font-size: 0.65rem; letter-spacing: 3px; }
+        #gate-btn.active { background: var(--tension); }
+
+        /* FLASH ZONE (Занимает остаток места) */
+        #flash-zone { 
+            flex-grow: 1; display: none; flex-direction: column; justify-content: center; align-items: center;
+            background: #050505; position: relative; border-bottom: 1px solid var(--dim);
+        }
+        #flash-zone.visible { display: flex; }
+        #word-stream { font-size: 2.8rem; font-weight: bold; text-align: center; cursor: pointer; width: 95%; color: var(--text); }
+
+        /* PINK CONTROLS */
+        #control-hub {
+            height: 40px; width: 100%; display: flex; justify-content: space-around; align-items: center;
+            background: #000; flex-shrink: 0;
+        }
+        .u-btn { color: var(--tension); font-size: 0.7rem; cursor: pointer; font-weight: bold; }
+
+        /* BASEMENT (Фиксированная высота, прокрутка внутри) */
+        #basement { height: 140px; width: 100%; background: #000; display: flex; flex-direction: column; flex-shrink: 0; border-top: 1px solid var(--dim); overflow-y: auto; }
+        #index-row {
+            width: 100%; min-height: 25px; display: flex; align-items: center; justify-content: center;
+            color: var(--accent); font-size: 0.8rem; letter-spacing: 12px; font-weight: bold; background: #000;
+        }
+        #monitor { min-height: 60px; width: 100%; position: relative; }
+        
+        #db-tools { min-height: 45px; display: flex; justify-content: center; gap: 20px; align-items: center; padding: 5px; }
+        .db-btn { font-size: 0.6rem; color: #666; cursor: pointer; border: 1px solid #222; padding: 4px 8px; text-transform: uppercase; }
+
+        video { position: fixed; width: 1px; height: 1px; opacity: 0; }
+    </style>
+</head>
+<body>
+
+    <video id="video" autoplay playsinline muted></video>
+
+    <div id="gateway">
+        <div class="pane-wrap"><textarea id="srcText" class="pane pane-l" placeholder="SOURCE"></textarea></div>
+        <div class="pane-wrap">
+            <textarea id="digText" class="pane" placeholder="DIGEST" oninput="checkDigest()"></textarea>
+            <div id="save-btn" onclick="exportDB()">SAVE</div>
+        </div>
+        <div id="gate-btn" onclick="toggleSystem()"><span>GATE</span></div>
+    </div>
+
+    <div id="flash-zone">
+        <div id="word-stream" onclick="captureWord()">READY</div>
+    </div>
+
+    <div id="control-hub">
+        <div class="u-btn" onclick="move(-10)">PREV</div>
+        <div class="u-btn" onclick="adjSpd(-50)">SLOWER</div>
+        <div class="u-btn" id="run-btn" onclick="toggleRun()">RUN</div>
+        <div class="u-btn" onclick="adjSpd(50)">FASTER</div>
+        <div class="u-btn" onclick="move(10)">NEXT</div>
+    </div>
+
+    <div id="basement">
+        <div id="index-row">RQ: 85</div>
+        <div id="monitor"><canvas id="sparkChart"></canvas></div>
+        <div id="db-tools">
+            <div class="db-btn" onclick="exportDB()">EXPORT DB</div>
+            <div class="db-btn" onclick="document.getElementById('importInput').click()">IMPORT DB</div>
+            <input type="file" id="importInput" style="display:none" onchange="importDB(event)">
+        </div>
+    </div>
+
+    <script>
+        let isRunning = false, isPaused = true, words = [], currentIdx = 0, speed = 300, rq = 85, timer = null;
+
+        const chart = new Chart(document.getElementById('sparkChart').getContext('2d'), {
+            type: 'line',
+            data: { labels: Array(40).fill(''), datasets: [{ borderColor: '#00ff00', borderWidth: 1, data: Array(40).fill(85), pointRadius: 0, fill: false, tension: 0.4 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false, max: 100, min: 0 }, x: { display: false } }, plugins: { legend: { display: false } } }
+        });
+
+        function toggleSystem() {
+            const flash = document.getElementById('flash-zone');
+            const btn = document.getElementById('gate-btn');
+            if (!isRunning) {
+                navigator.mediaDevices.getUserMedia({video: true}).then(s => { document.getElementById('video').srcObject = s; }).catch(()=>{});
+                words = document.getElementById('srcText').value.split(/\s+/).filter(w => w.length > 0);
+                if (!words.length) return;
+                flash.style.display = 'flex'; btn.classList.add('active');
+                isRunning = true; currentIdx = 0; isPaused = true; update();
+            } else {
+                isRunning = false; isPaused = true; clearTimeout(timer);
+                flash.style.display = 'none'; btn.classList.remove('active');
+                document.getElementById('run-btn').innerText = 'RUN';
+                document.getElementById('run-btn').style.color = '';
+            }
+        }
+
+        function update() {
+            if (!words[currentIdx]) return;
+            document.getElementById('word-stream').innerText = words[currentIdx];
+            document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
+        }
+
+        function toggleRun() {
+            if (!isRunning) return;
+            isPaused = !isPaused;
+            document.getElementById('run-btn').innerText = isPaused ? 'RUN' : 'STOP';
+            document.getElementById('run-btn').style.color = isPaused ? '' : 'var(--tension)';
+            if (!isPaused) loop();
+        }
+
+        function loop() {
+            if (isRunning && !isPaused && currentIdx < words.length - 1) {
+                currentIdx++; update();
+                timer = setTimeout(loop, 60000 / (speed * (rq/100)));
+            }
+        }
+
+        function adjSpd(d) { speed = Math.max(50, speed + d); update(); }
+        function move(d) { currentIdx = Math.max(0, Math.min(words.length-1, currentIdx + d)); update(); }
+
+        function captureWord() {
+            if (!words[currentIdx]) return;
+            const w = words[currentIdx].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+            document.getElementById('digText').value += w + ': ';
+            checkDigest();
+            document.getElementById('word-stream').style.color = 'var(--tension)';
+            setTimeout(() => document.getElementById('word-stream').style.color = '', 100);
+        }
+
+        function checkDigest() {
+            document.getElementById('save-btn').style.display = document.getElementById('digText').value.trim().length > 0 ? 'block' : 'none';
+        }
+
+        function exportDB() {
+            const data = JSON.stringify({src: document.getElementById('srcText').value, dig: document.getElementById('digText').value});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], {type:'application/json'})); a.download = 'matrix.json'; a.click();
+        }
+
+        function importDB(e) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const data = JSON.parse(ev.target.result);
+                document.getElementById('srcText').value = data.src || '';
+                document.getElementById('digText').value = data.dig || '';
+                checkDigest();
+            };
+            reader.readAsText(e.target.files[0]);
+        }
+
+        setInterval(() => {
+            rq = Math.max(10, Math.min(100, rq + (Math.random() - 0.5) * 6));
+            chart.data.datasets[0].data.push(rq); chart.data.datasets[0].data.shift();
+            chart.update('none');
+            const c = rq > 50 ? '#00ff00' : '#ff1493';
+            document.getElementById('index-row').style.color = c;
+            chart.data.datasets[0].borderColor = c;
+        }, 1000);
+    </script>
+</body>
+</html>
