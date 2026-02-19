@@ -83,10 +83,48 @@
         #monitor { min-height: 60px; width: 100%; position: relative; }
         
         #db-tools { min-height: 45px; display: flex; justify-content: center; gap: 20px; align-items: center; padding: 5px; }
-        .db-btn { font-size: 0.6rem; color: #666; cursor: pointer; border: 1px solid #222; padding: 4px 8px; text-transform: uppercase; }
+.db-btn { 
+    font-size: 0.7rem; 
+    color: var(--accent); /* Изменили с #666 на ярко-зеленый */
+    cursor: pointer; 
+    border: 1px solid var(--accent); /* Добавили рамку в цвет текста */
+    padding: 5px 10px; 
+    text-transform: uppercase; 
+    font-weight: bold;
+    transition: 0.3s; /* Для плавного эффекта */
+}
+
 
         video { position: fixed; width: 1px; height: 1px; opacity: 0; }
-    </style>
+ 
+/* Обновленный подвал теперь растет по контенту или скроллится */
+#basement { 
+    height: auto; 
+    max-height: 220px; 
+    width: 100%; 
+    background: #000; 
+    display: flex; 
+    flex-direction: column; 
+    flex-shrink: 0; 
+    border-top: 1px solid var(--dim); 
+    overflow-y: auto; 
+}
+
+/* Стили из loop.html, адаптированные под Matrix */
+footer { padding: 10px 0; flex-shrink: 0; }
+.donate-box { display: flex; flex-direction: column; gap: 8px; padding: 0 15px; }
+.donate-btn { 
+    color: #888; border: 1px solid #444; padding: 5px 15px; 
+    background: transparent; cursor: pointer; font-size: 0.6rem; 
+    text-transform: uppercase; width: fit-content;
+}
+.crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; }
+.crypto-address-display { 
+    font-size: 10px; color: var(--accent); background: #0a0a0a; 
+    padding: 8px; border: 1px dashed #333; cursor: copy; word-break: break-all; 
+}
+
+   </style>
 </head>
 <body>
 
@@ -113,15 +151,31 @@
         <div class="u-btn" onclick="move(10)">NEXT</div>
     </div>
 
-    <div id="basement">
-        <div id="index-row">RQ: 85</div>
-        <div id="monitor"><canvas id="sparkChart"></canvas></div>
-        <div id="db-tools">
-            <div class="db-btn" onclick="exportDB()">EXPORT DB</div>
-            <div class="db-btn" onclick="document.getElementById('importInput').click()">IMPORT DB</div>
-            <input type="file" id="importInput" style="display:none" onchange="importDB(event)">
-        </div>
+<div id="basement">
+    <div id="index-row">RQ: 85</div>
+    <div id="monitor"><canvas id="sparkChart"></canvas></div>
+    
+    <div id="db-tools">
+        <div class="db-btn" onclick="exportDB()">EXPORT DB</div>
+        <div class="db-btn" onclick="document.getElementById('importInput').click()">IMPORT DB</div>
+        <input type="file" id="importInput" style="display:none" onchange="importDB(event)">
+        <a href="index.html" style="margin-left: auto;">
+            <img src="logo.png" alt="Feedback" style="height: 24px; opacity: 0.6; width: auto;">
+        </a>
     </div>
+
+    <footer>
+        <div class="donate-box">
+            <button class="donate-btn" onclick="toggleDonate()">Support</button>
+            <div id="cryptoInfo" class="crypto-info">
+                <span style="font-size: 10px; color: #fff;">USDT BSC (BEP20)</span>
+                <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
+                <span id="copyHint" style="font-size: 9px; color: #aaa;">Click address to copy</span>
+            </div>
+        </div>
+    </footer>
+</div>
+
 
     <script>
         let isRunning = false, isPaused = true, words = [], currentIdx = 0, speed = 300, rq = 85, timer = null;
@@ -222,6 +276,26 @@ function toggleSystem() {
             document.getElementById('index-row').style.color = c;
             chart.data.datasets[0].borderColor = c;
         }, 1000);
+        
+        function toggleDonate() { 
+    const info = document.getElementById("cryptoInfo"); 
+    info.style.display = info.style.display === "flex" ? "none" : "flex"; 
+}
+
+function copyToClipboard() {
+    const addr = document.getElementById("cryptoAddr");
+    const text = addr.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        const originalText = text;
+        addr.innerText = "COPIED!";
+        addr.style.color = "var(--tension)";
+        setTimeout(() => {
+            addr.innerText = originalText;
+            addr.style.color = "var(--accent)";
+        }, 1500);
+    });
+}
+
     </script>
 </body>
 </html>
