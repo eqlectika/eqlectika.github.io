@@ -22,7 +22,7 @@
 #gateway { 
     display: grid; 
     grid-template-columns: 50% 50%; 
-    height: 40%; /* Увеличено с 25% для комфортного ввода */
+    height: 60%; /* Увеличено до 60% для комфортной работы с текстом */
     width: 100%; 
     position: relative; 
     border-bottom: 1px solid var(--dim); 
@@ -30,7 +30,8 @@
 }
 
 #flash-zone { 
-    flex: 1; /* Занимает оставшееся пространство */
+    height: 15%; /* Ограничиваем высоту зоны Flash */
+    min-height: 80px; /* Минимальный порог, чтобы текст не слипался */
     display: flex; 
     visibility: hidden; 
     flex-direction: column; 
@@ -39,8 +40,9 @@
     background: #050505; 
     position: relative; 
     border-bottom: 1px solid var(--dim);
-    min-height: 150px; /* Гарантирует место для текста */
+    flex-grow: 1; /* Позволяет занять остаток, если он есть */
 }
+
 
 #flash-zone.visible { visibility: visible; }
 
@@ -369,17 +371,17 @@ function exportDB() {
         
 function toggleDonate() { 
     const info = document.getElementById("cryptoInfo"); 
-    const basement = document.getElementById("basement");
     const isOpening = info.style.display !== "flex";
-    
     info.style.display = isOpening ? "flex" : "none"; 
     
     if (isOpening) {
         setTimeout(() => {
-            basement.scrollTo({ top: basement.scrollHeight, behavior: 'smooth' });
-        }, 10);
+            // Скроллим само окно к нижней части блока доната
+            info.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 50);
     }
 }
+
 
 
 
