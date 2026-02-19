@@ -304,14 +304,52 @@ function toggleSystem() {
         function adjSpd(d) { speed = Math.max(50, speed + d); update(); }
         function move(d) { currentIdx = Math.max(0, Math.min(words.length-1, currentIdx + d)); update(); }
 
-        function captureWord() {
-            if (!words[currentIdx]) return;
-            const w = words[currentIdx].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-            document.getElementById('digText').value += w + ': ';
-            checkDigest();
-            document.getElementById('word-stream').style.color = 'var(--tension)';
-            setTimeout(() => document.getElementById('word-stream').style.color = '', 100);
+function captureWord() {
+    if (!words[currentIdx]) return;
+    
+    // Очищаем слово от пунктуации для поиска
+    const w = words[currentIdx].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+    const dig = document.getElementById('digText');
+    const currentContent = dig.value;
+
+    // 1. Проверка на дубликат: если слово (с двоеточием) уже есть в Digest, выходим
+    const wordPattern = new RegExp('(^|\\n)' + w + ':', 'm');
+    if (wordPattern.test(currentContent)) {
+        // Краткая индикация, что слово уже есть (вспышка цветом)
+        document.getElementById('word-stream').style.color = '#555';
+        setTimeout(() => document.getElementById('word-stream').style.color = '', 100);
+        return;
+    }
+
+    // 2. Поиск определения в базе (localStorage)
+    let definition = "";
+    const cached = localStorage.getItem('matrix_cache');
+    if (cached) {
+        const data = JSON.parse(cached);
+        if (data.dig) {
+            // Ищем строку, начинающуюся со слова и двоеточия
+            const lines = data.dig.split('\n');
+            const foundLine = lines.find(line => line.startsWith(w + ':'));
+            if (foundLine) {
+                definition = foundLine.substring(w.length + 1).trim();
+            }
         }
+    }
+
+    // 3. Формирование строки
+    const prefix = dig.value.trim().length > 0 ? '\n' : '';
+    dig.value += prefix + w + ': ' + definition;
+    dig.scrollTop = dig.scrollHeight; 
+
+    checkDigest();
+    
+    document.getElementById('word-stream').style.color = 'var(--tension)';
+    setTimeout(() => document.getElementById('word-stream').style.color = '', 100);
+}
+
+
+
+
 
         function checkDigest() {
             document.getElementById('save-btn').style.display = document.getElementById('digText').value.trim().length > 0 ? 'block' : 'none';
