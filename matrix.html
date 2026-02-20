@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                  <link rel="manifest" href="manifestmatrix.json">
-     <title>Neural Matrix</title>
+<title>Neural Matrix</title>
+
         <link href="https://fonts.googleapis.com/css2?family=Ubuntu&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -222,12 +223,33 @@ width: fit-content;
     <div id="index-row">RQ:85</div>
     <div id="monitor"><canvas id="sparkChart"></canvas></div>
     
-    <div id="db-tools">
-<div class="db-btn" onclick="downloadDB()">EXPORT DB</div>
-
+<div id="db-tools" style="flex-direction: column; gap: 10px;">
+    <div style="display: flex; gap: 20px;">
+        <div class="db-btn" onclick="downloadDB()">EXPORT DB</div>
         <div class="db-btn" onclick="document.getElementById('importInput').click()">IMPORT DB</div>
-        <input type="file" id="importInput" style="display:none" onchange="importDB(event)">
     </div>
+    <div class="db-btn" onclick="toggleInfo()" style="width: fit-content;">INFO</div>
+    <input type="file" id="importInput" style="display:none" onchange="importDB(event)">
+</div>
+
+<div id="info-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.98); z-index:1000; padding:30px; overflow-y:auto; font-size:0.8rem; line-height:1.6; color: var(--text); border: 2px solid var(--accent);">
+    <h2 style="color:var(--accent); border-bottom:1px solid var(--accent); letter-spacing: 2px;">NEURO MATRIX PROTOCOL</h2>
+    
+    <p><strong style="color:var(--tension);">VISUAL SYNC (CAMERA):</strong> The video stream is engaged as a biometric anchor. It prevents device sleep-mode and ensures cognitive synchronization between the operator and the high-speed data flow.</p>
+    
+    <p><strong style="color:var(--accent);">GATE:</strong> Activates the Flash Zone. It parses the SOURCE text into the operational buffer for real-time processing.</p>
+    
+    <p><strong style="color:var(--accent);">FLASH CAPTURE:</strong> Tap the word in the center to commit it to the DIGEST. The system automatically filters duplicates to maintain matrix integrity.</p>
+    
+    <p><strong style="color:var(--accent);">INTELLIGENT CACHE:</strong> The SAVE button anchors data to localStorage. If a captured word exists in your history, its definition will be retrieved and injected automatically.</p>
+    
+    <p><strong style="color:var(--accent);">RQ MONITOR:</strong> Real-time Relational Quotient tracking. Use SLOWER/FASTER controls to maintain optimal neuro-linguistic balance.</p>
+    
+    <p><strong style="color:var(--accent);">DATA PERSISTENCE:</strong> Use EXPORT to secure your database as a physical file. IMPORT restores previous neuro-states.</p>
+    
+    <button onclick="toggleInfo()" style="background:var(--accent); border:none; padding:12px; width:100%; margin-top:30px; font-weight:bold; cursor:pointer; font-family:inherit; text-transform:uppercase;">RETURN TO MATRIX</button>
+</div>
+
 
     <a href="index.html" class="centered-logo">
         <img src="logo.png" alt="Feedback" style="height: 38px; opacity: 0.9; width: auto;">
@@ -386,6 +408,10 @@ function exportDB() {
     a.href = URL.createObjectURL(blob);
     a.download = 'matrix_backup.json';
     a.click();
+}
+function toggleInfo() {
+    const modal = document.getElementById('info-modal');
+    modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
 }
 
 
