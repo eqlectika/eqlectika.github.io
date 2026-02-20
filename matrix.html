@@ -81,6 +81,29 @@
     padding-left: 25px; color: #00ff00; /* Комфортный зазор для Digest */
 }
 
+#word-stream { 
+    font-size: 2.8rem; 
+    font-weight: bold; 
+    text-align: center; 
+    cursor: pointer; 
+    width: 95%; 
+    color: var(--text);
+    /* Добавляем transition для плавного возврата цвета и анимацию */
+    transition: color 0.1s;
+}
+
+/* Класс для запуска анимации */
+.word-flash {
+    animation: flash-cycle 0.3s ease-out;
+}
+
+@keyframes flash-cycle {
+    0% { opacity: 1; filter: blur(0); transform: scale(1); }
+    40% { opacity: 0; filter: blur(4px); transform: scale(0.95); } /* Плавное исчезновение */
+    60% { opacity: 0; } 
+    100% { opacity: 1; filter: blur(0); transform: scale(1); } /* Резкое появление */
+}
+
 
 
         #gate-btn span { writing-mode: vertical-rl; text-orientation: upright; color: #000; font-weight: 900; font-size: 0.8rem; letter-spacing: 3px; }
@@ -303,11 +326,23 @@ function toggleSystem() {
 
 
 
-        function update() {
-            if (!words[currentIdx]) return;
-            document.getElementById('word-stream').innerText = words[currentIdx];
-            document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
-        }
+function update() {
+    const el = document.getElementById('word-stream');
+    if (!words[currentIdx]) return;
+
+    // Перезапуск анимации
+    el.classList.remove('word-flash');
+    void el.offsetWidth; // Магия для сброса состояния DOM
+    el.classList.add('word-flash');
+
+    // Смена текста происходит в момент "пустоты" (на 40-50% анимации)
+    setTimeout(() => {
+        el.innerText = words[currentIdx];
+    }, 120); 
+
+    document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
+}
+
 
         function toggleRun() {
             if (!isRunning) return;
