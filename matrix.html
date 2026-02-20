@@ -330,15 +330,16 @@ function toggleSystem() {
 function captureWord() {
     if (!words[currentIdx]) return;
     
-    // Очищаем слово от пунктуации для поиска
-    const w = words[currentIdx].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+    // Очищаем от знаков, убираем пробелы и приводим к формату "Capitalized"
+    let raw = words[currentIdx].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+    if (!raw) return;
+    
+    const w = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
     const dig = document.getElementById('digText');
-    const currentContent = dig.value;
-
-    // 1. Проверка на дубликат: если слово (с двоеточием) уже есть в Digest, выходим
-    const wordPattern = new RegExp('(^|\\n)' + w + ':', 'm');
-    if (wordPattern.test(currentContent)) {
-        // Краткая индикация, что слово уже есть (вспышка цветом)
+    
+    // 1. Проверка на дубликат (регистронезависимая)
+    const lines = dig.value.split('\n').map(l => l.split(':')[0].trim());
+    if (lines.some(line => line.toLowerCase() === w.toLowerCase())) {
         document.getElementById('word-stream').style.color = '#555';
         setTimeout(() => document.getElementById('word-stream').style.color = '', 100);
         return;
@@ -348,20 +349,24 @@ function captureWord() {
     let definition = "";
     const cached = localStorage.getItem('matrix_cache');
     if (cached) {
-        const data = JSON.parse(cached);
-        if (data.dig) {
-            // Ищем строку, начинающуюся со слова и двоеточия
-            const lines = data.dig.split('\n');
-            const foundLine = lines.find(line => line.startsWith(w + ':'));
-            if (foundLine) {
-                definition = foundLine.substring(w.length + 1).trim();
+        try {
+            const data = JSON.parse(cached);
+            if (data.dig) {
+                const dbLines = data.dig.split('\n');
+                const foundLine = dbLines.find(line => {
+                    const parts = line.split(':');
+                    return parts[0].trim().toLowerCase() === w.toLowerCase();
+                });
+                if (foundLine && foundLine.includes(':')) {
+                    definition = foundLine.split(':').slice(1).join(':').trim();
+                }
             }
-        }
+        } catch (e) { console.error("Neural Matrix: DB access error"); }
     }
 
-    // 3. Формирование строки
+    // 3. Вставка в поле (Слово: Определение)
     const prefix = dig.value.trim().length > 0 ? '\n' : '';
-    dig.value += prefix + w + ': ' + definition;
+    dig.value += prefix + w + ': ' + (definition ? definition : '');
     dig.scrollTop = dig.scrollHeight; 
 
     checkDigest();
@@ -369,6 +374,7 @@ function captureWord() {
     document.getElementById('word-stream').style.color = 'var(--tension)';
     setTimeout(() => document.getElementById('word-stream').style.color = '', 100);
 }
+
 
 
 
