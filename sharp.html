@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <style>
+        * { -webkit-tap-highlight-color: transparent; touch-action: none !important; user-select: none !important; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; position: fixed; }
+        canvas { display: block; width: 100%; height: 100%; }
+        .logo-link { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 48px; z-index: 10; }
+        .logo-image { width: 100%; height: auto; display: block; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+    <a href="index.html" class="logo-link"><img src="logo.png" alt="Logo" class="logo-image"></a> 
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+    <script>
+        let scene, camera, renderer, mainGroup, droplets = [];
+        let isDragging = false, prevTouchDist = null, lastMousePos = { x: 0, y: 0 };
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        const geo = new THREE.IcosahedronGeometry(0.8, 64); 
+        const originalPos = geo.attributes.position.array.slice();
+        const mat = new THREE.MeshPhysicalMaterial({
+            color: 0x3399ff, metalness: 0.4, roughness: 0.02, 
+            transmission: 0.95, transparent: true, thickness: 1.5, ior: 1.45
+        });
+
+        function createDroplet(x, y, z) {
+            const g = geo.clone();
+            const drop = new THREE.Mesh(g, mat);
+            drop.position.set(x, y, z);
+            drop.userData = { hits: [], base: originalPos.slice() };
+            mainGroup.add(drop);
+            droplets.push(drop);
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+            camera.position.z = 4;
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.body.appendChild(renderer.domElement);
+
+            mainGroup = new THREE.Group();
+            scene.add(mainGroup);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            [[5,5,5,0xff3333], [-5,5,5,0x33ff33], [0,-5,5,0x3399ff]].forEach(l => {
+                const p = new THREE.PointLight(l[3], 10); p.position.set(l[0], l[1], l[2]); scene.add(p);
+            });
+
+            createDroplet(0, 0, 0);
+
+            const handleInput = (x, y) => {
+                mouse.x = (x / window.innerWidth) * 2 - 1;
+                mouse.y = -(y / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(droplets);
+                if (intersects.length > 0) {
+                    const hit = intersects[0];
+                    const ud = hit.object.userData;
+                    const localPoint = hit.object.worldToLocal(hit.point.clone());
+                    ud.hits.push({
+                        pos: localPoint,
+                        strength: 1.5,
+                        active: true
+                    });
+                }
+            };
+
+            const canvas = renderer.domElement;
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault(); isDragging = true;
+                const t = e.touches[0]; lastMousePos = { x: t.clientX, y: t.clientY };
+                handleInput(t.clientX, t.clientY);
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (!isDragging) return;
+                if (e.touches.length === 1) {
+                    const t = e.touches[0];
+                    mainGroup.rotation.y += (t.clientX - lastMousePos.x) * 0.005;
+                    mainGroup.rotation.x += (t.clientY - lastMousePos.y) * 0.005;
+                    lastMousePos = { x: t.clientX, y: t.clientY };
+                } else if (e.touches.length === 2) {
+                    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    if (prevTouchDist) camera.position.z = Math.max(1.5, Math.min(10, camera.position.z - (d - prevTouchDist) * 0.01));
+                    prevTouchDist = d;
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', () => { isDragging = false; prevTouchDist = null; });
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now() * 0.0005;
+
+            droplets.forEach(drop => {
+                const pos = drop.geometry.getAttribute('position');
+                const ud = drop.userData;
+                ud.hits = ud.hits.filter(h => h.strength > 0.001);
+
+                const v = new THREE.Vector3();
+                const ballCenter = new THREE.Vector3();
+                const tempV = new THREE.Vector3();
+
+for (let i = 0; i < pos.count; i++) {
+    // Берем базовую форму
+    v.set(ud.base[i*3], ud.base[i*3+1], ud.base[i*3+2]);
+    
+
+ud.hits.forEach(hit => {
+    const r = 0.22; 
+    // Центр шарика всегда находится на конце "стержня"
+    ballCenter.copy(hit.pos).normalize().multiplyScalar(0.8 + hit.strength);
+    
+    // Считаем расстояние от текущей вершины до ЦЕНТРА БУДУЩЕГО ШАРА
+    const distToBall = v.distanceTo(ballCenter);
+
+    if (distToBall < r) {
+        // Если вершина в радиусе — она ОБЯЗАНА стать частью сферы
+        // Находим вектор от центра шара к вершине и фиксируем его длину радиусом r
+        tempV.copy(v).sub(ballCenter).normalize().multiplyScalar(r);
+        v.copy(ballCenter).add(tempV);
+    } else {
+        // Для всех остальных вершин делаем "натяжение" к основанию шара
+        const distToRoot = v.distanceTo(hit.pos);
+        const influenceRadius = 0.4; // Зона, которая тянется за шаром
+        if (distToRoot < influenceRadius) {
+            // Плавное притяжение к точке входа в шар
+            const pull = Math.pow(1 - (distToRoot / influenceRadius), 2);
+            v.lerp(ballCenter, pull * 0.8);
+        }
+    }
+});
+
+
+
+    // Применяем легкую волну для "живости"
+    v.multiplyScalar(1 + Math.sin(v.x * 8 + time) * 0.005);
+    pos.setXYZ(i, v.x, v.y, v.z);
+}
+
+
+                ud.hits.forEach(h => { h.strength *= 0.993; });
+                pos.needsUpdate = true;
+                drop.geometry.computeVertexNormals();
+            });
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
+</body>
+</html>
