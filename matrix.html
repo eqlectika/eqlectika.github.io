@@ -449,6 +449,29 @@ function exportDB() {
     a.download = 'matrix_backup.json';
     a.click();
 }
+
+function importDB(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.src !== undefined) document.getElementById('srcText').value = data.src;
+            if (data.dig !== undefined) document.getElementById('digText').value = data.dig;
+            
+            // Синхронизируем с кэшем, чтобы данные не пропали после обновления
+            localStorage.setItem('matrix_cache', JSON.stringify(data));
+            checkDigest();
+        } catch (err) {
+            console.error("Neural Matrix: Import failed. Invalid JSON.");
+        }
+    };
+    reader.readAsText(file);
+}
+
+
 function toggleInfo() {
     const modal = document.getElementById('info-modal');
     modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
