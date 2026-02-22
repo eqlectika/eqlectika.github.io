@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="manifest" href="manifestspark.json">
+
+<title>The Blueprint | Core</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+
+  /* Базовый фон и шрифт */
+  body { 
+    background-color: #000; 
+color: #fff;
+    font-family: sans-serif; 
+    padding: 20px; 
+  }
+
+  /* Ссылка в спойлере без подчеркивания */
+  summary a { 
+    text-decoration: none; 
+    margin-left: 5px; 
+  }
+
+  /* Выравнивание кнопок и текста в один ряд */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  /* Оформление группы выбора */
+  .select-group {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  select {
+    padding: 8px;
+    border-radius: 5px;
+  }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Выравнивание по левому краю */
+    gap: 15px;
+    margin-top: 20px;
+  }
+
+
+  .controls button {
+    width: 120px;           /* Одинаковая ширина для симметрии */
+    padding: 8px;
+    cursor: pointer;
+  }
+
+  .edit-section {
+    margin-top: 30px;
+    border-top: 1px solid #333;
+    padding-top: 20px;
+  }
+
+  textarea {
+    width: 100%;
+    background: #222;
+    color: #fff;
+    border: 1px solid #444;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .controls-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  </style>
+</head>
+<body>
+
+<header> 
+
+    <a href="index.html">
+        <img src="logo.png" alt="Logo" style="max-width: 48px; height: auto;">
+    </a>
+
+    <h1 onclick="location.reload()" style="cursor: pointer; margin-bottom: 5px;">The Blueprint</h1>
+    <p style="font-style: italic; opacity: 0.8; margin-top: 0;">Actualise Ownership Core</p>
+</header>
+
+
+<details>
+    <summary>Help mindset <a href="https://telegra.ph/Samoanaliz-spisok-obshchih-sluchaev-02-16" target="_blank">[?]</a></summary>
+<p> Go through the entire list again and again, alternating data from memories with one sensation from the list of perceptions, one at a time. This rhythm allows your attention to re-examine your world (universe), identifying and smoothing over forgotten incidents that are currently affecting you. A mutual calibration occurs: memories are verified by the current state, and perceptions gain depth. This strengthens ownership, synchronizes experience, transforming the disparate list into a living, conscious structure.
+
+For best results, approach this responsibly. You are the only one who controls what happens.</p>
+</details>
+
+<div class="memory-section">
+    <p>Think back to a moment when:</p>
+<div class="controls">
+    <button type="button" onclick="changeMemory(-1)">Previous</button>
+    <span id="memory-display">You created something worthwhile.</span>
+    <button type="button" onclick="changeMemory(1)">Next</button>
+</div>
+</div>
+
+<div class="select-group">
+    <label for="perception-select"> Try to recall and feel this perception in that moment:</label>
+    <select id="perception-select">
+        </select>
+</div>
+
+<div class="edit-section">
+
+<textarea id="memories-input" rows="5" placeholder="Add memories..." style="margin-bottom: 10px;"></textarea>
+<textarea id="perceptions-input" rows="5" placeholder="Add perceptions..."></textarea>
+
+
+    <div class="controls-row">
+        <button type="button" onclick="resetAll()">Reset All</button>
+        <button type="button" onclick="saveAll()">Save All</button>
+        <button type="button" onclick="exportToFile()">Export</button>
+        <button type="button" onclick="document.getElementById('file-input').click()">Import</button>
+        <input type="file" id="file-input" style="display: none;" onchange="importFromFile(this)">
+    </div>
+</div>
+
+
+
+
+
+<script>
+
+const defaultMemories = [
+    "You created something worthwhile.",
+    "Life sparkled with pleasure.",
+    "Your wallet was replenished with a pleasant amount.",
+    "You got rid of unnecessary clutter.",
+    "Your joke caused sincere laughter.",
+    "You tamed a dangerous situation.",
+    "Your authority was recognized.",
+    "You indulged in laziness with pleasure.",
+    "Someone lent a helping hand in time.",
+    "You subdued stubborn technology."
+];
+
+let memories = JSON.parse(localStorage.getItem('myMemories')) || defaultMemories;
+let currentIndex = 0;
+
+function updateDisplay() {
+    // Обновляем ТОЛЬКО текстовый блок с фразой
+    document.getElementById('memory-display').textContent = memories[currentIndex];
+    // Поле ввода не трогаем, оно остается пустым (или с placeholder)
+}
+
+function changeMemory(direction) {
+    currentIndex += direction;
+    if (currentIndex < 0) currentIndex = memories.length - 1;
+    if (currentIndex >= memories.length) currentIndex = 0;
+    updateDisplay();
+}
+
+function saveMemories() {
+    const input = document.getElementById('memories-input').value.trim();
+    if (!input) return;
+
+    memories = input.split('\n').filter(line => line.trim() !== "");
+    localStorage.setItem('myMemories', JSON.stringify(memories));
+    
+    document.getElementById('memories-input').value = ""; // Очищаем поле после сохранения
+    currentIndex = 0;
+    updateDisplay();
+}
+
+function resetMemories() {
+    memories = [...defaultMemories];
+    localStorage.removeItem('myMemories');
+    document.getElementById('memories-input').value = ""; // Очищаем поле при сбросе
+    currentIndex = 0;
+    updateDisplay();
+}
+
+updateDisplay();
+
+const defaultPerceptions = [
+    "Smell",
+    "Gravity",
+    "Space",
+    "Support"
+];
+
+let perceptions = JSON.parse(localStorage.getItem('myPerceptions')) || defaultPerceptions;
+
+function updatePerceptionDropdown() {
+    const select = document.getElementById('perception-select');
+    select.innerHTML = ""; // Очистка
+    
+    perceptions.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.toLowerCase();
+        option.textContent = item;
+        select.appendChild(option);
+    });
+}
+
+function savePerceptions() {
+    const input = document.getElementById('perceptions-input').value.trim();
+    if (!input) return;
+
+    perceptions = input.split('\n').filter(line => line.trim() !== "");
+    localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
+    
+    document.getElementById('perceptions-input').value = "";
+    updatePerceptionDropdown();
+}
+
+function resetPerceptions() {
+    perceptions = [...defaultPerceptions];
+    localStorage.removeItem('myPerceptions');
+    document.getElementById('perceptions-input').value = "";
+    updatePerceptionDropdown();
+}
+
+// Вызовите эту функцию в конце скрипта для инициализации
+updatePerceptionDropdown();
+
+
+
+</script>
+
+</body>
+</html>
