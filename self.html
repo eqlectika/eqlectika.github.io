@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="manifest" href="manifestspark.json">
+  <link rel="manifest" href="manifestself.json">
 
 <title>The Blueprint | Core</title>
 
@@ -87,6 +87,13 @@ color: #fff;
     gap: 10px;
     margin-top: 10px;
   }
+
+    footer { margin-top: 50px; padding: 20px 0; border-top: 1px solid #222; }
+    .donate-box { display: flex; flex-direction: column; gap: 10px; }
+    .donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-family: monospace; width: fit-content; transition: 0.3s; font-size: 12px; }
+    .donate-btn:hover { background: #fff; color: #000; }
+    .crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; }
+    .crypto-address-display { font-size: 11px; color: #fff; background: #111; padding: 8px 12px; border: 1px dashed #666; cursor: copy; word-break: break-all; max-width: 280px; font-family: monospace; }
 
   </style>
 </head>
@@ -294,9 +301,43 @@ function importFromFile(input) {
 updatePerceptionDisplay();
 
 
+function toggleDonate() { 
+    const info = document.getElementById("cryptoInfo"); 
+    const isOpening = info.style.display !== "flex";
+    info.style.display = isOpening ? "flex" : "none"; 
+    if (isOpening) {
+        setTimeout(() => info.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+    }
+}
+
+function copyToClipboard() {
+    const addr = document.getElementById("cryptoAddr");
+    const hint = document.getElementById("copyHint");
+    const text = addr.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        addr.innerText = "Copied!";
+        addr.style.color = "#00ff00"; // Зеленый для подтверждения
+        if (hint) hint.innerText = "Address saved to clipboard";
+        setTimeout(() => {
+            addr.innerText = text;
+            addr.style.color = "#fff";
+            if (hint) hint.innerText = "Click address to copy";
+        }, 1500);
+    });
+}
 
 
 </script>
+<footer>
+  <div class="donate-box">
+    <button class="donate-btn" onclick="toggleDonate()">Support</button>
+    <div id="cryptoInfo" class="crypto-info">
+      <span style="font-size: 10px; color: #aaa; margin-bottom: 4px;">USDT BSC (BEP20)</span>
+      <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
+      <span id="copyHint" style="font-size: 9px; color: #666; margin-top: 4px;">Click address to copy</span>
+    </div>
+  </div>
+</footer>
 
 </body>
 </html>
