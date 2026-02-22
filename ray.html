@@ -31,26 +31,25 @@
       <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script>
         let scene, camera, renderer, mainGroup, droplets = [];
-        let isDragging = false, prevTouchDist = null, lastMousePos = { x: 0, y: 0 };
+        let touches = {}; 
+        let prevTouchDist = null;
+        let isDragging = false;
+        let longPressTimer = null;
+        let startPos = { x: 0, y: 0 };
+        
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
         const geo = new THREE.IcosahedronGeometry(0.8, 64); 
         const originalPos = geo.attributes.position.array.slice();
-const mat = new THREE.MeshPhysicalMaterial({
-    color: 0x3399ff, 
-    metalness: 0.2, 
-    roughness: 0.1, 
-    transmission: 0.7, 
-    transparent: true
-});
-
+        const mat = new THREE.MeshPhysicalMaterial({
+            color: 0x3399ff, metalness: 0.2, roughness: 0.1, transmission: 0.7, transparent: true
+        });
 
         function createDroplet(x, y, z) {
             const g = geo.clone();
             const drop = new THREE.Mesh(g, mat);
             drop.position.set(x, y, z);
-            // Храним массив "ударов", чтобы каждый отросток жил своей жизнью
             drop.userData = { hits: [], base: originalPos.slice() };
             mainGroup.add(drop);
             droplets.push(drop);
@@ -59,7 +58,8 @@ const mat = new THREE.MeshPhysicalMaterial({
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-            camera.position.z = 4;
+            camera.position.z = 5;
+
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -67,67 +67,133 @@ const mat = new THREE.MeshPhysicalMaterial({
 
             mainGroup = new THREE.Group();
             scene.add(mainGroup);
- scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-const p1 = new THREE.PointLight(0xff0000, 10); p1.position.set(5, 5, 5); scene.add(p1);
-const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.add(p2);
-
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const p1 = new THREE.PointLight(0xff0000, 10); p1.position.set(5, 5, 5); scene.add(p1);
+            const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.add(p2);
 
             createDroplet(0, 0, 0);
 
-            const handleInput = (x, y) => {
-                mouse.x = (x / window.innerWidth) * 2 - 1;
-                mouse.y = -(y / window.innerHeight) * 2 + 1;
-                raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(droplets);
-                if (intersects.length > 0) {
-                    const hit = intersects[0];
-                    const ud = hit.object.userData;
-                    const localPoint = hit.object.worldToLocal(hit.point.clone());
-                    
-                    // Добавляем новый независимый отросток
-                    ud.hits.push({
-                        pos: localPoint,
-                        strength: 3.5, // Длина выталкивания
-                        active: true
-                    });
-                }
+            const canvas = renderer.domElement;
+
+            const preventAll = (e) => {
+                if (e.cancelable) e.preventDefault();
+                e.stopPropagation();
             };
 
-            const canvas = renderer.domElement;
             canvas.addEventListener('touchstart', (e) => {
-                e.preventDefault(); isDragging = true;
-                const t = e.touches[0]; lastMousePos = { x: t.clientX, y: t.clientY };
-                handleInput(t.clientX, t.clientY);
+                preventAll(e);
+                isDragging = true;
+                const t = e.touches[0];
+                startPos = { x: t.clientX, y: t.clientY };
+                
+                for (let touch of e.touches) touches[touch.identifier] = { x: touch.clientX, y: touch.clientY };
+
+                if (e.touches.length === 1) {
+                    mouse.x = (t.clientX / window.innerWidth) * 2 - 1;
+                    mouse.y = -(t.clientY / window.innerHeight) * 2 + 1;
+
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObjects(droplets);
+
+                    longPressTimer = setTimeout(() => {
+                        if (intersects.length > 0) {
+                            const obj = intersects[0].object;
+                            mainGroup.remove(obj);
+                            droplets = droplets.filter(d => d !== obj);
+                        }
+                        longPressTimer = null;
+                    }, 600);
+                }
             }, { passive: false });
 
             canvas.addEventListener('touchmove', (e) => {
-                e.preventDefault();
+                preventAll(e);
                 if (!isDragging) return;
+                
+                const t0 = e.touches[0];
+                if (Math.hypot(t0.clientX - startPos.x, t0.clientY - startPos.y) > 10) {
+                    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+                }
+
                 if (e.touches.length === 1) {
                     const t = e.touches[0];
-                    mainGroup.rotation.y += (t.clientX - lastMousePos.x) * 0.005;
-                    mainGroup.rotation.x += (t.clientY - lastMousePos.y) * 0.005;
-                    lastMousePos = { x: t.clientX, y: t.clientY };
-                } else if (e.touches.length === 2) {
-                    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-                    if (prevTouchDist) camera.position.z = Math.max(1.5, Math.min(10, camera.position.z - (d - prevTouchDist) * 0.01));
-                    prevTouchDist = d;
+                    const prev = touches[t.identifier];
+                    mainGroup.rotation.y += (t.clientX - prev.x) * 0.01;
+                    mainGroup.rotation.x += (t.clientY - prev.y) * 0.01;
+                } 
+                else if (e.touches.length === 2) {
+                    const t1 = e.touches[0], t2 = e.touches[1];
+                    const curDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                    if (prevTouchDist) camera.position.z = Math.max(2, Math.min(15, camera.position.z - (curDist - prevTouchDist) * 0.01));
+                    prevTouchDist = curDist;
                 }
+
+                for (let touch of e.touches) touches[touch.identifier] = { x: touch.clientX, y: touch.clientY };
             }, { passive: false });
 
-            canvas.addEventListener('touchend', () => { isDragging = false; prevTouchDist = null; });
+            canvas.addEventListener('touchend', (e) => {
+                preventAll(e);
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObjects(droplets);
+                    
+                    if (intersects.length > 0) {
+                        const hit = intersects[0];
+                        hit.object.userData.hits.push({
+                            pos: hit.object.worldToLocal(hit.point.clone()),
+                            strength: 3.5,
+                            active: true
+                        });
+                    } else {
+                        const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+                        const dir = vector.sub(camera.position).normalize();
+                        const distance = -camera.position.z / dir.z;
+                        const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+                        const localPos = mainGroup.worldToLocal(pos);
+                        createDroplet(localPos.x, localPos.y, localPos.z);
+                    }
+                }
+
+                if (e.touches.length === 0) {
+                    isDragging = false;
+                    prevTouchDist = null;
+                    touches = {};
+                }
+                longPressTimer = null;
+            }, { passive: false });
+
             animate();
         }
+
 
         function animate() {
             requestAnimationFrame(animate);
             const time = performance.now() * 0.0005;
+            
+            // Получаем позицию камеры для расчета физики отталкивания
+            const camPos = new THREE.Vector3();
+            camera.getWorldPosition(camPos);
 
             droplets.forEach(drop => {
                 const pos = drop.geometry.getAttribute('position');
                 const ud = drop.userData;
 
-                // Удаляем совсем затухшие отростки для оптимизации
+                // --- ФИЗИКА СБЛИЖЕНИЯ И ОТТАЛКИВАНИЯ (ДОБАВЛЕНО) ---
+                const dropPos = new THREE.Vector3();
+                drop.getWorldPosition(dropPos);
+                
+                // 1. Отталкивание от камеры, если она слишком близко
+                const dist = dropPos.distanceTo(camPos);
+                if (dist < 4) {
+                    const force = (4 - dist) * 0.03;
+                    drop.position.add(dropPos.sub(camPos).normalize().multiplyScalar(force));
+                }
+
+                // 2. Дрейф к центру (сближение всех объектов в одну точку)
+                drop.position.multiplyScalar(0.99); 
+                // --------------------------------------------------
+
                 ud.hits = ud.hits.filter(h => h.strength > 0.001);
 
                 for (let i = 0; i < pos.count; i++) {
@@ -136,21 +202,17 @@ const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.
                     let totalPush = 0;
 
                     ud.hits.forEach(hit => {
-                        const dist = v.distanceTo(hit.pos);
-                        // Очень локальная площадь (40.0)
-                        const area = Math.exp(-dist * 40.0);
-                        // Острое сужение
-                        const taper = Math.pow(Math.max(0, 1 - dist * 2.5), 4);
+                        const d = v.distanceTo(hit.pos);
+                        const area = Math.exp(-d * 40.0);
+                        const taper = Math.pow(Math.max(0, 1 - d * 2.5), 4);
                         totalPush += hit.strength * area * taper;
                     });
 
                     v.normalize().multiplyScalar(0.8 + totalPush);
-                    // Тонкий шум для живости
                     v.addScaledVector(v, Math.sin(vx * 8 + time) * 0.008);
                     pos.setXYZ(i, v.x, v.y, v.z);
                 }
 
-                // Умеренно замедленный возврат (0.995 — заметно, но лениво)
                 ud.hits.forEach(h => { h.strength *= 0.985; });
 
                 pos.needsUpdate = true;
@@ -158,6 +220,7 @@ const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.
             });
             renderer.render(scene, camera);
         }
+
 
         init();
         window.addEventListener('resize', () => {
