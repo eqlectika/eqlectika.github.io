@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="manifest" href="manifestspark.json">
+  <link rel="manifest" href="manifestself.json">
 
 <title>The Blueprint | Core</title>
 
@@ -112,11 +112,15 @@ For best results, approach this responsibly. You are the only one who controls w
 </div>
 </div>
 
-<div class="select-group">
-    <label for="perception-select"> Try to recall and feel this perception in that moment:</label>
-    <select id="perception-select">
-        </select>
+<div class="perception-section">
+    <p>Try to recall and feel this perception in that moment:</p>
+    <div class="controls">
+        <button type="button" onclick="changePerception(-1)">Previous</button>
+        <span id="perception-display"></span>
+        <button type="button" onclick="changePerception(1)">Next</button>
+    </div>
 </div>
+
 
 <div class="edit-section">
 
@@ -198,39 +202,91 @@ const defaultPerceptions = [
 ];
 
 let perceptions = JSON.parse(localStorage.getItem('myPerceptions')) || defaultPerceptions;
+let currentPerceptionIndex = 0;
 
-function updatePerceptionDropdown() {
-    const select = document.getElementById('perception-select');
-    select.innerHTML = ""; // Очистка
-    
-    perceptions.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.toLowerCase();
-        option.textContent = item;
-        select.appendChild(option);
-    });
+function updatePerceptionDisplay() {
+    const display = document.getElementById('perception-display');
+    if (display) {
+        display.textContent = perceptions[currentPerceptionIndex] || "No perceptions";
+    }
 }
 
-function savePerceptions() {
-    const input = document.getElementById('perceptions-input').value.trim();
-    if (!input) return;
-
-    perceptions = input.split('\n').filter(line => line.trim() !== "");
-    localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
-    
-    document.getElementById('perceptions-input').value = "";
-    updatePerceptionDropdown();
+function changePerception(direction) {
+    if (perceptions.length === 0) return;
+    currentPerceptionIndex += direction;
+    if (currentPerceptionIndex < 0) currentPerceptionIndex = perceptions.length - 1;
+    if (currentPerceptionIndex >= perceptions.length) currentPerceptionIndex = 0;
+    updatePerceptionDisplay();
 }
 
-function resetPerceptions() {
+function saveAll() {
+    const memInput = document.getElementById('memories-input').value.trim();
+    const perInput = document.getElementById('perceptions-input').value.trim();
+
+    if (memInput) {
+        memories = memInput.split('\n').filter(line => line.trim() !== "");
+        localStorage.setItem('myMemories', JSON.stringify(memories));
+        document.getElementById('memories-input').value = "";
+        currentIndex = 0;
+        updateDisplay();
+    }
+
+    if (perInput) {
+        perceptions = perInput.split('\n').filter(line => line.trim() !== "");
+        localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
+        document.getElementById('perceptions-input').value = "";
+        currentPerceptionIndex = 0;
+        updatePerceptionDisplay();
+    }
+}
+
+function resetAll() {
+    memories = [...defaultMemories];
     perceptions = [...defaultPerceptions];
+    localStorage.removeItem('myMemories');
     localStorage.removeItem('myPerceptions');
+    document.getElementById('memories-input').value = "";
     document.getElementById('perceptions-input').value = "";
-    updatePerceptionDropdown();
+    currentIndex = 0;
+    currentPerceptionIndex = 0;
+    updateDisplay();
+    updatePerceptionDisplay();
 }
 
-// Вызовите эту функцию в конце скрипта для инициализации
-updatePerceptionDropdown();
+function exportToFile() {
+    const data = { memories, perceptions };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "blueprint_core.json";
+    a.click();
+}
+
+function importFromFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.memories) memories = data.memories;
+            if (data.perceptions) perceptions = data.perceptions;
+            localStorage.setItem('myMemories', JSON.stringify(memories));
+            localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
+            currentIndex = 0;
+            currentPerceptionIndex = 0;
+            updateDisplay();
+            updatePerceptionDisplay();
+        } catch (err) {
+            alert("Error importing file.");
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Первичная отрисовка при загрузке
+updatePerceptionDisplay();
+
 
 
 
