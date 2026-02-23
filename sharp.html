@@ -4,31 +4,166 @@
     <meta charset="UTF-8">
         <link rel="manifest" href="manifestdrop.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <style>
-        * { -webkit-tap-highlight-color: transparent; touch-action: none !important; user-select: none !important; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; position: fixed; }
-        canvas { display: block; width: 100%; height: 100%; }
-        .logo-link { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 48px; z-index: 10; }
-        .logo-image { width: 100%; height: auto; display: block; }
-    </style>
+ <title>Liquid Zen</title>
+<style>
+    * { 
+        -webkit-tap-highlight-color: transparent; 
+        touch-action: pan-y !important; /* Разрешаем вертикальный скролл для всей страницы */
+        user-select: none !important; 
+        -webkit-user-select: none;
+    }
+
+    body, html { 
+        margin: 0; padding: 0; width: 100%; 
+        min-height: 100%;
+        background: #000; 
+        overflow-x: hidden;
+        overflow-y: auto !important; /* Включаем системную прокрутку */
+    }
+
+    canvas { 
+        display: block; width: 100%; height: 100%; 
+        position: fixed; top: 0; left: 0; z-index: 0; 
+    }
+
+    /* Главная обертка для интерфейса поверх 3D */
+    .ui-wrapper {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        pointer-events: none; /* Пропускаем клики на канвас сквозь фон */
+    }
+
+    /* Возвращаем кликабельность всем элементам внутри обертки */
+    .ui-wrapper > div, 
+    .ui-wrapper > footer, 
+    .ui-wrapper > header { 
+        pointer-events: auto; 
+    }
+
+    /* Блок заголовка */
+    header {
+        width: 100%; 
+        text-align: center; 
+        padding-top: 20px; 
+        background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%);
+    }
+
+    /* Контейнер для нижних элементов управления */
+    .bottom-ui {
+        margin-top: auto; /* Выталкивает блок в самый низ экрана */
+        padding: 50px 0 30px 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 30px; /* Расстояние между ссылками меню и кнопкой Support */
+        width: 100%;
+    }
+
+    .menu-links {
+        display: flex;
+        gap: 20px;
+        font-family: sans-serif;
+    }
+
+    .menu-links a {
+        color: #fff;
+        text-decoration: none;
+        transition: opacity 0.3s;
+    }
+
+    /* Стили Support из spark.html */
+    footer { 
+        width: 100%; 
+        display: flex; 
+        justify-content: center; 
+    }
+
+    .donate-box { 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+    }
+
+    .donate-btn { 
+        color: #fff; 
+        border: 1px solid #fff; 
+        padding: 5px 15px; 
+        background: transparent; 
+        cursor: pointer; 
+        font-family: sans-serif; 
+        font-size: 12px; 
+        transition: 0.3s; 
+    }
+
+    .donate-btn:hover { 
+        background: #fff; 
+        color: #000; 
+    }
+
+    .crypto-info { 
+        display: none; /* Переключается через JS (flex) */
+        flex-direction: column; 
+        align-items: center; 
+        gap: 5px; 
+        margin-top: 15px; 
+        background: rgba(0,0,0,0.85); 
+        padding: 10px; 
+        border-radius: 5px; 
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    .crypto-address-display { 
+        font-size: 10px; 
+        color: #fff; 
+        background: #111; 
+        padding: 8px 12px; 
+        border: 1px dashed #fff; 
+        cursor: copy; 
+        word-break: break-all; 
+        max-width: 240px; 
+        font-family: monospace;
+    }
+</style>
+
 </head>
-<body oncontextmenu="return false;">
-<div style="position: fixed; top: 0; left: 0; width: 100%; text-align: center; pointer-events: none; z-index: 1001; padding-top: 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%);">
-    <a href="index.html" style="display: inline-block; pointer-events: auto; width: 48px; margin-bottom: 10px;">
-        <img src="logo.png" alt="Logo" style="width: 100%; height: auto;">
-    </a>
-    <h1 style="color: #fff; font-family: sans-serif; margin: 0; font-size: 24px; letter-spacing: 1px;">Liquid Zen</h1>
-    <p style="color: rgba(255,255,255,0.6); font-family: sans-serif; margin: 5px 0 0 0; font-size: 10px; text-transform: uppercase; letter-spacing: 4px;">Droplet Lab</p>
-</div>
-      <div style="position: fixed; z-index: 1000; bottom: 60px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; font-family: sans-serif;">
-    <a href="drop.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Drop</a>
-    <a href="sharp.html" style="color: #fff; text-decoration: none; font-weight: bold; opacity: 1;">Sharp</a>
-    <a href="blob.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Blob</a>
-    <a href="wave.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Wave</a>
-    <a href="ray.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Ray</a>
+<body oncontextmenu="return false;"> <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<div class="ui-wrapper">
+    <div style="width: 100%; text-align: center; padding-top: 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%);">
+        <a href="index.html" style="display: inline-block; width: 48px; margin-bottom: 10px;">
+            <img src="logo.png" alt="Logo" style="width: 100%; height: auto;">
+        </a>
+        <h1 style="color: #fff; font-family: sans-serif; margin: 0; font-size: 24px; letter-spacing: 1px;">Liquid Zen</h1>
+        <p style="color: rgba(255,255,255,0.6); font-family: sans-serif; margin: 5px 0 0 0; font-size: 10px; text-transform: uppercase; letter-spacing: 4px;">Droplet Lab</p>
+    </div>
+
+    <div class="bottom-ui">
+        <div style="display: flex; gap: 20px; font-family: sans-serif;">
+            <a href="drop.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Drop</a>
+            <a href="sharp.html" style="color: #fff; text-decoration: none; font-weight: bold; opacity: 1;">Sharp</a>
+            <a href="blob.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Blob</a>
+            <a href="wave.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Wave</a>
+            <a href="ray.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Ray</a>
+        </div>
+
+        <footer>
+            <div class="donate-box">
+                <button class="donate-btn" onclick="toggleDonate()">Support</button>
+                <div id="cryptoInfo" class="crypto-info">
+                    <span style="font-size: 10px; color: #fff; margin-bottom: 4px;">USDT BSC (BEP20)</span>
+                    <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
+                    <span id="copyHint" style="font-size: 9px; color: #fff; margin-top: 4px;">Click address to copy</span>
+                </div>
+            </div>
+        </footer>
+    </div>
 </div>
 
-       <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script>
         let scene, camera, renderer, mainGroup, droplets = [];
         let isDragging = false, prevTouchDist = null, lastMousePos = { x: 0, y: 0 };
@@ -137,29 +272,29 @@ const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.
                 const tempV = new THREE.Vector3();
 
 for (let i = 0; i < pos.count; i++) {
-    // Берем базовую форму
+    // ÐÐµÑÐµÐ¼ Ð±Ð°Ð·Ð¾Ð²ÑÑ ÑÐ¾ÑÐ¼Ñ
     v.set(ud.base[i*3], ud.base[i*3+1], ud.base[i*3+2]);
     
 
 ud.hits.forEach(hit => {
     const r = 0.22; 
-    // Центр шарика всегда находится на конце "стержня"
+    // Ð¦ÐµÐ½ÑÑ ÑÐ°ÑÐ¸ÐºÐ° Ð²ÑÐµÐ³Ð´Ð° Ð½Ð°ÑÐ¾Ð´Ð¸ÑÑÑ Ð½Ð° ÐºÐ¾Ð½ÑÐµ "ÑÑÐµÑÐ¶Ð½Ñ"
     ballCenter.copy(hit.pos).normalize().multiplyScalar(0.8 + hit.strength);
     
-    // Считаем расстояние от текущей вершины до ЦЕНТРА БУДУЩЕГО ШАРА
+    // Ð¡ÑÐ¸ÑÐ°ÐµÐ¼ ÑÐ°ÑÑÑÐ¾ÑÐ½Ð¸Ðµ Ð¾Ñ ÑÐµÐºÑÑÐµÐ¹ Ð²ÐµÑÑÐ¸Ð½Ñ Ð´Ð¾ Ð¦ÐÐÐ¢Ð Ð ÐÐ£ÐÐ£Ð©ÐÐÐ Ð¨ÐÐ Ð
     const distToBall = v.distanceTo(ballCenter);
 
     if (distToBall < r) {
-        // Если вершина в радиусе — она ОБЯЗАНА стать частью сферы
-        // Находим вектор от центра шара к вершине и фиксируем его длину радиусом r
+        // ÐÑÐ»Ð¸ Ð²ÐµÑÑÐ¸Ð½Ð° Ð² ÑÐ°Ð´Ð¸ÑÑÐµ â Ð¾Ð½Ð° ÐÐÐ¯ÐÐÐÐ ÑÑÐ°ÑÑ ÑÐ°ÑÑÑÑ ÑÑÐµÑÑ
+        // ÐÐ°ÑÐ¾Ð´Ð¸Ð¼ Ð²ÐµÐºÑÐ¾Ñ Ð¾Ñ ÑÐµÐ½ÑÑÐ° ÑÐ°ÑÐ° Ðº Ð²ÐµÑÑÐ¸Ð½Ðµ Ð¸ ÑÐ¸ÐºÑÐ¸ÑÑÐµÐ¼ ÐµÐ³Ð¾ Ð´Ð»Ð¸Ð½Ñ ÑÐ°Ð´Ð¸ÑÑÐ¾Ð¼ r
         tempV.copy(v).sub(ballCenter).normalize().multiplyScalar(r);
         v.copy(ballCenter).add(tempV);
     } else {
-        // Для всех остальных вершин делаем "натяжение" к основанию шара
+        // ÐÐ»Ñ Ð²ÑÐµÑ Ð¾ÑÑÐ°Ð»ÑÐ½ÑÑ Ð²ÐµÑÑÐ¸Ð½ Ð´ÐµÐ»Ð°ÐµÐ¼ "Ð½Ð°ÑÑÐ¶ÐµÐ½Ð¸Ðµ" Ðº Ð¾ÑÐ½Ð¾Ð²Ð°Ð½Ð¸Ñ ÑÐ°ÑÐ°
         const distToRoot = v.distanceTo(hit.pos);
-        const influenceRadius = 0.4; // Зона, которая тянется за шаром
+        const influenceRadius = 0.4; // ÐÐ¾Ð½Ð°, ÐºÐ¾ÑÐ¾ÑÐ°Ñ ÑÑÐ½ÐµÑÑÑ Ð·Ð° ÑÐ°ÑÐ¾Ð¼
         if (distToRoot < influenceRadius) {
-            // Плавное притяжение к точке входа в шар
+            // ÐÐ»Ð°Ð²Ð½Ð¾Ðµ Ð¿ÑÐ¸ÑÑÐ¶ÐµÐ½Ð¸Ðµ Ðº ÑÐ¾ÑÐºÐµ Ð²ÑÐ¾Ð´Ð° Ð² ÑÐ°Ñ
             const pull = Math.pow(1 - (distToRoot / influenceRadius), 2);
             v.lerp(ballCenter, pull * 0.8);
         }
@@ -168,7 +303,7 @@ ud.hits.forEach(hit => {
 
 
 
-    // Применяем легкую волну для "живости"
+    // ÐÑÐ¸Ð¼ÐµÐ½ÑÐµÐ¼ Ð»ÐµÐ³ÐºÑÑ Ð²Ð¾Ð»Ð½Ñ Ð´Ð»Ñ "Ð¶Ð¸Ð²Ð¾ÑÑÐ¸"
     v.multiplyScalar(1 + Math.sin(v.x * 8 + time) * 0.005);
     pos.setXYZ(i, v.x, v.y, v.z);
 }
@@ -182,6 +317,35 @@ ud.hits.forEach(hit => {
         }
 
         init();
+
+function toggleDonate() { 
+    const info = document.getElementById("cryptoInfo"); 
+    const isOpening = info.style.display !== "flex";
+    info.style.display = isOpening ? "flex" : "none"; 
+    
+    // ÐÐ²ÑÐ¾Ð¼Ð°ÑÐ¸ÑÐµÑÐºÐ°Ñ Ð¿ÑÐ¾ÐºÑÑÑÐºÐ° Ðº Ð°Ð´ÑÐµÑÑ, ÐµÑÐ»Ð¸ Ð¾Ð½ Ð½Ðµ Ð²Ð»ÐµÐ·Ð°ÐµÑ (ÐºÐ°Ðº Ð² spark.html)
+    if (isOpening) {
+        setTimeout(() => info.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+    }
+}
+
+
+        function copyToClipboard() {
+            const addr = document.getElementById("cryptoAddr");
+            const hint = document.getElementById("copyHint");
+            const text = addr.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                addr.innerText = "Copied!";
+                addr.style.color = "#00ff00";
+                if (hint) hint.innerText = "Address saved to clipboard";
+                setTimeout(() => {
+                    addr.innerText = text;
+                    addr.style.color = "#fff";
+                    if (hint) hint.innerText = "Click address to copy";
+                }, 1500);
+            });
+        }
     </script>
+
 </body>
 </html>
