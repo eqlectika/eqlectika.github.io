@@ -170,18 +170,24 @@
         info.style.display = info.style.display === "flex" ? "none" : "flex"; 
     }
 
-    function copyToClipboard() {
-        const addr = document.getElementById("cryptoAddr");
-        const text = addr.innerText;
-        navigator.clipboard.writeText(text).then(() => {
-            addr.innerText = "Copied!";
-            addr.style.color = "var(--creativity-color)";
-            setTimeout(() => {
-                addr.innerText = text;
-                addr.style.color = "#fff";
-            }, 1500);
-        });
-    }
+function copyToClipboard() {
+    const addr = document.getElementById("cryptoAddr");
+    const hint = document.getElementById("copyHint");
+    const text = addr.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        addr.innerText = "Copied!";
+        addr.style.color = "#00ff00";
+        // ВОТ ЭТА СТРОКА:
+        if (hint) hint.innerText = "Address saved to clipboard";
+        
+        setTimeout(() => {
+            addr.innerText = text;
+            addr.style.color = "#fff";
+            if (hint) hint.innerText = "Click address to copy";
+        }, 1500);
+    });
+}
+
 
     document.getElementById('src-text').value = txt;
     render();
