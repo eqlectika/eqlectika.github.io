@@ -4,28 +4,162 @@
     <meta charset="UTF-8">
         <link rel="manifest" href="manifestdrop.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <style>
-        * { -webkit-tap-highlight-color: transparent; touch-action: none !important; user-select: none !important; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; position: fixed; }
-        canvas { display: block; width: 100%; height: 100%; }
-        .logo-link { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 48px; z-index: 10; }
-        .logo-image { width: 100%; height: auto; display: block; }
-    </style>
+ <title>Liquid Zen</title>
+<style>
+    * { 
+        -webkit-tap-highlight-color: transparent; 
+        touch-action: pan-y !important; /* Разрешаем вертикальный скролл для всей страницы */
+        user-select: none !important; 
+        -webkit-user-select: none;
+    }
+
+    body, html { 
+        margin: 0; padding: 0; width: 100%; 
+        min-height: 100%;
+        background: #000; 
+        overflow-x: hidden;
+        overflow-y: auto !important; /* Включаем системную прокрутку */
+    }
+
+    canvas { 
+        display: block; width: 100%; height: 100%; 
+        position: fixed; top: 0; left: 0; z-index: 0; 
+    }
+
+    /* Главная обертка для интерфейса поверх 3D */
+    .ui-wrapper {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        pointer-events: none; /* Пропускаем клики на канвас сквозь фон */
+    }
+
+    /* Возвращаем кликабельность всем элементам внутри обертки */
+    .ui-wrapper > div, 
+    .ui-wrapper > footer, 
+    .ui-wrapper > header { 
+        pointer-events: auto; 
+    }
+
+    /* Блок заголовка */
+    header {
+        width: 100%; 
+        text-align: center; 
+        padding-top: 20px; 
+        background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%);
+    }
+
+    /* Контейнер для нижних элементов управления */
+    .bottom-ui {
+        margin-top: auto; /* Выталкивает блок в самый низ экрана */
+        padding: 50px 0 30px 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 30px; /* Расстояние между ссылками меню и кнопкой Support */
+        width: 100%;
+    }
+
+    .menu-links {
+        display: flex;
+        gap: 20px;
+        font-family: sans-serif;
+    }
+
+    .menu-links a {
+        color: #fff;
+        text-decoration: none;
+        transition: opacity 0.3s;
+    }
+
+    /* Стили Support из spark.html */
+    footer { 
+        width: 100%; 
+        display: flex; 
+        justify-content: center; 
+    }
+
+    .donate-box { 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+    }
+
+    .donate-btn { 
+        color: #fff; 
+        border: 1px solid #fff; 
+        padding: 5px 15px; 
+        background: transparent; 
+        cursor: pointer; 
+        font-family: sans-serif; 
+        font-size: 12px; 
+        transition: 0.3s; 
+    }
+
+    .donate-btn:hover { 
+        background: #fff; 
+        color: #000; 
+    }
+
+    .crypto-info { 
+        display: none; /* Переключается через JS (flex) */
+        flex-direction: column; 
+        align-items: center; 
+        gap: 5px; 
+        margin-top: 15px; 
+        background: rgba(0,0,0,0.85); 
+        padding: 10px; 
+        border-radius: 5px; 
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    .crypto-address-display { 
+        font-size: 10px; 
+        color: #fff; 
+        background: #111; 
+        padding: 8px 12px; 
+        border: 1px dashed #fff; 
+        cursor: copy; 
+        word-break: break-all; 
+        max-width: 240px; 
+        font-family: monospace;
+    }
+</style>
+
 </head>
-<body oncontextmenu="return false;">
-<div style="position: fixed; top: 0; left: 0; width: 100%; text-align: center; pointer-events: none; z-index: 1001; padding-top: 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%);">
-    <a href="index.html" style="display: inline-block; pointer-events: auto; width: 48px; margin-bottom: 10px;">
-        <img src="logo.png" alt="Logo" style="width: 100%; height: auto;">
-    </a>
-    <h1 style="color: #fff; font-family: sans-serif; margin: 0; font-size: 24px; letter-spacing: 1px;">Liquid Zen</h1>
-    <p style="color: rgba(255,255,255,0.6); font-family: sans-serif; margin: 5px 0 0 0; font-size: 10px; text-transform: uppercase; letter-spacing: 4px;">Droplet Lab</p>
-</div>
-      <div style="position: fixed; z-index: 1000; bottom: 60px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; font-family: sans-serif;">
-    <a href="drop.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Drop</a>
-    <a href="sharp.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Sharp</a>
-    <a href="blob.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Blob</a>
-    <a href="wave.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Wave</a>
-    <a href="ray.html" style="color: #fff; text-decoration: none; font-weight: bold; opacity: 1;">Ray</a>
+<body oncontextmenu="return false;"> <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<div class="ui-wrapper">
+    <div style="width: 100%; text-align: center; padding-top: 20px; background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 100%);">
+        <a href="index.html" style="display: inline-block; width: 48px; margin-bottom: 10px;">
+            <img src="logo.png" alt="Logo" style="width: 100%; height: auto;">
+        </a>
+        <h1 style="color: #fff; font-family: sans-serif; margin: 0; font-size: 24px; letter-spacing: 1px;">Liquid Zen</h1>
+        <p style="color: rgba(255,255,255,0.6); font-family: sans-serif; margin: 5px 0 0 0; font-size: 10px; text-transform: uppercase; letter-spacing: 4px;">Droplet Lab</p>
+    </div>
+
+    <div class="bottom-ui">
+        <div style="display: flex; gap: 20px; font-family: sans-serif;">
+            <a href="sharp.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Drop</a>
+            <a href="sharp.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Sharp</a>
+            <a href="blob.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Blob</a>
+            <a href="wave.html" style="color: #fff; text-decoration: none; opacity: 0.6;">Wave</a>
+            <a href="drop.html" style="color: #fff; text-decoration: none; font-weight: bold; opacity: 1;">Ray</a>
+        </div>
+
+        <footer>
+            <div class="donate-box">
+                <button class="donate-btn" onclick="toggleDonate()">Support</button>
+                <div id="cryptoInfo" class="crypto-info">
+                    <span style="font-size: 10px; color: #fff; margin-bottom: 4px;">USDT BSC (BEP20)</span>
+                    <div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0x769192cea8fbb7207f086d95fd653ebc3adb0c72</div>
+                    <span id="copyHint" style="font-size: 9px; color: #fff; margin-top: 4px;">Click address to copy</span>
+                </div>
+            </div>
+        </footer>
+    </div>
 </div>
 
       <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
@@ -171,7 +305,7 @@
             requestAnimationFrame(animate);
             const time = performance.now() * 0.0005;
             
-            // Получаем позицию камеры для расчета физики отталкивания
+            // ÐÐ¾Ð»ÑÑÐ°ÐµÐ¼ Ð¿Ð¾Ð·Ð¸ÑÐ¸Ñ ÐºÐ°Ð¼ÐµÑÑ Ð´Ð»Ñ ÑÐ°ÑÑÐµÑÐ° ÑÐ¸Ð·Ð¸ÐºÐ¸ Ð¾ÑÑÐ°Ð»ÐºÐ¸Ð²Ð°Ð½Ð¸Ñ
             const camPos = new THREE.Vector3();
             camera.getWorldPosition(camPos);
 
@@ -179,18 +313,18 @@
                 const pos = drop.geometry.getAttribute('position');
                 const ud = drop.userData;
 
-                // --- ФИЗИКА СБЛИЖЕНИЯ И ОТТАЛКИВАНИЯ (ДОБАВЛЕНО) ---
+                // --- Ð¤ÐÐÐÐÐ Ð¡ÐÐÐÐÐÐÐÐ¯ Ð ÐÐ¢Ð¢ÐÐÐÐÐÐÐÐÐ¯ (ÐÐÐÐÐÐÐÐÐ) ---
                 const dropPos = new THREE.Vector3();
                 drop.getWorldPosition(dropPos);
                 
-                // 1. Отталкивание от камеры, если она слишком близко
+                // 1. ÐÑÑÐ°Ð»ÐºÐ¸Ð²Ð°Ð½Ð¸Ðµ Ð¾Ñ ÐºÐ°Ð¼ÐµÑÑ, ÐµÑÐ»Ð¸ Ð¾Ð½Ð° ÑÐ»Ð¸ÑÐºÐ¾Ð¼ Ð±Ð»Ð¸Ð·ÐºÐ¾
                 const dist = dropPos.distanceTo(camPos);
                 if (dist < 4) {
                     const force = (4 - dist) * 0.03;
                     drop.position.add(dropPos.sub(camPos).normalize().multiplyScalar(force));
                 }
 
-                // 2. Дрейф к центру (сближение всех объектов в одну точку)
+                // 2. ÐÑÐµÐ¹Ñ Ðº ÑÐµÐ½ÑÑÑ (ÑÐ±Ð»Ð¸Ð¶ÐµÐ½Ð¸Ðµ Ð²ÑÐµÑ Ð¾Ð±ÑÐµÐºÑÐ¾Ð² Ð² Ð¾Ð´Ð½Ñ ÑÐ¾ÑÐºÑ)
                 drop.position.multiplyScalar(0.99); 
                 // --------------------------------------------------
 
@@ -228,6 +362,34 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+function toggleDonate() { 
+    const info = document.getElementById("cryptoInfo"); 
+    const isOpening = info.style.display !== "flex";
+    info.style.display = isOpening ? "flex" : "none"; 
+    
+    // ÐÐ²ÑÐ¾Ð¼Ð°ÑÐ¸ÑÐµÑÐºÐ°Ñ Ð¿ÑÐ¾ÐºÑÑÑÐºÐ° Ðº Ð°Ð´ÑÐµÑÑ, ÐµÑÐ»Ð¸ Ð¾Ð½ Ð½Ðµ Ð²Ð»ÐµÐ·Ð°ÐµÑ (ÐºÐ°Ðº Ð² spark.html)
+    if (isOpening) {
+        setTimeout(() => info.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+    }
+}
+
+
+        function copyToClipboard() {
+            const addr = document.getElementById("cryptoAddr");
+            const hint = document.getElementById("copyHint");
+            const text = addr.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                addr.innerText = "Copied!";
+                addr.style.color = "#00ff00";
+                if (hint) hint.innerText = "Address saved to clipboard";
+                setTimeout(() => {
+                    addr.innerText = text;
+                    addr.style.color = "#fff";
+                    if (hint) hint.innerText = "Click address to copy";
+                }, 1500);
+            });
+        }
     </script>
 </body>
 </html>
