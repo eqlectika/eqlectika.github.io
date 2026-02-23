@@ -518,17 +518,22 @@ function toggleDonate() {
 
 function copyToClipboard() {
     const addr = document.getElementById("cryptoAddr");
+    const hint = document.getElementById("copyHint");
     const text = addr.innerText;
     navigator.clipboard.writeText(text).then(() => {
-        const originalText = text;
-        addr.innerText = "COPIED!";
-        addr.style.color = "var(--tension)";
+        addr.innerText = "Copied!";
+        addr.style.color = "#00ff00";
+        // ВОТ ЭТА СТРОКА:
+        if (hint) hint.innerText = "Address saved to clipboard";
+        
         setTimeout(() => {
-            addr.innerText = originalText;
-            addr.style.color = "var(--accent)";
+            addr.innerText = text;
+            addr.style.color = "#fff";
+            if (hint) hint.innerText = "Click address to copy";
         }, 1500);
     });
 }
+
 // Добавьте это в конец скрипта, чтобы данные подтягивались при открытии
 window.addEventListener('DOMContentLoaded', () => {
     const cached = localStorage.getItem('matrix_cache');
