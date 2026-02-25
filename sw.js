@@ -4,6 +4,7 @@ const ASSETS = [
   './beta.html',
   './matrix.html',
   './blueprint.html',
+  './telegram.PNG',
   './loop.html',
   './clock.html',
   './flash.html',
