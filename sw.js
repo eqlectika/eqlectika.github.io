@@ -22,9 +22,7 @@ const ASSETS = [
   './resume.html',
   './peer.html',
   './manifest.json',
-  './manifestspark.json',
-  './manifestflash.json',
-  './manifestsquare.json',
+
   './icon-192x192.png', 
   './icon-512x512.png', 
   './quant.html',
