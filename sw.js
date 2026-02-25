@@ -54,6 +54,7 @@ const ASSETS = [
   'https://cdn.jsdelivr.net/npm/chart.js',
 
 
+
 ];
 
 self.addEventListener('install', (event) => {
