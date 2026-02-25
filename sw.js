@@ -30,6 +30,9 @@ const ASSETS = [
   './quant.html',
   './nomad.html',
   
+  'https://telegra.ph/An-Architectural-Anchor-in-the-Ocean-of-Semantic-Chaos-A-Survival-Guide-for-Virtual-Environments-02-11',
+  'https://telegra.ph/On-Butterflies-Storms-and-Fatal-Negligence-02-13',
+  'https://telegra.ph/Neural-Matrix-Operacionnyj-protokol-02-20',
   'https://telegra.ph/The-Crew-of-Samsara-in-the-London-Fog-01-13',
   'https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap',
   'https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap',
