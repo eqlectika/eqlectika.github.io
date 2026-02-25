@@ -52,7 +52,7 @@ const ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
   'https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js',
   'https://cdn.jsdelivr.net/npm/chart.js',
-
+  'https://fonts.googleapis.com/css2?family=Ubuntu&display=swap',
 
 
 ];
