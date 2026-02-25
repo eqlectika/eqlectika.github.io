@@ -40,6 +40,7 @@ const ASSETS = [
   './ray.html',
   './sharp.html',
   './blob.html',
+  './pwa-init.js',
   
   'https://telegra.ph/An-Architectural-Anchor-in-the-Ocean-of-Semantic-Chaos-A-Survival-Guide-for-Virtual-Environments-02-11',
   'https://telegra.ph/On-Butterflies-Storms-and-Fatal-Negligence-02-13',
