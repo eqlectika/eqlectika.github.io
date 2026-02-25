@@ -9,6 +9,7 @@ const ASSETS = [
   './clock.html',
   './flash.html',
   './about.html',
+  './print.html',
   './book.html',
   './me.jpeg',
   './cube.html',
