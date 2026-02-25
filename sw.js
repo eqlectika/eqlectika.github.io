@@ -53,7 +53,7 @@ const ASSETS = [
   'https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://fonts.googleapis.com/css2?family=Ubuntu&display=swap',
-
+  'https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js',
 
 ];
 
