@@ -2,6 +2,9 @@ const CACHE_NAME = 'polarity-sanctuary-v28';
 
 const ASSETS = [
   './beta.html',
+  './matrix.html',
+  './blueprint.html',
+  './loop.html',
   './clock.html',
   './flash.html',
   './about.html',
