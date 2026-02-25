@@ -14,6 +14,8 @@ const ASSETS = [
   './cube.html',
   './print.html',
   './spark.html',
+  './square.html',
+  './vacuum.html',
   './size.html',
   './index.html',
   './code.html',
