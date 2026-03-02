@@ -9,37 +9,42 @@
     * {
       box-sizing: border-box;
     }
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #000;
-      color: #fff;
-      font-family: monospace;
-      overflow-y: auto;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-                    /* защита от выделения и системных меню */
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
 
-    -webkit-touch-callout: none;
-    -webkit-tap-highlight-color: transparent;
-    }
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+  color: #fff;
+  font-family: monospace;
+  overflow-y: auto;
+  /* Убираем жесткую привязку к высоте экрана, чтобы контент шел плотно */
+  min-height: 100%; 
+  display: flex;
+  flex-direction: column;
+}
+
+#canvas-wrapper {
+  /* Убираем flex: 1, который создает пустоту */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+  margin: 5px 0; /* Уменьшаем отступы */
+}
+
+.footer-logo-container {
+  text-align: center;
+  width: 100%;
+  padding: 10px 0 0 0;
+  margin-top: 0; /* Убираем margin, который толкает всё вниз */
+}
+
     h1 {
-margib: 15px;
+margin: 15px;
       font-size: 1.2rem;
       text-align: center;
     }
-
-    .footer-logo-container {
-    text-align: center;
-    width: 100%;
-    padding: 0 0;
-    margin-top: 20px; /* Прижимает блок к самому низу, если контента мало */
-  }
 
 
   .logo-image {
@@ -70,15 +75,7 @@ margib: 15px;
       gap: 5px;
       font-size: 0.9rem;
     }
-    #canvas-wrapper {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      overflow: hidden;
-      position: relative;
-      margin: 5px;
-    }
+
     #orbitCanvas {
       background-color: #000;
       display: block;
@@ -207,14 +204,16 @@ margib: 15px;
     const ctx = canvas.getContext('2d');
     const legendDiv = document.getElementById('legend');
     
-    function initCanvas() {
-      const wrapper = document.getElementById('canvas-wrapper');
-      const size = Math.min(wrapper.clientWidth, wrapper.clientHeight) * 0.9;
-      canvas.width = size;
-      canvas.height = size;
-      canvas.style.width = `${size}px`;
-      canvas.style.height = `${size}px`;
-    }
+ function initCanvas() {
+  const wrapper = document.getElementById('canvas-wrapper');
+  // На мобильных устройствах ориентируемся на ширину экрана с небольшим запасом
+  const size = Math.min(window.innerWidth, window.innerHeight * 0.6); 
+  canvas.width = size;
+  canvas.height = size;
+  canvas.style.width = `${size}px`;
+  canvas.style.height = `${size}px`;
+}
+
     
     window.addEventListener('resize', () => {
       initCanvas();
