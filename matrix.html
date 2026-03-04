@@ -25,7 +25,7 @@
 #gateway { 
     display: grid; 
     grid-template-columns: 50% 50%; 
-    height: 45vh; /* Занимает почти половину экрана */
+    height: 45vh; 
     width: 100%; 
     position: relative; 
     border-bottom: 1px solid var(--dim); 
@@ -33,7 +33,7 @@
 }
 
 #flash-zone { 
-    height: 20vh; /* Ровно 1/5 экрана */
+    height: 20vh; 
     display: flex; 
     visibility: hidden; 
     flex-direction: column; 
@@ -53,8 +53,7 @@
     flex-direction: column; 
     border-top: 1px solid var(--dim); 
     overflow-y: auto; 
-    /* УДАЛИТЬ: height: 140px; */
-    min-height: 0; /* Важно для корректного расчета скролла во flex-контейнере */
+    min-height: 0; 
 }
 
 
@@ -65,7 +64,7 @@
 
 #gate-btn {
     position: absolute; 
-    left: 50%; /* Линия четко на границе сечения */
+    left: 50%; 
     top: 0; 
     bottom: 0; 
     width: 22px; 
@@ -79,7 +78,7 @@
 }
 
 #digText {
-    padding-left: 20px; color: #00ff00; /* Комфортный зазор для Digest */
+    padding-left: 20px; color: #00ff00; 
 }
 
 #word-stream { 
@@ -89,20 +88,18 @@
     cursor: pointer; 
     width: 95%; 
     color: var(--text);
-    /* Добавляем transition для плавного возврата цвета и анимацию */
     transition: color 0.1s;
 }
 
-/* Класс для запуска анимации */
 .word-flash {
     animation: flash-cycle 0.3s ease-out;
 }
 
 @keyframes flash-cycle {
     0% { opacity: 1; filter: blur(0); transform: scale(1); }
-    40% { opacity: 0; filter: blur(4px); transform: scale(0.95); } /* Плавное исчезновение */
+    40% { opacity: 0; filter: blur(4px); transform: scale(0.95); } 
     60% { opacity: 0; } 
-    100% { opacity: 1; filter: blur(0); transform: scale(1); } /* Резкое появление */
+    100% { opacity: 1; filter: blur(0); transform: scale(1); }
 }
 
 
@@ -114,11 +111,10 @@
 
         #word-stream { font-size: 2.8rem; font-weight: bold; text-align: center; cursor: pointer; width: 95%; color: var(--text); }
 
-        /* PINK CONTROLS */
 #control-hub {
     height: 40px; 
     width: 100%; 
-    display: none; /* Скрыто */
+    display: none; 
     justify-content: space-around; 
     align-items: center;
     background: #000; 
@@ -127,14 +123,13 @@
 
         .u-btn { color: var(--tension); font-size: 0.8rem; cursor: pointer; font-weight: bold; }
 
-        /* BASEMENT (Фиксированная высота, прокрутка внутри) */
         #basement { height: 140px; width: 100%; background: #000; display: flex; flex-direction: column; flex-shrink: 0; border-top: 1px solid var(--dim); overflow-y: auto; }
 #index-row {
     width: 100%; 
     min-height: 25px; 
     display: flex; 
     align-items: center; 
-    justify-content: center; /* Центрирует текст по горизонтали */
+    justify-content: center; 
     color: var(--accent); 
     font-size: 0.8rem; 
     letter-spacing: 12px; 
@@ -149,7 +144,7 @@ padding-left: 12px;
 #db-tools { 
     min-height: 45px; 
     display: flex; 
-    justify-content: center; /* Центрирует всё содержимое */
+    justify-content: center; 
     align-items: center; 
     gap: 20px; 
     padding: 5px; 
@@ -157,16 +152,15 @@ padding-left: 12px;
 
 .db-btn { 
     font-size: 0.7rem; 
-    color: var(--accent); /* Изменили с #666 на ярко-зеленый */
+    color: var(--accent); 
     cursor: pointer; 
-    border: 1px solid var(--accent); /* Добавили рамку в цвет текста */
+    border: 1px solid var(--accent); 
     padding: 5px 10px; 
     text-transform: uppercase; 
     font-weight: bold;
-    transition: 0.3s; /* Для плавного эффекта */
+    transition: 0.3s; 
 }
 
-/* Центрирование самого логотипа как отдельного блока */
 .centered-logo {
     display: flex;
     justify-content: center;
@@ -176,15 +170,9 @@ padding-left: 12px;
     text-decoration: none;
 }
 
-
-
         video { position: fixed; width: 1px; height: 1px; opacity: 0; }
  
 
-
-
-
-/* Стили из loop.html, адаптированные под Matrix */
 footer { padding: 10px 0; flex-shrink: 0; }
 
 .donate-btn { 
@@ -203,10 +191,10 @@ width: fit-content;
 .donate-box { 
     display: flex; 
     flex-direction: column; 
-    align-items: center; /* Центрирует кнопку и крипто-адрес */
+    align-items: center; 
     gap: 8px; 
     padding: 0 15px; 
-    text-align: center; /* Центрирует текст внутри блоков */
+    text-align: center; 
 }
 
 
@@ -331,12 +319,10 @@ function update() {
     const el = document.getElementById('word-stream');
     if (!words[currentIdx]) return;
 
-    // Перезапуск анимации
     el.classList.remove('word-flash');
-    void el.offsetWidth; // Магия для сброса состояния DOM
+    void el.offsetWidth; 
     el.classList.add('word-flash');
 
-    // Смена текста происходит в момент "пустоты" (на 40-50% анимации)
     setTimeout(() => {
         el.innerText = words[currentIdx];
     }, 120); 
@@ -366,14 +352,12 @@ function update() {
 function captureWord() {
     if (!words[currentIdx]) return;
     
-    // Очищаем от знаков, убираем пробелы и приводим к формату "Capitalized"
     let raw = words[currentIdx].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
     if (!raw) return;
     
     const w = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
     const dig = document.getElementById('digText');
     
-    // 1. Проверка на дубликат (регистронезависимая)
     const lines = dig.value.split('\n').map(l => l.split(':')[0].trim());
     if (lines.some(line => line.toLowerCase() === w.toLowerCase())) {
         document.getElementById('word-stream').style.color = '#555';
@@ -381,7 +365,6 @@ function captureWord() {
         return;
     }
 
-    // 2. Поиск определения в базе (localStorage)
     let definition = "";
     const cached = localStorage.getItem('matrix_cache');
     if (cached) {
@@ -400,7 +383,6 @@ function captureWord() {
         } catch (e) { console.error("Neural Matrix: DB access error"); }
     }
 
-    // 3. Вставка в поле (Слово: Определение)
     const prefix = dig.value.trim().length > 0 ? '\n' : '';
     dig.value += prefix + w + ': ' + (definition ? definition : '');
     dig.scrollTop = dig.scrollHeight; 
@@ -410,11 +392,6 @@ function captureWord() {
     document.getElementById('word-stream').style.color = 'var(--tension)';
     setTimeout(() => document.getElementById('word-stream').style.color = '', 100);
 }
-
-
-
-
-
 
         function checkDigest() {
             document.getElementById('save-btn').style.display = document.getElementById('digText').value.trim().length > 0 ? 'block' : 'none';
@@ -480,18 +457,14 @@ function toggleInfo() {
 
 
         setInterval(() => {
-    // Вычисляем новое значение
     rq = Math.max(10, Math.min(100, rq + (Math.random() - 0.5) * 6));
     
-    // Обновляем график
     chart.data.datasets[0].data.push(rq); 
     chart.data.datasets[0].data.shift();
     chart.update('none');
     
-    // ДОБАВЬТЕ ЭТУ СТРОКУ: она обновляет цифру в блоке index-row
     document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
     
-    // Меняем цвет в зависимости от состояния
     const c = rq > 50 ? '#00ff00' : '#ff1493';
     document.getElementById('index-row').style.color = c;
     chart.data.datasets[0].borderColor = c;
@@ -507,7 +480,6 @@ function toggleDonate() {
     
     if (isOpening) {
         setTimeout(() => {
-            // Центрируем блок доната в видимой области подвала
             info.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
     }
@@ -524,7 +496,6 @@ function copyToClipboard() {
     navigator.clipboard.writeText(text).then(() => {
         addr.innerText = "Copied!";
         addr.style.color = "#00ff00";
-        // ВОТ ЭТА СТРОКА:
         if (hint) hint.innerText = "Address saved to clipboard";
         
         setTimeout(() => {
@@ -535,7 +506,6 @@ function copyToClipboard() {
     });
 }
 
-// Добавьте это в конец скрипта, чтобы данные подтягивались при открытии
 window.addEventListener('DOMContentLoaded', () => {
     const cached = localStorage.getItem('matrix_cache');
     if (cached) {
