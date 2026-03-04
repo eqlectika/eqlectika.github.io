@@ -13,7 +13,6 @@
             margin: 0;
             overflow: hidden;
 
-            /* защита от выделения и системных меню */
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -23,11 +22,7 @@
     -webkit-tap-highlight-color: transparent;
             background: #000;
         }
-
-        /* --- Стили кнопок --- */
-
-
-        
+    
         .logo-image {
             height: 48px;
             width: auto;
@@ -129,7 +124,6 @@
             white-space: nowrap;
         }
 
-        /* Объединяем стили для всех типов подписей */
         .word-label, .secret {
             position: fixed;
             font-family: monospace;
@@ -183,10 +177,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
 
 <script type="module">
-// --- Local Setup Only ---
-// Все импорты Yjs удалены.
 
-// Локальное хранилище объектов (вместо Yjs Map)
 const localObjectsMap = new Map(); 
 
 function generateUUID() {
@@ -196,7 +187,6 @@ function generateUUID() {
     });
 }
 
-// --- I. Imports & THREE.js Setup ---
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x007bff);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
@@ -239,7 +229,6 @@ additionalLights.forEach(({ color, position }) => {
     scene.add(light);
 });
 
-// --- III. Background Animation ---
 const colors = ['#006ee5', '#f84d54', '#000033', '#f84d54']; 
 let currentColorIndex = 0;
 function changeBackgroundColor() {
@@ -260,7 +249,6 @@ function animateBackgroundColor(targetColor) {
 }
 setInterval(changeBackgroundColor, 100000); 
 
-// --- IV. Forma Base Logic ---
 let formaCubeFaces = [];
 let formaCubeGroup = null;
 const CUBE_SIZE = 5;
@@ -367,20 +355,17 @@ let lastTap = 0;
 const DOUBLE_TAP_DELAY = 300; 
 
 const initFormaCube = (position = new THREE.Vector3(0, 0, camera.position.z - 15)) => {
-    // Создаем сразу, без ожидания синхронизации
     const initialPosition = position.clone();
     const uuid = generateUUID();
     
-    // Создаем визуально
     const group = createFormaCube(initialPosition, -1);
     group.userData.uuid = uuid;
     
-    // Сохраняем в локальную карту
     localObjectsMap.set(uuid, {
         type: 'forma',
         position: initialPosition.toArray(),
         excludeIndex: -1,
-        ref: group // Ссылка на 3D объект
+        ref: group
     });
     
     controls.target.set(camera.position.x, camera.position.y, camera.position.z - 15);
@@ -406,7 +391,6 @@ const handleDeleteFormaFace = (faceToDelete) => {
     const obj = faceToDelete;
     const group = obj.parent;
     
-    // Удаляем из массива faces
     const index = formaCubeFaces.indexOf(obj);
     if (index > -1) formaCubeFaces.splice(index, 1);
 
@@ -414,7 +398,6 @@ const handleDeleteFormaFace = (faceToDelete) => {
         group.remove(obj);
         obj.geometry.dispose();
         
-        // Удаляем группу, если пусто
         if (group.children.filter(c => c.isMesh).length === 0) {
             scene.remove(group);
             if (group.userData.uuid) localObjectsMap.delete(group.userData.uuid);
@@ -437,7 +420,6 @@ const handleDeleteAndCreateTunnel = (event, faceToDelete, intersection) => {
     const excludeId = getTunnelFaceId(faceNormal);
     const newUUID = generateUUID();
     
-    // Создаем новый куб
     const newGroup = createFormaCube(newGroupPosition, excludeId);
     newGroup.userData.uuid = newUUID;
     localObjectsMap.set(newUUID, {
@@ -447,11 +429,9 @@ const handleDeleteAndCreateTunnel = (event, faceToDelete, intersection) => {
         ref: newGroup
     });
 
-    // Удаляем грань старого куба (туннельный эффект)
     handleDeleteFormaFace(obj);
 };
 
-// --- V. Space Polarity Objects ---
 const secrets = ['slowly', 'focus', 'pinch', 'try', 'switch', 'scroll', 'scale', 'shift', 'move', 'tap', 'touch', 'click', 'right', 'button', 'mouse', 'screen', 'fly', 'double', 'follow', 'read', 'peer', 'rest', 'quick', 'hold', 'and', 'or', 'virtual', 'eternity', 'node', 'server', 'idea', 'word', 'victory', 'release', 'keep', 'calm', 'relax', 'rest', 'leave', 'chance', 'mine', 'token', 'visual', 'reality', 'space', 'polarity', 'keep', 'mind', 'think', 'dream', 'fantasy', 'trade', 'change', 'place', 'invest', 'look', 'ask', 'find', 'sign', 'type', 'play', 'experiment', 'phenomena', 'coordinate', 'carry', 'spend', 'accept', 'bring', 'transfer', 'take', 'sell', 'market', 'stay', 'well', 'top', 'hit'];
 const staticObjects = [];
 const polarObjects = [];
@@ -720,16 +700,13 @@ const handleDeletePolarity = (event) => {
     if (intersects.length > 0) {
         const selectedObject = intersects[0].object;
         
-        // Удаляем из сцены
         scene.remove(selectedObject);
         
-        // Удаляем из локальных массивов
         const staticIndex = staticObjects.indexOf(selectedObject);
         if (staticIndex > -1) staticObjects.splice(staticIndex, 1);
         const polarIndex = polarObjects.indexOf(selectedObject);
         if (polarIndex > -1) polarObjects.splice(polarIndex, 1);
         
-        // Удаляем из карты по UUID
         if (selectedObject.userData.uuid) {
             localObjectsMap.delete(selectedObject.userData.uuid);
         }
@@ -897,7 +874,6 @@ const adjustCameraFocus = () => {
 goButton.addEventListener('click', () => { 
     isMovingPolarity = !isMovingPolarity;
     goButton.innerText = isMovingPolarity ? "Stop" : "Bypass"; 
-    // yEvents.push([{ type: 'bypass' }]); // Removed P2P event
     if (isMovingPolarity) {
         adjustCameraFocus();
         if (isFlyingBase) { isFlyingBase = false; flyButtonBase.textContent = 'Fly'; }
@@ -950,10 +926,8 @@ const performCameraLunge = () => {
 
 foreButton.addEventListener('click', () => {
     performCameraLunge();
-    // yEvents.push([{ type: 'scatter' }]); // Removed P2P event
 });
 
-// --- VII. Interactions ---
 let longPressTimer;
 const LONG_PRESS_DELAY = 700;
 let isLongPress = false;
@@ -1082,7 +1056,6 @@ renderer.domElement.addEventListener('pointerup', (event) => {
         } else if (selectedObject.userData.isPolarityObject) {
             if (mode !== 'Across') {
                 applyScatterEffect(selectedObject);
-                // yEvents.push([{ type: 'scatter' }]); // Removed P2P event
                 return;
             }
         }
@@ -1206,7 +1179,6 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Запускаем инициализацию и рендер
 initFormaCube();
 try {
     animate();
@@ -1215,7 +1187,6 @@ try {
 }
 
 document.getElementById('originButton').addEventListener('click', () => {
-    // Можно добавить легкий эффект затухания перед уходом
     document.body.style.opacity = '0';
     document.body.style.transition = 'opacity 0.5s';
     
