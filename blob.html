@@ -8,7 +8,7 @@
 <style>
     * { 
         -webkit-tap-highlight-color: transparent; 
-        touch-action: pan-y !important; /* Разрешаем вертикальный скролл для всей страницы */
+        touch-action: pan-y !important; 
         user-select: none !important; 
         -webkit-user-select: none;
     }
@@ -18,7 +18,7 @@
         min-height: 100%;
         background: #000; 
         overflow-x: hidden;
-        overflow-y: auto !important; /* Включаем системную прокрутку */
+        overflow-y: auto !important; 
     }
 
     canvas { 
@@ -26,7 +26,6 @@
         position: fixed; top: 0; left: 0; z-index: 0; 
     }
 
-    /* Главная обертка для интерфейса поверх 3D */
     .ui-wrapper {
         position: relative;
         z-index: 10;
@@ -34,17 +33,15 @@
         flex-direction: column;
         align-items: center;
         min-height: 100vh;
-        pointer-events: none; /* Пропускаем клики на канвас сквозь фон */
+        pointer-events: none; 
     }
 
-    /* Возвращаем кликабельность всем элементам внутри обертки */
     .ui-wrapper > div, 
     .ui-wrapper > footer, 
     .ui-wrapper > header { 
         pointer-events: auto; 
     }
 
-    /* Блок заголовка */
     header {
         width: 100%; 
         text-align: center; 
@@ -52,14 +49,13 @@
         background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%);
     }
 
-    /* Контейнер для нижних элементов управления */
     .bottom-ui {
-        margin-top: auto; /* Выталкивает блок в самый низ экрана */
+        margin-top: auto; 
         padding: 50px 0 30px 0;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 30px; /* Расстояние между ссылками меню и кнопкой Support */
+        gap: 30px; 
         width: 100%;
     }
 
@@ -75,7 +71,6 @@
         transition: opacity 0.3s;
     }
 
-    /* Стили Support из spark.html */
     footer { 
         width: 100%; 
         display: flex; 
@@ -105,7 +100,7 @@
     }
 
     .crypto-info { 
-        display: none; /* Переключается через JS (flex) */
+        display: none; 
         flex-direction: column; 
         align-items: center; 
         gap: 5px; 
@@ -213,7 +208,7 @@ const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.
                     const hit = intersects[0];
                     const ud = hit.object.userData;
                     const localPoint = hit.object.worldToLocal(hit.point.clone());
-                    ud.hits.push({ pos: localPoint, strength: 0.8 }); // Ощутимое выталкивание
+                    ud.hits.push({ pos: localPoint, strength: 0.8 }); 
                 }
             };
 
@@ -234,7 +229,6 @@ const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.
                     mainGroup.rotation.x += (t.clientY - lastMousePos.y) * 0.007;
                     lastMousePos = { x: t.clientX, y: t.clientY };
                 } else if (e.touches.length === 2) {
-                    // Возвращен Zoom
                     const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                     if (prevTouchDist) camera.position.z = Math.max(1.5, Math.min(10, camera.position.z - (d - prevTouchDist) * 0.015));
                     prevTouchDist = d;
@@ -258,7 +252,6 @@ const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.
 
                     ud.hits.forEach(hit => {
                         const dist = v.distanceTo(hit.pos);
-                        // Математика гантели: сфера на тонкой ножке
                         const head = Math.exp(-Math.pow(dist - 0.15, 2) * 60.0) * 1.2;
                         const stem = Math.exp(-dist * 100.0) * 0.4;
                         totalPush += hit.strength * (head + stem);
@@ -267,7 +260,6 @@ const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.
                     v.normalize().multiplyScalar(0.8 + totalPush);
                     pos.setXYZ(i, v.x, v.y, v.z);
                 }
-                // Замедленный возврат
                 ud.hits.forEach(h => { h.strength *= 0.985; });
                 pos.needsUpdate = true;
                 drop.geometry.computeVertexNormals();
@@ -285,7 +277,6 @@ function toggleDonate() {
     const isOpening = info.style.display !== "flex";
     info.style.display = isOpening ? "flex" : "none"; 
     
-    // Автоматическая прокрутка к адресу, если он не влезает (как в spark.html)
     if (isOpening) {
         setTimeout(() => info.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
     }
