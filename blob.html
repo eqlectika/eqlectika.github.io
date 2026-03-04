@@ -236,7 +236,28 @@ const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.
             }, { passive: false });
 
             canvas.addEventListener('touchend', () => { isDragging = false; prevTouchDist = null; });
-            animate();
+          
+canvas.addEventListener('mousedown', (e) => {
+isDragging = true;
+lastMousePos = { x: e.clientX, y: e.clientY };
+handleInput(e.clientX, e.clientY);
+});
+
+canvas.addEventListener('mousemove', (e) => {
+if (!isDragging) return;
+mainGroup.rotation.y += (e.clientX - lastMousePos.x) * 0.007;
+mainGroup.rotation.x += (e.clientY - lastMousePos.y) * 0.007;
+lastMousePos = { x: e.clientX, y: e.clientY };
+});
+
+window.addEventListener('mouseup', () => {
+isDragging = false;
+});
+
+canvas.addEventListener('wheel', (e) => {
+camera.position.z = Math.max(1.5, Math.min(10, camera.position.z + e.deltaY * 0.005));
+}, { passive: true });
+ animate ();
         }
 
         function animate() {
@@ -256,7 +277,7 @@ const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.
                         const stem = Math.exp(-dist * 100.0) * 0.4;
                         totalPush += hit.strength * (head + stem);
                     });
-
+ 
                     v.normalize().multiplyScalar(0.8 + totalPush);
                     pos.setXYZ(i, v.x, v.y, v.z);
                 }
@@ -302,5 +323,3 @@ function toggleDonate() {
 
 </body>
 </html>
-
-
