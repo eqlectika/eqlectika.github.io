@@ -12,13 +12,11 @@
 
   <style>
     body {
-      /* Устанавливаем системный шрифт по умолчанию */
       font-family: system-ui, -apple-system, sans-serif; 
       background-color: #000;
       color: #fff;
       margin: 20px;
       text-align: center;
-          /* защита от выделения и системных меню */
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -31,7 +29,7 @@
 .clickable-word {
   transition: color 0.0s ease;
   cursor: pointer;
-  display: inline-block; /* Помогает избежать проблем с кликами на мобильных */
+  display: inline-block; 
 }
 
 
@@ -39,7 +37,6 @@
       color: #fff;
     }
 
-    /* Контейнер для кнопок: размещает их по краям */
     #controls {
       display: flex;
       justify-content: space-between; 
@@ -47,7 +44,6 @@
       margin: 0 0 20px 0; 
     }
 
-    /* Общий стиль для кнопок */
     #loadFileButton, #changeFontButton {
       padding: 10px 20px;
       font-family: 'Ubuntu', sans-serif;
@@ -61,19 +57,16 @@
       text-align: center; 
     }
 
-    /* 🟡 Кнопка Menu: Желтый фон, Темно-синий текст */
     #loadFileButton {
       background-color: #ffd700; 
       color: #000080; 
     }
 
-    /* 🔵 Кнопка Font: Темно-синий фон, Желтый текст */
     #changeFontButton {
       background-color: #000080; 
       color: #ffd700; 
     }
 
-    /* Стили при наведении (Hover) */
     #loadFileButton:hover {
       background-color: #ffa500; 
     }
@@ -90,7 +83,6 @@
       display: none; 
     }
     
-    /* НОВОЕ МЕНЮ СЛЕВА (#leftMenuSelectMenu) */
     #leftMenuSelectMenu {
         position: absolute;
         top: 60px; 
@@ -119,7 +111,6 @@
         color: #000;
     }
 
-    /* Меню выбора шрифтов (СПРАВА) */
     #fontSelectMenu {
         position: absolute;
         top: 60px; 
@@ -149,7 +140,6 @@
     }
 
 
-    /* Стили для текста книги */
     .title {
       font-size: 1.5em;
       font-weight: bold;
@@ -197,7 +187,6 @@
   <div id="content" style="margin-top: 20px;"></div>
 
   <script>
-    // Элементы
     const loadFileButton = document.getElementById('loadFileButton');
     const fileInput = document.getElementById('fileInput');
     const changeFontButton = document.getElementById('changeFontButton');
@@ -209,7 +198,6 @@
     const helpMenuItem = document.getElementById('helpMenuItem');
     
 
-    // ФУНКЦИЯ: Установка ширины обоих меню по ширине их кнопок
     function setMenuWidth() {
       const leftButtonWidth = loadFileButton.offsetWidth; 
       leftMenuSelectMenu.style.width = leftButtonWidth + 'px';
@@ -221,33 +209,28 @@
     document.addEventListener('DOMContentLoaded', setMenuWidth);
     window.addEventListener('resize', setMenuWidth);
     
-    // 1. Обработка нажатия кнопки "Menu"
     loadFileButton.addEventListener('click', (event) => {
       event.stopPropagation();
       leftMenuSelectMenu.style.display = leftMenuSelectMenu.style.display === 'block' ? 'none' : 'block';
       fontSelectMenu.style.display = 'none';
     });
 
-    // 2. Обработка нажатия кнопки "Font"
     changeFontButton.addEventListener('click', (event) => {
       event.stopPropagation();
       fontSelectMenu.style.display = fontSelectMenu.style.display === 'block' ? 'none' : 'block';
       leftMenuSelectMenu.style.display = 'none';
     });
     
-    // 3. Обработка пунктов Левого Меню
     loadBookMenuItem.addEventListener('click', () => {
-        // Вызов окна загрузки файла (с фильтром .fb2)
         fileInput.click(); 
         leftMenuSelectMenu.style.display = 'none';
     });
 
     helpMenuItem.addEventListener('click', () => {
-    window.location.href = 'index.html'; // Это откроет в текущем окне
+    window.location.href = 'index.html'; 
     leftMenuSelectMenu.style.display = 'none';
 });
     
-    // 4. Обработка выбора файла (ИСПОЛЬЗУЕМ НАДЕЖНУЮ ЛОГИКУ FB2)
     fileInput.addEventListener('change', function(event) {
       const file = event.target.files[0];
       if (!file) {
@@ -255,22 +238,18 @@
         return;
       }
       
-      contentDiv.innerHTML = ""; // Очистка контента перед загрузкой
-
-      // 🔴 НАДЕЖНАЯ ПРОВЕРКА: Только по расширению .fb2 (игнорируем photo/image)
+      contentDiv.innerHTML = ""; 
       if (file.name.toLowerCase().endsWith('.fb2')) { 
         const reader = new FileReader();
         reader.onload = function(e) {
           const parser = new DOMParser();
           const xmlDoc = parser.parseFromString(e.target.result, "application/xml");
 
-          // Проверка на ошибки парсинга XML
           if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
                 contentDiv.innerHTML = `<div style="color:red;">Ошибка: Файл FB2 поврежден или не является действительным XML.</div>`;
                 return;
           }
 
-          // Получение информации о книге
           const titleInfo = xmlDoc.querySelector("description > title-info");
           if (titleInfo) {
             const bookTitle = titleInfo.querySelector("book-title")?.textContent || "Без названия";
@@ -281,7 +260,6 @@
             contentDiv.innerHTML += `<div class="author">Автор: ${author}</div>`;
           }
 
-          // Парсинг содержимого книги
           const body = xmlDoc.querySelector("body");
           if (body) {
             body.querySelectorAll("section").forEach(section => {
@@ -294,9 +272,8 @@ section.querySelectorAll("p").forEach(paragraph => {
   const pDiv = document.createElement('div');
   pDiv.className = 'paragraph';
   
-  // Разбиваем текст параграфа на слова и оборачиваем их
   pDiv.innerHTML = paragraph.textContent.split(/(\s+)/).map(part => {
-    if (part.trim().length === 0) return part; // Возвращаем пробелы как есть
+    if (part.trim().length === 0) return part; 
     return `<span class="clickable-word">${part}</span>`;
   }).join('');
   
@@ -312,12 +289,10 @@ section.querySelectorAll("p").forEach(paragraph => {
 
         reader.readAsText(file); 
       } else {
-        // Если выбран файл, но он не FB2 (например, фото, если опция не исчезла)
         alert("Неподдерживаемый тип файла. Выберите только FB2.");
       }
     });
 
-    // 5. Обработка выбора шрифта
     fontSelectMenu.querySelectorAll('button').forEach(button => {
       button.addEventListener('click', function() {
         const selectedFont = this.getAttribute('data-font');
@@ -336,7 +311,6 @@ section.querySelectorAll("p").forEach(paragraph => {
       });
     });
 
-    // 6. Скрываем оба меню при клике вне них
     document.addEventListener('click', function(event) {
         if (!leftMenuSelectMenu.contains(event.target) && !loadFileButton.contains(event.target)) {
             leftMenuSelectMenu.style.display = 'none';
@@ -350,14 +324,11 @@ document.addEventListener('click', function(e) {
   if (e.target.classList.contains('clickable-word')) {
     e.preventDefault();
     
-    // Определяем целевой цвет: ваш зеленый из предыдущего проекта или стандартный
     const targetGreen = '#00ff00'; 
     const currentStyle = window.getComputedStyle(e.target).color;
     
-    // Переключение: Белый (или серый) <-> Зеленый
-    // Браузер часто возвращает цвет в формате rgb
     if (e.target.style.color === 'rgb(0, 255, 0)' || e.target.style.color === targetGreen) {
-      e.target.style.color = ''; // Возвращает к цвету из CSS (.paragraph { color: #ddd; })
+      e.target.style.color = ''; 
     } else {
       e.target.style.color = targetGreen;
     }
