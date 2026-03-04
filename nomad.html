@@ -86,7 +86,6 @@
             
             const neighbor = cubesMap.get(nKey);
             if (neighbor) {
-                // Если сосед есть, удаляем его грань, смотрящую на нас
                 const invN = [-d.n[0], -d.n[1], -d.n[2]];
                 const backFace = neighbor.children.find(f => 
                     f.userData.normal && f.userData.normal.x === invN[0] && 
@@ -94,7 +93,6 @@
                 );
                 if (backFace) neighbor.remove(backFace);
             } else {
-                // Если соседа нет, создаем грань
                 const mesh = new THREE.Mesh(new THREE.PlaneGeometry(GRID, GRID), new THREE.MeshStandardMaterial({side: THREE.DoubleSide}));
                 mesh.position.set(d.n[0]*GRID/2, d.n[1]*GRID/2, d.n[2]*GRID/2);
                 mesh.rotation.set(d.r[0], d.r[1], d.r[2]);
