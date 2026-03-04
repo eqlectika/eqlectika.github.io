@@ -70,13 +70,11 @@ body {
 
 let currentDB = {};
 
-// 1. Загрузка существующей базы из файла
 function importDatabase(input) {
     const file = input.files[0];
     const reader = new FileReader();
     reader.onload = function() {
         try {
-            // Ожидаем формат {"word": {...}, "word2": {...}}
             currentDB = JSON.parse(reader.result);
             alert("Database loaded: " + Object.keys(currentDB).length + " words.");
             updateOutput();
@@ -87,7 +85,6 @@ function importDatabase(input) {
     reader.readAsText(file);
 }
 
-// 2. Генерация и добавление нового слова
 function generateJSON() {
     const word = document.getElementById('word').value.toLowerCase().trim();
     if (!word) return alert("Please enter the word");
@@ -108,17 +105,15 @@ function generateJSON() {
         pair: document.getElementById('pair').value
     };
     
-    currentDB[word] = entry; // Добавляем или обновляем
+    currentDB[word] = entry; 
     updateOutput();
 }
 
-// 3. Обновление текстового поля
 function updateOutput() {
     const output = document.getElementById('output');
     output.innerText = JSON.stringify(currentDB, null, 4);
 }
 
-// 4. Копирование в буфер обмена
 function copyToClipboard() {
     const text = document.getElementById('output').innerText;
     navigator.clipboard.writeText(text).then(() => {
