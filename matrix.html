@@ -331,20 +331,33 @@ function update() {
 }
 
 
-        function toggleRun() {
-            if (!isRunning) return;
-            isPaused = !isPaused;
-            document.getElementById('run-btn').innerText = isPaused ? 'RUN' : 'STOP';
-            document.getElementById('run-btn').style.color = isPaused ? '' : 'var(--tension)';
-            if (!isPaused) loop();
-        }
+function toggleRun() {
+if (!isRunning) return;
+if (isPaused && currentIdx >= words.length - 1) {
+currentIdx = 0;
+}
+isPaused = !isPaused;
+document.getElementById('run-btn').innerText = isPaused ? 'RUN' : 'STOP';
+document.getElementById('run-btn').style.color = isPaused ? '' : 'var(--tension)';
+if (!isPaused) {
+update();
+timer = setTimeout(loop, 60000 / (speed * (rq/100)));
+}
+}
 
-        function loop() {
-            if (isRunning && !isPaused && currentIdx < words.length - 1) {
-                currentIdx++; update();
-                timer = setTimeout(loop, 60000 / (speed * (rq/100)));
-            }
-        }
+function loop() {
+if (isRunning && !isPaused) {
+if (currentIdx < words.length - 1) {
+currentIdx++;
+update();
+timer = setTimeout(loop, 60000 / (speed * (rq/100)));
+} else {
+isPaused = true;
+document.getElementById('run-btn').innerText = 'RUN';
+document.getElementById('run-btn').style.color = '';
+}
+}
+}
 
         function adjSpd(d) { speed = Math.max(50, speed + d); update(); }
         function move(d) { currentIdx = Math.max(0, Math.min(words.length-1, currentIdx + d)); update(); }
