@@ -29,11 +29,9 @@
 let isDoubleTap = false;
 let dronePosition = new THREE.Vector3(0, 0, 10);
 let droneTarget = new THREE.Vector3(0, 0, 0);
-let panVelocity = new THREE.Vector3(0, 0, 0); // Если этой переменной еще нет
-
+let panVelocity = new THREE.Vector3(0, 0, 0); 
     let currentPropIndex = 0;
     
-    // Динамика
     let rotationVelocity = new THREE.Vector2(0, 0);
     let panVelocity = new THREE.Vector3(0, 0, 0);
     let flyVelocity = new THREE.Vector3(0, 0, 0);
@@ -48,7 +46,7 @@ let panVelocity = new THREE.Vector3(0, 0, 0); // Если этой переме�
     function init() {
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        pivot = new THREE.Group(); // Центр сцены (точка фокуса)
+        pivot = new THREE.Group(); 
         scene.add(pivot);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -109,7 +107,7 @@ let panVelocity = new THREE.Vector3(0, 0, 0); // Если этой переме�
                 prevPoint = { x: e.touches[0].pageX, y: e.touches[0].pageY };
                 touchStartTime = now;
                 if (now - lastTapTime < 300) {
-                    isPanning = true; // Double Tap активирует перемещение фокуса
+                    isPanning = true; 
                     clearTimeout(longPressTimer);
                 } else {
                     isPanning = false;
@@ -131,7 +129,6 @@ let panVelocity = new THREE.Vector3(0, 0, 0); // Если этой переме�
                 const dx = e.touches[0].pageX - prevPoint.x;
                 const dy = e.touches[0].pageY - prevPoint.y;
                 if (isPanning) {
-                    // Перемещаем центр сцены (фокус)
                     const s = distance * 0.0015;
                     panVelocity.x += dx * s;
                     panVelocity.y -= dy * s;
@@ -142,7 +139,6 @@ let panVelocity = new THREE.Vector3(0, 0, 0); // Если этой переме�
                 }
                 prevPoint = { x: e.touches[0].pageX, y: e.touches[0].pageY };
             } else if (e.touches.length === 2) {
-                // Изменяем дистанцию до фокуса (Zoom фокуса)
                 const d = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
                 targetDistance += (initialPinchDist - d) * 0.05;
                 initialPinchDist = d;
@@ -163,24 +159,18 @@ let panVelocity = new THREE.Vector3(0, 0, 0); // Если этой переме�
     function animate() {
         requestAnimationFrame(animate);
 
-        // 1. Вращение сцены вокруг фокуса
         pivot.rotation.x += rotationVelocity.x;
         pivot.rotation.y += rotationVelocity.y;
         rotationVelocity.multiplyScalar(FRICTION);
 
-        // 2. Перемещение центра сцены (Pan)
         pivot.position.add(panVelocity);
         panVelocity.multiplyScalar(FRICTION);
 
-        // 3. Zoom (дистанция камеры до фокуса)
         distance += (targetDistance - distance) * 0.1;
         camera.position.z = distance;
 
-        // 4. Движение Дрона (Fly / Bypass)
         if (isFlyMode || isBypassMode) {
-            // В этих режимах камера или pivot могут получать дополнительный вектор движения
-            // Bypass может использовать рейкастинг для прохода сквозь грани
-            pivot.position.z -= 0.02; // Пример постоянного движения вперед
+            pivot.position.z -= 0.02; 
         }
 
         renderer.render(scene, camera);
