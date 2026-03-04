@@ -100,7 +100,7 @@
     }
 
     .crypto-info { 
-        display: none;
+        display: none; 
         flex-direction: column; 
         align-items: center; 
         gap: 5px; 
@@ -159,7 +159,6 @@
     </div>
 </div>
 
-      <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script>
         let scene, camera, renderer, mainGroup, droplets = [];
         let touches = {}; 
@@ -293,7 +292,61 @@
                 }
                 longPressTimer = null;
             }, { passive: false });
+canvas.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    startPos = { x: e.clientX, y: e.clientY };
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(droplets);
+    longPressTimer = setTimeout(() => {
+        if (intersects.length > 0) {
+            const obj = intersects[0].object;
+            mainGroup.remove(obj);
+            droplets = droplets.filter(d => d !== obj);
+        }
+        longPressTimer = null;
+    }, 600);
+});
 
+window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    if (Math.hypot(e.clientX - startPos.x, e.clientY - startPos.y) > 10) {
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+    }
+    mainGroup.rotation.y += (e.clientX - startPos.x) * 0.01;
+    mainGroup.rotation.x += (e.clientY - startPos.y) * 0.01;
+    startPos = { x: e.clientX, y: e.clientY };
+});
+
+window.addEventListener('mouseup', (e) => {
+    if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(droplets);
+        if (intersects.length > 0) {
+            const hit = intersects[0];
+            hit.object.userData.hits.push({
+                pos: hit.object.worldToLocal(hit.point.clone()),
+                strength: 3.5
+            });
+        } else {
+            const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+            const dir = vector.sub(camera.position).normalize();
+            const distance = -camera.position.z / dir.z;
+            const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+            createDroplet(pos.x, pos.y, pos.z);
+        }
+    }
+    isDragging = false;
+    longPressTimer = null;
+});
+
+canvas.addEventListener('wheel', (e) => {
+    camera.position.z = Math.max(2, Math.min(15, camera.position.z + e.deltaY * 0.01));
+}, { passive: true });
             animate();
         }
 
