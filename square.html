@@ -97,7 +97,6 @@
             font-family: 'Georgia', serif;
         }
 
-        /* Стиль для лучшего времени */
         #bestTimeDisplay {
             font-size: 14px;
             color: rgba(255, 255, 255, 0.9);
@@ -152,7 +151,7 @@
         }
 
 footer {
-    padding: 20px 0 0px; /* Увеличили верхний отступ для воздуха */
+    padding: 20px 0 0px; 
     flex-shrink: 0;
 }
 
@@ -199,7 +198,6 @@ footer {
         const bestDisplay = document.getElementById("bestTimeDisplay");
         let numbers = Array.from({length: 25}, (_, i) => i + 1);
 
-        // Загрузка рекорда из памяти
         let bestTime = localStorage.getItem('schulte_best') || Infinity;
         if (bestTime !== Infinity) bestDisplay.innerText = "Best: " + timeToString(parseInt(bestTime));
 
@@ -246,7 +244,6 @@ footer {
                 toggleBtn.style.background = "#fff";
                 toggleBtn.style.color = "#000";
                 
-                // Проверка и сохранение рекорда
                 if (elapsedTime > 0 && elapsedTime < bestTime) {
                     bestTime = elapsedTime;
                     localStorage.setItem('schulte_best', bestTime);
@@ -266,15 +263,12 @@ footer {
         }
 
         function mix() {
-    // Перемешиваем числа
     shuffle(numbers);
     renderGrid();
     
-    // Сбрасываем рекорд в памяти
     bestTime = Infinity;
     localStorage.removeItem('schulte_best');
     
-    // Обновляем визуальное отображение
     bestDisplay.innerText = "Best: --:--.-";
 }
 
@@ -285,11 +279,10 @@ function toggleDonate() {
     
     info.style.display = isOpening ? "flex" : "none"; 
 
-    // Если открываем, плавно прокручиваем к самому низу
     if (isOpening) {
         setTimeout(() => {
             info.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }, 50); // Небольшая задержка, чтобы браузер успел отрисовать блок
+        }, 50); 
     }
 }
 
