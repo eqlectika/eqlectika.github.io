@@ -8,7 +8,7 @@
 <style>
     * { 
         -webkit-tap-highlight-color: transparent; 
-        touch-action: pan-y !important; /* Разрешаем вертикальный скролл для всей страницы */
+        touch-action: pan-y !important; 
         user-select: none !important; 
         -webkit-user-select: none;
     }
@@ -18,7 +18,7 @@
         min-height: 100%;
         background: #000; 
         overflow-x: hidden;
-        overflow-y: auto !important; /* Включаем системную прокрутку */
+        overflow-y: auto !important; 
     }
 
     canvas { 
@@ -26,7 +26,6 @@
         position: fixed; top: 0; left: 0; z-index: 0; 
     }
 
-    /* Главная обертка для интерфейса поверх 3D */
     .ui-wrapper {
         position: relative;
         z-index: 10;
@@ -34,17 +33,15 @@
         flex-direction: column;
         align-items: center;
         min-height: 100vh;
-        pointer-events: none; /* Пропускаем клики на канвас сквозь фон */
+        pointer-events: none; 
     }
 
-    /* Возвращаем кликабельность всем элементам внутри обертки */
     .ui-wrapper > div, 
     .ui-wrapper > footer, 
     .ui-wrapper > header { 
         pointer-events: auto; 
     }
 
-    /* Блок заголовка */
     header {
         width: 100%; 
         text-align: center; 
@@ -52,14 +49,13 @@
         background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%);
     }
 
-    /* Контейнер для нижних элементов управления */
     .bottom-ui {
-        margin-top: auto; /* Выталкивает блок в самый низ экрана */
+        margin-top: auto; 
         padding: 50px 0 30px 0;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 30px; /* Расстояние между ссылками меню и кнопкой Support */
+        gap: 30px; 
         width: 100%;
     }
 
@@ -75,7 +71,6 @@
         transition: opacity 0.3s;
     }
 
-    /* Стили Support из spark.html */
     footer { 
         width: 100%; 
         display: flex; 
@@ -105,7 +100,7 @@
     }
 
     .crypto-info { 
-        display: none; /* Переключается через JS (flex) */
+        display: none; 
         flex-direction: column; 
         align-items: center; 
         gap: 5px; 
@@ -256,7 +251,26 @@ const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
+canvas.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    lastMousePos = { x: e.clientX, y: e.clientY };
+    handleInput(e.clientX, e.clientY);
+});
 
+window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    mainGroup.rotation.y += (e.clientX - lastMousePos.x) * 0.005;
+    mainGroup.rotation.x += (e.clientY - lastMousePos.y) * 0.005;
+    lastMousePos = { x: e.clientX, y: e.clientY };
+});
+
+window.addEventListener('mouseup', () => {
+    isDragging = false;
+});
+
+canvas.addEventListener('wheel', (e) => {
+    camera.position.z = Math.max(1.5, Math.min(10, camera.position.z + e.deltaY * 0.005));
+}, { passive: true });
             animate();
         }
 
@@ -274,29 +288,22 @@ const p2 = new THREE.PointLight(0x00ff00, 10); p2.position.set(-5, 5, 5); scene.
                 const tempV = new THREE.Vector3();
 
 for (let i = 0; i < pos.count; i++) {
-    // ÐÐµÑÐµÐ¼ Ð±Ð°Ð·Ð¾Ð²ÑÑ ÑÐ¾ÑÐ¼Ñ
     v.set(ud.base[i*3], ud.base[i*3+1], ud.base[i*3+2]);
     
 
 ud.hits.forEach(hit => {
     const r = 0.22; 
-    // Ð¦ÐµÐ½ÑÑ ÑÐ°ÑÐ¸ÐºÐ° Ð²ÑÐµÐ³Ð´Ð° Ð½Ð°ÑÐ¾Ð´Ð¸ÑÑÑ Ð½Ð° ÐºÐ¾Ð½ÑÐµ "ÑÑÐµÑÐ¶Ð½Ñ"
     ballCenter.copy(hit.pos).normalize().multiplyScalar(0.8 + hit.strength);
     
-    // Ð¡ÑÐ¸ÑÐ°ÐµÐ¼ ÑÐ°ÑÑÑÐ¾ÑÐ½Ð¸Ðµ Ð¾Ñ ÑÐµÐºÑÑÐµÐ¹ Ð²ÐµÑÑÐ¸Ð½Ñ Ð´Ð¾ Ð¦ÐÐÐ¢Ð Ð ÐÐ£ÐÐ£Ð©ÐÐÐ Ð¨ÐÐ Ð
     const distToBall = v.distanceTo(ballCenter);
 
     if (distToBall < r) {
-        // ÐÑÐ»Ð¸ Ð²ÐµÑÑÐ¸Ð½Ð° Ð² ÑÐ°Ð´Ð¸ÑÑÐµ â Ð¾Ð½Ð° ÐÐÐ¯ÐÐÐÐ ÑÑÐ°ÑÑ ÑÐ°ÑÑÑÑ ÑÑÐµÑÑ
-        // ÐÐ°ÑÐ¾Ð´Ð¸Ð¼ Ð²ÐµÐºÑÐ¾Ñ Ð¾Ñ ÑÐµÐ½ÑÑÐ° ÑÐ°ÑÐ° Ðº Ð²ÐµÑÑÐ¸Ð½Ðµ Ð¸ ÑÐ¸ÐºÑÐ¸ÑÑÐµÐ¼ ÐµÐ³Ð¾ Ð´Ð»Ð¸Ð½Ñ ÑÐ°Ð´Ð¸ÑÑÐ¾Ð¼ r
         tempV.copy(v).sub(ballCenter).normalize().multiplyScalar(r);
         v.copy(ballCenter).add(tempV);
     } else {
-        // ÐÐ»Ñ Ð²ÑÐµÑ Ð¾ÑÑÐ°Ð»ÑÐ½ÑÑ Ð²ÐµÑÑÐ¸Ð½ Ð´ÐµÐ»Ð°ÐµÐ¼ "Ð½Ð°ÑÑÐ¶ÐµÐ½Ð¸Ðµ" Ðº Ð¾ÑÐ½Ð¾Ð²Ð°Ð½Ð¸Ñ ÑÐ°ÑÐ°
         const distToRoot = v.distanceTo(hit.pos);
-        const influenceRadius = 0.4; // ÐÐ¾Ð½Ð°, ÐºÐ¾ÑÐ¾ÑÐ°Ñ ÑÑÐ½ÐµÑÑÑ Ð·Ð° ÑÐ°ÑÐ¾Ð¼
+        const influenceRadius = 0.4; 
         if (distToRoot < influenceRadius) {
-            // ÐÐ»Ð°Ð²Ð½Ð¾Ðµ Ð¿ÑÐ¸ÑÑÐ¶ÐµÐ½Ð¸Ðµ Ðº ÑÐ¾ÑÐºÐµ Ð²ÑÐ¾Ð´Ð° Ð² ÑÐ°Ñ
             const pull = Math.pow(1 - (distToRoot / influenceRadius), 2);
             v.lerp(ballCenter, pull * 0.8);
         }
@@ -305,7 +312,6 @@ ud.hits.forEach(hit => {
 
 
 
-    // ÐÑÐ¸Ð¼ÐµÐ½ÑÐµÐ¼ Ð»ÐµÐ³ÐºÑÑ Ð²Ð¾Ð»Ð½Ñ Ð´Ð»Ñ "Ð¶Ð¸Ð²Ð¾ÑÑÐ¸"
     v.multiplyScalar(1 + Math.sin(v.x * 8 + time) * 0.005);
     pos.setXYZ(i, v.x, v.y, v.z);
 }
@@ -325,7 +331,6 @@ function toggleDonate() {
     const isOpening = info.style.display !== "flex";
     info.style.display = isOpening ? "flex" : "none"; 
     
-    // ÐÐ²ÑÐ¾Ð¼Ð°ÑÐ¸ÑÐµÑÐºÐ°Ñ Ð¿ÑÐ¾ÐºÑÑÑÐºÐ° Ðº Ð°Ð´ÑÐµÑÑ, ÐµÑÐ»Ð¸ Ð¾Ð½ Ð½Ðµ Ð²Ð»ÐµÐ·Ð°ÐµÑ (ÐºÐ°Ðº Ð² spark.html)
     if (isOpening) {
         setTimeout(() => info.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
     }
