@@ -7,16 +7,14 @@
     <title>Yevgeniy Korobka | Resume</title>
  <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">  
  <style>
-        body {
-     /* защита от выделения и системных меню */
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+body {
+    -webkit-user-select: text; 
+    -moz-user-select: text;
+    user-select: text;
 
-    -webkit-touch-callout: none;
+    -webkit-touch-callout: default;
     -webkit-tap-highlight-color: transparent;
-    touch-action: none;        /* Отключение стандартных жестов браузера */
+    touch-action: auto; 
 }
 
 
@@ -27,13 +25,13 @@ body {
             background-color: #0B0B45;
             margin: 0;
             padding: 0;
-touch-action: pan-y; /* Разрешает браузеру листать страницу вверх-вниз */
+touch-action: pan-y; 
             min-height: 100vh;
         }
 
         canvas {
             display: block;
-            position: fixed; /* Фон всегда на месте */
+            position: fixed; 
             top: 0;
             left: 0;
 touch-action: pan-y !important;
@@ -45,9 +43,13 @@ touch-action: pan-y !important;
     z-index: 10;
     max-width: 800px;
     margin: 0 auto;
-    padding: 40px 20px 100px; /* Добавили 100px снизу как буфер */
+    padding: 40px 20px 100px; 
     text-align: center;
     pointer-events: none;
+}
+
+.content p, h3, .cv-title, .header-img {
+    pointer-events: auto !important; /* Делает текст и заголовки интерактивными */
 }
 
 .footer-block { 
@@ -56,7 +58,7 @@ touch-action: pan-y !important;
     position: relative; 
     z-index: 20; 
     pointer-events: auto !important;
-    min-height: 50px; /* Резервируем место */
+    min-height: 50px; 
 }
 
 
@@ -71,12 +73,10 @@ touch-action: pan-y !important;
     pointer-events: auto;
     width: 100%;
     
-    /* Ключевое решение: */
-    padding-left: 12px; /* Добавляем слева столько же, сколько лишнего справа */
-    box-sizing: border-box; /* Чтобы padding не раздул ширину контейнера */
+    padding-left: 12px; 
+    box-sizing: border-box; 
 }
 
-/* Удалите этот блок совсем, он больше не нужен */
 .cv-title::after {
     display: none;
 }
@@ -130,8 +130,8 @@ touch-action: pan-y !important;
 
         .content { margin-top: 30px; }
         
-        .content p { 
-
+.content p {
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
 
             margin: 0 auto 25px auto; 
             font-size: 1.15em;
@@ -143,16 +143,16 @@ touch-action: pan-y !important;
             flex-direction: column;
             align-items: center;
             gap: 50px;
-            pointer-events: auto; /* Делаем ссылки кликабельными */
+            pointer-events: auto; 
         }
 
-    touch-action: pan-y; /* Разрешает браузеру листать страницу вверх-вниз */
+    touch-action: pan-y;
         .footer a:hover { opacity: 1; }
 
 
 .logo-link {
     pointer-events: auto;
-    display: inline-block; /* Чтобы ссылка плотно облегала изображение */
+    display: inline-block; 
 }
 
 
@@ -253,13 +253,12 @@ touch-action: pan-y !important;
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Controls привязаны к renderer.domElement, чтобы не мешать скроллу текста
    const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-controls.enableZoom = false; // Отключаем зум, чтобы колесо и щипок листали страницу
-controls.enablePan = false;  // Отключаем перемещение камеры в плоскости
-controls.touches.ONE = THREE.TOUCH.ROTATE; // Один палец вращает кубы
-controls.touches.TWO = null;               // ВТОРОЙ ПАЛЕЦ ИГНОРИРУЕТСЯ — это освобождает скролл
+controls.enableZoom = false; 
+controls.enablePan = false;  
+controls.touches.ONE = THREE.TOUCH.ROTATE; 
+controls.touches.TWO = null;      
 controls.domElement.style.touchAction = 'pan-y';
     
     const raycaster = new THREE.Raycaster();
@@ -284,7 +283,7 @@ controls.domElement.style.touchAction = 'pan-y';
         faceConfigs.forEach((config, i) => {
             const face = new THREE.Mesh(
                 new THREE.PlaneGeometry(5, 5),
-                new THREE.MeshStandardMaterial({ color: colors[i], transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+                new THREE.MeshStandardMaterial({ color: colors[i], transparent: true, opacity: 0.1, side: THREE.DoubleSide })
             );
             face.position.set(...config.pos);
             face.rotation.set(...config.rot);
@@ -312,7 +311,6 @@ controls.domElement.style.touchAction = 'pan-y';
     });
 
     window.addEventListener('pointerdown', (event) => {
-        // Игнорируем клики по ссылкам, кнопкам, фото и футеру
         if (event.target.closest('a') || event.target.closest('button') || event.target.closest('img') || event.target.closest('h3')) return;
 
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -345,19 +343,6 @@ controls.domElement.style.touchAction = 'pan-y';
         renderer.render(scene, camera);
     }
 
-// Единый обработчик для блокировки лишних действий и разрешения кликов по кнопкам
-window.addEventListener('pointerdown', (e) => {
-    // Разрешаем клики по ссылкам, кнопкам и элементам доната
-    if (e.target.closest('a') || 
-        e.target.closest('button') || 
-        e.target.classList.contains('donate-btn') || 
-        e.target.classList.contains('crypto-address-display')) {
-        return;
-    }
-    
-    // Блокируем выделение текста и жесты для всего остального (чтобы не мешать кубам)
-    if (e.cancelable) e.preventDefault();
-}, { passive: false });
 
 
     animate();
@@ -375,11 +360,10 @@ function toggleDonate() {
     info.style.display = isOpening ? "flex" : "none"; 
     
     if (isOpening) {
-        // scrollIntoView гораздо деликатнее, чем scrollTo на всю высоту
         setTimeout(() => {
             info.scrollIntoView({
                 behavior: 'smooth',
-                block: 'nearest' // Покажет элемент, не дергая всю страницу в топ
+                block: 'nearest' 
             });
         }, 100);
     }
@@ -392,7 +376,6 @@ function toggleDonate() {
         const hint = document.getElementById("copyHint");
         const text = addr.innerText;
         
-        // Используем современный API или fallback для старых браузеров
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(text).then(() => showSuccess(addr, hint, text));
         } else {
@@ -408,7 +391,7 @@ function toggleDonate() {
 
     function showSuccess(addr, hint, originalText) {
         addr.innerText = "Copied!";
-        addr.style.color = "#00ff00"; // Цвет успеха из spark
+        addr.style.color = "#00ff00"; 
         if (hint) hint.innerText = "Address saved to clipboard";
         setTimeout(() => {
             addr.innerText = originalText;
