@@ -13,14 +13,12 @@ body {
     overflow: hidden; 
     background: #000; 
     color: white; 
-    /* Защита от выделения и системных меню */
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
     touch-action: none; 
-     /* защита от выделения и системных меню */
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -165,7 +163,6 @@ body {
             document.getElementById('object-counter').innerText = `Tokens: ${personalObjects}`;
         }
 
-        // --- Управление с разделением Zoom и Pan ---
         let isDragging = false, isRotating = false;
         let previousMousePosition = { x: 0, y: 0, midX: null, midY: null };
         let cameraRotationVelocity = { x: 0, y: 0 };
@@ -202,14 +199,12 @@ body {
             } else if (activePointers.length === 2) {
                 const p1 = activePointers[0], p2 = activePointers[1];
                 
-                // Зум
                 const dist = Math.sqrt(Math.pow(p1.clientX - p2.clientX, 2) + Math.pow(p1.clientY - p2.clientY, 2));
                 if (lastPinchDist > 0) {
-                    cameraZoomVelocity += (lastPinchDist - dist) * 0.01; // Накопительная скорость
+                    cameraZoomVelocity += (lastPinchDist - dist) * 0.01; 
                 }
                 lastPinchDist = dist;
 
-                // Панорама
                 const midX = (p1.clientX + p2.clientX) / 2;
                 const midY = (p1.clientY + p2.clientY) / 2;
                 if (previousMousePosition.midX !== null) {
