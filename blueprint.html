@@ -10,7 +10,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
 
-  /* Базовый фон и шрифт */
   body { 
     background-color: #000; 
 color: #fff;
@@ -30,10 +29,6 @@ color: #fff;
     color: inherit;
   }
 
-
-
-
-  /* Оформление группы выбора */
   .select-group {
     margin-top: 20px;
     display: flex;
@@ -64,11 +59,9 @@ color: #fff;
     font-family: inherit;
 border-radius: 25px;
     transition: 0.3s;
-        /* Запрет выделения текста */
-    -webkit-user-select: none; /* Safari */
-    -ms-user-select: none;      /* IE 10+ */
-    user-select: none;          /* Standard syntax */
-    /* Убирает эффект серого подсвечивания в мобильном Chrome/Safari */
+    -webkit-user-select: none; 
+    -ms-user-select: none;   
+    user-select: none;      
     -webkit-tap-highlight-color: transparent;
   }
   
@@ -84,7 +77,7 @@ border-radius: 25px;
 
   .edit-section {
     margin-top: 30px;
-    border-top: 1px solid #222;
+    border-top: 2px solid #222;
     padding-top: 20px;
   }
 
@@ -105,7 +98,7 @@ border-radius: 25px;
 
     footer { margin-top: 50px; padding: 20px 0; border-top: 1px solid #222; }
     .donate-box { display: flex; flex-direction: column; gap: 10px; }
-    .donate-btn { color: #777; border: 1px solid #777; padding: 5px 15px; background: transparent; cursor: pointer; font-family: monospace; width: fit-content; transition: 0.3s; font-size: 12px; }
+    .donate-btn { color: #777; border: 2px solid #777; padding: 5px 15px; background: transparent; cursor: pointer; font-family: monospace; width: fit-content; transition: 0.3s; font-size: 12px; }
     .donate-btn:hover { background: #000; color: #fff; }
     .crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; }
     .crypto-address-display { font-size: 9px; color: #fff; background: #111; padding: 8px 12px; border: 1px dashed #666; cursor: copy; word-break: break-all; max-width: 280px; font-family: monospace; }
@@ -189,9 +182,7 @@ let memories = JSON.parse(localStorage.getItem('myMemories')) || defaultMemories
 let currentIndex = 0;
 
 function updateDisplay() {
-    // Обновляем ТОЛЬКО текстовый блок с фразой
     document.getElementById('memory-display').textContent = memories[currentIndex];
-    // Поле ввода не трогаем, оно остается пустым (или с placeholder)
 }
 
 function changeMemory(direction) {
@@ -208,7 +199,7 @@ function saveMemories() {
     memories = input.split('\n').filter(line => line.trim() !== "");
     localStorage.setItem('myMemories', JSON.stringify(memories));
     
-    document.getElementById('memories-input').value = ""; // Очищаем поле после сохранения
+    document.getElementById('memories-input').value = ""; 
     currentIndex = 0;
     updateDisplay();
 }
@@ -216,7 +207,7 @@ function saveMemories() {
 function resetMemories() {
     memories = [...defaultMemories];
     localStorage.removeItem('myMemories');
-    document.getElementById('memories-input').value = ""; // Очищаем поле при сбросе
+    document.getElementById('memories-input').value = ""; 
     currentIndex = 0;
     updateDisplay();
 }
@@ -312,7 +303,6 @@ function importFromFile(input) {
     reader.readAsText(file);
 }
 
-// Первичная отрисовка при загрузке
 updatePerceptionDisplay();
 
 
@@ -332,7 +322,6 @@ function copyToClipboard() {
     navigator.clipboard.writeText(text).then(() => {
         addr.innerText = "Copied!";
         addr.style.color = "#00ff00";
-        // ВОТ ЭТА СТРОКА:
         if (hint) hint.innerText = "Address saved to clipboard";
         
         setTimeout(() => {
