@@ -604,38 +604,28 @@ document.addEventListener('touchend', (event) => {
 }, false);
 
 function toggleDonate() { 
-    const info = document.getElementById("cryptoInfo"); 
-    const body = document.body;
-    const isOpening = (window.getComputedStyle(info).display === "none");
-    
-    if (isOpening) {
-        info.style.display = "flex";
-        body.classList.add('allow-scroll');
-        
-        setTimeout(() => {
-            info.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }, 100);
-    } else {
-        info.style.display = "none";
-        body.classList.remove('allow-scroll');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+  const info = document.getElementById("cryptoInfo"); 
+  const isOpening = info.style.display !== "flex";
+  info.style.display = isOpening ? "flex" : "none"; 
+  if (isOpening) {
+    setTimeout(() => info.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  }
 }
 
 function copyToClipboard() {
-    const addr = document.getElementById("cryptoAddr");
-    const text = addr.innerText;
-    if (text === "Copied!") return;
-
-    navigator.clipboard.writeText(text).then(() => {
-        const oldText = text;
-        addr.innerText = "Copied!";
-        addr.style.color = "#ffeb3b";
-        setTimeout(() => {
-            addr.innerText = oldText;
-            addr.style.color = "#fff";
-        }, 1500);
-    });
+  const addr = document.getElementById("cryptoAddr");
+  const hint = document.getElementById("copyHint");
+  const text = addr.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    addr.innerText = "Copied!";
+    addr.style.color = "#00ff00";
+    if (hint) hint.innerText = "Address saved to clipboard";
+    setTimeout(() => {
+      addr.innerText = text;
+      addr.style.color = "#fff";
+      if (hint) hint.innerText = "Click address to copy";
+    }, 1500);
+  });
 }
 
 </script>
