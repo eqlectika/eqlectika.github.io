@@ -1,4 +1,4 @@
-#Technical Specification: Linguistic Monolith (v. 2.0)
+# Technical Specification: Linguistic Monolith (v. 2.0)
 
 1. Philosophy and Interface Aesthetics
    • Visual Canon: Strict binarism. Only Black (#000000) and White (#FFFFFF). Complete absence of gradients, shadows, and decorative frames.
