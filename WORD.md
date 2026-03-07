@@ -20,7 +20,7 @@ State 2 (Analysis): Level 1. Three vertical columns of 33.3vw each. The central 
 
 State 3 (Final Fractal): Level 2. Tapping a word in the upper or lower row of Stage 2 divides the central column into three horizontal rows of 33.3vh each. The middle row is vertically divided: Light field (Interpretation A) | Dark field (Interpretation B). The button changes its label to “RESET”.
 
-Interpretation (at any level): etymology and examples.
+## Interpretation (at any level): etymology and examples.
 
 Algorithmic Logic
 
