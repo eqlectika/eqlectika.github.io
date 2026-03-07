@@ -1,4 +1,3 @@
-<a href="https://eqlectika.github.io"><img src="logo.png" width="48" height="48" alt="logo"></a>
 # Virtual Sandbox
 This code mixes geometry, particle physics, and interface elements that behave more like living organisms than obedient tools.
 Here's a catalog of logic and functionality extracted from the depths of this code:
@@ -27,3 +26,5 @@ Interaction and Interface
 * Secret Rain — The appearance of drifting text labels from a list of keywords that smoothly move across the screen and disappear.
 * Mode Selector — A drop-down menu for switching interaction modes: Fix, Polar, Delete, View.
 * Cleanup Protocol — A mode for selectively removing objects (both cubic faces and physical bodies) from the scene.
+
+<a href="https://eqlectika.github.io/cube.html"><img src="logo.png" width="48" height="48" alt="logo"></a>
