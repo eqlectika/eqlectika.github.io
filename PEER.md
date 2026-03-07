@@ -11,4 +11,4 @@ Key Mechanics
 Model Status
 This code is a sandbox for testing data transfer. Withdraw and transaction confirmation functions are simulated, demonstrating the user's path to interacting with assets without performing actual transactions on the blockchain.
 
-<a href="https://eqlectika.github.io"><img src="logo.png" width="48" height="48" alt="logo"></a>
+<a href="https://eqlectika.github.io/peer.html"><img src="logo.png" width="48" height="48" alt="logo"></a>
