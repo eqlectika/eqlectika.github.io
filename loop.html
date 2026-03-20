@@ -130,12 +130,20 @@ input {
             return `<span class="word ${cls}" onclick="clarify('${clean}', this)">${w}</span>`;
         }).join(' ');
     }
-
+    
     function clarify(k, el) {
-        document.querySelectorAll('.word').forEach(w => w.classList.remove('active'));
-        el.classList.add('active');
-        document.getElementById('out-def').innerText = db[k] || "Not defined.";
+    document.querySelectorAll('.word').forEach(w => w.classList.remove('active'));
+    el.classList.add('active');
+
+    if (db[k]) {
+        document.getElementById('out-def').innerText = db[k];
+    } else {
+        document.getElementById('out-def').innerText = "Not defined.";
+        document.getElementById('w-key').value = k;
+        document.getElementById('w-def').focus();
     }
+}
+
 
     function exportFullData() {
         const backup = {
