@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Versus</title>
+<style>
+body { background-color: #000; color: #fff; font-family: sans-serif; }
+#this-or-that h3, .ranking-title { color: #fff; }
+.this-or-that_thumbwrapper { background-color: #333; border: 5px solid #444; }
+.ranking-container { border-top: 2px solid #333; }
+.ranking-item { border-bottom: 1px solid #222; }
+
+#this-or-that {
+width: 100%;
+min-height: 250px;
+margin: 1em 0;
+display: block;
+position: relative;
+font-family: sans-serif;
+}
+#this-or-that:after {
+content: "";
+display: table;
+clear: both;
+}
+.this-or-that_column {
+width: 50%;
+float: left;
+box-sizing: border-box;
+}
+.this-or-that_item {
+margin: 0 10%;
+transition: transform 0.3s ease;
+}
+.this-or-that_thumbwrapper {
+position: relative;
+border: 5px solid #fff;
+box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+cursor: pointer;
+}
+.this-or-that_thumbwrapper img {
+display: block;
+width: 100%;
+height: 200px;
+object-fit: cover;
+}
+#this-or-that h3 {
+margin: 10px 0;
+text-align: center;
+font-size: 18px;
+}
+.ranking-container {
+margin-top: 40px;
+padding: 20px;
+font-family: sans-serif;
+border-top: 2px solid #eee;
+}
+.ranking-title {
+font-size: 22px;
+margin-bottom: 15px;
+text-align: center;
+}
+.ranking-item {
+padding: 8px 0;
+border-bottom: 1px solid #f0f0f0;
+display: flex;
+justify-content: space-between;
+}
+.ranking-item:last-child {
+border-bottom: none;
+}
+.selected {
+transform: scale(1.05);
+outline: 3px solid #007bff;
+}
+</style>
+</head>
+<body>
+<div id="this-or-that">
+<div class="this-or-that-wrapper">
+<div class="this-or-that_column">
+<div class="this-or-that_item" id="item-left">
+<div class="this-or-that_thumbwrapper" onclick="vote('left')">
+<img src="" alt="">
+</div>
+<h3 class="title"></h3>
+</div>
+</div>
+<div class="this-or-that_column">
+<div class="this-or-that_item" id="item-right">
+<div class="this-or-that_thumbwrapper" onclick="vote('right')">
+<img src="" alt="">
+</div>
+<h3 class="title"></h3>
+</div>
+</div>
+</div>
+</div>
+<div class="ranking-container">
+<div class="ranking-title">Ranking List</div>
+<div id="ranking-list">
+</div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+let items = [
+{ id: 0, title: "Cube", img: "https://via.placeholder.com/400x300", rating: 1400 },
+{ id: 1, title: "Matrix", img: "https://via.placeholder.com/400x300", rating: 1400 },
+{ id: 2, title: "Code", img: "https://via.placeholder.com/400x300", rating: 1400 },
+{ id: 3, title: "Loop", img: "https://via.placeholder.com/400x300", rating: 1400 },
+{ id: 4, title: "Flash", img: "https://via.placeholder.com/400x300", rating: 1400 }
+];
+let currentPair = [];
+function updateRankingList() {
+const sortedItems = [...items].sort((a, b) => b.rating - a.rating);
+let html = '';
+sortedItems.forEach((item, index) => {
+html += '<div class="ranking-item">' +
+'<span>' + (index + 1) + '. ' + item.title + '</span>' +
+'<strong>' + Math.round(item.rating) + '</strong>' +
+'</div>';
+});
+$('#ranking-list').html(html);
+}
+function updateDisplay() {
+const [left, right] = currentPair;
+$('#item-left img').attr('src', items[left].img);
+$('#item-left .title').text(items[left].title);
+$('#item-right img').attr('src', items[right].img);
+$('#item-right .title').text(items[right].title);
+}
+function getRandomPair() {
+let idx1 = Math.floor(Math.random() * items.length);
+let idx2;
+do { idx2 = Math.floor(Math.random() * items.length); } while (idx1 === idx2);
+return [idx1, idx2];
+}
+function calculateElo(winnerIdx, loserIdx) {
+const K = 32;
+const ratingW = items[winnerIdx].rating;
+const ratingL = items[loserIdx].rating;
+const expectedW = 1 / (1 + Math.pow(10, (ratingL - ratingW) / 400));
+const expectedL = 1 / (1 + Math.pow(10, (ratingW - ratingL) / 400));
+items[winnerIdx].rating = ratingW + K * (1 - expectedW);
+items[loserIdx].rating = ratingL + K * (0 - expectedL);
+}
+function vote(side) {
+const winnerIdx = side === 'left' ? currentPair[0] : currentPair[1];
+const loserIdx = side === 'left' ? currentPair[1] : currentPair[0];
+calculateElo(winnerIdx, loserIdx);
+updateRankingList();
+const $container = $('#this-or-that');
+$container.animate({ opacity: 0 }, 200, function() {
+currentPair = getRandomPair();
+$('.this-or-that_item').removeClass('selected');
+updateDisplay();
+$container.animate({ opacity: 1 }, 200);
+});
+}
+currentPair = getRandomPair();
+updateDisplay();
+updateRankingList();
+</script>
+</body>
+</html>
