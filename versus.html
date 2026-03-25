@@ -29,7 +29,7 @@ body { background-color: #000; color: #fff; font-family: sans-serif; margin: 0; 
     z-index: 10;
     max-width: 800px;
     margin: 0 auto;
-    padding: 40px 20px 10px; 
+    padding: 20px 0 0; 
     text-align: center;
     pointer-events: none;
 }
@@ -63,6 +63,13 @@ color: #fff;
 font-family: 'Luckiest Guy', sans-serif;
 margin-top: 30px;
 margin-bottom: 0px;
+}
+.ranking-item {
+cursor: pointer;
+transition: background-color 0.2s;
+}
+.ranking-item:hover {
+background-color: #111;
 }
 
 </style>
@@ -121,17 +128,26 @@ let currentPair = [];
 function saveToStorage() {
 localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
+
+
+
+
 function updateRankingList() {
 const sortedItems = [...items].sort((a, b) => b.rating - a.rating);
 let html = '';
 sortedItems.forEach((item, index) => {
-html += '<div class="ranking-item">' +
+const pageName = item.title.toLowerCase() + '.html';
+html += '<div class="ranking-item" onclick="window.location.href=\'' + pageName + '\'">' +
 '<span>' + (index + 1) + '. ' + item.title + '</span>' +
 '<strong>' + Math.round(item.rating) + '</strong>' +
 '</div>';
 });
-$('#ranking-list').html(html);
+$('#ranking-list').html(html); 
 }
+
+
+
+
 function updateDisplay() {
 const [left, right] = currentPair;
 $('#item-left img').attr('src', items[left].img);
