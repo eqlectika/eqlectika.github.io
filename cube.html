@@ -1205,20 +1205,38 @@ const saveAll = () => {
             exIdx: val.excludeIndex
         });
     });
+
+    const cameraState = {
+        position: camera.position.toArray(),
+        target: controls.target.toArray()
+    };
+
     localStorage.setItem('scene_backup', JSON.stringify(data));
+    localStorage.setItem('camera_backup', JSON.stringify(cameraState));
 };
 
 const restoreAll = () => {
     const raw = localStorage.getItem('scene_backup');
+    const savedCamera = localStorage.getItem('camera_backup');
+
+    if (savedCamera) {
+        const camData = JSON.parse(savedCamera);
+        camera.position.fromArray(camData.position);
+        controls.target.fromArray(camData.target);
+        controls.update();
+    }
+
     if (!raw) {
         initFormaCube();
         return;
     }
+
     const parsed = JSON.parse(raw);
     if (parsed.length === 0) {
         initFormaCube();
         return;
     }
+
     parsed.forEach(d => {
         let obj;
         if (d.type === 'forma') {
@@ -1228,6 +1246,7 @@ const restoreAll = () => {
         } else if (d.type === 'polar') {
             obj = createPolarObject(d);
         }
+
         if (obj) {
             obj.userData.uuid = d.id;
             obj.scale.fromArray(d.scale);
@@ -1238,9 +1257,6 @@ const restoreAll = () => {
 };
 
 window.addEventListener('beforeunload', saveAll);
-
-// Заменяем стандартный вызов на восстановление
-// initFormaCube(); // Эту строку в оригинальном коде нужно закомментировать или удалить
 restoreAll();
     
 try {
