@@ -34,8 +34,27 @@
         .light .word.active { background: #000; color: #fff; }
         .dark .word.active { background: #fff; color: #000; }
         
-        .footer-logo { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 3000; }
-        .footer-logo img { height: 48px; width: auto; display: block; opacity: 1; filter: grayscale(100%); }
+.footer-logo { 
+    position: absolute; 
+    bottom: 15px; 
+    left: 50%; 
+    transform: translateX(-50%); 
+    z-index: 3000;
+    display: flex;
+    justify-content: center;
+}
+
+.footer-logo img { 
+    height: 48px; 
+    width: auto; 
+    display: block; 
+    filter: grayscale(100%);
+    /* Симметричный отступ для компенсации тени и сохранения центра */
+    padding: 0 10px; 
+}
+
+
+
         .hidden { display: none; }
         .example { display: block; margin-top: 8px; font-style: italic; opacity: 0.9; }
    
@@ -161,6 +180,25 @@ const db = {
         pair: "мир" 
     }
 };
+
+function updateLogoShadow() {
+    const logo = document.querySelector('.footer-logo img');
+    if (logo) {
+        // -7px — смещение влево, 0px — размытие (четкий контур), #000 — черный
+        logo.style.filter = 'grayscale(100%) drop-shadow(-7px 0px 0px #000)';
+    }
+}
+
+window.addEventListener("DOMContentLoaded", updateLogoShadow);
+
+
+
+
+// Инициализация при загрузке
+window.addEventListener("DOMContentLoaded", () => {
+    updateLogoShadow();
+});
+
 
 function tokenize(t) {
     if (!t) return "";
