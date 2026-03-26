@@ -1189,6 +1189,60 @@ window.addEventListener('resize', () => {
 });
 
 initFormaCube();
+
+const saveAll = () => {
+    const data = [];
+    localObjectsMap.forEach((val, id) => {
+        if (!val.ref) return;
+        data.push({
+            id: id,
+            type: val.type,
+            pos: val.ref.position.toArray(),
+            rot: val.ref.rotation ? val.ref.rotation.toArray() : [0, 0, 0],
+            scale: val.ref.scale.toArray(),
+            color: val.color,
+            typeName: val.typeName,
+            exIdx: val.excludeIndex
+        });
+    });
+    localStorage.setItem('scene_backup', JSON.stringify(data));
+};
+
+const restoreAll = () => {
+    const raw = localStorage.getItem('scene_backup');
+    if (!raw) {
+        initFormaCube();
+        return;
+    }
+    const parsed = JSON.parse(raw);
+    if (parsed.length === 0) {
+        initFormaCube();
+        return;
+    }
+    parsed.forEach(d => {
+        let obj;
+        if (d.type === 'forma') {
+            obj = createFormaCube(new THREE.Vector3(...d.pos), d.exIdx);
+        } else if (d.type === 'fix') {
+            obj = createFixObject(d);
+        } else if (d.type === 'polar') {
+            obj = createPolarObject(d);
+        }
+        if (obj) {
+            obj.userData.uuid = d.id;
+            obj.scale.fromArray(d.scale);
+            if (d.rot) obj.rotation.fromArray(d.rot);
+            localObjectsMap.set(d.id, { ...d, ref: obj });
+        }
+    });
+};
+
+window.addEventListener('beforeunload', saveAll);
+
+// Заменяем стандартный вызов на восстановление
+// initFormaCube(); // Эту строку в оригинальном коде нужно закомментировать или удалить
+restoreAll();
+    
 try {
     animate();
 } catch (e) {
@@ -1203,6 +1257,7 @@ document.getElementById('originButton').addEventListener('click', () => {
         window.location.href = 'index.html';
     }, 300);
 });
+    
 </script>
 
 </body>
