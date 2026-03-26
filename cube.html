@@ -1237,23 +1237,33 @@ const restoreAll = () => {
         return;
     }
 
-    parsed.forEach(d => {
-        let obj;
-        if (d.type === 'forma') {
-            obj = createFormaCube(new THREE.Vector3(...d.pos), d.exIdx);
-        } else if (d.type === 'fix') {
-            obj = createFixObject(d);
-        } else if (d.type === 'polar') {
-            obj = createPolarObject(d);
-        }
+parsed.forEach(d => {
+    let obj;
+    // Создаем вектор позиции из сохраненного массива [x, y, z]
+    const savedPos = new THREE.Vector3(...d.pos);
 
-        if (obj) {
-            obj.userData.uuid = d.id;
-            obj.scale.fromArray(d.scale);
-            if (d.rot) obj.rotation.fromArray(d.rot);
-            localObjectsMap.set(d.id, { ...d, ref: obj });
-        }
-    });
+    if (d.type === 'forma') {
+        // Передаем сохраненную позицию в функцию создания
+        obj = createFormaCube(savedPos, d.exIdx);
+    } else if (d.type === 'fix') {
+        // Передаем параметры, включая сохраненную позицию
+        obj = createFixObject({ ...d, position: d.pos });
+    } else if (d.type === 'polar') {
+        // Передаем параметры для полярного объекта
+        obj = createPolarObject({ ...d, position: d.pos });
+    }
+
+    if (obj) {
+        obj.userData.uuid = d.id;
+        obj.scale.fromArray(d.scale);
+        if (d.rot) obj.rotation.fromArray(d.rot);
+        
+        // Принудительно подтверждаем позицию, если функции создания ее переопределили
+        obj.position.copy(savedPos);
+        
+        localObjectsMap.set(d.id, { ...d, ref: obj });
+    }
+});
 };
 
 window.addEventListener('beforeunload', saveAll);
