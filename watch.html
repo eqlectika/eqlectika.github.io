@@ -91,24 +91,36 @@ clockFaces.push(createFace(marks, 0xff2222, 'xy'));
 clockFaces.push(createFace(marks, 0x22ff22, 'yz'));  
 clockFaces.push(createFace(marks, 0x2222ff, 'xz')); 
 });
-window.addEventListener('click', (event) => {
-mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+const updateMouseCoords = (x, y) => {
+mouse.x = (x / window.innerWidth) * 2 - 1;
+mouse.y = -(y / window.innerHeight) * 2 + 1;
 raycaster.setFromCamera(mouse, camera);
+};
+
+const handleInteraction = (x, y) => {
+updateMouseCoords(x, y);
 if (logoMesh) {
 const intersects = raycaster.intersectObject(logoMesh);
-if (intersects.length > 0) { window.location.href = logoMesh.userData.URL; }
+if (intersects.length > 0) window.location.href = logoMesh.userData.URL;
 }
-});
-window.addEventListener('mousemove', (event) => {
-mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-raycaster.setFromCamera(mouse, camera); 
+};
+
+window.addEventListener('click', (e) => handleInteraction(e.clientX, e.clientY));
+
+window.addEventListener('touchstart', (e) => {
+const touch = e.touches[0];
+handleInteraction(touch.clientX, touch.clientY);
+}, { passive: true });
+
+window.addEventListener('mousemove', (e) => {
+updateMouseCoords(e.clientX, e.clientY);
 if (logoMesh) {
 const intersects = raycaster.intersectObject(logoMesh);
 document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
 }
 });
+
 function updateChronos() {
 if (clockFaces.length === 0) return;
 const now = new Date();
