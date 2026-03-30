@@ -139,9 +139,27 @@ for (let z = 0; z < 8; z++) {
     const glassBlock = new THREE.Mesh(new THREE.BoxGeometry(8.5, 9, 8.5), glassMat);
     glassBlock.position.y = 3.5;
     scene.add(glassBlock);
+
+
+
+
+
+let conflictCube = null;
+    const conflictPointLight = new THREE.PointLight(0xff3300, 0, 5);
+    scene.add(conflictPointLight);
+
+
+
+
     function animate(time) {
 
-
+if (conflictCube) {
+            const pulse = 0.5 + Math.sin(time * 0.01) * 0.4;
+            conflictCube.material.emissiveIntensity = pulse;
+            conflictPointLight.position.copy(conflictCube.position);
+            conflictPointLight.position.y += 1.5;
+            conflictPointLight.intensity = pulse * 2;
+        }
 
 
         requestAnimationFrame(animate);
@@ -155,9 +173,8 @@ for (let z = 0; z < 8; z++) {
 
 
 
-if (Math.random() > 0.985) {
+if (Math.random() > 0.995) {
             const p = pieces[Math.floor(Math.random() * pieces.length)];
-            const type = p.userData.type;
             const cx = p.userData.gx;
             const cz = p.userData.gz;
             let moves = [];
@@ -166,6 +183,7 @@ if (Math.random() > 0.985) {
                     let dx = Math.abs(x - cx);
                     let dz = Math.abs(z - cz);
                     let valid = false;
+                    const type = p.userData.type;
                     if (type === 'p') valid = (dx === 0 && (z - cz === (p.userData.isWhite ? -1 : 1)));
                     if (type === 'r') valid = (dx === 0 || dz === 0);
                     if (type === 'n') valid = (dx * dz === 2);
@@ -177,10 +195,15 @@ if (Math.random() > 0.985) {
             }
             if (moves.length > 0) {
                 const move = moves[Math.floor(Math.random() * moves.length)];
-                const conflict = pieces.find(other => other !== p && other.userData.gx === move.x && other.userData.gz === move.z);
-                if (conflict) {
-                    cubes[move.x][move.z].mesh.material.emissiveIntensity = 1.0;
-                    setTimeout(() => { if(cubes[move.x][move.z]) cubes[move.x][move.z].mesh.material.emissiveIntensity = 0.1; }, 500);
+                // Сброс предыдущей подсветки
+                if (conflictCube) {
+                    conflictCube.material.emissiveIntensity = 0.1;
+                    conflictCube = null;
+                }
+                // Проверка на наличие другой фигуры в целевой клетке
+                const isConflict = pieces.some(other => other !== p && other.userData.gx === move.x && other.userData.gz === move.z);
+                if (isConflict) {
+                    conflictCube = cubes[move.x][move.z].mesh;
                 }
                 p.userData.gx = move.x;
                 p.userData.gz = move.z;
