@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Event City: Glass Monolith</title>
+    <title>Event City: Living Monolith</title>
     <link rel="manifest" href="manifest.json">
     <style>
         body { margin: 0; overflow: hidden; background: #000; }
@@ -50,27 +50,25 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     document.body.appendChild(renderer.domElement);
-
     const loader = new THREE.CubeTextureLoader();
     const envTexture = loader.setPath('https://threejs.org/examples/textures/cube/Park2/').load([
         'posx.jpg', 'negx.jpg', 'posy.jpg', 'negy.jpg', 'posz.jpg', 'negz.jpg'
     ]);
     scene.environment = envTexture;
-
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    camera.position.set(15, 20, 15);
+    camera.position.set(0, 27, 0); 
+    controls.target.set(0, 0, 0);
     controls.enableDamping = true;
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-    const pointLight = new THREE.PointLight(0xffffff, 1.5, 50);
-    pointLight.position.set(10, 20, 10);
-    scene.add(pointLight);
-
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xCCAC00, metalness: 0.9, roughness: 0.2 });
-    const platMat = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, metalness: 0.9, roughness: 0.1 });
-    
+    controls.update();
+    scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+    const movingLight = new THREE.PointLight(0xffffff, 2, 50);
+    scene.add(movingLight);
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xCCAC00, metalness: 0.9, roughness: 0.2, emissive: 0x221100, emissiveIntensity: 0.1 });
+    const platMat = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, metalness: 0.9, roughness: 0.1, emissive: 0x111111, emissiveIntensity: 0.1 });
     const h = [[4, 3, 2, 1], [5, 4, 3, 2], [6, 5, 4, 3], [7, 6, 5, 4]];
     const cubes = [];
+    const boardGroup = new THREE.Group();
+    scene.add(boardGroup);
     for (let x = 0; x < 8; x++) {
         cubes[x] = [];
         for (let z = 0; z < 8; z++) {
@@ -80,49 +78,60 @@
             const cube = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1, 0.9), (x + z) % 2 === 0 ? goldMat : platMat);
             cube.scale.y = height;
             cube.position.set(x - 3.5, height / 2, z - 3.5);
-            scene.add(cube);
+            boardGroup.add(cube);
             cubes[x][z] = { mesh: cube, h: height };
         }
     }
-
     const pieces = [];
     const pGeom = new THREE.ConeGeometry(0.3, 0.8, 8);
-    for (let i = 0; i < 12; i++) {
-        const p = new THREE.Mesh(pGeom, i < 6 ? goldMat : platMat);
+    for (let i = 0; i < 16; i++) {
+        const p = new THREE.Mesh(pGeom, i < 8 ? goldMat : platMat);
         p.userData = { gx: Math.floor(Math.random()*8), gz: Math.floor(Math.random()*8) };
-        scene.add(p);
+        boardGroup.add(p);
         pieces.push(p);
     }
-
     const glassMat = new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
-        metalness: 0,
-        roughness: 0,
+        metalness: 0.1,
+        roughness: 0.05,
         transmission: 1,
         ior: 1.5,
-        thickness: 10,
+        thickness: 4,
         transparent: true,
-        opacity: 0.5
+        opacity: 0.3
     });
-    const glassBlock = new THREE.Mesh(new THREE.BoxGeometry(8.5, 8, 8.5), glassMat);
+    const glassBlock = new THREE.Mesh(new THREE.BoxGeometry(8.5, 9, 8.5), glassMat);
     glassBlock.position.y = 3.5;
     scene.add(glassBlock);
-
     function animate(time) {
         requestAnimationFrame(animate);
+        const t = time * 0.001;
+        movingLight.position.set(Math.sin(t) * 12, 18, Math.cos(t) * 12);
         pieces.forEach(p => {
             const c = cubes[p.userData.gx][p.userData.gz];
             p.position.set(c.mesh.position.x, c.h + 0.4, c.mesh.position.z);
         });
-        if (Math.random() > 0.98) {
+        if (Math.random() > 0.985) {
             const p = pieces[Math.floor(Math.random()*pieces.length)];
-            p.userData.gx = Math.floor(Math.random()*8);
-            p.userData.gz = Math.floor(Math.random()*8);
+            const nx = Math.floor(Math.random()*8);
+            const nz = Math.floor(Math.random()*8);
+            const conflict = pieces.find(other => other !== p && other.userData.gx === nx && other.userData.gz === nz);
+            if (conflict) {
+                cubes[nx][nz].mesh.material.emissiveIntensity = 1.0;
+                setTimeout(() => { if(cubes[nx][nz]) cubes[nx][nz].mesh.material.emissiveIntensity = 0.1; }, 500);
+            }
+            p.userData.gx = nx;
+            p.userData.gz = nz;
         }
         controls.update();
         renderer.render(scene, camera);
     }
     animate();
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
 </script>
 </body>
 </html>
