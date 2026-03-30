@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Event City: Living Monolith</title>
+    <title>Event City: Glass Monolith</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        body { margin: 0; overflow: hidden; background: #0f0f0f; }
+        body { margin: 0; overflow: hidden; background: #000; }
         #header-link {
             position: absolute;
             top: 30px;
@@ -33,10 +33,6 @@
             text-transform: uppercase;
             margin-top: 10px;
         }
-        @media (max-width: 768px) {
-            #header-logo { max-height: 50px; }
-            #logo-caption { font-size: 10px; letter-spacing: 2px; }
-        }
     </style>
 </head>
 <body>
@@ -48,175 +44,85 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
     const scene = new THREE.Scene();
-    const fogColor = new THREE.Color(0x0a0a0a);
-    scene.fog = new THREE.FogExp2(fogColor, 0.05);
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
+
+    const loader = new THREE.CubeTextureLoader();
+    const envTexture = loader.setPath('https://threejs.org/examples/textures/cube/Park2/').load([
+        'posx.jpg', 'negx.jpg', 'posy.jpg', 'negy.jpg', 'posz.jpg', 'negz.jpg'
+    ]);
+    scene.environment = envTexture;
+
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    camera.position.set(0, 27, 0); 
-    controls.target.set(0, 0, 0);
+    camera.position.set(15, 20, 15);
     controls.enableDamping = true;
-    controls.update();
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const topLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    topLight.position.set(0, 20, 0);
-    scene.add(topLight);
-    const movingLight = new THREE.PointLight(0xffffff, 2.5, 40);
-    movingLight.castShadow = true;
-    scene.add(movingLight);
-    const lightSphere = new THREE.Mesh(
-        new THREE.SphereGeometry(0.15, 16, 16),
-        new THREE.MeshBasicMaterial({ color: 0xffffff })
-    );
-    scene.add(lightSphere);
-    const h = [
-        [4, 3, 2, 1], 
-        [5, 4, 3, 2], 
-        [6, 5, 4, 3], 
-        [7, 6, 5, 4]
-    ];
-    const goldMat = new THREE.MeshStandardMaterial({ 
-        color: 0xCCAC00, metalness: 0.9, roughness: 0.22, emissive: 0x110a00
-    });
-    const platMat = new THREE.MeshStandardMaterial({ 
-        color: 0xCCCCCC, metalness: 0.9, roughness: 0.18, emissive: 0x050505
-    });
-    const geom = new THREE.BoxGeometry(0.95, 1, 0.95); 
-    const cubes = []; // Массив для хранения ссылок на кубы
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const pointLight = new THREE.PointLight(0xffffff, 1.5, 50);
+    pointLight.position.set(10, 20, 10);
+    scene.add(pointLight);
+
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xCCAC00, metalness: 0.9, roughness: 0.2 });
+    const platMat = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, metalness: 0.9, roughness: 0.1 });
+    
+    const h = [[4, 3, 2, 1], [5, 4, 3, 2], [6, 5, 4, 3], [7, 6, 5, 4]];
+    const cubes = [];
     for (let x = 0; x < 8; x++) {
         cubes[x] = [];
         for (let z = 0; z < 8; z++) {
             let sx = x < 4 ? x : 7 - x;
             let sz = z < 4 ? z : 7 - z;
             const height = h[sx][sz];
-            const mat = (x + z) % 2 === 0 ? goldMat : platMat;
-            const cube = new THREE.Mesh(geom, mat);
+            const cube = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1, 0.9), (x + z) % 2 === 0 ? goldMat : platMat);
             cube.scale.y = height;
             cube.position.set(x - 3.5, height / 2, z - 3.5);
-            cube.castShadow = true;
-            cube.receiveShadow = true;
-            cube.userData.height = height; // Сохраняем высоту
             scene.add(cube);
-            cubes[x][z] = cube; // Сохраняем куб
+            cubes[x][z] = { mesh: cube, h: height };
         }
     }
-    const infinitePlane = new THREE.Mesh(
-        new THREE.PlaneGeometry(400, 400),
-        new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.1 })
-    );
-    infinitePlane.rotation.x = -Math.PI / 2;
-    infinitePlane.position.y = -0.01;
-    infinitePlane.receiveShadow = true;
-    scene.add(infinitePlane);
-    renderer.setClearColor(scene.fog.color);
 
-    // --- ЛОГИКА ШАХМАТ ---
     const pieces = [];
-    const conflictPointLight = new THREE.PointLight(0xff3300, 0, 5); // Свет конфликта
-    scene.add(conflictPointLight);
-    
-    function createPiece(type, mat, x, z) {
-        let piece;
-        const scale = 0.4;
-        switch(type) {
-            case 'p': piece = new THREE.Mesh(new THREE.ConeGeometry(scale, scale*2, 8), mat); break; // Пешка
-            case 'r': piece = new THREE.Mesh(new THREE.CylinderGeometry(scale, scale, scale*2, 8), mat); break; // Ладья
-            case 'n': piece = new THREE.Mesh(new THREE.BoxGeometry(scale, scale*2, scale*1.5), mat); break; // Конь (стилизованный)
-            case 'b': piece = new THREE.Mesh(new THREE.ConeGeometry(scale, scale*3, 4), mat); break; // Слон
-            case 'q': piece = new THREE.Mesh(new THREE.SphereGeometry(scale*1.2, 8, 8), mat); break; // Ферзь
-            case 'k': piece = new THREE.Mesh(new THREE.BoxGeometry(scale*1.5, scale*1.5, scale*1.5), mat); break; // Король
-        }
-        piece.castShadow = true;
-        piece.userData.gridX = x;
-        piece.userData.gridZ = z;
-        scene.add(piece);
-        pieces.push(piece);
+    const pGeom = new THREE.ConeGeometry(0.3, 0.8, 8);
+    for (let i = 0; i < 12; i++) {
+        const p = new THREE.Mesh(pGeom, i < 6 ? goldMat : platMat);
+        p.userData = { gx: Math.floor(Math.random()*8), gz: Math.floor(Math.random()*8) };
+        scene.add(p);
+        pieces.push(p);
     }
 
-    const initialBoard = [
-        ['r','n','b','q','k','b','n','r'],
-        ['p','p','p','p','p','p','p','p'],
-        [0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0],
-        ['P','P','P','P','P','P','P','P'],
-        ['R','N','B','Q','K','B','N','R']
-    ];
-
-    for (let z = 0; z < 8; z++) {
-        for (let x = 0; x < 8; x++) {
-            const p = initialBoard[z][x];
-            if (p) {
-                const mat = p === p.toUpperCase() ? goldMat : platMat;
-                createPiece(p.toLowerCase(), mat, x, z);
-            }
-        }
-    }
-
-    let lastMoveTime = 0;
-    let conflictCube = null;
+    const glassMat = new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        metalness: 0,
+        roughness: 0,
+        transmission: 1,
+        ior: 1.5,
+        thickness: 10,
+        transparent: true,
+        opacity: 0.5
+    });
+    const glassBlock = new THREE.Mesh(new THREE.BoxGeometry(8.5, 8, 8.5), glassMat);
+    glassBlock.position.y = 3.5;
+    scene.add(glassBlock);
 
     function animate(time) {
         requestAnimationFrame(animate);
-        const t = time * 0.0008; 
-        const radius = 10;
-        movingLight.position.x = Math.sin(t) * radius;
-        movingLight.position.z = Math.sin(t * 2) * (radius / 2);
-        movingLight.position.y = 8 + Math.cos(t * 1.5) * 2;
-        lightSphere.position.copy(movingLight.position);
-
-        // Обновление позиции фигур над кубами
         pieces.forEach(p => {
-            const x = p.userData.gridX;
-            const z = p.userData.gridZ;
-            const cube = cubes[x][z];
-            p.position.set(cube.position.x, cube.userData.height + 0.5, cube.position.z);
+            const c = cubes[p.userData.gx][p.userData.gz];
+            p.position.set(c.mesh.position.x, c.h + 0.4, c.mesh.position.z);
         });
-
-        // Эффект конфликта
-        if (conflictCube) {
-            conflictCube.material.emissiveIntensity = 0.5 + Math.sin(time * 0.01) * 0.4;
-            conflictPointLight.position.copy(conflictCube.position);
-            conflictPointLight.position.y += conflictCube.userData.height + 1;
-            conflictPointLight.intensity = 1 + Math.sin(time * 0.01) * 0.5;
+        if (Math.random() > 0.98) {
+            const p = pieces[Math.floor(Math.random()*pieces.length)];
+            p.userData.gx = Math.floor(Math.random()*8);
+            p.userData.gz = Math.floor(Math.random()*8);
         }
-
-        // Логика движения (каждую секунду)
-        if (time - lastMoveTime > 1000) {
-            const piece = pieces[Math.floor(Math.random() * pieces.length)];
-            let newX = Math.floor(Math.random() * 8);
-            let newZ = Math.floor(Math.random() * 8);
-
-            // Очистка старого конфликта
-            if (conflictCube) {
-                conflictCube.material.emissiveIntensity = 0.1;
-                conflictCube = null;
-                conflictPointLight.intensity = 0;
-            }
-
-            // Проверка на конфликт
-            const targetPiece = pieces.find(p => p.userData.gridX === newX && p.userData.gridZ === newZ && p !== piece);
-            if (targetPiece) {
-                conflictCube = cubes[newX][newZ]; // Запускаем свечение
-            }
-
-            piece.userData.gridX = newX;
-            piece.userData.gridZ = newZ;
-            lastMoveTime = time;
-        }
-
         controls.update();
         renderer.render(scene, camera);
     }
-    animate(0);
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    animate();
 </script>
 </body>
 </html>
