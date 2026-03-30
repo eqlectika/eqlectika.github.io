@@ -60,11 +60,15 @@
     controls.target.set(0, 0, 0);
     controls.enableDamping = true;
     controls.update();
-    scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
     const movingLight = new THREE.PointLight(0xffffff, 2, 50);
     scene.add(movingLight);
     const goldMat = new THREE.MeshStandardMaterial({ color: 0xCCAC00, metalness: 0.9, roughness: 0.2, emissive: 0x221100, emissiveIntensity: 0.1 });
     const platMat = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, metalness: 0.9, roughness: 0.1, emissive: 0x111111, emissiveIntensity: 0.1 });
+    
+    const blackPieceMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.1 });
+    const whitePieceMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.5, roughness: 0.2 });
+
     const h = [[4, 3, 2, 1], [5, 4, 3, 2], [6, 5, 4, 3], [7, 6, 5, 4]];
     const cubes = [];
     const boardGroup = new THREE.Group();
@@ -83,12 +87,37 @@
         }
     }
     const pieces = [];
-    const pGeom = new THREE.ConeGeometry(0.3, 0.8, 8);
-    for (let i = 0; i < 16; i++) {
-        const p = new THREE.Mesh(pGeom, i < 8 ? goldMat : platMat);
-        p.userData = { gx: Math.floor(Math.random()*8), gz: Math.floor(Math.random()*8) };
-        boardGroup.add(p);
-        pieces.push(p);
+function createPiece(type, mat, x, z, isWhite) {
+        let piece;
+        const scale = 0.4;
+        switch(type) {
+            case 'p': piece = new THREE.Mesh(new THREE.ConeGeometry(scale, scale*2, 8), mat); break;
+            case 'r': piece = new THREE.Mesh(new THREE.CylinderGeometry(scale, scale, scale*2, 8), mat); break;
+            case 'n': piece = new THREE.Mesh(new THREE.BoxGeometry(scale, scale*2, scale*1.5), mat); break;
+            case 'b': piece = new THREE.Mesh(new THREE.ConeGeometry(scale, scale*3, 4), mat); break;
+            case 'q': piece = new THREE.Mesh(new THREE.SphereGeometry(scale*1.2, 8, 8), mat); break;
+            case 'k': piece = new THREE.Mesh(new THREE.BoxGeometry(scale*1.5, scale*1.5, scale*1.5), mat); break;
+        }
+        piece.userData = { gx: x, gz: z, type: type, isWhite: isWhite };
+        boardGroup.add(piece);
+        pieces.push(piece);
+    }
+    const initialBoard = [
+        ['r','n','b','q','k','b','n','r'],
+        ['p','p','p','p','p','p','p','p'],
+        [0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0],
+        ['P','P','P','P','P','P','P','P'],
+        ['R','N','B','Q','K','B','N','R']
+    ];
+for (let z = 0; z < 8; z++) {
+        for (let x = 0; x < 8; x++) {
+            const p = initialBoard[z][x];
+            if (p) {
+                const isWhite = p === p.toUpperCase();
+                const mat = isWhite ? whitePieceMat : blackPieceMat;
+                createPiece(p.toLowerCase(), mat, x, z, isWhite);
+            }
+        }
     }
     const glassMat = new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
@@ -104,34 +133,68 @@
     glassBlock.position.y = 3.5;
     scene.add(glassBlock);
     function animate(time) {
+
+
+
+
         requestAnimationFrame(animate);
         const t = time * 0.001;
         movingLight.position.set(Math.sin(t) * 12, 18, Math.cos(t) * 12);
         pieces.forEach(p => {
             const c = cubes[p.userData.gx][p.userData.gz];
             p.position.set(c.mesh.position.x, c.h + 0.4, c.mesh.position.z);
+            p.rotation.y += 0.01;
         });
-        if (Math.random() > 0.985) {
-            const p = pieces[Math.floor(Math.random()*pieces.length)];
-            const nx = Math.floor(Math.random()*8);
-            const nz = Math.floor(Math.random()*8);
-            const conflict = pieces.find(other => other !== p && other.userData.gx === nx && other.userData.gz === nz);
-            if (conflict) {
-                cubes[nx][nz].mesh.material.emissiveIntensity = 1.0;
-                setTimeout(() => { if(cubes[nx][nz]) cubes[nx][nz].mesh.material.emissiveIntensity = 0.1; }, 500);
+
+
+
+if (Math.random() > 0.985) {
+            const p = pieces[Math.floor(Math.random() * pieces.length)];
+            const type = p.userData.type;
+            const cx = p.userData.gx;
+            const cz = p.userData.gz;
+            let moves = [];
+            for (let x = 0; x < 8; x++) {
+                for (let z = 0; z < 8; z++) {
+                    let dx = Math.abs(x - cx);
+                    let dz = Math.abs(z - cz);
+                    let valid = false;
+                    if (type === 'p') valid = (dx === 0 && (z - cz === (p.userData.isWhite ? -1 : 1)));
+                    if (type === 'r') valid = (dx === 0 || dz === 0);
+                    if (type === 'n') valid = (dx * dz === 2);
+                    if (type === 'b') valid = (dx === dz);
+                    if (type === 'q') valid = (dx === 0 || dz === 0 || dx === dz);
+                    if (type === 'k') valid = (dx <= 1 && dz <= 1);
+                    if (valid && (x !== cx || z !== cz)) moves.push({x, z});
+                }
             }
-            p.userData.gx = nx;
-            p.userData.gz = nz;
+            if (moves.length > 0) {
+                const move = moves[Math.floor(Math.random() * moves.length)];
+                const conflict = pieces.find(other => other !== p && other.userData.gx === move.x && other.userData.gz === move.z);
+                if (conflict) {
+                    cubes[move.x][move.z].mesh.material.emissiveIntensity = 1.0;
+                    setTimeout(() => { if(cubes[move.x][move.z]) cubes[move.x][move.z].mesh.material.emissiveIntensity = 0.1; }, 500);
+                }
+                p.userData.gx = move.x;
+                p.userData.gz = move.z;
+            }
         }
         controls.update();
         renderer.render(scene, camera);
     }
+
+
+
+
+
+
     animate();
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
+
 </script>
 </body>
 </html>
