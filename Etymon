@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>3D Grid 8x8 - Infinite & Branded</title>
+<link rel="manifest" href="manifest.json">
+
+    <style>
+        body { margin: 0; overflow: hidden; background: #0f0f0f; }
+        
+        /* Стили для логотипа и ссылки */
+        #header-link {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%); /* Центрирование */
+            z-index: 1000; /* Поверх 3D-сцены */
+            text-decoration: none; /* Убрать подчеркивание */
+            transition: opacity 0.3s;
+        }
+        #header-link:hover {
+            opacity: 0.1; /* Эффект при наведении */
+        }
+        #header-logo {
+            opacity: 0.2; 
+            max-height: 48px; /* Ограничение высоты */
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" id="header-link" target="_blank" rel="noopener noreferrer">
+        <img src="logo.png" alt="Логотип компании" id="header-logo">
+    </a>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        const scene = new THREE.Scene();
+        // Настройка тумана для бесконечного горизонта
+        const fogColor = new THREE.Color(0x0a0a0a);
+        scene.fog = new THREE.FogExp2(fogColor, 0.05); // Плотный туман на расстоянии
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        camera.position.set(12, 12, 12);
+        controls.enableDamping = true;
+
+        // --- ОСВЕЩЕНИЕ ---
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const topLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        topLight.position.set(0, 20, 0);
+        scene.add(topLight);
+
+        // БЛУЖДАЮЩИЙ СВЕТ
+        const movingLight = new THREE.PointLight(0xffffff, 2.5, 40);
+        movingLight.castShadow = true;
+        scene.add(movingLight);
+
+        const lightSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(0.15, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
+        scene.add(lightSphere);
+
+        // ДАННЫЕ ВЫСОТ
+        const h = [
+            [4, 3, 2, 1], 
+            [5, 4, 3, 2], 
+            [6, 5, 4, 3], 
+            [7, 6, 5, 4]
+        ];
+
+        // МАТЕРИАЛЫ
+        const goldMat = new THREE.MeshStandardMaterial({ 
+            color: 0xCCAC00, 
+            metalness: 0.9, 
+            roughness: 0.22,
+            emissive: 0x110a00
+        });
+
+        const platMat = new THREE.MeshStandardMaterial({ 
+            color: 0xCCCCCC, 
+            metalness: 0.9, 
+            roughness: 0.18,
+            emissive: 0x050505
+        });
+        
+        const geom = new THREE.BoxGeometry(0.95, 1, 0.95); 
+
+        for (let x = 0; x < 8; x++) {
+            for (let z = 0; z < 8; z++) {
+                let sx = x < 4 ? x : 7 - x;
+                let sz = z < 4 ? z : 7 - z;
+                const height = h[sx][sz];
+                const mat = (x + z) % 2 === 0 ? goldMat : platMat;
+                const cube = new THREE.Mesh(geom, mat);
+                cube.scale.y = height;
+                cube.position.set(x - 3.5, height / 2, z - 3.5);
+                cube.castShadow = true;
+                cube.receiveShadow = true;
+                scene.add(cube);
+            }
+        }
+
+        // --- БЕСКОНЕЧНАЯ СЕРАЯ ПЛОСКОСТЬ ---
+        // Использование бесконечного радиуса неэффективно,
+        // поэтому мы используем очень большую плоскость и Туман.
+        const infinitePlane = new THREE.Mesh(
+            new THREE.PlaneGeometry(200, 200), // Очень большой размер
+            new THREE.MeshStandardMaterial({ 
+                color: 0x111111, // Серый/Графит
+                roughness: 0.8,
+                metalness: 0.1
+            })
+        );
+        infinitePlane.rotation.x = -Math.PI / 2; // Кладем горизонтально
+        infinitePlane.position.y = -0.01; // Немного ниже кубов, чтобы избежать артефактов
+        infinitePlane.receiveShadow = true; // Принимает тени
+        scene.add(infinitePlane);
+
+        // Настройка рендеринга, чтобы видеть бесконечный горизонт
+        renderer.setClearColor(scene.fog.color); // Фон совпадает с туманом
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            
+            const t = time * 0.0008; 
+            const radius = 9;
+            
+            // Траектория "Восьмерка"
+            movingLight.position.x = Math.sin(t) * radius;
+            movingLight.position.z = Math.sin(t * 2) * (radius / 2);
+            movingLight.position.y = 6 + Math.cos(t * 1.5) * 2;
+            
+            lightSphere.position.copy(movingLight.position);
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate(0);
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
