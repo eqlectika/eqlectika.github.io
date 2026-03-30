@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Event City</title>
+    <title>Event City: Living Monolith</title>
     <link rel="manifest" href="manifest.json">
     <style>
         body { margin: 0; overflow: hidden; background: #0f0f0f; }
@@ -17,11 +17,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-transition: opacity 0.7s;
+            transition: opacity 0.7s;
         }
-        #header-link:hover { opacity: 0.3; }
+        #header-link:hover { opacity: 0.5; }
         #header-logo {
-opacity: 0.7;
+            opacity: 0.7; 
             max-height: 60px;
             display: block;
         }
@@ -87,7 +87,9 @@ opacity: 0.7;
         color: 0xCCCCCC, metalness: 0.9, roughness: 0.18, emissive: 0x050505
     });
     const geom = new THREE.BoxGeometry(0.95, 1, 0.95); 
+    const cubes = []; // Массив для хранения ссылок на кубы
     for (let x = 0; x < 8; x++) {
+        cubes[x] = [];
         for (let z = 0; z < 8; z++) {
             let sx = x < 4 ? x : 7 - x;
             let sz = z < 4 ? z : 7 - z;
@@ -98,7 +100,9 @@ opacity: 0.7;
             cube.position.set(x - 3.5, height / 2, z - 3.5);
             cube.castShadow = true;
             cube.receiveShadow = true;
+            cube.userData.height = height; // Сохраняем высоту
             scene.add(cube);
+            cubes[x][z] = cube; // Сохраняем куб
         }
     }
     const infinitePlane = new THREE.Mesh(
@@ -110,6 +114,51 @@ opacity: 0.7;
     infinitePlane.receiveShadow = true;
     scene.add(infinitePlane);
     renderer.setClearColor(scene.fog.color);
+
+    // --- ЛОГИКА ШАХМАТ ---
+    const pieces = [];
+    const conflictPointLight = new THREE.PointLight(0xff3300, 0, 5); // Свет конфликта
+    scene.add(conflictPointLight);
+    
+    function createPiece(type, mat, x, z) {
+        let piece;
+        const scale = 0.4;
+        switch(type) {
+            case 'p': piece = new THREE.Mesh(new THREE.ConeGeometry(scale, scale*2, 8), mat); break; // Пешка
+            case 'r': piece = new THREE.Mesh(new THREE.CylinderGeometry(scale, scale, scale*2, 8), mat); break; // Ладья
+            case 'n': piece = new THREE.Mesh(new THREE.BoxGeometry(scale, scale*2, scale*1.5), mat); break; // Конь (стилизованный)
+            case 'b': piece = new THREE.Mesh(new THREE.ConeGeometry(scale, scale*3, 4), mat); break; // Слон
+            case 'q': piece = new THREE.Mesh(new THREE.SphereGeometry(scale*1.2, 8, 8), mat); break; // Ферзь
+            case 'k': piece = new THREE.Mesh(new THREE.BoxGeometry(scale*1.5, scale*1.5, scale*1.5), mat); break; // Король
+        }
+        piece.castShadow = true;
+        piece.userData.gridX = x;
+        piece.userData.gridZ = z;
+        scene.add(piece);
+        pieces.push(piece);
+    }
+
+    const initialBoard = [
+        ['r','n','b','q','k','b','n','r'],
+        ['p','p','p','p','p','p','p','p'],
+        [0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0],
+        ['P','P','P','P','P','P','P','P'],
+        ['R','N','B','Q','K','B','N','R']
+    ];
+
+    for (let z = 0; z < 8; z++) {
+        for (let x = 0; x < 8; x++) {
+            const p = initialBoard[z][x];
+            if (p) {
+                const mat = p === p.toUpperCase() ? goldMat : platMat;
+                createPiece(p.toLowerCase(), mat, x, z);
+            }
+        }
+    }
+
+    let lastMoveTime = 0;
+    let conflictCube = null;
+
     function animate(time) {
         requestAnimationFrame(animate);
         const t = time * 0.0008; 
@@ -118,6 +167,47 @@ opacity: 0.7;
         movingLight.position.z = Math.sin(t * 2) * (radius / 2);
         movingLight.position.y = 8 + Math.cos(t * 1.5) * 2;
         lightSphere.position.copy(movingLight.position);
+
+        // Обновление позиции фигур над кубами
+        pieces.forEach(p => {
+            const x = p.userData.gridX;
+            const z = p.userData.gridZ;
+            const cube = cubes[x][z];
+            p.position.set(cube.position.x, cube.userData.height + 0.5, cube.position.z);
+        });
+
+        // Эффект конфликта
+        if (conflictCube) {
+            conflictCube.material.emissiveIntensity = 0.5 + Math.sin(time * 0.01) * 0.4;
+            conflictPointLight.position.copy(conflictCube.position);
+            conflictPointLight.position.y += conflictCube.userData.height + 1;
+            conflictPointLight.intensity = 1 + Math.sin(time * 0.01) * 0.5;
+        }
+
+        // Логика движения (каждую секунду)
+        if (time - lastMoveTime > 1000) {
+            const piece = pieces[Math.floor(Math.random() * pieces.length)];
+            let newX = Math.floor(Math.random() * 8);
+            let newZ = Math.floor(Math.random() * 8);
+
+            // Очистка старого конфликта
+            if (conflictCube) {
+                conflictCube.material.emissiveIntensity = 0.1;
+                conflictCube = null;
+                conflictPointLight.intensity = 0;
+            }
+
+            // Проверка на конфликт
+            const targetPiece = pieces.find(p => p.userData.gridX === newX && p.userData.gridZ === newZ && p !== piece);
+            if (targetPiece) {
+                conflictCube = cubes[newX][newZ]; // Запускаем свечение
+            }
+
+            piece.userData.gridX = newX;
+            piece.userData.gridZ = newZ;
+            lastMoveTime = time;
+        }
+
         controls.update();
         renderer.render(scene, camera);
     }
