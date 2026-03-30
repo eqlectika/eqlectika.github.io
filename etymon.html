@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Event City</title>
     <link rel="manifest" href="manifest.json">
     <style>
@@ -9,7 +10,7 @@
         
         #header-link {
             position: absolute;
-            top: 20px;
+            top: 30px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
@@ -20,28 +21,26 @@
             transition: opacity 0.3s;
         }
 
-        #header-link:hover {
-            opacity: 0.5;
-        }
+        #header-link:hover { opacity: 0.5; }
 
         #header-logo {
             opacity: 0.2; 
-            max-height: 48px;
+            max-height: 60px;
             display: block;
         }
 
         #logo-caption {
             color: rgba(255, 255, 255, 0.3);
             font-family: sans-serif;
-            font-size: 10px;
-            letter-spacing: 2px;
+            font-size: 12px;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            margin-top: 8px;
+            margin-top: 10px;
         }
 
         @media (max-width: 768px) {
-            #header-logo { max-height: 36px; }
-            #logo-caption { font-size: 8px; letter-spacing: 1.5px; }
+            #header-logo { max-height: 50px; }
+            #logo-caption { font-size: 10px; letter-spacing: 2px; }
         }
     </style>
 </head>
@@ -70,10 +69,13 @@
     document.body.appendChild(renderer.domElement);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    camera.position.set(12, 12, 12);
+    
+    // Камера в зените на исходном расстоянии (sqrt(12^2 + 12^2 + 12^2) ≈ 20.8)
+    camera.position.set(0, 20.8, 0); 
+    controls.target.set(0, 0, 0);
     controls.enableDamping = true;
+    controls.update();
 
-    // СВЕТ
     scene.add(new THREE.AmbientLight(0xffffff, 0.6));
     const topLight = new THREE.DirectionalLight(0xffffff, 0.5);
     topLight.position.set(0, 20, 0);
@@ -89,7 +91,6 @@
     );
     scene.add(lightSphere);
 
-    // СЕТКА 8x8
     const h = [
         [4, 3, 2, 1], 
         [5, 4, 3, 2], 
@@ -122,9 +123,8 @@
         }
     }
 
-    // ГОРИЗОНТ
     const infinitePlane = new THREE.Mesh(
-        new THREE.PlaneGeometry(300, 300),
+        new THREE.PlaneGeometry(400, 400),
         new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8, metalness: 0.1 })
     );
     infinitePlane.rotation.x = -Math.PI / 2;
@@ -137,11 +137,11 @@
     function animate(time) {
         requestAnimationFrame(animate);
         const t = time * 0.0008; 
-        const radius = 9;
+        const radius = 10;
         
         movingLight.position.x = Math.sin(t) * radius;
         movingLight.position.z = Math.sin(t * 2) * (radius / 2);
-        movingLight.position.y = 6 + Math.cos(t * 1.5) * 2;
+        movingLight.position.y = 8 + Math.cos(t * 1.5) * 2;
         
         lightSphere.position.copy(movingLight.position);
         controls.update();
