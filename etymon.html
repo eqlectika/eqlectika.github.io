@@ -148,6 +148,9 @@ let conflictCube = null;
     const conflictPointLight = new THREE.PointLight(0xff3300, 0, 5);
     scene.add(conflictPointLight);
 
+    let lastMoveTime = 0;
+    let nextMoveDelay = 1200;
+
 
 
 
@@ -173,42 +176,27 @@ if (conflictCube) {
 
 
 
-if (Math.random() > 0.999) {
-            const p = pieces[Math.floor(Math.random() * pieces.length)];
-            const cx = p.userData.gx;
-            const cz = p.userData.gz;
-            let moves = [];
-            for (let x = 0; x < 8; x++) {
-                for (let z = 0; z < 8; z++) {
-                    let dx = Math.abs(x - cx);
-                    let dz = Math.abs(z - cz);
-                    let valid = false;
-                    const type = p.userData.type;
-                    if (type === 'p') valid = (dx === 0 && (z - cz === (p.userData.isWhite ? -1 : 1)));
-                    if (type === 'r') valid = (dx === 0 || dz === 0);
-                    if (type === 'n') valid = (dx * dz === 2);
-                    if (type === 'b') valid = (dx === dz);
-                    if (type === 'q') valid = (dx === 0 || dz === 0 || dx === dz);
-                    if (type === 'k') valid = (dx <= 1 && dz <= 1);
-                    if (valid && (x !== cx || z !== cz)) moves.push({x, z});
-                }
-            }
-            if (moves.length > 0) {
-                const move = moves[Math.floor(Math.random() * moves.length)];
-                // Сброс предыдущей подсветки
-                if (conflictCube) {
-                    conflictCube.material.emissiveIntensity = 0.1;
-                    conflictCube = null;
-                }
-                // Проверка на наличие другой фигуры в целевой клетке
-                const isConflict = pieces.some(other => other !== p && other.userData.gx === move.x && other.userData.gz === move.z);
-                if (isConflict) {
-                    conflictCube = cubes[move.x][move.z].mesh;
-                }
-                p.userData.gx = move.x;
-                p.userData.gz = move.z;
-            }
+    if (time - lastMoveTime > nextMoveDelay) {
+        const p = pieces[Math.floor(Math.random() * pieces.length)];
+        const nx = Math.floor(Math.random() * 8);
+        const nz = Math.floor(Math.random() * 8);
+
+        const conflict = pieces.find(other => other !== p && other.userData.gx === nx && other.userData.gz === nz);
+        if (conflict) {
+            const cube = cubes[nx][nz].mesh;
+            cube.material.emissiveIntensity = 1.0;
+            setTimeout(() => { if (cube) cube.material.emissiveIntensity = 0.1; }, 400);
         }
+
+        p.userData.gx = nx;
+        p.userData.gz = nz;
+
+        lastMoveTime = time;
+        // Пауза от 1.2 до 4.2 секунды
+        nextMoveDelay = 1200 + Math.random() * 3000;
+    }
+
+
         controls.update();
         renderer.render(scene, camera);
     }
