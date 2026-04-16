@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Versus | Local Edition</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+body { background-color: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; box-sizing: border-box; }
+#versus { width: 100%; margin: 2em 0; }
+.versus-wrapper { display: flex; gap: 10px; justify-content: center; }
+.versus_column { flex: 1; min-width: 0; cursor: pointer; }
+.versus_thumbwrapper { position: relative; border: 3px solid #444; background-color: #333; aspect-ratio: 1/1; overflow: hidden; }
+.versus_thumbwrapper img { width: 100%; height: 100%; object-fit: cover; }
+.ranking-container { margin-top: 10px;}
+.ranking-title { font-family: 'Oswald', sans-serif; font-size: 24px; text-transform: uppercase; text-align: center; border-bottom: 1px solid #222; padding-bottom: 10px; margin-bottom: 20px; }
+.ranking-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #222; cursor: pointer; }
+.ranking-img { width: 40px; height: 40px; object-fit: cover; margin-right: 12px; border: 1px solid #444; }
+.ranking-info { flex-grow: 1; display: flex; justify-content: space-between; align-items: center; }
+.item-details { display: none; padding: 15px; background: #050505; border-bottom: 1px solid #222; font-size: 14px; color: #ccc; }
+.external-link { color: #448aff; text-decoration: none; display: block; margin-top: 10px; font-weight: bold; }
+.admin-panel { margin-bottom: 40px; padding: 20px; background: #333; border-radius: 8px; }
+.admin-input { 
+    width: 100%; 
+    padding: 12px; 
+    margin-bottom: 15px; 
+    background: #000; 
+    border: 1px solid #777; 
+    color: #fff; 
+    box-sizing: border-box; 
+}
+#new-img-file { display: none; }
+.file-label {
+    display: inline-block;
+    padding: 12px;
+    background: #000;
+    color: #fff;
+    text-align: left;
+    box-sizing: border-box;
+    cursor: pointer;
+    margin-bottom: 30px;
+    border: 2px solid #fff;
+}
+.admin-btn { 
+    width: 100%; 
+    padding: 22px; 
+    background: #fff; 
+    color: #000; 
+    border: none; 
+    font-weight: bold; 
+    cursor: pointer; 
+    text-transform: uppercase; 
+    font-size: 18px;
+}
+</style>
+</head>
+<body>
+<div class="admin-panel">
+    <input type="text" id="new-title" class="admin-input" placeholder="Task">
+    <textarea id="new-desc" class="admin-input" placeholder="Description" rows="3"></textarea>
+    <input type="url" id="new-url" class="admin-input" placeholder="External URL (optional)">
+    <label for="new-img-file" class="file-label" id="file-label-text">Choose image file</label>
+    <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)">
+    <button class="admin-btn" onclick="addItem()">Add Item</button>
+</div>
+<div class="ranking-container">
+    <div class="ranking-title">Local Ranking</div>
+    <div id="ranking-list"></div>
+</div>
+<div id="versus">
+    <div class="versus-wrapper">
+        <div class="versus_column" id="item-left" onclick="vote('left')">
+            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+            <h3 class="title" style="text-align:center"></h3>
+        </div>
+        <div class="versus_column" id="item-right" onclick="vote('right')">
+            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+            <h3 class="title" style="text-align:center"></h3>
+        </div>
+    </div>
+</div>
+<script>
+let items = JSON.parse(localStorage.getItem('versus_items')) || [];
+let currentPair = [];
+function updateLabel(input) {
+    const fileName = input.files[0] ? input.files[0].name : "Choose image file";
+    document.getElementById('file-label-text').innerText = fileName;
+}
+function save() {
+    localStorage.setItem('versus_items', JSON.stringify(items));
+    updateRankingList();
+}
+async function compressImage(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxWidth = 800;
+                let width = img.width, height = img.height;
+                if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.8));
+            };
+        };
+    });
+}
+async function addItem() {
+    const title = $('#new-title').val().trim();
+    const desc = $('#new-desc').val().trim();
+    const url = $('#new-url').val().trim();
+    const file = $('#new-img-file')[0].files[0];
+    if (!title || !file) return;
+    const imgData = await compressImage(file);
+    items.push({ id: Date.now(), title, description: desc, externalUrl: url, img: imgData, rating: 1500 });
+    save();
+    $('#new-title, #new-desc, #new-url, #new-img-file').val('');
+    $('#file-label-text').text("Choose image file");
+    if (items.length >= 2 && currentPair.length === 0) nextPair();
+}
+function toggleDetails(id) { $(`#details-${id}`).slideToggle(200); }
+function updateRankingList() {
+    const sorted = [...items].sort((a, b) => b.rating - a.rating);
+    let html = '';
+    sorted.forEach((item, index) => {
+        html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
+            <img src="${item.img}" class="ranking-img">
+            <div class="ranking-info"><span>${index + 1}. ${item.title}</span><strong>${Math.round(item.rating)}</strong></div>
+        </div>
+        <div id="details-${item.id}" class="item-details">
+            <p>${item.description || 'No description.'}</p>
+            ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" class="external-link">Visit Link →</a>` : ''}
+        </div>`;
+    });
+    $('#ranking-list').html(html);
+}
+function nextPair() {
+    if (items.length < 2) return;
+    let i1 = Math.floor(Math.random() * items.length), i2;
+    do { i2 = Math.floor(Math.random() * items.length); } while (i1 === i2);
+    currentPair = [i1, i2];
+    $('#item-left img').attr('src', items[i1].img);
+    $('#item-left .title').text(items[i1].title);
+    $('#item-right img').attr('src', items[i2].img);
+    $('#item-right .title').text(items[i2].title);
+}
+function vote(side) {
+    if (items.length < 2) return;
+    const winIdx = side === 'left' ? currentPair[0] : currentPair[1];
+    const loseIdx = side === 'left' ? currentPair[1] : currentPair[0];
+    const rW = items[winIdx].rating, rL = items[loseIdx].rating;
+    const expW = 1 / (1 + Math.pow(10, (rL - rW) / 400));
+    const change = 32 * (1 - expW);
+    items[winIdx].rating += change; items[loseIdx].rating -= change;
+    save();
+    $('#versus').animate({ opacity: 0 }, 100, function() { nextPair(); $(this).animate({ opacity: 1 }, 100); });
+}
+updateRankingList();
+nextPair();
+</script>
+</body>
+</html>
