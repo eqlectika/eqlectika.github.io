@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="manifest" href="manifest.json">
-<title>Quad Editor PWA</title>
+<title>Cross Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Ubuntu:wght@400;700&700&display=swap" rel="stylesheet">
+
 <style>
 body, html {
 margin: 0;
@@ -116,6 +120,11 @@ store.put(data);
 function loadData() {
 container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
 container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
+
+const defFonts = ['Luckiest Guy', 'Copperplate', 'Ubuntu', 'Menlo'];
+const defBgs = ['#e00esf', '#5f0000', '#005f5f', '#afffoo']; // Пастельные: желтый, фиолетовый, зеленый, голубой
+const defColors = ['#ffffff', '#ffffoo', '#00ff00', '#000000']; // Контрастные темные оттенки
+
 textareas.forEach((ta, i) => {
 const tx = db.transaction("texts", "readonly");
 const req = tx.objectStore("texts").get(i);
@@ -125,11 +134,12 @@ ta.value = req.result.content || '';
 if (req.result.img) { images[i].src = req.result.img; images[i].style.display = 'block'; }
 }
 };
-ta.style.setProperty('--font', localStorage.getItem(`q_f_${i}`) || 'sans-serif');
-ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`) || '#111');
-ta.style.setProperty('--color', localStorage.getItem(`q_c_${i}`) || '#eee');
+ta.style.setProperty('--font', localStorage.getItem(`q_f_${i}`) || defFonts[i]);
+ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`) || defBgs[i]);
+ta.style.setProperty('--color', localStorage.getItem(`q_c_${i}`) || defColors[i]);
 });
 }
+
 const onMove = (e) => {
 if (!isDragging) return;
 const touch = e.touches ? e.touches[0] : e;
