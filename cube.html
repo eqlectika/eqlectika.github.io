@@ -189,6 +189,17 @@
 
 const localObjectsMap = new Map(); 
 
+let db;
+const dbRequest = indexedDB.open("QuadEditorDB", 3);
+dbRequest.onupgradeneeded = e => {
+db = e.target.result;
+if(!db.objectStoreNames.contains("scene")) db.createObjectStore("scene", { keyPath: "id" });
+};
+dbRequest.onsuccess = e => { 
+db = e.target.result; 
+restoreAll(); 
+};
+
 function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -1191,98 +1202,139 @@ window.addEventListener('resize', () => {
 initFormaCube();
 
 const saveAll = () => {
-    const data = [];
-    localObjectsMap.forEach((val, id) => {
-        if (!val.ref) return;
-        data.push({
-            id: id,
-            type: val.type,
-            pos: val.ref.position.toArray(),
-            rot: val.ref.rotation ? val.ref.rotation.toArray() : [0, 0, 0],
-            scale: val.ref.scale.toArray(),
-            color: val.color,
-            typeName: val.typeName,
-            exIdx: val.excludeIndex
-        });
-    });
-
-    const cameraState = {
-        position: camera.position.toArray(),
-        target: controls.target.toArray()
-    };
-
-    localStorage.setItem('scene_backup', JSON.stringify(data));
-    localStorage.setItem('camera_backup', JSON.stringify(cameraState));
+if (!db) return;
+const data = [];
+localObjectsMap.forEach((val, id) => {
+if (!val.ref || !val.ref.parent) return;
+data.push({
+id: id,
+type: val.type,
+pos: val.ref.position.toArray(),
+rot: val.ref.rotation ? val.ref.rotation.toArray() : [0, 0, 0],
+scale: val.ref.scale.toArray(),
+color: val.color,
+typeName: val.typeName,
+exIdx: val.excludeIndex
+});
+});
+if (data.length === 0) return;
+const tx = db.transaction("scene", "readwrite");
+const store = tx.objectStore("scene");
+store.put({ 
+id: "current_session", 
+objects: data, 
+camera: {
+position: camera.position.toArray(),
+target: controls.target.toArray()
+}
+});
 };
 
 const restoreAll = () => {
-    const raw = localStorage.getItem('scene_backup');
-    const savedCamera = localStorage.getItem('camera_backup');
-
-    if (savedCamera) {
-        const camData = JSON.parse(savedCamera);
-        camera.position.fromArray(camData.position);
-        controls.target.fromArray(camData.target);
-        controls.update();
-    }
-
-    if (!raw) {
-        initFormaCube();
-        return;
-    }
-
-    const parsed = JSON.parse(raw);
-    if (parsed.length === 0) {
-        initFormaCube();
-        return;
-    }
-
-parsed.forEach(d => {
-    let obj;
-    // Создаем вектор позиции из сохраненного массива [x, y, z]
-    const savedPos = new THREE.Vector3(...d.pos);
-
-    if (d.type === 'forma') {
-        // Передаем сохраненную позицию в функцию создания
-        obj = createFormaCube(savedPos, d.exIdx);
-    } else if (d.type === 'fix') {
-        // Передаем параметры, включая сохраненную позицию
-        obj = createFixObject({ ...d, position: d.pos });
-    } else if (d.type === 'polar') {
-        // Передаем параметры для полярного объекта
-        obj = createPolarObject({ ...d, position: d.pos });
-    }
-
-    if (obj) {
-        obj.userData.uuid = d.id;
-        obj.scale.fromArray(d.scale);
-        if (d.rot) obj.rotation.fromArray(d.rot);
-        
-        // Принудительно подтверждаем позицию, если функции создания ее переопределили
-        obj.position.copy(savedPos);
-        
-        localObjectsMap.set(d.id, { ...d, ref: obj });
-    }
+if (!db) return;
+const tx = db.transaction("scene", "readonly");
+const req = tx.objectStore("scene").get("current_session");
+req.onsuccess = () => {
+const res = req.result;
+if (!res || !res.objects || res.objects.length === 0) {
+initFormaCube();
+return;
+}
+camera.position.fromArray(res.camera.position);
+controls.target.fromArray(res.camera.target);
+controls.update();
+res.objects.forEach(d => {
+let obj;
+const savedPos = new THREE.Vector3(...d.pos);
+if (d.type === 'forma') obj = createFormaCube(savedPos, d.exIdx);
+else if (d.type === 'fix') obj = createFixObject({ ...d, position: d.pos });
+else if (d.type === 'polar') obj = createPolarObject({ ...d, position: d.pos });
+if (obj) {
+obj.userData.uuid = d.id;
+obj.scale.fromArray(d.scale);
+if (d.rot) obj.rotation.fromArray(d.rot);
+obj.position.copy(savedPos);
+localObjectsMap.set(d.id, { ...d, ref: obj });
+}
 });
 };
+};
+
+const mainAnimate = () => {
+controls.update();
+if (objectToScale) {
+if (isScalingUp) {
+objectToScale.scale.multiplyScalar(SCALE_RATE);
+if (objectToScale.scale.x > MAX_SCALE) objectToScale.scale.set(MAX_SCALE, MAX_SCALE, MAX_SCALE);
+} else if (isScalingDown) { 
+objectToScale.scale.multiplyScalar(SCALE_RATE_DOWN);
+if (objectToScale.scale.x < MIN_SCALE) objectToScale.scale.set(MIN_SCALE, MIN_SCALE, MIN_SCALE);
+}
+}
+if (isFlyingBase) {
+currentSpeed = Math.min(currentSpeed + ACCELERATION, MAX_SPEED);
+} else {
+currentSpeed = Math.max(currentSpeed - DECCELERATION, 0.0);
+}
+if (currentSpeed > 0) {
+const direction = new THREE.Vector3();
+camera.getWorldDirection(direction);
+moveCamera(direction, currentSpeed);
+}
+if (isMovingPolarity) {
+cameraVelocity.lerp(targetVelocity, accelerationPolarity);
+} else {
+cameraVelocity.lerp(new THREE.Vector3(), decelerationPolarity);
+}
+camera.position.add(cameraVelocity);
+applyCameraRepulsion();
+[...staticObjects, ...polarObjects].forEach((obj) => {
+if (obj.userData.scatterVelocity) {
+const elapsed = (performance.now() - obj.userData.scatterStart) / 1000;
+if (elapsed < obj.userData.scatterDuration) {
+obj.position.add(obj.userData.scatterVelocity.clone().multiplyScalar(1 / 60));
+} else {
+obj.userData.scatterVelocity.multiplyScalar(1 - obj.userData.scatterDeceleration);
+if (obj.userData.scatterVelocity.length() < 0.01) {
+obj.userData.scatterVelocity = null;
+} else {
+obj.position.add(obj.userData.scatterVelocity.clone().multiplyScalar(1 / 60));
+}
+}
+}
+if (obj.userData.isPolar) {
+obj.position.add(obj.userData.velocity);
+if (obj.userData.rotationSpeed) {
+obj.rotation.x += obj.userData.rotationSpeed.x;
+obj.rotation.y += obj.userData.rotationSpeed.y;
+obj.rotation.z += obj.userData.rotationSpeed.z;
+}
+}
+});
+if (mode === 'Polar') handlePolarInteractions();
+handlePolarAndStaticInteractions();
+applyDeceleration();
+activePoints.forEach(point => {
+if (point.isWord && point.element) {
+point.y += point.speed; 
+point.element.style.top = `${point.y}px`;
+if (point.y > window.innerHeight - 50) point.element.style.opacity = '0';
+}
+});
+renderer.render(scene, camera);
+requestAnimationFrame(mainAnimate);
+};
+
+window.addEventListener('resize', () => {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
 window.addEventListener('beforeunload', saveAll);
-restoreAll();
-    
-try {
-    animate();
-} catch (e) {
-    console.error("Ошибка запуска отрисовки:", e);
-}
+setInterval(saveAll, 10000);
+mainAnimate();
 
-document.getElementById('originButton').addEventListener('click', () => {
-    document.body.style.opacity = '0';
-    document.body.style.transition = 'opacity 0.5s';
-    
-    setTimeout(() => {
-        window.location.href = 'index.html';
-    }, 300);
-});
     
 </script>
 
