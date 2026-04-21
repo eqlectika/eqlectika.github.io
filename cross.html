@@ -62,13 +62,16 @@ opacity: 0.7;
 position: absolute;
 top: var(--y);
 left: var(--x);
-width: 34px;
-height: 34px;
+width: 48px;
+height: 48px;
 transform: translate(-50%, -50%);
 z-index: 100;
 touch-action: none;
-cursor: pointer;
+-webkit-touch-callout: none;
+-webkit-user-select: none;
+user-select: none;
 }
+
 .handle img {
 width: 100%;
 height: 100%;
@@ -85,7 +88,7 @@ pointer-events: none;
 <div class="editor-wrapper"><textarea id="t1" placeholder="Type or paste text and hold to change font, background, or color."></textarea><img id="i1" class="img-preview"></div>
 <div class="editor-wrapper"><textarea id="t2" placeholder="Type or paste text and hold to change font, background, or color."></textarea><img id="i2" class="img-preview"></div>
 <div class="editor-wrapper"><textarea id="t3" placeholder="Type or paste text and hold to change font, background, or color."></textarea><img id="i3" class="img-preview"></div>
-<a href="index.html" class="handle" id="handle"><img src="logo.png" alt="Logo"></a>
+<div class="handle" id="handle"><img src="logo.png" alt="Logo" draggable="false" style="width:100%; height:100%; pointer-events:none;"></div>
 </div>
 <script>
 const container = document.getElementById('app');
@@ -155,10 +158,11 @@ window.addEventListener('pointerup', (e) => {
 if (!isDragging) return;
 const duration = Date.now() - dragStartTime;
 if (duration < 200) {
-e.preventDefault();
 navigator.clipboard.writeText('0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8').then(() => {
 alert('Address ETH (ERC20) is copied to donate. Thank you.');
 });
+} else if (duration > 600) {
+window.location.href = 'index.html';
 }
 isDragging = false;
 });
@@ -191,6 +195,7 @@ if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c)
 ta.addEventListener('touchend', () => clearTimeout(timer));
 });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+handle.addEventListener('contextmenu', e => e.preventDefault());
 </script>
 </body>
 </html>
