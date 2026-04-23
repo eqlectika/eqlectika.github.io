@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest-spark.json">
   <title>Vital Spark</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -299,41 +299,42 @@ document.querySelectorAll('select, .ui-btn').forEach(el => {
   }
 
   function saveToStorage() {
-    const score = calculateRiskQuine();
-    let verdict = (score < 0.45) ? "SYSTEMIC NOISE - High." : (score < 0.75) ? "SURFACE CALM." : "CLARITY - Absolute.";
-    const logEntry = {
-      timestamp: new Date().toLocaleString('en-GB'),
-      score: score,
-      verdict: verdict,
-      labels: chart.data.labels,
-      data: chart.data.datasets.map(ds => ds.data)
-    };
-    let history = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    history.push(logEntry);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-  }
+  const score = calculateRiskQuine();
+  let verdict = (score < 0.45) ? "SYSTEMIC NOISE - High." : (score < 0.75) ? "SURFACE CALM." : "CLARITY - Absolute.";
+  const logEntry = {
+    timestamp: new Date().toLocaleString('en-GB'),
+    score: score,
+    verdict: verdict,
+    labels: chart.data.labels,
+    data: chart.data.datasets.map(ds => ds.data)
+  };
+  let history = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  history.push(logEntry);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+}
 
-  function loadFromStorage() { 
+function loadFromStorage() { 
+  const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  if (history.length === 0) return;
+  const last = history[history.length - 1];
+  try { 
+    chart.data.labels = last.labels || []; 
+    last.data.forEach((d, i) => { if(chart.data.datasets[i]) chart.data.datasets[i].data = d; }); 
+    chart.update(); 
+  } catch(e) { console.error("Data restoration failed"); } 
+}
+
+function toggleData() {
+  const pre = document.getElementById("savedDataView");
+  if (pre.style.display === "none" || pre.style.display === "") {
     const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    if (history.length === 0) return;
-    const last = history[history.length - 1];
-    try { 
-      chart.data.labels = last.labels || []; 
-      last.data.forEach((d, i) => { if(chart.data.datasets[i]) chart.data.datasets[i].data = d; }); 
-      chart.update(); 
-    } catch(e) {} 
+    pre.textContent = history.slice().reverse().map(entry => `[${entry.timestamp}] Rq: ${entry.score}\nVerdict: ${entry.verdict}\n---`).join('\n');
+    pre.style.display = "block";
+  } else {
+    pre.style.display = "none";
   }
+}
 
-  function toggleData() {
-    const pre = document.getElementById("savedDataView");
-    if (pre.style.display === "none" || pre.style.display === "") {
-      const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      pre.textContent = history.slice().reverse().map(entry => `[${entry.timestamp}] Rq: ${entry.score}\nVerdict: ${entry.verdict}\n---`).join('\n');
-      pre.style.display = "block";
-    } else {
-      pre.style.display = "none";
-    }
-  }
 
   function makeWordsClickable() {
     const container = document.querySelector('.protocol-content');
