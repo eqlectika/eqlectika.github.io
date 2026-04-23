@@ -153,16 +153,20 @@ window.location.href = 'index.html';
 window.addEventListener('pointermove', (e) => {
 if (!isDragging) return;
 const touch = e.touches ? e.touches[0] : e;
-const deltaX = Math.abs(touch.clientX - (parseFloat(container.style.getPropertyValue('--x')) * window.innerWidth / 100));
-const deltaY = Math.abs(touch.clientY - (parseFloat(container.style.getPropertyValue('--y')) * window.innerHeight / 100));
-if (deltaX > 5 || deltaY > 5) clearTimeout(holdTimer);
-const x = `${(touch.clientX / window.innerWidth) * 100}%`;
-const y = `${(touch.clientY / window.innerHeight) * 100}%`;
+const padding = 10;
+const rawX = (touch.clientX / window.innerWidth) * 100;
+const rawY = (touch.clientY / window.innerHeight) * 100;
+const clampedX = Math.max(padding, Math.min(100 - padding, rawX));
+const clampedY = Math.max(padding, Math.min(100 - padding, rawY));
+const x = `${clampedX}%`;
+const y = `${clampedY}%`;
 container.style.setProperty('--x', x);
 container.style.setProperty('--y', y);
 localStorage.setItem('q_x', x);
 localStorage.setItem('q_y', y);
+clearTimeout(holdTimer);
 });
+
 window.addEventListener('pointerup', (e) => {
 clearTimeout(holdTimer);
 if (!isDragging) return;
