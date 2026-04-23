@@ -70,7 +70,9 @@ touch-action: none;
 cursor: pointer;
 -webkit-user-select: none;
 user-select: none;
+-webkit-touch-callout: none; /* Отключает превью и контекстное меню в iOS */
 }
+
 .handle img {
 width: 100%;
 height: 100%;
@@ -87,7 +89,8 @@ pointer-events: none;
 <div class="editor-wrapper"><textarea id="t1" placeholder="Type or paste text and hold to change font, background, or color."></textarea><img id="i1" class="img-preview"></div>
 <div class="editor-wrapper"><textarea id="t2" placeholder="Type or paste text and hold to change font, background, or color."></textarea><img id="i2" class="img-preview"></div>
 <div class="editor-wrapper"><textarea id="t3" placeholder="Type or paste text and hold to change font, background, or color."></textarea><img id="i3" class="img-preview"></div>
-<a href="index.html" target="_blank" class="handle" id="handle" draggable="false"><img src="logo.png" alt="Logo" draggable="false"></a>
+<a href="index.html" class="handle" id="handle" draggable="false" onclick="return false;"><img src="logo.png" alt="Logo" draggable="false"></a>
+
 </div>
 <script>
 const container = document.getElementById('app');
@@ -96,6 +99,8 @@ const textareas = document.querySelectorAll('textarea');
 const images = document.querySelectorAll('.img-preview');
 let isDragging = false;
 let dragStartTime = 0;
+let holdTimer;
+let isLongPress = false;
 let db;
 const dbRequest = indexedDB.open("QuadEditorDB", 3);
 dbRequest.onupgradeneeded = e => {
@@ -117,11 +122,9 @@ store.put(data);
 function loadData() {
 container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
 container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
-
 const defFonts = ['Luckiest Guy', 'Copperplate', 'Ubuntu', 'Menlo'];
 const defBgs = ['#1A1A1A', '#212121', '#121212', '#1C1C1E']; 
 const defColors = ['#FFD54F', '#E1BEE7', '#81C784', '#64B5F6']; 
-
 textareas.forEach((ta, i) => {
 const tx = db.transaction("texts", "readonly");
 const req = tx.objectStore("texts").get(i);
@@ -131,40 +134,51 @@ ta.value = req.result.content || '';
 if (req.result.img) { images[i].src = req.result.img; images[i].style.display = 'block'; }
 }
 };
-// Если в localStorage пусто, подставляются новые значения из массивов выше
 ta.style.setProperty('--font', localStorage.getItem(`q_f_${i}`) || defFonts[i]);
 ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`) || defBgs[i]);
 ta.style.setProperty('--color', localStorage.getItem(`q_c_${i}`) || defColors[i]);
 });
 }
-
-const onMove = (e) => {
+handle.addEventListener('pointerdown', (e) => {
+isDragging = true;
+isLongPress = false;
+dragStartTime = Date.now();
+holdTimer = setTimeout(() => {
+if (isDragging) {
+isLongPress = true;
+window.location.href = 'index.html';
+}
+}, 800);
+});
+window.addEventListener('pointermove', (e) => {
 if (!isDragging) return;
 const touch = e.touches ? e.touches[0] : e;
+const deltaX = Math.abs(touch.clientX - (parseFloat(container.style.getPropertyValue('--x')) * window.innerWidth / 100));
+const deltaY = Math.abs(touch.clientY - (parseFloat(container.style.getPropertyValue('--y')) * window.innerHeight / 100));
+if (deltaX > 5 || deltaY > 5) clearTimeout(holdTimer);
 const x = `${(touch.clientX / window.innerWidth) * 100}%`;
 const y = `${(touch.clientY / window.innerHeight) * 100}%`;
 container.style.setProperty('--x', x);
 container.style.setProperty('--y', y);
 localStorage.setItem('q_x', x);
 localStorage.setItem('q_y', y);
-};
-handle.addEventListener('pointerdown', (e) => {
-isDragging = true;
-dragStartTime = Date.now();
 });
-window.addEventListener('pointermove', onMove);
 window.addEventListener('pointerup', (e) => {
+clearTimeout(holdTimer);
 if (!isDragging) return;
 const duration = Date.now() - dragStartTime;
-if (duration < 200) {
-e.preventDefault();
+if (duration < 250 && !isLongPress) {
 navigator.clipboard.writeText('0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8').then(() => {
 alert('Address ETH (ERC20) is copied to donate. Thank you.');
 });
 }
 isDragging = false;
 });
-
+handle.addEventListener('touchstart', (e) => {
+if (e.cancelable) e.preventDefault();
+}, { passive: false });
+handle.addEventListener('click', (e) => e.preventDefault());
+handle.addEventListener('contextmenu', (e) => e.preventDefault());
 textareas.forEach((ta, i) => {
 ta.addEventListener('input', () => saveToDB(i, ta.value));
 ta.addEventListener('paste', (e) => {
@@ -193,6 +207,7 @@ if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c)
 ta.addEventListener('touchend', () => clearTimeout(timer));
 });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
 </script>
 </body>
 </html>
