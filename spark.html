@@ -229,14 +229,16 @@ document.querySelectorAll('select, .ui-btn').forEach(el => {
 
 
   function log(key) {
-    const val = +document.getElementById(key).value;
-    let col = chart.data.labels.length;
-    const isColumnFull = col > 0 && chart.data.datasets.every(ds => ds.data[col - 1] != null);
-    if (isColumnFull || col === 0) chart.data.labels.push(++col);
-    chart.data.datasets[rows.indexOf(key)].data[col - 1] = val;
-    chart.update();
-    saveToStorage(); updateRiskIndicator();
-  }
+  const val = +document.getElementById(key).value;
+  let col = chart.data.labels.length;
+  const isColumnFull = col > 0 && chart.data.datasets.every(ds => ds.data[col - 1] != null);
+  if (isColumnFull || col === 0) chart.data.labels.push(++col);
+  chart.data.datasets[rows.indexOf(key)].data[col - 1] = val;
+  chart.update();
+  saveToStorage(); 
+  updateRiskIndicator();
+}
+
 
   function calculateRiskQuine() {
     const data = chart.data.datasets; 
@@ -358,14 +360,14 @@ function toggleData() {
     }
   }, true);
 
-    window.addEventListener("DOMContentLoaded", () => {
-    loadFromStorage();
-    makeWordsClickable();
-    setTimeout(updateRiskIndicator, 100);
-    
-    updateButterflyShadow();
-    setInterval(updateButterflyShadow, 1000); 
-  });
+window.addEventListener("DOMContentLoaded", () => {
+  loadFromStorage();
+  makeWordsClickable();
+  setTimeout(updateRiskIndicator, 100);
+  updateButterflyShadow();
+  setInterval(updateButterflyShadow, 1000); 
+});
+
 
 
  
