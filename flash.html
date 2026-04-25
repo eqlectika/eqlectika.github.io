@@ -156,22 +156,22 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
     }
     body.is-paused #accelBtn { display: inline-flex; }
 
-    #inputText {
-      -webkit-user-select: text !important;
-      user-select: text !important;
-      pointer-events: auto !important;
-      width: 90%; max-width: 650px; 
-      min-height: 190px;
-      max-height: 60vh;
-      padding: 10px 14px; background: rgba(255,255,255,0.05); 
-      color: #fff; border: 1px solid rgba(255,255,255,0.2); 
-      border-radius: 0px; font-size: 16px; outline: none; 
-      box-sizing: border-box; display: block;
-      font-family: Arial, sans-serif;
-      /* Убираем ручной resize, заменяем его логикой */
-      resize: none; 
-      overflow-y: hidden;
-    }
+#inputText {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  pointer-events: auto !important;
+  width: 90%; max-width: 650px; min-height: 190px;
+  padding: 10px 14px; background: rgba(255,255,255,0.05); 
+  color: #fff; border: 1px solid rgba(255,255,255,0.2); 
+  border-radius: 0px; font-size: 16px; outline: none; 
+  box-sizing: border-box; display: block;
+  font-family: Arial, sans-serif;
+  max-height: 60vh;
+  resize: vertical;
+  overflow-y: auto;
+  touch-action: pan-y !important;
+}
+
 
 
     .donate-box { 
@@ -408,7 +408,10 @@ if (isDynamicAccel && words.length > 1) {
 
     function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = (info.style.display === "flex") ? "none" : "flex"; info.scrollIntoView({ behavior: 'smooth' }); }
     function copyToClipboard() { const addr = document.getElementById("cryptoAddr"); const hint = document.getElementById("copyHint"); const text = addr.innerText; navigator.clipboard.writeText(text).then(() => { addr.innerText = "Copied!"; addr.style.color = "#00ff00"; setTimeout(() => { addr.innerText = text; addr.style.color = "#fff"; }, 1500); }); }
-    document.getElementById('inputText').addEventListener('touchmove', (e) => { const rect = e.target.getBoundingClientRect(); const touchY = e.touches[0].clientY; if (touchY > rect.top + 30 && touchY < rect.bottom - 30) e.stopPropagation(); }, { passive: false });
+document.getElementById('inputText').addEventListener('touchmove', (e) => {
+    e.stopPropagation();
+}, { passive: true });
+
 
 async function requestWakeLock() {
     try {
