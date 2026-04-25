@@ -233,6 +233,8 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
     
     let colorIndex = parseInt(localStorage.getItem('reading_colorIndex')) || 0;
     let textColorIndex = parseInt(localStorage.getItem('reading_textColorIndex')) || 0;
+    let wakeLock = null;
+    
     let words = [], index = 0, timer = null, isPaused = false, isReading = false;
     let interval = parseInt(localStorage.getItem('reading_interval')) || 600;
     let isDynamicAccel = true;
@@ -301,7 +303,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
 let currentInterval = interval;
 if (isDynamicAccel && words.length > 1) {
     let progress = index / (words.length - 1);
-    const phi = 0.382; 
+    const phi = 0.618; 
     const intensity = 0.6; 
     
     let factor = progress <= phi 
@@ -317,7 +319,8 @@ if (isDynamicAccel && words.length > 1) {
         timer = setTimeout(showNext, currentInterval * pauses);
     }
 
-    function stopReading() {
+        function stopReading() {
+        releaseWakeLock();
         clearTimeout(timer);
         isReading = false; isPaused = false;
         document.body.classList.remove('is-reading', 'is-paused');
@@ -339,10 +342,13 @@ if (isDynamicAccel && words.length > 1) {
             if (!text) return;
             localStorage.setItem('reading_text', text);
             words = text.split(/(\s{2,})|\s+/).filter(w => w !== undefined && w !== "").map(w => w.trim() === "" ? " " : w.replace(/_/g, ' '));
+            
             index = 0; isReading = true; isPaused = false;
             document.body.classList.add('is-reading');
             startBtn.textContent = 'Pause';
+            requestWakeLock();
             showNext();
+            
         } else {
             isPaused = !isPaused;
             document.body.classList.toggle('is-paused', isPaused);
@@ -370,6 +376,24 @@ if (isDynamicAccel && words.length > 1) {
     function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = (info.style.display === "flex") ? "none" : "flex"; info.scrollIntoView({ behavior: 'smooth' }); }
     function copyToClipboard() { const addr = document.getElementById("cryptoAddr"); const hint = document.getElementById("copyHint"); const text = addr.innerText; navigator.clipboard.writeText(text).then(() => { addr.innerText = "Copied!"; addr.style.color = "#00ff00"; setTimeout(() => { addr.innerText = text; addr.style.color = "#fff"; }, 1500); }); }
     document.getElementById('inputText').addEventListener('touchmove', (e) => { const rect = e.target.getBoundingClientRect(); const touchY = e.touches[0].clientY; if (touchY > rect.top + 30 && touchY < rect.bottom - 30) e.stopPropagation(); }, { passive: false });
+
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function releaseWakeLock() {
+    if (wakeLock !== null) {
+        wakeLock.release();
+        wakeLock = null;
+    }
+}
+
 </script> 
 </body>
 </html>
