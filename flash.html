@@ -298,15 +298,19 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
         }
 
 
-        let currentInterval = interval;
+let currentInterval = interval;
 if (isDynamicAccel && words.length > 1) {
     let progress = index / (words.length - 1);
     const phi = 0.618; 
+    const intensity = 0.7; 
+    
     let factor = progress <= phi 
-        ? (1 - (progress / phi) * 0.5) 
-        : (0.5 + ((progress - phi) / (0.382)) * 0.1);
+        ? (1 - (progress / phi) * intensity) 
+        : ((1 - intensity) + ((progress - phi) / (1 - phi)) * intensity);
+    
     currentInterval = interval * factor;
 }
+
 
   
         index++;
