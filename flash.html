@@ -142,13 +142,19 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
       -webkit-user-select: text !important;
       user-select: text !important;
       pointer-events: auto !important;
-      width: 90%; max-width: 650px; min-height: 190px;
+      width: 90%; max-width: 650px; 
+      min-height: 190px;
+      max-height: 60vh;
       padding: 10px 14px; background: rgba(255,255,255,0.05); 
       color: #fff; border: 1px solid rgba(255,255,255,0.2); 
       border-radius: 0px; font-size: 16px; outline: none; 
-      box-sizing: border-box; resize: none; display: block;
+      box-sizing: border-box; display: block;
       font-family: Arial, sans-serif;
+      /* Убираем ручной resize, заменяем его логикой */
+      resize: none; 
+      overflow-y: hidden;
     }
+
 
     .donate-box { 
       display: flex; flex-direction: column; gap: 10px; 
@@ -393,6 +399,17 @@ function releaseWakeLock() {
         wakeLock = null;
     }
 }
+
+    inputText.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+
+    // Вызов при загрузке для адаптации под сохраненный текст
+    window.addEventListener('load', () => {
+        inputText.style.height = 'auto';
+        inputText.style.height = (inputText.scrollHeight) + 'px';
+    });
 
 </script> 
 </body>
