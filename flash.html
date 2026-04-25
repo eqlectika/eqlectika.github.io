@@ -377,7 +377,14 @@ if (isDynamicAccel && words.length > 1) {
     slowerBtn.onclick = (e) => { e.stopPropagation(); interval += 50; localStorage.setItem('reading_interval', interval); };
     colorControl.onclick = (e) => { e.stopPropagation(); colorIndex = (colorIndex + 1) % colors.length; document.body.style.backgroundColor = colors[colorIndex]; localStorage.setItem('reading_colorIndex', colorIndex); };
     textColorControl.onclick = (e) => { e.stopPropagation(); textColorIndex = (textColorIndex + 1) % textColors.length; localStorage.setItem('reading_textColorIndex', textColorIndex); textColorControl.style.color = textColors[textColorIndex]; setTimeout(() => { textColorControl.style.color = 'rgba(255, 255, 255, 0.4)'; }, 300); };
-    clickShield.onclick = stopReading;
+
+    ['click', 'touchstart'].forEach(evt => 
+        clickShield.addEventListener(evt, (e) => {
+            e.preventDefault();
+            stopReading();
+        }, { passive: false })
+    );
+
 
     function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = (info.style.display === "flex") ? "none" : "flex"; info.scrollIntoView({ behavior: 'smooth' }); }
     function copyToClipboard() { const addr = document.getElementById("cryptoAddr"); const hint = document.getElementById("copyHint"); const text = addr.innerText; navigator.clipboard.writeText(text).then(() => { addr.innerText = "Copied!"; addr.style.color = "#00ff00"; setTimeout(() => { addr.innerText = text; addr.style.color = "#fff"; }, 1500); }); }
