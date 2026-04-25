@@ -1,4 +1,5 @@
 <a href="https://eqlectika.github.io"><img src="logo.png" width="48" height="48" alt="logo"></a>
+
 Any structure begins with contact. The architectural logic of the transition: a description of the semantic core's content is a declaration of birth in the virtual world; a website, a server/cloud for life in a neural network—it can't be otherwise. 
 Judge for yourself. Where are we heading? It once began with a radio in the kitchen, then came the television > telephone > computer > mobile phone > pocket TV with two-way communication > virtual reality glasses. Clearly, attention, through contact with the outside world, undergoes an evolution through which a new future unfolds. With the help of the internet, people are beginning to understand the phenomenon of their phenomenal essence.
 We are currently at a rather primitive stage of mastering virtual space through the flat pages of online publications. 3D games are already something more tangible, so much so that you can even dream about them!
