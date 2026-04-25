@@ -37,9 +37,27 @@
     }
 
     #clickShield {
-      position: fixed; top: 0; left: 0; width: 100%; height: calc(100% - 130px);
-      z-index: 150; display: none; cursor: pointer;
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      /* Теперь щит занимает весь экран */
+      height: 100%; 
+      z-index: 50; 
+      display: none; 
+      cursor: pointer;
     }
+
+    .footer-block {
+      z-index: 100;
+    }
+
+    #mainButtons, #backBtn {
+      position: relative;
+      z-index: 110;
+      pointer-events: auto;
+    }
+
 
     body.is-reading #clickShield { display: block; }
 
@@ -378,12 +396,14 @@ if (isDynamicAccel && words.length > 1) {
     colorControl.onclick = (e) => { e.stopPropagation(); colorIndex = (colorIndex + 1) % colors.length; document.body.style.backgroundColor = colors[colorIndex]; localStorage.setItem('reading_colorIndex', colorIndex); };
     textColorControl.onclick = (e) => { e.stopPropagation(); textColorIndex = (textColorIndex + 1) % textColors.length; localStorage.setItem('reading_textColorIndex', textColorIndex); textColorControl.style.color = textColors[textColorIndex]; setTimeout(() => { textColorControl.style.color = 'rgba(255, 255, 255, 0.4)'; }, 300); };
 
-    ['click', 'touchstart'].forEach(evt => 
-        clickShield.addEventListener(evt, (e) => {
-            e.preventDefault();
-            stopReading();
-        }, { passive: false })
-    );
+    const handleExit = (e) => {
+        e.preventDefault();
+        stopReading();
+    };
+
+    clickShield.addEventListener('click', handleExit);
+    clickShield.addEventListener('touchstart', handleExit, { passive: false });
+
 
 
     function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = (info.style.display === "flex") ? "none" : "flex"; info.scrollIntoView({ behavior: 'smooth' }); }
