@@ -36,17 +36,7 @@
       align-items: center; box-sizing: border-box; transition: opacity 0.6s ease;
     }
 
-    #clickShield {
-      position: fixed; 
-      top: 0; 
-      left: 0; 
-      width: 100%; 
-      /* Теперь щит занимает весь экран */
-      height: 100%; 
-      z-index: 50; 
-      display: none; 
-      cursor: pointer;
-    }
+
 
     .footer-block {
       z-index: 100;
@@ -58,8 +48,13 @@
       pointer-events: auto;
     }
 
+    body.is-paused #editBtn { 
+      display: block !important; 
+      opacity: 1 !important; 
+      visibility: visible !important;
+      z-index: 210 !important;
+    }
 
-    body.is-reading #clickShield { display: block; }
 
     .footer-block > *, #mainButtons > button, #accelBtn { pointer-events: auto; }
 
@@ -101,7 +96,8 @@
     }
 
     body.is-reading .footer-block { 
-margin-top: 40px;
+      position: fixed;
+      margin-top: 40px;
       bottom: 0; 
       height: auto; 
       min-height: 50px; 
@@ -208,7 +204,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
   </div>
 
   <div id="container"></div>
-  <div id="clickShield"></div>
+
 
   <div class="footer-block">
     <div id="inputContainer">
@@ -221,12 +217,13 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
     </div>
 
     <button id="backBtn">← One Word Back</button>
+        <button id="editBtn" style="display: none; margin-bottom: 15px; background: rgba(255,255,255,0.1); z-index: 210;">Edit Text</button>
     <div id="mainButtons">
       <div class="button-row">
         <button id="slowerBtn">Slower</button>
         <button id="startBtn">Start</button>
         <button id="fasterBtn">Faster</button>
-      </div>
+    </div>
       <button id="accelBtn" class="setting-btn">Dynamic Accel: ON</button>
     </div>
 
@@ -249,7 +246,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
     const slowerBtn = document.getElementById('slowerBtn');
     const colorControl = document.getElementById('colorControl');
     const textColorControl = document.getElementById('textColorControl');
-    const clickShield = document.getElementById('clickShield');
+
     const accelBtn = document.getElementById('accelBtn');
 
     const colors = ['#000000', '#2a0505', '#05052a', '#052a05', '#1a1a1a'];
@@ -401,9 +398,7 @@ if (isDynamicAccel && words.length > 1) {
         stopReading();
     };
 
-    clickShield.addEventListener('click', handleExit);
-    clickShield.addEventListener('touchstart', handleExit, { passive: false });
-
+const editBtn = document.getElementById('editBtn');
 
 
     function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = (info.style.display === "flex") ? "none" : "flex"; info.scrollIntoView({ behavior: 'smooth' }); }
@@ -440,6 +435,13 @@ function releaseWakeLock() {
         inputText.style.height = 'auto';
         inputText.style.height = (inputText.scrollHeight) + 'px';
     });
+    
+    editBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        stopReading();
+    };
+
 
 </script> 
 </body>
