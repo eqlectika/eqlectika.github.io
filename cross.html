@@ -193,6 +193,7 @@ if (e.cancelable) e.preventDefault();
 handle.addEventListener('click', (e) => e.preventDefault());
 handle.addEventListener('contextmenu', (e) => e.preventDefault());
 textareas.forEach((ta, i) => {
+textareas.forEach((ta, i) => {
 ta.addEventListener('input', () => saveToDB(i, ta.value));
 ta.addEventListener('paste', (e) => {
 const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
@@ -207,9 +208,8 @@ reader.readAsDataURL(item.getAsFile());
 }
 });
 ta.addEventListener('contextmenu', (e) => e.preventDefault());
-
 let timer;
-ta.addEventListener('touchstart', () => {
+const startLongPress = () => {
 timer = setTimeout(() => {
 const f = prompt("Font:", ta.style.getPropertyValue('--font'));
 if (f) { ta.style.setProperty('--font', f); localStorage.setItem(`q_f_${i}`, f); }
@@ -219,9 +219,14 @@ const b = prompt("Background:", ta.style.getPropertyValue('--bg'));
 if (b) { ta.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
 const c = prompt("Color:", ta.style.getPropertyValue('--color'));
 if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
-}, 5000);
-});
-ta.addEventListener('touchend', () => clearTimeout(timer));
+}, 2000);
+};
+const stopLongPress = () => clearTimeout(timer);
+ta.addEventListener('touchstart', startLongPress);
+ta.addEventListener('touchend', stopLongPress);
+ta.addEventListener('mousedown', startLongPress);
+ta.addEventListener('mouseup', stopLongPress);
+ta.addEventListener('mouseleave', stopLongPress);
 });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
