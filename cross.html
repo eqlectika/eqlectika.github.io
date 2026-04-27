@@ -34,6 +34,7 @@ width: 100%;
 height: 100%;
 overflow: hidden;
 }
+
 textarea {
 width: 100%;
 height: 100%;
@@ -52,6 +53,7 @@ user-select: text;
 -webkit-touch-callout: default;
 -webkit-user-modify: read-write;
 }
+
 .img-preview {
 position: absolute;
 bottom: 10px;
@@ -78,6 +80,7 @@ cursor: pointer;
 user-select: none;
 -webkit-touch-callout: none;
 }
+
 .handle img {
 width: 100%;
 height: 100%;
@@ -85,15 +88,17 @@ object-fit: contain;
 pointer-events: none;
 -webkit-user-drag: none;
 }
+
 </style>
 </head>
 <body>
 <div class="container" id="app" style="--x: 50%; --y: 50%;">
-<div class="editor-wrapper"><textarea id="t0" placeholder="Type or paste text and long hold to change font, size, background, or color."></textarea><img id="i0" class="img-preview"></div>
-<div class="editor-wrapper"><textarea id="t1" placeholder="Type or paste text and long hold to change font, size, background, or color."></textarea><img id="i1" class="img-preview"></div>
-<div class="editor-wrapper"><textarea id="t2" placeholder="Type or paste text and long hold to change font, size, background, or color."></textarea><img id="i2" class="img-preview"></div>
-<div class="editor-wrapper"><textarea id="t3" placeholder="Type or paste text and long hold to change font, size, background, or color."></textarea><img id="i3" class="img-preview"></div>
+<div class="editor-wrapper"><textarea id="t0" placeholder="Type or paste text and long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></textarea><img id="i0" class="img-preview"></div>
+<div class="editor-wrapper"><textarea id="t1" placeholder="Type or paste text and long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></textarea><img id="i0" class="img-preview"></div>
+<div class="editor-wrapper"><textarea id="t2" placeholder="Type or paste text and long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></textarea><img id="i0" class="img-preview"></div>
+<div class="editor-wrapper"><textarea id="t3" placeholder="Type or paste text and long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></textarea><img id="i0" class="img-preview"></div>
 <a href="index.html" class="handle" id="handle" draggable="false" onclick="return false;"><img src="logo.png" alt="Logo" draggable="false"></a>
+
 </div>
 <script>
 const container = document.getElementById('app');
@@ -126,8 +131,8 @@ function loadData() {
 container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
 container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
 const defFonts = ['Copperplate', 'Ceviche One', 'DIN Alternate', 'Luckiest Guy'];
-const defBgs = ['#000080', '#005f00', '#870000', '#ff8700'];
-const defColors = ['#FFD54F', '#E1BEE7', '#81C784', '#000000'];
+const defBgs = ['#000080', '#005f00', '#870000', '#ff8700']; 
+const defColors = ['#FFD54F', '#E1BEE7', '#81C784', '#000000']; 
 textareas.forEach((ta, i) => {
 const tx = db.transaction("texts", "readonly");
 const req = tx.objectStore("texts").get(i);
@@ -170,6 +175,7 @@ localStorage.setItem('q_x', x);
 localStorage.setItem('q_y', y);
 clearTimeout(holdTimer);
 });
+
 window.addEventListener('pointerup', (e) => {
 clearTimeout(holdTimer);
 if (!isDragging) return;
@@ -186,7 +192,6 @@ if (e.cancelable) e.preventDefault();
 }, { passive: false });
 handle.addEventListener('click', (e) => e.preventDefault());
 handle.addEventListener('contextmenu', (e) => e.preventDefault());
-
 textareas.forEach((ta, i) => {
 ta.addEventListener('input', () => saveToDB(i, ta.value));
 ta.addEventListener('paste', (e) => {
@@ -201,8 +206,11 @@ saveToDB(i, ta.value, ev.target.result);
 reader.readAsDataURL(item.getAsFile());
 }
 });
+ta.addEventListener('contextmenu', (e) => e.preventDefault());
+
 let timer;
-const triggerMenu = () => {
+ta.addEventListener('touchstart', () => {
+timer = setTimeout(() => {
 const f = prompt("Font:", ta.style.getPropertyValue('--font'));
 if (f) { ta.style.setProperty('--font', f); localStorage.setItem(`q_f_${i}`, f); }
 const s = prompt("Size:", ta.style.fontSize);
@@ -211,21 +219,12 @@ const b = prompt("Background:", ta.style.getPropertyValue('--bg'));
 if (b) { ta.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
 const c = prompt("Color:", ta.style.getPropertyValue('--color'));
 if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
-};
-ta.addEventListener('mousedown', (e) => {
-if (e.button === 0) timer = setTimeout(triggerMenu, 2000);
+}, 5000);
 });
-ta.addEventListener('touchstart', () => {
-timer = setTimeout(triggerMenu, 2000);
-}, {passive: true});
-ta.addEventListener('mouseup', () => clearTimeout(timer));
-ta.addEventListener('mouseleave', () => clearTimeout(timer));
 ta.addEventListener('touchend', () => clearTimeout(timer));
-ta.addEventListener('contextmenu', (e) => {
-e.preventDefault();
-triggerMenu();
 });
-});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
 </script>
 </body>
 </html>
