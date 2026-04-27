@@ -219,13 +219,18 @@ const c = prompt("Color:", ta.style.getPropertyValue('--color'));
 if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
 };
 ta.addEventListener('mousedown', (e) => {
-if (e.button === 2) timer = setTimeout(triggerMenu, 2000);
+if (e.button === 2) {
+timer = setTimeout(() => {
+triggerMenu();
+timer = null;
+}, 2000);
+}
 });
 ta.addEventListener('contextmenu', (e) => {
-if (timer) {
+if (timer === null) {
 e.preventDefault();
+} else {
 clearTimeout(timer);
-timer = null;
 }
 });
 ta.addEventListener('touchstart', () => {
@@ -235,7 +240,6 @@ ta.addEventListener('mouseup', () => clearTimeout(timer));
 ta.addEventListener('touchend', () => clearTimeout(timer));
 ta.addEventListener('mouseleave', () => clearTimeout(timer));
 });
-
 </script>
 </body>
 </html>
