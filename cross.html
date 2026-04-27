@@ -208,12 +208,10 @@ reader.readAsDataURL(item.getAsFile());
 }
 });
 ta.addEventListener('contextmenu', (e) => e.preventDefault());
-
 let timer;
 const startLongPress = (e) => {
 timer = setTimeout(() => {
-ta.style.userSelect = 'none';
-ta.style.webkitUserSelect = 'none';
+ta.blur();
 const f = prompt("Font:", ta.style.getPropertyValue('--font'));
 if (f) { ta.style.setProperty('--font', f); localStorage.setItem(`q_f_${i}`, f); }
 const s = prompt("Size:", ta.style.fontSize);
@@ -222,17 +220,9 @@ const b = prompt("Background:", ta.style.getPropertyValue('--bg'));
 if (b) { ta.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
 const c = prompt("Color:", ta.style.getPropertyValue('--color'));
 if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
-ta.style.userSelect = 'text';
-ta.style.webkitUserSelect = 'text';
 }, 2000);
 };
-
-const stopLongPress = () => {
-clearTimeout(timer);
-ta.style.userSelect = 'text';
-ta.style.webkitUserSelect = 'text';
-};
-
+const stopLongPress = () => clearTimeout(timer);
 ta.addEventListener('touchstart', startLongPress);
 ta.addEventListener('touchend', stopLongPress);
 ta.addEventListener('mousedown', startLongPress);
