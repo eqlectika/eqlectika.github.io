@@ -186,6 +186,7 @@ if (e.cancelable) e.preventDefault();
 }, { passive: false });
 handle.addEventListener('click', (e) => e.preventDefault());
 handle.addEventListener('contextmenu', (e) => e.preventDefault());
+
 textareas.forEach((ta, i) => {
 ta.addEventListener('input', () => saveToDB(i, ta.value));
 ta.addEventListener('paste', (e) => {
@@ -211,8 +212,12 @@ if (b) { ta.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
 const c = prompt("Color:", ta.style.getPropertyValue('--color'));
 if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
 };
-ta.addEventListener('mousedown', (e) => { if(e.button === 0) timer = setTimeout(triggerMenu, 2000); });
-ta.addEventListener('touchstart', () => { timer = setTimeout(triggerMenu, 2000); }, {passive: true});
+ta.addEventListener('mousedown', (e) => {
+if (e.button === 0) timer = setTimeout(triggerMenu, 2000);
+});
+ta.addEventListener('touchstart', () => {
+timer = setTimeout(triggerMenu, 2000);
+}, {passive: true});
 ta.addEventListener('mouseup', () => clearTimeout(timer));
 ta.addEventListener('mouseleave', () => clearTimeout(timer));
 ta.addEventListener('touchend', () => clearTimeout(timer));
@@ -221,7 +226,6 @@ e.preventDefault();
 triggerMenu();
 });
 });
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 </script>
 </body>
 </html>
