@@ -49,9 +49,11 @@ outline: none;
 touch-action: auto;
 font-family: var(--font, sans-serif);
 -webkit-user-select: text;
--webkit-touch-callout: none;
--webkit-user-modify: read-write-plaintext-only;
+user-select: text;
+-webkit-touch-callout: default;
+-webkit-user-modify: read-write;
 }
+
 .img-preview {
 position: absolute;
 bottom: 10px;
@@ -128,7 +130,7 @@ store.put(data);
 function loadData() {
 container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
 container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
-const defFonts = ['Ceviche One', 'Copperplate', 'DIN Alternate', 'Luckiest Guy'];
+const defFonts = ['Copperplate', 'Ceviche One', 'DIN Alternate', 'Luckiest Guy'];
 const defBgs = ['#000080', '#005f00', '#870000', '#ff8700']; 
 const defColors = ['#FFD54F', '#E1BEE7', '#81C784', '#000000']; 
 textareas.forEach((ta, i) => {
@@ -217,7 +219,7 @@ const b = prompt("Background:", ta.style.getPropertyValue('--bg'));
 if (b) { ta.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
 const c = prompt("Color:", ta.style.getPropertyValue('--color'));
 if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
-}, 1800);
+}, 5000);
 });
 ta.addEventListener('touchend', () => clearTimeout(timer));
 });
