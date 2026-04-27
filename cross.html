@@ -219,26 +219,16 @@ const c = prompt("Color:", ta.style.getPropertyValue('--color'));
 if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
 };
 ta.addEventListener('mousedown', (e) => {
-if (e.button === 2) {
-timer = setTimeout(() => {
-triggerMenu();
-timer = null;
-}, 2000);
-}
-});
-ta.addEventListener('contextmenu', (e) => {
-if (timer === null) {
-e.preventDefault();
-} else {
-clearTimeout(timer);
+if (e.button === 0) {
+timer = setTimeout(triggerMenu, 2000);
 }
 });
 ta.addEventListener('touchstart', () => {
 timer = setTimeout(triggerMenu, 2000);
 }, {passive: true});
 ta.addEventListener('mouseup', () => clearTimeout(timer));
-ta.addEventListener('touchend', () => clearTimeout(timer));
 ta.addEventListener('mouseleave', () => clearTimeout(timer));
+ta.addEventListener('touchend', () => clearTimeout(timer));
 });
 </script>
 </body>
