@@ -45,7 +45,7 @@ line-height: 1.4;
 <body>
 
 <div class="logo-container">
-<div class="logo-text">A Trump Card Under</div>
+<div class="logo-text">Tap & Hold</div>
 <a href="index.html"><img src="logo.png" alt="Logo"></a>
 
 </div>
@@ -64,9 +64,77 @@ const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.rotateSpeed = -0.5;
 const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true, side: THREE.DoubleSide });
+
+const DB_NAME = 'GeometryDB';
+const STORE_NAME = 'meshStore';
+let db;
 let geometry = new THREE.IcosahedronGeometry(10, 0);
 let mesh = new THREE.Mesh(geometry, material);
 scene.add(mesh);
+const request = indexedDB.open(DB_NAME, 1);
+request.onupgradeneeded = (e) => {
+    db = e.target.result;
+    db.createObjectStore(STORE_NAME);
+};
+request.onsuccess = (e) => {
+    db = e.target.result;
+    loadState();
+};
+function saveState() {
+    const posAttr = mesh.geometry.attributes.position;
+    const vertices = Array.from(posAttr.array);
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    transaction.objectStore(STORE_NAME).put(vertices, 'currentVertices');
+    localStorage.setItem('cameraPos', JSON.stringify(camera.position));
+    localStorage.setItem('targetCenter', JSON.stringify(targetCenter));
+}
+function loadState() {
+    const transaction = db.transaction([STORE_NAME], 'readonly');
+    const getReq = transaction.objectStore(STORE_NAME).get('currentVertices');
+    getReq.onsuccess = () => {
+        if (getReq.result) {
+            const newGeo = new THREE.BufferGeometry();
+            newGeo.setAttribute('position', new THREE.Float32BufferAttribute(getReq.result, 3));
+            mesh.geometry.dispose();
+            mesh.geometry = newGeo;
+        }
+    };
+    const savedCam = localStorage.getItem('cameraPos');
+    if (savedCam) {
+        const p = JSON.parse(savedCam);
+        camera.position.set(p.x, p.y, p.z);
+    }
+    const savedTarget = localStorage.getItem('targetCenter');
+    if (savedTarget) {
+        const t = JSON.parse(savedTarget);
+        targetCenter.set(t.x, t.y, t.z);
+    }
+}
+function subdivideMidpoints(faceIndex, point) {
+    targetCenter.copy(point);
+    const posAttr = mesh.geometry.attributes.position;
+    const vA = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3);
+    const vB = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3 + 1);
+    const vC = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3 + 2);
+    const vP = point.clone();
+    const mAB = new THREE.Vector3().addVectors(vA, vB).multiplyScalar(0.5);
+    const mBC = new THREE.Vector3().addVectors(vB, vC).multiplyScalar(0.5);
+    const mCA = new THREE.Vector3().addVectors(vC, vA).multiplyScalar(0.5);
+    const newVertices = [
+        mAB.x, mAB.y, mAB.z, mBC.x, mBC.y, mBC.z, vP.x, vP.y, vP.z,
+        mBC.x, mBC.y, mBC.z, mCA.x, mCA.y, mCA.z, vP.x, vP.y, vP.z,
+        mCA.x, mCA.y, mCA.z, mAB.x, mAB.y, mAB.z, vP.x, vP.y, vP.z
+    ];
+    const oldPos = Array.from(posAttr.array);
+    oldPos.splice(faceIndex * 9, 9, ...newVertices);
+    const newGeo = new THREE.BufferGeometry();
+    newGeo.setAttribute('position', new THREE.Float32BufferAttribute(oldPos, 3));
+    mesh.geometry.dispose();
+    mesh.geometry = newGeo;
+    saveState();
+}
+window.addEventListener('blur', saveState);
+
 camera.position.set(0, 0, 0.1);
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
