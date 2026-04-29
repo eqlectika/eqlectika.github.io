@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Icosahedron Environment</title>
+<style>
+body { margin: 0; overflow: hidden; background: #000; touch-action: none; }
+canvas { display: block; }
+</style>
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.rotateSpeed = -0.5;
+const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true, side: THREE.DoubleSide });
+let geometry = new THREE.IcosahedronGeometry(10, 0);
+let mesh = new THREE.Mesh(geometry, material);
+scene.add(mesh);
+camera.position.set(0, 0, 0.1);
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const startMouse = new THREE.Vector2();
+const currentCenter = new THREE.Vector3(0, 0, 0);
+const targetCenter = new THREE.Vector3(0, 0, 0);
+let holdTimer = null;
+let isFlying = false;
+let startTime = 0;
+let flyDirection = new THREE.Vector3();
+let flyPhase = 'approach';
+let currentSpeed = 0;
+const maxSpeed = 0.3;
+const acceleration = 0.005;
+const bypassDistance = 2;
+function subdivideMidpoints(faceIndex, point) {
+targetCenter.copy(point);
+const posAttr = mesh.geometry.attributes.position;
+const vA = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3);
+const vB = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3 + 1);
+const vC = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3 + 2);
+const vP = point.clone();
+const mAB = new THREE.Vector3().addVectors(vA, vB).multiplyScalar(0.5);
+const mBC = new THREE.Vector3().addVectors(vB, vC).multiplyScalar(0.5);
+const mCA = new THREE.Vector3().addVectors(vC, vA).multiplyScalar(0.5);
+const newVertices = [
+mAB.x, mAB.y, mAB.z, mBC.x, mBC.y, mBC.z, vP.x, vP.y, vP.z,
+mBC.x, mBC.y, mBC.z, mCA.x, mCA.y, mCA.z, vP.x, vP.y, vP.z,
+mCA.x, mCA.y, mCA.z, mAB.x, mAB.y, mAB.z, vP.x, vP.y, vP.z
+];
+const oldPos = Array.from(posAttr.array);
+oldPos.splice(faceIndex * 9, 9, ...newVertices);
+const newGeo = new THREE.BufferGeometry();
+newGeo.setAttribute('position', new THREE.Float32BufferAttribute(oldPos, 3));
+mesh.geometry.dispose();
+mesh.geometry = newGeo;
+}
+function startFly() {
+isFlying = true;
+flyPhase = 'approach';
+const currentPos = camera.position.clone();
+const toCenter = new THREE.Vector3().subVectors(currentCenter, currentPos).normalize();
+const lateral = new THREE.Vector3(0, 1, 0).cross(toCenter).normalize().multiplyScalar(bypassDistance);
+flyDirection.copy(toCenter).add(lateral.multiplyScalar(0.2)).normalize();
+controls.enabled = false;
+}
+function onPointerDown(e) {
+const x = e.clientX || (e.touches && e.touches[0].clientX);
+const y = e.clientY || (e.touches && e.touches[0].clientY);
+mouse.x = (x / window.innerWidth) * 2 - 1;
+mouse.y = -(y / window.innerHeight) * 2 + 1;
+startMouse.set(x, y);
+startTime = Date.now();
+clearTimeout(holdTimer);
+holdTimer = setTimeout(startFly, 3000);
+}
+function onPointerMove(e) {
+if (!startTime) return;
+const x = e.clientX || (e.touches && e.touches[0].clientX);
+const y = e.clientY || (e.touches && e.touches[0].clientY);
+const dist = Math.hypot(x - startMouse.x, y - startMouse.y);
+if (dist > 5 && !isFlying) {
+clearTimeout(holdTimer);
+startTime = 0;
+}
+}
+function onPointerUp(e) {
+const duration = Date.now() - startTime;
+clearTimeout(holdTimer);
+if (startTime !== 0 && duration < 3000 && !isFlying) {
+raycaster.setFromCamera(mouse, camera);
+const intersects = raycaster.intersectObject(mesh);
+if (intersects.length > 0) {
+subdivideMidpoints(intersects[0].faceIndex, intersects[0].point);
+}
+}
+isFlying = false;
+startTime = 0;
+}
+function animate() {
+requestAnimationFrame(animate);
+currentCenter.lerp(targetCenter, 0.05);
+controls.target.copy(currentCenter);
+if (isFlying) {
+currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed);
+} else {
+currentSpeed = Math.max(currentSpeed - acceleration, 0);
+if (currentSpeed === 0 && !controls.enabled) controls.enabled = true;
+}
+if (currentSpeed > 0) {
+const distToCenter = camera.position.distanceTo(currentCenter);
+if (flyPhase === 'approach') {
+camera.position.addScaledVector(flyDirection, currentSpeed);
+if (distToCenter < bypassDistance + 1) flyPhase = 'bypass';
+} else if (flyPhase === 'bypass') {
+const relativePos = new THREE.Vector3().subVectors(camera.position, currentCenter);
+const tangent = new THREE.Vector3().crossVectors(relativePos, new THREE.Vector3(0, 1, 0)).normalize();
+camera.position.addScaledVector(tangent, currentSpeed);
+camera.position.addScaledVector(relativePos.normalize(), currentSpeed * 0.2);
+if (relativePos.normalize().dot(flyDirection) < -0.5) flyPhase = 'exit';
+} else {
+const exitDir = new THREE.Vector3().subVectors(camera.position, currentCenter).normalize();
+camera.position.addScaledVector(exitDir, currentSpeed);
+}
+camera.lookAt(currentCenter);
+}
+controls.update();
+renderer.render(scene, camera);
+}
+window.addEventListener('mousedown', onPointerDown);
+window.addEventListener('mousemove', onPointerMove);
+window.addEventListener('mouseup', onPointerUp);
+window.addEventListener('touchstart', onPointerDown, { passive: false });
+window.addEventListener('touchmove', onPointerMove, { passive: false });
+window.addEventListener('touchend', onPointerUp, { passive: false });
+window.addEventListener('resize', () => {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+});
+animate();
+
+
+
+
+
+
+</script>
+</body>
+</html>
