@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Icosahedron Pearl Deformer</title>
+<style>
+body { margin: 0; overflow: hidden; background: #000; touch-action: none; }
+canvas { display: block; }
+.logo-container {
+position: absolute;
+bottom: 20px;
+left: 50%;
+transform: translateX(-50%);
+display: flex;
+flex-direction: column;
+align-items: center;
+text-decoration: none;
+z-index: 10;
+pointer-events: none;
+}
+.logo-container img {
+height: 44px;
+width: auto;
+pointer-events: auto;
+margin-bottom: 8px;
+}
+.logo-text {
+color: #ffffff;
+font-family: 'Ubuntu', monospace;
+font-size: 0.7rem;
+letter-spacing: 2px;
+opacity: 0.8;
+text-align: center; 
+white-space: nowrap;
+line-height: 1.4;
+}
+</style>
+</head>
+<body>
+
+<div class="logo-container">
+<div class="logo-text">Tap & Hold</div>
+<a href="index.html"><img src="logo.png" alt="Logo"></a>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.rotateSpeed = -0.5;
+
+const pearlMaterial = new THREE.MeshStandardMaterial({ 
+    color: 0xffffff, 
+    metalness: 0.3,   
+    roughness: 0.4,   
+    side: THREE.DoubleSide,
+    flatShading: false,
+    transparent: true,
+    opacity: 0.5,
+    depthWrite: false
+});
+
+let geometry = new THREE.IcosahedronGeometry(10, 0);
+let mesh = new THREE.Mesh(geometry, pearlMaterial);
+scene.add(mesh);
+camera.position.set(0, 0, 30);
+
+const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+scene.add(hemisphereLight);
+
+const lights = [
+    { color: 0xff0000, pos: [20, 20, 20] },   
+    { color: 0x0000ff, pos: [-20, 20, 20] },  
+    { color: 0x00ff00, pos: [0, -20, 20] },   
+    { color: 0xffff00, pos: [0, 20, -20] }    
+];
+lights.forEach(l => {
+    const light = new THREE.PointLight(l.color, 2, 100);
+    light.position.set(l.pos[0], l.pos[1], l.pos[2]);
+    scene.add(light);
+});
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const startMouse = new THREE.Vector2();
+const currentCenter = new THREE.Vector3(0, 0, 0);
+const targetCenter = new THREE.Vector3(0, 0, 0);
+
+let holdTimer = null;
+let isFlying = false;
+let startTime = 0;
+let flyDirection = new THREE.Vector3();
+let flyPhase = 'approach';
+let currentSpeed = 0;
+const maxSpeed = 0.3;
+const acceleration = 0.005;
+const bypassDistance = 2;
+const pushDistance = 2;
+const interactionRadius = 5;
+const goldenRatio = 0.618;
+const maxGenerations = 3;
+
+function deformHierarchy(targetPoint) {
+    const posAttr = mesh.geometry.attributes.position;
+    const vertex = new THREE.Vector3();
+    const modifiedIndices = new Set();
+    for (let gen = 0; gen <= maxGenerations; gen++) {
+        const currentForce = Math.pow(goldenRatio, gen);
+        const currentRadius = interactionRadius * (gen + 1) * 0.5;
+        for (let i = 0; i < posAttr.count; i++) {
+            if (modifiedIndices.has(i)) continue;
+            vertex.fromBufferAttribute(posAttr, i);
+            const distance = vertex.distanceTo(targetPoint);
+            if (distance < currentRadius) {
+                const direction = vertex.clone().normalize();
+                vertex.add(direction.multiplyScalar(pushDistance * currentForce));
+                posAttr.setXYZ(i, vertex.x, vertex.y, vertex.z);
+                modifiedIndices.add(i);
+            }
+        }
+    }
+    posAttr.needsUpdate = true;
+}
+
+function subdivideHex(faceIndex, point) {
+    targetCenter.copy(point);
+    const posAttr = mesh.geometry.attributes.position;
+    const vP_base = point.clone().normalize().multiplyScalar(point.length() + pushDistance);
+    
+    deformHierarchy(point);
+
+    const vA = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3);
+    const vB = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3 + 1);
+    const vC = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3 + 2);
+    
+    const mAB = new THREE.Vector3().addVectors(vA, vB).multiplyScalar(0.5);
+    const mBC = new THREE.Vector3().addVectors(vB, vC).multiplyScalar(0.5);
+    const mCA = new THREE.Vector3().addVectors(vC, vA).multiplyScalar(0.5);
+
+    const newVertices = [
+        vA.x, vA.y, vA.z, mAB.x, mAB.y, mAB.z, vP_base.x, vP_base.y, vP_base.z,
+        mAB.x, mAB.y, mAB.z, vB.x, vB.y, vB.z, vP_base.x, vP_base.y, vP_base.z,
+        vB.x, vB.y, vB.z, mBC.x, mBC.y, mBC.z, vP_base.x, vP_base.y, vP_base.z,
+        mBC.x, mBC.y, mBC.z, vC.x, vC.y, vC.z, vP_base.x, vP_base.y, vP_base.z,
+        vC.x, vC.y, vC.z, mCA.x, mCA.y, mCA.z, vP_base.x, vP_base.y, vP_base.z,
+        mCA.x, mCA.y, mCA.z, vA.x, vA.y, vA.z, vP_base.x, vP_base.y, vP_base.z
+    ];
+
+    const oldPos = Array.from(posAttr.array);
+    oldPos.splice(faceIndex * 9, 9, ...newVertices);
+    const newGeo = new THREE.BufferGeometry();
+    newGeo.setAttribute('position', new THREE.Float32BufferAttribute(oldPos, 3));
+    newGeo.computeVertexNormals();
+    mesh.geometry.dispose();
+    mesh.geometry = newGeo;
+    
+    saveState();
+}
+
+function startFly() {
+    isFlying = true;
+    flyPhase = 'approach';
+    const currentPos = camera.position.clone();
+    const toCenter = new THREE.Vector3().subVectors(currentCenter, currentPos).normalize();
+    const lateral = new THREE.Vector3(0, 1, 0).cross(toCenter).normalize().multiplyScalar(bypassDistance);
+    flyDirection.copy(toCenter).add(lateral.multiplyScalar(0.2)).normalize();
+    controls.enabled = false;
+}
+
+function onPointerDown(e) {
+    const x = e.clientX || (e.touches && e.touches[0].clientX);
+    const y = e.clientY || (e.touches && e.touches[0].clientY);
+    mouse.x = (x / window.innerWidth) * 2 - 1;
+    mouse.y = -(y / window.innerHeight) * 2 + 1;
+    startMouse.set(x, y);
+    startTime = Date.now();
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(startFly, 1800);
+}
+
+function onPointerMove(e) {
+    if (!startTime) return;
+    const x = e.clientX || (e.touches && e.touches[0].clientX);
+    const y = e.clientY || (e.touches && e.touches[0].clientY);
+    const dist = Math.hypot(x - startMouse.x, y - startMouse.y);
+    if (dist > 5 && !isFlying) {
+        clearTimeout(holdTimer);
+        startTime = 0;
+    }
+}
+
+function onPointerUp(e) {
+    const duration = Date.now() - startTime;
+    clearTimeout(holdTimer);
+    if (startTime !== 0 && duration < 1800 && !isFlying) {
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObject(mesh);
+        if (intersects.length > 0) {
+            subdivideHex(intersects[0].faceIndex, intersects[0].point);
+        }
+    }
+    isFlying = false;
+    startTime = 0;
+}
+
+async function saveState() {
+    const position = Array.from(mesh.geometry.attributes.position.array);
+    localStorage.setItem('pearl_geometry_pos', JSON.stringify(position));
+    
+    const dbRequest = indexedDB.open('PearlDB', 1);
+    dbRequest.onupgradeneeded = (e) => e.target.result.createObjectStore('states');
+    dbRequest.onsuccess = (e) => {
+        const db = e.target.result;
+        db.transaction('states', 'readwrite').objectStore('states').put(position, 'last_pos');
+    };
+}
+
+async function loadState() {
+    const saved = localStorage.getItem('pearl_geometry_pos');
+    if (saved) {
+        const position = JSON.parse(saved);
+        const newGeo = new THREE.BufferGeometry();
+        newGeo.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
+        newGeo.computeVertexNormals();
+        mesh.geometry.dispose();
+        mesh.geometry = newGeo;
+    }
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    currentCenter.lerp(targetCenter, 0.05);
+    controls.target.copy(currentCenter);
+
+    if (isFlying) {
+        currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed);
+    } else {
+        currentSpeed = Math.max(currentSpeed - acceleration, 0);
+        if (currentSpeed === 0 && !controls.enabled) controls.enabled = true;
+    }
+
+    if (currentSpeed > 0) {
+        const distToCenter = camera.position.distanceTo(currentCenter);
+        if (flyPhase === 'approach') {
+            camera.position.addScaledVector(flyDirection, currentSpeed);
+            if (distToCenter < bypassDistance + 1) flyPhase = 'bypass';
+        } else if (flyPhase === 'bypass') {
+            const relativePos = new THREE.Vector3().subVectors(camera.position, currentCenter);
+            const tangent = new THREE.Vector3().crossVectors(relativePos, new THREE.Vector3(0, 1, 0)).normalize();
+            camera.position.addScaledVector(tangent, currentSpeed);
+            camera.position.addScaledVector(relativePos.normalize(), currentSpeed * 0.2);
+            if (relativePos.normalize().dot(flyDirection) < -0.5) flyPhase = 'exit';
+        } else {
+            const exitDir = new THREE.Vector3().subVectors(camera.position, currentCenter).normalize();
+            camera.position.addScaledVector(exitDir, currentSpeed);
+        }
+        camera.lookAt(currentCenter);
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+}
+
+window.addEventListener('mousedown', onPointerDown);
+window.addEventListener('mousemove', onPointerMove);
+window.addEventListener('mouseup', onPointerUp);
+window.addEventListener('touchstart', onPointerDown, { passive: false });
+window.addEventListener('touchmove', onPointerMove, { passive: false });
+window.addEventListener('touchend', onPointerUp, { passive: false });
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+loadState();
+animate();
+</script>
+</body>
+</html>
