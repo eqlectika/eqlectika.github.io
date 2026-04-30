@@ -8,53 +8,47 @@
 <style>
 body { margin: 0; overflow: hidden; background: #000; touch-action: none; user-select: none; }
 canvas { display: block; }
-.logo-container {
-position: absolute;
-bottom: 20px;
-left: 50%;
-transform: translateX(-50%);
-display: flex;
-flex-direction: column;
-align-items: center;
-text-decoration: none;
-z-index: 10;
-pointer-events: none;
-}
-.logo-container img {
-height: 44px;
-width: auto;
-pointer-events: auto;
-margin-bottom: 8px;
-}
+.controls-ui { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 20; }
 
-.logo-text {
-color: #00ff00;
-font-family: 'Ubuntu', monospace;
-font-size: 0.7rem;
-letter-spacing: 2px;
-user-select: none;
-opacity: 0.8;
-text-align: center;
-white-space: nowrap;
-line-height: 1.4;
+.mode-btn { 
+background: none !important;
+background-color: transparent !important;
+color: #00ff00; 
+padding: 8px 16px; 
+font-family: 'Ubuntu', monospace; 
+font-size: 0.7rem; 
+cursor: pointer; 
+letter-spacing: 1px; 
+transition: opacity 0.3s; 
+border: none !important;
+outline: none !important; 
+box-shadow: none !important;
+-webkit-tap-highlight-color: transparent;
+-webkit-appearance: none;
+width: 140px; 
+}
+.mode-btn:focus, .mode-btn:active, .mode-btn:visited {
+background: none !important;
+outline: none !important;
 }
 
 
+.logo-container { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; text-decoration: none; z-index: 10; pointer-events: none; }
+.logo-container img { height: 44px; width: auto; pointer-events: auto; margin-bottom: 8px; }
+.logo-text { color: #ffffff; font-family: 'Ubuntu', monospace; font-size: 0.7rem; letter-spacing: 2px; opacity: 0.8; text-align: center; white-space: nowrap; line-height: 1.4; }
 </style>
-</head>
+</head> 
 <body>
-
+<div class="controls-ui">
+<button id="toggleBtn" class="mode-btn">SOLID</button>
+</div>
 <div class="logo-container">
 <div class="logo-text">Tap • Scale • Rotate • Hold</div>
 <a href="index.html"><img src="logo.png" alt="Logo"></a>
-
 </div>
-
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -63,93 +57,73 @@ document.body.appendChild(renderer.domElement);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.rotateSpeed = -0.5;
-const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true, side: THREE.DoubleSide });
-
+const materials = {
+wire: new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true, side: THREE.DoubleSide }),
+solid: new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.8, roughness: 0.2, side: THREE.DoubleSide, transparent: true, opacity: 0.5, depthWrite: false })
+};
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+const pointLights = [
+{ color: 0xff0000, pos: [20, 20, 20] }, { color: 0x0000ff, pos: [-20, 20, 20] },
+{ color: 0x00ff00, pos: [0, -20, 20] }, { color: 0xffff00, pos: [0, 20, -20] }
+].map(l => {
+const light = new THREE.PointLight(l.color, 2, 100);
+light.position.set(...l.pos);
+return light;
+});
+let currentMode = 'wire';
+let geometry = new THREE.IcosahedronGeometry(10, 0);
+let mesh = new THREE.Mesh(geometry, materials.wire);
+scene.add(mesh);
+const toggleBtn = document.getElementById('toggleBtn');
+function toggleMode() {
+currentMode = currentMode === 'wire' ? 'solid' : 'wire';
+mesh.material = materials[currentMode];
+toggleBtn.textContent = currentMode === 'wire' ? 'SOLID' : 'WIRE';
+scene.remove(hemiLight);
+pointLights.forEach(l => scene.remove(l));
+if (currentMode === 'solid') {
+scene.add(hemiLight);
+pointLights.forEach(l => scene.add(l));
+mesh.geometry.computeVertexNormals();
+}
+saveState();
+}
+toggleBtn.onclick = toggleMode;
 const DB_NAME = 'GeometryDB';
 const STORE_NAME = 'meshStore';
 let db;
-let geometry = new THREE.IcosahedronGeometry(10, 0);
-let mesh = new THREE.Mesh(geometry, material);
-scene.add(mesh);
 const request = indexedDB.open(DB_NAME, 1);
-request.onupgradeneeded = (e) => {
-    db = e.target.result;
-    db.createObjectStore(STORE_NAME);
-};
-request.onsuccess = (e) => {
-    db = e.target.result;
-    loadState();
-};
+request.onupgradeneeded = (e) => { db = e.target.result; db.createObjectStore(STORE_NAME); };
+request.onsuccess = (e) => { db = e.target.result; loadState(); };
 function saveState() {
-    const posAttr = mesh.geometry.attributes.position;
-    const vertices = Array.from(posAttr.array);
-    const transaction = db.transaction([STORE_NAME], 'readwrite');
-    transaction.objectStore(STORE_NAME).put(vertices, 'currentVertices');
-    localStorage.setItem('cameraPos', JSON.stringify(camera.position));
-    localStorage.setItem('targetCenter', JSON.stringify(targetCenter));
+if(!db) return;
+const posAttr = mesh.geometry.attributes.position;
+const vertices = Array.from(posAttr.array);
+const transaction = db.transaction([STORE_NAME], 'readwrite');
+transaction.objectStore(STORE_NAME).put(vertices, 'currentVertices');
+localStorage.setItem('cameraPos', JSON.stringify(camera.position));
+localStorage.setItem('targetCenter', JSON.stringify(targetCenter));
+localStorage.setItem('visualMode', currentMode);
 }
 function loadState() {
-    const transaction = db.transaction([STORE_NAME], 'readonly');
-    const getReq = transaction.objectStore(STORE_NAME).get('currentVertices');
-    getReq.onsuccess = () => {
-        if (getReq.result) {
-            const newGeo = new THREE.BufferGeometry();
-            newGeo.setAttribute('position', new THREE.Float32BufferAttribute(getReq.result, 3));
-            mesh.geometry.dispose();
-            mesh.geometry = newGeo;
-        }
-    };
-    const savedCam = localStorage.getItem('cameraPos');
-    if (savedCam) {
-        const p = JSON.parse(savedCam);
-        camera.position.set(p.x, p.y, p.z);
-    }
-    const savedTarget = localStorage.getItem('targetCenter');
-    if (savedTarget) {
-        const t = JSON.parse(savedTarget);
-        targetCenter.set(t.x, t.y, t.z);
-    }
+const transaction = db.transaction([STORE_NAME], 'readonly');
+const getReq = transaction.objectStore(STORE_NAME).get('currentVertices');
+getReq.onsuccess = () => {
+if (getReq.result) {
+const newGeo = new THREE.BufferGeometry();
+newGeo.setAttribute('position', new THREE.Float32BufferAttribute(getReq.result, 3));
+if(currentMode === 'solid') newGeo.computeVertexNormals();
+mesh.geometry.dispose();
+mesh.geometry = newGeo;
 }
-function subdivideMidpoints(faceIndex, point) {
-    targetCenter.copy(point);
-    const posAttr = mesh.geometry.attributes.position;
-    const vA = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3);
-    const vB = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3 + 1);
-    const vC = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3 + 2);
-    const vP = point.clone();
-    const mAB = new THREE.Vector3().addVectors(vA, vB).multiplyScalar(0.5);
-    const mBC = new THREE.Vector3().addVectors(vB, vC).multiplyScalar(0.5);
-    const mCA = new THREE.Vector3().addVectors(vC, vA).multiplyScalar(0.5);
-    const newVertices = [
-        mAB.x, mAB.y, mAB.z, mBC.x, mBC.y, mBC.z, vP.x, vP.y, vP.z,
-        mBC.x, mBC.y, mBC.z, mCA.x, mCA.y, mCA.z, vP.x, vP.y, vP.z,
-        mCA.x, mCA.y, mCA.z, mAB.x, mAB.y, mAB.z, vP.x, vP.y, vP.z
-    ];
-    const oldPos = Array.from(posAttr.array);
-    oldPos.splice(faceIndex * 9, 9, ...newVertices);
-    const newGeo = new THREE.BufferGeometry();
-    newGeo.setAttribute('position', new THREE.Float32BufferAttribute(oldPos, 3));
-    mesh.geometry.dispose();
-    mesh.geometry = newGeo;
-    saveState();
+};
+const savedCam = localStorage.getItem('cameraPos');
+if (savedCam) { const p = JSON.parse(savedCam); camera.position.set(p.x, p.y, p.z); }
+const savedTarget = localStorage.getItem('targetCenter');
+if (savedTarget) { const t = JSON.parse(savedTarget); targetCenter.set(t.x, t.y, t.z); }
+const savedMode = localStorage.getItem('visualMode');
+if (savedMode && savedMode !== currentMode) toggleMode();
 }
-window.addEventListener('blur', saveState);
-
-camera.position.set(0, 0, 0.1);
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-const startMouse = new THREE.Vector2();
-const currentCenter = new THREE.Vector3(0, 0, 0);
-const targetCenter = new THREE.Vector3(0, 0, 0);
-let holdTimer = null;
-let isFlying = false;
-let startTime = 0;
-let flyDirection = new THREE.Vector3();
-let flyPhase = 'approach';
-let currentSpeed = 0;
-const maxSpeed = 0.1;
-const acceleration = 0.001;
-const bypassDistance = 1;
 function subdivideMidpoints(faceIndex, point) {
 targetCenter.copy(point);
 const posAttr = mesh.geometry.attributes.position;
@@ -169,9 +143,20 @@ const oldPos = Array.from(posAttr.array);
 oldPos.splice(faceIndex * 9, 9, ...newVertices);
 const newGeo = new THREE.BufferGeometry();
 newGeo.setAttribute('position', new THREE.Float32BufferAttribute(oldPos, 3));
+if(currentMode === 'solid') newGeo.computeVertexNormals();
 mesh.geometry.dispose();
 mesh.geometry = newGeo;
+saveState();
 }
+camera.position.set(0, 0, 30);
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const startMouse = new THREE.Vector2();
+const currentCenter = new THREE.Vector3(0, 0, 0);
+const targetCenter = new THREE.Vector3(0, 0, 0);
+let holdTimer = null, isFlying = false, startTime = 0, currentSpeed = 0;
+let flyDirection = new THREE.Vector3(), flyPhase = 'approach';
+const maxSpeed = 0.1, acceleration = 0.001, bypassDistance = 1;
 function startFly() {
 isFlying = true;
 flyPhase = 'approach';
@@ -195,21 +180,15 @@ function onPointerMove(e) {
 if (!startTime) return;
 const x = e.clientX || (e.touches && e.touches[0].clientX);
 const y = e.clientY || (e.touches && e.touches[0].clientY);
-const dist = Math.hypot(x - startMouse.x, y - startMouse.y);
-if (dist > 5 && !isFlying) {
-clearTimeout(holdTimer);
-startTime = 0;
+if (Math.hypot(x - startMouse.x, y - startMouse.y) > 5 && !isFlying) { clearTimeout(holdTimer); startTime = 0; }
 }
-}
-function onPointerUp(e) {
+function onPointerUp() {
 const duration = Date.now() - startTime;
 clearTimeout(holdTimer);
 if (startTime !== 0 && duration < 1800 && !isFlying) {
 raycaster.setFromCamera(mouse, camera);
 const intersects = raycaster.intersectObject(mesh);
-if (intersects.length > 0) {
-subdivideMidpoints(intersects[0].faceIndex, intersects[0].point);
-}
+if (intersects.length > 0) subdivideMidpoints(intersects[0].faceIndex, intersects[0].point);
 }
 isFlying = false;
 startTime = 0;
@@ -218,12 +197,8 @@ function animate() {
 requestAnimationFrame(animate);
 currentCenter.lerp(targetCenter, 0.05);
 controls.target.copy(currentCenter);
-if (isFlying) {
-currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed);
-} else {
-currentSpeed = Math.max(currentSpeed - acceleration, 0);
-if (currentSpeed === 0 && !controls.enabled) controls.enabled = true;
-}
+if (isFlying) { currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed); } 
+else { currentSpeed = Math.max(currentSpeed - acceleration, 0); if (currentSpeed === 0 && !controls.enabled) controls.enabled = true; }
 if (currentSpeed > 0) {
 const distToCenter = camera.position.distanceTo(currentCenter);
 if (flyPhase === 'approach') {
@@ -255,9 +230,8 @@ camera.aspect = window.innerWidth / window.innerHeight;
 camera.updateProjectionMatrix();
 renderer.setSize(window.innerWidth, window.innerHeight);
 });
+window.addEventListener('blur', saveState);
 animate();
-
-
 </script>
 </body>
 </html>
