@@ -19,7 +19,7 @@ canvas { display: block; }
 <button id="toggleMode" class="mode-toggle">Hopper</button>
 </div>
 <div class="logo-container">
-    <div class="logo-text">Tap to Grow • Hold to Fly</div>
+    <div class="logo-text">Tap • Rotate • Scale • Pan • Hold</div>
 <a href="index.html"><img src="logo.png" alt="Logo"></a>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -35,9 +35,15 @@ const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 const group = new THREE.Group();
 scene.add(group);
-const lights = [new THREE.PointLight(0xffffff, 5, 100), new THREE.AmbientLight(0xffffff, 0.5)];
+const lights = [
+new THREE.PointLight(0xffffff, 5, 100),
+new THREE.PointLight(0xffffff, 4, 100),
+new THREE.AmbientLight(0xffffff, 0.5)
+];
 lights[0].position.set(15, 15, 15);
+lights[1].position.set(-15, -15, -15);
 scene.add(...lights);
+
 camera.position.set(12, 12, 12);
 let currentMode = 'quadtree';
 const material = new THREE.MeshStandardMaterial({ metalness: 0.7, roughness: 0.2, transparent: true, opacity: 0.6, side: THREE.DoubleSide, flatShading: true });
