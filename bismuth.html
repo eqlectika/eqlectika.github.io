@@ -18,7 +18,9 @@ canvas { display: block; }
 <body>
 <div class="interface">
 <button id="toggleMode" class="mode-toggle">Hopper</button>
+<button id="undoBtn" class="mode-toggle" style="border:none; background:none; pointer-events: auto;">Undo</button>
 </div>
+
 <div class="logo-container">
     <div class="logo-text">Tap • Rotate • Scale • Pan • Hold</div>
 <a href="index.html"><img src="logo.png" alt="Logo"></a>
@@ -26,6 +28,7 @@ canvas { display: block; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
+let history = [];
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -65,19 +68,44 @@ const startMouse = new THREE.Vector2();
 function saveState() {
 const data = group.children.map(m => ({
 depth: m.userData.depth,
-corners: m.userData.corners
+corners: m.userData.corners.map(c => c.clone())
 }));
-localStorage.setItem('bismuth_state', JSON.stringify(data));
+const snapshot = JSON.stringify(data);
+if (history.length === 0 || history[history.length - 1] !== snapshot) {
+history.push(snapshot);
+if (history.length > 30) history.shift();
 }
+localStorage.setItem('bismuth_state', snapshot);
+}
+
+
 function loadState() {
 const saved = localStorage.getItem('bismuth_state');
 if (!saved) return initBase();
 const data = JSON.parse(saved);
+// Очищаем историю перед загрузкой и кладем в нее только начальное состояние
+history = [saved]; 
 data.forEach(d => {
 const c = d.corners.map(p => new THREE.Vector3(p.x, p.y, p.z));
 createRect(c[0], c[1], c[2], c[3], d.depth, false);
 });
 }
+
+
+function undo() {
+if (history.length <= 1) return;
+history.pop();
+const previousState = JSON.parse(history[history.length - 1]);
+while(group.children.length > 0) { group.remove(group.children[0]); }
+previousState.forEach(d => {
+const c = d.corners.map(p => new THREE.Vector3(p.x, p.y, p.z));
+// Параметр save установлен в false, чтобы не засорять историю при откате
+createRect(c[0], c[1], c[2], c[3], d.depth, false);
+});
+localStorage.setItem('bismuth_state', JSON.stringify(previousState));
+}
+
+
 function initBase() {
 const s = 4;
 const pts = [new THREE.Vector3(-s,s,s), new THREE.Vector3(s,s,s), new THREE.Vector3(s,-s,s), new THREE.Vector3(-s,-s,s), new THREE.Vector3(-s,s,-s), new THREE.Vector3(s,s,-s), new THREE.Vector3(s,-s,-s), new THREE.Vector3(-s,-s,-s)];
@@ -116,15 +144,17 @@ flyDirection.copy(toCenter).add(lateral.multiplyScalar(0.2)).normalize();
 controls.enabled = false;
 }
 function onDown(e) {
-const x = e.clientX || (e.touches && e.touches[0].clientX);
-const y = e.clientY || (e.touches && e.touches[0].clientY);
-mouse.x = (x / window.innerWidth) * 2 - 1;
-mouse.y = -(y / window.innerHeight) * 2 + 1;
-startMouse.set(x, y);
-startTime = Date.now();
-clearTimeout(holdTimer);
-holdTimer = setTimeout(startFly, 1800);
+    if (e.target.tagName === 'BUTTON') return; // Игнорировать, если нажата кнопка
+    const x = e.clientX || (e.touches && e.touches[0].clientX);
+    const y = e.clientY || (e.touches && e.touches[0].clientY);
+    mouse.x = (x / window.innerWidth) * 2 - 1;
+    mouse.y = -(y / window.innerHeight) * 2 + 1;
+    startMouse.set(x, y);
+    startTime = Date.now();
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(startFly, 1800);
 }
+
 function onMove(e) {
 if (!startTime) return;
 const x = e.clientX || (e.touches && e.touches[0].clientX);
@@ -135,20 +165,31 @@ clearTimeout(holdTimer);
 startTime = 0;
 }
 }
-function onUp() {
-clearTimeout(holdTimer);
-if (startTime !== 0 && Date.now() - startTime < 1800 && !isFlying) {
-raycaster.setFromCamera(mouse, camera);
-const hits = raycaster.intersectObjects(group.children);
-if (hits.length > 0) grow(hits[0].object);
+function onUp(e) {
+    if (e.target.tagName === 'BUTTON') {
+        clearTimeout(holdTimer);
+        startTime = 0;
+        return;
+    }
+    clearTimeout(holdTimer);
+    if (startTime !== 0 && Date.now() - startTime < 1800 && !isFlying) {
+        raycaster.setFromCamera(mouse, camera);
+        const hits = raycaster.intersectObjects(group.children);
+        if (hits.length > 0) grow(hits[0].object);
+    }
+    isFlying = false;
+    startTime = 0;
 }
-isFlying = false;
-startTime = 0;
-}
+
 document.getElementById('toggleMode').addEventListener('click', (e) => {
 currentMode = (currentMode === 'quadtree') ? 'hopper' : 'quadtree';
 e.target.innerText = `${currentMode === 'quadtree' ? 'Hopper' : 'Quadtree'}`;
 });
+document.getElementById('undoBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    undo();
+});
+
 window.addEventListener('mousedown', onDown);
 window.addEventListener('mousemove', onMove);
 window.addEventListener('mouseup', onUp);
