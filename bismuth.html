@@ -48,17 +48,20 @@ scene.add(...lights);
 camera.position.set(12, 12, 12);
 let currentMode = 'quadtree';
 const material = new THREE.MeshStandardMaterial({ metalness: 0.7, roughness: 0.2, transparent: true, opacity: 0.6, side: THREE.DoubleSide, flatShading: true });
-function createRect(p1, p2, p3, p4, depth, save = true) {
-const geo = new THREE.BufferGeometry();
-const v = [p1.x,p1.y,p1.z, p2.x,p2.y,p2.z, p3.x,p3.y,p3.z, p3.x,p3.y,p3.z, p4.x,p4.y,p4.z, p1.x,p1.y,p1.z];
-geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
-geo.computeVertexNormals();
-const mesh = new THREE.Mesh(geo, material.clone());
-mesh.material.color.setHSL((depth * 0.12) % 1, 0.8, 0.5);
-mesh.userData = { isBismuth: true, depth: depth, corners: [p1.clone(), p2.clone(), p3.clone(), p4.clone()] };
-group.add(mesh);
-if (save) saveState();
-}
+const targetCenter = new THREE.Vector3(0, 0, 0);
+const currentCenter = new THREE.Vector3(0, 0, 0);
+let holdTimer = null;
+let isFlying = false;
+let startTime = 0;
+let flyDirection = new THREE.Vector3();
+let flyPhase = 'approach';
+let currentSpeed = 0;
+const maxSpeed = 0.1;
+const acceleration = 0.001;
+const bypassDistance = 1;
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const startMouse = new THREE.Vector2();
 function saveState() {
 const data = group.children.map(m => ({
 depth: m.userData.depth,
@@ -81,6 +84,17 @@ const pts = [new THREE.Vector3(-s,s,s), new THREE.Vector3(s,s,s), new THREE.Vect
 [[pts[0],pts[1],pts[2],pts[3]], [pts[1],pts[5],pts[6],pts[2]], [pts[5],pts[4],pts[7],pts[6]], [pts[4],pts[0],pts[3],pts[7]], [pts[4],pts[5],pts[1],pts[0]], [pts[3],pts[2],pts[6],pts[7]]].forEach(f => createRect(f[0], f[1], f[2], f[3], 0, false));
 saveState();
 }
+function createRect(p1, p2, p3, p4, depth, save = true) {
+const geo = new THREE.BufferGeometry();
+const v = [p1.x,p1.y,p1.z, p2.x,p2.y,p2.z, p3.x,p3.y,p3.z, p3.x,p3.y,p3.z, p4.x,p4.y,p4.z, p1.x,p1.y,p1.z];
+geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+geo.computeVertexNormals();
+const mesh = new THREE.Mesh(geo, material.clone());
+mesh.material.color.setHSL((depth * 0.12) % 1, 0.8, 0.5);
+mesh.userData = { isBismuth: true, depth: depth, corners: [p1.clone(), p2.clone(), p3.clone(), p4.clone()] };
+group.add(mesh);
+if (save) saveState();
+}
 function grow(mesh) {
 const c = mesh.userData.corners; const d = mesh.userData.depth + 1; if (d > 10) return;
 const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
@@ -92,57 +106,92 @@ group.remove(mesh);
 createRect(c[0], c[1], inner[1], inner[0], d, false); createRect(c[1], c[2], inner[2], inner[1], d, false); createRect(c[2], c[3], inner[3], inner[2], d, false); createRect(c[3], c[0], inner[0], inner[3], d, false); createRect(inner[0], inner[1], inner[2], inner[3], d, false);
 saveState();
 }
-document.getElementById('toggleMode').addEventListener('click', (e) => {
-currentMode = (currentMode === 'quadtree') ? 'hopper' : 'quadtree';
-e.target.innerText = `${currentMode === 'quadtree' ? 'Hopper' : 'Quadtree'}`;
-});
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-const targetCenter = new THREE.Vector3(0, 0, 0);
-let holdTimer = null; let isFlying = false; let startTime = 0; let flyDirection = new THREE.Vector3(); let flyPhase = 'approach'; let currentSpeed = 0;
-const maxSpeed = 0.15; const acceleration = 0.005; const bypassDistance = 5;
 function startFly() {
-isFlying = true; flyPhase = 'approach';
-const toCenter = new THREE.Vector3().subVectors(targetCenter, camera.position).normalize();
-flyDirection.copy(toCenter).add(new THREE.Vector3(0, 1, 0).cross(toCenter).normalize().multiplyScalar(0.2)).normalize();
+isFlying = true;
+flyPhase = 'approach';
+const currentPos = camera.position.clone();
+const toCenter = new THREE.Vector3().subVectors(currentCenter, currentPos).normalize();
+const lateral = new THREE.Vector3(0, 1, 0).cross(toCenter).normalize().multiplyScalar(bypassDistance);
+flyDirection.copy(toCenter).add(lateral.multiplyScalar(0.2)).normalize();
 controls.enabled = false;
 }
 function onDown(e) {
 const x = e.clientX || (e.touches && e.touches[0].clientX);
 const y = e.clientY || (e.touches && e.touches[0].clientY);
-mouse.set((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+mouse.x = (x / window.innerWidth) * 2 - 1;
+mouse.y = -(y / window.innerHeight) * 2 + 1;
+startMouse.set(x, y);
 startTime = Date.now();
-holdTimer = setTimeout(startFly, 1200);
+clearTimeout(holdTimer);
+holdTimer = setTimeout(startFly, 1800);
+}
+function onMove(e) {
+if (!startTime) return;
+const x = e.clientX || (e.touches && e.touches[0].clientX);
+const y = e.clientY || (e.touches && e.touches[0].clientY);
+const dist = Math.hypot(x - startMouse.x, y - startMouse.y);
+if (dist > 5 && !isFlying) {
+clearTimeout(holdTimer);
+startTime = 0;
+}
 }
 function onUp() {
 clearTimeout(holdTimer);
-if (Date.now() - startTime < 1200 && !isFlying) {
+if (startTime !== 0 && Date.now() - startTime < 1800 && !isFlying) {
 raycaster.setFromCamera(mouse, camera);
 const hits = raycaster.intersectObjects(group.children);
 if (hits.length > 0) grow(hits[0].object);
 }
-isFlying = false; startTime = 0;
+isFlying = false;
+startTime = 0;
 }
-window.addEventListener('mousedown', onDown); window.addEventListener('mouseup', onUp);
-window.addEventListener('touchstart', onDown, { passive: false }); window.addEventListener('touchend', onUp, { passive: false });
+document.getElementById('toggleMode').addEventListener('click', (e) => {
+currentMode = (currentMode === 'quadtree') ? 'hopper' : 'quadtree';
+e.target.innerText = `${currentMode === 'quadtree' ? 'Hopper' : 'Quadtree'}`;
+});
+window.addEventListener('mousedown', onDown);
+window.addEventListener('mousemove', onMove);
+window.addEventListener('mouseup', onUp);
+window.addEventListener('touchstart', onDown, { passive: false });
+window.addEventListener('touchmove', onMove, { passive: false });
+window.addEventListener('touchend', onUp, { passive: false });
 function animate() {
 requestAnimationFrame(animate);
-if (isFlying) { currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed); } 
-else { currentSpeed = Math.max(currentSpeed - acceleration, 0); if (currentSpeed === 0) controls.enabled = true; }
+currentCenter.lerp(targetCenter, 0.05);
+if (isFlying) {
+currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed);
+} else {
+currentSpeed = Math.max(currentSpeed - acceleration, 0);
+if (currentSpeed === 0 && !controls.enabled) controls.enabled = true;
+}
 if (currentSpeed > 0) {
-const dist = camera.position.distanceTo(targetCenter);
-if (flyPhase === 'approach') { camera.position.addScaledVector(flyDirection, currentSpeed); if (dist < bypassDistance) flyPhase = 'bypass'; }
-else if (flyPhase === 'bypass') {
-const rel = new THREE.Vector3().subVectors(camera.position, targetCenter);
-camera.position.addScaledVector(new THREE.Vector3().crossVectors(rel, new THREE.Vector3(0, 1, 0)).normalize(), currentSpeed);
-camera.position.addScaledVector(rel.normalize(), currentSpeed * 0.1);
+const distToCenter = camera.position.distanceTo(currentCenter);
+if (flyPhase === 'approach') {
+camera.position.addScaledVector(flyDirection, currentSpeed);
+if (distToCenter < bypassDistance + 1) flyPhase = 'bypass';
+} else if (flyPhase === 'bypass') {
+const relativePos = new THREE.Vector3().subVectors(camera.position, currentCenter);
+const tangent = new THREE.Vector3().crossVectors(relativePos, new THREE.Vector3(0, 1, 0)).normalize();
+camera.position.addScaledVector(tangent, currentSpeed);
+camera.position.addScaledVector(relativePos.normalize(), currentSpeed * 0.2);
+if (relativePos.normalize().dot(flyDirection) < -0.5) flyPhase = 'exit';
+} else {
+const exitDir = new THREE.Vector3().subVectors(camera.position, currentCenter).normalize();
+camera.position.addScaledVector(exitDir, currentSpeed);
 }
-camera.lookAt(targetCenter);
+camera.lookAt(currentCenter);
 }
-controls.update(); renderer.render(scene, camera);
+controls.update();
+renderer.render(scene, camera);
 }
-loadState(); animate();
-window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+loadState();
+animate();
+window.addEventListener('resize', () => {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
 
 </script>
 </body>
