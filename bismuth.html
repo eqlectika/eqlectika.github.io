@@ -6,10 +6,10 @@
 <link rel="manifest" href="manifest-bismuth.json">
 <title>Bismuth Laboratory Persistent</title>
 <style>
-body { margin: 0; overflow: hidden; background: #000; touch-action: none; user-select: none; font-family: 'Ubuntu', monospace; select-user: none; }
+body { margin: 0; overflow: hidden; background: #000; touch-action: none; user-select: none; font-family: 'Ubuntu', monospace; }
 canvas { display: block; }
-.interface { position: absolute; top: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 10; pointer-events: none; }
-.mode-toggle { background: none; border: none; color: #00ff00; padding: 10px 20px; font-size: 0.8rem; letter-spacing: 2px; cursor: pointer; pointer-events: auto; text-transform: uppercase; outline: none; -webkit-tap-highlight-color: transparent; }
+.interface { position: absolute; top: 20px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 15px; z-index: 10; pointer-events: none; }
+.mode-toggle { background: none; border: none; color: #00ff00; padding: 10px; font-size: 0.7rem; letter-spacing: 2px; cursor: pointer; pointer-events: auto; text-transform: uppercase; outline: none; min-width: 80px; -webkit-tap-highlight-color: transparent; }
 .logo-container { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 10; pointer-events: none; }
 .logo-text { color: #ffffff; font-size: 0.7rem; letter-spacing: 2px; opacity: 0.8; text-align: center; margin-bottom: 8px; width: 100%; white-space: nowrap; }
 .logo-container img { height: 44px; width: auto; pointer-events: auto; }
@@ -17,20 +17,18 @@ canvas { display: block; }
 </head>
 <body>
 <div class="interface">
-<button id="toggleMode" class="mode-toggle">Hopper</button>
-
+<button id="deleteMode" class="mode-toggle">Build</button>
+<button id="toggleMode" class="mode-toggle">Tree</button>
+<button id="undoBtn" class="mode-toggle">Undo</button>
 </div>
-
 <div class="logo-container">
-    <button id="undoBtn" class="mode-toggle" style="border:none; background:none; pointer-events: auto;">Undo</button>
-    <div class="logo-text">Tap • Rotate • Scale • Pan • Hold</div>
+<div class="logo-text">Tap • Rotate • Scale • Pan • Hold</div>
 <a href="index.html"><img src="logo.png" alt="Logo"></a>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 let history = [];
-
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -41,36 +39,20 @@ const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 const group = new THREE.Group();
 scene.add(group);
-const lights = [
-new THREE.PointLight(0xffffff, 5, 100),
-new THREE.PointLight(0xffffff, 4, 100),
-new THREE.AmbientLight(0xffffff, 0.5)
-];
+const lights = [new THREE.PointLight(0xffffff, 5, 100), new THREE.PointLight(0xffffff, 4, 100), new THREE.AmbientLight(0xffffff, 0.5)];
 lights[0].position.set(15, 15, 15);
 lights[1].position.set(-15, -15, -15);
 scene.add(...lights);
 camera.position.set(12, 12, 12);
-let currentMode = 'quadtree';
+let currentMode = 'tree';
+let isDeleteMode = false;
 const material = new THREE.MeshStandardMaterial({ metalness: 0.7, roughness: 0.2, transparent: true, opacity: 0.6, side: THREE.DoubleSide, flatShading: true });
-const targetCenter = new THREE.Vector3(0, 0, 0);
 const currentCenter = new THREE.Vector3(0, 0, 0);
-let holdTimer = null;
-let isFlying = false;
-let startTime = 0;
-let flyDirection = new THREE.Vector3();
-let flyPhase = 'approach';
-let currentSpeed = 0;
-const maxSpeed = 0.1;
-const acceleration = 0.001;
-const bypassDistance = 1;
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-const startMouse = new THREE.Vector2();
+let holdTimer = null, isFlying = false, startTime = 0, flyDirection = new THREE.Vector3(), flyPhase = 'approach', currentSpeed = 0;
+const maxSpeed = 0.1, acceleration = 0.001, bypassDistance = 1;
+const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), startMouse = new THREE.Vector2();
 function saveState() {
-const data = group.children.map(m => ({
-depth: m.userData.depth,
-corners: m.userData.corners.map(c => c.clone())
-}));
+const data = group.children.map(m => ({ depth: m.userData.depth, corners: m.userData.corners.map(c => c.clone()) }));
 const snapshot = JSON.stringify(data);
 if (history.length === 0 || history[history.length - 1] !== snapshot) {
 history.push(snapshot);
@@ -78,21 +60,15 @@ if (history.length > 30) history.shift();
 }
 localStorage.setItem('bismuth_state', snapshot);
 }
-
-
 function loadState() {
 const saved = localStorage.getItem('bismuth_state');
 if (!saved) return initBase();
-const data = JSON.parse(saved);
-// Очищаем историю перед загрузкой и кладем в нее только начальное состояние
-history = [saved]; 
-data.forEach(d => {
+history = [saved];
+JSON.parse(saved).forEach(d => {
 const c = d.corners.map(p => new THREE.Vector3(p.x, p.y, p.z));
 createRect(c[0], c[1], c[2], c[3], d.depth, false);
 });
 }
-
-
 function undo() {
 if (history.length <= 1) return;
 history.pop();
@@ -100,13 +76,10 @@ const previousState = JSON.parse(history[history.length - 1]);
 while(group.children.length > 0) { group.remove(group.children[0]); }
 previousState.forEach(d => {
 const c = d.corners.map(p => new THREE.Vector3(p.x, p.y, p.z));
-// Параметр save установлен в false, чтобы не засорять историю при откате
 createRect(c[0], c[1], c[2], c[3], d.depth, false);
 });
 localStorage.setItem('bismuth_state', JSON.stringify(previousState));
 }
-
-
 function initBase() {
 const s = 4;
 const pts = [new THREE.Vector3(-s,s,s), new THREE.Vector3(s,s,s), new THREE.Vector3(s,-s,s), new THREE.Vector3(-s,-s,s), new THREE.Vector3(-s,s,-s), new THREE.Vector3(s,s,-s), new THREE.Vector3(s,-s,-s), new THREE.Vector3(-s,-s,-s)];
@@ -125,116 +98,81 @@ group.add(mesh);
 if (save) saveState();
 }
 function grow(mesh) {
-const c = mesh.userData.corners; const d = mesh.userData.depth + 1; if (d > 10) return;
+const c = mesh.userData.corners, d = mesh.userData.depth + 1; if (d > 10) return;
 const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
 const normal = new THREE.Vector3().crossVectors(v1, new THREE.Vector3().subVectors(c[3], c[0])).normalize();
 const center = new THREE.Vector3().add(c[0]).add(c[1]).add(c[2]).add(c[3]).divideScalar(4);
-const offset = normal.multiplyScalar(currentMode === 'quadtree' ? 1.2 : v1.length() * 0.15);
+const offset = normal.multiplyScalar(currentMode === 'tree' ? 1.2 : v1.length() * 0.15);
 const inner = c.map(p => p.clone().lerp(center, 0.2).sub(offset));
 group.remove(mesh);
 createRect(c[0], c[1], inner[1], inner[0], d, false); createRect(c[1], c[2], inner[2], inner[1], d, false); createRect(c[2], c[3], inner[3], inner[2], d, false); createRect(c[3], c[0], inner[0], inner[3], d, false); createRect(inner[0], inner[1], inner[2], inner[3], d, false);
 saveState();
 }
 function startFly() {
-isFlying = true;
-flyPhase = 'approach';
+isFlying = true; flyPhase = 'approach';
 const currentPos = camera.position.clone();
 const toCenter = new THREE.Vector3().subVectors(currentCenter, currentPos).normalize();
 const lateral = new THREE.Vector3(0, 1, 0).cross(toCenter).normalize().multiplyScalar(bypassDistance);
 flyDirection.copy(toCenter).add(lateral.multiplyScalar(0.2)).normalize();
 controls.enabled = false;
 }
+document.getElementById('deleteMode').addEventListener('click', (e) => {
+e.stopPropagation(); isDeleteMode = !isDeleteMode;
+e.target.innerText = isDeleteMode ? 'Delete' : 'Build';
+e.target.style.color = isDeleteMode ? '#ff0000' : '#00ff00';
+});
+document.getElementById('toggleMode').addEventListener('click', (e) => {
+e.stopPropagation();
+currentMode = (currentMode === 'tree') ? 'hopper' : 'tree';
+e.target.innerText = currentMode === 'tree' ? 'Tree' : 'Hopper';
+});
+document.getElementById('undoBtn').addEventListener('click', (e) => { e.stopPropagation(); undo(); });
 function onDown(e) {
-    if (e.target.tagName === 'BUTTON') return; // Игнорировать, если нажата кнопка
-    const x = e.clientX || (e.touches && e.touches[0].clientX);
-    const y = e.clientY || (e.touches && e.touches[0].clientY);
-    mouse.x = (x / window.innerWidth) * 2 - 1;
-    mouse.y = -(y / window.innerHeight) * 2 + 1;
-    startMouse.set(x, y);
-    startTime = Date.now();
-    clearTimeout(holdTimer);
-    holdTimer = setTimeout(startFly, 1800);
-}
-
-function onMove(e) {
-if (!startTime) return;
-const x = e.clientX || (e.touches && e.touches[0].clientX);
-const y = e.clientY || (e.touches && e.touches[0].clientY);
-const dist = Math.hypot(x - startMouse.x, y - startMouse.y);
-if (dist > 5 && !isFlying) {
-clearTimeout(holdTimer);
-startTime = 0;
-}
+if (e.target.tagName === 'BUTTON') return;
+const x = e.clientX || (e.touches && e.touches[0].clientX), y = e.clientY || (e.touches && e.touches[0].clientY);
+mouse.x = (x / window.innerWidth) * 2 - 1; mouse.y = -(y / window.innerHeight) * 2 + 1;
+startMouse.set(x, y); startTime = Date.now();
+clearTimeout(holdTimer); holdTimer = setTimeout(startFly, 1800);
 }
 function onUp(e) {
-    if (e.target.tagName === 'BUTTON') {
-        clearTimeout(holdTimer);
-        startTime = 0;
-        return;
-    }
-    clearTimeout(holdTimer);
-    if (startTime !== 0 && Date.now() - startTime < 1800 && !isFlying) {
-        raycaster.setFromCamera(mouse, camera);
-        const hits = raycaster.intersectObjects(group.children);
-        if (hits.length > 0) grow(hits[0].object);
-    }
-    isFlying = false;
-    startTime = 0;
+if (e.target.tagName === 'BUTTON') { clearTimeout(holdTimer); startTime = 0; return; }
+clearTimeout(holdTimer);
+if (startTime !== 0 && Date.now() - startTime < 1800 && !isFlying) {
+raycaster.setFromCamera(mouse, camera);
+const hits = raycaster.intersectObjects(group.children);
+if (hits.length > 0) {
+if (isDeleteMode) { group.remove(hits[0].object); saveState(); }
+else { grow(hits[0].object); }
 }
-
-document.getElementById('toggleMode').addEventListener('click', (e) => {
-currentMode = (currentMode === 'quadtree') ? 'hopper' : 'quadtree';
-e.target.innerText = `${currentMode === 'quadtree' ? 'Hopper' : 'Quadtree'}`;
-});
-document.getElementById('undoBtn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    undo();
-});
-
-window.addEventListener('mousedown', onDown);
-window.addEventListener('mousemove', onMove);
-window.addEventListener('mouseup', onUp);
-window.addEventListener('touchstart', onDown, { passive: false });
-window.addEventListener('touchmove', onMove, { passive: false });
-window.addEventListener('touchend', onUp, { passive: false });
+}
+isFlying = false; startTime = 0;
+}
+function onMove(e) {
+if (!startTime) return;
+const x = e.clientX || (e.touches && e.touches[0].clientX), y = e.clientY || (e.touches && e.touches[0].clientY);
+if (Math.hypot(x - startMouse.x, y - startMouse.y) > 5 && !isFlying) { clearTimeout(holdTimer); startTime = 0; }
+}
+window.addEventListener('mousedown', onDown); window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+window.addEventListener('touchstart', onDown, { passive: false }); window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp, { passive: false });
 function animate() {
 requestAnimationFrame(animate);
-currentCenter.lerp(targetCenter, 0.05);
-if (isFlying) {
-currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed);
-} else {
-currentSpeed = Math.max(currentSpeed - acceleration, 0);
-if (currentSpeed === 0 && !controls.enabled) controls.enabled = true;
-}
+if (isFlying) { currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed); } 
+else { currentSpeed = Math.max(currentSpeed - acceleration, 0); if (currentSpeed === 0) controls.enabled = true; }
 if (currentSpeed > 0) {
-const distToCenter = camera.position.distanceTo(currentCenter);
-if (flyPhase === 'approach') {
-camera.position.addScaledVector(flyDirection, currentSpeed);
-if (distToCenter < bypassDistance + 1) flyPhase = 'bypass';
-} else if (flyPhase === 'bypass') {
-const relativePos = new THREE.Vector3().subVectors(camera.position, currentCenter);
-const tangent = new THREE.Vector3().crossVectors(relativePos, new THREE.Vector3(0, 1, 0)).normalize();
-camera.position.addScaledVector(tangent, currentSpeed);
-camera.position.addScaledVector(relativePos.normalize(), currentSpeed * 0.2);
-if (relativePos.normalize().dot(flyDirection) < -0.5) flyPhase = 'exit';
-} else {
-const exitDir = new THREE.Vector3().subVectors(camera.position, currentCenter).normalize();
-camera.position.addScaledVector(exitDir, currentSpeed);
-}
+const dist = camera.position.distanceTo(currentCenter);
+if (flyPhase === 'approach') { camera.position.addScaledVector(flyDirection, currentSpeed); if (dist < bypassDistance + 1) flyPhase = 'bypass'; } 
+else if (flyPhase === 'bypass') {
+const rel = new THREE.Vector3().subVectors(camera.position, currentCenter);
+const tan = new THREE.Vector3().crossVectors(rel, new THREE.Vector3(0, 1, 0)).normalize();
+camera.position.addScaledVector(tan, currentSpeed); camera.position.addScaledVector(rel.normalize(), currentSpeed * 0.2);
+if (rel.normalize().dot(flyDirection) < -0.5) flyPhase = 'exit';
+} else { camera.position.addScaledVector(new THREE.Vector3().subVectors(camera.position, currentCenter).normalize(), currentSpeed); }
 camera.lookAt(currentCenter);
 }
-controls.update();
-renderer.render(scene, camera);
+controls.update(); renderer.render(scene, camera);
 }
-loadState();
-animate();
-window.addEventListener('resize', () => {
-camera.aspect = window.innerWidth / window.innerHeight;
-camera.updateProjectionMatrix();
-renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-
+loadState(); animate();
+window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
 </script>
 </body>
 </html>
