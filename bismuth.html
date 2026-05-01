@@ -10,9 +10,18 @@ body { margin: 0; overflow: hidden; background: #000; touch-action: none; user-s
 canvas { display: block; }
 .interface { position: absolute; top: 20px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 15px; z-index: 10; pointer-events: none; }
 .mode-toggle { background: none; border: none; color: #00ff00; padding: 10px; font-size: 0.7rem; letter-spacing: 2px; cursor: pointer; pointer-events: auto; text-transform: uppercase; outline: none; min-width: 80px; -webkit-tap-highlight-color: transparent; }
-.logo-container { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 10; pointer-events: none; }
+#basement { position: absolute; bottom: 0; width: 100%; height: 120px; overflow-y: scroll; scroll-snap-type: y mandatory; z-index: 10; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none; }
+#basement::-webkit-scrollbar { display: none; }
+.scroll-container { display: flex; flex-direction: column; width: 100%; }
+.snap-section { height: 120px; width: 100%; flex-shrink: 0; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; }
+.logo-container { display: flex; flex-direction: column; align-items: center; pointer-events: none; }
 .logo-text { color: #ffffff; font-size: 0.7rem; letter-spacing: 2px; opacity: 0.8; text-align: center; margin-bottom: 8px; width: 100%; white-space: nowrap; }
 .logo-container img { height: 44px; width: auto; pointer-events: auto; }
+footer { width: 100%; background: transparent; }
+.donate-box { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-size: 0.6rem; text-transform: uppercase; width: fit-content; }
+.crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; padding: 0 20px; }
+.crypto-address-display { font-size: 10px; color: #00ff00; background: #0a0a0a; padding: 8px; border: 1px dashed #999; cursor: copy; word-break: break-all; }
 </style>
 </head>
 <body>
@@ -21,9 +30,27 @@ canvas { display: block; }
 <button id="toggleMode" class="mode-toggle">Tree</button>
 <button id="undoBtn" class="mode-toggle">Undo</button>
 </div>
+<div id="basement">
+<div class="scroll-container">
+<div class="snap-section">
 <div class="logo-container">
 <div class="logo-text">Tap • Rotate • Scale • Pan • Hold</div>
 <a href="index.html"><img src="logo.png" alt="Logo"></a>
+</div>
+</div>
+<div class="snap-section">
+<footer>
+<div class="donate-box">
+<button class="donate-btn" onclick="toggleDonate()">Support</button>
+<div id="cryptoInfo" class="crypto-info">
+<span style="font-size: 10px; color: #fff;">ETH (ERC20)</span>
+<div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8</div>
+<span id="copyHint" style="font-size: 9px; color: #fff;">Click address to copy</span>
+</div>
+</div>
+</footer>
+</div>
+</div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -127,15 +154,28 @@ currentMode = (currentMode === 'tree') ? 'hopper' : 'tree';
 e.target.innerText = currentMode === 'tree' ? 'Tree' : 'Hopper';
 });
 document.getElementById('undoBtn').addEventListener('click', (e) => { e.stopPropagation(); undo(); });
+function toggleDonate() { 
+const info = document.getElementById("cryptoInfo"); 
+const isOpening = info.style.display !== "flex";
+info.style.display = isOpening ? "flex" : "none"; 
+}
+function copyToClipboard() {
+const addr = document.getElementById("cryptoAddr");
+const text = addr.innerText;
+navigator.clipboard.writeText(text).then(() => {
+addr.innerText = "Copied!";
+setTimeout(() => addr.innerText = text, 1500);
+});
+}
 function onDown(e) {
-if (e.target.tagName === 'BUTTON') return;
+if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
 const x = e.clientX || (e.touches && e.touches[0].clientX), y = e.clientY || (e.touches && e.touches[0].clientY);
 mouse.x = (x / window.innerWidth) * 2 - 1; mouse.y = -(y / window.innerHeight) * 2 + 1;
 startMouse.set(x, y); startTime = Date.now();
 clearTimeout(holdTimer); holdTimer = setTimeout(startFly, 1800);
 }
 function onUp(e) {
-if (e.target.tagName === 'BUTTON') { clearTimeout(holdTimer); startTime = 0; return; }
+if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) { clearTimeout(holdTimer); startTime = 0; return; }
 clearTimeout(holdTimer);
 if (startTime !== 0 && Date.now() - startTime < 1800 && !isFlying) {
 raycaster.setFromCamera(mouse, camera);
