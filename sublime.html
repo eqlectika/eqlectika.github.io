@@ -19,10 +19,10 @@ canvas { display: block; }
 .logo-container { display: flex; flex-direction: column; align-items: center; pointer-events: none; }
 .polarity-toggle { background: none; border: none; color: #00ff00; font-size: 1.2rem; letter-spacing: 1px; cursor: pointer; pointer-events: auto; outline: none; margin-bottom: 8px; -webkit-tap-highlight-color: transparent; font-family: 'Ubuntu', cursive; }
 
-.logo-container img { height: 44px; width: auto; pointer-events: auto; }
+.logo-container img { height: 44px; width: auto; pointer-events: auto; -webkit-user-drag: none; -webkit-user-select: none; user-select: none; }
 footer { width: 100%; background: transparent; }
 .donate-box { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
-.donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-size: 1rem; width: fit-content; font-family: 'Ubuntu', cursive; }
+.donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-size: 1rem; width: fit-content; font-family: 'Ubuntu', cursive; -webkit-user-select: none; user-select: none; }
 
 .crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; padding: 0 20px; }
 .crypto-address-display { font-size: 10px; color: #00ff00; background: #0a0a0a; padding: 8px; border: 1px dashed #999; cursor: copy; word-break: break-all; }
@@ -36,8 +36,11 @@ margin-bottom: 10px;
 opacity: 1;
 pointer-events: none;
 text-align: center;
+-webkit-user-select: none;
+user-select: none;
 }
 
+.mode-toggle, a { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
 </style>
 </head>
 <body>
@@ -187,6 +190,11 @@ createRect(c[0], c[1], c[2], c[3], d.depth, false);
 });
 localStorage.setItem('bismuth_state', JSON.stringify(previousState));
 }
+function reset() {
+while(group.children.length > 0) { group.remove(group.children[0]); }
+history = [];
+initBase();
+}
 function initBase() {
 const s = 4;
 const pts = [new THREE.Vector3(-s,s,s), new THREE.Vector3(s,s,s), new THREE.Vector3(s,-s,s), new THREE.Vector3(-s,-s,s), new THREE.Vector3(-s,s,-s), new THREE.Vector3(s,s,-s), new THREE.Vector3(s,-s,-s), new THREE.Vector3(-s,-s,-s)];
@@ -233,7 +241,38 @@ e.stopPropagation();
 currentMode = (currentMode === 'tree') ? 'hopper' : 'tree';
 e.target.innerText = currentMode === 'tree' ? 'Tree' : 'Hopper';
 });
-document.getElementById('undoBtn').addEventListener('click', (e) => { e.stopPropagation(); undo(); });
+
+let undoTimer = null;
+let isLongPress = false;
+const undoBtn = document.getElementById('undoBtn');
+undoBtn.addEventListener('mousedown', (e) => {
+e.stopPropagation();
+isLongPress = false;
+undoTimer = setTimeout(() => {
+reset();
+isLongPress = true;
+}, 3000);
+});
+undoBtn.addEventListener('touchstart', (e) => {
+e.stopPropagation();
+isLongPress = false;
+undoTimer = setTimeout(() => {
+reset();
+isLongPress = true;
+}, 3000);
+}, { passive: true });
+window.addEventListener('mouseup', () => {
+if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
+});
+window.addEventListener('touchend', () => {
+if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
+});
+undoBtn.addEventListener('click', (e) => {
+e.stopPropagation();
+if (!isLongPress) undo();
+isLongPress = false;
+});
+
 document.getElementById('polarityBtn').addEventListener('click', (e) => {
 e.stopPropagation();
 polarity *= -1;
