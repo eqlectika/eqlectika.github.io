@@ -94,7 +94,7 @@ await audioContext.resume();
 }
 
 function startVoiceAction(mesh) {
-if (isListening) return;
+if (isListening && activeMesh === mesh) return;
 initAudio().then(() => {
 isListening = true;
 activeMesh = mesh;
@@ -103,33 +103,36 @@ if (!recognition) {
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 recognition = new SpeechRecognition();
 recognition.lang = 'en-US';
-recognition.continuous = false;
+recognition.continuous = true;
 recognition.interimResults = false;
 recognition.onresult = (event) => {
-const transcript = event.results[0][0].transcript.toLowerCase();
+const lastIndex = event.results.length - 1;
+const transcript = event.results[lastIndex][0].transcript.toLowerCase().trim();
 applyVoiceGrow(transcript);
 };
-recognition.onerror = () => {
-isListening = false;
-if(activeMesh) activeMesh.material.emissive.setHex(0x000000);
-};
-recognition.onend = () => {
-isListening = false;
-if(activeMesh) activeMesh.material.emissive.setHex(0x000000);
-};
+recognition.onerror = (e) => { console.error('Speech Error:', e.error); resetListening(); };
+recognition.onend = () => { if (isListening) recognition.start(); };
 }
-recognition.start();
+try { recognition.start(); } catch(e) {}
 }).catch(e => console.error(e));
 }
 
 function applyVoiceGrow(text) {
 if (!activeMesh) return;
-if (text.includes('big') || text.includes('long')) polarity = 2;
-if (text.includes('small') || text.includes('inner')) polarity = -1;
-grow(activeMesh);
-activeMesh = null;
+if (text.includes('big') || text.includes('long') || text.includes('large')) {
+polarity = 2;
+} else if (text.includes('small') || text.includes('inner') || text.includes('tiny')) {
+polarity = -1;
+} else {
 polarity = 1;
 }
+grow(activeMesh);
+const newMeshes = group.children.slice(-5);
+activeMesh = newMeshes[Math.floor(Math.random() * newMeshes.length)];
+group.children.forEach(m => m.material.emissive.setHex(0x000000));
+activeMesh.material.emissive.setHex(0x00ff00);
+}
+
 
 let history = [];
 const scene = new THREE.Scene();
@@ -299,17 +302,30 @@ if (recognition.state !== 'starting') recognition.start();
 }).catch(e => console.error(e));
 }
 
-function applyVoiceGrow(text) {
+async function applyVoiceGrow(text) {
 if (!activeMesh) return;
-if (text.includes('big') || text.includes('long')) polarity = 2;
-if (text.includes('small') || text.includes('inner')) polarity = -1;
+let steps = 3; 
+if (text.includes('big') || text.includes('long') || text.includes('large')) {
+polarity = 2;
+steps = 5;
+} else if (text.includes('small') || text.includes('inner') || text.includes('tiny')) {
+polarity = -1;
+steps = 4;
+} else {
+polarity = 1;
+}
+for (let i = 0; i < steps; i++) {
+if (!activeMesh) break;
 grow(activeMesh);
+await new Promise(r => setTimeout(r, 150)); 
 const newMeshes = group.children.slice(-5);
 activeMesh = newMeshes[Math.floor(Math.random() * newMeshes.length)];
 group.children.forEach(m => m.material.emissive.setHex(0x000000));
 activeMesh.material.emissive.setHex(0x00ff00);
+}
 polarity = 1;
 }
+
 
 function resetListening() {
 isListening = false;
