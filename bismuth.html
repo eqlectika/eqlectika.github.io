@@ -6,24 +6,37 @@
 <link rel="manifest" href="manifest-bismuth.json">
 <title>Bismuth Laboratory Persistent</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@700&display=swap');
-body { margin: 0; overflow: hidden; background: #000; touch-action: none; user-select: none; font-family: 'Ubuntu', monospace; }
+
+.snap-section,
+.logo-container,
+.logo-container img,
+.mode-toggle,
+a {
+-webkit-user-select: none;
+-khtml-user-select: none;
+-moz-user-select: none;
+-ms-user-select: none;
+user-select: none;
+-webkit-touch-callout: none;
+-webkit-user-drag: none;
+-webkit-tap-highlight-color: transparent;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&display=swap');
+body { margin: 0; overflow: hidden; background: #000; touch-action: none; user-select: none; font-family: 'UnifrakturCook', monospace; }
 canvas { display: block; }
 .interface { position: absolute; top: 20px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 15px; z-index: 10; pointer-events: none; }
-.mode-toggle { background: none; border: none; color: #00ff00; padding: 10px; font-size: 1.2rem; letter-spacing: 1px; cursor: pointer; pointer-events: auto; outline: none; min-width: 80px; -webkit-tap-highlight-color: transparent; font-family: 'Ubuntu', cursive; }
-
+.mode-toggle { background: none; border: none; color: #00ff00; padding: 10px; font-size: 0.7rem; letter-spacing: 2px; cursor: pointer; pointer-events: auto; text-transform: uppercase; outline: none; min-width: 80px; -webkit-tap-highlight-color: transparent; }
 #basement { position: absolute; bottom: 0; width: 100%; height: 120px; overflow-y: scroll; scroll-snap-type: y mandatory; z-index: 10; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none; }
 #basement::-webkit-scrollbar { display: none; }
 .scroll-container { display: flex; flex-direction: column; width: 100%; }
 .snap-section { height: 120px; width: 100%; flex-shrink: 0; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; }
 .logo-container { display: flex; flex-direction: column; align-items: center; pointer-events: none; }
-.polarity-toggle { background: none; border: none; color: #00ff00; font-size: 1.2rem; letter-spacing: 1px; cursor: pointer; pointer-events: auto; outline: none; margin-bottom: 8px; -webkit-tap-highlight-color: transparent; font-family: 'Ubuntu', cursive; }
-
+.polarity-toggle { background: none; border: none; color: #00ff00; font-size: 0.7rem; letter-spacing: 2px; cursor: pointer; pointer-events: auto; text-transform: uppercase; outline: none; margin-bottom: 8px; -webkit-tap-highlight-color: transparent; }
 .logo-container img { height: 44px; width: auto; pointer-events: auto; }
 footer { width: 100%; background: transparent; }
 .donate-box { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
-.donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-size: 1rem; width: fit-content; font-family: 'Ubuntu', cursive; }
-
+.donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-size: 0.6rem; text-transform: uppercase; width: fit-content; }
 .crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; padding: 0 20px; }
 .crypto-address-display { font-size: 10px; color: #00ff00; background: #0a0a0a; padding: 8px; border: 1px dashed #999; cursor: copy; word-break: break-all; }
 </style>
@@ -38,7 +51,7 @@ footer { width: 100%; background: transparent; }
 <div class="scroll-container">
 <div class="snap-section">
 <div class="logo-container">
-<button id="polarityBtn" class="polarity-toggle">External</button>
+<button id="polarityBtn" class="polarity-toggle">EXTERNAL</button>
 <a href="index.html"><img src="logo.png" alt="Logo"></a>
 </div>
 </div>
@@ -112,6 +125,11 @@ createRect(c[0], c[1], c[2], c[3], d.depth, false);
 });
 localStorage.setItem('bismuth_state', JSON.stringify(previousState));
 }
+function reset() {
+while(group.children.length > 0) { group.remove(group.children[0]); }
+history = [];
+initBase();
+}
 function initBase() {
 const s = 4;
 const pts = [new THREE.Vector3(-s,s,s), new THREE.Vector3(s,s,s), new THREE.Vector3(s,-s,s), new THREE.Vector3(-s,-s,s), new THREE.Vector3(-s,s,-s), new THREE.Vector3(s,s,-s), new THREE.Vector3(s,-s,-s), new THREE.Vector3(-s,-s,-s)];
@@ -158,11 +176,40 @@ e.stopPropagation();
 currentMode = (currentMode === 'tree') ? 'hopper' : 'tree';
 e.target.innerText = currentMode === 'tree' ? 'Tree' : 'Hopper';
 });
-document.getElementById('undoBtn').addEventListener('click', (e) => { e.stopPropagation(); undo(); });
+let undoTimer = null;
+let isLongPress = false;
+const undoBtn = document.getElementById('undoBtn');
+undoBtn.addEventListener('mousedown', (e) => {
+e.stopPropagation();
+isLongPress = false;
+undoTimer = setTimeout(() => {
+reset();
+isLongPress = true;
+}, 3000);
+});
+undoBtn.addEventListener('touchstart', (e) => {
+e.stopPropagation();
+isLongPress = false;
+undoTimer = setTimeout(() => {
+reset();
+isLongPress = true;
+}, 3000);
+}, { passive: true });
+window.addEventListener('mouseup', () => {
+if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
+});
+window.addEventListener('touchend', () => {
+if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
+});
+undoBtn.addEventListener('click', (e) => {
+e.stopPropagation();
+if (!isLongPress) undo();
+isLongPress = false;
+});
 document.getElementById('polarityBtn').addEventListener('click', (e) => {
 e.stopPropagation();
 polarity *= -1;
-e.target.innerText = polarity === 1 ? 'External' : 'Internal';
+e.target.innerText = polarity === 1 ? 'EXTERNAL' : 'INTERNAL';
 e.target.style.color = polarity === 1 ? '#00ff00' : '#ff1493';
 });
 function toggleDonate() { 
