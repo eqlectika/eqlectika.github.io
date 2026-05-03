@@ -28,7 +28,7 @@ canvas { display: block; }
 <body>
 <div class="interface">
 <button id="undoBtn" class="mode-toggle">Undo</button>
-<button id="ritzBtn" class="mode-toggle">Ritz</button>
+<button id="ritzBtn" class="mode-toggle">Demo</button>
 </div>
 <div id="basement">
 <div class="scroll-container">
@@ -53,9 +53,20 @@ const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 const group = new THREE.Group();
 scene.add(group);
-const pointLight = new THREE.PointLight(0xffffff, 5, 100);
-pointLight.position.set(15, 15, 15);
-scene.add(pointLight, new THREE.AmbientLight(0xffffff, 0.5));
+
+const pointLights = [
+{ color: 0xff0000, pos: [20, 20, 20] },
+{ color: 0x00ff00, pos: [-20, 20, 20] },
+{ color: 0x0000ff, pos: [20, -20, 20] },
+{ color: 0xffff00, pos: [-20, -20, -20] }
+].map(l => {
+const pl = new THREE.PointLight(l.color, 3, 100);
+pl.position.set(...l.pos);
+scene.add(pl);
+return pl;
+});
+scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+
 camera.position.set(12, 12, 12);
 const material = new THREE.MeshStandardMaterial({ metalness: 0.7, roughness: 0.2, transparent: true, opacity: 0.6, side: THREE.DoubleSide, flatShading: true });
 const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
@@ -75,7 +86,7 @@ source.connect(audioAnalyser);
 audioAnalyser.connect(audioContext.destination);
 dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
 }
-if (isPlaying) { activeAudio.pause(); isPlaying = false; document.getElementById('ritzBtn').innerText = 'Ritz'; }
+if (isPlaying) { activeAudio.pause(); isPlaying = false; document.getElementById('ritzBtn').innerText = 'Demo'; }
 else { activeAudio.play(); isPlaying = true; document.getElementById('ritzBtn').innerText = 'Pause'; }
 });
 }
@@ -184,7 +195,7 @@ createRect(c[0], c[1], c[2], c[3], d.depth, false);
 });
 }
 function reset() {
-if (activeAudio) { activeAudio.pause(); activeAudio.currentTime = 0; isPlaying = false; document.getElementById('ritzBtn').innerText = 'Ritz'; }
+if (activeAudio) { activeAudio.pause(); activeAudio.currentTime = 0; isPlaying = false; document.getElementById('ritzBtn').innerText = 'Demo'; }
 resetListening();
 while(group.children.length > 0) { group.remove(group.children[0]); }
 history = [];
@@ -210,7 +221,15 @@ if (hits.length > 0) startVoiceAction(hits[0].object);
 function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = info.style.display !== "flex" ? "flex" : "none"; }
 function copyToClipboard() { const addr = document.getElementById("cryptoAddr"); navigator.clipboard.writeText(addr.innerText); const original = addr.innerText; addr.innerText = "Copied!"; setTimeout(() => addr.innerText = original, 1500); }
 document.getElementById('ritzBtn').addEventListener('click', toggleRitz);
-document.getElementById('undoBtn').addEventListener('click', undo);
+let undoTimer = null, isLongPress = false;
+const undoBtn = document.getElementById('undoBtn');
+const startUndoTimer = (e) => { e.stopPropagation(); isLongPress = false; undoTimer = setTimeout(() => { reset(); isLongPress = true; }, 1800); };
+const clearUndoTimer = () => { if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; } };
+undoBtn.addEventListener('mousedown', startUndoTimer);
+undoBtn.addEventListener('touchstart', startUndoTimer, { passive: true });
+window.addEventListener('mouseup', clearUndoTimer);
+window.addEventListener('touchend', clearUndoTimer);
+undoBtn.addEventListener('click', (e) => { e.stopPropagation(); if (!isLongPress) undo(); isLongPress = false; });
 function animate() {
 requestAnimationFrame(animate);
 const now = Date.now();
@@ -219,10 +238,8 @@ if (isPlaying && audioAnalyser) {
 audioAnalyser.getByteFrequencyData(dataArray);
 const bass = dataArray[2] / 255.0;
 group.scale.set(1 + bass * 0.1, 1 + bass * 0.1, 1 + bass * 0.1);
-pointLight.color.setHSL((now * 0.0005) % 1, 0.8, 0.5);
-group.children.forEach((m, i) => { 
-m.material.emissive.setHSL((0.7 + i * 0.001 + bass * 0.2) % 1, 0.9, 0.1 * bass);
-});
+pointLights.forEach((pl, i) => { pl.color.setHSL((now * 0.0005 + i * 0.25) % 1, 0.8, 0.5); });
+group.children.forEach((m, i) => { m.material.emissive.setHSL((0.7 + i * 0.001 + bass * 0.2) % 1, 0.9, 0.1 * bass); });
 if (bass > 0.85 && now - lastBeatTime > beatCooldown) {
 if (group.children.length > 1000) { undo(); }
 else {
