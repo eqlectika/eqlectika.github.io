@@ -137,8 +137,7 @@ const v = [p1.x,p1.y,p1.z, p2.x,p2.y,p2.z, p3.x,p3.y,p3.z, p3.x,p3.y,p3.z, p4.x,
 geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
 geo.computeVertexNormals();
 const mesh = new THREE.Mesh(geo, material.clone());
-mesh.material.color.setHSL((depth * 0.1) % 1, 0.8, 0.5);
-mesh.userData = { depth: depth, corners: [p1.clone(), p2.clone(), p3.clone(), p4.clone()] };
+mesh.material.color.setHSL((0.7+ depth * 0.1) % 1, 0.8, 0.5);mesh.userData = { depth: depth, corners: [p1.clone(), p2.clone(), p3.clone(), p4.clone()] };
 group.add(mesh);
 if (save) saveState();
 }
@@ -193,7 +192,8 @@ audioAnalyser.getByteFrequencyData(dataArray);
 const bass = dataArray[2] / 255.0;
 group.scale.set(1 + bass * 0.1, 1 + bass * 0.1, 1 + bass * 0.1);
 pointLight.color.setHSL((now * 0.0005) % 1, 0.8, 0.5);
-group.children.forEach((m, i) => { m.material.emissive.setHSL((i * 0.003 + bass) % 1, 0.9, 0.1 * bass); });
+group.children.forEach((m, i) => { 
+m.material.emissive.setHSL((0.7 + i * 0.001 + bass * 0.2) % 1, 0.9, 0.1 * bass);});
 if (bass > 0.85 && now - lastBeatTime > beatCooldown) {
 if (group.children.length > 1000) { undo(); }
 else {
