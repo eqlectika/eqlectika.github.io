@@ -73,8 +73,16 @@ return pl;
 scene.add(new THREE.AmbientLight(0xffffff, 0.3));
 
 camera.position.set(12, 12, 12);
-const material = new THREE.MeshStandardMaterial({ metalness: 0.7, roughness: 0.2, transparent: true, opacity: 0.6, side: THREE.DoubleSide, flatShading: true });
-const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
+// Замените существующую строку material на эту:
+const material = new THREE.MeshStandardMaterial({ 
+    metalness: 0.7, 
+    roughness: 0.2, 
+    transparent: true, 
+    opacity: 0.4, // Немного уменьшил для лучшей видимости слоев
+    side: THREE.DoubleSide, 
+    flatShading: true,
+    depthWrite: false // Позволяет видеть объекты друг за другом без багов прозрачности
+});const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
 
 
   
@@ -113,10 +121,15 @@ document.getElementById('ritzBtn').innerText = 'Pause';
 }
 
 async function startVoiceAction(mesh) {
-if (isListening && activeVoiceMesh === mesh) return;
+if (isListening) {
+resetListening();
+if (recognition) recognition.stop();
+return;
+}
 try {
 await initAudio();
-isListening = true; activeVoiceMesh = mesh;
+isListening = true;
+activeVoiceMesh = mesh;
 activeVoiceMesh.material.emissive.setHex(0x00ff00);
 const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
 if (!SpeechRecognition) return;
@@ -127,7 +140,7 @@ recognition.continuous = false;
 recognition.interimResults = false;
 recognition.onresult = (event) => {
 const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
-applyVoiceGrow(transcript);
+applyVoiceGrow(transcript, activeVoiceMesh);
 };
 recognition.onend = () => { if (isListening) recognition.start(); };
 }
@@ -137,28 +150,29 @@ if (recognition.state !== 'listening') recognition.start();
 
 
 
+let baseSides = [];
+const oppositeMap = { 0: 2, 1: 3, 2: 0, 3: 1, 4: 5, 5: 4 };
+let lastBaseSideIndex = 0;
 
-async function applyVoiceGrow(text) {
-if (!activeVoiceMesh) return;
-const words = text.split(/\s+/).filter(w => w.length > 0);
-let steps = words.length <= 1 ? 1 : (words.length <= 3 ? 2 : (words.length <= 7 ? 5 : 12));
-let vPolarity = (text.includes('big') || text.includes('long')) ? 2 : ((text.includes('small') || text.includes('inner')) ? -1 : 1);
-for (let i = 0; i < steps; i++) {
-if (!activeVoiceMesh) break;
-grow(activeVoiceMesh, vPolarity);
-await new Promise(r => setTimeout(r, 100));
-activeVoiceMesh = group.children[Math.floor(Math.random() * group.children.length)];
-group.children.forEach(m => {
-m.material.emissive.setHex(0x000000);
-});
-if (activeVoiceMesh) {
-activeVoiceMesh.material.emissive.setHex(0x00ff00);
+async function applyVoiceGrow(text, startMesh) {
+let currentActiveMesh = startMesh;
+const totalSteps = 10;
+const vPolarity = (text.includes('big') || text.includes('long')) ? 2 : ((text.includes('small') || text.includes('inner')) ? -1 : 1);
+for (let i = 0; i < totalSteps; i++) {
+if (!isListening || !currentActiveMesh) break;
+const nextBatch = grow(currentActiveMesh, vPolarity);
+group.children.forEach(m => m.material.emissive.setHex(0x000000));
+if (nextBatch.length > 0) {
+currentActiveMesh = nextBatch[Math.floor(Math.random() * nextBatch.length)];
+currentActiveMesh.material.emissive.setHex(0x00ff00);
+} else {
+break;
 }
+await new Promise(r => setTimeout(r, 120));
 }
+resetListening();
+if (recognition) recognition.stop();
 }
-
-
-
 
   
 function resetListening() {
@@ -166,28 +180,46 @@ isListening = false;
 if (activeVoiceMesh) activeVoiceMesh.material.emissive.setHex(0x000000);
 activeVoiceMesh = null;
 }
+
+
+
+
+  
 function grow(mesh, forcePolarity = null) {
-const c = mesh.userData.corners, d = mesh.userData.depth + 1; if (d > 14) return;
-let p = forcePolarity !== null ? forcePolarity : (Math.random() < 0.5 ? 1 : -1);
-const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
-const normal = new THREE.Vector3().crossVectors(v1, new THREE.Vector3().subVectors(c[3], c[0])).normalize();
-const center = new THREE.Vector3().add(c[0]).add(c[1]).add(c[2]).add(c[3]).divideScalar(4);
-const randomLength = forcePolarity !== null ? 1.2 : (0.8 + Math.random() * 2.0);
-const offset = normal.multiplyScalar(randomLength * p);
-const lerpFactor = 0.2 + Math.random() * 0.2;
-const inner = c.map(pt => pt.clone().lerp(center, lerpFactor).sub(offset));
-group.remove(mesh);
-if (forcePolarity === null && Math.random() < 0.5) {
-createRect(inner[0], inner[1], inner[2], inner[3], d, false);
-} else {
-createRect(c[0], c[1], inner[1], inner[0], d, false);
-createRect(c[1], c[2], inner[2], inner[1], d, false);
-createRect(c[2], c[3], inner[3], inner[2], d, false);
-createRect(c[3], c[0], inner[0], inner[3], d, false);
-createRect(inner[0], inner[1], inner[2], inner[3], d, false);
+    const c = mesh.userData.corners, d = mesh.userData.depth + 1; 
+    if (d > 14) return [];
+
+    const center = new THREE.Vector3().add(c[0]).add(c[1]).add(c[2]).add(c[3]).divideScalar(4);
+    
+    // Вычисляем вектор от центра меша к центру всей группы
+    // Если меш снаружи, нормаль будет направлена внутрь
+    const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
+    const v2 = new THREE.Vector3().subVectors(c[3], c[0]);
+    let normal = new THREE.Vector3().crossVectors(v1, v2).normalize();
+    
+    // Проверка: направлена ли нормаль внутрь?
+    // Если dot product с вектором к центру отрицательный — меняем направление
+    if (normal.dot(center) > 0) normal.multiplyScalar(-1);
+
+    let p = forcePolarity !== null ? forcePolarity : 1; 
+    
+    const randomLength = forcePolarity !== null ? (forcePolarity > 0 ? 1.5 : 0.8) : (0.8 + Math.random() * 1.5);
+    const offset = normal.clone().multiplyScalar(randomLength * p);
+    const lerpFactor = 0.15 + Math.random() * 0.15;
+    const inner = c.map(pt => pt.clone().lerp(center, lerpFactor).add(offset));
+    
+    const newMeshes = [];
+    newMeshes.push(createRect(c[0], c[1], inner[1], inner[0], d, false));
+    newMeshes.push(createRect(c[1], c[2], inner[2], inner[1], d, false));
+    newMeshes.push(createRect(c[2], c[3], inner[3], inner[2], d, false));
+    newMeshes.push(createRect(c[3], c[0], inner[0], inner[3], d, false));
+    newMeshes.push(createRect(inner[0], inner[1], inner[2], inner[3], d, false));
+    
+    saveState();
+    return newMeshes;
 }
-saveState();
-}
+
+
 function createRect(p1, p2, p3, p4, depth, save = true) {
 const geo = new THREE.BufferGeometry();
 const v = [p1.x,p1.y,p1.z, p2.x,p2.y,p2.z, p3.x,p3.y,p3.z, p3.x,p3.y,p3.z, p4.x,p4.y,p4.z, p1.x,p1.y,p1.z];
@@ -198,7 +230,11 @@ mesh.material.color.setHSL((0.7+ depth * 0.1) % 1, 0.8, 0.5);
 mesh.userData = { depth: depth, corners: [p1.clone(), p2.clone(), p3.clone(), p4.clone()] };
 group.add(mesh);
 if (save) saveState();
+return mesh;
 }
+
+
+  
 function saveState() {
 const data = group.children.map(m => ({ depth: m.userData.depth, corners: m.userData.corners.map(c => ({x:c.x, y:c.y, z:c.z})) }));
 const snapshot = JSON.stringify(data);
@@ -208,25 +244,40 @@ if (history.length > 70) history.shift();
 }
 localStorage.setItem('bismuth_state', snapshot);
 }
+
+
+  
 function loadState() {
 const saved = localStorage.getItem('bismuth_state');
 if (!saved) return initBase();
 history = [saved];
+while(group.children.length > 0) { group.remove(group.children[0]); }
+baseSides = [];
 JSON.parse(saved).forEach(d => {
 const c = d.corners.map(p => new THREE.Vector3(p.x, p.y, p.z));
-createRect(c[0], c[1], c[2], c[3], d.depth, false);
+const mesh = createRect(c[0], c[1], c[2], c[3], d.depth, false);
+if (d.depth === 0) baseSides.push(mesh);
 });
 }
+
+
+  
 function undo() {
 if (history.length <= 1) return;
 history.pop();
 const previousState = JSON.parse(history[history.length - 1]);
 while(group.children.length > 0) { group.remove(group.children[0]); }
+baseSides = [];
 previousState.forEach(d => {
 const c = d.corners.map(p => new THREE.Vector3(p.x, p.y, p.z));
-createRect(c[0], c[1], c[2], c[3], d.depth, false);
+const mesh = createRect(c[0], c[1], c[2], c[3], d.depth, false);
+if (d.depth === 0) baseSides.push(mesh);
 });
 }
+
+
+
+  
 function reset() {
 if (activeAudio) { activeAudio.pause(); activeAudio.currentTime = 0; isPlaying = false; document.getElementById('ritzBtn').innerText = 'Demo'; }
 resetListening();
@@ -237,12 +288,24 @@ group.rotation.set(0,0,0);
 localStorage.removeItem('bismuth_state');
 initBase();
 }
+
+
+
+  
 function initBase() {
 const s = 4;
 const pts = [new THREE.Vector3(-s,s,s), new THREE.Vector3(s,s,s), new THREE.Vector3(s,-s,s), new THREE.Vector3(-s,-s,s), new THREE.Vector3(-s,s,-s), new THREE.Vector3(s,s,-s), new THREE.Vector3(s,-s,-s), new THREE.Vector3(-s,-s,-s)];
-[[pts[0],pts[1],pts[2],pts[3]], [pts[1],pts[5],pts[6],pts[2]], [pts[5],pts[4],pts[7],pts[6]], [pts[4],pts[0],pts[3],pts[7]], [pts[4],pts[5],pts[1],pts[0]], [pts[3],pts[2],pts[6],pts[7]]].forEach(f => createRect(f[0], f[1], f[2], f[3], 0, false));
+baseSides = [];
+while(group.children.length > 0) { group.remove(group.children[0]); }
+[[pts[0],pts[1],pts[2],pts[3]], [pts[1],pts[5],pts[6],pts[2]], [pts[5],pts[4],pts[7],pts[6]], [pts[4],pts[0],pts[3],pts[7]], [pts[4],pts[5],pts[1],pts[0]], [pts[3],pts[2],pts[6],pts[7]]].forEach(f => {
+const mesh = createRect(f[0], f[1], f[2], f[3], 0, false);
+baseSides.push(mesh);
+});
 saveState();
 }
+
+
+  
 window.addEventListener('pointerdown', (e) => {
 if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
 initAudio();
@@ -263,32 +326,65 @@ undoBtn.addEventListener('touchstart', startUndoTimer, { passive: true });
 window.addEventListener('mouseup', clearUndoTimer);
 window.addEventListener('touchend', clearUndoTimer);
 undoBtn.addEventListener('click', (e) => { e.stopPropagation(); if (!isLongPress) undo(); isLongPress = false; });
+
+
+  
+let branchCounter = 0; // Счетчик блоков в текущей ветке
+
 function animate() {
-requestAnimationFrame(animate);
-const now = Date.now();
-if (isRotating) { group.rotation.y += 0.002; group.rotation.x += 0.001; }
-if (isPlaying && audioAnalyser) {
-audioAnalyser.getByteFrequencyData(dataArray);
-const bass = dataArray[2] / 255.0;
-group.scale.set(1 + bass * 0.1, 1 + bass * 0.1, 1 + bass * 0.1);
-pointLights.forEach((pl, i) => { pl.color.setHSL((now * 0.0005 + i * 0.25) % 1, 0.8, 0.5); });
-group.children.forEach((m, i) => { m.material.emissive.setHSL((0.7 + i * 0.001 + bass * 0.2) % 1, 0.9, 0.1 * bass); });
-if (bass > 0.85 && now - lastBeatTime > beatCooldown) {
-if (group.children.length > 1000) { undo(); }
-else {
-const minD = Math.min(...group.children.map(m => m.userData.depth));
-const targets = group.children.filter(m => m.userData.depth === minD || Math.random() < 0.3);
-const randomMesh = targets[Math.floor(Math.random() * targets.length)];
-if (randomMesh) grow(randomMesh);
+    requestAnimationFrame(animate);
+    const now = Date.now();
+    if (isRotating) { group.rotation.y += 0.002; group.rotation.x += 0.001; }
+    
+    if (isPlaying && audioAnalyser) {
+        audioAnalyser.getByteFrequencyData(dataArray);
+        const bass = dataArray[2] / 255.0;
+        group.scale.set(1 + bass * 0.1, 1 + bass * 0.1, 1 + bass * 0.1);
+        
+        pointLights.forEach((pl, i) => { pl.color.setHSL((now * 0.0005 + i * 0.25) % 1, 0.8, 0.5); });
+        group.children.forEach((m, i) => { 
+            m.material.emissive.setHSL((0.7 + i * 0.001 + bass * 0.2) % 1, 0.9, 0.1 * bass); 
+        });
+
+        if (bass > 0.85 && now - lastBeatTime > beatCooldown) {
+            if (group.children.length > 1200) { 
+                undo(); 
+                window.currentBranchMesh = null;
+                branchCounter = 0;
+            } else {
+                // Если ветка достигла 10 блоков или еще не создана
+                if (!window.currentBranchMesh || branchCounter >= 10) {
+                    // Выбираем новую базу с противоположной стороны
+                    lastBaseSideIndex = oppositeMap[lastBaseSideIndex];
+                    window.currentBranchMesh = baseSides[lastBaseSideIndex];
+                    branchCounter = 0;
+                }
+
+                const nextBatch = grow(window.currentBranchMesh);
+                if (nextBatch && nextBatch.length > 0) {
+                    window.currentBranchMesh = nextBatch[Math.floor(Math.random() * nextBatch.length)];
+                    branchCounter++;
+                } else {
+                    // Если расти некуда, прыгаем на случайное место
+                    window.currentBranchMesh = group.children[Math.floor(Math.random() * group.children.length)];
+                    branchCounter = 0;
+                }
+            }
+            lastBeatTime = now;
+        }
+    }
+    controls.update();
+    renderer.render(scene, camera);
 }
-lastBeatTime = now;
-}
-}
-controls.update();
-renderer.render(scene, camera);
-}
-loadState(); animate();
-window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+
+loadState();
+animate();
+
+window.addEventListener('resize', () => {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+});
 </script>
 </body>
 </html>
