@@ -59,27 +59,41 @@ const pointLights = [
 { color: 0xff0000, pos: [20, 20, 20] },
 { color: 0x00ff00, pos: [-20, 20, 20] },
 { color: 0x0000ff, pos: [20, -20, 20] },
-{ color: 0xffff00, pos: [-20, -20, -20] }
+{ color: 0xffff00, pos: [-20, -20, -20] },
+{ color: 0xff00ff, pos: [0, 30, 0] }
 ].map(l => {
-const pl = new THREE.PointLight(l.color, 3, 100);
+const pl = new THREE.PointLight(l.color, 4, 100);
 pl.position.set(...l.pos);
 scene.add(pl);
 return pl;
 });
+
+
+  
 scene.add(new THREE.AmbientLight(0xffffff, 0.3));
 
 camera.position.set(12, 12, 12);
 const material = new THREE.MeshStandardMaterial({ metalness: 0.7, roughness: 0.2, transparent: true, opacity: 0.6, side: THREE.DoubleSide, flatShading: true });
 const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
+
+
+  
+let stream = null;
 async function initAudio() {
 if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
 if (audioContext.state === 'suspended') await audioContext.resume();
+if (!stream) {
+stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+}
 await requestWakeLock();
 }
+
 function toggleRitz() {
-initAudio().then(() => {
+if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+if (audioContext.state === 'suspended') audioContext.resume();
 if (!activeAudio) {
 activeAudio = new Audio('Ritz.mp3');
+activeAudio.crossOrigin = "anonymous";
 const source = audioContext.createMediaElementSource(activeAudio);
 audioAnalyser = audioContext.createAnalyser();
 audioAnalyser.fftSize = 256;
@@ -87,14 +101,20 @@ source.connect(audioAnalyser);
 audioAnalyser.connect(audioContext.destination);
 dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
 }
-if (isPlaying) { activeAudio.pause(); isPlaying = false; document.getElementById('ritzBtn').innerText = 'Demo'; }
-else { activeAudio.play(); isPlaying = true; document.getElementById('ritzBtn').innerText = 'Pause'; }
-});
+if (isPlaying) {
+activeAudio.pause();
+isPlaying = false;
+document.getElementById('ritzBtn').innerText = 'Demo';
+} else {
+activeAudio.play().catch(console.error);
+isPlaying = true;
+document.getElementById('ritzBtn').innerText = 'Pause';
 }
+}
+
 async function startVoiceAction(mesh) {
 if (isListening && activeVoiceMesh === mesh) return;
 try {
-await navigator.mediaDevices.getUserMedia({ audio: true });
 await initAudio();
 isListening = true; activeVoiceMesh = mesh;
 activeVoiceMesh.material.emissive.setHex(0x00ff00);
@@ -111,7 +131,7 @@ applyVoiceGrow(transcript);
 };
 recognition.onend = () => { if (isListening) recognition.start(); };
 }
-recognition.start();
+if (recognition.state !== 'listening') recognition.start();
 } catch (err) { resetListening(); }
 }
 
