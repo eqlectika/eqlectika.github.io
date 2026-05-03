@@ -11,59 +11,38 @@ body { margin: 0; overflow: hidden; background: #000; touch-action: none; user-s
 canvas { display: block; }
 .interface { position: absolute; top: 20px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 15px; z-index: 10; pointer-events: none; }
 .mode-toggle { background: none; border: none; color: #00ff00; padding: 10px; font-size: 1.2rem; letter-spacing: 1px; cursor: pointer; pointer-events: auto; outline: none; min-width: 80px; -webkit-tap-highlight-color: transparent; font-family: 'Ubuntu', cursive; }
-
 #basement { position: absolute; bottom: 0; width: 100%; height: 120px; overflow-y: scroll; scroll-snap-type: y mandatory; z-index: 10; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none; }
 #basement::-webkit-scrollbar { display: none; }
 .scroll-container { display: flex; flex-direction: column; width: 100%; }
 .snap-section { height: 120px; width: 100%; flex-shrink: 0; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; }
 .logo-container { display: flex; flex-direction: column; align-items: center; pointer-events: none; }
 .polarity-toggle { background: none; border: none; color: #00ff00; font-size: 1.2rem; letter-spacing: 1px; cursor: pointer; pointer-events: auto; outline: none; margin-bottom: 8px; -webkit-tap-highlight-color: transparent; font-family: 'Ubuntu', cursive; }
-
 .logo-container img { height: 44px; width: auto; pointer-events: auto; -webkit-user-drag: none; -webkit-user-select: none; user-select: none; }
 footer { width: 100%; background: transparent; }
 .donate-box { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
 .donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-size: 1rem; width: fit-content; font-family: 'Ubuntu', cursive; -webkit-user-select: none; user-select: none; }
-
 .crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; padding: 0 20px; }
 .crypto-address-display { font-size: 10px; color: #00ff00; background: #0a0a0a; padding: 8px; border: 1px dashed #999; cursor: copy; word-break: break-all; }
-
-.instruction-text {
-display: block;
-font-size: 1.0rem;
-color: #ffffff !important;
-letter-spacing: 1px;
-margin-bottom: 10px;
-opacity: 1;
-pointer-events: none;
-text-align: center;
--webkit-user-select: none;
-user-select: none;
-}
-
+.instruction-text { display: block; font-size: 1.0rem; color: #ffffff !important; letter-spacing: 1px; margin-bottom: 10px; opacity: 1; pointer-events: none; text-align: center; -webkit-user-select: none; user-select: none; }
 .mode-toggle, a { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
 </style>
 </head>
 <body>
-
 <div class="interface">
 <button id="deleteMode" class="mode-toggle" style="display:none">Build</button>
 <button id="toggleMode" class="mode-toggle" style="display:none">Tree</button>
 <button id="undoBtn" class="mode-toggle">Undo</button>
+<button id="ritzBtn" class="mode-toggle">Ritz</button>
 </div>
-
 <div id="basement">
 <div class="scroll-container">
-
 <div class="snap-section">
-
 <div class="logo-container">
 <button id="polarityBtn" class="polarity-toggle" style="display:none">EXTERNAL</button>
 <span class="instruction-text">Tap any side and speak</span>
 <a href="index.html"><img src="logo.png" alt="Logo"></a>
 </div>
-
 </div>
-
 <div class="snap-section">
 <footer>
 <div class="donate-box">
@@ -81,12 +60,11 @@ user-select: none;
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-
 let recognition;
 let isListening = false;
 let activeMesh = null;
 let audioContext;
-
+let audioAnalyser, dataArray;
 async function initAudio() {
 if (!audioContext) {
 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -94,6 +72,19 @@ audioContext = new (window.AudioContext || window.webkitAudioContext)();
 if (audioContext.state === 'suspended') {
 await audioContext.resume();
 }
+}
+
+function startRitz() {
+initAudio().then(() => {
+const audio = new Audio('ritz.mp3');
+const source = audioContext.createMediaElementSource(audio);
+audioAnalyser = audioContext.createAnalyser();
+audioAnalyser.fftSize = 256;
+source.connect(audioAnalyser);
+audioAnalyser.connect(audioContext.destination);
+dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+audio.play().catch(e => console.error("Audio playback failed:", e));
+}).catch(e => console.error("AudioContext failed:", e));
 }
 
 function startVoiceAction(mesh) {
@@ -119,7 +110,6 @@ recognition.onend = () => { if (isListening) recognition.start(); };
 try { recognition.start(); } catch(e) {}
 }).catch(e => console.error(e));
 }
-
 function applyVoiceGrow(text) {
 if (!activeMesh) return;
 if (text.includes('big') || text.includes('long') || text.includes('large')) {
@@ -135,8 +125,6 @@ activeMesh = newMeshes[Math.floor(Math.random() * newMeshes.length)];
 group.children.forEach(m => m.material.emissive.setHex(0x000000));
 activeMesh.material.emissive.setHex(0x00ff00);
 }
-
-
 let history = [];
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -231,6 +219,7 @@ const lateral = new THREE.Vector3(0, 1, 0).cross(toCenter).normalize().multiplyS
 flyDirection.copy(toCenter).add(lateral.multiplyScalar(0.2)).normalize();
 controls.enabled = false;
 }
+document.getElementById('ritzBtn').addEventListener('click', (e) => { e.stopPropagation(); startRitz(); });
 document.getElementById('deleteMode').addEventListener('click', (e) => {
 e.stopPropagation(); isDeleteMode = !isDeleteMode;
 e.target.innerText = isDeleteMode ? 'Delete' : 'Build';
@@ -241,7 +230,6 @@ e.stopPropagation();
 currentMode = (currentMode === 'tree') ? 'hopper' : 'tree';
 e.target.innerText = currentMode === 'tree' ? 'Tree' : 'Hopper';
 });
-
 let undoTimer = null;
 let isLongPress = false;
 const undoBtn = document.getElementById('undoBtn');
@@ -272,7 +260,6 @@ e.stopPropagation();
 if (!isLongPress) undo();
 isLongPress = false;
 });
-
 document.getElementById('polarityBtn').addEventListener('click', (e) => {
 e.stopPropagation();
 polarity *= -1;
@@ -299,7 +286,6 @@ mouse.x = (x / window.innerWidth) * 2 - 1; mouse.y = -(y / window.innerHeight) *
 startMouse.set(x, y); startTime = Date.now();
 clearTimeout(holdTimer); holdTimer = setTimeout(startFly, 1800);
 }
-
 function onUp(e) {
 if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
 clearTimeout(holdTimer);
@@ -317,72 +303,11 @@ startVoiceAction(hits[0].object);
 }
 isFlying = false; startTime = 0;
 }
-
-function startVoiceAction(mesh) {
-if (isListening && activeMesh === mesh) return;
-initAudio().then(() => {
-isListening = true;
-activeMesh = mesh;
-activeMesh.material.emissive.setHex(0x00ff00);
-if (!recognition) {
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-recognition = new SpeechRecognition();
-recognition.lang = 'en-US';
-recognition.continuous = true;
-recognition.interimResults = false;
-recognition.onresult = (event) => {
-const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
-applyVoiceGrow(transcript);
-};
-recognition.onerror = () => resetListening();
-recognition.onend = () => { if (isListening) recognition.start(); };
-}
-if (recognition.state !== 'starting') recognition.start();
-}).catch(e => console.error(e));
-}
-
-async function applyVoiceGrow(text) {
-if (!activeMesh) return;
-const words = text.trim().split(/\s+/).filter(w => w.length > 0);
-const wordCount = words.length;
-let steps = 1;
-if (wordCount === 1) {
-steps = 1;
-} else if (wordCount > 1 && wordCount <= 3) {
-steps = 2;
-} else if (wordCount > 3 && wordCount <= 7) {
-steps = 5;
-} else {
-steps = 12;
-}
-if (text.includes('big') || text.includes('long')) {
-polarity = 2;
-} else if (text.includes('small') || text.includes('inner')) {
-polarity = -1;
-} else {
-polarity = 1;
-}
-for (let i = 0; i < steps; i++) {
-if (!activeMesh) break;
-grow(activeMesh);
-await new Promise(r => setTimeout(r, 100));
-const lastAdded = group.children.slice(-5);
-activeMesh = lastAdded[Math.floor(Math.random() * lastAdded.length)];
-group.children.forEach(m => m.material.emissive.setHex(0x000000));
-activeMesh.material.emissive.setHex(0x00ff00);
-}
-polarity = 1;
-}
-
-
-
 function resetListening() {
 isListening = false;
 if (activeMesh) activeMesh.material.emissive.setHex(0x000000);
 activeMesh = null;
 }
-
-
 function onMove(e) {
 if (!startTime) return;
 const x = e.clientX || (e.touches && e.touches[0].clientX), y = e.clientY || (e.touches && e.touches[0].clientY);
@@ -392,6 +317,15 @@ window.addEventListener('mousedown', onDown); window.addEventListener('mousemove
 window.addEventListener('touchstart', onDown, { passive: false }); window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp, { passive: false });
 function animate() {
 requestAnimationFrame(animate);
+if (audioAnalyser) {
+audioAnalyser.getByteFrequencyData(dataArray);
+const bass = dataArray[2] / 255.0;
+const scale = 1 + bass * 0.2;
+group.scale.set(scale, scale, scale);
+group.children.forEach((m, i) => {
+m.material.emissive.setHSL((i * 0.01 + bass) % 1, 0.8, 0.2 * bass);
+});
+}
 if (isFlying) { currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed); } 
 else { currentSpeed = Math.max(currentSpeed - acceleration, 0); if (currentSpeed === 0) controls.enabled = true; }
 if (currentSpeed > 0) {
