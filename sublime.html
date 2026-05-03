@@ -113,6 +113,10 @@ recognition.onend = () => { if (isListening) recognition.start(); };
 recognition.start();
 } catch (err) { resetListening(); }
 }
+
+
+
+
 async function applyVoiceGrow(text) {
 if (!activeVoiceMesh) return;
 const words = text.split(/\s+/).filter(w => w.length > 0);
@@ -122,18 +126,20 @@ for (let i = 0; i < steps; i++) {
 if (!activeVoiceMesh) break;
 grow(activeVoiceMesh, vPolarity);
 await new Promise(r => setTimeout(r, 100));
-const lastAdded = group.children.slice(-5);
-activeVoiceMesh = lastAdded[Math.floor(Math.random() * lastAdded.length)];
+activeVoiceMesh = group.children[Math.floor(Math.random() * group.children.length)];
 group.children.forEach(m => {
 m.material.emissive.setHex(0x000000);
-m.material.needsUpdate = true;
 });
 if (activeVoiceMesh) {
 activeVoiceMesh.material.emissive.setHex(0x00ff00);
-activeVoiceMesh.material.needsUpdate = true;
 }
 }
 }
+
+
+
+
+  
 function resetListening() {
 isListening = false;
 if (activeVoiceMesh) activeVoiceMesh.material.emissive.setHex(0x000000);
