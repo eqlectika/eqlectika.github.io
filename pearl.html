@@ -35,14 +35,43 @@ text-align: center;
 white-space: nowrap;
 line-height: 1.4;
 }
+
+#basement { position: absolute; bottom: 0; width: 100%; height: 120px; overflow-y: scroll; scroll-snap-type: y mandatory; z-index: 10; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none; }
+#basement::-webkit-scrollbar { display: none; }
+.scroll-container { display: flex; flex-direction: column; width: 100%; }
+.snap-section { height: 120px; width: 100%; flex-shrink: 0; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; }
+.donate-box { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-size: 0.6rem; text-transform: uppercase; width: fit-content; font-family: 'Ubuntu', monospace; }
+.crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; padding: 0 20px; }
+.crypto-address-display { font-size: 10px; color: #00ff00; background: #0a0a0a; padding: 8px; border: 1px dashed #999; cursor: copy; word-break: break-all; font-family: monospace; }
+
 </style>
 </head>
 <body>
 
+<div id="basement">
+<div class="scroll-container">
+<div class="snap-section">
 <div class="logo-container">
 <div class="logo-text">Tap • Scale • Rotate • Hold</div>
 <a href="index.html"><img src="logo.png" alt="Logo"></a>
 </div>
+</div>
+<div class="snap-section">
+<footer>
+<div class="donate-box">
+<button class="donate-btn" onclick="toggleDonate()">Support</button>
+<div id="cryptoInfo" class="crypto-info">
+<span style="font-size: 10px; color: #fff;">Quantum Resistant Ledger (QRL)</span>
+<div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">Q0105000f1ce7bb4e86c2adcc4a5795d63e70d3e0ca788518348780cfe0d6d4ad943a89f873f84c</div>
+<span id="copyHint" style="font-size: 9px; color: #fff;">Click address to copy</span>
+</div>
+</div>
+</footer>
+</div>
+</div>
+</div>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -176,6 +205,7 @@ function startFly() {
 }
 
 function onPointerDown(e) {
+    if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
     const x = e.clientX || (e.touches && e.touches[0].clientX);
     const y = e.clientY || (e.touches && e.touches[0].clientY);
     mouse.x = (x / window.innerWidth) * 2 - 1;
@@ -198,6 +228,7 @@ function onPointerMove(e) {
 }
 
 function onPointerUp(e) {
+    if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
     const duration = Date.now() - startTime;
     clearTimeout(holdTimer);
     if (startTime !== 0 && duration < 1800 && !isFlying) {
@@ -283,6 +314,21 @@ window.addEventListener('resize', () => {
 
 loadState();
 animate();
+
+function toggleDonate() { 
+const info = document.getElementById("cryptoInfo"); 
+const isOpening = info.style.display !== "flex";
+info.style.display = isOpening ? "flex" : "none"; 
+}
+function copyToClipboard() {
+const addr = document.getElementById("cryptoAddr");
+const text = addr.innerText;
+navigator.clipboard.writeText(text).then(() => {
+addr.innerText = "Copied!";
+setTimeout(() => addr.innerText = text, 1500);
+});
+}
+
 </script>
 </body>
 </html>
