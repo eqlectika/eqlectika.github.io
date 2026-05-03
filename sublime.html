@@ -7,128 +7,54 @@
 <title>Bismuth Laboratory Persistent</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@700&display=swap');
-body { margin: 0; overflow: hidden; background: #000; touch-action: none; user-select: none; font-family: 'Ubuntu', monospace; }
+* { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; box-sizing: border-box; }
+body { margin: 0; overflow: hidden; background: #000; touch-action: none; font-family: 'Ubuntu', monospace; }
 canvas { display: block; }
 .interface { position: absolute; top: 20px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 15px; z-index: 10; pointer-events: none; }
-.mode-toggle { background: none; border: none; color: #00ff00; padding: 10px; font-size: 1.2rem; letter-spacing: 1px; cursor: pointer; pointer-events: auto; outline: none; min-width: 80px; -webkit-tap-highlight-color: transparent; font-family: 'Ubuntu', cursive; }
+.mode-toggle { background: none; border: none; color: #00ff00; padding: 10px; font-size: 1.2rem; letter-spacing: 1px; cursor: pointer; pointer-events: auto; outline: none; min-width: 80px; font-family: 'Ubuntu', cursive; }
 #basement { position: absolute; bottom: 0; width: 100%; height: 120px; overflow-y: scroll; scroll-snap-type: y mandatory; z-index: 10; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none; }
 #basement::-webkit-scrollbar { display: none; }
 .scroll-container { display: flex; flex-direction: column; width: 100%; }
-.snap-section { height: 120px; width: 100%; flex-shrink: 0; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; }
-.logo-container { display: flex; flex-direction: column; align-items: center; pointer-events: none; }
-.polarity-toggle { background: none; border: none; color: #00ff00; font-size: 1.2rem; letter-spacing: 1px; cursor: pointer; pointer-events: auto; outline: none; margin-bottom: 8px; -webkit-tap-highlight-color: transparent; font-family: 'Ubuntu', cursive; }
-.logo-container img { height: 44px; width: auto; pointer-events: auto; -webkit-user-drag: none; -webkit-user-select: none; user-select: none; }
-footer { width: 100%; background: transparent; }
-.donate-box { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
-.donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-size: 1rem; width: fit-content; font-family: 'Ubuntu', cursive; -webkit-user-select: none; user-select: none; }
-.crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; padding: 0 20px; }
-.crypto-address-display { font-size: 10px; color: #00ff00; background: #0a0a0a; padding: 8px; border: 1px dashed #999; cursor: copy; word-break: break-all; }
-.instruction-text { display: block; font-size: 1.0rem; color: #ffffff !important; letter-spacing: 1px; margin-bottom: 10px; opacity: 1; pointer-events: none; text-align: center; -webkit-user-select: none; user-select: none; }
-.mode-toggle, a { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.snap-section { height: 120px; width: 100%; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.logo-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
+.logo-container img { height: 44px; width: auto; pointer-events: auto; }
+.donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-family: 'Ubuntu', cursive; }
+.crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; padding: 0 20px; align-items: center; }
+.crypto-label { font-size: 10px; color: #fff; margin-bottom: 2px; display: block; }
+.crypto-address-display { font-size: 10px; color: #00ff00; background: #0a0a0a; padding: 8px; border: 1px dashed #999; cursor: copy; word-break: break-all; max-width: 90%; }
+.instruction-text { display: block; font-size: 1.0rem; color: #ffffff; letter-spacing: 1px; margin-bottom: 10px; pointer-events: none; }
 </style>
 </head>
 <body>
 <div class="interface">
-<button id="deleteMode" class="mode-toggle" style="display:none">Build</button>
-<button id="toggleMode" class="mode-toggle" style="display:none">Tree</button>
 <button id="undoBtn" class="mode-toggle">Undo</button>
 <button id="ritzBtn" class="mode-toggle">Ritz</button>
 </div>
 <div id="basement">
 <div class="scroll-container">
-<div class="snap-section">
-<div class="logo-container">
-<button id="polarityBtn" class="polarity-toggle" style="display:none">EXTERNAL</button>
-<span class="instruction-text">Tap any side and speak</span>
-<a href="index.html"><img src="logo.png" alt="Logo"></a>
-</div>
-</div>
-<div class="snap-section">
-<footer>
-<div class="donate-box">
-<button class="donate-btn" onclick="toggleDonate()">Support</button>
-<div id="cryptoInfo" class="crypto-info">
-<span style="font-size: 10px; color: #fff;">Quantum Resistant Ledger (QRL)</span>
-<div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">Q0105000f1ce7bb4e86c2adcc4a5795d63e70d3e0ca788518348780cfe0d6d4ad943a89f873f84c</div>
-<span id="copyHint" style="font-size: 9px; color: #fff;">Click address to copy</span>
-</div>
-</div>
-</footer>
-</div>
+<div class="snap-section"><div class="logo-container"><span class="instruction-text">Tap any side and speak</span><a href="index.html"><img src="logo.png" alt="Logo"></a></div></div>
+<div class="snap-section"><footer><div class="donate-box"><button class="donate-btn" onclick="toggleDonate()">Support</button><div id="cryptoInfo" class="crypto-info"><span class="crypto-label">Quantum Resistant Ledger (QRL)</span><div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">Q0105000f1ce7bb4e86c2adcc4a5795d63e70d3e0ca788518348780cfe0d6d4ad943a89f873f84c</div><span class="crypto-label" style="font-size: 8px;">Tap address to copy</span></div></div></footer></div>
 </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-let recognition;
-let isListening = false;
-let activeMesh = null;
-let audioContext;
-let audioAnalyser, dataArray;
-async function initAudio() {
-if (!audioContext) {
-audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let wakeLock = null;
+const requestWakeLock = async () => {
+try {
+if ('wakeLock' in navigator) {
+wakeLock = await navigator.wakeLock.request('screen');
 }
-if (audioContext.state === 'suspended') {
-await audioContext.resume();
-}
-}
-
-function startRitz() {
-initAudio().then(() => {
-const audio = new Audio('Ritz.mp3');
-const source = audioContext.createMediaElementSource(audio);
-audioAnalyser = audioContext.createAnalyser();
-audioAnalyser.fftSize = 256;
-source.connect(audioAnalyser);
-audioAnalyser.connect(audioContext.destination);
-dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
-audio.play().catch(e => console.error("Audio playback failed:", e));
-}).catch(e => console.error("AudioContext failed:", e));
-}
-
-function startVoiceAction(mesh) {
-if (isListening && activeMesh === mesh) return;
-initAudio().then(() => {
-isListening = true;
-activeMesh = mesh;
-activeMesh.material.emissive.setHex(0x00ff00);
-if (!recognition) {
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-recognition = new SpeechRecognition();
-recognition.lang = 'en-US';
-recognition.continuous = true;
-recognition.interimResults = false;
-recognition.onresult = (event) => {
-const lastIndex = event.results.length - 1;
-const transcript = event.results[lastIndex][0].transcript.toLowerCase().trim();
-applyVoiceGrow(transcript);
+} catch (err) {}
 };
-recognition.onerror = (e) => { console.error('Speech Error:', e.error); resetListening(); };
-recognition.onend = () => { if (isListening) recognition.start(); };
+document.addEventListener('visibilitychange', async () => {
+if (wakeLock !== null && document.visibilityState === 'visible') {
+await requestWakeLock();
 }
-try { recognition.start(); } catch(e) {}
-}).catch(e => console.error(e));
-}
-function applyVoiceGrow(text) {
-if (!activeMesh) return;
-if (text.includes('big') || text.includes('long') || text.includes('large')) {
-polarity = 2;
-} else if (text.includes('small') || text.includes('inner') || text.includes('tiny')) {
-polarity = -1;
-} else {
-polarity = 1;
-}
-grow(activeMesh);
-const newMeshes = group.children.slice(-5);
-activeMesh = newMeshes[Math.floor(Math.random() * newMeshes.length)];
-group.children.forEach(m => m.material.emissive.setHex(0x000000));
-activeMesh.material.emissive.setHex(0x00ff00);
-}
-let history = [];
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+});
+let audioContext, audioAnalyser, dataArray, activeAudio = null, history = [];
+let lastBeatTime = 0, beatCooldown = 350, polarity = 1, isRotating = true, isPlaying = false;
+const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000), renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
@@ -136,25 +62,38 @@ const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 const group = new THREE.Group();
 scene.add(group);
-const lights = [new THREE.PointLight(0xffffff, 5, 100), new THREE.PointLight(0xffffff, 4, 100), new THREE.AmbientLight(0xffffff, 0.5)];
-lights[0].position.set(15, 15, 15);
-lights[1].position.set(-15, -15, -15);
-scene.add(...lights);
+const pointLight = new THREE.PointLight(0xffffff, 5, 100);
+pointLight.position.set(15, 15, 15);
+scene.add(pointLight, new THREE.AmbientLight(0xffffff, 0.5));
 camera.position.set(12, 12, 12);
-let currentMode = 'tree';
-let isDeleteMode = false;
-let polarity = 1;
 const material = new THREE.MeshStandardMaterial({ metalness: 0.7, roughness: 0.2, transparent: true, opacity: 0.6, side: THREE.DoubleSide, flatShading: true });
-const currentCenter = new THREE.Vector3(0, 0, 0);
-let holdTimer = null, isFlying = false, startTime = 0, flyDirection = new THREE.Vector3(), flyPhase = 'approach', currentSpeed = 0;
-const maxSpeed = 0.1, acceleration = 0.001, bypassDistance = 1;
-const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), startMouse = new THREE.Vector2();
+const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
+async function initAudio() {
+if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+if (audioContext.state === 'suspended') await audioContext.resume();
+await requestWakeLock();
+}
+function toggleRitz() {
+initAudio().then(() => {
+if (!activeAudio) {
+activeAudio = new Audio('Ritz.mp3');
+const source = audioContext.createMediaElementSource(activeAudio);
+audioAnalyser = audioContext.createAnalyser();
+audioAnalyser.fftSize = 256;
+source.connect(audioAnalyser);
+audioAnalyser.connect(audioContext.destination);
+dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+}
+if (isPlaying) { activeAudio.pause(); isPlaying = false; document.getElementById('ritzBtn').innerText = 'Ritz'; }
+else { activeAudio.play(); isPlaying = true; document.getElementById('ritzBtn').innerText = 'Pause'; }
+});
+}
 function saveState() {
-const data = group.children.map(m => ({ depth: m.userData.depth, corners: m.userData.corners.map(c => c.clone()) }));
+const data = group.children.map(m => ({ depth: m.userData.depth, corners: m.userData.corners.map(c => ({x:c.x, y:c.y, z:c.z})) }));
 const snapshot = JSON.stringify(data);
 if (history.length === 0 || history[history.length - 1] !== snapshot) {
 history.push(snapshot);
-if (history.length > 30) history.shift();
+if (history.length > 70) history.shift();
 }
 localStorage.setItem('bismuth_state', snapshot);
 }
@@ -176,11 +115,14 @@ previousState.forEach(d => {
 const c = d.corners.map(p => new THREE.Vector3(p.x, p.y, p.z));
 createRect(c[0], c[1], c[2], c[3], d.depth, false);
 });
-localStorage.setItem('bismuth_state', JSON.stringify(previousState));
 }
 function reset() {
+if (activeAudio) { activeAudio.pause(); activeAudio.currentTime = 0; isPlaying = false; document.getElementById('ritzBtn').innerText = 'Ritz'; }
 while(group.children.length > 0) { group.remove(group.children[0]); }
 history = [];
+group.scale.set(1, 1, 1);
+group.rotation.set(0,0,0);
+localStorage.removeItem('bismuth_state');
 initBase();
 }
 function initBase() {
@@ -195,151 +137,76 @@ const v = [p1.x,p1.y,p1.z, p2.x,p2.y,p2.z, p3.x,p3.y,p3.z, p3.x,p3.y,p3.z, p4.x,
 geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
 geo.computeVertexNormals();
 const mesh = new THREE.Mesh(geo, material.clone());
-mesh.material.color.setHSL((depth * 0.12) % 1, 0.8, 0.5);
-mesh.userData = { isBismuth: true, depth: depth, corners: [p1.clone(), p2.clone(), p3.clone(), p4.clone()] };
+mesh.material.color.setHSL((depth * 0.1) % 1, 0.8, 0.5);
+mesh.userData = { depth: depth, corners: [p1.clone(), p2.clone(), p3.clone(), p4.clone()] };
 group.add(mesh);
 if (save) saveState();
 }
 function grow(mesh) {
-const c = mesh.userData.corners, d = mesh.userData.depth + 1; if (d > 10) return;
+const c = mesh.userData.corners, d = mesh.userData.depth + 1; if (d > 14) return;
+polarity = Math.random() < 0.5 ? 1 : -1;
 const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
 const normal = new THREE.Vector3().crossVectors(v1, new THREE.Vector3().subVectors(c[3], c[0])).normalize();
 const center = new THREE.Vector3().add(c[0]).add(c[1]).add(c[2]).add(c[3]).divideScalar(4);
-const offset = normal.multiplyScalar(currentMode === 'tree' ? 1.2 : v1.length() * 0.15).multiplyScalar(polarity);
-const inner = c.map(p => p.clone().lerp(center, 0.2).sub(offset));
+const randomLength = 0.8 + Math.random() * 2.0;
+const offset = normal.multiplyScalar(randomLength * polarity);
+const lerpFactor = 0.2 + Math.random() * 0.2;
+const inner = c.map(p => p.clone().lerp(center, lerpFactor).sub(offset));
 group.remove(mesh);
-createRect(c[0], c[1], inner[1], inner[0], d, false); createRect(c[1], c[2], inner[2], inner[1], d, false); createRect(c[2], c[3], inner[3], inner[2], d, false); createRect(c[3], c[0], inner[0], inner[3], d, false); createRect(inner[0], inner[1], inner[2], inner[3], d, false);
+if (Math.random() < 0.5) {
+createRect(inner[0], inner[1], inner[2], inner[3], d, false);
+} else {
+createRect(c[0], c[1], inner[1], inner[0], d, false);
+createRect(c[1], c[2], inner[2], inner[1], d, false);
+createRect(c[2], c[3], inner[3], inner[2], d, false);
+createRect(c[3], c[0], inner[0], inner[3], d, false);
+createRect(inner[0], inner[1], inner[2], inner[3], d, false);
+}
 saveState();
 }
-function startFly() {
-isFlying = true; flyPhase = 'approach';
-const currentPos = camera.position.clone();
-const toCenter = new THREE.Vector3().subVectors(currentCenter, currentPos).normalize();
-const lateral = new THREE.Vector3(0, 1, 0).cross(toCenter).normalize().multiplyScalar(bypassDistance);
-flyDirection.copy(toCenter).add(lateral.multiplyScalar(0.2)).normalize();
-controls.enabled = false;
-}
-document.getElementById('ritzBtn').addEventListener('click', (e) => { e.stopPropagation(); startRitz(); });
-document.getElementById('deleteMode').addEventListener('click', (e) => {
-e.stopPropagation(); isDeleteMode = !isDeleteMode;
-e.target.innerText = isDeleteMode ? 'Delete' : 'Build';
-e.target.style.color = isDeleteMode ? '#ff0000' : '#00ff00';
-});
-document.getElementById('toggleMode').addEventListener('click', (e) => {
-e.stopPropagation();
-currentMode = (currentMode === 'tree') ? 'hopper' : 'tree';
-e.target.innerText = currentMode === 'tree' ? 'Tree' : 'Hopper';
-});
-let undoTimer = null;
-let isLongPress = false;
+let undoTimer = null, isLongPress = false;
 const undoBtn = document.getElementById('undoBtn');
-undoBtn.addEventListener('mousedown', (e) => {
-e.stopPropagation();
-isLongPress = false;
-undoTimer = setTimeout(() => {
-reset();
-isLongPress = true;
-}, 3000);
-});
-undoBtn.addEventListener('touchstart', (e) => {
-e.stopPropagation();
-isLongPress = false;
-undoTimer = setTimeout(() => {
-reset();
-isLongPress = true;
-}, 3000);
-}, { passive: true });
-window.addEventListener('mouseup', () => {
-if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
-});
-window.addEventListener('touchend', () => {
-if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
-});
-undoBtn.addEventListener('click', (e) => {
-e.stopPropagation();
-if (!isLongPress) undo();
-isLongPress = false;
-});
-document.getElementById('polarityBtn').addEventListener('click', (e) => {
-e.stopPropagation();
-polarity *= -1;
-e.target.innerText = polarity === 1 ? 'EXTERNAL' : 'INTERNAL';
-e.target.style.color = polarity === 1 ? '#00ff00' : '#ff1493';
-});
-function toggleDonate() { 
-const info = document.getElementById("cryptoInfo"); 
-const isOpening = info.style.display !== "flex";
-info.style.display = isOpening ? "flex" : "none"; 
-}
-function copyToClipboard() {
-const addr = document.getElementById("cryptoAddr");
-const text = addr.innerText;
-navigator.clipboard.writeText(text).then(() => {
-addr.innerText = "Copied!";
-setTimeout(() => addr.innerText = text, 1500);
-});
-}
-function onDown(e) {
+function handleStart(e) { e.preventDefault(); isLongPress = false; undoTimer = setTimeout(() => { reset(); isLongPress = true; }, 1800); }
+function handleEnd() { clearTimeout(undoTimer); }
+undoBtn.addEventListener('mousedown', handleStart);
+undoBtn.addEventListener('touchstart', handleStart);
+undoBtn.addEventListener('mouseup', handleEnd);
+undoBtn.addEventListener('touchend', handleEnd);
+undoBtn.addEventListener('click', () => { if (!isLongPress) undo(); });
+document.getElementById('ritzBtn').addEventListener('click', toggleRitz);
+function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = info.style.display !== "flex" ? "flex" : "none"; }
+function copyToClipboard() { const addr = document.getElementById("cryptoAddr"); navigator.clipboard.writeText(addr.innerText); const original = addr.innerText; addr.innerText = "Copied!"; setTimeout(() => addr.innerText = original, 1500); }
+window.addEventListener('pointerdown', (e) => {
 if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
-const x = e.clientX || (e.touches && e.touches[0].clientX), y = e.clientY || (e.touches && e.touches[0].clientY);
-mouse.x = (x / window.innerWidth) * 2 - 1; mouse.y = -(y / window.innerHeight) * 2 + 1;
-startMouse.set(x, y); startTime = Date.now();
-clearTimeout(holdTimer); holdTimer = setTimeout(startFly, 1800);
-}
-function onUp(e) {
-if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
-clearTimeout(holdTimer);
-if (startTime !== 0 && Date.now() - startTime < 1800 && !isFlying) {
+initAudio();
+mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 raycaster.setFromCamera(mouse, camera);
 const hits = raycaster.intersectObjects(group.children);
-if (hits.length > 0) {
-if (isDeleteMode) { 
-group.remove(hits[0].object); 
-saveState(); 
-} else {
-startVoiceAction(hits[0].object);
-}
-}
-}
-isFlying = false; startTime = 0;
-}
-function resetListening() {
-isListening = false;
-if (activeMesh) activeMesh.material.emissive.setHex(0x000000);
-activeMesh = null;
-}
-function onMove(e) {
-if (!startTime) return;
-const x = e.clientX || (e.touches && e.touches[0].clientX), y = e.clientY || (e.touches && e.touches[0].clientY);
-if (Math.hypot(x - startMouse.x, y - startMouse.y) > 5 && !isFlying) { clearTimeout(holdTimer); startTime = 0; }
-}
-window.addEventListener('mousedown', onDown); window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-window.addEventListener('touchstart', onDown, { passive: false }); window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp, { passive: false });
+if (hits.length > 0) grow(hits[0].object);
+});
 function animate() {
 requestAnimationFrame(animate);
-if (audioAnalyser) {
+const now = Date.now();
+if (isRotating) { group.rotation.y += 0.002; group.rotation.x += 0.001; }
+if (isPlaying && audioAnalyser) {
 audioAnalyser.getByteFrequencyData(dataArray);
 const bass = dataArray[2] / 255.0;
-const scale = 1 + bass * 0.2;
-group.scale.set(scale, scale, scale);
-group.children.forEach((m, i) => {
-m.material.emissive.setHSL((i * 0.01 + bass) % 1, 0.8, 0.2 * bass);
-});
+group.scale.set(1 + bass * 0.1, 1 + bass * 0.1, 1 + bass * 0.1);
+pointLight.color.setHSL((now * 0.0005) % 1, 0.8, 0.5);
+group.children.forEach((m, i) => { m.material.emissive.setHSL((i * 0.003 + bass) % 1, 0.9, 0.1 * bass); });
+if (bass > 0.85 && now - lastBeatTime > beatCooldown) {
+if (group.children.length > 1000) { undo(); }
+else {
+const minD = Math.min(...group.children.map(m => m.userData.depth));
+const targets = group.children.filter(m => m.userData.depth === minD || Math.random() < 0.3);
+const randomMesh = targets[Math.floor(Math.random() * targets.length)];
+if (randomMesh) grow(randomMesh);
 }
-if (isFlying) { currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed); } 
-else { currentSpeed = Math.max(currentSpeed - acceleration, 0); if (currentSpeed === 0) controls.enabled = true; }
-if (currentSpeed > 0) {
-const dist = camera.position.distanceTo(currentCenter);
-if (flyPhase === 'approach') { camera.position.addScaledVector(flyDirection, currentSpeed); if (dist < bypassDistance + 1) flyPhase = 'bypass'; } 
-else if (flyPhase === 'bypass') {
-const rel = new THREE.Vector3().subVectors(camera.position, currentCenter);
-const tan = new THREE.Vector3().crossVectors(rel, new THREE.Vector3(0, 1, 0)).normalize();
-camera.position.addScaledVector(tan, currentSpeed); camera.position.addScaledVector(rel.normalize(), currentSpeed * 0.2);
-if (rel.normalize().dot(flyDirection) < -0.5) flyPhase = 'exit';
-} else { camera.position.addScaledVector(new THREE.Vector3().subVectors(camera.position, currentCenter).normalize(), currentSpeed); }
-camera.lookAt(currentCenter);
+lastBeatTime = now;
 }
-controls.update(); renderer.render(scene, camera);
+}
+controls.update();
+renderer.render(scene, camera);
 }
 loadState(); animate();
 window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
