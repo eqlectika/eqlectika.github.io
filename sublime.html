@@ -343,16 +343,19 @@ function animate() {
         group.rotation.x += 0.001;
     }
     if (isPlaying && audioAnalyser) {
-        audioAnalyser.getByteFrequencyData(dataArray);
-        const bass = dataArray[2] / 255.0;
-        const mid = dataArray[8] / 255.0;
-        group.scale.set(1 + bass * 0.1, 1 + bass * 0.1, 1 + bass * 0.1);
-        dirLight.forEach((light, i) => {
-            light.intensity = 1 + bass * 5;
-            if (bass > 0.8) {
-                light.color.setHSL((i / dirLight.length) + (now * 0.0005) % 1, 0.9, 0.5);
-            }
-        });
+    audioAnalyser.getByteFrequencyData(dataArray);
+    const bass = dataArray[2] / 255.0;
+    const treble = dataArray[40] / 255.0;
+    const wave = (Math.sin(now * 0.001) + 1) / 2;
+    group.scale.set(1 + bass * 0.1, 1 + bass * 0.1, 1 + bass * 0.1);
+    dirLight.forEach((light, i) => {
+        const r = bass * (1 - wave) * 2.0;
+        const b = bass * wave * 2.0;
+        const g = treble * 0.5;
+        light.color.setRGB(r, g, b);
+        light.intensity = 1 + bass * 4;
+    });
+
         if (bass > 0.85 && now - lastBeatTime > beatCooldown) {
             if (group.children.length > 1200) {
                 undo();
@@ -381,6 +384,9 @@ function animate() {
 }
 
 const initialLightColors = dirLight.map(l => l.color.getHex());
+
+const staticAmbientLight = new THREE.AmbientLight(0xffffff, 0.0);
+scene.add(staticAmbientLight);
 
 function reset() {
     if (activeAudio) { 
