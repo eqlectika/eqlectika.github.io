@@ -155,7 +155,8 @@ let lastBaseSideIndex = 0;
 
 async function applyVoiceGrow(text, startMesh) {
 let currentActiveMesh = startMesh;
-const totalSteps = 10;
+const words = text.split(/\s+/).filter(word => word.length > 0);
+const totalSteps = words.length;
 const vPolarity = (text.includes('big') || text.includes('long')) ? 2 : ((text.includes('small') || text.includes('inner')) ? -1 : 1);
 for (let i = 0; i < totalSteps; i++) {
 if (!isListening || !currentActiveMesh) break;
@@ -172,6 +173,7 @@ await new Promise(r => setTimeout(r, 120));
 resetListening();
 if (recognition) recognition.stop();
 }
+
 
   
 function resetListening() {
