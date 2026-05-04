@@ -194,8 +194,10 @@ const lateral = new THREE.Vector3(0, 1, 0).cross(toCenter).normalize().multiplyS
 flyDirection.copy(toCenter).add(lateral.multiplyScalar(0.2)).normalize();
 controls.enabled = false;
 }
+
 function onPointerDown(e) {
-    if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
+const target = e.target;
+if (target.tagName === 'BUTTON' || target.closest('#basement')) return;
 const x = e.clientX || (e.touches && e.touches[0].clientX);
 const y = e.clientY || (e.touches && e.touches[0].clientY);
 mouse.x = (x / window.innerWidth) * 2 - 1;
@@ -205,14 +207,10 @@ startTime = Date.now();
 clearTimeout(holdTimer);
 holdTimer = setTimeout(startFly, 1800);
 }
-function onPointerMove(e) {
-if (!startTime) return;
-const x = e.clientX || (e.touches && e.touches[0].clientX);
-const y = e.clientY || (e.touches && e.touches[0].clientY);
-if (Math.hypot(x - startMouse.x, y - startMouse.y) > 5 && !isFlying) { clearTimeout(holdTimer); startTime = 0; }
-}
-function onPointerUp() {
-    if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
+
+function onPointerUp(e) {
+const target = e.target;
+if (target.tagName === 'BUTTON' || target.closest('#basement')) return;
 const duration = Date.now() - startTime;
 clearTimeout(holdTimer);
 if (startTime !== 0 && duration < 1800 && !isFlying) {
@@ -223,6 +221,14 @@ if (intersects.length > 0) subdivideMidpoints(intersects[0].faceIndex, intersect
 isFlying = false;
 startTime = 0;
 }
+
+function onPointerMove(e) {
+if (!startTime) return;
+const x = e.clientX || (e.touches && e.touches[0].clientX);
+const y = e.clientY || (e.touches && e.touches[0].clientY);
+if (Math.hypot(x - startMouse.x, y - startMouse.y) > 5 && !isFlying) { clearTimeout(holdTimer); startTime = 0; }
+}
+
 function animate() {
 requestAnimationFrame(animate);
 currentCenter.lerp(targetCenter, 0.05);
