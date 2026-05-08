@@ -2,40 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Icosahedron Pearl Deformer</title>
 <style>
-body { margin: 0; overflow: hidden; background: #000; touch-action: none; }
+body { margin: 0; overflow: hidden; background: #000; touch-action: none; -webkit-user-select: none; user-select: none; }
 canvas { display: block; }
-.logo-container {
-position: absolute;
-bottom: 20px;
-left: 50%;
-transform: translateX(-50%);
-display: flex;
-flex-direction: column;
-align-items: center;
-text-decoration: none;
-z-index: 10;
-pointer-events: none;
-}
-.logo-container img {
-height: 44px;
-width: auto;
-pointer-events: auto;
-margin-bottom: 8px;
-}
-.logo-text {
-color: #ffffff;
-font-family: 'Ubuntu', monospace;
-font-size: 0.7rem;
-letter-spacing: 2px;
-opacity: 0.8;
-text-align: center; 
-white-space: nowrap;
-line-height: 1.4;
-}
-
+.reset-btn { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: none; border: none; color: #ffffff; font-family: 'Ubuntu', monospace; font-size: 0.7rem; letter-spacing: 2px; cursor: pointer; opacity: 0.5; z-index: 20; text-transform: uppercase; transition: opacity 0.3s; }
+.reset-btn:active { opacity: 1; scale: 1.1; }
+.logo-container { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; text-decoration: none; z-index: 10; pointer-events: none; }
+.logo-container img { height: 44px; width: auto; pointer-events: auto; margin-bottom: 8px; }
+.logo-text { color: #ffffff; font-family: 'Ubuntu', monospace; font-size: 0.7rem; letter-spacing: 2px; opacity: 0.8; text-align: center; white-space: nowrap; line-height: 1.4; }
 #basement { position: absolute; bottom: 0; width: 100%; height: 120px; overflow-y: scroll; scroll-snap-type: y mandatory; z-index: 10; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none; }
 #basement::-webkit-scrollbar { display: none; }
 .scroll-container { display: flex; flex-direction: column; width: 100%; }
@@ -44,36 +20,18 @@ line-height: 1.4;
 .donate-btn { color: #fff; border: 1px solid #fff; padding: 5px 15px; background: transparent; cursor: pointer; font-size: 0.6rem; text-transform: uppercase; width: fit-content; font-family: 'Ubuntu', monospace; }
 .crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; padding: 0 20px; }
 .crypto-address-display { font-size: 10px; color: #00ff00; background: #0a0a0a; padding: 8px; border: 1px dashed #999; cursor: copy; word-break: break-all; font-family: monospace; }
-
 </style>
 </head>
 <body>
-
+<button class="reset-btn" id="resetTrigger">Reset</button>
 <div id="basement">
 <div class="scroll-container">
-<div class="snap-section">
-<div class="logo-container">
-<div class="logo-text">Tap • Scale • Rotate • Hold</div>
-<a href="index.html"><img src="logo.png" alt="Logo"></a>
+<div class="snap-section"><div class="logo-container"><div class="logo-text">Tap • Scale • Rotate • Hold</div><a href="index.html"><img src="logo.png" alt="Logo"></a></div></div>
+<div class="snap-section"><footer><div class="donate-box"><button class="donate-btn" onclick="toggleDonate()">Support</button><div id="cryptoInfo" class="crypto-info"><span style="font-size: 10px; color: #fff;">Quantum Resistant Ledger (QRL)</span><div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">Q0105000f1ce7bb4e86c2adcc4a5795d63e70d3e0ca788518348780cfe0d6d4ad943a89f873f84c</div><span id="copyHint" style="font-size: 9px; color: #fff;">Click address to copy</span></div></div></footer></div>
 </div>
 </div>
-<div class="snap-section">
-<footer>
-<div class="donate-box">
-<button class="donate-btn" onclick="toggleDonate()">Support</button>
-<div id="cryptoInfo" class="crypto-info">
-<span style="font-size: 10px; color: #fff;">Quantum Resistant Ledger (QRL)</span>
-<div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">Q0105000f1ce7bb4e86c2adcc4a5795d63e70d3e0ca788518348780cfe0d6d4ad943a89f873f84c</div>
-<span id="copyHint" style="font-size: 9px; color: #fff;">Click address to copy</span>
-</div>
-</div>
-</footer>
-</div>
-</div>
-</div>
-
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 const scene = new THREE.Scene();
@@ -81,254 +39,154 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
-
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
+controls.dampingFactor = 0.05;
 controls.rotateSpeed = -0.5;
-
-const pearlMaterial = new THREE.MeshStandardMaterial({ 
-    color: 0xffffff, 
-    metalness: 0.8,   
-    roughness: 0.2,   
-    side: THREE.DoubleSide,
-    flatShading: false,
-    transparent: true,
-    opacity: 0.5,
-    depthWrite: false
-});
-
-let geometry = new THREE.IcosahedronGeometry(10, 0);
-let mesh = new THREE.Mesh(geometry, pearlMaterial);
+const pearlMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.8, roughness: 0.2, side: THREE.DoubleSide, transparent: true, opacity: 0.5, depthWrite: false });
+function createGeometry() {
+let geo = new THREE.IcosahedronGeometry(10, 0);
+return THREE.BufferGeometryUtils.mergeVertices(geo);
+}
+let mesh = new THREE.Mesh(createGeometry(), pearlMaterial);
 scene.add(mesh);
-camera.position.set(0, 0, 30);
-
+camera.position.set(0, 0, 35);
 const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
 scene.add(hemisphereLight);
-
-const lights = [
-    { color: 0xff0000, pos: [20, 20, 20] },   
-    { color: 0x0000ff, pos: [-20, 20, 20] },  
-    { color: 0x00ff00, pos: [0, -20, 20] },   
-    { color: 0xffff00, pos: [0, 20, -20] }    
-];
+const lights = [{ color: 0xff0000, pos: [20, 20, 20] }, { color: 0x0000ff, pos: [-20, 20, 20] }, { color: 0x00ff00, pos: [0, -20, 20] }, { color: 0xffff00, pos: [0, 20, -20] }];
 lights.forEach(l => {
-    const light = new THREE.PointLight(l.color, 2, 100);
-    light.position.set(l.pos[0], l.pos[1], l.pos[2]);
-    scene.add(light);
+const light = new THREE.PointLight(l.color, 2, 100);
+light.position.set(l.pos[0], l.pos[1], l.pos[2]);
+scene.add(light);
 });
-
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-const startMouse = new THREE.Vector2();
-const currentCenter = new THREE.Vector3(0, 0, 0);
-const targetCenter = new THREE.Vector3(0, 0, 0);
-
+const flyTarget = new THREE.Vector3(0, 0, 0);
+const lerpTarget = new THREE.Vector3().copy(controls.target);
 let holdTimer = null;
+let resetHoldTimer = null;
 let isFlying = false;
 let startTime = 0;
-let flyDirection = new THREE.Vector3();
-let flyPhase = 'approach';
+let flyPhase = 'idle';
 let currentSpeed = 0;
-const maxSpeed = 0.3;
-const acceleration = 0.005;
-const bypassDistance = 2;
-const pushDistance = 2;
-const interactionRadius = 5;
-const goldenRatio = 0.618;
-const maxGenerations = 3;
-
-function deformHierarchy(targetPoint) {
-    const posAttr = mesh.geometry.attributes.position;
-    const vertex = new THREE.Vector3();
-    const modifiedIndices = new Set();
-    for (let gen = 0; gen <= maxGenerations; gen++) {
-        const currentForce = Math.pow(goldenRatio, gen);
-        const currentRadius = interactionRadius * (gen + 1) * 0.5;
-        for (let i = 0; i < posAttr.count; i++) {
-            if (modifiedIndices.has(i)) continue;
-            vertex.fromBufferAttribute(posAttr, i);
-            const distance = vertex.distanceTo(targetPoint);
-            if (distance < currentRadius) {
-                const direction = vertex.clone().normalize();
-                vertex.add(direction.multiplyScalar(pushDistance * currentForce));
-                posAttr.setXYZ(i, vertex.x, vertex.y, vertex.z);
-                modifiedIndices.add(i);
-            }
-        }
-    }
-    posAttr.needsUpdate = true;
-}
-
+const maxSpeed = 0.06;
+const orbitRadius = 12;
 function subdivideHex(faceIndex, point) {
-    targetCenter.copy(point);
-    const posAttr = mesh.geometry.attributes.position;
-    const vP_base = point.clone().normalize().multiplyScalar(point.length() + pushDistance);
-    
-    deformHierarchy(point);
-
-    const vA = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3);
-    const vB = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3 + 1);
-    const vC = new THREE.Vector3().fromBufferAttribute(posAttr, faceIndex * 3 + 2);
-    
-    const mAB = new THREE.Vector3().addVectors(vA, vB).multiplyScalar(0.5);
-    const mBC = new THREE.Vector3().addVectors(vB, vC).multiplyScalar(0.5);
-    const mCA = new THREE.Vector3().addVectors(vC, vA).multiplyScalar(0.5);
-
-    const newVertices = [
-        vA.x, vA.y, vA.z, mAB.x, mAB.y, mAB.z, vP_base.x, vP_base.y, vP_base.z,
-        mAB.x, mAB.y, mAB.z, vB.x, vB.y, vB.z, vP_base.x, vP_base.y, vP_base.z,
-        vB.x, vB.y, vB.z, mBC.x, mBC.y, mBC.z, vP_base.x, vP_base.y, vP_base.z,
-        mBC.x, mBC.y, mBC.z, vC.x, vC.y, vC.z, vP_base.x, vP_base.y, vP_base.z,
-        vC.x, vC.y, vC.z, mCA.x, mCA.y, mCA.z, vP_base.x, vP_base.y, vP_base.z,
-        mCA.x, mCA.y, mCA.z, vA.x, vA.y, vA.z, vP_base.x, vP_base.y, vP_base.z
-    ];
-
-    const oldPos = Array.from(posAttr.array);
-    oldPos.splice(faceIndex * 9, 9, ...newVertices);
-    const newGeo = new THREE.BufferGeometry();
-    newGeo.setAttribute('position', new THREE.Float32BufferAttribute(oldPos, 3));
-    newGeo.computeVertexNormals();
-    mesh.geometry.dispose();
-    mesh.geometry = newGeo;
-    
-    saveState();
+const geo = mesh.geometry;
+const posAttr = geo.attributes.position;
+const indexAttr = geo.index;
+let closestIdx = -1;
+for(let i = 0; i < posAttr.count; i++) {
+const v = new THREE.Vector3().fromBufferAttribute(posAttr, i);
+if (v.distanceTo(point) < 1.8) { closestIdx = i; break; }
 }
-
-function startFly() {
-    isFlying = true;
-    flyPhase = 'approach';
-    const currentPos = camera.position.clone();
-    const toCenter = new THREE.Vector3().subVectors(currentCenter, currentPos).normalize();
-    const lateral = new THREE.Vector3(0, 1, 0).cross(toCenter).normalize().multiplyScalar(bypassDistance);
-    flyDirection.copy(toCenter).add(lateral.multiplyScalar(0.2)).normalize();
-    controls.enabled = false;
+if (closestIdx !== -1) {
+const v = new THREE.Vector3().fromBufferAttribute(posAttr, closestIdx);
+if (v.length() > 10.1) {
+v.normalize().multiplyScalar(10);
+posAttr.setXYZ(closestIdx, v.x, v.y, v.z);
+posAttr.needsUpdate = true;
+flyTarget.copy(v);
+return;
 }
-
-function onPointerDown(e) {
-    if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
-    const x = e.clientX || (e.touches && e.touches[0].clientX);
-    const y = e.clientY || (e.touches && e.touches[0].clientY);
-    mouse.x = (x / window.innerWidth) * 2 - 1;
-    mouse.y = -(y / window.innerHeight) * 2 + 1;
-    startMouse.set(x, y);
-    startTime = Date.now();
-    clearTimeout(holdTimer);
-    holdTimer = setTimeout(startFly, 1800);
 }
-
-function onPointerMove(e) {
-    if (!startTime) return;
-    const x = e.clientX || (e.touches && e.touches[0].clientX);
-    const y = e.clientY || (e.touches && e.touches[0].clientY);
-    const dist = Math.hypot(x - startMouse.x, y - startMouse.y);
-    if (dist > 5 && !isFlying) {
-        clearTimeout(holdTimer);
-        startTime = 0;
-    }
+const vIndices = [indexAttr.getX(faceIndex * 3), indexAttr.getX(faceIndex * 3 + 1), indexAttr.getX(faceIndex * 3 + 2)];
+const vA = new THREE.Vector3().fromBufferAttribute(posAttr, vIndices[0]);
+const vB = new THREE.Vector3().fromBufferAttribute(posAttr, vIndices[1]);
+const vC = new THREE.Vector3().fromBufferAttribute(posAttr, vIndices[2]);
+const vP = point.clone().normalize().multiplyScalar(point.length() + 2.5);
+flyTarget.copy(vP);
+const startIdx = posAttr.count;
+const positions = Array.from(posAttr.array);
+positions.push((vA.x+vB.x)/2, (vA.y+vB.y)/2, (vA.z+vB.z)/2, (vB.x+vC.x)/2, (vB.y+vC.y)/2, (vB.z+vC.z)/2, (vC.x+vA.x)/2, (vC.y+vA.y)/2, (vC.z+vA.z)/2, vP.x, vP.y, vP.z);
+const indices = Array.from(indexAttr.array);
+indices.splice(faceIndex * 3, 3, vIndices[0], startIdx, startIdx+3, startIdx, vIndices[1], startIdx+3, vIndices[1], startIdx+1, startIdx+3, startIdx+1, vIndices[2], startIdx+3, vIndices[2], startIdx+2, startIdx+3, startIdx+2, vIndices[0], startIdx+3);
+const newGeo = new THREE.BufferGeometry();
+newGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+newGeo.setIndex(indices);
+newGeo.computeVertexNormals();
+mesh.geometry.dispose();
+mesh.geometry = newGeo;
 }
-
-function onPointerUp(e) {
-    if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
-    const duration = Date.now() - startTime;
-    clearTimeout(holdTimer);
-    if (startTime !== 0 && duration < 1800 && !isFlying) {
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObject(mesh);
-        if (intersects.length > 0) {
-            subdivideHex(intersects[0].faceIndex, intersects[0].point);
-        }
-    }
-    isFlying = false;
-    startTime = 0;
+function startFly() { if(flyTarget.length() === 0) return; isFlying = true; flyPhase = 'approach'; controls.enabled = false; currentSpeed = 0; }
+function handlePointerDown(e) {
+if (e.target.closest('#basement') || e.target.closest('.reset-btn')) return;
+const isTouch = e.touches && e.touches.length > 0;
+if (isTouch && e.touches.length > 1) { clearTimeout(holdTimer); return; }
+const x = isTouch ? e.touches[0].clientX : e.clientX;
+const y = isTouch ? e.touches[0].clientY : e.clientY;
+mouse.x = (x / window.innerWidth) * 2 - 1;
+mouse.y = -(y / window.innerHeight) * 2 + 1;
+startTime = Date.now();
+holdTimer = setTimeout(startFly, 1500);
 }
-
-async function saveState() {
-    const position = Array.from(mesh.geometry.attributes.position.array);
-    localStorage.setItem('pearl_geometry_pos', JSON.stringify(position));
-    
-    const dbRequest = indexedDB.open('PearlDB', 1);
-    dbRequest.onupgradeneeded = (e) => e.target.result.createObjectStore('states');
-    dbRequest.onsuccess = (e) => {
-        const db = e.target.result;
-        db.transaction('states', 'readwrite').objectStore('states').put(position, 'last_pos');
-    };
+function handlePointerUp(e) {
+clearTimeout(holdTimer);
+if (!isFlying && (Date.now() - startTime < 1500)) {
+raycaster.setFromCamera(mouse, camera);
+const intersects = raycaster.intersectObject(mesh);
+if (intersects.length > 0) subdivideHex(intersects[0].faceIndex, intersects[0].point);
 }
-
-async function loadState() {
-    const saved = localStorage.getItem('pearl_geometry_pos');
-    if (saved) {
-        const position = JSON.parse(saved);
-        const newGeo = new THREE.BufferGeometry();
-        newGeo.setAttribute('position', new THREE.Float32BufferAttribute(position, 3));
-        newGeo.computeVertexNormals();
-        mesh.geometry.dispose();
-        mesh.geometry = newGeo;
-    }
+if (isFlying) { isFlying = false; controls.enabled = true; controls.target.copy(lerpTarget); }
+startTime = 0;
 }
-
+function resetSphere() {
+scene.remove(mesh);
+mesh.geometry.dispose();
+mesh = new THREE.Mesh(createGeometry(), pearlMaterial);
+scene.add(mesh);
+flyTarget.set(0, 0, 0);
+lerpTarget.set(0, 0, 0);
+camera.position.set(0, 0, 35);
+controls.target.set(0, 0, 0);
+controls.update();
+}
+const resetBtn = document.getElementById('resetTrigger');
+resetBtn.addEventListener('mousedown', () => resetHoldTimer = setTimeout(resetSphere, 1500));
+resetBtn.addEventListener('mouseup', () => clearTimeout(resetHoldTimer));
+resetBtn.addEventListener('mouseleave', () => clearTimeout(resetHoldTimer));
+resetBtn.addEventListener('touchstart', (e) => { e.preventDefault(); resetHoldTimer = setTimeout(resetSphere, 1500); });
+resetBtn.addEventListener('touchend', () => clearTimeout(resetHoldTimer));
 function animate() {
-    requestAnimationFrame(animate);
-currentCenter.lerp(targetCenter, 0.05);
-controls.target.copy(currentCenter);
-
-    if (isFlying) {
-        currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed);
-    } else {
-        currentSpeed = Math.max(currentSpeed - acceleration, 0);
-        if (currentSpeed === 0 && !controls.enabled) controls.enabled = true;
-    }
-
-    if (currentSpeed > 0) {
-        const distToCenter = camera.position.distanceTo(currentCenter);
-        if (flyPhase === 'approach') {
-            camera.position.addScaledVector(flyDirection, currentSpeed);
-            if (distToCenter < bypassDistance + 1) flyPhase = 'bypass';
-        } else if (flyPhase === 'bypass') {
-            const relativePos = new THREE.Vector3().subVectors(camera.position, currentCenter);
-            const tangent = new THREE.Vector3().crossVectors(relativePos, new THREE.Vector3(0, 1, 0)).normalize();
-            camera.position.addScaledVector(tangent, currentSpeed);
-            camera.position.addScaledVector(relativePos.normalize(), currentSpeed * 0.2);
-            if (relativePos.normalize().dot(flyDirection) < -0.5) flyPhase = 'exit';
-        } else {
-            const exitDir = new THREE.Vector3().subVectors(camera.position, currentCenter).normalize();
-            camera.position.addScaledVector(exitDir, currentSpeed);
-        }
-        camera.lookAt(currentCenter);
-    }
-
-    controls.update();
-    renderer.render(scene, camera);
+requestAnimationFrame(animate);
+if (isFlying) {
+currentSpeed = THREE.MathUtils.lerp(currentSpeed, maxSpeed, 0.02);
+lerpTarget.lerp(flyTarget, 0.02);
+const dist = camera.position.distanceTo(flyTarget);
+const dir = new THREE.Vector3().subVectors(flyTarget, camera.position).normalize();
+if (flyPhase === 'approach') {
+const sideDir = new THREE.Vector3(0, 1, 0).cross(dir).normalize();
+const targetPoint = flyTarget.clone().addScaledVector(sideDir, orbitRadius * 0.5);
+const moveDir = new THREE.Vector3().subVectors(targetPoint, camera.position).normalize();
+camera.position.addScaledVector(moveDir, currentSpeed);
+if (dist < orbitRadius) flyPhase = 'orbit';
+} else if (flyPhase === 'orbit') {
+const rel = new THREE.Vector3().subVectors(camera.position, flyTarget);
+const tan = new THREE.Vector3().crossVectors(rel, new THREE.Vector3(0, 1, 0)).normalize();
+camera.position.addScaledVector(tan, currentSpeed);
+camera.position.addScaledVector(rel.normalize(), currentSpeed * 0.05);
+if (dist > orbitRadius * 2.5) flyPhase = 'exit';
+} else if (flyPhase === 'exit') {
+const away = new THREE.Vector3().subVectors(camera.position, flyTarget).normalize();
+camera.position.addScaledVector(away, currentSpeed);
+if (dist > 70) { isFlying = false; controls.enabled = true; controls.target.copy(lerpTarget); flyPhase = 'idle'; }
 }
-
-window.addEventListener('mousedown', onPointerDown);
-window.addEventListener('mousemove', onPointerMove);
-window.addEventListener('mouseup', onPointerUp);
-window.addEventListener('touchstart', onPointerDown, { passive: false });
-window.addEventListener('touchmove', onPointerMove, { passive: false });
-window.addEventListener('touchend', onPointerUp, { passive: false });
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-loadState();
+camera.lookAt(lerpTarget);
+} else {
+currentSpeed = 0;
+controls.target.copy(lerpTarget);
+controls.update();
+}
+renderer.render(scene, camera);
+}
+window.addEventListener('mousedown', handlePointerDown);
+window.addEventListener('mouseup', handlePointerUp);
+window.addEventListener('touchstart', handlePointerDown, { passive: false });
+window.addEventListener('touchend', handlePointerUp, { passive: false });
+window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
 animate();
-
-function toggleDonate() { 
-const info = document.getElementById("cryptoInfo"); 
-const isOpening = info.style.display !== "flex";
-info.style.display = isOpening ? "flex" : "none"; 
-}
-function copyToClipboard() {
-const addr = document.getElementById("cryptoAddr");
-const text = addr.innerText;
-navigator.clipboard.writeText(text).then(() => {
-addr.innerText = "Copied!";
-setTimeout(() => addr.innerText = text, 1500);
-});
-}
-
+function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = info.style.display !== "flex" ? "flex" : "none"; }
+function copyToClipboard() { const addr = document.getElementById("cryptoAddr"); const text = addr.innerText; navigator.clipboard.writeText(text).then(() => { addr.innerText = "Copied!"; setTimeout(() => addr.innerText = text, 1500); }); }
 </script>
 </body>
 </html>
