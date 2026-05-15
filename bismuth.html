@@ -55,7 +55,7 @@ footer { width: 100%; background: transparent; }
 <button id="polarityBtn" class="polarity-toggle">EXTERNAL</button>
 <a href="index.html"><img src="logo.png" alt="Logo"></a>
 
-<span style="color: #ffffff; font-size: 0.6rem; letter-spacing: 1px; opacity: 0.7; margin-bottom: 4px;">Hold Undo to Reset</span>
+<span style="color: #ffffff; font-size: 0.6rem; letter-spacing: 1px; opacity: 0.7; margin-bottom: 4px;">Hold to Fly</span>
 
 </div>
 </div>
@@ -189,14 +189,12 @@ group.remove(mesh);
 createRect(c[0], c[1], inner[1], inner[0], d, false); createRect(c[1], c[2], inner[2], inner[1], d, false); createRect(c[2], c[3], inner[3], inner[2], d, false); createRect(c[3], c[0], inner[0], inner[3], d, false); createRect(inner[0], inner[1], inner[2], inner[3], d, false);
 saveState();
 }
+
 function startFly() {
-isFlying = true; flyPhase = 'approach';
-const currentPos = camera.position.clone();
-const toCenter = new THREE.Vector3().subVectors(currentCenter, currentPos).normalize();
-const lateral = new THREE.Vector3(0, 1, 0).cross(toCenter).normalize().multiplyScalar(bypassDistance);
-flyDirection.copy(toCenter).add(lateral.multiplyScalar(0.2)).normalize();
-controls.enabled = true;
+    isFlying = true;
+    flyDirection.subVectors(currentCenter, camera.position).normalize();
 }
+
 document.getElementById('deleteMode').addEventListener('click', (e) => {
 e.stopPropagation(); isDeleteMode = !isDeleteMode;
 e.target.innerText = isDeleteMode ? 'Delete' : 'Build';
@@ -287,17 +285,13 @@ function animate() {
 requestAnimationFrame(animate);
 if (isFlying) { currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed); } 
 else { currentSpeed = Math.max(currentSpeed - acceleration, 0); if (currentSpeed === 0) controls.enabled = true; }
+
 if (currentSpeed > 0) {
-const dist = camera.position.distanceTo(currentCenter);
-if (flyPhase === 'approach') { camera.position.addScaledVector(flyDirection, currentSpeed); if (dist < bypassDistance + 1) flyPhase = 'bypass'; } 
-else if (flyPhase === 'bypass') {
-const rel = new THREE.Vector3().subVectors(camera.position, currentCenter);
-const tan = new THREE.Vector3().crossVectors(rel, new THREE.Vector3(0, 1, 0)).normalize();
-camera.position.addScaledVector(tan, currentSpeed); camera.position.addScaledVector(rel.normalize(), currentSpeed * 0.2);
-if (rel.normalize().dot(flyDirection) < -0.5) flyPhase = 'exit';
-} else { camera.position.addScaledVector(new THREE.Vector3().subVectors(camera.position, currentCenter).normalize(), currentSpeed); }
-camera.lookAt(currentCenter);
+    camera.position.addScaledVector(flyDirection, currentSpeed);
+    controls.target.addScaledVector(flyDirection, currentSpeed);
 }
+
+
 controls.update(); renderer.render(scene, camera);
 }
 loadState(); animate();
