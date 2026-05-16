@@ -137,7 +137,7 @@ if (save) saveState();
 }
 function grow(mesh) {
 const c = mesh.userData.corners, d = mesh.userData.depth;
-if (!isMirror && d >= 10) return;
+if ((!isMirror && d >= 10) || (isMirror && d <= -10)) return;
 const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
 const normal = new THREE.Vector3().crossVectors(v1, new THREE.Vector3().subVectors(c[3], c[0])).normalize();
 const center = new THREE.Vector3().add(c[0]).add(c[1]).add(c[2]).add(c[3]).divideScalar(4);
