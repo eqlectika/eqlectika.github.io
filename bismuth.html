@@ -73,125 +73,884 @@ color:#fff;
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 let history = [];
+
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+const camera = new THREE.PerspectiveCamera(
+75,
+window.innerWidth / window.innerHeight,
+0.1,
+1000
+);
+
+const renderer = new THREE.WebGLRenderer({
+antialias: true
+});
+
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
+
 document.body.appendChild(renderer.domElement);
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+const controls = new THREE.OrbitControls(
+camera,
+renderer.domElement
+);
 
 controls.enableDamping = true;
 
 const group = new THREE.Group();
-scene.add(group);
-const material = new THREE.MeshPhongMaterial({ shininess: 30, specular: 0x444444, transparent: true, opacity: 0.85, side: THREE.DoubleSide, flatShading: true, depthWrite: true });
-const lights = [new THREE.HemisphereLight(0xffffff, 0x000000, 0.8), new THREE.PointLight(0xffffff, 0.5)];
-lights[1].position.set(10, 10, 10);
-scene.add(...lights);
-const backLight = new THREE.PointLight(0xffffff, 1, 50);
-backLight.position.set(-15, -20, -15);
-scene.add(backLight);
-const bottomLight = new THREE.DirectionalLight(0xffffff, 0.4);
-bottomLight.position.set(0, -20, 0);
-scene.add(bottomLight);
-camera.position.set(12, 12, 12);
-let currentMode = 'tree', isDeleteMode = false, polarity = 1, isMirror = false;
-const currentCenter = new THREE.Vector3(0, 0, 0);
-let holdTimer = null, isFlying = false, startTime = 0, flyDirection = new THREE.Vector3(), currentSpeed = 0;
-const maxSpeed = 0.1, acceleration = 0.001;
-const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), startMouse = new THREE.Vector2();
-function saveState() {
-const data = group.children.map(m => ({ depth: m.userData.depth, corners: m.userData.corners.map(c => c.clone()) }));
-const snapshot = JSON.stringify(data);
-if (history.length === 0 || history[history.length - 1] !== snapshot) {
-history.push(snapshot);
-if (history.length > 30) history.shift();
-}
-localStorage.setItem('bismuth_state', snapshot);
-}
-function loadState() {
-const saved = localStorage.getItem('bismuth_state');
-if (!saved) return initBase();
-history = [saved];
-JSON.parse(saved).forEach(d => {
-const c = d.corners.map(p => new THREE.Vector3(p.x, p.y, p.z));
-createRect(c[0], c[1], c[2], c[3], d.depth, false);
-});
-}
-function undo() {
-if (history.length <= 1) return;
-history.pop();
-const previousState = JSON.parse(history[history.length - 1]);
-while(group.children.length > 0) { group.remove(group.children[0]); }
-previousState.forEach(d => {
-const c = d.corners.map(p => new THREE.Vector3(p.x, p.y, p.z));
-createRect(c[0], c[1], c[2], c[3], d.depth, false);
-});
-localStorage.setItem('bismuth_state', JSON.stringify(previousState));
-}
-function reset() { while(group.children.length > 0) { group.remove(group.children[0]); } history = []; initBase(); }
-function initBase() {
-const s = 4;
-const pts = [new THREE.Vector3(-s,s,s), new THREE.Vector3(s,s,s), new THREE.Vector3(s,-s,s), new THREE.Vector3(-s,-s,s), new THREE.Vector3(-s,s,-s), new THREE.Vector3(s,s,-s), new THREE.Vector3(s,-s,-s), new THREE.Vector3(-s,-s,-s)];
-[[pts[0],pts[1],pts[2],pts[3]], [pts[1],pts[5],pts[6],pts[2]], [pts[5],pts[4],pts[7],pts[6]], [pts[4],pts[0],pts[3],pts[7]], [pts[4],pts[5],pts[1],pts[0]], [pts[3],pts[2],pts[6],pts[7]]].forEach(f => createRect(f[0], f[1], f[2], f[3], 0, false));
-saveState();
-}
-function createRect(p1, p2, p3, p4, depth, save = true) {
-const geo = new THREE.BufferGeometry();
-const v = [p1.x,p1.y,p1.z, p2.x,p2.y,p2.z, p3.x,p3.y,p3.z, p3.x,p3.y,p3.z, p4.x,p4.y,p4.z, p1.x,p1.y,p1.z];
-geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
-geo.computeVertexNormals();
-const mesh = new THREE.Mesh(geo, material.clone());
-mesh.material.color.setHSL((depth * 0.15) % 1, 0.6, 0.4);
-mesh.userData = { isBismuth: true, depth: depth, corners: [p1.clone(), p2.clone(), p3.clone(), p4.clone()] };
-group.add(mesh);
-if (save) saveState();
-}
-function grow(mesh) {
-const c = mesh.userData.corners, d = mesh.userData.depth;
-if ((!isMirror && d >= 10) || (isMirror && d <= -10)) return;
-const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
-const normal = new THREE.Vector3().crossVectors(v1, new THREE.Vector3().subVectors(c[3], c[0])).normalize();
-const center = new THREE.Vector3().add(c[0]).add(c[1]).add(c[2]).add(c[3]).divideScalar(4);
-const lerpFactor = isMirror ? -0.2 : 0.2;
-const stepPolarity = isMirror ? -polarity : polarity;
-const offset = normal.multiplyScalar(currentMode === 'tree' ? 1.2 : v1.length() * 0.15).multiplyScalar(stepPolarity);
-const inner = c.map(p => p.clone().lerp(center, lerpFactor).sub(offset));
-const nextDepth = isMirror ? d - 1 : d + 1;
-group.remove(mesh);
-createRect(c[0], c[1], inner[1], inner[0], nextDepth, false); 
-createRect(c[1], c[2], inner[2], inner[1], nextDepth, false); 
-createRect(c[2], c[3], inner[3], inner[2], nextDepth, false); 
-createRect(c[3], c[0], inner[0], inner[3], nextDepth, false);
-createRect(inner[0], inner[1], inner[2], inner[3], nextDepth, false);
-saveState();
-}
-function startFly() { isFlying = true; flyDirection.subVectors(currentCenter, camera.position).normalize(); }
-document.getElementById('deleteMode').addEventListener('click', (e) => { e.stopPropagation(); isDeleteMode = !isDeleteMode; e.target.innerText = isDeleteMode ? 'Del' : 'Build'; e.target.style.color = isDeleteMode ? '#ff0000' : '#00ff00'; });
-document.getElementById('toggleMode').addEventListener('click', (e) => { e.stopPropagation(); currentMode = (currentMode === 'tree') ? 'hopper' : 'tree'; e.target.innerText = currentMode === 'tree' ? 'Tree' : 'Hop'; });
-document.getElementById('mirrorBtn').addEventListener('click', (e) => { e.stopPropagation(); isMirror = !isMirror; e.target.innerText = isMirror ? 'Mirror' : 'Norm'; e.target.style.color = isMirror ? '#ffa500' : '#00ff00'; });
-document.getElementById('polarityBtn').addEventListener('click', (e) => { e.stopPropagation(); polarity *= -1; e.target.innerText = polarity === 1 ? 'EXT' : 'INT'; e.target.style.color = polarity === 1 ? '#00ff00' : '#ff1493'; });
-let undoTimer = null, isLongPress = false;
-const undoBtn = document.getElementById('undoBtn');
-undoBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); isLongPress = false; undoTimer = setTimeout(() => { reset(); isLongPress = true; }, 3000); });
-undoBtn.addEventListener('touchstart', (e) => { e.stopPropagation(); isLongPress = false; undoTimer = setTimeout(() => { reset(); isLongPress = true; }, 3000); }, { passive: true });
-window.addEventListener('mouseup', () => { if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; } });
-window.addEventListener('touchend', () => { if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; } });
-undoBtn.addEventListener('click', (e) => { e.stopPropagation(); if (!isLongPress) undo(); isLongPress = false; });
-function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = info.style.display !== "flex" ? "flex" : "none"; }
-function copyToClipboard() { const addr = document.getElementById("cryptoAddr"); const text = addr.innerText; navigator.clipboard.writeText(text).then(() => { addr.innerText = "Copied!"; setTimeout(() => addr.innerText = text, 1500); }); }
-function onDown(e) { if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return; const x = e.clientX || (e.touches && e.touches[0].clientX), y = e.clientY || (e.touches && e.touches[0].clientY); mouse.x = (x / window.innerWidth) * 2 - 1; mouse.y = -(y / window.innerHeight) * 2 + 1; startMouse.set(x, y); startTime = Date.now(); clearTimeout(holdTimer); holdTimer = setTimeout(startFly, 1800); }
-function onUp(e) { if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) { clearTimeout(holdTimer); startTime = 0; return; } clearTimeout(holdTimer); if (startTime !== 0 && Date.now() - startTime < 1800 && !isFlying) { raycaster.setFromCamera(mouse, camera); const hits = raycaster.intersectObjects(group.children); if (hits.length > 0) { if (isDeleteMode) { group.remove(hits[0].object); saveState(); } else { grow(hits[0].object); } } } isFlying = false; startTime = 0; }
-function onMove(e) { if (!startTime) return; const x = e.clientX || (e.touches && e.touches[0].clientX), y = e.clientY || (e.touches && e.touches[0].clientY); if (Math.hypot(x - startMouse.x, y - startMouse.y) > 5 && !isFlying) { clearTimeout(holdTimer); startTime = 0; } }
 
-renderer.domElement.addEventListener('pointerdown', onDown);
-renderer.domElement.addEventListener('pointermove', onMove);
-renderer.domElement.addEventListener('pointerup', onUp);
-  
-function animate() { requestAnimationFrame(animate); if (isFlying) { currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed); } else { currentSpeed = Math.max(currentSpeed - acceleration, 0); if (currentSpeed === 0) controls.enabled = true; } if (currentSpeed > 0) { camera.position.addScaledVector(flyDirection, currentSpeed); controls.target.addScaledVector(flyDirection, currentSpeed); } controls.update(); renderer.render(scene, camera); }
-loadState(); animate();
-window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+scene.add(group);
+
+const material = new THREE.MeshPhongMaterial({
+shininess: 30,
+specular: 0x444444,
+transparent: true,
+opacity: 0.85,
+side: THREE.DoubleSide,
+flatShading: true,
+depthWrite: true
+});
+
+const hemi = new THREE.HemisphereLight(
+0xffffff,
+0x000000,
+0.8
+);
+
+const light = new THREE.PointLight(
+0xffffff,
+0.5
+);
+
+light.position.set(10,10,10);
+
+scene.add(hemi, light);
+
+const backLight = new THREE.PointLight(
+0xffffff,
+1,
+50
+);
+
+backLight.position.set(-15,-20,-15);
+
+scene.add(backLight);
+
+const bottomLight = new THREE.DirectionalLight(
+0xffffff,
+0.4
+);
+
+bottomLight.position.set(0,-20,0);
+
+scene.add(bottomLight);
+
+camera.position.set(12,12,12);
+
+let currentMode = 'tree';
+
+let isDeleteMode = false;
+
+let polarity = 1;
+
+let isMirror = false;
+
+const currentCenter = new THREE.Vector3(0,0,0);
+
+let holdTimer = null;
+
+let isFlying = false;
+
+let startTime = 0;
+
+const flyDirection = new THREE.Vector3();
+
+let currentSpeed = 0;
+
+const maxSpeed = 0.1;
+
+const acceleration = 0.001;
+
+const raycaster = new THREE.Raycaster();
+
+const mouse = new THREE.Vector2();
+
+const startMouse = new THREE.Vector2();
+
+function saveState() {
+
+const data = group.children.map(m => ({
+
+depth: m.userData.depth,
+
+normalSteps: m.userData.normalSteps,
+
+mirrorSteps: m.userData.mirrorSteps,
+
+corners: m.userData.corners.map(c => ({
+x: c.x,
+y: c.y,
+z: c.z
+}))
+
+}));
+
+const snapshot = JSON.stringify(data);
+
+if (
+history.length === 0 ||
+history[history.length - 1] !== snapshot
+) {
+
+history.push(snapshot);
+
+if (history.length > 30) {
+history.shift();
+}
+
+}
+
+localStorage.setItem(
+'bismuth_state',
+snapshot
+);
+
+}
+
+function loadState() {
+
+const saved =
+localStorage.getItem('bismuth_state');
+
+if (!saved) {
+
+initBase();
+
+return;
+
+}
+
+history = [saved];
+
+JSON.parse(saved).forEach(d => {
+
+const c = d.corners.map(p =>
+new THREE.Vector3(p.x,p.y,p.z)
+);
+
+createRect(
+c[0],
+c[1],
+c[2],
+c[3],
+d.depth,
+d.normalSteps,
+d.mirrorSteps,
+false
+);
+
+});
+
+}
+
+function undo() {
+
+if (history.length <= 1) return;
+
+history.pop();
+
+const previous =
+JSON.parse(history[history.length - 1]);
+
+while (group.children.length > 0) {
+
+group.remove(group.children[0]);
+
+}
+
+previous.forEach(d => {
+
+const c = d.corners.map(p =>
+new THREE.Vector3(p.x,p.y,p.z)
+);
+
+createRect(
+c[0],
+c[1],
+c[2],
+c[3],
+d.depth,
+d.normalSteps,
+d.mirrorSteps,
+false
+);
+
+});
+
+localStorage.setItem(
+'bismuth_state',
+JSON.stringify(previous)
+);
+
+}
+
+function reset() {
+
+while(group.children.length > 0) {
+
+group.remove(group.children[0]);
+
+}
+
+history = [];
+
+initBase();
+
+}
+
+function initBase() {
+
+const s = 4;
+
+const pts = [
+
+new THREE.Vector3(-s,s,s),
+new THREE.Vector3(s,s,s),
+new THREE.Vector3(s,-s,s),
+new THREE.Vector3(-s,-s,s),
+
+new THREE.Vector3(-s,s,-s),
+new THREE.Vector3(s,s,-s),
+new THREE.Vector3(s,-s,-s),
+new THREE.Vector3(-s,-s,-s)
+
+];
+
+[
+[pts[0],pts[1],pts[2],pts[3]],
+[pts[1],pts[5],pts[6],pts[2]],
+[pts[5],pts[4],pts[7],pts[6]],
+[pts[4],pts[0],pts[3],pts[7]],
+[pts[4],pts[5],pts[1],pts[0]],
+[pts[3],pts[2],pts[6],pts[7]]
+
+].forEach(f => {
+
+createRect(
+f[0],
+f[1],
+f[2],
+f[3],
+0,
+0,
+0,
+false
+);
+
+});
+
+saveState();
+
+}
+
+function createRect(
+p1,
+p2,
+p3,
+p4,
+depth,
+normalSteps = 0,
+mirrorSteps = 0,
+save = true
+) {
+
+const geo = new THREE.BufferGeometry();
+
+const v = [
+
+p1.x,p1.y,p1.z,
+p2.x,p2.y,p2.z,
+p3.x,p3.y,p3.z,
+
+p3.x,p3.y,p3.z,
+p4.x,p4.y,p4.z,
+p1.x,p1.y,p1.z
+
+];
+
+geo.setAttribute(
+'position',
+new THREE.Float32BufferAttribute(v,3)
+);
+
+geo.computeVertexNormals();
+
+const mesh = new THREE.Mesh(
+geo,
+material.clone()
+);
+
+mesh.material.color.setHSL(
+(depth * 0.15) % 1,
+0.6,
+0.4
+);
+
+mesh.userData = {
+
+isBismuth: true,
+
+depth,
+
+normalSteps,
+
+mirrorSteps,
+
+corners: [
+p1.clone(),
+p2.clone(),
+p3.clone(),
+p4.clone()
+]
+
+};
+
+group.add(mesh);
+
+if (save) saveState();
+
+}
+
+function grow(mesh) {
+
+const c = mesh.userData.corners;
+
+const d = mesh.userData.depth;
+
+const normalSteps =
+mesh.userData.normalSteps;
+
+const mirrorSteps =
+mesh.userData.mirrorSteps;
+
+if (!isMirror && normalSteps >= 10) return;
+
+if (isMirror && mirrorSteps >= 10) return;
+
+const v1 = new THREE.Vector3()
+.subVectors(c[1], c[0]);
+
+const normal = new THREE.Vector3()
+.crossVectors(
+v1,
+new THREE.Vector3()
+.subVectors(c[3], c[0])
+)
+.normalize();
+
+const center = new THREE.Vector3()
+.add(c[0])
+.add(c[1])
+.add(c[2])
+.add(c[3])
+.divideScalar(4);
+
+const lerpFactor =
+isMirror ? -0.2 : 0.2;
+
+const stepPolarity =
+isMirror ? -polarity : polarity;
+
+const offset = normal
+.multiplyScalar(
+currentMode === 'tree'
+? 1.2
+: v1.length() * 0.15
+)
+.multiplyScalar(stepPolarity);
+
+const inner = c.map(p =>
+p.clone()
+.lerp(center, lerpFactor)
+.sub(offset)
+);
+
+const nextDepth =
+isMirror ? d - 1 : d + 1;
+
+const nextNormalSteps =
+isMirror
+? normalSteps
+: normalSteps + 1;
+
+const nextMirrorSteps =
+isMirror
+? mirrorSteps + 1
+: mirrorSteps;
+
+group.remove(mesh);
+
+createRect(
+c[0],
+c[1],
+inner[1],
+inner[0],
+nextDepth,
+nextNormalSteps,
+nextMirrorSteps,
+false
+);
+
+createRect(
+c[1],
+c[2],
+inner[2],
+inner[1],
+nextDepth,
+nextNormalSteps,
+nextMirrorSteps,
+false
+);
+
+createRect(
+c[2],
+c[3],
+inner[3],
+inner[2],
+nextDepth,
+nextNormalSteps,
+nextMirrorSteps,
+false
+);
+
+createRect(
+c[3],
+c[0],
+inner[0],
+inner[3],
+nextDepth,
+nextNormalSteps,
+nextMirrorSteps,
+false
+);
+
+createRect(
+inner[0],
+inner[1],
+inner[2],
+inner[3],
+nextDepth,
+nextNormalSteps,
+nextMirrorSteps,
+false
+);
+
+saveState();
+
+}
+
+function startFly() {
+
+isFlying = true;
+
+flyDirection
+.subVectors(
+currentCenter,
+camera.position
+)
+.normalize();
+
+}
+
+document
+.getElementById('deleteMode')
+.addEventListener('click', e => {
+
+e.stopPropagation();
+
+isDeleteMode = !isDeleteMode;
+
+e.target.innerText =
+isDeleteMode
+? 'Del'
+: 'Build';
+
+e.target.style.color =
+isDeleteMode
+? '#ff0000'
+: '#00ff00';
+
+});
+
+document
+.getElementById('toggleMode')
+.addEventListener('click', e => {
+
+e.stopPropagation();
+
+currentMode =
+currentMode === 'tree'
+? 'hopper'
+: 'tree';
+
+e.target.innerText =
+currentMode === 'tree'
+? 'Tree'
+: 'Hop';
+
+});
+
+document
+.getElementById('mirrorBtn')
+.addEventListener('click', e => {
+
+e.stopPropagation();
+
+isMirror = !isMirror;
+
+e.target.innerText =
+isMirror
+? 'Mirror'
+: 'Norm';
+
+e.target.style.color =
+isMirror
+? '#ffa500'
+: '#00ff00';
+
+});
+
+document
+.getElementById('polarityBtn')
+.addEventListener('click', e => {
+
+e.stopPropagation();
+
+polarity *= -1;
+
+e.target.innerText =
+polarity === 1
+? 'EXT'
+: 'INT';
+
+e.target.style.color =
+polarity === 1
+? '#00ff00'
+: '#ff1493';
+
+});
+
+let undoTimer = null;
+
+let isLongPress = false;
+
+const undoBtn =
+document.getElementById('undoBtn');
+
+undoBtn.addEventListener(
+'mousedown',
+e => {
+
+e.stopPropagation();
+
+isLongPress = false;
+
+undoTimer = setTimeout(() => {
+
+reset();
+
+isLongPress = true;
+
+}, 3000);
+
+}
+);
+
+undoBtn.addEventListener(
+'touchstart',
+e => {
+
+e.stopPropagation();
+
+isLongPress = false;
+
+undoTimer = setTimeout(() => {
+
+reset();
+
+isLongPress = true;
+
+}, 3000);
+
+},
+{ passive: true }
+);
+
+window.addEventListener('mouseup', () => {
+
+if (undoTimer) {
+
+clearTimeout(undoTimer);
+
+undoTimer = null;
+
+}
+
+});
+
+window.addEventListener('touchend', () => {
+
+if (undoTimer) {
+
+clearTimeout(undoTimer);
+
+undoTimer = null;
+
+}
+
+});
+
+undoBtn.addEventListener('click', e => {
+
+e.stopPropagation();
+
+if (!isLongPress) undo();
+
+isLongPress = false;
+
+});
+
+function toggleDonate() {
+
+const info =
+document.getElementById('cryptoInfo');
+
+info.style.display =
+info.style.display !== 'flex'
+? 'flex'
+: 'none';
+
+}
+
+function copyToClipboard() {
+
+const addr =
+document.getElementById('cryptoAddr');
+
+const text = addr.innerText;
+
+navigator.clipboard
+.writeText(text)
+.then(() => {
+
+addr.innerText = 'Copied!';
+
+setTimeout(() => {
+
+addr.innerText = text;
+
+},1500);
+
+});
+
+}
+
+function onDown(e) {
+
+if (
+e.target.tagName === 'BUTTON' ||
+e.target.closest('#basement')
+) return;
+
+const x =
+e.clientX ||
+(e.touches && e.touches[0].clientX);
+
+const y =
+e.clientY ||
+(e.touches && e.touches[0].clientY);
+
+mouse.x =
+(x / window.innerWidth) * 2 - 1;
+
+mouse.y =
+-(y / window.innerHeight) * 2 + 1;
+
+startMouse.set(x,y);
+
+startTime = Date.now();
+
+clearTimeout(holdTimer);
+
+holdTimer = setTimeout(
+startFly,
+1800
+);
+
+}
+
+function onUp(e) {
+
+if (
+e.target.tagName === 'BUTTON' ||
+e.target.closest('#basement')
+) {
+
+clearTimeout(holdTimer);
+
+startTime = 0;
+
+return;
+
+}
+
+clearTimeout(holdTimer);
+
+if (
+startTime !== 0 &&
+Date.now() - startTime < 1800 &&
+!isFlying
+) {
+
+raycaster.setFromCamera(
+mouse,
+camera
+);
+
+const hits =
+raycaster.intersectObjects(
+group.children
+);
+
+if (hits.length > 0) {
+
+if (isDeleteMode) {
+
+group.remove(hits[0].object);
+
+saveState();
+
+} else {
+
+grow(hits[0].object);
+
+}
+
+}
+
+}
+
+isFlying = false;
+
+startTime = 0;
+
+}
+
+function onMove(e) {
+
+if (!startTime) return;
+
+const x =
+e.clientX ||
+(e.touches && e.touches[0].clientX);
+
+const y =
+e.clientY ||
+(e.touches && e.touches[0].clientY);
+
+if (
+Math.hypot(
+x - startMouse.x,
+y - startMouse.y
+) > 5 &&
+!isFlying
+) {
+
+clearTimeout(holdTimer);
+
+startTime = 0;
+
+}
+
+}
+
+renderer.domElement.addEventListener(
+'pointerdown',
+onDown
+);
+
+renderer.domElement.addEventListener(
+'pointermove',
+onMove
+);
+
+renderer.domElement.addEventListener(
+'pointerup',
+onUp
+);
+
+function animate() {
+
+requestAnimationFrame(animate);
+
+if (isFlying) {
+
+currentSpeed = Math.min(
+currentSpeed + acceleration,
+maxSpeed
+);
+
+} else {
+
+currentSpeed = Math.max(
+currentSpeed - acceleration,
+0
+);
+
+}
+
+if (currentSpeed > 0) {
+
+camera.position.addScaledVector(
+flyDirection,
+currentSpeed
+);
+
+controls.target.addScaledVector(
+flyDirection,
+currentSpeed
+);
+
+}
+
+controls.update();
+
+renderer.render(scene,camera);
+
+}
+
+loadState();
+
+animate();
+
+window.addEventListener(
+'resize',
+() => {
+
+camera.aspect =
+window.innerWidth / window.innerHeight;
+
+camera.updateProjectionMatrix();
+
+renderer.setSize(
+window.innerWidth,
+window.innerHeight
+);
+
+}
+);
 </script>
 </body>
 </html>
