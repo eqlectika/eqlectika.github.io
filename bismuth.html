@@ -69,7 +69,6 @@ document.body.appendChild(renderer.domElement);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
 controls.enableDamping = true;
-controls.touches.ONE = THREE.TOUCH.NONE;
 
 const group = new THREE.Group();
 scene.add(group);
@@ -173,9 +172,9 @@ function onDown(e) { if (e.target.tagName === 'BUTTON' || e.target.closest('#bas
 function onUp(e) { if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) { clearTimeout(holdTimer); startTime = 0; return; } clearTimeout(holdTimer); if (startTime !== 0 && Date.now() - startTime < 1800 && !isFlying) { raycaster.setFromCamera(mouse, camera); const hits = raycaster.intersectObjects(group.children); if (hits.length > 0) { if (isDeleteMode) { group.remove(hits[0].object); saveState(); } else { grow(hits[0].object); } } } isFlying = false; startTime = 0; }
 function onMove(e) { if (!startTime) return; const x = e.clientX || (e.touches && e.touches[0].clientX), y = e.clientY || (e.touches && e.touches[0].clientY); if (Math.hypot(x - startMouse.x, y - startMouse.y) > 5 && !isFlying) { clearTimeout(holdTimer); startTime = 0; } }
 
-window.addEventListener('pointerdown', onDown);
-window.addEventListener('pointermove', onMove);
-window.addEventListener('pointerup', onUp);
+renderer.domElement.addEventListener('pointerdown', onDown);
+renderer.domElement.addEventListener('pointermove', onMove);
+renderer.domElement.addEventListener('pointerup', onUp);
   
 function animate() { requestAnimationFrame(animate); if (isFlying) { currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed); } else { currentSpeed = Math.max(currentSpeed - acceleration, 0); if (currentSpeed === 0) controls.enabled = true; } if (currentSpeed > 0) { camera.position.addScaledVector(flyDirection, currentSpeed); controls.target.addScaledVector(flyDirection, currentSpeed); } controls.update(); renderer.render(scene, camera); }
 loadState(); animate();
