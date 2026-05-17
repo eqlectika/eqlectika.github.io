@@ -43,7 +43,7 @@ footer { width: 100%; background: transparent; }
 <button id="deleteMode" class="mode-toggle">Build</button>
 <button id="toggleMode" class="mode-toggle">Tree</button>
 <button id="mirrorBtn" class="mode-toggle">Normal</button>
-<button id="polarityBtn" class="mode-toggle">External</button>
+<button id="polarityBtn" class="mode-toggle">Internal</button>
 <button id="undoBtn" class="mode-toggle">Undo</button>
 </div>
 <div id="basement">
@@ -322,7 +322,7 @@ function grow(mesh) {
   const normal = new THREE.Vector3().crossVectors(v1, new THREE.Vector3().subVectors(c[3], c[0])).normalize();
   const center = new THREE.Vector3().add(c[0]).add(c[1]).add(c[2]).add(c[3]).divideScalar(4);
   const lerpFactor = isMirror ? -0.2 : 0.2;
-  const stepPolarity = isMirror ? -polarity : polarity;
+  const stepPolarity = isMirror ? polarity : -polarity;
   const offset = normal.multiplyScalar(currentMode === 'tree' ? 1.2 : v1.length() * 0.15).multiplyScalar(stepPolarity);
   const inner = c.map(p => p.clone().lerp(center, lerpFactor).sub(offset));
   const nextDepth = isMirror ? d - 1 : d + 1;
@@ -366,7 +366,7 @@ document.getElementById('mirrorBtn').addEventListener('click', e => {
 document.getElementById('polarityBtn').addEventListener('click', e => {
   e.stopPropagation();
   polarity *= -1;
-  e.target.innerText = polarity === 1 ? 'External' : 'Internal';
+  e.target.innerText = polarity === 1 ? 'Internal' : 'External';
   e.target.style.color = polarity === 1 ? '#00ff00' : '#ff1493';
 });
 
