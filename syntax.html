@@ -10,7 +10,7 @@
 -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
 -webkit-touch-callout: none; -webkit-user-drag: none; -webkit-tap-highlight-color: transparent;
 }
-@import url('https://fonts.cdnfonts.com/css/din-condensed');
+@import url('https://fonts.googleapis.com/css2?family=DIN+Condensed&display=swap');
 body {
   margin: 0;
   overflow: hidden;
@@ -96,8 +96,7 @@ controls.enableDamping = true;
 const group = new THREE.Group();
 scene.add(group);
 
-const systemLanguages = navigator.languages || [];
-const userLang = (systemLanguages[0] || navigator.language || 'en').slice(0, 2);
+const userLang = (navigator.language || 'en').slice(0, 2);
 
 const predictiveDict = {
   'ru': {
@@ -159,23 +158,20 @@ function predictNextWords(seedWord) {
 
 function createTextTexture(text) {
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width = 256;
+  canvas.height = 256;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.lineWidth = 32;
+  ctx.lineWidth = 16;
   ctx.strokeStyle = '#ffffff';
-  ctx.strokeRect(16, 16, canvas.width - 32, canvas.height - 32);
-  ctx.font = 'bold 80px "DIN Condensed", Menlo, sans-serif';
+  ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
+  ctx.font = 'bold 40px "DIN Condensed", Menlo, sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text.toUpperCase(), canvas.width / 2, canvas.height / 2);
   const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.ClampToEdgeWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
   return texture;
 }
 
@@ -277,74 +273,30 @@ function initBase() {
 }
 
 function createRect(p1, p2, p3, p4, depth, normalSteps = 0, mirrorSteps = 0, word = "", save = true) {
-  const center = new THREE.Vector3().add(p1).add(p2).add(p3).add(p4).divideScalar(4);
-  
-  let norm = new THREE.Vector3().crossVectors(
-    new THREE.Vector3().subVectors(p2, p1),
-    new THREE.Vector3().subVectors(p4, p1)
-  ).normalize();
-  
-  if (norm.dot(center) < 0) {
-    const t1 = p1, t2 = p2;
-    p1 = p4; p2 = p3; p3 = t2; p4 = t1;
-    norm.multiplyScalar(-1);
-  }
-
-  let u = new THREE.Vector3();
-  let v = new THREE.Vector3();
-  
-  if (Math.abs(norm.y) > 0.9) {
-    u.set(1, 0, 0).projectOnPlane(norm).normalize();
-    v.crossVectors(norm, u).normalize();
-  } else {
-    v.set(0, 1, 0).projectOnPlane(norm).normalize();
-    u.crossVectors(v, norm).normalize();
-  }
-
-  const project = (p) => {
-    const offset = new THREE.Vector3().subVectors(p, center);
-    return { x: offset.dot(u), y: offset.dot(v) };
-  };
-
-  const coords = [project(p1), project(p2), project(p3), project(p4)];
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  coords.forEach(c => {
-    if (c.x < minX) minX = c.x; if (c.x > maxX) maxX = c.x;
-    if (c.y < minY) minY = c.y; if (c.y > maxY) maxY = c.y;
-  });
-
-  const wSize = maxX - minX || 1;
-  const hSize = maxY - minY || 1;
-  const uvsArray = coords.map(c => [
-    (c.x - minX) / wSize,
-    (c.y - minY) / hSize
-  ]);
-
   const geo = new THREE.BufferGeometry();
-  const vertices = [
+  const v = [
     p1.x,p1.y,p1.z, p2.x,p2.y,p2.z, p3.x,p3.y,p3.z,
     p3.x,p3.y,p3.z, p4.x,p4.y,p4.z, p1.x,p1.y,p1.z
   ];
   const uvs = new Float32Array([
-    uvsArray[0][0], uvsArray[0][1], uvsArray[1][0], uvsArray[1][1], uvsArray[2][0], uvsArray[2][1],
-    uvsArray[2][0], uvsArray[2][1], uvsArray[3][0], uvsArray[3][1], uvsArray[0][0], uvsArray[0][1]
+    0,1, 1,1, 1,0,
+    1,0, 0,0, 0,1
   ]);
-
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(v,3));
   geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   geo.computeVertexNormals();
-
+  
   const textTex = createTextTexture(word);
   const customMaterial = new THREE.MeshPhongMaterial({
     color: 0xffffff,
     shininess: 30,
     specular: 0x444444,
-    side: THREE.FrontSide,
+    side: THREE.DoubleSide,
     flatShading: true,
     depthWrite: true,
     map: textTex
   });
-
+  
   const mesh = new THREE.Mesh(geo, customMaterial);
   mesh.userData = {
     isBismuth: true,
