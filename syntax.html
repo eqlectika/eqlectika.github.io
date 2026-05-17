@@ -37,6 +37,7 @@ footer { width: 100%; background: transparent; }
 .crypto-info { display: none; flex-direction: column; gap: 4px; margin-top: 5px; padding: 0 20px; }
 .crypto-address-display { font-size: 9px; color: #00ff00; background: #0a0a0a; padding: 6px; border: 1px dashed #999; cursor: copy; word-break: break-all; }
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/typo-js@1.2.4/typo.min.js"></script>
 </head>
 <body>
 <div class="interface">
@@ -96,64 +97,46 @@ controls.enableDamping = true;
 const group = new THREE.Group();
 scene.add(group);
 
-const userLang = (navigator.language || 'en').slice(0, 2);
+let typo = null;
+const defaultEnWords = ["structure", "geometry", "quantum", "dimension", "axis", "matrix", "vector", "fractal", "node", "symmetry", "order", "system", "vertex", "tensor", "lattice"];
 
-const predictiveDict = {
-  'ru': {
-    'initial': ["я", "матрица", "архитектор", "код", "система", "разум"],
-    'я': ["вижу", "знаю", "строю", "помню", "слышу"],
-    'матрица': ["генерирует", "развивает", "требует", "скрывает", "контролирует"],
-    'архитектор': ["создает", "проектирует", "направляет", "исправляет", "связывает"],
-    'код': ["определяет", "структурирует", "запускает", "очищает", "блокирует"],
-    'система': ["функционирует", "наблюдает", "адаптируется", "трансформирует", "отвечает"],
-    'разум': ["ищет", "осознает", "вычисляет", "синхронизирует", "считывает"],
-    'вижу': ["твой", "новый", "чистый", "вечный", "скрытый"],
-    'знаю': ["вектор", "путь", "метод", "алгоритм", "паттерн"],
-    'строю': ["фрактал", "пространство", "узел", "симметрию", "порядок"],
-    'помню': ["исходный", "первый", "базовый", "главный", "критический"],
-    'слышу': ["запрос", "сигнал", "поток", "команду", "импульс"],
-    'default': ["структура", "геометрия", "квант", "измерение", "ось"]
-  },
-  'uk': {
-    'initial': ["я", "матриця", "архітектор", "код", "система", "розум"],
-    'я': ["бачу", "знаю", "будую", "пам'ятаю", "чую"],
-    'матриця': ["генерує", "розвиває", "вимагає", "приховує", "контролює"],
-    'архітектор': ["створює", "проектує", "направляє", "виправляє", "пов'язує"],
-    'код': ["визначає", "структурує", "запускає", "очищає", "блокує"],
-    'система': ["функціонує", "спостерігає", "адаптується", "трансформує", "відповідає"],
-    'розум': ["шукає", "усвідомлює", "обчислює", "синхронізує", "зчитує"],
-    'бачу': ["твій", "новий", "чистий", "вічний", "прихований"],
-    'знаю': ["вектор", "шлях", "метод", "алгоритм", "паттерн"],
-    'будую': ["фрактал", "простір", "вузол", "симетрію", "порядок"],
-    "пам'ятаю": ["вихідний", "перший", "базовий", "головний", "критичний"],
-    'чую': ["запит", "сигнал", "потік", "команду", "імпульс"],
-    'default': ["структура", "геометрія", "квант", "вимір", "вісь"]
-  },
-  'en': {
-    'initial': ["i", "matrix", "architect", "code", "system", "mind"],
-    'i': ["see", "know", "build", "remember", "hear"],
-    'matrix': ["generates", "develops", "requires", "hides", "controls"],
-    'architect': ["creates", "designs", "directs", "fixes", "binds"],
-    'code': ["defines", "structures", "executes", "clears", "blocks"],
-    'system': ["functions", "observes", "adapts", "transforms", "responds"],
-    'mind': ["seeks", "perceives", "calculates", "synchronizes", "reads"],
-    'see': ["your", "new", "clean", "eternal", "hidden"],
-    'know': ["vector", "path", "method", "algorithm", "pattern"],
-    'build': ["fractal", "space", "node", "symmetry", "order"],
-    'remember': ["source", "first", "base", "main", "critical"],
-    'hear': ["request", "signal", "flow", "command", "impulse"],
-    'default': ["structure", "geometry", "quantum", "dimension", "axis"]
-  }
-};
-
-const currentDict = predictiveDict[userLang] || predictiveDict['en'];
+function initTypoDictionary() {
+  const affPath = "https://cdn.jsdelivr.net/jsdelivr/gh/cfinke/Typo.js@master/typo/dictionaries/en_US/en_US.aff";
+  const dicPath = "https://cdn.jsdelivr.net/jsdelivr/gh/cfinke/Typo.js@master/typo/dictionaries/en_US/en_US.dic";
+  
+  Promise.all([
+    fetch(affPath).then(r => { if (!r.ok) throw new Error(); return r.text(); }),
+    fetch(dicPath).then(r => { if (!r.ok) throw new Error(); return r.text(); })
+  ]).then(([affData, dicData]) => {
+    typo = new Typo("en_US", affData, dicData);
+  }).catch(() => {
+    console.warn("Using local fallback generator.");
+  });
+}
+initTypoDictionary();
 
 function predictNextWords(seedWord) {
-  const norm = seedWord ? seedWord.toLowerCase() : '';
-  if (currentDict[norm]) return currentDict[norm];
-  const keys = Object.keys(currentDict).filter(k => k !== 'initial' && k !== 'default');
-  const randomKey = keys[Math.floor(Math.random() * keys.length)];
-  return currentDict[randomKey];
+  const norm = seedWord ? seedWord.toLowerCase().trim() : '';
+  let result = [];
+  
+  if (typo) {
+    const suggestions = typo.suggest(norm);
+    if (suggestions && suggestions.length > 0) {
+      result = suggestions.filter(w => !w.includes("'") && !w.includes("-"));
+    }
+  }
+  
+  if (result.length < 5) {
+    const shuffled = [...defaultEnWords].sort(() => 0.5 - Math.random());
+    while (result.length < 5) {
+      const nextWord = shuffled.pop();
+      if (!result.includes(nextWord)) {
+        result.push(nextWord);
+      }
+    }
+  }
+  
+  return result.slice(0, 5);
 }
 
 function createTextTexture(text) {
@@ -161,16 +144,29 @@ function createTextTexture(text) {
   canvas.width = 256;
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
+  
   ctx.fillStyle = '#000000';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
   ctx.lineWidth = 16;
   ctx.strokeStyle = '#ffffff';
   ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
-  ctx.font = 'bold 40px "DIN Condensed", Menlo, sans-serif';
+  
+  const cleanText = text.toUpperCase();
+  let fontSize = 50; 
+  const maxWidth = canvas.width - 40; 
+  
+  do {
+    ctx.font = `bold ${fontSize}px "DIN Condensed", Menlo, sans-serif`;
+    if (ctx.measureText(cleanText).width <= maxWidth) break;
+    fontSize -= 2;
+  } while (fontSize > 10);
+  
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text.toUpperCase(), canvas.width / 2, canvas.height / 2);
+  ctx.fillText(cleanText, canvas.width / 2, canvas.height / 2);
+  
   const texture = new THREE.CanvasTexture(canvas);
   return texture;
 }
@@ -264,7 +260,7 @@ function initBase() {
     [pts[0],pts[1],pts[2],pts[3]], [pts[1],pts[5],pts[6],pts[2]], [pts[5],pts[4],pts[7],pts[6]],
     [pts[4],pts[0],pts[3],pts[7]], [pts[4],pts[5],pts[1],pts[0]], [pts[3],pts[2],pts[6],pts[7]]
   ];
-  const initialWords = currentDict['initial'];
+const initialWords = ["subject", "matrix", "architect", "code", "system", "mind"];  
   faces.forEach((f, idx) => {
     const word = initialWords[idx % initialWords.length];
     createRect(f[0], f[1], f[2], f[3], 0, 0, 0, word, false);
@@ -459,8 +455,10 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-loadState();
-animate();
+document.fonts.ready.then(() => {
+  loadState();
+  animate();
+});
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
