@@ -96,16 +96,64 @@ controls.enableDamping = true;
 const group = new THREE.Group();
 scene.add(group);
 
-const baseWords = ["bismuth", "matrix", "geometry", "structure", "quantum", "crystal", "layer", "dimension", "lattice", "vector", "vertex", "order", "symmetry", "depth", "node", "axis"];
-let wordsArray = [];
-if ('Intl' in window && 'Segmenter' in Intl) {
-  const segmenter = new Intl.Segmenter(navigator.language || 'en', { granularity: 'word' });
-  const segments = segmenter.segment(baseWords.join(" "));
-  for (const seg of segments) {
-    if (seg.isWordLike) wordsArray.push(seg.segment);
+const userLang = (navigator.language || 'en').slice(0, 2);
+
+const predictiveDict = {
+  'ru': {
+    'initial': ["я", "матрица", "архитектор", "код", "система", "разум"],
+    'я': ["вижу", "знаю", "строю", "помню", "слышу"],
+    'матрица': ["генерирует", "развивает", "требует", "скрывает", "контролирует"],
+    'архитектор': ["создает", "проектирует", "направляет", "исправляет", "связывает"],
+    'код': ["определяет", "структурирует", "запускает", "очищает", "блокирует"],
+    'система': ["функционирует", "наблюдает", "адаптируется", "трансформирует", "отвечает"],
+    'разум': ["ищет", "осознает", "вычисляет", "синхронизирует", "считывает"],
+    'вижу': ["твой", "новый", "чистый", "вечный", "скрытый"],
+    'знаю': ["вектор", "путь", "метод", "алгоритм", "паттерн"],
+    'строю': ["фрактал", "пространство", "узел", "симметрию", "порядок"],
+    'помню': ["исходный", "первый", "базовый", "главный", "критический"],
+    'слышу': ["запрос", "сигнал", "поток", "команду", "импульс"],
+    'default': ["структура", "геометрия", "квант", "измерение", "ось"]
+  },
+  'uk': {
+    'initial': ["я", "матриця", "архітектор", "код", "система", "розум"],
+    'я': ["бачу", "знаю", "будую", "пам'ятаю", "чую"],
+    'матриця': ["генерує", "розвиває", "вимагає", "приховує", "контролює"],
+    'архітектор': ["створює", "проектує", "направляє", "виправляє", "пов'язує"],
+    'код': ["визначає", "структурує", "запускає", "очищає", "блокує"],
+    'система': ["функціонує", "спостерігає", "адаптується", "трансформує", "відповідає"],
+    'розум': ["шукає", "усвідомлює", "обчислює", "синхронізує", "зчитує"],
+    'бачу': ["твій", "новий", "чистий", "вічний", "прихований"],
+    'знаю': ["вектор", "шлях", "метод", "алгоритм", "паттерн"],
+    'будую': ["фрактал", "простір", "вузол", "симетрію", "порядок"],
+    "пам'ятаю": ["вихідний", "перший", "базовий", "головний", "критичний"],
+    'чую': ["запит", "сигнал", "потік", "команду", "імпульс"],
+    'default': ["структура", "геометрія", "квант", "вимір", "вісь"]
+  },
+  'en': {
+    'initial': ["i", "matrix", "architect", "code", "system", "mind"],
+    'i': ["see", "know", "build", "remember", "hear"],
+    'matrix': ["generates", "develops", "requires", "hides", "controls"],
+    'architect': ["creates", "designs", "directs", "fixes", "binds"],
+    'code': ["defines", "structures", "executes", "clears", "blocks"],
+    'system': ["functions", "observes", "adapts", "transforms", "responds"],
+    'mind': ["seeks", "perceives", "calculates", "synchronizes", "reads"],
+    'see': ["your", "new", "clean", "eternal", "hidden"],
+    'know': ["vector", "path", "method", "algorithm", "pattern"],
+    'build': ["fractal", "space", "node", "symmetry", "order"],
+    'remember': ["source", "first", "base", "main", "critical"],
+    'hear': ["request", "signal", "flow", "command", "impulse"],
+    'default': ["structure", "geometry", "quantum", "dimension", "axis"]
   }
-} else {
-  wordsArray = [...baseWords];
+};
+
+const currentDict = predictiveDict[userLang] || predictiveDict['en'];
+
+function predictNextWords(seedWord) {
+  const norm = seedWord ? seedWord.toLowerCase() : '';
+  if (currentDict[norm]) return currentDict[norm];
+  const keys = Object.keys(currentDict).filter(k => k !== 'initial' && k !== 'default');
+  const randomKey = keys[Math.floor(Math.random() * keys.length)];
+  return currentDict[randomKey];
 }
 
 function createTextTexture(text) {
@@ -216,9 +264,10 @@ function initBase() {
     [pts[0],pts[1],pts[2],pts[3]], [pts[1],pts[5],pts[6],pts[2]], [pts[5],pts[4],pts[7],pts[6]],
     [pts[4],pts[0],pts[3],pts[7]], [pts[4],pts[5],pts[1],pts[0]], [pts[3],pts[2],pts[6],pts[7]]
   ];
-  faces.forEach(f => {
-    const randomWord = wordsArray[Math.floor(Math.random() * wordsArray.length)];
-    createRect(f[0], f[1], f[2], f[3], 0, 0, 0, randomWord, false);
+  const initialWords = currentDict['initial'];
+  faces.forEach((f, idx) => {
+    const word = initialWords[idx % initialWords.length];
+    createRect(f[0], f[1], f[2], f[3], 0, 0, 0, word, false);
   });
   saveState();
 }
@@ -266,6 +315,7 @@ function grow(mesh) {
   const d = mesh.userData.depth;
   const normalSteps = mesh.userData.normalSteps;
   const mirrorSteps = mesh.userData.mirrorSteps;
+  const seedWord = mesh.userData.word;
   if (!isMirror && normalSteps >= 10) return;
   if (isMirror && mirrorSteps >= 10) return;
   const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
@@ -281,17 +331,13 @@ function grow(mesh) {
   
   group.remove(mesh);
   
-  const w1 = wordsArray[Math.floor(Math.random() * wordsArray.length)];
-  const w2 = wordsArray[Math.floor(Math.random() * wordsArray.length)];
-  const w3 = wordsArray[Math.floor(Math.random() * wordsArray.length)];
-  const w4 = wordsArray[Math.floor(Math.random() * wordsArray.length)];
-  const w5 = wordsArray[Math.floor(Math.random() * wordsArray.length)];
+  const predicted = predictNextWords(seedWord);
   
-  createRect(c[0], c[1], inner[1], inner[0], nextDepth, nextNormalSteps, nextMirrorSteps, w1, false);
-  createRect(c[1], c[2], inner[2], inner[1], nextDepth, nextNormalSteps, nextMirrorSteps, w2, false);
-  createRect(c[2], c[3], inner[3], inner[2], nextDepth, nextNormalSteps, nextMirrorSteps, w3, false);
-  createRect(c[3], c[0], inner[0], inner[3], nextDepth, nextNormalSteps, nextMirrorSteps, w4, false);
-  createRect(inner[0], inner[1], inner[2], inner[3], nextDepth, nextNormalSteps, nextMirrorSteps, w5, false);
+  createRect(c[0], c[1], inner[1], inner[0], nextDepth, nextNormalSteps, nextMirrorSteps, predicted[0], false);
+  createRect(c[1], c[2], inner[2], inner[1], nextDepth, nextNormalSteps, nextMirrorSteps, predicted[1], false);
+  createRect(c[2], c[3], inner[3], inner[2], nextDepth, nextNormalSteps, nextMirrorSteps, predicted[2], false);
+  createRect(c[3], c[0], inner[0], inner[3], nextDepth, nextNormalSteps, nextMirrorSteps, predicted[3], false);
+  createRect(inner[0], inner[1], inner[2], inner[3], nextDepth, nextNormalSteps, nextMirrorSteps, predicted[4], false);
   saveState();
 }
 
