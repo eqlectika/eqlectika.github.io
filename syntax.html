@@ -477,19 +477,26 @@ function animate() {
   requestAnimationFrame(animate);
   if (isFlying) {
     controls.enabled = true;
+    controls.autoRotate = false;
     currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed);
     camera.position.addScaledVector(flyDirection, currentSpeed);
     controls.target.addScaledVector(flyDirection, currentSpeed);
   } else if (isBypassing) {
-    controls.enabled = false;
-    bypassRadius += (targetBypassRadius - bypassRadius) * 0.02;
-    bypassAngle += maxSpeed / Math.max(bypassRadius, 1.0);
-    camera.position.x = currentCenter.x + Math.cos(bypassAngle) * bypassRadius;
-    camera.position.z = currentCenter.z + Math.sin(bypassAngle) * bypassRadius;
+    controls.enabled = true;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = (maxSpeed * 60) / Math.max(camera.position.distanceTo(controls.target), 1.0);
+    
+    let dir = new THREE.Vector3().subVectors(controls.target, camera.position);
+    let dist = dir.length();
+    if (dist > targetBypassRadius) {
+      let moveStep = (dist - targetBypassRadius) * 0.02;
+      camera.position.addScaledVector(dir.normalize(), moveStep);
+    }
+    
     camera.position.y += (currentCenter.y - camera.position.y) * 0.02;
-    controls.target.copy(currentCenter);
   } else {
     controls.enabled = true;
+    controls.autoRotate = false;
     currentSpeed = Math.max(currentSpeed - acceleration, 0);
   }
   controls.update();
