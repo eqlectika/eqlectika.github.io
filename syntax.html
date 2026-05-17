@@ -52,22 +52,22 @@ footer { width: 100%; background: transparent; }
 <div class="snap-section">
 <div class="logo-container">
 <a href="index.html"><img src="logo.png" alt="Logo"></a>
+
 <div style="
-display:flex;
-width:100vw;
-padding:0 15px;
-box-sizing:border-box;
-color:white;
-font-size:0.8rem;
-opacity:0.8;
+display: flex;
+width: 100vw;
+padding: 0 15px;
+box-sizing: border-box;
+color: white;
+font-size: 0.8rem;
+opacity: 0.8;
+justify-content: space-between;
 ">
-  <div style="flex:1; text-align:left;">
-    Hold screen to fly
-  </div>
-  <div style="flex:1; text-align:right;">
-    Hold Undo to reset
-  </div>
+  <div id="flyLabel" style="width: 30%; text-align: left; cursor: pointer; pointer-events: auto;">Fly</div>
+  <div style="width: 40%; text-align: center;">Hold Undo to reset</div>
+  <div id="bypassLabel" style="width: 30%; text-align: right; cursor: pointer; pointer-events: auto;">Bypass</div>
 </div>
+
 </div>
 </div>
 <div class="snap-section">
@@ -337,10 +337,7 @@ function grow(mesh) {
   saveState();
 }
 
-function startFly() {
-  isFlying = true;
-  flyDirection.subVectors(currentCenter, camera.position).normalize();
-}
+
 
 document.getElementById('deleteMode').addEventListener('click', e => {
   e.stopPropagation();
@@ -400,21 +397,57 @@ function copyToClipboard() {
   });
 }
 
+let isBypassing = false;
+let bypassAngle = 0;
+let bypassRadius = 0;
+let targetBypassRadius = 0;
+
+const flyLabel = document.getElementById('flyLabel');
+const bypassLabel = document.getElementById('bypassLabel');
+
+function updateInterfaceLabels() {
+  flyLabel.innerText = isFlying ? 'Stop' : 'Fly';
+  flyLabel.style.color = isFlying ? '#ff0000' : '#ffffff';
+  bypassLabel.innerText = isBypassing ? 'Stop' : 'Bypass';
+  bypassLabel.style.color = isBypassing ? '#ff0000' : '#ffffff';
+}
+
+flyLabel.addEventListener('click', (e) => {
+  e.stopPropagation();
+  isFlying = !isFlying;
+  if (isFlying) {
+    isBypassing = false;
+    flyDirection.subVectors(currentCenter, camera.position).normalize();
+  }
+  updateInterfaceLabels();
+});
+
+bypassLabel.addEventListener('click', (e) => {
+  e.stopPropagation();
+  isBypassing = !isBypassing;
+  if (isBypassing) {
+    isFlying = false;
+    let radiusVector = new THREE.Vector3().subVectors(camera.position, currentCenter);
+    bypassRadius = radiusVector.length();
+    targetBypassRadius = bypassRadius * 0.25;
+    bypassAngle = Math.atan2(camera.position.z - currentCenter.z, camera.position.x - currentCenter.x);
+  }
+  updateInterfaceLabels();
+});
+
 function onDown(e) {
   if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
   const x = e.clientX || (e.touches && e.touches[0].clientX);
   const y = e.clientY || (e.touches && e.touches[0].clientY);
   mouse.x = (x / window.innerWidth) * 2 - 1;
   mouse.y = -(y / window.innerHeight) * 2 + 1;
-  startMouse.set(x,y);
+  startMouse.set(x, y);
   startTime = Date.now();
-  clearTimeout(holdTimer);
-  holdTimer = setTimeout(startFly, 1800);
 }
+
 function onUp(e) {
-  if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) { clearTimeout(holdTimer); startTime = 0; return; }
-  clearTimeout(holdTimer);
-  if (startTime !== 0 && Date.now() - startTime < 1800 && !isFlying) {
+  if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) { startTime = 0; return; }
+  if (startTime !== 0 && Date.now() - startTime < 300) {
     raycaster.setFromCamera(mouse, camera);
     const hits = raycaster.intersectObjects(group.children);
     if (hits.length > 0) {
@@ -426,14 +459,14 @@ function onUp(e) {
       }
     }
   }
-  isFlying = false;
   startTime = 0;
 }
+
 function onMove(e) {
   if (!startTime) return;
   const x = e.clientX || (e.touches && e.touches[0].clientX);
   const y = e.clientY || (e.touches && e.touches[0].clientY);
-  if (Math.hypot(x - startMouse.x, y - startMouse.y) > 5 && !isFlying) { clearTimeout(holdTimer); startTime = 0; }
+  if (Math.hypot(x - startMouse.x, y - startMouse.y) > 5) { startTime = 0; }
 }
 
 renderer.domElement.addEventListener('pointerdown', onDown);
@@ -443,22 +476,30 @@ renderer.domElement.addEventListener('pointerup', onUp);
 function animate() {
   requestAnimationFrame(animate);
   if (isFlying) {
+    controls.enabled = true;
     currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed);
-  } else {
-    currentSpeed = Math.max(currentSpeed - acceleration, 0);
-  }
-  if (currentSpeed > 0) {
     camera.position.addScaledVector(flyDirection, currentSpeed);
     controls.target.addScaledVector(flyDirection, currentSpeed);
+  } else if (isBypassing) {
+    controls.enabled = false;
+    bypassRadius += (targetBypassRadius - bypassRadius) * 0.02;
+    bypassAngle += maxSpeed / Math.max(bypassRadius, 1.0);
+    camera.position.x = currentCenter.x + Math.cos(bypassAngle) * bypassRadius;
+    camera.position.z = currentCenter.z + Math.sin(bypassAngle) * bypassRadius;
+    camera.position.y += (currentCenter.y - camera.position.y) * 0.02;
+    controls.target.copy(currentCenter);
+  } else {
+    controls.enabled = true;
+    currentSpeed = Math.max(currentSpeed - acceleration, 0);
   }
   controls.update();
   renderer.render(scene, camera);
 }
-
 document.fonts.ready.then(() => {
   loadState();
   animate();
 });
+
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
