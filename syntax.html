@@ -37,25 +37,102 @@ footer { width: 100%; background: transparent; }
 .crypto-info { display: none; flex-direction: column; gap: 4px; margin-top: 5px; padding: 0 20px; }
 .crypto-label { font-size: 10px; color: #fff; margin-bottom: 2px; display: block; }
 .crypto-address-display { font-size: 10px; color: #00ff00; background: #0a0a0a; padding: 6px; border: 1px dashed #999; cursor: copy; word-break: break-all; }
+
+#flatInterface {
+  display: none;
+  position: absolute;
+  top: 40px;
+  bottom: 140px;
+  width: 100%;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  box-sizing: border-box;
+  z-index: 5;
+}
+.flat-word {
+  width: 100%;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: bold;
+  white-space: nowrap;
+  cursor: pointer;
+  overflow: hidden;
+}
+.flat-controls {
+  position: absolute;
+  bottom: 110px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+.flat-btn {
+  background: transparent;
+  border: none;
+  color: #00ff00;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  pointer-events: auto;
+  outline: none;
+  position: absolute;
+}
+#bgColorBtn {
+  left: 25px;
+}
+#textColorBtn {
+  right: 25px;
+}
+#textToggleBtn {
+  border: none;
+  background: transparent;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  pointer-events: auto;
+  outline: none;
+  padding: 6px 12px;
+}
 </style>
   <script src="https://cdn.jsdelivr.net/npm/typo-js@1.2.4/typo.min.js"></script>
 </head>
 <body>
-<div class="interface">
+<div id="topInterface" class="interface">
 <button id="deleteMode" class="mode-toggle">Build</button>
 <button id="toggleMode" class="mode-toggle">Tree</button>
 <button id="mirrorBtn" class="mode-toggle">Normal</button>
 <button id="polarityBtn" class="mode-toggle">Internal</button>
-<button id="textToggleBtn" class="mode-toggle" style="color: #ffa500;">Void</button>
 <button id="undoBtn" class="mode-toggle">Undo</button>
 </div>
+
+<div id="flatControls" class="flat-controls">
+  <button id="bgColorBtn" class="flat-btn">Bkg Color</button>
+  <button id="textToggleBtn" style="color: #ffa500;">Void</button>
+  <button id="textColorBtn" class="flat-btn">Txt Color</button>
+</div>
+
+<div id="flatInterface">
+  <div class="flat-word" id="fw0"></div>
+  <div class="flat-word" id="fw1"></div>
+  <div class="flat-word" id="fw2"></div>
+  <div class="flat-word" id="fw3"></div>
+  <div class="flat-word" id="fw4"></div>
+</div>
+
 <div id="basement">
 <div class="scroll-container">
 <div class="snap-section">
 <div class="logo-container">
 <a href="index.html"><img src="logo.png" alt="Logo"></a>
 
-<div style="
+<div id="labelsContainer" style="
 display: flex;
 width: 100vw;
 padding: 0 15px;
@@ -90,7 +167,7 @@ justify-content: space-between;
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw-syntax.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
 let history = [];
@@ -105,7 +182,14 @@ controls.enableDamping = true;
 const group = new THREE.Group();
 scene.add(group);
 
-let isTextDisabled = true;
+let currentVisualMode = 'void'; 
+let currentFlatWords = ["subject", "matrix", "architect", "code", "system"];
+
+const bgColors = ["#000000", "#000033", "#003300", "#4a0010"];
+const textColors = ["#ffffff", "#00ff00", "#ffa500", "#ff1493", "#00ffff"];
+let bgIndex = 0;
+let textIndex = 0;
+
 let typo = null;
 const defaultEnWords = ["structure", "geometry", "quantum", "dimension", "axis", "matrix", "vector", "fractal", "node", "symmetry", "order", "system", "vertex", "tensor", "lattice"];
 
@@ -161,7 +245,7 @@ function createTextTexture(text) {
   ctx.strokeStyle = '#ffffff';
   ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
   
-  if (!isTextDisabled) {
+  if (currentVisualMode === 'text') {
     const cleanText = text.toUpperCase();
     let fontSize = 50; 
     const maxWidth = canvas.width - 40; 
@@ -191,6 +275,57 @@ function updateAllTextures() {
       mesh.material.map = createTextTexture(mesh.userData.word);
       mesh.material.needsUpdate = true;
     }
+  });
+}
+
+function fitSingleWordFontSize(el, word) {
+  let fontSize = 100;
+  el.style.fontSize = `${fontSize}px`;
+  
+  const maxW = window.innerWidth - 40;
+  const testCanvas = document.createElement('canvas');
+  const testCtx = testCanvas.getContext('2d');
+  
+  do {
+    testCtx.font = `bold ${fontSize}px "DIN Condensed", Menlo, sans-serif`;
+    if (testCtx.measureText(word.toUpperCase()).width <= maxW) break;
+    fontSize -= 2;
+  } while (fontSize > 12);
+  
+  el.style.fontSize = `${fontSize}px`;
+}
+
+function renderFlatInterface() {
+  const container = document.getElementById('flatInterface');
+  const topMenu = document.getElementById('topInterface');
+  const lbls = document.getElementById('labelsContainer');
+  const bgBtn = document.getElementById('bgColorBtn');
+  const txBtn = document.getElementById('textColorBtn');
+  
+  if (currentVisualMode !== 'flat') {
+    container.style.display = 'none';
+    topMenu.style.display = 'flex';
+    lbls.style.display = 'flex';
+    bgBtn.style.display = 'none';
+    txBtn.style.display = 'none';
+    document.body.style.background = '#000000';
+    return;
+  }
+  
+  container.style.display = 'flex';
+  topMenu.style.display = 'none';
+  lbls.style.display = 'none';
+  bgBtn.style.display = 'block';
+  txBtn.style.display = 'block';
+  
+  container.style.background = bgColors[bgIndex];
+  document.body.style.background = bgColors[bgIndex];
+  
+  currentFlatWords.forEach((word, idx) => {
+    const el = document.getElementById(`fw${idx}`);
+    el.innerText = word.toUpperCase();
+    el.style.color = textColors[textIndex];
+    fitSingleWordFontSize(el, word);
   });
 }
 
@@ -263,6 +398,11 @@ function undo() {
     createRect(c[0], c[1], c[2], c[3], d.depth, d.normalSteps, d.mirrorSteps, d.word, false);
   });
   localStorage.setItem('bismuth_state', JSON.stringify(previous));
+  if (group.children.length > 0) {
+    const lastMeshWord = group.children[group.children.length - 1].userData.word || "matrix";
+    currentFlatWords = predictNextWords(lastMeshWord);
+    if (currentVisualMode === 'flat') renderFlatInterface();
+  }
 }
 
 function reset() {
@@ -271,6 +411,7 @@ function reset() {
   }
   history = [];
   initBase();
+  if (currentVisualMode === 'flat') renderFlatInterface();
 }
 
 function initBase() {
@@ -283,12 +424,13 @@ function initBase() {
     [pts[0],pts[1],pts[2],pts[3]], [pts[1],pts[5],pts[6],pts[2]], [pts[5],pts[4],pts[7],pts[6]],
     [pts[4],pts[0],pts[3],pts[7]], [pts[4],pts[5],pts[1],pts[0]], [pts[3],pts[2],pts[6],pts[7]]
   ];
-const initialWords = ["subject", "matrix", "architect", "code", "system", "mind"];  
+  const initialWords = ["subject", "matrix", "architect", "code", "system", "mind"];  
   faces.forEach((f, idx) => {
     const word = initialWords[idx % initialWords.length];
     createRect(f[0], f[1], f[2], f[3], 0, 0, 0, word, false);
   });
   saveState();
+  currentFlatWords = initialWords.slice(0, 5);
 }
 
 function createRect(p1, p2, p3, p4, depth, normalSteps = 0, mirrorSteps = 0, word = "", save = true) {
@@ -362,10 +504,52 @@ function grow(mesh) {
 
 document.getElementById('textToggleBtn').addEventListener('click', e => {
   e.stopPropagation();
-  isTextDisabled = !isTextDisabled;
-  e.target.innerText = isTextDisabled ? 'Void' : 'Text';
-  e.target.style.color = isTextDisabled ? '#ffa500' : '#00ff00';
-  updateAllTextures();
+  
+  if (currentVisualMode === 'void') {
+    currentVisualMode = 'text';
+    e.target.innerText = 'Text';
+    e.target.style.color = '#00ff00';
+    renderer.domElement.style.display = 'block';
+    updateAllTextures();
+  } else if (currentVisualMode === 'text') {
+    currentVisualMode = 'flat';
+    e.target.innerText = 'Info';
+    e.target.style.color = '#00ffff';
+    renderer.domElement.style.display = 'none';
+  } else {
+    currentVisualMode = 'void';
+    e.target.innerText = 'Void';
+    e.target.style.color = '#ffa500';
+    renderer.domElement.style.display = 'block';
+    updateAllTextures();
+  }
+  renderFlatInterface();
+});
+
+currentFlatWords.forEach((_, idx) => {
+  const el = document.getElementById(`fw${idx}`);
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    const currentText = el.innerText.toLowerCase();
+    const predicted = predictNextWords(currentText);
+    const newWord = predicted[Math.floor(Math.random() * predicted.length)];
+    
+    currentFlatWords[idx] = newWord;
+    el.innerText = newWord.toUpperCase();
+    fitSingleWordFontSize(el, newWord);
+  });
+});
+
+document.getElementById('bgColorBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  bgIndex = (bgIndex + 1) % bgColors.length;
+  renderFlatInterface();
+});
+
+document.getElementById('textColorBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  textIndex = (textIndex + 1) % textColors.length;
+  renderFlatInterface();
 });
 
 document.getElementById('deleteMode').addEventListener('click', e => {
@@ -465,7 +649,7 @@ bypassLabel.addEventListener('click', (e) => {
 });
 
 function onDown(e) {
-  if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
+  if (e.target.tagName === 'BUTTON' || e.target.closest('#basement') || currentVisualMode === 'flat') return;
   const x = e.clientX || (e.touches && e.touches[0].clientX);
   const y = e.clientY || (e.touches && e.touches[0].clientY);
   mouse.x = (x / window.innerWidth) * 2 - 1;
@@ -475,7 +659,7 @@ function onDown(e) {
 }
 
 function onUp(e) {
-  if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) { startTime = 0; return; }
+  if (e.target.tagName === 'BUTTON' || e.target.closest('#basement') || currentVisualMode === 'flat') { startTime = 0; return; }
   if (startTime !== 0 && Date.now() - startTime < 300) {
     raycaster.setFromCamera(mouse, camera);
     const hits = raycaster.intersectObjects(group.children);
@@ -492,7 +676,7 @@ function onUp(e) {
 }
 
 function onMove(e) {
-  if (!startTime) return;
+  if (!startTime || currentVisualMode === 'flat') return;
   const x = e.clientX || (e.touches && e.touches[0].clientX);
   const y = e.clientY || (e.touches && e.touches[0].clientY);
   if (Math.hypot(x - startMouse.x, y - startMouse.y) > 5) { startTime = 0; }
@@ -504,6 +688,8 @@ renderer.domElement.addEventListener('pointerup', onUp);
 
 function animate() {
   requestAnimationFrame(animate);
+  if (currentVisualMode === 'flat') return;
+  
   if (isFlying) {
     controls.enabled = true;
     controls.autoRotate = false;
@@ -534,12 +720,15 @@ function animate() {
 document.fonts.ready.then(() => {
   loadState();
   animate();
+  document.getElementById('bgColorBtn').style.display = 'none';
+  document.getElementById('textColorBtn').style.display = 'none';
 });
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  if (currentVisualMode === 'flat') renderFlatInterface();
 });
 </script>
 </body>
