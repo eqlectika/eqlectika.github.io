@@ -46,6 +46,7 @@ footer { width: 100%; background: transparent; }
 <button id="toggleMode" class="mode-toggle">Tree</button>
 <button id="mirrorBtn" class="mode-toggle">Normal</button>
 <button id="polarityBtn" class="mode-toggle">Internal</button>
+<button id="textToggleBtn" class="mode-toggle" style="color: #ffa500;">Void</button>
 <button id="undoBtn" class="mode-toggle">Undo</button>
 </div>
 <div id="basement">
@@ -88,6 +89,10 @@ justify-content: space-between;
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw-syntax.js').catch(() => {});
+}
+
 let history = [];
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -100,6 +105,7 @@ controls.enableDamping = true;
 const group = new THREE.Group();
 scene.add(group);
 
+let isTextDisabled = true;
 let typo = null;
 const defaultEnWords = ["structure", "geometry", "quantum", "dimension", "axis", "matrix", "vector", "fractal", "node", "symmetry", "order", "system", "vertex", "tensor", "lattice"];
 
@@ -155,23 +161,37 @@ function createTextTexture(text) {
   ctx.strokeStyle = '#ffffff';
   ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
   
-  const cleanText = text.toUpperCase();
-  let fontSize = 50; 
-  const maxWidth = canvas.width - 40; 
-  
-  do {
-    ctx.font = `bold ${fontSize}px "DIN Condensed", Menlo, sans-serif`;
-    if (ctx.measureText(cleanText).width <= maxWidth) break;
-    fontSize -= 2;
-  } while (fontSize > 10);
-  
-  ctx.fillStyle = '#ffffff';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(cleanText, canvas.width / 2, canvas.height / 2);
+  if (!isTextDisabled) {
+    const cleanText = text.toUpperCase();
+    let fontSize = 50; 
+    const maxWidth = canvas.width - 40; 
+    
+    do {
+      ctx.font = `bold ${fontSize}px "DIN Condensed", Menlo, sans-serif`;
+      if (ctx.measureText(cleanText).width <= maxWidth) break;
+      fontSize -= 2;
+    } while (fontSize > 10);
+    
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(cleanText, canvas.width / 2, canvas.height / 2);
+  }
   
   const texture = new THREE.CanvasTexture(canvas);
   return texture;
+}
+
+function updateAllTextures() {
+  group.children.forEach(mesh => {
+    if (mesh.userData && mesh.userData.word !== undefined) {
+      if (mesh.material.map) {
+        mesh.material.map.dispose();
+      }
+      mesh.material.map = createTextTexture(mesh.userData.word);
+      mesh.material.needsUpdate = true;
+    }
+  });
 }
 
 const hemi = new THREE.HemisphereLight(0xffffff, 0x000000, 0.8);
@@ -340,7 +360,13 @@ function grow(mesh) {
   saveState();
 }
 
-
+document.getElementById('textToggleBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  isTextDisabled = !isTextDisabled;
+  e.target.innerText = isTextDisabled ? 'Void' : 'Text';
+  e.target.style.color = isTextDisabled ? '#ffa500' : '#00ff00';
+  updateAllTextures();
+});
 
 document.getElementById('deleteMode').addEventListener('click', e => {
   e.stopPropagation();
