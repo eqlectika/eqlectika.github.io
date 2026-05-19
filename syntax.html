@@ -719,14 +719,20 @@ function animate() {
     controls.enabled = true;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 1.0;
+    currentSpeed = 0;
   } else {
     controls.enabled = true;
     controls.autoRotate = false;
-    currentSpeed = Math.max(currentSpeed - acceleration, 0);
+    if (currentSpeed > 0) {
+      currentSpeed = Math.max(currentSpeed - acceleration, 0);
+      camera.position.addScaledVector(flyDirection, currentSpeed);
+      controls.target.addScaledVector(flyDirection, currentSpeed);
+    }
   }
   controls.update();
   renderer.render(scene, camera);
 }
+
 document.fonts.ready.then(() => {
   loadState();
   animate();
