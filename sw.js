@@ -2,6 +2,18 @@ const CACHE_NAME = 'polarity-sanctuary-v30';
  
 const ASSETS = [
   './beta.html',
+    './sublime.html',
+      './pearl.html',
+        './entropy.html',
+          './etymon.html',
+    './bismuth.html',
+      './syntax.html',
+        './beta.html',
+  './manifest-cross.json',
+    './manifest-syntax.json',
+      './manifest-bismuth.json',
+            './paramount.html',
+              './cross.html',
   './matrix.html',
   './blueprint.html',
   './telegram.PNG',
