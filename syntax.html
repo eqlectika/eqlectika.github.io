@@ -190,6 +190,8 @@ const textColors = ["#ffffff", "#00ff00", "#ffa500", "#ff1493", "#00ffff"];
 let bgIndex = 0;
 let textIndex = 0;
 
+const textureCache = {};
+
 let typo = null;
 const defaultEnWords = ["structure", "geometry", "quantum", "dimension", "axis", "matrix", "vector", "fractal", "node", "symmetry", "order", "system", "vertex", "tensor", "lattice"];
 
@@ -233,6 +235,11 @@ function predictNextWords(seedWord) {
 }
 
 function createTextTexture(text) {
+  const cacheKey = `${text}_${currentVisualMode}`;
+  if (textureCache[cacheKey]) {
+    return textureCache[cacheKey];
+  }
+
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 256;
@@ -263,15 +270,13 @@ function createTextTexture(text) {
   }
   
   const texture = new THREE.CanvasTexture(canvas);
+  textureCache[cacheKey] = texture;
   return texture;
 }
 
 function updateAllTextures() {
   group.children.forEach(mesh => {
     if (mesh.userData && mesh.userData.word !== undefined) {
-      if (mesh.material.map) {
-        mesh.material.map.dispose();
-      }
       mesh.material.map = createTextTexture(mesh.userData.word);
       mesh.material.needsUpdate = true;
     }
@@ -386,13 +391,25 @@ function loadState() {
   });
 }
 
+function clearGroupResources() {
+  while (group.children.length > 0) {
+    const mesh = group.children[0];
+    if (mesh.geometry) mesh.geometry.dispose();
+    if (mesh.material) {
+      if (mesh.material.map && !Object.values(textureCache).includes(mesh.material.map)) {
+        mesh.material.map.dispose();
+      }
+      mesh.material.dispose();
+    }
+    group.remove(mesh);
+  }
+}
+
 function undo() {
   if (history.length <= 1) return;
   history.pop();
   const previous = JSON.parse(history[history.length - 1]);
-  while (group.children.length > 0) {
-    group.remove(group.children[0]);
-  }
+  clearGroupResources();
   previous.forEach(d => {
     const c = d.corners.map(p => new THREE.Vector3(p.x, p.y, p.z));
     createRect(c[0], c[1], c[2], c[3], d.depth, d.normalSteps, d.mirrorSteps, d.word, false);
@@ -406,9 +423,7 @@ function undo() {
 }
 
 function reset() {
-  while (group.children.length > 0) {
-    group.remove(group.children[0]);
-  }
+  clearGroupResources();
   history = [];
   initBase();
   if (currentVisualMode === 'flat') renderFlatInterface();
@@ -489,6 +504,8 @@ function grow(mesh) {
   const nextNormalSteps = isMirror ? normalSteps : normalSteps + 1;
   const nextMirrorSteps = isMirror ? mirrorSteps + 1 : mirrorSteps;
   
+  if (mesh.geometry) mesh.geometry.dispose();
+  if (mesh.material) mesh.material.dispose();
   group.remove(mesh);
   
   const predicted = predictNextWords(seedWord);
@@ -664,7 +681,10 @@ function onUp(e) {
     const hits = raycaster.intersectObjects(group.children);
     if (hits.length > 0) {
       if (isDeleteMode) {
-        group.remove(hits[0].object);
+        const targetMesh = hits[0].object;
+        if (targetMesh.geometry) targetMesh.geometry.dispose();
+        if (targetMesh.material) targetMesh.material.dispose();
+        group.remove(targetMesh);
         saveState();
       } else {
         grow(hits[0].object);
@@ -721,5 +741,6 @@ window.addEventListener('resize', () => {
   if (currentVisualMode === 'flat') renderFlatInterface();
 });
 </script>
+
 </body>
 </html>
