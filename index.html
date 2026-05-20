@@ -94,8 +94,10 @@
 
 <div id="log-info" style="width: 90%; max-width: 90%; margin: 30px auto; margin-bottom: 500px; text-align: center;">
   
-<div onclick="toggleInfo()" style="color: #ffffff; font-weight: bold; font-size: 18px; font-family: sans-serif; padding: 0px; cursor: pointer;">
-  Become Richer in Just a Month <span id="toggleIcon">▼</span>
+<div id="toggleHeader" onclick="toggleInfo()" style="color: #ffffff; font-weight: bold; font-size: 18px; font-family: sans-serif; padding: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; border: 2px solid #2962ff; border-radius: 8px; transition: border 0.3s;">
+  <span id="toggleIconLeft">▼</span>
+  Become Richer in Just a Month 
+  <span id="toggleIconRight">▼</span>
 </div>
 
   <div id="info-content" style="display: none; color: #d1d4dc; font-size: 16px; font-family: sans-serif; padding-top: 10px;">
@@ -454,12 +456,18 @@ tfSelect.onchange = connect;
 
 function toggleInfo() {
   const content = document.getElementById("info-content");
-  const icon = document.getElementById("toggleIcon");
+  const header = document.getElementById("toggleHeader");
+  const iconLeft = document.getElementById("toggleIconLeft");
+  const iconRight = document.getElementById("toggleIconRight");
   
   const isOpening = content.style.display === "none" || content.style.display === "";
   content.style.display = isOpening ? "block" : "none";
   
-  icon.innerText = isOpening ? "▲" : "▼";
+  header.style.border = isOpening ? "2px solid transparent" : "2px solid #2962ff";
+  
+  const newIcon = isOpening ? "▲" : "▼";
+  iconLeft.innerText = newIcon;
+  iconRight.innerText = newIcon;
   
   if (isOpening) {
     setTimeout(() => {
@@ -467,6 +475,7 @@ function toggleInfo() {
     }, 100);
   }
 }
+    
 function copyToClipboard() {
   const addr = document.getElementById("cryptoAddr").innerText;
   navigator.clipboard.writeText(addr).then(() => {
