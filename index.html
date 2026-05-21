@@ -73,6 +73,10 @@
   </style>
 </head>
 <body>
+  <div id="akai-indicator" style="position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: #000; z-index: 9999;">
+  <div id="akai-fill" style="height: 100%; width: 0%; background: linear-gradient(to right, #00ff00 70%, #ffff00 85%, #ff0000 100%); transition: width 0.1s ease-out;"></div>
+</div>
+
   <div id="terminal">
 <div style="display: flex; align-items: center; justify-content: left; gap: 15px; margin-bottom: 20px;">
   <img src="icon.png" alt="Logo" style="height: 48px; width: auto;">
@@ -173,6 +177,14 @@ const worker = new Worker("worker.js?cache-bust=" + Math.random());
     worker.postMessage({ type: 'INIT_PARROTS_PORT' }, [parrotsChannel.port2]);
 
     worker.onmessage = (event) => {
+
+const { signal, force, price } = event.data;
+const fill = document.getElementById("akai-fill");
+if (fill) {
+    const value = Math.min(Math.max(force || 0, 0), 100);
+    fill.style.width = value + "%";
+}
+
 if (event.data.type === 'AETHER_UPDATE') {
     const { vector, anchor, signal } = event.data;
     const status = `VX: ${vector.toFixed(2)} | ANCHOR: ${anchor.toFixed(2)} | <span class="${signal}">${signal}</span>`;
@@ -181,7 +193,6 @@ if (event.data.type === 'AETHER_UPDATE') {
     return;
   }
 
-  const { signal, force, price } = event.data;
   const time = new Date().toLocaleTimeString();
   const logLine = document.createElement("div");
   logLine.className = signal;
