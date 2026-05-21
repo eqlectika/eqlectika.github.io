@@ -52,15 +52,22 @@ self.addEventListener("message", (event) => {
       if (spectrumPercent > 70) parrotsSignal = "BUY";
     }
   }
+
+    deviations.push(spectrumPercent);
+    if (deviations.length > 10) deviations.shift(); 
+
     const meanDev = deviations.reduce((a, b) => a + b, 0) / deviations.length;
     const variance = deviations.reduce((sum, d) => sum + Math.pow(d - meanDev, 2), 0) / deviations.length;
-    const coherence = Math.sqrt(variance);
+    const stdDev = Math.sqrt(variance);
+    const marketState = stdDev < 15 ? "STABLE" : "NOISE"; 
   if (parrotsPort) {
     parrotsPort.postMessage({
       parrotsSignal: parrotsSignal,
       parrotsScore: spectrumPercent,
-      parrotsDirection: spectrumDirection,
-      price: currentPrice
+            parrotsDirection: spectrumDirection,
+      price: currentPrice,
+      deviation: stdDev.toFixed(2), // передаем число
+      state: marketState          // передаем слово (STABLE или NOISE)
     });
   }
   const aether = getAether(candles);
