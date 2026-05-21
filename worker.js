@@ -1,12 +1,9 @@
 let parrotsPort = null;
-let deviations = [];
+let deviations = []; // Переменная вынесена в самое начало
 
 self.addEventListener("message", (event) => {
-  console.log("Worker received event:", event.data ? event.data.type : "no data");
-
   if (event.data && event.data.type === 'INIT_PARROTS_PORT') {
     parrotsPort = event.ports ? event.ports[0] : null;
-    if (parrotsPort) console.log("Parrots port was accepted");
     return; 
   }
 
@@ -39,6 +36,7 @@ self.addEventListener("message", (event) => {
       }
     }
   }
+  
   let parrotsSignal = "HOLD";
   let spectrumPercent = 0;
   let spectrumDirection = "NONE";
@@ -54,45 +52,38 @@ self.addEventListener("message", (event) => {
     }
   }
 
-    deviations.push(spectrumPercent);
-    if (deviations.length > 10) deviations.shift(); 
+  // Расчет отклонения
+  deviations.push(spectrumPercent);
+  if (deviations.length > 10) deviations.shift(); 
+  const meanDev = deviations.reduce((a, b) => a + b, 0) / deviations.length;
+  const variance = deviations.reduce((sum, d) => sum + Math.pow(d - meanDev, 2), 0) / deviations.length;
+  const stdDev = Math.sqrt(variance);
+  const marketState = stdDev < 15 ? "STABLE" : "NOISE"; 
 
-    const meanDev = deviations.reduce((a, b) => a + b, 0) / deviations.length;
-    const variance = deviations.reduce((sum, d) => sum + Math.pow(d - meanDev, 2), 0) / deviations.length;
-    const stdDev = Math.sqrt(variance);
-    const marketState = stdDev < 15 ? "STABLE" : "NOISE"; 
   if (parrotsPort) {
     parrotsPort.postMessage({
       parrotsSignal: parrotsSignal,
       parrotsScore: spectrumPercent,
-            parrotsDirection: spectrumDirection,
+      parrotsDirection: spectrumDirection,
       price: currentPrice,
-      deviation: stdDev.toFixed(2), // передаем число
-      state: marketState          // передаем слово (STABLE или NOISE)
+      deviation: stdDev.toFixed(2),
+      state: marketState
     });
   }
-  const aether = getAether(candles);
   
+  const aether = getAether(candles);
   let aetherSignal = "HOLD";
   if (aether.vector > aether.anchor) aetherSignal = "BUY";
   if (aether.vector < aether.anchor) aetherSignal = "SELL";
-
-  self.postMessage({ 
-    type: 'AETHER_UPDATE', 
-    vector: aether.vector, 
-    anchor: aether.anchor,
-    signal: aetherSignal 
-  });
+  self.postMessage({ type: 'AETHER_UPDATE', vector: aether.vector, anchor: aether.anchor, signal: aetherSignal });
 });
 
 function calculateFORCE(closes, period) {
   if (closes.length < period + 1) return null;
-  let gains = 0;
-  let losses = 0;
+  let gains = 0, losses = 0;
   for (let i = closes.length - period; i < closes.length; i++) {
     const diff = closes[i] - closes[i - 1];
-    if (diff > 0) gains += diff;
-    else losses -= diff;
+    if (diff > 0) gains += diff; else losses -= diff;
   }
   if (losses === 0) return 100;
   const rs = (gains / period) / (losses / period);
@@ -104,22 +95,16 @@ function calculateBBForLast(closes, period) {
   if (len < period) return null;
   const slice = closes.slice(len - period);
   const sma = slice.reduce((a, b) => a + b, 0) / period;
-  
   const variance = slice.reduce((sum, val) => sum + Math.pow(val - sma, 2), 0) / period;
-  const stdDev = Math.sqrt(variance);
-  return { upper: sma + (2 * stdDev), lower: sma - (2 * stdDev) };
+  return { upper: sma + (2 * Math.sqrt(variance)), lower: sma - (2 * Math.sqrt(variance)) };
 }
 
 function getAether(candles) {
-    const periodVector = 9;
-    const periodAnchor = 26;
-    
-    const getHigh = (i) => Math.max(...candles.slice(i - periodVector + 1, i + 1).map(c => c.high || c.close));
-    const getLow = (i) => Math.min(...candles.slice(i - periodVector + 1, i + 1).map(c => c.close));
-
-    const vector = (getHigh(candles.length-1) + getLow(candles.length-1)) / 2;
-    const anchor = (Math.max(...candles.slice(candles.length-26, candles.length).map(c => c.close)) + 
-                   Math.min(...candles.slice(candles.length-26, candles.length).map(c => c.close))) / 2;
-
-    return { vector, anchor };
+  const periodVector = 9, periodAnchor = 26;
+  const getHigh = (i) => Math.max(...candles.slice(i - periodVector + 1, i + 1).map(c => c.high || c.close));
+  const getLow = (i) => Math.min(...candles.slice(i - periodVector + 1, i + 1).map(c => c.close));
+  const vector = (getHigh(candles.length-1) + getLow(candles.length-1)) / 2;
+  const anchor = (Math.max(...candles.slice(candles.length-26, candles.length).map(c => c.close)) + 
+                 Math.min(...candles.slice(candles.length-26, candles.length).map(c => c.close))) / 2;
+  return { vector, anchor };
 }
