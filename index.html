@@ -188,23 +188,17 @@ if (event.data.type === 'AETHER_UPDATE') {
 
   let lastParrotsScore = 0;
   
-
 parrotsChannel.port1.onmessage = (event) => {
-  const time = new Date().toLocaleTimeString();
-  const parrotsLogDiv = document.getElementById("log-parrots");
-  const parrotsLine = document.createElement("div");
-  
   const { parrotsSignal, parrotsScore, parrotsDirection, deviation, state } = event.data;
+  const time = new Date().toLocaleTimeString();
+  const logDiv = document.getElementById("log-parrots");
+  const line = document.createElement("div");
+  const color = state === "STABLE" ? "#29b6f6" : "#ffa726";
 
-  const stateColor = state === "STABLE" ? "#29b6f6" : "#ffa726";
-
-  parrotsLine.innerHTML = `[${time}] Spec ${parrotsDirection}: ${parrotsScore.toFixed(0)}% | <b>DEVIATION: <span style="color:${stateColor}">${deviation}</span></b> <span style="color:${stateColor}">[${state}]</span> | SIGNAL: <span class="${parrotsSignal}">${parrotsSignal}</span>`;
-
-  parrotsLogDiv.insertBefore(parrotsLine, parrotsLogDiv.firstChild);
+  line.innerHTML = `[${time}] Spec ${parrotsDirection}: ${parrotsScore.toFixed(0)}% | <b>DEVIATION: <span style="color:${color}">${deviation}</span></b> <span style="color:${color}">[${state}]</span> | SIGNAL: <span class="${parrotsSignal}">${parrotsSignal}</span>`;
   
-  if (parrotsLogDiv.childNodes.length > 100) {
-    parrotsLogDiv.removeChild(parrotsLogDiv.lastChild);
-  }
+  logDiv.insertBefore(line, logDiv.firstChild);
+  if (logDiv.childNodes.length > 100) logDiv.removeChild(logDiv.lastChild);
 };
 
 
