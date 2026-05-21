@@ -1,4 +1,5 @@
 let parrotsPort = null;
+let deviations = [];
 
 self.addEventListener("message", (event) => {
   console.log("Worker received event:", event.data ? event.data.type : "no data");
@@ -26,7 +27,7 @@ self.addEventListener("message", (event) => {
   let totalLines = 0;
   let brokenUpper = 0;
   let brokenLower = 0;
-  let deviations = [];
+  
   for (let i = 0; i < 27; i++) {
     const period = (i + 1) * 20;
     if (closes.length >= period) {
