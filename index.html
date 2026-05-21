@@ -185,11 +185,10 @@ parrotsChannel.port1.onmessage = (event) => {
   const parrotsLogDiv = document.getElementById("log-parrots");
   const parrotsLine = document.createElement("div");
   
-  const cohColor = coherence < 0.2 ? "#00e676" : "#b2b5be";
-  
-  parrotsLine.className = parrotsSignal;
-  parrotsLine.innerHTML = `[${time}] Spec ${parrotsDirection}: ${parrotsScore.toFixed(0)}% | <b>Coh: <span style="color:${cohColor}">${coherence}</span></b> | SIGNAL: ${parrotsSignal}`;
-  
+  const { parrotsSignal, parrotsScore, parrotsDirection, deviation, state } = event.data;
+  const stateColor = state === "STABLE" ? "#00e676" : "#ff5252";
+  parrotsLine.innerHTML = `[${time}] Spec ${parrotsDirection}: ${parrotsScore.toFixed(0)}% | <b>DEVIATION: <span style="color:${stateColor}">${deviation} (${state})</span></b> | SIGNAL: ${parrotsSignal}`;
+
   parrotsLogDiv.insertBefore(parrotsLine, parrotsLogDiv.firstChild);
   
   if (parrotsLogDiv.childNodes.length > 100) {
