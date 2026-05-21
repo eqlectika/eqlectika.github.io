@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
   <title>Made in Heaven Crypto Advisor</title>
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,13 +15,22 @@
       color: #d1d4dc; 
       font-family: sans-serif; 
       margin: 0; 
-      padding: 0px; 
+      padding-top: 50px; 
       display: flex; 
       flex-direction: column; 
       align-items: center; 
       box-sizing: border-box;
       min-height: 100vh;
     }
+    #akai-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 40px;
+  background: #2c3145; /* Серый фон, чтобы видеть индикатор */
+  z-index: 9999;
+}
     #terminal { 
       width: 100%; 
       max-width: 100%; 
@@ -73,7 +83,7 @@
   </style>
 </head>
 <body>
-<div id="akai-indicator" style="position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: #333; z-index: 9999;">
+<div id="akai-indicator" style="position: fixed; top: 0; left: 0; width: 100%; height: 40px; background: #2c3145; z-index: 9999;">
   <div id="akai-fill" style="height: 100%; width: 0%; background: linear-gradient(to right, #00ff00 70%, #ffff00 85%, #ff0000 100%); transition: width 0.1s ease-out;"></div>
 </div>
 
@@ -177,7 +187,7 @@ const worker = new Worker("worker.js?cache-bust=" + Math.random());
     worker.postMessage({ type: 'INIT_PARROTS_PORT' }, [parrotsChannel.port2]);
 
     worker.onmessage = (event) => {
-
+console.log("Worker data:", event.data);
 const { signal, force, price } = event.data;
 const fill = document.getElementById("akai-fill");
 if (fill) {
