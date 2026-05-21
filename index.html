@@ -122,27 +122,27 @@
 
 <div id="log-info" style="width: 90%; max-width: 90%; margin: 30px auto; margin-bottom: 500px; text-align: center;">
   
-<div id="toggleHeader" 
-     onclick="toggleInfo()" 
-     style="color: #ffffff; font-weight: bold; font-size: 18px; font-family: sans-serif; 
-            padding: 10px 20px; cursor: pointer; 
-            display: inline-flex; align-items: center; justify-content: center; gap: 10px; 
-            border: 2px solid #2962ff; border-radius: 8px; 
-            transition: border 0.3s; margin: 0 auto;">
-  <span id="toggleIconLeft">▼</span>
-  Become Richer in Just a Month 
-  <span id="toggleIconRight">▼</span>
-</div>
+  <div id="toggleHeaderTop" onclick="toggleInfo()" 
+       style="color: #ffffff; font-weight: bold; font-size: 18px; font-family: sans-serif; padding: 10px 20px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 2px solid #2962ff; border-radius: 8px; margin: 0 auto;">
+    <span id="toggleIconLeft">▼</span> Become richer in just a month <span id="toggleIconRight">▼</span>
+  </div>
 
   <div id="info-content" style="display: none; color: #d1d4dc; font-size: 16px; font-family: sans-serif; padding-top: 10px;">
-<p style="padding: 0 10px; line-height: 1.5;">
-  To receive signal strategy, further instructions and recommendation to optimize profits, please send the equivalent of 20 USDT to the address below and share the transaction hash with 
-  <a href="https://t.me/eugenebox" target="_blank" style="color: #0087ff; text-decoration: none; font-weight: bold;">@eugenebox</a> 
-  on Telegram. I know everything about the market. You can finally understand why even a trend can be unsafe and how to fix this paradox.
-</p>   
-    <div style="margin: 15px 10px; color: #ff9900; font-size: 18px; font-style: bold; text-align: center;">
-    Disclaimer: Crypto trading involves high risk. This is for educational purposes only and not financial advice.
-  </div> 
+    <p style="padding: 0 10px; line-height: 1.5;">
+      To receive signal strategy, further instructions and recommendation to optimize profits, please send the equivalent of 20 USDT to the address below and share the transaction hash with 
+      <a href="https://t.me/eugenebox" target="_blank" style="color: #0087ff; text-decoration: none; font-weight: bold;">@eugenebox</a> 
+      on Telegram. I know everything about the market. You can finally understand why even a trend can be unsafe and how to fix this paradox.
+    </p>   
+    
+    <div style="margin: 15px 10px; color: #ff9900; font-size: 18px; font-weight: bold; text-align: center;">
+      Disclaimer: Crypto trading involves high risk. This is for educational purposes only and not financial advice.
+    </div> 
+
+    <div id="toggleHeaderBottom" onclick="toggleInfo()" 
+style="color: #ffffff; font-weight: bold; font-size: 18px; font-family: sans-serif; padding: 10px 20px; cursor: pointer; display: none; border: 2px solid #2962ff; border-radius: 8px; margin: 10px auto;">      
+      Support
+    </div>
+
     <div style="display: flex; flex-direction: column; align-items: center; margin-top: 20px; padding: 15px; border: 1px solid #ff9900; border-radius: 4px;">
       <span style="font-size: 16px; color: #fff;">ETH (ERC20)</span>
       <div id="cryptoAddr" onclick="copyToClipboard()" style="font-family: monospace; color: #00e676; cursor: pointer; margin: 5px 0; font-size: 16px; word-break: break-all; width: 90%;">0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8</div>
@@ -508,22 +508,18 @@ tfSelect.onchange = connect;
 
 function toggleInfo() {
   const content = document.getElementById("info-content");
-  const header = document.getElementById("toggleHeader");
-  const iconLeft = document.getElementById("toggleIconLeft");
-  const iconRight = document.getElementById("toggleIconRight");
+  const topBtn = document.getElementById("toggleHeaderTop");
+  const bottomBtn = document.getElementById("toggleHeaderBottom");
   
-  const isOpening = content.style.display === "none" || content.style.display === "";
+  const isOpening = content.style.display === "none";
+  
   content.style.display = isOpening ? "block" : "none";
-  
-  header.style.border = isOpening ? "2px solid transparent" : "2px solid #2962ff";
-  
-  const newIcon = isOpening ? "▲" : "▼";
-  iconLeft.innerText = newIcon;
-  iconRight.innerText = newIcon;
+  topBtn.style.display = isOpening ? "none" : "inline-flex";
+  bottomBtn.style.display = isOpening ? "block" : "none";
   
   if (isOpening) {
     setTimeout(() => {
-      document.getElementById("log-info").scrollIntoView({ behavior: 'smooth', block: 'start' });
+      bottomBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
   }
 }
