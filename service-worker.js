@@ -2,7 +2,6 @@ const CACHE_NAME = "advisor-v1";
 const ASSETS = [
   "index.html",
   "manifest.json",
-  "worker.js"
 ];
 self.addEventListener("install", (event) => {
   event.waitUntil(
