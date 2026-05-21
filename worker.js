@@ -1,5 +1,5 @@
 let parrotsPort = null;
-let deviations = []; // Переменная вынесена в самое начало
+let deviations = []; 
 
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === 'INIT_PARROTS_PORT') {
@@ -21,10 +21,7 @@ self.addEventListener("message", (event) => {
   }
   self.postMessage({ price: currentPrice, force: force, signal: signal });
 
-  let totalLines = 0;
-  let brokenUpper = 0;
-  let brokenLower = 0;
-  
+  let totalLines = 0, brokenUpper = 0, brokenLower = 0;
   for (let i = 0; i < 27; i++) {
     const period = (i + 1) * 20;
     if (closes.length >= period) {
@@ -37,9 +34,7 @@ self.addEventListener("message", (event) => {
     }
   }
   
-  let parrotsSignal = "HOLD";
-  let spectrumPercent = 0;
-  let spectrumDirection = "NONE";
+  let parrotsSignal = "HOLD", spectrumPercent = 0, spectrumDirection = "NONE";
   if (totalLines > 0) {
     if (brokenUpper > brokenLower) {
       spectrumPercent = (brokenUpper / totalLines) * 100;
@@ -52,7 +47,6 @@ self.addEventListener("message", (event) => {
     }
   }
 
-  // Расчет отклонения
   deviations.push(spectrumPercent);
   if (deviations.length > 10) deviations.shift(); 
   const meanDev = deviations.reduce((a, b) => a + b, 0) / deviations.length;
@@ -62,49 +56,34 @@ self.addEventListener("message", (event) => {
 
   if (parrotsPort) {
     parrotsPort.postMessage({
-      parrotsSignal: parrotsSignal,
-      parrotsScore: spectrumPercent,
-      parrotsDirection: spectrumDirection,
-      price: currentPrice,
-      deviation: stdDev.toFixed(2),
-      state: marketState
+      parrotsSignal, parrotsScore: spectrumPercent, parrotsDirection: spectrumDirection,
+      price: currentPrice, deviation: stdDev.toFixed(2), state: marketState
     });
   }
   
   const aether = getAether(candles);
-  let aetherSignal = "HOLD";
-  if (aether.vector > aether.anchor) aetherSignal = "BUY";
-  if (aether.vector < aether.anchor) aetherSignal = "SELL";
-  self.postMessage({ type: 'AETHER_UPDATE', vector: aether.vector, anchor: aether.anchor, signal: aetherSignal });
+  self.postMessage({ type: 'AETHER_UPDATE', vector: aether.vector, anchor: aether.anchor, signal: aether.vector > aether.anchor ? "BUY" : "SELL" });
 });
 
-function calculateFORCE(closes, period) {
-  if (closes.length < period + 1) return null;
-  let gains = 0, losses = 0;
-  for (let i = closes.length - period; i < closes.length; i++) {
-    const diff = closes[i] - closes[i - 1];
-    if (diff > 0) gains += diff; else losses -= diff;
+function calculateFORCE(c, p) {
+  if (c.length < p + 1) return null;
+  let g = 0, l = 0;
+  for (let i = c.length - p; i < c.length; i++) {
+    let d = c[i] - c[i - 1];
+    if (d > 0) g += d; else l -= d;
   }
-  if (losses === 0) return 100;
-  const rs = (gains / period) / (losses / period);
-  return 100 - (100 / (1 + rs));
+  return l === 0 ? 100 : 100 - (100 / (1 + (g / p) / (l / p)));
 }
 
-function calculateBBForLast(closes, period) {
-  const len = closes.length;
-  if (len < period) return null;
-  const slice = closes.slice(len - period);
-  const sma = slice.reduce((a, b) => a + b, 0) / period;
-  const variance = slice.reduce((sum, val) => sum + Math.pow(val - sma, 2), 0) / period;
-  return { upper: sma + (2 * Math.sqrt(variance)), lower: sma - (2 * Math.sqrt(variance)) };
+function calculateBBForLast(c, p) {
+  const s = c.slice(c.length - p);
+  const sma = s.reduce((a, b) => a + b, 0) / p;
+  const std = Math.sqrt(s.reduce((a, b) => a + Math.pow(b - sma, 2), 0) / p);
+  return { upper: sma + (2 * std), lower: sma - (2 * std) };
 }
 
-function getAether(candles) {
-  const periodVector = 9, periodAnchor = 26;
-  const getHigh = (i) => Math.max(...candles.slice(i - periodVector + 1, i + 1).map(c => c.high || c.close));
-  const getLow = (i) => Math.min(...candles.slice(i - periodVector + 1, i + 1).map(c => c.close));
-  const vector = (getHigh(candles.length-1) + getLow(candles.length-1)) / 2;
-  const anchor = (Math.max(...candles.slice(candles.length-26, candles.length).map(c => c.close)) + 
-                 Math.min(...candles.slice(candles.length-26, candles.length).map(c => c.close))) / 2;
-  return { vector, anchor };
+function getAether(c) {
+  const v = (Math.max(...c.slice(-9).map(x => x.high || x.close)) + Math.min(...c.slice(-9).map(x => x.close))) / 2;
+  const a = (Math.max(...c.slice(-26).map(x => x.close)) + Math.min(...c.slice(-26).map(x => x.close))) / 2;
+  return { vector: v, anchor: a };
 }
