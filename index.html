@@ -168,7 +168,9 @@ style="color: #ffffff; font-weight: bold; font-size: 18px; font-family: sans-ser
 </div>
 
   <script>
-
+  let y = 0;
+window.addEventListener('touchstart', e => y = window.scrollY ? -1 : e.touches[0].clientY);
+window.addEventListener('touchend', e => { if(y >= 0 && e.changedTouches[0].clientY - y > 150) location.reload(); });
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("service-worker.js?t=" + Date.now());
     }
