@@ -189,18 +189,19 @@ if (event.data.type === 'AETHER_UPDATE') {
   let lastParrotsScore = 0;
   
 parrotsChannel.port1.onmessage = (event) => {
-  const { parrotsSignal, parrotsScore, parrotsDirection, deviation, state } = event.data;
   const time = new Date().toLocaleTimeString();
   const logDiv = document.getElementById("log-parrots");
   const line = document.createElement("div");
+  
+  const { parrotsSignal, parrotsScore, parrotsDirection, deviation, state } = event.data;
+
   const color = state === "STABLE" ? "#29b6f6" : "#ffa726";
 
   line.innerHTML = `[${time}] Spec ${parrotsDirection}: ${parrotsScore.toFixed(0)}% | <b>DEVIATION: <span style="color:${color}">${deviation}</span></b> <span style="color:${color}">[${state}]</span> | SIGNAL: <span class="${parrotsSignal}">${parrotsSignal}</span>`;
-  
+
   logDiv.insertBefore(line, logDiv.firstChild);
   if (logDiv.childNodes.length > 100) logDiv.removeChild(logDiv.lastChild);
 };
-
 
     let isDragging = false;
     let previousX = 0;
