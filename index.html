@@ -84,10 +84,10 @@
     .SELL { color: #ff5252; }
     .HOLD { color: #b2b5be; }
 #toggleHeaderTop, #toggleHeaderBottom {
-  width: 250px; /* Укажите нужную ширину в пикселях */
+  width: 300px; 
   margin: 10px auto;
   text-align: center;
-  box-sizing: border-box; /* Чтобы padding не ломал ширину */
+  box-sizing: border-box; 
 }
 
   </style>
@@ -139,11 +139,10 @@
   </div>
 
   <div id="info-content" style="display: none; color: #d1d4dc; font-size: 16px; font-family: sans-serif; padding-top: 10px;">
-    <p style="padding: 0 10px; line-height: 1.5;">
+
       To receive signal strategy, further instructions and recommendation to optimize your trading efficiency, please send the equivalent of 20 USDT to the address below and share the transaction hash with 
       <a href="https://t.me/eugenebox" target="_blank" style="color: #0087ff; text-decoration: none; font-weight: bold;">@eugenebox</a> 
       on Telegram.
-    </p>   
     
     <div style="margin: 15px 10px; color: #ff9900; font-size: 18px; font-weight: bold; text-align: center;">
       Disclaimer: Crypto trading involves high risk. This is for educational purposes only and not financial advice.
@@ -522,14 +521,20 @@ tfSelect.onchange = connect;
 
 function toggleInfo() {
   const content = document.getElementById("info-content");
-  // Удаляем логику скрытия кнопок, просто переключаем отображение контента
-  const isHidden = content.style.display === "none";
-  content.style.display = isHidden ? "block" : "none";
+  const topBtn = document.getElementById("toggleHeaderTop");
+  const bottomBtn = document.getElementById("toggleHeaderBottom");
   
-  // Если нужно оставить кнопку "Support" внизу всегда видимой, 
-  // просто уберите изменение display для topBtn и bottomBtn
-  // или сделайте их всегда visible.
-  document.getElementById("toggleHeaderBottom").style.display = "block";
+  const isOpening = content.style.display === "none";
+  
+  content.style.display = isOpening ? "block" : "none";
+  topBtn.style.display = isOpening ? "none" : "inline-flex";
+  bottomBtn.style.display = isOpening ? "block" : "none";
+  
+  if (isOpening) {
+    setTimeout(() => {
+      topBtn.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100); 
+  }
 }
 
     
