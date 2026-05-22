@@ -125,10 +125,11 @@
   </div> 
 
 <div id="log-info" style="width: 90%; max-width: 90%; margin: 30px auto; margin-bottom: 300px; text-align: center;">
-  
+
   <div id="toggleHeaderTop" onclick="toggleInfo()" 
-       style="color: #ffffff; font-weight: bold; font-size: 18px; font-family: sans-serif; padding: 10px 20px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 2px solid #2962ff; border-radius: 8px; margin: 0 auto;">
-    <span id="toggleIconLeft">▼</span> Become richer in just a month <span id="toggleIconRight">▼</span>
+    disabled
+       style="color: #ffffff; font-weight: bold; font-size: 18px; font-family: sans-serif; padding: 10px 20px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 2px solid #ffffff; border-radius: 8px; margin: 0 auto;">
+    Become richer in just a month
   </div>
 
   <div id="info-content" style="display: none; color: #d1d4dc; font-size: 16px; font-family: sans-serif; padding-top: 10px;">
@@ -142,10 +143,11 @@
       Disclaimer: Crypto trading involves high risk. This is for educational purposes only and not financial advice.
     </div> 
 
-    <div id="toggleHeaderBottom" onclick="toggleInfo()" 
-style="color: #ffffff; font-weight: bold; font-size: 18px; font-family: sans-serif; padding: 10px 20px; cursor: pointer; display: none; border: 2px solid #2962ff; border-radius: 8px; margin: 10px auto;">      
-      Support
-    </div>
+<div id="toggleHeaderBottom" 
+     style="color: #ffffff; font-weight: bold; font-size: 18px; font-family: sans-serif; padding: 10px 20px; cursor: default; display: block; border: 2px solid #2962ff; border-radius: 8px; margin: 10px auto;">      
+  Support
+</div>
+
 
     <div style="display: flex; flex-direction: column; align-items: center; margin-top: 20px; padding: 15px; border: 1px solid #ff9900; border-radius: 4px;">
       <span style="font-size: 16px; color: #fff;">ETH (ERC20)</span>
@@ -514,21 +516,16 @@ tfSelect.onchange = connect;
 
 function toggleInfo() {
   const content = document.getElementById("info-content");
-  const topBtn = document.getElementById("toggleHeaderTop");
-  const bottomBtn = document.getElementById("toggleHeaderBottom");
+  // Удаляем логику скрытия кнопок, просто переключаем отображение контента
+  const isHidden = content.style.display === "none";
+  content.style.display = isHidden ? "block" : "none";
   
-  const isOpening = content.style.display === "none";
-  
-  content.style.display = isOpening ? "block" : "none";
-  topBtn.style.display = isOpening ? "none" : "inline-flex";
-  bottomBtn.style.display = isOpening ? "block" : "none";
-  
-  if (isOpening) {
-    setTimeout(() => {
-      bottomBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
-  }
+  // Если нужно оставить кнопку "Support" внизу всегда видимой, 
+  // просто уберите изменение display для topBtn и bottomBtn
+  // или сделайте их всегда visible.
+  document.getElementById("toggleHeaderBottom").style.display = "block";
 }
+
     
 function copyToClipboard() {
   const addr = document.getElementById("cryptoAddr").innerText;
