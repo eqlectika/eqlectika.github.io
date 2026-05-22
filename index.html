@@ -32,7 +32,7 @@
   left: 0;
   width: 100%;
   height: 8px;
-  background: #2c3145; /* Серый фон, чтобы видеть индикатор */
+  background: #2c3145; 
   z-index: 9999;
 }
     #terminal { 
@@ -198,17 +198,20 @@
   
 </div>
 
-  <script>
-  let y = 0;
-window.addEventListener('touchstart', e => y = window.scrollY ? -1 : e.touches[0].clientY);
-window.addEventListener('touchend', e => { if(y >= 0 && e.changedTouches[0].clientY - y > 150) location.reload(); });
+<script>
+    let autoReturnTimeout = null;
+    const RETURN_DELAY = 60000; // 1 минута ожидания перед возвратом
+    let y = 0;
+
+    window.addEventListener('touchstart', e => y = window.scrollY ? -1 : e.touches[0].clientY);
+    window.addEventListener('touchend', e => { if(y >= 0 && e.changedTouches[0].clientY - y > 150) location.reload(); });
+
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("service-worker.js?t=" + Date.now());
     }
 
     const pairSelect = document.getElementById("pair");
     const tfSelect = document.getElementById("tf");
-    const startBtn = document.getElementById("start");
     const statusDiv = document.getElementById("status");
     const logDiv = document.getElementById("log");
     
@@ -218,64 +221,68 @@ window.addEventListener('touchend', e => { if(y >= 0 && e.changedTouches[0].clie
     let moireChart = null;
     let isInitialLoad = true;
 
-const worker = new Worker("worker.js?cache-bust=" + Math.random());
+    const worker = new Worker("worker.js?cache-bust=" + Math.random());
     const parrotsChannel = new MessageChannel();
 
     worker.postMessage({ type: 'INIT_PARROTS_PORT' }, [parrotsChannel.port2]);
 
-worker.onmessage = (event) => {
-  const { signal, force, price } = event.data;
-  const fill = document.getElementById("akai-fill");
-  
-  if (fill && force !== undefined && force !== null) {
-    const invertedForce = 100 - force;
-    const value = Math.min(Math.max(force, 0), 100);
-    console.log("current value:", value);
-    fill.style.width = value + "%";
-    
-fill.style.backgroundColor = `hsl(${240 - (value / 100) * 240}, 100%, 50%)`;
-  }
+    worker.onmessage = (event) => {
+      const { signal, force, price } = event.data;
+      const fill = document.getElementById("akai-fill");
+      
+      if (fill && force !== undefined && force !== null) {
+        const value = Math.min(Math.max(force, 0), 100);
+        fill.style.width = value + "%";
+        fill.style.backgroundColor = `hsl(${240 - (value / 100) * 240}, 100%, 50%)`;
+      }
 
-if (event.data.type === 'AETHER_UPDATE') {
-    const { vector, anchor, signal } = event.data;
-    const status = `VX: ${vector.toFixed(2)} | ANCHOR: ${anchor.toFixed(2)} | <span class="${signal}">${signal}</span>`;
-    
-    logCloud("SIGNAL", status);
-    return;
-  }
+      if (event.data.type === 'AETHER_UPDATE') {
+        const { vector, anchor, signal: aetherSignal } = event.data;
+        const status = `VX: ${vector.toFixed(2)} | ANCHOR: ${anchor.toFixed(2)} | <span class="${aetherSignal}">${aetherSignal}</span>`;
+        logCloud("SIGNAL", status);
+        return;
+      }
 
-  const time = new Date().toLocaleTimeString();
-  const logLine = document.createElement("div");
-  logLine.innerHTML = `[${time}] Price: $${price.toFixed(2)} | FORCE: ${force.toFixed(2)} | SIGNAL: <span class="${signal}">${signal}</span>`;
-  logDiv.insertBefore(logLine, logDiv.firstChild);
+      const time = new Date().toLocaleTimeString();
+      const logLine = document.createElement("div");
+      logLine.innerHTML = `[${time}] Price: $${price.toFixed(2)} | FORCE: ${force.toFixed(2)} | SIGNAL: <span class="${signal}">${signal}</span>`;
+      logDiv.insertBefore(logLine, logDiv.firstChild);
 
-  if (logDiv.childNodes.length > 100) {
-    logDiv.removeChild(logDiv.lastChild);
-  }
+      if (logDiv.childNodes.length > 100) {
+        logDiv.removeChild(logDiv.lastChild);
+      }
 
-  const closes = candles.map(c => c.close);
-  updateChart(closes);
-};
+      const closes = candles.map(c => c.close);
+      updateChart(closes);
+    };
 
-  let lastParrotsScore = 0;
-  
-parrotsChannel.port1.onmessage = (event) => {
-  const time = new Date().toLocaleTimeString();
-  const logDiv = document.getElementById("log-parrots");
-  const line = document.createElement("div");
-  
-  const { parrotsSignal, parrotsScore, parrotsDirection, deviation, state } = event.data;
+    let lastParrotsScore = 0;
+      
+    parrotsChannel.port1.onmessage = (event) => {
+      const time = new Date().toLocaleTimeString();
+      const logParrotsDiv = document.getElementById("log-parrots");
+      const line = document.createElement("div");
+      
+      const { parrotsSignal, parrotsScore, parrotsDirection, deviation, state } = event.data;
+      const color = state === "STABLE" ? "#29b6f6" : "#ffa726";
 
-  const color = state === "STABLE" ? "#29b6f6" : "#ffa726";
+      line.innerHTML = `[${time}] Spec ${parrotsDirection}: ${parrotsScore.toFixed(0)}% | <b>DEVIATION: <span style="color:${color}">${deviation}</span></b> <span style="color:${color}">[${state}]</span> | SIGNAL: <span class="${parrotsSignal}">${parrotsSignal}</span>`;
 
-  line.innerHTML = `[${time}] Spec ${parrotsDirection}: ${parrotsScore.toFixed(0)}% | <b>DEVIATION: <span style="color:${color}">${deviation}</span></b> <span style="color:${color}">[${state}]</span> | SIGNAL: <span class="${parrotsSignal}">${parrotsSignal}</span>`;
-
-  logDiv.insertBefore(line, logDiv.firstChild);
-  if (logDiv.childNodes.length > 100) logDiv.removeChild(logDiv.lastChild);
-};
+      logParrotsDiv.insertBefore(line, logParrotsDiv.firstChild);
+      if (logParrotsDiv.childNodes.length > 100) logParrotsDiv.removeChild(logParrotsDiv.lastChild);
+    };
 
     let isDragging = false;
     let previousX = 0;
+
+    function resetAutoReturnTimer() {
+      if (autoReturnTimeout) clearTimeout(autoReturnTimeout);
+      autoReturnTimeout = setTimeout(() => {
+        if (moireChart && moireChart.data.labels.length > 0) {
+          jumpToCurrent(); 
+        }
+      }, RETURN_DELAY);
+    }
 
     function initChart() {
       if (moireChart) moireChart.destroy();
@@ -320,7 +327,7 @@ parrotsChannel.port1.onmessage = (event) => {
           responsive: true,
           maintainAspectRatio: false,
           animation: false, 
-                    scales: { 
+scales: { 
             x: { 
               display: true, 
               grid: { display: false }, 
@@ -333,9 +340,8 @@ parrotsChannel.port1.onmessage = (event) => {
               bounds: 'data',
               ticks: {
                 color: '#d1d4dc',
-                callback: function(value) {
-                  return Math.floor(value); 
-                }
+                padding: 12, 
+                callback: function(value) { return Math.floor(value); }
               }
             },
             yParrots: { display: false, min: 0, max: 100 }
@@ -346,12 +352,14 @@ parrotsChannel.port1.onmessage = (event) => {
               zoom: { 
                 wheel: { enabled: true }, 
                 pinch: { enabled: true }, 
-                mode: 'x'
+                mode: 'x',
+                onZoom: function() { resetAutoReturnTimer(); }
               },
               pan: { 
                 enabled: true, 
                 mode: 'x', 
-                threshold: 5
+                threshold: 5,
+                onPan: function() { resetAutoReturnTimer(); }
               }
             }
           }
@@ -364,12 +372,15 @@ parrotsChannel.port1.onmessage = (event) => {
         if (e.button === 0) { 
           isDragging = true; 
           previousX = e.clientX; 
+          if (autoReturnTimeout) clearTimeout(autoReturnTimeout);
         } 
       });
 
       window.addEventListener('mousemove', (e) => {
         if (!isDragging || !moireChart) return;
         
+        resetAutoReturnTimer();
+
         const xAxis = moireChart.scales.x;
         const totalPoints = moireChart.data.labels.length;
         if (totalPoints === 0) return;
@@ -441,26 +452,34 @@ parrotsChannel.port1.onmessage = (event) => {
         isInitialLoad = false;
         scrollToEnd(150); 
       } else {
-        if (moireChart.panMode !== 'none' || moireChart.zoomMode !== 'none') {
-    return; 
-  }
+        const totalPoints = closes.length;
+        const xAxis = moireChart.scales.x;
+        const currentMax = xAxis.max !== undefined ? xAxis.max : totalPoints - 1;
+        
+        const isAtEnd = (totalPoints - 1 - currentMax) <= 2;
+
+        if (isAtEnd) {
+          const range = (xAxis.max - xAxis.min) || 150; 
+          moireChart.options.scales.x.max = totalPoints - 1;
+          moireChart.options.scales.x.min = Math.max(0, totalPoints - 1 - range);
+        }
+
         moireChart.update('none');
       }
     }
 
     function logCloud(event, status) {
-  const cloudLogDiv = document.getElementById("log-cloud");
-  const time = new Date().toLocaleTimeString();
-  const entry = document.createElement("div");
-  
-  entry.innerHTML = `[${time}] <b>[AETHER]</b> ${event}: <span style="color:#2962ff">${status}</span>`;
-  
-  cloudLogDiv.insertBefore(entry, cloudLogDiv.firstChild);
-  
-  if (cloudLogDiv.childNodes.length > 50) {
-    cloudLogDiv.removeChild(cloudLogDiv.lastChild);
-  }
-}
+      const cloudLogDiv = document.getElementById("log-cloud");
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement("div");
+      
+      entry.innerHTML = `[${time}] <b>[AETHER]</b> ${event}: <span style="color:#2962ff">${status}</span>`;
+      cloudLogDiv.insertBefore(entry, cloudLogDiv.firstChild);
+      
+      if (cloudLogDiv.childNodes.length > 50) {
+        cloudLogDiv.removeChild(cloudLogDiv.lastChild);
+      }
+    }
 
     function scrollToEnd(rangeSize = 150) {
       if (!moireChart) return;
@@ -474,102 +493,93 @@ parrotsChannel.port1.onmessage = (event) => {
       moireChart.update('none');
     }
 
-function jumpToCurrent() {
-  if (!moireChart) return;
+    function jumpToCurrent() {
+      if (!moireChart) return;
+      if (moireChart.resetZoom) moireChart.resetZoom('none'); 
 
-  if (moireChart.resetZoom) {
-    moireChart.resetZoom('none'); 
-  }
+      const totalPoints = moireChart.data.labels.length; 
+      if (totalPoints === 0) return;
 
-  const totalPoints = moireChart.data.labels.length; 
-  if (totalPoints === 0) return;
+      const rangeSize = 150; 
+      const min = Math.max(0, totalPoints - rangeSize);
+      const max = totalPoints - 1;
 
-  const rangeSize = 150; 
-  const min = Math.max(0, totalPoints - rangeSize);
-  const max = totalPoints - 1;
+      moireChart.options.scales.x.min = min;
+      moireChart.options.scales.x.max = max;
+      moireChart.update('none');
+    }
 
-  moireChart.options.scales.x.min = min;
-  moireChart.options.scales.x.max = max;
+    function connect() {
+      if (ws) { ws.close(); }
+      logDiv.innerHTML = "";
+      document.getElementById("log-parrots").innerHTML = "";
+      parrotsHistory = [];
+      lastParrotsScore = 0;
+      initChart();
 
-  moireChart.update('none');
-}
-
-function connect() {
-  if (ws) { ws.close(); }
-  logDiv.innerHTML = "";
-  document.getElementById("log-parrots").innerHTML = "";
-  parrotsHistory = [];
-  lastParrotsScore = 0;
-  initChart();
-
-  const pair = pairSelect.value;
-  const tf = tfSelect.value;
-  statusDiv.innerText = "Status: Loading history...";
-  
-  fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${tf}&limit=600`)
-    .then(res => res.json())
-    .then(data => {
-      candles = data.map(d => ({ close: parseFloat(d[4]) }));
-      statusDiv.innerText = "Status: Connecting WebSocket...";
+      const pair = pairSelect.value;
+      const tf = tfSelect.value;
+      statusDiv.innerText = "Status: Loading history...";
       
-      const closes = candles.map(c => c.close);
-      updateChart(closes);
-      worker.postMessage({ candles, period });
+      fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${tf}&limit=600`)
+        .then(res => res.json())
+        .then(data => {
+          candles = data.map(d => ({ close: parseFloat(d[4]) }));
+          statusDiv.innerText = "Status: Connecting WebSocket...";
+          
+          const closes = candles.map(c => c.close);
+          updateChart(closes);
+          worker.postMessage({ candles, period });
 
-      ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}@kline_${tf}`);
-      ws.onmessage = (msg) => {
-        statusDiv.innerText = `Status: Streaming ${pair.toUpperCase()} (${tf})`;
-        const e = JSON.parse(msg.data);
-        const k = e.k;
-        const currentClose = parseFloat(k.c);
-        if (k.x) {
-          candles.push({ close: currentClose });
-          if (candles.length > 200) candles.shift();
-        } else {
-          const lastCandle = candles[candles.length - 1];
-          if (lastCandle) lastCandle.close = currentClose;
-        }
-        worker.postMessage({ candles, period });
-      };
-      ws.onerror = () => { statusDiv.innerText = "Status: WS Error"; };
-      ws.onclose = () => { statusDiv.innerText = "Status: Disconnected"; };
-    })
-    .catch(() => { statusDiv.innerText = "Status: History Fetch Error"; });
-}
+          ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}@kline_${tf}`);
+          ws.onmessage = (msg) => {
+            statusDiv.innerText = `Status: Streaming ${pair.toUpperCase()} (${tf})`;
+            const e = JSON.parse(msg.data);
+            const k = e.k;
+            const currentClose = parseFloat(k.c);
+            if (k.x) {
+              candles.push({ close: currentClose });
+              if (candles.length > 200) candles.shift();
+            } else {
+              const lastCandle = candles[candles.length - 1];
+              if (lastCandle) lastCandle.close = currentClose;
+            }
+            worker.postMessage({ candles, period });
+          };
+          ws.onerror = () => { statusDiv.innerText = "Status: WS Error"; };
+          ws.onclose = () => { statusDiv.innerText = "Status: Disconnected"; };
+        })
+        .catch(() => { statusDiv.innerText = "Status: History Fetch Error"; });
+    }
 
-connect();
+    connect();
 
-pairSelect.onchange = connect;
-tfSelect.onchange = connect;
+    pairSelect.onchange = connect;
+    tfSelect.onchange = connect;
 
-function toggleInfo() {
-  const content = document.getElementById("info-content");
-  const topBtn = document.getElementById("toggleHeaderTop");
-  const isOpening = content.style.display === "none";
-  
-  content.style.display = isOpening ? "block" : "none";
-  
-  topBtn.style.display = isOpening ? "none" : "block";
-  
-  if (isOpening) {
-    setTimeout(() => {
-      content.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 50);
-  } else {
-
-    topBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-}
-
-    
-function copyToClipboard() {
-  const addr = document.getElementById("cryptoAddr").innerText;
-  navigator.clipboard.writeText(addr).then(() => {
-    const hint = document.getElementById("copyHint");
-    hint.innerText = "Copied!";
-    setTimeout(() => hint.innerText = "Click address to copy", 2000);
-  });
-}
+    function toggleInfo() {
+      const content = document.getElementById("info-content");
+      const topBtn = document.getElementById("toggleHeaderTop");
+      const isOpening = content.style.display === "none";
+      
+      content.style.display = isOpening ? "block" : "none";
+      topBtn.style.display = isOpening ? "none" : "block";
+      
+      if (isOpening) {
+        setTimeout(() => { content.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+      } else {
+        topBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+        
+    function copyToClipboard() {
+      const addr = document.getElementById("cryptoAddr").innerText;
+      navigator.clipboard.writeText(addr).then(() => {
+        const hint = document.getElementById("copyHint");
+        hint.innerText = "Copied!";
+        setTimeout(() => hint.innerText = "Click address to copy", 2000);
+      });
+    }
   </script>
 </body>
 </html>
