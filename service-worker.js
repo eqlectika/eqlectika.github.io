@@ -1,4 +1,4 @@
-const CACHE_NAME = "advisor-v1";
+const CACHE_NAME = "trainer-v1";
 const ASSETS = [
   "index.html",
   "manifest.json",
