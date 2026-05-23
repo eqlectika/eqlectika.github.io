@@ -292,7 +292,81 @@
         }
       }, RETURN_DELAY);
     }
+const priceCrosshairPlugin = {
+  id: 'priceCrosshair',
+  afterInit(chart) {
+    chart.crosshair = { x: null, y: null, active: false };
+    
+    const storeEvent = (e) => {
+      const rect = chart.canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      
+      chart.crosshair.x = clientX - rect.left;
+      chart.crosshair.y = clientY - rect.top;
+      chart.crosshair.active = true;
+      chart.update('none');
+    };
 
+    const clearEvent = () => {
+      chart.crosshair.active = false;
+      chart.update('none');
+    };
+
+    chart.canvas.addEventListener('mousemove', storeEvent);
+    chart.canvas.addEventListener('touchstart', storeEvent, {passive: true});
+    chart.canvas.addEventListener('touchmove', storeEvent, {passive: true});
+    
+    chart.canvas.addEventListener('mouseleave', clearEvent);
+    chart.canvas.addEventListener('touchend', clearEvent);
+  },
+  afterDraw(chart) {
+    if (!chart.crosshair || !chart.crosshair.active || chart.crosshair.y === null) return;
+
+    const { ctx, scales: { x, y } } = chart;
+    const yPos = chart.crosshair.y;
+
+    // Ограничиваем линию пределами оси Y
+    if (yPos < y.top || yPos > y.bottom) return;
+
+    ctx.save();
+    
+    // 1. Рисуем горизонтальную линию
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(209, 212, 220, 0.4)'; // Цвет линии (под цвет текста)
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]); // Пунктир
+    ctx.moveTo(x.left, yPos);
+    ctx.lineTo(y.right, yPos);
+    ctx.stroke();
+    
+    // 2. Вычисляем цену и формируем плашку на шкале
+    const price = y.getValueForPixel(yPos);
+    const text = Math.floor(price).toString();
+    
+    ctx.font = '12px sans-serif';
+    const textWidth = ctx.measureText(text).width;
+    const padding = 6;
+    
+    // Координаты для плашки на правой шкале
+    const rectX = y.left;
+    const rectY = yPos - 9;
+    const rectWidth = y.right - y.left + 5;
+    const rectHeight = 18;
+
+    // Рисуем фон для цены на шкале
+    ctx.fillStyle = '#2962ff'; // Синий цвет под стиль кнопок
+    ctx.setLineDash([]); // Сброс пунктира
+    ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+
+    // Рисуем текст цены
+    ctx.fillStyle = '#ffffff';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, rectX + (rectWidth - textWidth) / 2, yPos);
+
+    ctx.restore();
+  }
+};
     function initChart() {
       if (moireChart) moireChart.destroy();
       isInitialLoad = true;
@@ -332,6 +406,7 @@
       moireChart = new Chart(ctx, {
         type: 'line',
         data: { labels: [], datasets: datasets },
+        plugins: [priceCrosshairPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
