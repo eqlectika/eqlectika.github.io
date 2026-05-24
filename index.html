@@ -341,7 +341,6 @@ const priceCrosshairPlugin = {
     ctx.strokeStyle = 'rgba(41, 98, 255, 0.8)';
     ctx.lineWidth = 1;
     
-    // Линии перекрестия
     ctx.moveTo(x.left, yPos); ctx.lineTo(x.right, yPos); // Горизонтальная
     ctx.moveTo(xPos, y.top); ctx.lineTo(xPos, y.bottom); // Вертикальная
     ctx.stroke();
@@ -351,13 +350,19 @@ const priceCrosshairPlugin = {
     ctx.textAlign = 'center';
     ctx.fillStyle = '#2962ff';
 
-    // 1. Плашка цены (аналогично исходному коду)
     const price = y.getValueForPixel(yPos);
     const priceText = Math.floor(price).toString();
     const pRectW = 50; 
-    ctx.fillRect(x.right, yPos - 9, pRectW, 18);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(priceText, x.right + pRectW / 2, yPos);
+    
+    const rectX = x.left - pRectW; 
+    
+    ctx.fillStyle = '#2962ff'; // Цвет плашки
+    ctx.fillRect(rectX, yPos - 9, pRectW, 18);
+    
+    ctx.fillStyle = '#ffffff'; // Цвет текста
+    ctx.textAlign = 'center';
+    ctx.fillText(priceText, rectX + pRectW / 2, yPos);
+
 
     // 2. Плашка времени (аналогично исходному коду, но сверху)
 
@@ -435,7 +440,7 @@ scales: {
   }, 
   y: { 
     display: true, 
-    position: 'right',
+    position: 'left',
     grid: { display: false }, 
     bounds: 'data',
     ticks: {
