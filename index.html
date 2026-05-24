@@ -297,7 +297,8 @@ const priceCrosshairPlugin = {
   afterInit(chart) {
     chart.crosshair = { x: null, y: null, active: false };
     
-    const storeEvent = (e) => {
+    // Функция обновления координат
+    const updateCrosshair = (e) => {
       const rect = chart.canvas.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -308,66 +309,58 @@ const priceCrosshairPlugin = {
       chart.update('none');
     };
 
-    const clearEvent = () => {
+    // Функция скрытия
+    const clearCrosshair = () => {
       chart.crosshair.active = false;
       chart.update('none');
     };
 
-    chart.canvas.addEventListener('mousemove', storeEvent);
-    chart.canvas.addEventListener('touchstart', storeEvent, {passive: true});
-    chart.canvas.addEventListener('touchmove', storeEvent, {passive: true});
+    // Вешаем события только на canvas
+    chart.canvas.addEventListener('mousedown', updateCrosshair);
+    chart.canvas.addEventListener('mousemove', (e) => {
+      if (chart.crosshair.active) updateCrosshair(e);
+    });
+    chart.canvas.addEventListener('touchstart', updateCrosshair, {passive: true});
+    chart.canvas.addEventListener('touchmove', (e) => {
+      if (chart.crosshair.active) updateCrosshair(e);
+    }, {passive: true});
     
-    chart.canvas.addEventListener('mouseleave', clearEvent);
-    chart.canvas.addEventListener('touchend', clearEvent);
+    // Глобальные события отпускания для надежности
+    window.addEventListener('mouseup', clearCrosshair);
+    window.addEventListener('touchend', clearCrosshair);
   },
   afterDraw(chart) {
-    if (!chart.crosshair || !chart.crosshair.active || chart.crosshair.y === null) return;
-
+    if (!chart.crosshair || !chart.crosshair.active) return;
+    
     const { ctx, scales: { x, y } } = chart;
     const yPos = chart.crosshair.y;
-
 
     if (yPos < y.top || yPos > y.bottom) return;
 
     ctx.save();
-    
-
     ctx.beginPath();
-ctx.strokeStyle = 'rgba(41, 98, 255, 0.8)';
-
+    ctx.strokeStyle = 'rgba(41, 98, 255, 0.8)';
     ctx.lineWidth = 1;
-    ctx.setLineDash([]); 
     ctx.moveTo(x.left, yPos);
-    ctx.lineTo(y.right, yPos);
+    ctx.lineTo(x.right, yPos); // Исправлено: x.right вместо y.right
     ctx.stroke();
     
-    // 2. Вычисляем цену и формируем плашку на шкале
     const price = y.getValueForPixel(yPos);
     const text = Math.floor(price).toString();
-    
     ctx.font = '12px sans-serif';
     const textWidth = ctx.measureText(text).width;
-    const padding = 6;
-    
-    // Координаты для плашки на правой шкале
     const rectX = y.left;
     const rectY = yPos - 9;
     const rectWidth = y.right - y.left + 5;
-    const rectHeight = 18;
-
-    // Рисуем фон для цены на шкале
-    ctx.fillStyle = '#2962ff'; // Синий цвет под стиль кнопок
-    ctx.setLineDash([]); // Сброс пунктира
-    ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
-
-    // Рисуем текст цены
+    
+    ctx.fillStyle = '#2962ff';
+    ctx.fillRect(rectX, rectY, rectWidth, 18);
     ctx.fillStyle = '#ffffff';
-    ctx.textBaseline = 'middle';
     ctx.fillText(text, rectX + (rectWidth - textWidth) / 2, yPos);
-
     ctx.restore();
   }
 };
+
     function initChart() {
       if (moireChart) moireChart.destroy();
       isInitialLoad = true;
