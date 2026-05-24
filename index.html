@@ -297,15 +297,14 @@ const priceCrosshairPlugin = {
   afterInit(chart) {
     chart.crosshair = { x: null, y: null, active: false };
     let pressTimer = null;
-    const LONG_PRESS_DELAY = 500; // Задержка в мс
+    const LONG_PRESS_DELAY = 500;
 
     const updateCrosshair = (e) => {
       const rect = chart.canvas.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      
-      chart.crosshair.x = clientX - rect.left;
-      chart.crosshair.y = clientY - rect.top;
+      const clientX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      const clientY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+      chart.crosshair.x = clientX;
+      chart.crosshair.y = clientY;
       chart.crosshair.active = true;
       chart.update('none');
     };
@@ -319,60 +318,64 @@ const priceCrosshairPlugin = {
     chart.canvas.addEventListener('mousedown', (e) => {
       pressTimer = setTimeout(() => updateCrosshair(e), LONG_PRESS_DELAY);
     });
-
-    chart.canvas.addEventListener('mousemove', (e) => {
-      if (chart.crosshair.active) {
-        updateCrosshair(e);
-      }
-    });
-
     chart.canvas.addEventListener('touchstart', (e) => {
       pressTimer = setTimeout(() => updateCrosshair(e), LONG_PRESS_DELAY);
     }, {passive: true});
 
-    chart.canvas.addEventListener('touchmove', (e) => {
-      if (chart.crosshair.active) {
-        updateCrosshair(e);
-      }
-    }, {passive: true});
+    chart.canvas.addEventListener('mousemove', (e) => { if (chart.crosshair.active) updateCrosshair(e); });
+    chart.canvas.addEventListener('touchmove', (e) => { if (chart.crosshair.active) updateCrosshair(e); }, {passive: true});
     
     window.addEventListener('mouseup', clearCrosshair);
     window.addEventListener('touchend', clearCrosshair);
   },
   
+
   afterDraw(chart) {
     if (!chart.crosshair || !chart.crosshair.active) return;
     
     const { ctx, scales: { x, y } } = chart;
-    const yPos = chart.crosshair.y;
-
-    if (yPos < y.top || yPos > y.bottom) return;
+    const { x: xPos, y: yPos } = chart.crosshair;
 
     ctx.save();
     ctx.beginPath();
     ctx.strokeStyle = 'rgba(41, 98, 255, 0.8)';
     ctx.lineWidth = 1;
-    ctx.moveTo(x.left, yPos);
-    ctx.lineTo(x.right, yPos);
+    
+    // Линии перекрестия
+    ctx.moveTo(x.left, yPos); ctx.lineTo(x.right, yPos); // Горизонтальная
+    ctx.moveTo(xPos, y.top); ctx.lineTo(xPos, y.bottom); // Вертикальная
     ctx.stroke();
-    
-    const price = y.getValueForPixel(yPos);
-    const text = Math.floor(price).toString();
-    const rectX = y.left;
-    const rectWidth = y.right - y.left + 5;
-    const rectHeight = 18;
-    const rectY = yPos - (rectHeight / 2);
-    
-    ctx.fillStyle = '#2962ff';
-    ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
-    ctx.fillStyle = '#ffffff';
+
     ctx.font = '12px sans-serif';
-    ctx.textBaseline = 'middle'; 
-    ctx.textAlign = 'center';  
-    ctx.fillText(text, rectX + rectWidth / 2, rectY + rectHeight / 2);
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#2962ff';
+
+    // 1. Плашка цены (аналогично исходному коду)
+    const price = y.getValueForPixel(yPos);
+    const priceText = Math.floor(price).toString();
+    const pRectW = 50; 
+    ctx.fillRect(x.right, yPos - 9, pRectW, 18);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(priceText, x.right + pRectW / 2, yPos);
+
+    // 2. Плашка времени (аналогично исходному коду, но сверху)
+
+const timeVal = Math.round(x.getValueForPixel(xPos));
+
+    const tRectW = 60;
+    ctx.fillStyle = '#2962ff';
+    ctx.fillRect(xPos - tRectW / 2, y.top - 25, tRectW, 18);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(timeVal.toString(), xPos, y.top - 16);
+    
     ctx.restore();
   }
+
 };
+
+
+
 
 
     function initChart() {
@@ -420,24 +423,30 @@ const priceCrosshairPlugin = {
           maintainAspectRatio: false,
           animation: false, 
 scales: { 
-            x: { 
-              display: true, 
-              grid: { display: false }, 
-              ticks: { display: false }
-            }, 
-            y: { 
-              display: true, 
-              position: 'right',
-              grid: { display: false }, 
-              bounds: 'data',
-              ticks: {
-                color: '#d1d4dc',
-                padding: 0, 
-                callback: function(value) { return Math.round(value / 10) * 10; }
-              }
-            },
-            yParrots: { display: false, min: 0, max: 100 }
-          },
+  x: { 
+    position: 'top',
+    display: true, 
+    grid: { display: false }, 
+    ticks: { 
+      display: true,
+      color: '#d1d4dc',
+      callback: function(val) { return Math.round(val / 20) * 20; }
+    }
+  }, 
+  y: { 
+    display: true, 
+    position: 'right',
+    grid: { display: false }, 
+    bounds: 'data',
+    ticks: {
+      color: '#d1d4dc',
+      callback: function(value) { return Math.round(value / 10) * 10; }
+    }
+  },
+  yParrots: { display: false, min: 0, max: 100 }
+},
+
+
           plugins: { 
             tooltip: { enabled: false },
             legend: { display: false },
