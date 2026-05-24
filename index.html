@@ -342,23 +342,31 @@ const priceCrosshairPlugin = {
     ctx.strokeStyle = 'rgba(41, 98, 255, 0.8)';
     ctx.lineWidth = 1;
     ctx.moveTo(x.left, yPos);
-    ctx.lineTo(x.right, yPos); // Исправлено: x.right вместо y.right
+    ctx.lineTo(x.right, yPos);
     ctx.stroke();
     
+    // Вычисления для плашки
     const price = y.getValueForPixel(yPos);
     const text = Math.floor(price).toString();
-    ctx.font = '12px sans-serif';
-    const textWidth = ctx.measureText(text).width;
     const rectX = y.left;
-    const rectY = yPos - 9;
     const rectWidth = y.right - y.left + 5;
+    const rectHeight = 18;
+    const rectY = yPos - (rectHeight / 2); // Центрируем плашку по линии кроссхеира
     
+    // Рисуем фон
     ctx.fillStyle = '#2962ff';
-    ctx.fillRect(rectX, rectY, rectWidth, 18);
+    ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+
+    // Рисуем текст
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(text, rectX + (rectWidth - textWidth) / 2, yPos);
+    ctx.font = '12px sans-serif';
+    ctx.textBaseline = 'middle'; 
+    ctx.textAlign = 'center';  
+    ctx.fillText(text, rectX + rectWidth / 2, rectY + rectHeight / 2);
+    
     ctx.restore();
   }
+
 };
 
     function initChart() {
