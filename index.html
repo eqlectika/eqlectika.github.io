@@ -296,8 +296,9 @@ const priceCrosshairPlugin = {
   id: 'priceCrosshair',
   afterInit(chart) {
     chart.crosshair = { x: null, y: null, active: false };
-    
-    // Функция обновления координат
+    let pressTimer = null;
+    const LONG_PRESS_DELAY = 500; // Задержка в мс
+
     const updateCrosshair = (e) => {
       const rect = chart.canvas.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -309,26 +310,36 @@ const priceCrosshairPlugin = {
       chart.update('none');
     };
 
-    // Функция скрытия
     const clearCrosshair = () => {
+      clearTimeout(pressTimer);
       chart.crosshair.active = false;
       chart.update('none');
     };
 
-    // Вешаем события только на canvas
-    chart.canvas.addEventListener('mousedown', updateCrosshair);
-    chart.canvas.addEventListener('mousemove', (e) => {
-      if (chart.crosshair.active) updateCrosshair(e);
+    chart.canvas.addEventListener('mousedown', (e) => {
+      pressTimer = setTimeout(() => updateCrosshair(e), LONG_PRESS_DELAY);
     });
-    chart.canvas.addEventListener('touchstart', updateCrosshair, {passive: true});
+
+    chart.canvas.addEventListener('mousemove', (e) => {
+      if (chart.crosshair.active) {
+        updateCrosshair(e);
+      }
+    });
+
+    chart.canvas.addEventListener('touchstart', (e) => {
+      pressTimer = setTimeout(() => updateCrosshair(e), LONG_PRESS_DELAY);
+    }, {passive: true});
+
     chart.canvas.addEventListener('touchmove', (e) => {
-      if (chart.crosshair.active) updateCrosshair(e);
+      if (chart.crosshair.active) {
+        updateCrosshair(e);
+      }
     }, {passive: true});
     
-    // Глобальные события отпускания для надежности
     window.addEventListener('mouseup', clearCrosshair);
     window.addEventListener('touchend', clearCrosshair);
   },
+  
   afterDraw(chart) {
     if (!chart.crosshair || !chart.crosshair.active) return;
     
@@ -345,29 +356,24 @@ const priceCrosshairPlugin = {
     ctx.lineTo(x.right, yPos);
     ctx.stroke();
     
-    // Вычисления для плашки
     const price = y.getValueForPixel(yPos);
     const text = Math.floor(price).toString();
     const rectX = y.left;
     const rectWidth = y.right - y.left + 5;
     const rectHeight = 18;
-    const rectY = yPos - (rectHeight / 2); // Центрируем плашку по линии кроссхеира
+    const rectY = yPos - (rectHeight / 2);
     
-    // Рисуем фон
     ctx.fillStyle = '#2962ff';
     ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
-
-    // Рисуем текст
     ctx.fillStyle = '#ffffff';
     ctx.font = '12px sans-serif';
     ctx.textBaseline = 'middle'; 
     ctx.textAlign = 'center';  
     ctx.fillText(text, rectX + rectWidth / 2, rectY + rectHeight / 2);
-    
     ctx.restore();
   }
-
 };
+
 
     function initChart() {
       if (moireChart) moireChart.destroy();
