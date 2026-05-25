@@ -66,13 +66,17 @@ self.addEventListener("message", (event) => {
   const aether = getAether(candles);
   const currentAetherSignal = aether.vector > aether.anchor ? "BUY" : "SELL";
   
-  if (currentAetherSignal !== lastAetherSignal) {
+if (currentAetherSignal !== lastAetherSignal) {
     lastAetherSignal = currentAetherSignal;
     self.postMessage({ 
-      type: 'AETHER_UPDATE', 
-      vector: aether.vector, 
-      anchor: aether.anchor, 
-      signal: currentAetherSignal 
+      price: currentPrice, 
+      force: force, 
+      signal: signal,
+      aether: { 
+        vector: aether.vector,
+        anchor: aether.anchor,
+        signal: currentAetherSignal
+      }
     });
   }
 });
