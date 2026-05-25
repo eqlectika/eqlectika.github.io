@@ -1,5 +1,6 @@
 let parrotsPort = null;
 let lastAetherSignal = null; // Для фильтрации "дребезга"
+let lastSentForce = 0;
 
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === 'INIT_PARROTS_PORT') {
@@ -62,10 +63,14 @@ self.addEventListener("message", (event) => {
   }
   
   // 3. Фильтрация сигналов AETHER
-  const aether = getAether(candles);
+const aether = getAether(candles);
   const currentAetherSignal = aether.vector > aether.anchor ? "BUY" : "SELL";
   
-lastAetherSignal = currentAetherSignal; // Это можно оставить для статистики
+  // УСЛОВИЕ ДЛЯ ОТПРАВКИ (только если данные изменились)
+  if (Math.abs(force - lastSentForce) > 0.1 || currentAetherSignal !== lastAetherSignal) {
+    lastSentForce = force;
+    lastAetherSignal = currentAetherSignal;
+
     self.postMessage({ 
       price: currentPrice, 
       force: force, 
@@ -76,6 +81,7 @@ lastAetherSignal = currentAetherSignal; // Это можно оставить д
         signal: currentAetherSignal
       }
     });
+  }
 });
 function calculateFORCE(c, p) {
   if (c.length < p + 1) return null;
