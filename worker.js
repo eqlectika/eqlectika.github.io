@@ -19,8 +19,24 @@ self.addEventListener("message", (event) => {
   if (force !== null) {
     if (force < 30) signal = "BUY";
     if (force > 70) signal = "SELL";
-    self.postMessage({ price: currentPrice, force: force, signal: signal });
-  }
+// Внутри self.addEventListener("message", ...)
+// Замените отправку сообщений на одну точку входа:
+
+self.postMessage({
+  type: 'UPDATE_ALL',
+  main: { price: currentPrice, force: force, signal: signal },
+  parrots: { 
+    parrotsSignal, parrotsScore: spectrumPercent, 
+    parrotsDirection: spectrumDirection, deviation: Math.sqrt(variance).toFixed(2), 
+    state: marketState 
+  },
+  aether: currentAetherSignal ? {
+    vector: aether.vector,
+    anchor: aether.anchor,
+    signal: currentAetherSignal
+  } : null
+});
+
 
   // 2. Расчет состояния рынка на основе волатильности цены
   let totalLines = 0, brokenUpper = 0, brokenLower = 0;
