@@ -77,7 +77,7 @@ lastAetherSignal = currentAetherSignal; // Это можно оставить д
         signal: currentAetherSignal
       }
     });
-
+});
 function calculateFORCE(c, p) {
   if (c.length < p + 1) return null;
   let g = 0, l = 0;
