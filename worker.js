@@ -19,7 +19,6 @@ self.addEventListener("message", (event) => {
   if (force !== null) {
     if (force < 30) signal = "BUY";
     if (force > 70) signal = "SELL";
-    self.postMessage({ price: currentPrice, force: force, signal: signal });
   }
 
   // 2. Расчет состояния рынка на основе волатильности цены
