@@ -227,17 +227,22 @@
     worker.postMessage({ type: 'INIT_PARROTS_PORT' }, [parrotsChannel.port2]);
 
 worker.onmessage = (event) => {
-  console.log("Данные из воркера:", event.data); // Добавьте это
-  const { signal, force, price, aether } = event.data; // Добавили aether
+  // 1. ПРОВЕРКА: если данных нет или они неполные, просто выходим
+  if (!event.data || event.data.force === undefined) {
+    return;
+  }
+
+  // Теперь мы уверены, что event.data существует
+  const { signal, force, price, aether } = event.data;
+  
   const fill = document.getElementById("akai-fill");
   
-  if (fill && force !== undefined && force !== null) {
+  if (fill) {
     const value = Math.min(Math.max(force, 0), 100);
     fill.style.width = value + "%";
     fill.style.backgroundColor = `hsl(${120 - (value / 100) * 120}, 100%, 50%)`;
   }
 
-  // Теперь aether определен, и проверка сработает
   if (aether) {
     const status = `VX: ${aether.vector.toFixed(2)} | ANCHOR: ${aether.anchor.toFixed(2)} | <span class="${aether.signal}">${aether.signal}</span>`;
     logCloud("SIGNAL", status);
