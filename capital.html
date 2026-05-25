@@ -623,7 +623,14 @@ scales: {
       fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${tf}&limit=600`)
         .then(res => res.json())
         .then(data => {
-          candles = data.map(d => ({ close: parseFloat(d[4]) }));
+// Замените в блоке fetch этот кусок:
+candles = data.map(d => ({ 
+  high: parseFloat(d[2]), 
+  low: parseFloat(d[3]), 
+  close: parseFloat(d[4]) 
+}));
+
+
           statusDiv.innerText = "Status: Connecting WebSocket...";
           
           const closes = candles.map(c => c.close);
@@ -631,17 +638,27 @@ scales: {
           worker.postMessage({ candles, period });
 
           ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}@kline_${tf}`);
+          
+          
           ws.onmessage = (msg) => {
             statusDiv.innerText = `Status: Streaming ${pair.toUpperCase()} (${tf})`;
             const e = JSON.parse(msg.data);
             const k = e.k;
-            const currentClose = parseFloat(k.c);
-            if (k.x) {
-              candles.push({ close: currentClose });
+            
+            if (k.x) { 
+              candles.push({ 
+                high: parseFloat(k.h), 
+                low: parseFloat(k.l), 
+                close: parseFloat(k.c) 
+              });
               if (candles.length > 600) candles.shift();
             } else {
-              const lastCandle = candles[candles.length - 1];
-              if (lastCandle) lastCandle.close = currentClose;
+              const last = candles[candles.length - 1];
+              if (last) {
+                last.high = Math.max(last.high, parseFloat(k.h));
+                last.low = Math.min(last.low, parseFloat(k.l));
+                last.close = parseFloat(k.c);
+              }
             }
             worker.postMessage({ candles, period });
           };
@@ -649,6 +666,7 @@ scales: {
           ws.onclose = () => { statusDiv.innerText = "Status: Disconnected"; };
         })
         .catch(() => { statusDiv.innerText = "Status: History Fetch Error"; });
+
     }
 
     connect();
