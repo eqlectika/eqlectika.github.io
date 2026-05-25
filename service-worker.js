@@ -1,6 +1,6 @@
 const CACHE_NAME = "trainer-v1";
 const ASSETS = [
-  "index.html",
+  "capital.html",
   "manifest.json",
 ];
 self.addEventListener("install", (event) => {
