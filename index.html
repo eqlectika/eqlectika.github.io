@@ -1,663 +1,580 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/png" href="icon.png">
-  <title>Capital&Eqlectika - Trade Phenomena</title>
-  <link rel="manifest" href="manifest.json">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
-  <style>
-    body { 
-      html, body {
-      overscroll-behavior-y: auto;
-      overflow-y: auto; 
-    }
-      background: #000000; 
-      color: #d1d4dc; 
-      font-family: sans-serif; 
-      margin: 0; 
-      padding-top: 20px; 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      box-sizing: border-box;
-      min-height: 100vh;
-    }
-    #akai-indicator {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 8px;
-  background: #2c3145; 
-  z-index: 9999;
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="logo.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest-research.json">
+<title>Eqlectika - Made in Heaven workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<style>
+body {
+margin: 0;
+padding: 0;
+background-color: #000088;
+min-height: 100vh;
+overflow-y: auto;
+overflow-x: hidden;
+-webkit-user-select: none;
+user-select: none;
+-webkit-tap-highlight-color: transparent;
 }
-    #terminal { 
-      width: 100%; 
-      max-width: 100%; 
-      background: #000000; 
-      padding: 4px; 
-      border-radius: 0px; 
-      box-sizing: border-box; 
-    }
-    
-    #tf {
-  background-color: #ff5f00; 
+canvas {
+position: fixed !important;
+top: 0;
+left: 0;
+width: 100vw !important;
+height: 100vh !important;
+z-index: 1;
+display: block;
 }
-
-#tf:hover {
-  background-color: #e68a00; 
+#ui-layer {
+pointer-events: none;
+position: absolute;
+top: 0;
+left: 0;
+padding: 3%;
+box-sizing: border-box;
+width: 100%;
+z-index: 10;
 }
-
-    .chart-container { 
-      position: relative; 
-      width: 100%; 
-      height: 50vh; 
-      margin-bottom: 15px; 
-    }
-    select {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    }
-    select, button { background: #2962ff; color: white; border: none; padding: 10px 20px; margin: 0 5px 10px 0;; border-radius: 4px; font-size: 16px; cursor: pointer; }
-    button:hover { background: #1e4bd8; }
-    #status { margin: 15px 0; font-weight: bold; }
-    canvas#moireChart { 
-    image-rendering: crisp-edges; 
-    image-rendering: pixelated; 
-    width: 100% !important; 
-    height: 100% !important; 
-    cursor: grab; 
-    pointer-events: auto;
-    touch-action: none;
-    }
-    canvas#moireChart:active { cursor: grabbing; }
-    #log { height: 150px; overflow-y: auto; background: #0c0d14; padding: 0px; font-family: monospace; font-size: 14px; border-radius: 4px; margin-top: 50px; }
-    #log-parrots { height: 150px; overflow-y: auto; background: #0c0d14; padding: 0px; font-family: monospace; font-size: 14px; border-radius: 4px; margin-top: 50px; }
-    #log-cloud { height: 150px; overflow-y: auto; background: #0c0d14; padding: 0px; font-family: monospace; font-size: 14px; border-radius: 4px; margin-top: 50px; }
-
-    .BUY { color: #00e676; }
-    .SELL { color: #ff5252; }
-    .HOLD { color: #b2b5be; }
-#toggleHeaderTop, #toggleHeaderBottom {
-  width: 300px; 
-  margin: 10px auto;
-  text-align: center;
-  box-sizing: border-box; 
+#ui-layer * {
+pointer-events: auto;
 }
-
-    .disclaimer-box {
-    margin: 40px auto;
-    padding: 20px;
-    border: 1px solid #333;
-    background-color: #050505;
-    color: #888;
-    font-size: 13px;
-    line-height: 1.5;
-    text-align: justify;
-    max-width: 800px;
-    border-radius: 4px;
+nav {
+display: flex;
+flex-direction: column;
+width: fit-content;
+pointer-events: none;
 }
-
-.disclaimer-box h4 {
-    color: #d1d4dc;
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 14px;
+h1 {
+font-size: 1.25rem;
+font-weight: 700;
+margin-bottom: 0.5rem;
+padding-left: 2px;
+font-family: 'Roboto Condensed', sans-serif;
+color: #fff;
 }
-  </style>
+.menu-item-container {
+position: relative;
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+width: fit-content;
+pointer-events: auto;
+}
+.menu-item {
+text-decoration: none;
+color: #ffffff;
+font-family: 'Roboto Condensed', sans-serif;
+font-size: 18px;
+font-weight: 400;
+letter-spacing: 0;
+opacity: 0.8;
+white-space: nowrap;
+padding-left: 2px;
+cursor: pointer;
+display: block;
+transition: transform 0.2s ease, color 0.2s ease;
+text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+.menu-item:hover {
+color: #ffeb3b;
+transform: scale(1.08);
+}
+.logo {
+max-width: 48px;
+height: auto;
+opacity: 0.9;
+display: block;
+margin-top: 30px;
+transition: opacity 0.3s ease;
+}
+.logo:hover {
+opacity: 1;
+}
+#ui-layer, nav, .menu-item {
+touch-action: manipulation;
+}
+#ui-layer p {
+    font-family: 'Roboto Condensed', sans-serif !important;
+}
+.submenu {
+display: none;
+position: absolute;
+left: 80%;
+top: -20px;
+width: 380px;
+padding-left: 60px;
+flex-direction: row;
+flex-wrap: wrap;
+gap: 0 40px;
+z-index: 20;
+background: transparent;
+font-family: 'Roboto Condensed', sans-serif;
+}
+.menu-item-container:hover .submenu {
+display: flex;
+}
+.menu-item-container:hover > .menu-item {
+color: #ffeb3b;
+}
+.submenu .menu-item {
+font-size: 18px;
+opacity: 0.8;
+}
+span.menu-item {
+cursor: pointer;
+display: block;
+}
+.donate-box {
+display: flex;
+flex-direction: column;
+gap: 10px;
+margin-top: 20px;
+width: fit-content;
+}
+.donate-btn {
+color: rgba(255,255,255,0.6);
+border: 1px solid rgba(255,255,255,0.3);
+padding: 8px 16px;
+background: transparent;
+cursor: pointer;
+font-size: 14px;
+font-family: 'Roboto Condensed', sans-serif;
+transition: 0.3s;
+border-radius: 8px;
+width: fit-content;
+}
+.donate-btn:hover {
+background: #ffeb3b;
+color: #000;
+border-color: #ffeb3b;
+}
+.donate-container {
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+width: fit-content;
+}
+.crypto-info {
+display: none;
+flex-direction: column;
+gap: 8px;
+padding: 10px 0 20px 2px;
+}
+.crypto-info span {
+font-family: 'Roboto Condensed', sans-serif;
+}
+.crypto-address-display {
+font-size: 12px;
+color: #fff;
+background: rgba(255,255,255,0.05);
+padding: 8px;
+border: 1px dashed rgba(255,255,255,0.9);
+cursor: copy;
+word-break: break-all;
+max-width: 300px;
+font-family: 'Roboto Condensed', sans-serif;
+}
+</style>
 </head>
+
 <body>
-<div id="akai-indicator" style="position: fixed; top: 0; left: 0; width: 100%; height: 8px; background: #2c3145; z-index: 9999;">
-  <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
+<script src="pwa-init.js"></script>
+<div id="ui-layer">
+<div style="display: flex; align-items: center; gap: 15px; pointer-events: auto; margin-bottom: 15px;">
+    <a href="index.html" style="display: block;">
+        <img src="logo.png" alt="Logo" class="logo" style="margin-bottom: 0;">
+    </a>
+
+</div> 
+
+<div style="margin-bottom: 20px;">
+  <h1 style="margin: 0; font-size: 32px; letter-spacing: 1px;">Eqlectika</h1>
+  <p style="margin: 5px 0 0 2px; color: #b2b5be; font-size: 14px;">
+    Made in Heaven workspace
+  </p>
 </div>
 
-  <div id="terminal">
-<div style="display: flex; align-items: flex-start; justify-content: left; gap: 15px; margin-bottom: 5px;">
+<nav>
+<div class="menu-item-container" style="margin-top: 20px;">
+    <span class="menu-item">Sketches</span>
+    <div class="submenu">
+        <div style="display: flex; flex-direction: column; flex: 0 0 auto;">
+            <a style="margin-top: 20px" href="cube.html" class="menu-item">Cube</a>
+            <a style="margin-top: 20px" href="peer.html" class="menu-item">Peer</a>
+            <a style="margin-top: 20px" href="drop.html" class="menu-item">Drop</a>
+            <a style="margin-top: 20px" href="square.html" class="menu-item">Square</a>
+            <a style="margin-top: 20px" href="spark.html" class="menu-item">Spark</a>
+            <a style="margin-top: 20px" href="clock.html" class="menu-item">Clock</a>
+            <a style="margin-top: 20px" href="matrix.html" class="menu-item">Matrix</a>
+            <a style="margin-top: 20px" href="book.html" class="menu-item">Book</a>
+            <a style="margin-top: 20px" href="flash.html" class="menu-item">Flash</a>
+            <a style="margin-top: 20px" href="cross.html" class="menu-item">Cross</a>
+            <a style="margin-top: 20px" href="pearl.html" class="menu-item">Pearl</a>
+            <a style="margin-top: 20px" href="syntax.html" class="menu-item">Syntax</a>
+            <a style="margin-top: 20px" href="hybrid.html" class="menu-item">Hybrid</a>
+            <a style="margin-top: 20px; margin-bottom: 40px" href="watch.html" class="menu-item">Watch</a>
 
-  <a href="research.html" style="text-decoration: none;">
-    <img src="icon.png" alt="Logo" style="height: 48px; width: auto;">
-  </a>
-  
-  <div style="display: flex; flex-direction: column;">
-    <h2 style="margin: 0; line-height: 0.74; margin-left: -8px;">Capital&Eqlectika</h2>
-    <span style="font-size: 14px; color: #b2b5be; margin-top: 5px; margin-left: -8px;">
-      Trade Phenomena
-    </span>
-  </div>
-</div>
-
-            <select id="pair">
-      <option value="btcusdt">BTC / USDT</option>
-      <option value="ethusdt">ETH / USDT</option>
-      <option value="solusdt">SOL / USDT</option>
-      <option value="zecusdt">ZEC / USDT</option>
-    </select>
-<select id="tf">
-  <option value="1m">1 Minute</option>
-  <option value="5m">5 Minutes</option>
-  <option value="15m">15 Minutes</option>
-  <option value="1h">1 Hour</option>
-  <option value="4h">4 Hours</option>
-  <option value="1d">1 Day</option>
-  <option value="1w">1 Week</option>
-  <option value="1M">1 Month</option>
-
-</select>
-    <button onclick="jumpToCurrent()">Jump to Current</button>
-    <div id="status">Status: Disconnected</div>
-    
-    <div class="chart-container">
-      <canvas id="moireChart"></canvas>
+        </div>
+        <div style="display: flex; flex-direction: column; flex: 0 0 auto;">
+            <a style="margin-top: 20px" href="lexis.html" class="menu-item">Lexis</a>
+            <a style="margin-top: 20px" href="code.html" class="menu-item">Code</a>
+            <a style="margin-top: 20px" href="size.html" class="menu-item">Size</a>
+            <a style="margin-top: 20px" href="beta.html" class="menu-item">Beta</a>
+            <a style="margin-top: 20px" href="demo.html" class="menu-item">Demo</a>
+            <a style="margin-top: 20px" href="quant.html" class="menu-item">Quant</a>
+            <a style="margin-top: 20px" href="blueprint.html" class="menu-item">Blueprint</a>
+            <a style="margin-top: 20px" href="etymon.html" class="menu-item">Etymon</a>
+            <a style="margin-top: 20px" href="paramount.html" class="menu-item">Paramount</a>
+            <a style="margin-top: 20px" href="entropy.html" class="menu-item">Entropy</a>
+            <a style="margin-top: 20px" href="bismuth.html" class="menu-item">Bismuth</a>
+            <a style="margin-top: 20px" href="sublime.html" class="menu-item">Sublime</a>
+            <a style="margin-top: 20px" href="capital.html" class="menu-item">Capital</a>
+        </div>
     </div>
-
-    <div id="log"></div>
-    <div id="log-parrots"></div>
-    <div id="log-cloud"></div>
-  </div>
-
-  </div> 
-
-<div class="disclaimer-box">
-    <h4>Legal Disclaimer</h4>
-    <p>
-        <strong>Disclaimer:</strong> The content, software tools, algorithms, and trading signals provided on the Capital&Eqlectika website are for informational and educational purposes only. This information <strong>does not</strong> constitute financial, investment, tax, or legal advice.
-    </p>
-    <p>
-        <strong>No Advisory Status:</strong> Capital&Eqlectika is not a registered financial advisor, broker, or investment institution. The use of any tools or strategies described on this resource is entirely at the user's own risk.
-    </p>
-    <p>
-        <strong>Trading Risks:</strong> Trading in cryptocurrencies and other financial assets involves a high level of risk and can result in the total loss of your capital. Historical data and mathematical models <strong>do not guarantee</strong> future results. Past performance is not indicative of future profits.
-    </p>
-    <p>
-        <strong>User Responsibility:</strong> By using this resource, you acknowledge that you understand the risks associated with cryptocurrency market volatility, assume full personal responsibility for all trading decisions made, and agree that the administration of Capital&Eqlectika shall not be held liable for any losses or damages arising from the use of this service.
-    </p>
 </div>
+<a style="margin-top: 20px" href="concept.html" class="menu-item">Concept</a>
+<a style="margin-top: 20px" href="https://github.com/eqlectika" class="menu-item">GitHub</a>
+<a style="margin-top: 20px" href="resume.html" class="menu-item">Resume</a>
+<a style="margin-top: 20px" href="wire.html" class="menu-item">Wire</a>
+<a style="margin-top: 20px" href="https://t.me/eugenebox" class="menu-item">Telegram</a>
+
+<div style="margin-top: 20px" class="menu-item-container donate-container">
+<span class="menu-item" onclick="toggleDonate()">Support</span>
+<div id="cryptoInfo" class="crypto-info">
+<span style="font-size: 11px; color: #fff;">ETH (ERC20)</span>
+<div id="cryptoAddr" class="crypto-address-display" onclick="copyToClipboard()">0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8</div>
+<span id="copyHint" style="font-size: 10px; color: #fff;">Click to copy address</span>
+</div>
+</div>
+</nav>
+
+</div> 
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three/examples/js/controls/OrbitControls.js"></script>
 
 <script>
-    let autoReturnTimeout = null;
-    const RETURN_DELAY = 10000; // 1 минута ожидания перед возвратом
-    let y = 0;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000088);
 
-    window.addEventListener('touchstart', e => y = window.scrollY ? -1 : e.touches[0].clientY);
-    window.addEventListener('touchend', e => { if(y >= 0 && e.changedTouches[0].clientY - y > 150) location.reload(); });
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000);
+camera.position.z = 35;
 
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js?t=" + Date.now());
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+renderer.domElement.style.position = 'fixed';
+renderer.domElement.style.top = '0';
+renderer.domElement.style.left = '0';
+renderer.domElement.style.width = '100vw';
+renderer.domElement.style.height = '100vh';
+renderer.domElement.style.zIndex = '1'; 
+
+document.body.appendChild(renderer.domElement);
+
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.domElement.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+
+const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+scene.add(ambient);
+
+const redSun = new THREE.DirectionalLight(0xff0000, 1.5);
+redSun.position.set(-50, 20, 20);
+scene.add(redSun);
+
+const greenSun = new THREE.DirectionalLight(0x00ff00, 1.5);
+greenSun.position.set(50, 20, 20);
+scene.add(greenSun);
+
+const blueSun = new THREE.DirectionalLight(0x0000ff, 1.5);
+blueSun.position.set(0, -50, 20);
+scene.add(blueSun);
+
+
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playLaunchSound(power) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.value = 160 + power * 260;
+    gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.28);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.3);
+}
+
+let firstAutoSpawn = true;
+
+function playSpawnSound() {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = 420 + Math.random() * 180;
+    gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.1, audioCtx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.22);
+}
+
+const objects = [];
+let preview = null;
+let directionLine = null;
+let isHolding = false;
+let holdStart = 0;
+let lastUserActivity = performance.now();
+const mouse = new THREE.Vector2();
+
+const minScale = 0.01;
+const maxScale = 21;
+const minOpacity = 0.25;
+const maxOpacity = 0.9;
+
+function explode(obj) {
+    const basePos = obj.position.clone();
+    const baseMat = obj.material;
+    const baseScale = obj.scale.x;
+
+    for (let i = 0; i < 8; i++) {
+        const geom = new THREE.IcosahedronGeometry(0.5, 0);
+        const mat  = baseMat.clone();
+        const piece = new THREE.Mesh(geom, mat);
+        piece.position.copy(basePos);
+        piece.scale.setScalar(baseScale);
+const power = baseScale * 0.15; 
+
+piece.userData.velocity = new THREE.Vector3(
+    (Math.random() - 0.5) * power,
+    (Math.random() - 0.5) * power,
+    (Math.random() - 0.5) * power
+);
+
+        scene.add(piece);
+        objects.push(piece);
     }
+    scene.remove(obj);
+}
 
-    const pairSelect = document.getElementById("pair");
-    const tfSelect = document.getElementById("tf");
-    const statusDiv = document.getElementById("status");
-    const logDiv = document.getElementById("log");
-    
-    let ws = null;
-    let candles = [];
-    const period = 14;
-    let moireChart = null;
-    let isInitialLoad = true;
+window.addEventListener("pointerdown", e => {
+    lastUserActivity = performance.now();
+    isHolding = true;
+    holdStart = performance.now();
 
-    const worker = new Worker("worker.js?cache-bust=" + Math.random());
-    const parrotsChannel = new MessageChannel();
+    mouse.set(
+        (e.clientX / innerWidth) * 2 - 1,
+        -(e.clientY / innerHeight) * 2 + 1
+    );
 
-    worker.postMessage({ type: 'INIT_PARROTS_PORT' }, [parrotsChannel.port2]);
+    const dir = new THREE.Vector3(mouse.x, mouse.y, 0.5)
+        .unproject(camera)
+        .sub(camera.position)
+        .normalize();
 
-    worker.onmessage = (event) => {
-      const { signal, force, price } = event.data;
-      const fill = document.getElementById("akai-fill");
-      
-      if (fill && force !== undefined && force !== null) {
-        const value = Math.min(Math.max(force, 0), 100);
-        fill.style.width = value + "%";
-        fill.style.backgroundColor = `hsl(${120 - (value / 100) * 120}, 100%, 50%)`;
-      }
+    const pos = camera.position.clone().add(dir.clone().multiplyScalar(10));
 
-      if (event.data.type === 'AETHER_UPDATE') {
-        const { vector, anchor, signal: aetherSignal } = event.data;
-        const status = `VX: ${vector.toFixed(2)} | ANCHOR: ${anchor.toFixed(2)} | <span class="${aetherSignal}">${aetherSignal}</span>`;
-        logCloud("SIGNAL", status);
-        return;
-      }
-
-      const time = new Date().toLocaleTimeString();
-      const logLine = document.createElement("div");
-      logLine.innerHTML = `[${time}] Price: $${price.toFixed(2)} | FORCE: ${force.toFixed(2)} | SIGNAL: <span class="${signal}">${signal}</span>`;
-      logDiv.insertBefore(logLine, logDiv.firstChild);
-
-      if (logDiv.childNodes.length > 100) {
-        logDiv.removeChild(logDiv.lastChild);
-      }
-
-      const closes = candles.map(c => c.close);
-      updateChart(closes);
-    };
-
-    let lastParrotsScore = 0;
-      
-    parrotsChannel.port1.onmessage = (event) => {
-      const time = new Date().toLocaleTimeString();
-      const logParrotsDiv = document.getElementById("log-parrots");
-      const line = document.createElement("div");
-      
-      const { parrotsSignal, parrotsScore, parrotsDirection, deviation, state } = event.data;
-      const color = state === "STABLE" ? "#29b6f6" : "#ffa726";
-
-      line.innerHTML = `[${time}] Spec ${parrotsDirection}: ${parrotsScore.toFixed(0)}% | <b>DEVIATION: <span style="color:${color}">${deviation}</span></b> <span style="color:${color}">[${state}]</span> | SIGNAL: <span class="${parrotsSignal}">${parrotsSignal}</span>`;
-
-      logParrotsDiv.insertBefore(line, logParrotsDiv.firstChild);
-      if (logParrotsDiv.childNodes.length > 100) logParrotsDiv.removeChild(logParrotsDiv.lastChild);
-    };
-
-    let isDragging = false;
-    let previousX = 0;
-
-    function resetAutoReturnTimer() {
-      if (autoReturnTimeout) clearTimeout(autoReturnTimeout);
-      autoReturnTimeout = setTimeout(() => {
-        if (moireChart && moireChart.data.labels.length > 0) {
-          jumpToCurrent(); 
-        }
-      }, RETURN_DELAY);
-    }
-const priceCrosshairPlugin = {
-  id: 'priceCrosshair',
-  afterInit(chart) {
-    chart.crosshair = { x: null, y: null, active: false };
-    let pressTimer = null;
-    const LONG_PRESS_DELAY = 500;
-
-    const updateCrosshair = (e) => {
-      const rect = chart.canvas.getBoundingClientRect();
-      const clientX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      const clientY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-      chart.crosshair.x = clientX;
-      chart.crosshair.y = clientY;
-      chart.crosshair.active = true;
-      chart.update('none');
-    };
-
-    const clearCrosshair = () => {
-      clearTimeout(pressTimer);
-      chart.crosshair.active = false;
-      chart.update('none');
-    };
-
-    chart.canvas.addEventListener('mousedown', (e) => {
-      pressTimer = setTimeout(() => updateCrosshair(e), LONG_PRESS_DELAY);
+    const geom = new THREE.IcosahedronGeometry(0.5, 0);
+    const mat = new THREE.MeshPhongMaterial({
+        color: Math.random() * 0xffffff,
+        transparent: true,
+        opacity: minOpacity,
+        shininess: 120,
+        side: THREE.DoubleSide
     });
-    chart.canvas.addEventListener('touchstart', (e) => {
-      pressTimer = setTimeout(() => updateCrosshair(e), LONG_PRESS_DELAY);
-    }, {passive: true});
 
-    chart.canvas.addEventListener('mousemove', (e) => { if (chart.crosshair.active) updateCrosshair(e); });
-    chart.canvas.addEventListener('touchmove', (e) => { if (chart.crosshair.active) updateCrosshair(e); }, {passive: true});
-    
-    window.addEventListener('mouseup', clearCrosshair);
-    window.addEventListener('touchend', clearCrosshair);
-  },
-  
+    preview = new THREE.Mesh(geom, mat);
+    preview.position.copy(pos);
+    preview.scale.setScalar(minScale);
+    preview.userData.dir = dir;
+    scene.add(preview);
 
-  afterDraw(chart) {
-    if (!chart.crosshair || !chart.crosshair.active) return;
-    
-    const { ctx, scales: { x, y } } = chart;
-    const { x: xPos, y: yPos } = chart.crosshair;
+    directionLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([
+            pos.clone(),
+            pos.clone().add(dir.clone().multiplyScalar(6))
+        ]),
+        new THREE.LineBasicMaterial({ transparent: true, opacity: 0.4 })
+    );
+    scene.add(directionLine);
+});
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.strokeStyle = 'rgba(41, 98, 255, 0.8)';
-    ctx.lineWidth = 1;
-    
-    ctx.moveTo(x.left, yPos); ctx.lineTo(x.right, yPos); // Горизонтальная
-    ctx.moveTo(xPos, y.top); ctx.lineTo(xPos, y.bottom); // Вертикальная
-    ctx.stroke();
+window.addEventListener("pointerup", () => {
+    if (!preview) return;
+    isHolding = false;
+    lastUserActivity = performance.now();
 
-    ctx.font = '12px sans-serif';
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#2962ff';
+    const holdTime = Math.min((performance.now() - holdStart) / 1000, 2);
+    const power = holdTime / 8;
 
-    const price = y.getValueForPixel(yPos);
-    const priceText = Math.floor(price).toString();
-    const pRectW = 50; 
-    
-    const rectX = x.left - pRectW; 
-    
-    ctx.fillStyle = '#2962ff'; // Цвет плашки
-    ctx.fillRect(rectX, yPos - 9, pRectW, 18);
-    
-    ctx.fillStyle = '#ffffff'; // Цвет текста
-    ctx.textAlign = 'center';
-    ctx.fillText(priceText, rectX + pRectW / 2, yPos);
+const currentScale = preview.scale.x;
+
+preview.userData.velocity = 
+    preview.userData.dir.clone().normalize().multiplyScalar((0.2 + power * 0.35) * currentScale * 0.8);
+
+    playLaunchSound(power);
+
+    const obj = preview;
+    objects.push(obj);
+
+    setTimeout(() => {
+        if (scene.children.includes(obj)) explode(obj);
+    }, 2000);
+
+    if (directionLine) {
+        scene.remove(directionLine);
+        directionLine = null;
+    }
+
+    preview = null;
+});
 
 
-    // 2. Плашка времени (аналогично исходному коду, но сверху)
+function spawnRandomObject() {
 
-const timeVal = Math.round(x.getValueForPixel(xPos));
+    let dir, pos;
 
-    const tRectW = 60;
-    ctx.fillStyle = '#2962ff';
-    ctx.fillRect(xPos - tRectW / 2, y.top - 25, tRectW, 18);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillText(timeVal.toString(), xPos, y.top - 16);
-    
-    ctx.restore();
+    if (firstAutoSpawn) {
+        pos = new THREE.Vector3(0, 0, 0);
+
+        dir = camera.getWorldDirection(new THREE.Vector3()).normalize();
+
+        firstAutoSpawn = false;
+    } else {
+        dir = new THREE.Vector3(
+            Math.random() * 2 - 1,
+            Math.random() * 2 - 1,
+            Math.random() * 2 - 1
+        ).normalize();
+
+        pos = dir.clone().multiplyScalar(8);
+    }
+
+    const geom = new THREE.IcosahedronGeometry(0.5, 0);
+    const mat = new THREE.MeshPhongMaterial({
+        color: Math.random() * 0xffffff,
+        transparent: true,
+        opacity: 0.6,
+        shininess: 120,
+        side: THREE.DoubleSide
+    });
+
+    const obj = new THREE.Mesh(geom, mat);
+    obj.position.copy(pos);
+    obj.scale.setScalar(0.8 + Math.random() * 2.0);
+    obj.userData.velocity = dir.multiplyScalar(0.18);
+
+    scene.add(obj);
+    objects.push(obj);
+
+    playSpawnSound();
+
+    setTimeout(() => {
+        if (scene.children.includes(obj)) explode(obj);
+    }, 2000);
+}
+
+window.addEventListener('load', () => {
+    spawnRandomObject(); 
+});
+
+window.addEventListener('pointerup', () => {
+    setTimeout(spawnRandomObject, 5000);
+}, { once: false });
+
+
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    objects.forEach(obj => {
+        if (!obj.userData.velocity) return;
+        obj.position.add(obj.userData.velocity);
+        obj.userData.velocity.multiplyScalar(0.99);
+        obj.rotation.x += 0.01;
+        obj.rotation.y += 0.015;
+    });
+
+    if (isHolding && preview) {
+        const t = Math.min((performance.now() - holdStart) / 2000, 1);
+        const scale = THREE.MathUtils.lerp(minScale, maxScale, t);
+        preview.scale.setScalar(scale);
+        preview.material.opacity =
+            THREE.MathUtils.lerp(maxOpacity, minOpacity, t);
+        preview.rotation.x += 0.03;
+        preview.rotation.y += 0.02;
+
+        if (directionLine) {
+            const p0 = preview.position;
+            const p1 = p0.clone().add(preview.userData.dir.clone().multiplyScalar(6));
+            directionLine.geometry.setFromPoints([p0, p1]);
+        }
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+}
+
+window.addEventListener("resize", () => {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+    renderer.domElement.style.width = '100vw';
+    renderer.domElement.style.height = '100vh';
+});
+
+
+animate();
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (event) => {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
+
+function toggleDonate() { 
+  const info = document.getElementById("cryptoInfo"); 
+  const isOpening = info.style.display !== "flex";
+  info.style.display = isOpening ? "flex" : "none"; 
+  if (isOpening) {
+    setTimeout(() => info.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
   }
+}
 
-};
+function copyToClipboard() {
+  const addr = document.getElementById("cryptoAddr");
+  const hint = document.getElementById("copyHint");
+  const text = addr.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    addr.innerText = "Copied!";
+    addr.style.color = "#00ff00";
+    if (hint) hint.innerText = "Address saved to clipboard";
+    setTimeout(() => {
+      addr.innerText = text;
+      addr.style.color = "#fff";
+      if (hint) hint.innerText = "Click address to copy";
+    }, 1500);
+  });
+}
 
+</script>
 
-
-
-
-    function initChart() {
-      if (moireChart) moireChart.destroy();
-      isInitialLoad = true;
-      
-      const datasets = [
-        {
-          label: 'Price',
-          data: [],
-          borderColor: '#d1d4dc',
-          borderWidth: 2,
-          pointRadius: 0,
-          stepped: true,
-          order: 1,
-          yAxisID: 'y'
-        },
-        {
-          label: '38 Parrots',
-          data: [],
-          borderColor: 'rgba(230, 126, 34, 0.7)',
-          borderWidth: 2,
-          pointRadius: 0,
-          fill: false,
-          stepped: true,
-          order: 0,
-          yAxisID: 'yParrots',
-          hidden: true
-        }
-      ];
-
-      for (let i = 0; i < 34; i++) {
-        const color = 'rgba(155, 89, 182, 0.25)';
-        datasets.push({ data: [], borderColor: color, borderWidth: 2, pointRadius: 0, fill: false, stepped: false, order: 2, yAxisID: 'y' });
-        datasets.push({ data: [], borderColor: color, borderWidth: 2, pointRadius: 0, fill: false, stepped: false, order: 2, yAxisID: 'y' });
-      }
-
-      const ctx = document.getElementById('moireChart').getContext('2d');
-      moireChart = new Chart(ctx, {
-        type: 'line',
-        data: { labels: [], datasets: datasets },
-        plugins: [priceCrosshairPlugin],
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: false, 
-scales: { 
-  x: { 
-    position: 'top',
-    display: true, 
-    grid: { display: false }, 
-    ticks: { 
-      display: true,
-      color: '#d1d4dc',
-      callback: function(val) { return Math.round(val / 20) * 20; }
-    }
-  }, 
-  y: { 
-    display: true, 
-    position: 'left',
-    grid: { display: false }, 
-    bounds: 'data',
-    ticks: {
-      color: '#d1d4dc',
-      callback: function(value) { return Math.round(value / 10) * 10; }
-    }
-  },
-  yParrots: { display: false, min: 0, max: 100 }
-},
-
-
-          plugins: { 
-            tooltip: { enabled: false },
-            legend: { display: false },
-            zoom: {
-              zoom: { 
-                wheel: { enabled: true }, 
-                pinch: { enabled: true }, 
-                mode: 'x',
-                onZoom: function() { resetAutoReturnTimer(); }
-              },
-              pan: { 
-                enabled: true, 
-                mode: 'x', 
-                threshold: 5,
-                onPan: function() { resetAutoReturnTimer(); }
-              }
-            }
-          }
-        }
-      });
-
-      const canvas = document.getElementById('moireChart');
-      
-      canvas.addEventListener('mousedown', (e) => { 
-        if (e.button === 0) { 
-          isDragging = true; 
-          previousX = e.clientX; 
-          if (autoReturnTimeout) clearTimeout(autoReturnTimeout);
-        } 
-      });
-
-      window.addEventListener('mousemove', (e) => {
-        if (!isDragging || !moireChart) return;
-        
-        resetAutoReturnTimer();
-
-        const xAxis = moireChart.scales.x;
-        const totalPoints = moireChart.data.labels.length;
-        if (totalPoints === 0) return;
-
-        const currentMin = xAxis.min !== undefined ? xAxis.min : 0;
-        const currentMax = xAxis.max !== undefined ? xAxis.max : totalPoints - 1;
-
-        const deltaX = e.clientX - previousX;
-        if (Math.abs(deltaX) > 1) {
-          const pointsPerPixel = (currentMax - currentMin) / xAxis.width;
-          const shift = deltaX * pointsPerPixel;
-          
-          let newMin = currentMin - shift;
-          let newMax = currentMax - shift;
-
-          if (newMin < 0) { newMax -= newMin; newMin = 0; }
-          if (newMax > totalPoints - 1) { newMin -= (newMax - (totalPoints - 1)); newMax = totalPoints - 1; }
-
-          moireChart.options.scales.x.min = newMin;
-          moireChart.options.scales.x.max = newMax;
-          moireChart.update('none');
-          previousX = e.clientX;
-        }
-      });
-
-      window.addEventListener('mouseup', () => { isDragging = false; });
-    }
-
-    function calculateBB(closes, period) {
-      const uppers = []; const lowers = [];
-      for (let i = 0; i < closes.length; i++) {
-        if (i < period - 1) { uppers.push(null); lowers.push(null); continue; }
-        const slice = closes.slice(i - period + 1, i + 1);
-        const sma = slice.reduce((a, b) => a + b, 0) / period;
-        const variance = slice.reduce((a, b) => a + Math.pow(b - sma, 2), 0) / period;
-        const stdDev = Math.sqrt(variance);
-        uppers.push(sma + (2 * stdDev)); lowers.push(sma - (2 * stdDev));
-      }
-      return { uppers, lowers };
-    }
-
-    let parrotsHistory = [];
-
-    function updateChart(closes) {
-      if (!moireChart) return;
-      
-      while (parrotsHistory.length < closes.length) {
-        parrotsHistory.push(lastParrotsScore);
-      }
-      if (parrotsHistory.length > closes.length) {
-        parrotsHistory = parrotsHistory.slice(-closes.length);
-      }
-      if (parrotsHistory.length > 0) {
-        parrotsHistory[parrotsHistory.length - 1] = lastParrotsScore;
-      }
-
-      moireChart.data.labels = Array.from({length: closes.length}, (_, i) => i);
-      moireChart.data.datasets[0].data = closes;
-      moireChart.data.datasets[1].data = [...parrotsHistory];
-
-      for (let i = 0; i < 34; i++) {
-        const periodBB = (i + 1) * 5;
-        const bb = calculateBB(closes, periodBB);
-        moireChart.data.datasets[i * 2 + 2].data = bb.uppers;
-        moireChart.data.datasets[i * 2 + 3].data = bb.lowers;
-      }
-
-      if (isInitialLoad && closes.length > 0) {
-        isInitialLoad = false;
-        scrollToEnd(250); 
-      } else {
-        const totalPoints = closes.length;
-        const xAxis = moireChart.scales.x;
-        const currentMax = xAxis.max !== undefined ? xAxis.max : totalPoints - 1;
-        
-        const isAtEnd = (totalPoints - 1 - currentMax) <= 2;
-
-        if (isAtEnd) {
-          const range = (xAxis.max - xAxis.min) || 150; 
-          moireChart.options.scales.x.max = totalPoints - 1;
-          moireChart.options.scales.x.min = Math.max(0, totalPoints - 1 - range);
-        }
-
-        moireChart.update('none');
-      }
-    }
-
-    function logCloud(event, status) {
-      const cloudLogDiv = document.getElementById("log-cloud");
-      const time = new Date().toLocaleTimeString();
-      const entry = document.createElement("div");
-      
-      entry.innerHTML = `[${time}] <b>[AETHER]</b> ${event}: <span style="color:#2962ff">${status}</span>`;
-      cloudLogDiv.insertBefore(entry, cloudLogDiv.firstChild);
-      
-      if (cloudLogDiv.childNodes.length > 50) {
-        cloudLogDiv.removeChild(cloudLogDiv.lastChild);
-      }
-    }
-
-    function scrollToEnd(rangeSize = 250) {
-      if (!moireChart) return;
-      const totalPoints = moireChart.data.labels.length;
-      if (totalPoints === 0) return;
-      const minIndex = Math.max(0, totalPoints - rangeSize);
-      const maxIndex = totalPoints - 1;
-      
-      moireChart.options.scales.x.min = minIndex;
-      moireChart.options.scales.x.max = maxIndex;
-      moireChart.update('none');
-    }
-
-    function jumpToCurrent() {
-      if (!moireChart) return;
-      if (moireChart.resetZoom) moireChart.resetZoom('none'); 
-
-      const totalPoints = moireChart.data.labels.length; 
-      if (totalPoints === 0) return;
-
-      const rangeSize = 250; 
-      const min = Math.max(0, totalPoints - rangeSize);
-      const max = totalPoints - 1;
-
-      moireChart.options.scales.x.min = min;
-      moireChart.options.scales.x.max = max;
-      moireChart.update('none');
-    }
-
-    function connect() {
-      if (ws) { ws.close(); }
-      logDiv.innerHTML = "";
-      document.getElementById("log-parrots").innerHTML = "";
-      parrotsHistory = [];
-      lastParrotsScore = 0;
-      initChart();
-
-      const pair = pairSelect.value;
-      const tf = tfSelect.value;
-      statusDiv.innerText = "Status: Loading history...";
-      
-      fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${tf}&limit=600`)
-        .then(res => res.json())
-        .then(data => {
-          candles = data.map(d => ({ close: parseFloat(d[4]) }));
-          statusDiv.innerText = "Status: Connecting WebSocket...";
-          
-          const closes = candles.map(c => c.close);
-          updateChart(closes);
-          worker.postMessage({ candles, period });
-
-          ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}@kline_${tf}`);
-          ws.onmessage = (msg) => {
-            statusDiv.innerText = `Status: Streaming ${pair.toUpperCase()} (${tf})`;
-            const e = JSON.parse(msg.data);
-            const k = e.k;
-            const currentClose = parseFloat(k.c);
-            if (k.x) {
-              candles.push({ close: currentClose });
-              if (candles.length > 200) candles.shift();
-            } else {
-              const lastCandle = candles[candles.length - 1];
-              if (lastCandle) lastCandle.close = currentClose;
-            }
-            worker.postMessage({ candles, period });
-          };
-          ws.onerror = () => { statusDiv.innerText = "Status: WS Error"; };
-          ws.onclose = () => { statusDiv.innerText = "Status: Disconnected"; };
-        })
-        .catch(() => { statusDiv.innerText = "Status: History Fetch Error"; });
-    }
-
-    connect();
-
-    pairSelect.onchange = connect;
-    tfSelect.onchange = connect;
-
-    function toggleInfo() {
-      const content = document.getElementById("info-content");
-      const topBtn = document.getElementById("toggleHeaderTop");
-      const isOpening = content.style.display === "none";
-      
-      content.style.display = isOpening ? "block" : "none";
-      topBtn.style.display = isOpening ? "none" : "block";
-      
-      if (isOpening) {
-        setTimeout(() => { content.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
-      } else {
-        topBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-        
-    function copyToClipboard() {
-      const addr = document.getElementById("cryptoAddr").innerText;
-      navigator.clipboard.writeText(addr).then(() => {
-        const hint = document.getElementById("copyHint");
-        hint.innerText = "Copied!";
-        setTimeout(() => hint.innerText = "Click address to copy", 2000);
-      });
-    }
-  </script>
 </body>
 </html>
