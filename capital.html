@@ -650,32 +650,40 @@ candles = data.map(d => ({
           ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}@kline_${tf}`);
           
           
-ws.onmessage = (msg) => {
-  statusDiv.innerText = `Status: Streaming ${pair.toUpperCase()} (${tf})`;
-  const e = JSON.parse(msg.data);
-  const k = e.k;
-  
-  // Получаем текущие данные из сообщения Binance
-  const high = parseFloat(k.h);
-  const low = parseFloat(k.l);
-  const close = parseFloat(k.c);
-  
-  if (k.x) { 
-    // Новая закрытая свеча: просто добавляем её
-    candles.push({ high, low, close });
-    if (candles.length > 600) candles.shift();
-  } else {
-    // Обновление текущей (открытой) свечи
-    const last = candles[candles.length - 1];
-    if (last) {
-      // Здесь ключевое исправление: используем ||, чтобы избежать undefined
-      last.high = Math.max(last.high || high, high);
-      last.low = Math.min(last.low || low, low);
-      last.close = close;
+// Внутри worker.onmessage
+worker.onmessage = (event) => {
+  if (event.data.type === 'UPDATE_ALL') {
+    const { main, parrots, aether } = event.data;
+    const time = new Date().toLocaleTimeString();
+
+    // 1. Обновление основного лога
+    const logLine = document.createElement("div");
+    logLine.innerHTML = `[${time}] Price: $${main.price.toFixed(2)} | FORCE: ${main.force.toFixed(2)} | SIGNAL: <span class="${main.signal}">${main.signal}</span>`;
+    logDiv.insertBefore(logLine, logDiv.firstChild);
+
+    // 2. Обновление Parrots
+    const logParrotsDiv = document.getElementById("log-parrots");
+    const pLine = document.createElement("div");
+    const color = parrots.state === "STABLE" ? "#29b6f6" : "#ffa726";
+    pLine.innerHTML = `[${time}] Spec ${parrots.parrotsDirection}: ${parrots.parrotsScore.toFixed(0)}% | <b>DEVIATION: <span style="color:${color}">${parrots.deviation}</span></b> | SIGNAL: <span class="${parrots.parrotsSignal}">${parrots.parrotsSignal}</span>`;
+    logParrotsDiv.insertBefore(pLine, logParrotsDiv.firstChild);
+
+    // 3. Обновление Aether (если есть сигнал)
+    if (aether) {
+      logCloud("SIGNAL", `VX: ${aether.vector.toFixed(2)} | ANCHOR: ${aether.anchor.toFixed(2)} | <span class="${aether.signal}">${aether.signal}</span>`);
     }
+
+    // Очистка старых логов (унифицировано)
+    [logDiv, logParrotsDiv, document.getElementById("log-cloud")].forEach(d => {
+      if (d.childNodes.length > 50) d.removeChild(d.lastChild);
+    });
+
+    // Обновление графика
+    const closes = candles.map(c => c.close);
+    updateChart(closes);
   }
-  // Отправляем чистые данные в воркер
-  worker.postMessage({ candles, period });
+};
+
 };
 
 
