@@ -1,10 +1,10 @@
 let parrotsPort = null;
-let deviations = []; 
+let lastAetherSignal = null; // Для фильтрации "дребезга"
 
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === 'INIT_PARROTS_PORT') {
     parrotsPort = event.ports ? event.ports[0] : null;
-    return; 
+    return;
   }
 
   const { candles } = event.data;
@@ -13,14 +13,16 @@ self.addEventListener("message", (event) => {
   const closes = candles.map(c => typeof c === 'object' ? c.close : c);
   const currentPrice = closes[closes.length - 1];
 
+  // 1. Исправленный расчет FORCE с проверкой на null
   const force = calculateFORCE(closes, 14);
   let signal = "HOLD";
   if (force !== null) {
     if (force < 30) signal = "BUY";
     if (force > 70) signal = "SELL";
+    self.postMessage({ price: currentPrice, force: force, signal: signal });
   }
-  self.postMessage({ price: currentPrice, force: force, signal: signal });
 
+  // 2. Расчет состояния рынка на основе волатильности цены
   let totalLines = 0, brokenUpper = 0, brokenLower = 0;
   for (let i = 0; i < 27; i++) {
     const period = (i + 1) * 20;
@@ -47,22 +49,32 @@ self.addEventListener("message", (event) => {
     }
   }
 
-  deviations.push(spectrumPercent);
-  if (deviations.length > 10) deviations.shift(); 
-  const meanDev = deviations.reduce((a, b) => a + b, 0) / deviations.length;
-  const variance = deviations.reduce((sum, d) => sum + Math.pow(d - meanDev, 2), 0) / deviations.length;
-  const stdDev = Math.sqrt(variance);
-  const marketState = stdDev < 15 ? "STABLE" : "NOISE"; 
+  // Расчет рыночной фазы через изменение цены (stdDev)
+  const priceChange = closes.slice(-10).map((val, i, arr) => i > 0 ? val - arr[i-1] : 0);
+  const meanChange = priceChange.reduce((a, b) => a + b, 0) / priceChange.length;
+  const variance = priceChange.reduce((sum, d) => sum + Math.pow(d - meanChange, 2), 0) / priceChange.length;
+  const marketState = Math.sqrt(variance) < 0.5 ? "STABLE" : "NOISE"; 
 
   if (parrotsPort) {
     parrotsPort.postMessage({
       parrotsSignal, parrotsScore: spectrumPercent, parrotsDirection: spectrumDirection,
-      price: currentPrice, deviation: stdDev.toFixed(2), state: marketState
+      price: currentPrice, deviation: Math.sqrt(variance).toFixed(2), state: marketState
     });
   }
   
+  // 3. Фильтрация сигналов AETHER
   const aether = getAether(candles);
-  self.postMessage({ type: 'AETHER_UPDATE', vector: aether.vector, anchor: aether.anchor, signal: aether.vector > aether.anchor ? "BUY" : "SELL" });
+  const currentAetherSignal = aether.vector > aether.anchor ? "BUY" : "SELL";
+  
+  if (currentAetherSignal !== lastAetherSignal) {
+    lastAetherSignal = currentAetherSignal;
+    self.postMessage({ 
+      type: 'AETHER_UPDATE', 
+      vector: aether.vector, 
+      anchor: aether.anchor, 
+      signal: currentAetherSignal 
+    });
+  }
 });
 
 function calculateFORCE(c, p) {
