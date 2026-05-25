@@ -95,13 +95,17 @@ function calculateBBForLast(c, p) {
 }
 
 function getAether(candles) {
-  // candles теперь должны содержать {high, low, close}
+
+  if (!candles || candles.length < 26) return { vector: 0, anchor: 0 };
+
+  const getHigh = (x) => (x && typeof x.high !== 'undefined') ? x.high : (x.close || 0);
+  const getLow = (x) => (x && typeof x.low !== 'undefined') ? x.low : (x.close || 0);
+
   const slice9 = candles.slice(-9);
   const slice26 = candles.slice(-26);
 
-  const v = (Math.max(...slice9.map(x => x.high)) + Math.min(...slice9.map(x => x.low))) / 2; // Tenkan-sen
-  const a = (Math.max(...slice26.map(x => x.high)) + Math.min(...slice26.map(x => x.low))) / 2; // Kijun-sen
+  const v = (Math.max(...slice9.map(getHigh)) + Math.min(...slice9.map(getLow))) / 2;
+  const a = (Math.max(...slice26.map(getHigh)) + Math.min(...slice26.map(getLow))) / 2;
   
   return { vector: v, anchor: a };
 }
-
