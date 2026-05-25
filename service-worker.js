@@ -1,7 +1,7 @@
 const CACHE_NAME = "trainer-v1";
 const ASSETS = [
   "capital.html",
-  "manifest.json",
+  "manifest-capital.json",
 ];
 self.addEventListener("install", (event) => {
   event.waitUntil(
