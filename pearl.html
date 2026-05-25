@@ -179,10 +179,12 @@ controls.update();
 }
 renderer.render(scene, camera);
 }
-window.addEventListener('mousedown', handlePointerDown);
-window.addEventListener('mouseup', handlePointerUp);
-window.addEventListener('touchstart', handlePointerDown, { passive: false });
-window.addEventListener('touchend', handlePointerUp, { passive: false });
+const canvas = renderer.domElement;
+
+canvas.addEventListener('pointerdown', handlePointerDown);
+canvas.addEventListener('pointerup', handlePointerUp);
+// Отключаем контекстное меню при правом клике, чтобы оно не мешало
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
 animate();
 function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = info.style.display !== "flex" ? "flex" : "none"; }
