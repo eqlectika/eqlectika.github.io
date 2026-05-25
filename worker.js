@@ -66,8 +66,7 @@ self.addEventListener("message", (event) => {
   const aether = getAether(candles);
   const currentAetherSignal = aether.vector > aether.anchor ? "BUY" : "SELL";
   
-if (currentAetherSignal !== lastAetherSignal) {
-    lastAetherSignal = currentAetherSignal;
+lastAetherSignal = currentAetherSignal; // Это можно оставить для статистики
     self.postMessage({ 
       price: currentPrice, 
       force: force, 
@@ -78,8 +77,6 @@ if (currentAetherSignal !== lastAetherSignal) {
         signal: currentAetherSignal
       }
     });
-  }
-});
 
 function calculateFORCE(c, p) {
   if (c.length < p + 1) return null;
