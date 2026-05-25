@@ -1,4 +1,4 @@
-const CACHE_NAME = "trainer-v1";
+const CACHE_NAME = "trainer-v2";
 const ASSETS = [
   "capital.html",
   "manifest-capital.json",
