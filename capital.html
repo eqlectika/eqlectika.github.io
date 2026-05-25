@@ -102,15 +102,26 @@
     max-width: 100%;
 }
 
+.main-layout {
+  display: flex;
+  flex-direction: row; /* Горизонтальное расположение */
+  gap: 20px;
+  width: 100%;
+}
 
+.column-left { flex: 2; }  /* График занимает больше места */
+.column-right { flex: 1; } /* Логи занимают меньше места */
+
+/* Для мобильных устройств возвращаем столбец */
+@media (max-width: 768px) {
+  .main-layout { flex-direction: column; }
+}
   </style>
 </head>
 <body>
 <div id="akai-indicator" style="position: fixed; top: 0; left: 0; width: 100%; height: 8px; background: #2c3145; z-index: 9999;">
   <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
 </div>
-
-  <div id="terminal">
 <div style="display: flex; align-items: flex-start; justify-content: left; gap: 15px; margin-bottom: 5px;">
 
   <a href="index.html" style="text-decoration: none;">
@@ -125,6 +136,7 @@
   </div>
 </div>
 
+  <div id="terminal">
             <select id="pair">
       <option value="btcusdt">BTC / USDT</option>
       <option value="ethusdt">ETH / USDT</option>
@@ -145,16 +157,32 @@
     <button onclick="jumpToCurrent()">Jump to Current</button>
     <div id="status">Status: Disconnected</div>
     
-    <div class="chart-container">
-      <canvas id="moireChart"></canvas>
+
+  <div class="main-layout">
+    <div class="column-left">
+      <div class="chart-container">
+        <canvas id="moireChart"></canvas>
+      </div>
     </div>
-
-    <div id="log"></div>
-    <div id="log-parrots"></div>
-    <div id="log-cloud"></div>
+    
+    <div class="column-right">
+      <div id="log"></div>
+      <div id="log-parrots"></div>
+      <div id="log-cloud"></div>
+    </div>
   </div>
+</div>
 
-  </div> 
+
+
+
+
+  
+
+
+
+
+
 
 <div class="disclaimer-box">
     <h4>Legal Disclaimer</h4>
