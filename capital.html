@@ -226,35 +226,34 @@
 
     worker.postMessage({ type: 'INIT_PARROTS_PORT' }, [parrotsChannel.port2]);
 
-    worker.onmessage = (event) => {
-      const { signal, force, price } = event.data;
-      const fill = document.getElementById("akai-fill");
-      
-      if (fill && force !== undefined && force !== null) {
-        const value = Math.min(Math.max(force, 0), 100);
-        fill.style.width = value + "%";
-        fill.style.backgroundColor = `hsl(${120 - (value / 100) * 120}, 100%, 50%)`;
-      }
+worker.onmessage = (event) => {
+  const { signal, force, price, aether } = event.data; // Добавили aether
+  const fill = document.getElementById("akai-fill");
+  
+  if (fill && force !== undefined && force !== null) {
+    const value = Math.min(Math.max(force, 0), 100);
+    fill.style.width = value + "%";
+    fill.style.backgroundColor = `hsl(${120 - (value / 100) * 120}, 100%, 50%)`;
+  }
 
-      if (event.data.type === 'AETHER_UPDATE') {
-        const { vector, anchor, signal: aetherSignal } = event.data;
-        const status = `VX: ${vector.toFixed(2)} | ANCHOR: ${anchor.toFixed(2)} | <span class="${aetherSignal}">${aetherSignal}</span>`;
-        logCloud("SIGNAL", status);
-        return;
-      }
+  // Теперь aether определен, и проверка сработает
+  if (aether) {
+    const status = `VX: ${aether.vector.toFixed(2)} | ANCHOR: ${aether.anchor.toFixed(2)} | <span class="${aether.signal}">${aether.signal}</span>`;
+    logCloud("SIGNAL", status);
+  }
 
-      const time = new Date().toLocaleTimeString();
-      const logLine = document.createElement("div");
-      logLine.innerHTML = `[${time}] Price: $${price.toFixed(2)} | FORCE: ${force.toFixed(2)} | SIGNAL: <span class="${signal}">${signal}</span>`;
-      logDiv.insertBefore(logLine, logDiv.firstChild);
+  const time = new Date().toLocaleTimeString();
+  const logLine = document.createElement("div");
+  logLine.innerHTML = `[${time}] Price: $${price.toFixed(2)} | FORCE: ${force.toFixed(2)} | SIGNAL: <span class="${signal}">${signal}</span>`;
+  logDiv.insertBefore(logLine, logDiv.firstChild);
 
-      if (logDiv.childNodes.length > 100) {
-        logDiv.removeChild(logDiv.lastChild);
-      }
+  if (logDiv.childNodes.length > 100) {
+    logDiv.removeChild(logDiv.lastChild);
+  }
 
-      const closes = candles.map(c => c.close);
-      updateChart(closes);
-    };
+  const closes = candles.map(c => c.close);
+  updateChart(closes);
+};
 
     let lastParrotsScore = 0;
       
@@ -629,17 +628,6 @@ candles = data.map(d => ({
   low: parseFloat(d[3]), 
   close: parseFloat(d[4]) 
 }));
-
-
-
-
-
-
-
-
-
-
-
 
           statusDiv.innerText = "Status: Connecting WebSocket...";
           
