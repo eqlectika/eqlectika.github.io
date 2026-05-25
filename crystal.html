@@ -7,9 +7,25 @@
 <style>
 body { margin: 0; overflow: hidden; background: #000; touch-action: none; }
 canvas { display: block; }
+#logo-link {
+    position: absolute;
+    top: 50px; /* Отступ сверху */
+    left: 50%;
+    transform: translateX(-50%); /* Центрирование по горизонтали */
+    z-index: 1000;
+    cursor: pointer;
+}
+
+#logo-link img {
+    width: 60px; /* Размер логотипа */
+    height: auto;
+}
 </style>
 </head>
 <body>
+<a href="index.html" id="logo-link">
+    <img src="logo.png" alt="Logo">
+</a>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
@@ -93,6 +109,23 @@ window.addEventListener('pointerdown', (e) => {
     raycaster.setFromCamera(mouse, camera);
     const intersects = raycaster.intersectObject(mesh);
     if (intersects.length > 0) growStep(intersects[0].faceIndex);
+});
+
+let startX, startY; 
+window.addEventListener('pointerdown', (e) => {
+    startX = e.clientX;
+    startY = e.clientY;
+});
+
+window.addEventListener('pointerup', (e) => {
+    // Проверяем, что мы не сдвинули мышь (это был клик, а не вращение)
+    if (Math.abs(e.clientX - startX) < 5 && Math.abs(e.clientY - startY) < 5) {
+        const mouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObject(mesh);
+        if (intersects.length > 0) growStep(Math.floor(intersects[0].faceIndex / 1)); // Индекс может быть смещен
+    }
 });
 function animate() {
     requestAnimationFrame(animate);
