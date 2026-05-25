@@ -655,25 +655,29 @@ ws.onmessage = (msg) => {
   const e = JSON.parse(msg.data);
   const k = e.k;
   
+  // Получаем текущие данные из сообщения Binance
+  const high = parseFloat(k.h);
+  const low = parseFloat(k.l);
+  const close = parseFloat(k.c);
+  
   if (k.x) { 
-    // Новая закрытая свеча
-    candles.push({ 
-      high: parseFloat(k.h), 
-      low: parseFloat(k.l), 
-      close: parseFloat(k.c) 
-    });
+    // Новая закрытая свеча: просто добавляем её
+    candles.push({ high, low, close });
     if (candles.length > 600) candles.shift();
   } else {
-    // Обновление текущей свечи
+    // Обновление текущей (открытой) свечи
     const last = candles[candles.length - 1];
     if (last) {
-      last.high = Math.max(last.high || 0, parseFloat(k.h));
-      last.low = Math.min(last.low || Infinity, parseFloat(k.l));
-      last.close = parseFloat(k.c);
+      // Здесь ключевое исправление: используем ||, чтобы избежать undefined
+      last.high = Math.max(last.high || high, high);
+      last.low = Math.min(last.low || low, low);
+      last.close = close;
     }
   }
+  // Отправляем чистые данные в воркер
   worker.postMessage({ candles, period });
 };
+
 
           ws.onerror = () => { statusDiv.innerText = "Status: WS Error"; };
           ws.onclose = () => { statusDiv.innerText = "Status: Disconnected"; };
