@@ -95,17 +95,20 @@ function calculateBBForLast(c, p) {
 }
 
 function getAether(candles) {
-
   if (!candles || candles.length < 26) return { vector: 0, anchor: 0 };
 
-  const getHigh = (x) => (x && typeof x.high !== 'undefined') ? x.high : (x.close || 0);
-  const getLow = (x) => (x && typeof x.low !== 'undefined') ? x.low : (x.close || 0);
+  // Используем цену закрытия как fallback, если high/low не определены
+  const getHigh = (x) => (x && x.high > 0) ? x.high : (x.close || 0);
+  const getLow = (x) => (x && x.low > 0) ? x.low : (x.close || 0);
 
   const slice9 = candles.slice(-9);
   const slice26 = candles.slice(-26);
 
   const v = (Math.max(...slice9.map(getHigh)) + Math.min(...slice9.map(getLow))) / 2;
   const a = (Math.max(...slice26.map(getHigh)) + Math.min(...slice26.map(getLow))) / 2;
+  
+  // Добавим проверку, чтобы исключить нулевые значения при расчете
+  if (v === 0 || a === 0) return { vector: 0, anchor: 0 };
   
   return { vector: v, anchor: a };
 }
