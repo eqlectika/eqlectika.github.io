@@ -3,7 +3,7 @@ import * as THREE from 'three';
 class PlanetEngine {
     constructor() {
         this.scene = new THREE.Scene();
-        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 1000);
         this.camera.position.set(0, 0, 0); 
         
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -23,6 +23,7 @@ class PlanetEngine {
             side: THREE.DoubleSide 
         });
         this.planet = new THREE.Mesh(geometry, material);
+        this.planet.frustumCulled = false; // Отключает проверку на видимость
         this.scene.add(this.planet);
 
         // Физика камеры
@@ -63,16 +64,22 @@ class PlanetEngine {
         });
     }
 
-    updateCamera() {
-        const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+updateCamera() {
+    const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
 
-        if (this.isMovingForward) this.velocity.add(direction.multiplyScalar(this.moveSpeed));
-        if (this.isMovingBackward) this.velocity.sub(direction.multiplyScalar(this.moveSpeed));
-        if (this.verticalDirection !== 0) this.velocity.y += this.verticalDirection;
+    if (this.isMovingForward) this.velocity.add(direction.multiplyScalar(this.moveSpeed));
+    if (this.isMovingBackward) this.velocity.sub(direction.multiplyScalar(this.moveSpeed));
+    
+    this.velocity.multiplyScalar(this.friction);
+    this.camera.position.add(this.velocity);
+    if (this.camera.position.length() > 4.8) {
+    this.camera.position.setLength(4.8); // Не даем вылететь наружу
+}
 
-        this.velocity.multiplyScalar(this.friction);
-        this.camera.position.add(this.velocity);
-    }
+    // ВАЖНО: Привязываем свет к камере, чтобы внутри планеты всегда было светло
+    // Если pointLight был создан в конструкторе, сохраните его как this.pointLight
+    this.pointLight.position.copy(this.camera.position); 
+}
 
     animate() {
         requestAnimationFrame(() => this.animate());
