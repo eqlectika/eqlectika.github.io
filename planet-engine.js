@@ -1,3 +1,5 @@
+window.addEventListener('contextmenu', (e) => e.preventDefault());
+
 import * as THREE from 'three';
 
 class PlanetEngine {
@@ -29,8 +31,8 @@ class PlanetEngine {
         // Физика камеры
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.rotationVelocity = new THREE.Vector2(0, 0);
-        this.friction = 0.95;
-        this.moveSpeed = 0.1;
+        this.friction = 0.92;
+        this.moveSpeed = 0.01;
 
         // Состояние
         this.isMovingForward = false;
@@ -65,20 +67,25 @@ class PlanetEngine {
     }
 
 updateCamera() {
+    // Вектор взгляда камеры
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
 
+    // Управление
     if (this.isMovingForward) this.velocity.add(direction.multiplyScalar(this.moveSpeed));
     if (this.isMovingBackward) this.velocity.sub(direction.multiplyScalar(this.moveSpeed));
     
+    // Вертикаль
+    if (this.verticalDirection !== 0) this.velocity.y += this.verticalDirection * this.moveSpeed;
+
+    // Инерция
     this.velocity.multiplyScalar(this.friction);
     this.camera.position.add(this.velocity);
-    if (this.camera.position.length() > 4.8) {
-    this.camera.position.setLength(4.8); // Не даем вылететь наружу
-}
 
-    // ВАЖНО: Привязываем свет к камере, чтобы внутри планеты всегда было светло
-    // Если pointLight был создан в конструкторе, сохраните его как this.pointLight
-    this.pointLight.position.copy(this.camera.position); 
+    // КОЛЛИЗИИ: не даем выйти за радиус
+    this.checkCollisions();
+
+    // Свет всегда рядом
+    this.pointLight.position.copy(this.camera.position);
 }
 
     animate() {
@@ -89,3 +96,10 @@ updateCamera() {
 }
 
 new PlanetEngine();
+checkCollisions() {
+    const radius = 4.8; // Чуть меньше радиуса икосаэдра
+    if (this.camera.position.length() > radius) {
+        this.camera.position.setLength(radius);
+        this.velocity.multiplyScalar(-0.5); // Отскок при столкновении
+    }
+}
