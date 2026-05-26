@@ -19,11 +19,20 @@ lightPositions.forEach(pos => {
     light.position.set(pos[0], pos[1], pos[2]);
     this.scene.add(light);
 });
-        // Создание сферы с треугольными полигонами
-        const geometry = new THREE.IcosahedronGeometry(5, 15);
-        const material = new THREE.MeshPhongMaterial({ color: 0xff5f00, wireframe: true });
-        this.planet = new THREE.Mesh(geometry, material);
-        this.scene.add(this.planet);
+
+        // Замена старой сферы на чистый икосаэдр
+// detail: 0 дает 20 базовых треугольников
+const geometry = new THREE.IcosahedronGeometry(5, 0); 
+
+// Wireframe материал позволяет видеть структуру полигонов
+const material = new THREE.MeshPhongMaterial({ 
+    color: 0xff5f00, 
+    wireframe: true,
+    side: THREE.DoubleSide // Важно для inverted planet (видеть изнутри)
+});
+
+this.planet = new THREE.Mesh(geometry, material);
+this.scene.add(this.planet);
 
         // Свет для рельефа
         this.scene.add(new THREE.AmbientLight(0x404040));
