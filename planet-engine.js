@@ -1,5 +1,3 @@
-window.addEventListener('contextmenu', (e) => e.preventDefault());
-
 import * as THREE from 'three';
 
 class PlanetEngine {
@@ -12,10 +10,10 @@ class PlanetEngine {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(this.renderer.domElement);
 
-        // Свет: Увеличили интенсивность, чтобы было видно
+        // Свет (сохраняем как свойство класса)
         this.scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-        const pointLight = new THREE.PointLight(0xffffff, 2, 100);
-        this.scene.add(pointLight); 
+        this.pointLight = new THREE.PointLight(0xffffff, 2, 100);
+        this.scene.add(this.pointLight); 
 
         // Геометрия
         const geometry = new THREE.IcosahedronGeometry(5, 0);
@@ -25,12 +23,11 @@ class PlanetEngine {
             side: THREE.DoubleSide 
         });
         this.planet = new THREE.Mesh(geometry, material);
-        this.planet.frustumCulled = false; // Отключает проверку на видимость
+        this.planet.frustumCulled = false; 
         this.scene.add(this.planet);
 
-        // Физика камеры
+        // Физика
         this.velocity = new THREE.Vector3(0, 0, 0);
-        this.rotationVelocity = new THREE.Vector2(0, 0);
         this.friction = 0.92;
         this.moveSpeed = 0.01;
 
@@ -38,6 +35,9 @@ class PlanetEngine {
         this.isMovingForward = false;
         this.isMovingBackward = false;
         this.verticalDirection = 0;
+
+        // Блокировка контекстного меню
+        window.addEventListener('contextmenu', (e) => e.preventDefault());
 
         this.initInputListeners();
         this.animate();
@@ -66,27 +66,29 @@ class PlanetEngine {
         });
     }
 
-updateCamera() {
-    // Вектор взгляда камеры
-    const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+    checkCollisions() {
+        const radius = 4.8;
+        if (this.camera.position.length() > radius) {
+            this.camera.position.setLength(radius);
+            this.velocity.multiplyScalar(-0.5);
+        }
+    }
 
-    // Управление
-    if (this.isMovingForward) this.velocity.add(direction.multiplyScalar(this.moveSpeed));
-    if (this.isMovingBackward) this.velocity.sub(direction.multiplyScalar(this.moveSpeed));
-    
-    // Вертикаль
-    if (this.verticalDirection !== 0) this.velocity.y += this.verticalDirection * this.moveSpeed;
+    updateCamera() {
+        const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
 
-    // Инерция
-    this.velocity.multiplyScalar(this.friction);
-    this.camera.position.add(this.velocity);
+        if (this.isMovingForward) this.velocity.add(direction.multiplyScalar(this.moveSpeed));
+        if (this.isMovingBackward) this.velocity.sub(direction.multiplyScalar(this.moveSpeed));
+        
+        if (this.verticalDirection !== 0) this.velocity.y += this.verticalDirection * this.moveSpeed;
 
-    // КОЛЛИЗИИ: не даем выйти за радиус
-    this.checkCollisions();
+        this.velocity.multiplyScalar(this.friction);
+        this.camera.position.add(this.velocity);
 
-    // Свет всегда рядом
-    this.pointLight.position.copy(this.camera.position);
-}
+        this.checkCollisions();
+
+        this.pointLight.position.copy(this.camera.position);
+    }
 
     animate() {
         requestAnimationFrame(() => this.animate());
@@ -96,10 +98,3 @@ updateCamera() {
 }
 
 new PlanetEngine();
-checkCollisions() {
-    const radius = 4.8; // Чуть меньше радиуса икосаэдра
-    if (this.camera.position.length() > radius) {
-        this.camera.position.setLength(radius);
-        this.velocity.multiplyScalar(-0.5); // Отскок при столкновении
-    }
-}
