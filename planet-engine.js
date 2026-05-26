@@ -44,21 +44,55 @@ class PlanetEngine {
         this.animate();
     }
 
-    updateCamera() {
-        // Управление движением (WASD + Space/Ctrl)
-        if (this.keys['KeyW']) this.velocity.z -= this.moveSpeed;
-        if (this.keys['KeyS']) this.velocity.z += this.moveSpeed;
-        if (this.keys['Space']) this.velocity.y += this.moveSpeed;
-        if (this.keys['ControlLeft']) this.velocity.y -= this.moveSpeed;
+    this.isMovingForward = false;
+        this.isMovingBackward = false;
+        this.verticalDirection = 0; // 1 - вверх, -1 - вниз
 
-        // Применение инерции
-        this.velocity.multiplyScalar(this.friction);
+        this.initInputListeners();
+        this.animate();
+    }
+
+    initInputListeners() {
+        // КЛИКИ И КАСАНИЯ
+        window.addEventListener('pointerdown', (e) => {
+            // Левая кнопка или 1 палец - движение вперед
+            if (e.button === 0 || e.pointerType === 'touch') {
+                this.isMovingForward = true;
+            }
+            // Правая кнопка или двойное касание - движение назад
+            if (e.button === 2 || (e.pointerType === 'touch' && e.pressure > 0.5)) {
+                this.isMovingBackward = true;
+            }
+        });
+
+        window.addEventListener('pointerup', () => {
+            this.isMovingForward = false;
+            this.isMovingBackward = false;
+            this.verticalDirection = 0;
+        });
+
+        // Двойной клик для подъема/спуска
+        window.addEventListener('dblclick', (e) => {
+            this.verticalDirection = (this.verticalDirection === 0) ? 1 : 0;
+        });
+    }
+
+    updateCamera() {
+        // 1. ПОЛЕТ (Инерционное движение)
+        const speed = 0.1;
+        if (this.isMovingForward) this.velocity.z -= speed;
+        if (this.isMovingBackward) this.velocity.z += speed;
+        
+        // 2. ВЕРТИКАЛЬ (Подъем/спуск)
+        if (this.verticalDirection !== 0) this.velocity.y += this.verticalDirection * speed;
+
+        // Плавное торможение (инерция)
+        this.velocity.multiplyScalar(0.95);
         this.camera.position.add(this.velocity);
 
-        // Вращение камеры
-        this.camera.rotation.x += this.rotationVelocity.x;
-        this.camera.rotation.y += this.rotationVelocity.y;
-        this.rotationVelocity.multiplyScalar(this.friction);
+        // 3. РОТАЦИЯ (Вращение камеры)
+        // Вращение происходит при движении мыши (pan)
+        // Zoom реализуется через FOV или Z-дистанцию в будущем
     }
 
     animate() {
@@ -67,5 +101,4 @@ class PlanetEngine {
         this.renderer.render(this.scene, this.camera);
     }
 }
-
 new PlanetEngine();
