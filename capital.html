@@ -373,8 +373,47 @@ afterDraw(chart) {
 };
 
 
+const currentPriceIndicator = {
+  id: 'currentPriceIndicator',
+  afterDatasetsDraw(chart) { // Используем этот хук
+    const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+    const data = chart.data.datasets[0].data;
+    if (!data || data.length === 0) return;
 
+    const currentPrice = data[data.length - 1];
+    const yPos = y.getPixelForValue(currentPrice);
 
+    // Проверка, что цена в пределах графика
+    if (yPos < y.top || yPos > y.bottom) return;
+
+    ctx.save();
+    
+    // 1. Пунктирная линия (на всю ширину)
+    ctx.strokeStyle = '#FFCC00';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(left, yPos);
+    ctx.lineTo(right, yPos);
+    ctx.stroke();
+
+    // 2. Плашка цены (рисуем СЛЕВА ВНУТРИ графика)
+    const rectW = 60;
+    const rectH = 20;
+    ctx.fillStyle = '#FFCC00';
+    // Рисуем от левой границы chartArea + 5px отступ
+    ctx.fillRect(left + 0, yPos - rectH / 2, rectW, rectH);
+
+    // 3. Текст цены
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(currentPrice.toFixed(0), left + 0 + rectW / 2, yPos);
+    
+    ctx.restore();
+  }
+};
 
     function initChart() {
       if (moireChart) moireChart.destroy();
@@ -415,7 +454,7 @@ afterDraw(chart) {
       moireChart = new Chart(ctx, {
         type: 'line',
         data: { labels: [], datasets: datasets },
-        plugins: [priceCrosshairPlugin],
+        plugins: [priceCrosshairPlugin, currentPriceIndicator],
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -446,6 +485,8 @@ scales: {
 
 
           plugins: { 
+priceCrosshair: {},          // Активация перекрестия
+  currentPriceIndicator: {},   // Активация индикатора цены
             tooltip: { enabled: false },
             legend: { display: false },
             zoom: {
