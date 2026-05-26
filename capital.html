@@ -315,49 +315,54 @@ const priceCrosshairPlugin = {
   },
   
 
-  afterDraw(chart) {
+afterDraw(chart) {
     if (!chart.crosshair || !chart.crosshair.active) return;
     
     const { ctx, scales: { x, y } } = chart;
     const { x: xPos, y: yPos } = chart.crosshair;
 
+    // 1. Отрисовка линий (перекрестие)
     ctx.save();
     ctx.beginPath();
     ctx.strokeStyle = 'rgba(41, 98, 255, 0.8)';
     ctx.lineWidth = 1;
-    
-    ctx.moveTo(x.left, yPos); ctx.lineTo(x.right, yPos); // Горизонтальная
-    ctx.moveTo(xPos, y.top); ctx.lineTo(xPos, y.bottom); // Вертикальная
+    ctx.moveTo(x.left, yPos); ctx.lineTo(x.right, yPos);
+    ctx.moveTo(xPos, y.top); ctx.lineTo(xPos, y.bottom);
     ctx.stroke();
 
-    ctx.font = '12px sans-serif';
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
+    // 2. Параметры плашки
+    const pRectW = 50; 
+    const pRectH = 18;
+    
+    // Рисуем плашку ВНУТРИ области графика (отступ от левого края x.left + 5)
+    // чтобы она не исчезала за пределами canvas
+    const rectX = x.left - 5; 
+    const rectY = yPos - (pRectH / 1);
+    
     ctx.fillStyle = '#2962ff';
-
+    ctx.fillRect(rectX, rectY, pRectW, pRectH);
+    
+    // 3. Текст
     const price = y.getValueForPixel(yPos);
     const priceText = Math.floor(price).toString();
-    const pRectW = 50; 
     
-    const rectX = x.left - pRectW; 
-    
-    ctx.fillStyle = '#2962ff'; // Цвет плашки
-    ctx.fillRect(rectX, yPos - 9, pRectW, 18);
-    
-    ctx.fillStyle = '#ffffff'; // Цвет текста
-    ctx.textAlign = 'center';
-    ctx.fillText(priceText, rectX + pRectW / 2, yPos);
-
-
-    // 2. Плашка времени (аналогично исходному коду, но сверху)
-
-const timeVal = Math.round(x.getValueForPixel(xPos));
-
-    const tRectW = 60;
-    ctx.fillStyle = '#2962ff';
-    ctx.fillRect(xPos - tRectW / 2, y.top - 25, tRectW, 18);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(timeVal.toString(), xPos, y.top - 16);
+    ctx.font = '12px sans-serif';
+    
+    // ПРИНУДИТЕЛЬНОЕ ЦЕНТРИРОВАНИЕ:
+    // Мы вручную задаем центр: X = начало плашки + 25, Y = центр плашки
+    ctx.textAlign = 'center';      
+    ctx.textBaseline = 'middle';   
+    
+    ctx.fillText(priceText, rectX + 25, rectY + 10);
+    
+    // Плашка времени
+    const timeVal = Math.round(x.getValueForPixel(xPos));
+    const tRectW = 40;
+    ctx.fillStyle = '#2962ff';
+    ctx.fillRect(xPos - tRectW / 2, y.top - 5, tRectW, 18);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(timeVal.toString(), xPos, y.top + 5);
     
     ctx.restore();
   }
