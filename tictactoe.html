@@ -2,18 +2,45 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Крестики-нолики</title>
+    <title>TicTacToe</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        .board { display: grid; grid-template-columns: repeat(3, 120px); gap: 10px; }
+        body { 
+            background: #222; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            font-family: sans-serif;
+            margin: 0;
+            padding-top: 50px;
+        }
+        .board { 
+            display: grid; 
+            grid-template-columns: repeat(3, 120px); 
+            gap: 4px 12px; 
+            margin-bottom: 30px;
+        }
         .cell { 
-            width: 120px; height: 120px; 
+            width: 120px; 
+            height: 120px; 
             border: 4px solid white; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 4em; cursor: pointer; color: white;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 4em; 
+            cursor: pointer; 
+            color: white;
             background: #333;
         }
-        body { background: #222; display: flex; flex-direction: column; align-items: center; }
+        button {
+            padding: 10px 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            background: #000000;
+            border: 2px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -23,26 +50,27 @@
 </a>
 
 <div class="board" id="board">
-    <div class="cell" onclick="makeMove(0)"></div>
-    <div class="cell" onclick="makeMove(1)"></div>
-    <div class="cell" onclick="makeMove(2)"></div>
-    <div class="cell" onclick="makeMove(3)"></div>
-    <div class="cell" onclick="makeMove(4)"></div>
-    <div class="cell" onclick="makeMove(5)"></div>
-    <div class="cell" onclick="makeMove(6)"></div>
-    <div class="cell" onclick="makeMove(7)"></div>
-    <div class="cell" onclick="makeMove(8)"></div>
+    <div class="cell" onclick="makeMove(this, 0)"></div>
+    <div class="cell" onclick="makeMove(this, 1)"></div>
+    <div class="cell" onclick="makeMove(this, 2)"></div>
+    <div class="cell" onclick="makeMove(this, 3)"></div>
+    <div class="cell" onclick="makeMove(this, 4)"></div>
+    <div class="cell" onclick="makeMove(this, 5)"></div>
+    <div class="cell" onclick="makeMove(this, 6)"></div>
+    <div class="cell" onclick="makeMove(this, 7)"></div>
+    <div class="cell" onclick="makeMove(this, 8)"></div>
 </div>
+
+<button onclick="resetGame()">Reset</button>
 
 <script>
     let currentPlayer = 'X';
     let board = ['', '', '', '', '', '', '', '', ''];
-    const cells = document.querySelectorAll('.cell');
 
-    function makeMove(index) {
+    function makeMove(element, index) {
         if (!board[index]) {
             board[index] = currentPlayer;
-            cells[index].innerText = currentPlayer;
+            element.innerText = currentPlayer;
             checkWinner();
             currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
         }
@@ -53,11 +81,21 @@
         for (let combo of wins) {
             const [a, b, c] = combo;
             if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-                alert(board[a] + ' Win!');
-                location.reload();
+                alert(board[a] + ' победил!');
+                resetGame();
+                return;
             }
         }
-        if (!board.includes('')) alert('Tie!');
+        if (!board.includes('')) {
+            alert('Ничья!');
+            resetGame();
+        }
+    }
+
+    function resetGame() {
+        board = ['', '', '', '', '', '', '', '', ''];
+        currentPlayer = 'X';
+        document.querySelectorAll('.cell').forEach(cell => cell.innerText = '');
     }
 </script>
 
