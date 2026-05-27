@@ -35,13 +35,9 @@
             padding: 10px;
         }
         
-        /* Нижняя панель */
         .control-button { bottom: 20px; }
-        .further-button { left: 3%; }
-        .closer-button { right: 3%; }
         .fly-button-base { left: 50%; transform: translateX(-50%); }
         
-        /* Верхняя панель: все кнопки на одном уровне top: 20px */
         .top-control { top: 20px; }
         .mode-menu-container { position: fixed; top: 20px; left: 3%; z-index: 1000; }
         .structure-button { left: 50%; transform: translateX(-50%); }
@@ -54,13 +50,11 @@
 </head>
 <body>
 
-    <div class="control-button further-button">Further</div>
-    <div class="control-button closer-button">Closer</div>
     <div class="control-button fly-button-base" id="fly-btn">Fly</div> 
 
     <div class="top-control wire-button">Wire</div> 
     <div class="top-control structure-button">
-        <a href="index.html" style="position: left: 50%; transform: translateX(-50%); fixed; z-index: 1000;">
+        <a href="index.html" style="position: fixed; z-index: 1000; left: 50%; transform: translateX(-50%);">
         <img src="logo.png" alt="Logo" style="height: 40px; cursor: pointer;">
     </a>
     </div> 
@@ -70,12 +64,10 @@
         <div class="mode-menu" id="mode-menu-list">
             <div class="mode-menu-item" data-mode="Build">BUILD</div>
             <div class="mode-menu-item" data-mode="Delete">DELETE</div>
-
         </div> 
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script>
         let isScalingUp = false;
         let isScalingDown = false;
@@ -94,20 +86,19 @@
         let currentStructure = 'Hopper'; 
         let isFlying = false;
 
+        let cameraVelocity = new THREE.Vector3();
+        const FRICTION = 0.98;
+        const ACCEL = 0.01;
+
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x007bff);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
-        camera.position.z = 30;
+        camera.position.set(0, 0, 0);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-
-        // OrbitControls
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
 
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
@@ -155,8 +146,7 @@
         const createRandomObjectAt = (pos3D) => {
             const size = Math.random() * 2 + 3;
             const type = GEOMETRY_TYPES[Math.floor(Math.random() * GEOMETRY_TYPES.length)];
-            let geometry = type.creator(size);
-            geometry = geometry.toNonIndexed();
+            let geometry = type.creator(size).toNonIndexed();
 
             const material = new THREE.MeshStandardMaterial({
                 color: Math.random() * 0xffffff,
@@ -169,7 +159,6 @@
             });
             const pivot = new THREE.Group();
             pivot.position.copy(pos3D);
-            
             pivot.userData = {
                 velocity: new THREE.Vector3((Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.2),
                 rotVelocity: new THREE.Vector3((Math.random() - 0.5) * 0.02, (Math.random() - 0.5) * 0.02, (Math.random() - 0.5) * 0.02)
@@ -184,303 +173,140 @@
             interactiveObjects.push(mesh);
         };
 
-        const createInitialCube = () => {
-            let geometry = new THREE.BoxGeometry(6, 6, 6).toNonIndexed();
-            
+        const createInitialIcosahedron = () => {
+            let geometry = new THREE.IcosahedronGeometry(4, 0).toNonIndexed();
             const material = new THREE.MeshStandardMaterial({
-                color: 0x00ffcc,
-                roughness: 0.2,
-                metalness: 0.8,
-                side: THREE.DoubleSide,
-                wireframe: isWireframeMode
+                color: 0x00ffcc, roughness: 0.2, metalness: 0.8, side: THREE.DoubleSide, wireframe: isWireframeMode
             });
             const pivot = new THREE.Group();
-            pivot.position.set(0, 0, 0);
-            pivot.userData = {
-                velocity: new THREE.Vector3((Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.2),
-                rotVelocity: new THREE.Vector3((Math.random() - 0.5) * 0.02, (Math.random() - 0.5) * 0.02, (Math.random() - 0.5) * 0.02)
-            };
-
+            pivot.position.set(0, 0, -20);
             const mesh = new THREE.Mesh(geometry, material);
             mesh.userData = { depth: 0, isStatic: true, isPolarityObject: true, parentPivot: pivot };
-            
             pivot.add(mesh);
             mainGroup.add(pivot);
             interactiveObjects.push(mesh);
         };
 
-        createInitialCube();
+        createInitialIcosahedron();
 
         function growFromFace(hitObject, face) {
             if (!face) return;
             const geometry = hitObject.geometry;
             const posAttr = geometry.attributes.position;
-            if (!posAttr) return;
-
-            const vA = new THREE.Vector3().fromBufferAttribute(posAttr, face.a);
-            const vB = new THREE.Vector3().fromBufferAttribute(posAttr, face.b);
-            const vC = new THREE.Vector3().fromBufferAttribute(posAttr, face.c);
-
-            vA.applyMatrix4(hitObject.matrixWorld);
-            vB.applyMatrix4(hitObject.matrixWorld);
-            vC.applyMatrix4(hitObject.matrixWorld);
-
+            const vA = new THREE.Vector3().fromBufferAttribute(posAttr, face.a).applyMatrix4(hitObject.matrixWorld);
+            const vB = new THREE.Vector3().fromBufferAttribute(posAttr, face.b).applyMatrix4(hitObject.matrixWorld);
+            const vC = new THREE.Vector3().fromBufferAttribute(posAttr, face.c).applyMatrix4(hitObject.matrixWorld);
             const worldNormal = face.normal.clone().applyQuaternion(hitObject.quaternion).normalize();
             
             const stepOut = (currentStructure === 'Hopper') ? 0.3 : 0.8;
-            const stepIn = -stepOut; 
-            const lerpFactor = (currentStructure === 'Hopper') ? 0.4 : 0.25;
-
             const parentPivot = hitObject.userData.parentPivot;
             const invPivotMatrix = new THREE.Matrix4().copy(parentPivot.matrixWorld).invert();
-            const currentDepth = hitObject.userData.depth || 0;
-            const nextDepth = currentDepth + 1;
+            const nextDepth = (hitObject.userData.depth || 0) + 1;
             const hue = (nextDepth * 25) % 360;
 
             const nextMaterial = new THREE.MeshStandardMaterial({
                 color: new THREE.Color(`hsl(${hue}, 90%, 50%)`),
-                roughness: 0.2,
-                metalness: 0.8,
-                transparent: true,
-                opacity: 0.9,
-                side: THREE.DoubleSide,
-                wireframe: isWireframeMode
+                roughness: 0.2, metalness: 0.8, transparent: true, opacity: 0.9, side: THREE.DoubleSide, wireframe: isWireframeMode
             });
 
             const segGeometry = new THREE.BufferGeometry();
             const vertices = [];
-
-            function addTriangle(p1, p2, p3) {
-                vertices.push(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z, p3.x, p3.y, p3.z);
-            }
-
-            function appendSide(stepSize) {
-                const vA_up = vA.clone().addScaledVector(worldNormal, stepSize);
-                const vB_up = vB.clone().addScaledVector(worldNormal, stepSize);
-                const vC_up = vC.clone().addScaledVector(worldNormal, stepSize);
-
-                const center = new THREE.Vector3().add(vA).add(vB).add(vC).divideScalar(3);
-                const center_up = center.clone().addScaledVector(worldNormal, stepSize);
-
-                vA_up.lerp(center_up, lerpFactor);
-                vB_up.lerp(center_up, lerpFactor);
-                vC_up.lerp(center_up, lerpFactor);
-
-                const locA = vA.clone().applyMatrix4(invPivotMatrix);
-                const locB = vB.clone().applyMatrix4(invPivotMatrix);
-                const locC = vC.clone().applyMatrix4(invPivotMatrix);
-                const locA_up = vA_up.applyMatrix4(invPivotMatrix);
-                const locB_up = vB_up.applyMatrix4(invPivotMatrix);
-                const locC_up = vC_up.applyMatrix4(invPivotMatrix);
-
-                addTriangle(locA, locB, locB_up); addTriangle(locA, locB_up, locA_up);
-                addTriangle(locB, locC, locC_up); addTriangle(locB, locC_up, locB_up);
-                addTriangle(locC, locA, locA_up); addTriangle(locC, locA_up, locC_up);
-                addTriangle(locA_up, locB_up, locC_up);
-            }
-
-            appendSide(stepOut); 
-            appendSide(stepIn);  
+            function addT(p1, p2, p3) { vertices.push(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z, p3.x, p3.y, p3.z); }
+            
+            const vA_up = vA.clone().addScaledVector(worldNormal, stepOut);
+            const vB_up = vB.clone().addScaledVector(worldNormal, stepOut);
+            const vC_up = vC.clone().addScaledVector(worldNormal, stepOut);
+            const center = new THREE.Vector3().add(vA).add(vB).add(vC).divideScalar(3).addScaledVector(worldNormal, stepOut);
+            
+            vA_up.lerp(center, 0.4); vB_up.lerp(center, 0.4); vC_up.lerp(center, 0.4);
+            
+            const loc = [vA, vB, vC, vA_up, vB_up, vC_up].map(v => v.applyMatrix4(invPivotMatrix));
+            addT(loc[0], loc[1], loc[4]); addT(loc[0], loc[4], loc[3]);
+            addT(loc[1], loc[2], loc[5]); addT(loc[1], loc[5], loc[4]);
+            addT(loc[2], loc[0], loc[3]); addT(loc[2], loc[3], loc[5]);
+            addT(loc[3], loc[4], loc[5]);
 
             segGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
             segGeometry.computeVertexNormals();
-
             const mesh = new THREE.Mesh(segGeometry, nextMaterial);
             mesh.userData = { depth: nextDepth, isPolarityObject: true, parentPivot: parentPivot };
-            
             parentPivot.add(mesh);
             interactiveObjects.push(mesh);
-
-            // Удаление базовой грани
-            const posArray = posAttr.array;
-            const newVertices = [];
-            const targetIndex = face.faceIndex * 9;
-
-            for (let i = 0; i < posArray.length; i += 9) {
-                if (i === targetIndex) continue; 
-                for (let j = 0; j < 9; j++) {
-                    newVertices.push(posArray[i + j]);
-                }
-            }
-
-            hitObject.geometry.dispose();
-            const rebuiltGeometry = new THREE.BufferGeometry();
-            rebuiltGeometry.setAttribute('position', new THREE.Float32BufferAttribute(newVertices, 3));
-            rebuiltGeometry.computeVertexNormals();
-            hitObject.geometry = rebuiltGeometry;
         }
 
         const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
 
-        const getIntersection = (clientX, clientY, objectsToCheck) => {
-            mouse.x = (clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            return raycaster.intersectObjects(objectsToCheck, false); 
-        };
-
-        const getEmptySpace3DPoint = (clientX, clientY) => {
-            mouse.x = (clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            const targetPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-            const intersectionPoint = new THREE.Vector3();
-            raycaster.ray.intersectPlane(targetPlane, intersectionPoint);
-            return intersectionPoint;
-        };
-
-        // ВВОД
         renderer.domElement.addEventListener('pointerdown', (e) => {
             if (e.target.closest('.control-button, .top-control, .mode-menu-container')) return;
-            if (!e.isPrimary) return;
-
             pointerDownPosition.set(e.clientX, e.clientY);
             pointerDownTime = Date.now();
-            isScalingUp = false; isScalingDown = false; objectToScale = null;
-
-            const intersects = getIntersection(e.clientX, e.clientY, interactiveObjects);
-            if (intersects.length > 0 && intersects[0].object.userData.isPolarityObject) {
-                const hitObject = intersects[0].object;
-                if (e.button === 2) {
-                    objectToScale = hitObject;
-                    isScalingDown = true;
-                    controls.enabled = false;
-                } else {
-                    holdScaleTimer = setTimeout(() => {
-                        objectToScale = hitObject;
-                        isScalingUp = true;
-                        controls.enabled = false; 
-                    }, HOLD_SCALE_DELAY);
-                }
+            const normMouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+            raycaster.setFromCamera(normMouse, camera);
+            const intersects = raycaster.intersectObjects(interactiveObjects, false);
+            if (intersects.length > 0) {
+                if (e.button === 2) { objectToScale = intersects[0].object; isScalingDown = true; }
+                else { holdScaleTimer = setTimeout(() => { objectToScale = intersects[0].object; isScalingUp = true; }, HOLD_SCALE_DELAY); }
             }
         });
 
-        renderer.domElement.addEventListener('pointermove', (e) => {
-            if (!e.isPrimary) return;
-            const dist = pointerDownPosition.distanceTo(new THREE.Vector2(e.clientX, e.clientY));
-            if (dist > MOVE_THRESHOLD) clearTimeout(holdScaleTimer);
+        window.addEventListener('pointermove', (e) => {
+            if (e.buttons === 1 && !isScalingUp && !isScalingDown) {
+                camera.rotation.y -= e.movementX * 0.002;
+                camera.rotation.x -= e.movementY * 0.002;
+                camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+            }
+            if (pointerDownPosition.distanceTo(new THREE.Vector2(e.clientX, e.clientY)) > MOVE_THRESHOLD) clearTimeout(holdScaleTimer);
         });
 
         renderer.domElement.addEventListener('pointerup', (e) => {
-            if (!e.isPrimary) return;
             clearTimeout(holdScaleTimer);
-            controls.enabled = true; 
-
-            if (isScalingUp || isScalingDown) {
-                isScalingUp = false; isScalingDown = false; objectToScale = null;
-                return;
-            }
-
+            if (isScalingUp || isScalingDown) { isScalingUp = false; isScalingDown = false; objectToScale = null; return; }
             if (e.target.closest('.control-button, .top-control, .mode-menu-container')) return;
-
-            const moveDistance = pointerDownPosition.distanceTo(new THREE.Vector2(e.clientX, e.clientY));
-            const duration = Date.now() - pointerDownTime;
-
-            if (moveDistance <= MOVE_THRESHOLD && duration < HOLD_SCALE_DELAY && e.button !== 2) {
-                const intersects = getIntersection(e.clientX, e.clientY, interactiveObjects);
-                
+            if (pointerDownPosition.distanceTo(new THREE.Vector2(e.clientX, e.clientY)) <= MOVE_THRESHOLD) {
+                const normMouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+                raycaster.setFromCamera(normMouse, camera);
+                const intersects = raycaster.intersectObjects(interactiveObjects, false);
                 if (intersects.length > 0) {
-                    const hit = intersects[0];
                     if (mode === 'Delete') {
-                        const pivot = hit.object.userData.parentPivot;
+                        const pivot = intersects[0].object.userData.parentPivot;
                         mainGroup.remove(pivot);
-                        pivot.traverse((child) => {
-                            const idx = interactiveObjects.indexOf(child);
-                            if (idx > -1) interactiveObjects.splice(idx, 1);
-                        });
-                    } else if (mode === 'Build') {
-                        growFromFace(hit.object, hit.face);
-                    }
-                } else {
-                    if (mode === 'Build') {
-                        const spawnPoint = getEmptySpace3DPoint(e.clientX, e.clientY);
-                        createRandomObjectAt(spawnPoint);
-                    }
+                    } else growFromFace(intersects[0].object, intersects[0].face);
+                } else if (mode === 'Build') {
+                    const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                    createRandomObjectAt(camera.position.clone().add(dir.multiplyScalar(20)));
                 }
             }
-            isScalingUp = false; isScalingDown = false; objectToScale = null;
         });
 
+        document.getElementById('fly-btn').addEventListener('click', () => { isFlying = !isFlying; });
+        document.querySelector('.structure-button').addEventListener('click', () => currentStructure = (currentStructure === 'Hopper') ? 'Tree' : 'Hopper');
+        document.getElementById('mode-dropdown-toggle').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('mode-menu-list').classList.toggle('show'); });
+        document.querySelectorAll('.mode-menu-item').forEach(item => item.addEventListener('click', () => mode = item.getAttribute('data-mode')));
+        document.querySelector('.wire-button').addEventListener('click', () => { isWireframeMode = !isWireframeMode; interactiveObjects.forEach(obj => obj.material.wireframe = isWireframeMode); });
+        
         document.addEventListener('contextmenu', (e) => e.preventDefault());
-
-        // UI Listeners
-        // ИСПРАВЛЕНА ЛОГИКА FLY: импульс движения и вращения
-        document.getElementById('fly-btn').addEventListener('click', () => {
-            isFlying = !isFlying;
-            document.getElementById('fly-btn').style.color = isFlying ? '#00ffcc' : 'rgba(255, 255, 255, 0.9)';
-        });
-
-        document.querySelector('.structure-button').addEventListener('click', () => {
-            currentStructure = (currentStructure === 'Hopper') ? 'Tree' : 'Hopper';
-            document.querySelector('.structure-button').textContent = currentStructure.toUpperCase();
-        });
-
-        document.getElementById('mode-dropdown-toggle').addEventListener('click', (e) => {
-            e.stopPropagation();
-            document.getElementById('mode-menu-list').classList.toggle('show');
-        });
-
-        document.querySelectorAll('.mode-menu-item').forEach(item => {
-            item.addEventListener('click', () => {
-                mode = item.getAttribute('data-mode');
-                document.getElementById('mode-dropdown-toggle').textContent = mode;
-                document.getElementById('mode-menu-list').classList.remove('show');
-            });
-        });
-
-        document.querySelector('.wire-button').addEventListener('click', () => {
-            isWireframeMode = !isWireframeMode;
-            document.querySelector('.wire-button').textContent = isWireframeMode ? 'Solid' : 'Wire';
-            interactiveObjects.forEach(obj => {
-                if (obj.material) obj.material.wireframe = isWireframeMode;
-            });
-        });
-
-        // ИСПРАВЛЕНО СООТВЕТСТВИЕ НАЗНАЧЕНИЮ: Closer приближает, Further удаляет
-        document.querySelector('.closer-button').addEventListener('click', () => { camera.position.z -= 5; });
-        document.querySelector('.further-button').addEventListener('click', () => { camera.position.z += 5; });
 
         function animate() {
             requestAnimationFrame(animate);
-
             if (objectToScale) {
-                const targetPivot = objectToScale.userData.parentPivot;
-                if (isScalingUp) {
-                    targetPivot.scale.multiplyScalar(SCALE_RATE);
-                    if (targetPivot.scale.x > MAX_SCALE) targetPivot.scale.set(MAX_SCALE, MAX_SCALE, MAX_SCALE);
-                } else if (isScalingDown) {
-                    targetPivot.scale.multiplyScalar(SCALE_RATE_DOWN);
-                    if (targetPivot.scale.x < MIN_SCALE) targetPivot.scale.set(MIN_SCALE, MIN_SCALE, MIN_SCALE);
-                }
+                const p = objectToScale.userData.parentPivot;
+                p.scale.multiplyScalar(isScalingUp ? SCALE_RATE : SCALE_RATE_DOWN);
             }
-
-            // Динамический расчет движения Fly
+            
             if (isFlying) {
-                mainGroup.children.forEach(pivot => {
-                    if (pivot.userData.velocity) {
-                        pivot.position.add(pivot.userData.velocity);
-                        pivot.rotation.x += pivot.userData.rotVelocity.x;
-                        pivot.rotation.y += pivot.userData.rotVelocity.y;
-                        pivot.rotation.z += pivot.userData.rotVelocity.z;
-
-                        if (pivot.position.length() > 150) {
-                            pivot.userData.velocity.negate();
-                        }
-                    }
-                });
+                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                cameraVelocity.add(forward.multiplyScalar(ACCEL));
             }
+            cameraVelocity.multiplyScalar(FRICTION);
+            camera.position.add(cameraVelocity);
 
-            controls.update();
+            mainGroup.children.forEach(pivot => {
+                pivot.position.add(pivot.userData.velocity || new THREE.Vector3());
+            });
+
             renderer.render(scene, camera);
         }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         animate();
     </script>
 </body>
