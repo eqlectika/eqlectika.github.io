@@ -183,51 +183,79 @@
 
         createInitialIcosahedron();
 
-        function growFromFace(hitObject, face) {
-            if (!face) return;
-            const geometry = hitObject.geometry;
-            const posAttr = geometry.attributes.position;
-            const vA = new THREE.Vector3().fromBufferAttribute(posAttr, face.a).applyMatrix4(hitObject.matrixWorld);
-            const vB = new THREE.Vector3().fromBufferAttribute(posAttr, face.b).applyMatrix4(hitObject.matrixWorld);
-            const vC = new THREE.Vector3().fromBufferAttribute(posAttr, face.c).applyMatrix4(hitObject.matrixWorld);
-            const worldNormal = face.normal.clone().applyQuaternion(hitObject.quaternion).normalize();
-            
-            const stepOut = (currentStructure === 'Hopper') ? 0.3 : 0.8;
-            const parentPivot = hitObject.userData.parentPivot;
-            const invPivotMatrix = new THREE.Matrix4().copy(parentPivot.matrixWorld).invert();
-            const nextDepth = (hitObject.userData.depth || 0) + 1;
-            const hue = (nextDepth * 25) % 360;
+function growFromFace(hitObject, face) {
+    if (!face) return;
 
-            const nextMaterial = new THREE.MeshStandardMaterial({
-                color: new THREE.Color(`hsl(${hue}, 90%, 50%)`),
-                roughness: 0.2, metalness: 0.8, transparent: true, opacity: 0.9, side: THREE.DoubleSide, wireframe: isWireframeMode
-            });
+    const posAttr = hitObject.geometry.attributes.position;
+    const vA = new THREE.Vector3().fromBufferAttribute(posAttr, face.a).applyMatrix4(hitObject.matrixWorld);
+    const vB = new THREE.Vector3().fromBufferAttribute(posAttr, face.b).applyMatrix4(hitObject.matrixWorld);
+    const vC = new THREE.Vector3().fromBufferAttribute(posAttr, face.c).applyMatrix4(hitObject.matrixWorld);
+    const worldNormal = face.normal.clone().applyQuaternion(hitObject.quaternion).normalize();
+    const parentPivot = hitObject.userData.parentPivot;
+    const invPivotMatrix = new THREE.Matrix4().copy(parentPivot.matrixWorld).invert();
+    const nextDepth = (hitObject.userData.depth || 0) + 1;
+    const stepOut = (currentStructure === 'Hopper') ? 0.3 : 0.8;
 
-            const segGeometry = new THREE.BufferGeometry();
-            const vertices = [];
-            function addT(p1, p2, p3) { vertices.push(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z, p3.x, p3.y, p3.z); }
-            
-            const vA_up = vA.clone().addScaledVector(worldNormal, stepOut);
-            const vB_up = vB.clone().addScaledVector(worldNormal, stepOut);
-            const vC_up = vC.clone().addScaledVector(worldNormal, stepOut);
-            const center = new THREE.Vector3().add(vA).add(vB).add(vC).divideScalar(3).addScaledVector(worldNormal, stepOut);
-            
-            vA_up.lerp(center, 0.4); vB_up.lerp(center, 0.4); vC_up.lerp(center, 0.4);
-            
-            const loc = [vA, vB, vC, vA_up, vB_up, vC_up].map(v => v.applyMatrix4(invPivotMatrix));
-            addT(loc[0], loc[1], loc[4]); addT(loc[0], loc[4], loc[3]);
-            addT(loc[1], loc[2], loc[5]); addT(loc[1], loc[5], loc[4]);
-            addT(loc[2], loc[0], loc[3]); addT(loc[2], loc[3], loc[5]);
-            addT(loc[3], loc[4], loc[5]);
+    [1, -1].forEach(dir => {
+        const currentNormal = worldNormal.clone().multiplyScalar(dir);
+        const segGeometry = new THREE.BufferGeometry();
+        const vertices = [];
+        
+        const vA_up = vA.clone().addScaledVector(currentNormal, stepOut);
+        const vB_up = vB.clone().addScaledVector(currentNormal, stepOut);
+        const vC_up = vC.clone().addScaledVector(currentNormal, stepOut);
+        const center = new THREE.Vector3().add(vA).add(vB).add(vC).divideScalar(3).addScaledVector(currentNormal, stepOut);
+        
+        vA_up.lerp(center, 0.4); vB_up.lerp(center, 0.4); vC_up.lerp(center, 0.4);
+        
+        const loc = [vA, vB, vC, vA_up, vB_up, vC_up].map(v => v.applyMatrix4(invPivotMatrix));
+        
+        // Массив вершин пирамиды
+        const pts = [loc[0], loc[1], loc[4], loc[0], loc[4], loc[3], loc[1], loc[2], loc[5], loc[1], loc[5], loc[4], loc[2], loc[0], loc[3], loc[2], loc[3], loc[5], loc[3], loc[4], loc[5]];
+        pts.forEach(p => vertices.push(p.x, p.y, p.z));
 
-segGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-    segGeometry.computeVertexNormals();
-    segGeometry.computeBoundingSphere(); // ЭТО ИСПРАВИТ RAYCASTER
+        segGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        segGeometry.computeVertexNormals();
+        
+        const mesh = new THREE.Mesh(segGeometry, new THREE.MeshStandardMaterial({
+            color: new THREE.Color(`hsl(${(nextDepth * 25) % 360}, 90%, 50%)`),
+            roughness: 0.2, metalness: 0.8, side: THREE.DoubleSide, wireframe: isWireframeMode
+        }));
+        mesh.userData = { depth: nextDepth, isPolarityObject: true, parentPivot: parentPivot };
+        parentPivot.add(mesh);
+        interactiveObjects.push(mesh);
+    });
+
+    removeFaceFromGeometry(hitObject, face);
+}
+
+function removeFaceFromGeometry(mesh, face) {
+    const geo = mesh.geometry;
+    const pos = geo.attributes.position;
+    const newPositions = [];
     
-    const mesh = new THREE.Mesh(segGeometry, nextMaterial);
-    mesh.userData = { depth: nextDepth, isPolarityObject: true, parentPivot: parentPivot };
-    parentPivot.add(mesh);
-    interactiveObjects.push(mesh);
+    // Сравниваем координаты вершин, чтобы найти нужный треугольник
+    for (let i = 0; i < pos.count; i += 3) {
+        const v1 = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
+        const targetV1 = new THREE.Vector3().fromBufferAttribute(pos, face.a);
+        
+        // Если вершины не совпадают с вершинами кликнутого треугольника, оставляем их
+        if (v1.distanceTo(targetV1) > 0.001) {
+            for (let j = 0; j < 3; j++) {
+                newPositions.push(pos.getX(i+j), pos.getY(i+j), pos.getZ(i+j));
+            }
+        }
+    }
+    
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(newPositions, 3));
+    geo.attributes.position.needsUpdate = true;
+    geo.computeVertexNormals();
+    
+    // Удаляем из interactiveObjects, если в меше не осталось треугольников
+    if (newPositions.length === 0) {
+        mesh.parent.remove(mesh);
+        interactiveObjects.splice(interactiveObjects.indexOf(mesh), 1);
+    }
 }
 
         const raycaster = new THREE.Raycaster();
@@ -256,29 +284,28 @@ segGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 
 
 renderer.domElement.addEventListener('pointerup', (e) => {
     clearTimeout(holdScaleTimer);
+    
+    // 1. Если это было масштабирование, сбрасываем состояние
     if (isScalingUp || isScalingDown) { 
         isScalingUp = false; isScalingDown = false; objectToScale = null; return; 
     }
+    
+    // 2. Игнорируем клики по элементам интерфейса
     if (e.target.closest('.control-button, .top-control')) return;
     
+    // 3. Проверка на случайный сдвиг (чтобы не срабатывало при вращении камеры)
     if (pointerDownPosition.distanceTo(new THREE.Vector2(e.clientX, e.clientY)) <= MOVE_THRESHOLD) {
+        
         const normMouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
         raycaster.setFromCamera(normMouse, camera);
         const intersects = raycaster.intersectObjects(interactiveObjects, false);
         
         if (intersects.length > 0) {
-            // Клик по объекту: если это правая кнопка - удаляем, если левая - растем
-            if (e.button === 2) { 
-                const obj = intersects[0].object;
-                obj.parent.remove(obj);
-                interactiveObjects.splice(interactiveObjects.indexOf(obj), 1);
-                obj.geometry.dispose();
-                if (obj.material) obj.material.dispose();
-            } else {
-                growFromFace(intersects[0].object, intersects[0].face);
-            }
+            // ВАЖНО: Больше никакой проверки e.button. 
+            // Любой клик по объекту вызывает его деление и удаление.
+            growFromFace(intersects[0].object, intersects[0].face);
         } else {
-            // Клик по пустоте - строим новый объект
+            // Клик по пустоте - создаем новый объект из камеры
             const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
             createRandomObjectAt(camera.position.clone().add(dir.multiplyScalar(20)));
         }
