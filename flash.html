@@ -278,7 +278,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
         }
     }
 
-    function showNext() {
+function showNext() {
         if (index >= words.length || isPaused || !isReading) {
             if (index >= words.length) stopReading();
             return;
@@ -291,54 +291,43 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
 
         clearOldWord(isLongHold);
 
-        const isPunctuationOnly = /^[.,!?;:]+$/.test(displayTxt);
-
+        // Всегда создаем элемент, если это не пустая строка или разделитель
         if (displayTxt !== " " && !displayTxt.includes('|')) {
-            if (!isPunctuationOnly || (isPunctuationOnly && isLongHold)) {
-                const newEl = document.createElement('div');
-                newEl.className = 'word-layer word-enter';
-                newEl.textContent = displayTxt;
-                newEl.style.color = textColors[textColorIndex];
-                updateFontSize(displayTxt, newEl);
-                container.appendChild(newEl);
-                requestAnimationFrame(() => setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20));
-            }
+            const newEl = document.createElement('div');
+            newEl.className = 'word-layer word-enter';
+            newEl.textContent = displayTxt;
+            newEl.style.color = textColors[textColorIndex];
+            updateFontSize(displayTxt, newEl);
+            container.appendChild(newEl);
+            requestAnimationFrame(() => setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20));
         }
 
+        // Логика пауз
         let pauses = 1; 
         if (displayTxt.includes('|')) {
             pauses = 5; 
         } else if (rawTxt === " ") {
             pauses = 3; 
         } else {
-            // Базовая пауза для коротких слов
             if (displayTxt.replace(/[.,!?;:]/g, '').length <= 3) pauses = 1.2;
-            
-            // Запятая, двоеточие, точка с запятой
             if (/[;,]/.test(displayTxt)) pauses = 2.5;
             if (/:/.test(displayTxt)) pauses = 3.0;
-            
-            // Точка, восклицательный и вопросительный знаки
             if (/[.!?—]/.test(displayTxt)) pauses = 4.5;
-            
             if (isLongHold) pauses += 2;
-        }}
+        }
 
-let currentInterval = interval;
-if (isDynamicAccel && words.length > 1) {
-    let progress = index / (words.length - 1);
-    const phi = 0.618; 
-    const intensity = 0.382; 
-    
-    let factor = progress <= phi 
-        ? (1 - (progress / phi) * intensity) 
-        : ((1 - intensity) + ((progress - phi) / (1 - phi)) * intensity);
-    
-    currentInterval = interval * factor;
-}
+        // Ускорение
+        let currentInterval = interval;
+        if (isDynamicAccel && words.length > 1) {
+            let progress = index / (words.length - 1);
+            const phi = 0.618; 
+            const intensity = 0.382; 
+            let factor = progress <= phi 
+                ? (1 - (progress / phi) * intensity) 
+                : ((1 - intensity) + ((progress - phi) / (1 - phi)) * intensity);
+            currentInterval = interval * factor;
+        }
 
-
-  
         index++;
         timer = setTimeout(showNext, currentInterval * pauses);
     }
