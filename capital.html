@@ -80,9 +80,9 @@ a {
     touch-action: none;
     }
     canvas#moireChart:active { cursor: grabbing; }
-    #log { height: 176px; overflow-y: auto; background: #000000; padding: 0px; font-family: monospace; font-size: 14px; border-radius: 4px; margin-top: 4px; }
-    #log-parrots { height: 176px; overflow-y: auto; background: #000000; padding: 0px; font-family: monospace; font-size: 14px; border-radius: 4px; margin-top: 40px; }
-    #log-cloud { height: 176px; overflow-y: auto; background: #000000; padding: 0px; font-family: monospace; font-size: 14px; border-radius: 4px; margin-top: 40px; }
+    #log { height: 172px; overflow-y: auto; background: #000000; padding: 0px; font-family: monospace; font-size: 14px; border-radius: 4px; margin-top: 4px; }
+    #log-parrots { height: 172px; overflow-y: auto; background: #000000; padding: 0px; font-family: monospace; font-size: 14px; border-radius: 4px; margin-top: 40px; }
+    #log-cloud { height: 172px; overflow-y: auto; background: #000000; padding: 0px; font-family: monospace; font-size: 14px; border-radius: 4px; margin-top: 40px; }
 
     .BUY { color: #00e676; }
     .SELL { color: #ff5252; }
@@ -242,7 +242,7 @@ worker.onmessage = (event) => {
 
   const time = new Date().toLocaleTimeString();
   const logLine = document.createElement("div");
-  logLine.innerHTML = `[${time}] Price: $${price.toFixed(2)} | FORCE: ${force.toFixed(2)} | SIGNAL: <span class="${signal}">${signal}</span>`;
+  logLine.innerHTML = `[${time}] Price: $${price.toFixed(2)} | FORCE: ${force.toFixed(2)} |  <span class="${signal}">${signal}</span>`;
   logDiv.insertBefore(logLine, logDiv.firstChild);
 
   if (logDiv.childNodes.length > 100) {
@@ -263,7 +263,7 @@ worker.onmessage = (event) => {
       const { parrotsSignal, parrotsScore, parrotsDirection, deviation, state } = event.data;
       const color = state === "STABLE" ? "#29b6f6" : "#ffa726";
 
-      line.innerHTML = `[${time}] Spec ${parrotsDirection}: ${parrotsScore.toFixed(0)}% | <b>DEVIATION: <span style="color:${color}">${deviation}</span></b> <span style="color:${color}">[${state}]</span> | SIGNAL: <span class="${parrotsSignal}">${parrotsSignal}</span>`;
+      line.innerHTML = `[${time}] Spec ${parrotsDirection}: ${parrotsScore.toFixed(0)}% | <b>DEVIATION: <span style="color:${color}">${deviation}</span></b> <span style="color:${color}">[${state}]</span> |  <span class="${parrotsSignal}">${parrotsSignal}</span>`;
 
       logParrotsDiv.insertBefore(line, logParrotsDiv.firstChild);
       if (logParrotsDiv.childNodes.length > 100) logParrotsDiv.removeChild(logParrotsDiv.lastChild);
