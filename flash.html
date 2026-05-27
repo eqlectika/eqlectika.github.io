@@ -302,19 +302,25 @@ function showNext() {
             requestAnimationFrame(() => setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20));
         }
 
-        // Логика пауз
-        let pauses = 1; 
-        if (displayTxt.includes('|')) {
-            pauses = 5; 
-        } else if (rawTxt === " ") {
-            pauses = 3; 
-        } else {
-            if (displayTxt.replace(/[.,!?;:]/g, '').length <= 3) pauses = 1.2;
-            if (/[;,]/.test(displayTxt)) pauses = 2.5;
-            if (/:/.test(displayTxt)) pauses = 3.0;
-            if (/[.!?—]/.test(displayTxt)) pauses = 4.5;
-            if (isLongHold) pauses += 2;
-        }
+// Логика пауз
+let pauses = 1;
+
+if (rawTxt.match(/\n{2,}/)) {
+    pauses = 5.0; // Пауза для нового абзаца
+} else if (rawTxt.includes('|')) {
+    pauses = 5.0; // Специальный разделитель
+} else if (rawTxt === " " || rawTxt.match(/\s+/)) {
+    pauses = 1.0; // Обычный пробел (без паузы)
+} else {
+    // Проверка знаков препинания
+    if (/[;,]/.test(rawTxt)) pauses = 3.0;         // Запятая, точка с запятой
+    else if (/:/.test(rawTxt)) pauses = 3.0;       // Двоеточие
+    else if (/[.!?—]/.test(rawTxt)) pauses = 4.5;  // Точка, воскл/вопр знаки, тире
+    
+    // Дополнительная задержка для длинных слов
+    if (rawTxt.length > 8) pauses += 0.5;
+    if (isLongHold) pauses += 2.0;
+}
 
         // Ускорение
         let currentInterval = interval;
@@ -354,8 +360,12 @@ function showNext() {
             const text = inputText.value.trim();
             if (!text) return;
             localStorage.setItem('reading_text', text);
-            words = text.split(/(\s{2,})|\s+/).filter(w => w !== undefined && w !== "").map(w => w.trim() === "" ? " " : w.replace(/_/g, ' '));
-            
+words = text
+  .replace(/([,;:.!?])(?!\s|$)/g, '$1 ') // Гарантируем пробел после знака
+  .split(/(\n{2,}|\s+)/)                 // Делим по двойным переносам или пробелам
+  .filter(w => w !== undefined && w !== "")
+  .map(w => w.replace(/_/g, ' '));
+          
             index = 0; isReading = true; isPaused = false;
             document.body.classList.add('is-reading');
             startBtn.textContent = 'Pause';
