@@ -19,7 +19,7 @@
             background: #000;
             touch-action: none;
         }
-        .control-button, .top-control, .mode-menu-item {
+        .control-button, .top-control, {
             font-family: 'Luckiest Guy', cursive !important;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -59,13 +59,7 @@
     </a>
     </div> 
 
-    <div class="mode-menu-container">
-        <div class="top-control mode-button" id="mode-dropdown-toggle" style="position:static; padding:10px;">BUILD</div>
-        <div class="mode-menu" id="mode-menu-list">
-            <div class="mode-menu-item" data-mode="Build">BUILD</div>
-            <div class="mode-menu-item" data-mode="Delete">DELETE</div>
-        </div> 
-    </div>
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
@@ -226,13 +220,15 @@
             addT(loc[2], loc[0], loc[3]); addT(loc[2], loc[3], loc[5]);
             addT(loc[3], loc[4], loc[5]);
 
-            segGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-            segGeometry.computeVertexNormals();
-            const mesh = new THREE.Mesh(segGeometry, nextMaterial);
-            mesh.userData = { depth: nextDepth, isPolarityObject: true, parentPivot: parentPivot };
-            parentPivot.add(mesh);
-            interactiveObjects.push(mesh);
-        }
+segGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    segGeometry.computeVertexNormals();
+    segGeometry.computeBoundingSphere(); // ЭТО ИСПРАВИТ RAYCASTER
+    
+    const mesh = new THREE.Mesh(segGeometry, nextMaterial);
+    mesh.userData = { depth: nextDepth, isPolarityObject: true, parentPivot: parentPivot };
+    parentPivot.add(mesh);
+    interactiveObjects.push(mesh);
+}
 
         const raycaster = new THREE.Raycaster();
 
@@ -258,29 +254,39 @@
             if (pointerDownPosition.distanceTo(new THREE.Vector2(e.clientX, e.clientY)) > MOVE_THRESHOLD) clearTimeout(holdScaleTimer);
         });
 
-        renderer.domElement.addEventListener('pointerup', (e) => {
-            clearTimeout(holdScaleTimer);
-            if (isScalingUp || isScalingDown) { isScalingUp = false; isScalingDown = false; objectToScale = null; return; }
-            if (e.target.closest('.control-button, .top-control, .mode-menu-container')) return;
-            if (pointerDownPosition.distanceTo(new THREE.Vector2(e.clientX, e.clientY)) <= MOVE_THRESHOLD) {
-                const normMouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
-                raycaster.setFromCamera(normMouse, camera);
-                const intersects = raycaster.intersectObjects(interactiveObjects, false);
-                if (intersects.length > 0) {
-                    if (mode === 'Delete') {
-                        const pivot = intersects[0].object.userData.parentPivot;
-                        mainGroup.remove(pivot);
-                    } else growFromFace(intersects[0].object, intersects[0].face);
-                } else if (mode === 'Build') {
-                    const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-                    createRandomObjectAt(camera.position.clone().add(dir.multiplyScalar(20)));
-                }
+renderer.domElement.addEventListener('pointerup', (e) => {
+    clearTimeout(holdScaleTimer);
+    if (isScalingUp || isScalingDown) { 
+        isScalingUp = false; isScalingDown = false; objectToScale = null; return; 
+    }
+    if (e.target.closest('.control-button, .top-control')) return;
+    
+    if (pointerDownPosition.distanceTo(new THREE.Vector2(e.clientX, e.clientY)) <= MOVE_THRESHOLD) {
+        const normMouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+        raycaster.setFromCamera(normMouse, camera);
+        const intersects = raycaster.intersectObjects(interactiveObjects, false);
+        
+        if (intersects.length > 0) {
+            // Клик по объекту: если это правая кнопка - удаляем, если левая - растем
+            if (e.button === 2) { 
+                const obj = intersects[0].object;
+                obj.parent.remove(obj);
+                interactiveObjects.splice(interactiveObjects.indexOf(obj), 1);
+                obj.geometry.dispose();
+                if (obj.material) obj.material.dispose();
+            } else {
+                growFromFace(intersects[0].object, intersects[0].face);
             }
-        });
+        } else {
+            // Клик по пустоте - строим новый объект
+            const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            createRandomObjectAt(camera.position.clone().add(dir.multiplyScalar(20)));
+        }
+    }
+});
 
         document.getElementById('fly-btn').addEventListener('click', () => { isFlying = !isFlying; });
         document.querySelector('.structure-button').addEventListener('click', () => currentStructure = (currentStructure === 'Hopper') ? 'Tree' : 'Hopper');
-        document.getElementById('mode-dropdown-toggle').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('mode-menu-list').classList.toggle('show'); });
         document.querySelectorAll('.mode-menu-item').forEach(item => item.addEventListener('click', () => mode = item.getAttribute('data-mode')));
         document.querySelector('.wire-button').addEventListener('click', () => { isWireframeMode = !isWireframeMode; interactiveObjects.forEach(obj => obj.material.wireframe = isWireframeMode); });
         
