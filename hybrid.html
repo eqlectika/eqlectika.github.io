@@ -319,6 +319,10 @@ renderer.domElement.addEventListener('pointerup', (e) => {
         
         document.addEventListener('contextmenu', (e) => e.preventDefault());
 
+
+
+
+
         function animate() {
             requestAnimationFrame(animate);
             if (objectToScale) {
@@ -330,6 +334,15 @@ renderer.domElement.addEventListener('pointerup', (e) => {
                 const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
                 cameraVelocity.add(forward.multiplyScalar(ACCEL));
             }
+            
+            mainGroup.children.forEach(pivot => {
+                    pivot.position.add(pivot.userData.velocity || new THREE.Vector3());
+            
+            if (pivot.scale.x < 50) { // Лимит роста
+                pivot.scale.multiplyScalar(1.0001); // Скорость меньше скорости перемещения
+                }
+            });
+            
             cameraVelocity.multiplyScalar(FRICTION);
             camera.position.add(cameraVelocity);
 
