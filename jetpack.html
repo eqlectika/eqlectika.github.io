@@ -94,14 +94,11 @@ body {
     // ==========================================
     // 3. ОБРАБОТЧИКИ СОБЫТИЙ И ИНТЕРФЕЙС
     // ==========================================
-    document.getElementById('overlay').addEventListener('click', async () => {
-        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            const response = await DeviceOrientationEvent.requestPermission();
-            if (response !== 'granted') return;
-        }
-        document.getElementById('overlay').style.display = 'none';
+window.addEventListener('click', () => {
+    if (!document.pointerLockElement) {
         document.body.requestPointerLock();
-    });
+    }
+});
 
     document.getElementById('btnForward').addEventListener('touchstart', () => { touch.forward = true; });
     document.getElementById('btnForward').addEventListener('touchend', () => { touch.forward = false; });
@@ -342,7 +339,6 @@ body {
     window.addEventListener('keydown', (e) => keys[e.code] = true);
     window.addEventListener('keyup', (e) => keys[e.code] = false);
     
-    document.body.addEventListener('click', () => document.body.requestPointerLock());
 
     let velocity = new THREE.Vector3(0, 0, 0);
     let angularVelocity = 0;
