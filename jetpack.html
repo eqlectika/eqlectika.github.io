@@ -56,6 +56,17 @@ body {
     font-size: 20px;         /* Опционально: можно увеличить шрифт */
 }
 
+.slider {
+    width: 50px;
+    height: 150px;
+    appearance: slider-vertical; /* Позволяет сделать слайдер вертикальным */
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    pointer-events: auto;
+    writing-mode: bt-lr; /* IE/Edge */
+    -webkit-appearance: slider-vertical;
+}
+
 </style>
 </head>
 <body>
@@ -63,9 +74,11 @@ body {
     <img src="logo.png" alt="Logo" style="width: 42px; height: 42px;">
 </a>
 <div id="controls">
-        <button id="btnUp" class="btn">Go</button>
-    <button id="btnForward" class="btn">Move</button>
+    <input type="range" id="throttleSlider" min="0" max="1" step="0.01" value="0" orient="vertical" class="slider">
+    
+    <button id="btnUp" class="btn">Up</button>
 </div>
+
 
 <script type="importmap">
   { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
@@ -98,6 +111,7 @@ body {
     let previousTouchX = 0;
     let previousTouchY = 0;
     let swipeTouchId = null; 
+let throttle = 0;
 
     let cameraVelocityY = 0; 
     let cameraVelocityX = 0; 
@@ -181,6 +195,12 @@ window.addEventListener('click', () => {
             }
         }
     });
+    
+    const throttleSlider = document.getElementById('throttleSlider');
+throttleSlider.addEventListener('input', (e) => {
+    throttle = parseFloat(e.target.value);
+});
+
 
     // ==========================================
     // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
@@ -409,9 +429,9 @@ window.addEventListener('click', () => {
         let addedForwardSpeed = 0;
         let currentFlySpeed = FLY_SPEED;
 
-        if (keys['KeyW'] || touch.forward) {
-            addedForwardSpeed += MOVE_SPEED;
-        }
+
+addedForwardSpeed += (MOVE_SPEED * 10) * throttle; 
+
 
         if (camera.rotation.x < 0) {
             const pitchFactor = Math.abs(camera.rotation.x); 
