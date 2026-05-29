@@ -62,7 +62,7 @@
     const MOVE_SPEED = 0.005;       
     const FLY_SPEED = 0.01;       
     const LOOK_SPEED = 0.001;       
-    const TURN_SPEED = 0.001;      
+    const TURN_SPEED = 0.0005;      
     const TOUCH_SENSITIVITY = 0.005; 
     
     const DAMPING_LOOK = 0.96; 
@@ -189,21 +189,59 @@
     scene.add(light);
     scene.add(new THREE.AmbientLight(0x888888));
 
-// Дополнительный свет с другой стороны, чтобы убрать черные тени
     const backLight = new THREE.DirectionalLight(0xabcdef, 0.8);
-    backLight.position.set(-50, 100, -50); // Противоположные координаты
+    backLight.position.set(-50, 100, -50); 
     scene.add(backLight);
 
-    scene.add(new THREE.GridHelper(1000, 100, 0x4444ff, 0x222244));
-
+    // Вектор коллизий и зона генерации объектов мира
     const collidableObjects = [];
+    const WORLD_SIZE = 800; 
 
     function addStructure(mesh) {
         scene.add(mesh);
         collidableObjects.push(mesh);
     }
 
-    const WORLD_SIZE = 800; 
+    // ==========================================
+    // ОПТИМИЗИРОВАННАЯ БЕСКОНЕЧНАЯ СЕТКА
+    // ==========================================
+    const gridGeometry = new THREE.PlaneGeometry(10000, 10000);
+    const gridMaterial = new THREE.ShaderMaterial({
+        side: THREE.DoubleSide,
+        transparent: true,
+        uniforms: {
+            uSize: { value: 10.0 },
+        },
+        vertexShader: `
+            varying vec3 vWorldPosition;
+            void main() {
+                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                vWorldPosition = worldPosition.xyz;
+                gl_Position = projectionMatrix * viewMatrix * worldPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vWorldPosition;
+            uniform float uSize;
+            void main() {
+                vec2 grid = abs(fract(vWorldPosition.xz / uSize - 0.5) - 0.5) / fwidth(vWorldPosition.xz / uSize);
+                float line = min(grid.x, grid.y);
+                float alpha = 1.0 - min(line, 1.0);
+                
+                float dist = length(vWorldPosition.xz);
+                float fade = 1.0 - smoothstep(100.0, 800.0, dist); 
+                
+                if (alpha < 0.1) discard;
+                
+                gl_FragColor = vec4(0.26, 0.26, 1.0, alpha * fade * 0.5);
+            }
+        `
+    });
+
+    const infiniteGrid = new THREE.Mesh(gridGeometry, gridMaterial);
+    infiniteGrid.rotation.x = -Math.PI / 2; 
+    infiniteGrid.position.y = 0;
+    scene.add(infiniteGrid);
 
     // Столбы и квадраты
     for(let i=0; i<40; i++) {
@@ -339,7 +377,6 @@
         player.rotation.y += angularVelocity;
         angularVelocity *= DAMPING_TURN;
 
-        // Направление движения по горизонтальной плоскости
         const totalRotationY = player.rotation.y + camera.rotation.y;
         const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, totalRotationY, 0));
         
@@ -347,7 +384,6 @@
         const isFlyingUp = keys['Space'] || touch.up;
         const totalTurnSpeed = angularVelocity + cameraVelocityY;
 
-        // Расчет бокового крена на оси Z
         let targetRoll = 0;
         if (isMovingForward || (isFlyingUp && camera.rotation.x < 0)) {
             targetRoll = totalTurnSpeed * 15; 
@@ -355,7 +391,6 @@
         }
         camera.rotation.z += (targetRoll - camera.rotation.z) * ROLL_SPEED;
 
-        // --- ДИНАМИЧЕСКИЙ ПЕРЕНОС СКОРОСТЕЙ И АВТОМАТИЧЕСКИЙ ПОЛЕТ ВПЕРЕД ---
         let addedForwardSpeed = 0;
         let currentFlySpeed = FLY_SPEED;
 
@@ -363,18 +398,15 @@
             addedForwardSpeed += MOVE_SPEED;
         }
 
-        // Если наклоняем нос вниз (rotation.x < 0)
         if (camera.rotation.x < 0) {
-            const pitchFactor = Math.abs(camera.rotation.x); // Величиная наклона
+            const pitchFactor = Math.abs(camera.rotation.x); 
             
             if (isFlyingUp) {
-                // Преобразуем вертикальную тягу Up в движение вперед принудительно
                 addedForwardSpeed += pitchFactor * 0.018; 
                 currentFlySpeed *= (1.0 - Math.min(pitchFactor, 0.6)); 
             }
         }
 
-        // Применение импульсов к вектору скорости
         if (addedForwardSpeed > 0) {
             velocity.add(forward.clone().multiplyScalar(addedForwardSpeed));
         }
@@ -385,7 +417,6 @@
             velocity.y += currentFlySpeed;
         }
 
-        // Гравитация
         velocity.y -= 0.003;
         player.position.add(velocity);
         
@@ -396,6 +427,7 @@
             velocity.y = Math.max(0, velocity.y * -0.3);
         }
 
+        infiniteGrid.position.set(player.position.x, 0, player.position.z);
         renderer.render(scene, camera);
     }
     animate();
