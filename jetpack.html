@@ -55,7 +55,13 @@ body {
     color: white;            /* Оставляет надпись видимой */
     font-size: 20px;         /* Опционально: можно увеличить шрифт */
 }
-
+#throttleSlider {
+    appearance: slider-vertical;
+    width: 300px;
+    height: 50vh;
+    background: rgba(255, 255, 255, 0.1);
+    pointer-events: auto;
+}
 </style>
 </head>
 <body>
@@ -63,14 +69,24 @@ body {
     <img src="logo.png" alt="Logo" style="width: 42px; height: 42px;">
 </a>
 <div id="controls">
-        <button id="btnUp" class="btn">Go</button>
-    <button id="btnForward" class="btn">Move</button>
+    <input type="range" id="throttleSlider" min="0" max="1" step="0.01" value="0">
 </div>
 
 <script type="importmap">
   { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
 </script>
 <script type="module">
+    let currentThrottle = 0;
+const throttleSlider = document.getElementById('throttleSlider');
+
+throttleSlider.addEventListener('input', (e) => {
+    currentThrottle = parseFloat(e.target.value);
+});
+
+throttleSlider.addEventListener('touchend', () => {
+    currentThrottle = 0.382;
+    throttleSlider.value = 0.382;
+});
     import * as THREE from 'three';
 
     // ==========================================
@@ -117,8 +133,6 @@ window.addEventListener('click', () => {
 
     document.getElementById('btnForward').addEventListener('touchstart', () => { touch.forward = true; });
     document.getElementById('btnForward').addEventListener('touchend', () => { touch.forward = false; });
-    document.getElementById('btnUp').addEventListener('touchstart', () => { touch.up = true; });
-    document.getElementById('btnUp').addEventListener('touchend', () => { touch.up = false; });
 
     window.addEventListener('touchstart', (e) => {
         if (swipeTouchId === null) {
@@ -396,7 +410,9 @@ window.addEventListener('click', () => {
         const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, totalRotationY, 0));
         
         const isMovingForward = keys['KeyW'] || touch.forward;
-        const isFlyingUp = keys['Space'] || touch.up;
+
+        const isFlyingUp = keys['Space'] || currentThrottle > 0;
+        
         const totalTurnSpeed = angularVelocity + cameraVelocityY;
 
         let targetRoll = 0;
@@ -415,7 +431,6 @@ window.addEventListener('click', () => {
 
         if (camera.rotation.x < 0) {
             const pitchFactor = Math.abs(camera.rotation.x); 
-            
             if (isFlyingUp) {
                 addedForwardSpeed += pitchFactor * 0.018; 
                 currentFlySpeed *= (1.0 - Math.min(pitchFactor, 0.6)); 
@@ -428,12 +443,16 @@ window.addEventListener('click', () => {
         if (keys['KeyS']) {
             velocity.add(forward.clone().multiplyScalar(-MOVE_SPEED)); 
         }
-        // Внутри animate()
-if (isFlyingUp) {
-    velocity.y += currentFlySpeed;
-} else {
-    velocity.y -= GRAVITY; // Гравитация тянет вниз, только если не летим
-}
+
+        // ЕДИНСТВЕННЫЙ БЛОК РАСЧЕТА ВЕРТИКАЛЬНОЙ СКОРОСТИ
+        if (isFlyingUp) {
+            // Если тяга 0 (слайдер внизу), используем стандартный FLY_SPEED, 
+            // иначе умножаем на текущее значение слайдера
+            let thrust = currentThrottle > 0 ? (currentThrottle * 5) : 1.0;
+            velocity.y += currentFlySpeed * thrust;
+        } else {
+            velocity.y -= GRAVITY;
+        }
 
         player.position.add(velocity);
         
