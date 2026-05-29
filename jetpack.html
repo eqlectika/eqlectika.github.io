@@ -56,44 +56,28 @@
 <script type="module">
     import * as THREE from 'three';
 
-    // Блокировка ориентации экрана
-if (screen.orientation && screen.orientation.lock) {
-    screen.orientation.lock('landscape').catch(() => {});
-}
-document.getElementById('overlay').addEventListener('click', async () => {
-    // 1. Запрос разрешения для iOS (оставлен для совместимости, хотя для touch не нужен)
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        const response = await DeviceOrientationEvent.requestPermission();
-        if (response !== 'granted') return;
-    }
-    
-    // 2. Скрытие оверлея
-    document.getElementById('overlay').style.display = 'none';
-    
-    // 3. Захват курсора (для десктопа)
-    document.body.requestPointerLock();
-});
-
-    // НАСТРОЙКИ СКОРОСТИ И ИНЕРЦИИ
+    // ==========================================
+    // 1. НАСТРОЙКИ СКОРОСТИ, ИНЕРЦИИ И КРЕНА
+    // ==========================================
     const MOVE_SPEED = 0.002;       
     const FLY_SPEED = 0.003;       
-    const LOOK_SPEED = 0.0005;       
+    const LOOK_SPEED = 0.001;       
     const TURN_SPEED = 0.0002;      
-    const TOUCH_SENSITIVITY = 0.0005; 
+    const TOUCH_SENSITIVITY = 0.005; 
     
     // Коэффициенты затухания (чем ближе к 1, тем дольше инерция)
     const DAMPING_LOOK = 0.96; 
     const DAMPING_TURN = 0.96;
     const DAMPING_MOVE = 0.98;
 
-    // Состояние кнопок
-    const touch = { forward: false, up: false };
-    document.getElementById('btnForward').addEventListener('touchstart', () => { touch.forward = true; });
-    document.getElementById('btnForward').addEventListener('touchend', () => { touch.forward = false; });
-    document.getElementById('btnUp').addEventListener('touchstart', () => { touch.up = true; });
-    document.getElementById('btnUp').addEventListener('touchend', () => { touch.up = false; });
+    // Настройки силы и скорости крена
+    const ROLL_MAX = 0.35;        // Максимальный угол наклона в радианах (~20 градусов)
+    const ROLL_SPEED = 0.1;       // Скорость вхождения в крен и возврата в исходное
 
-    // Переменные для хранения координат тача
+    // ==========================================
+    // 2. ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННЫХ И СОСТОЯНИЙ
+    // ==========================================
+    const touch = { forward: false, up: false };
     let previousTouchX = 0;
     let previousTouchY = 0;
     let swipeTouchId = null; // Идентификатор пальца, который осуществляет обзор
@@ -101,6 +85,34 @@ document.getElementById('overlay').addEventListener('click', async () => {
     // Переменные инерции для обзора камеры (мышь/свайпы/стрелки)
     let cameraVelocityY = 0; // Вращение по горизонтали
     let cameraVelocityX = 0; // Вращение по вертикали
+
+    // Блокировка ориентации экрана
+    if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+    }
+
+    // ==========================================
+    // 3. ОБРАБОТЧИКИ СОБЫТИЙ И ИНТЕРФЕЙС
+    // ==========================================
+    document.getElementById('overlay').addEventListener('click', async () => {
+        // Запрос разрешения для iOS (оставлен для совместимости, хотя для touch не нужен)
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            const response = await DeviceOrientationEvent.requestPermission();
+            if (response !== 'granted') return;
+        }
+        
+        // Скрытие оверлея
+        document.getElementById('overlay').style.display = 'none';
+        
+        // Захват курсора (для десктопа)
+        document.body.requestPointerLock();
+    });
+
+    // Навешивание тач-событий на управление
+    document.getElementById('btnForward').addEventListener('touchstart', () => { touch.forward = true; });
+    document.getElementById('btnForward').addEventListener('touchend', () => { touch.forward = false; });
+    document.getElementById('btnUp').addEventListener('touchstart', () => { touch.up = true; });
+    document.getElementById('btnUp').addEventListener('touchend', () => { touch.up = false; });
 
     // Обработка начала касания (кроме кнопок управления)
     window.addEventListener('touchstart', (e) => {
@@ -167,6 +179,9 @@ document.getElementById('overlay').addEventListener('click', async () => {
         }
     });
 
+    // ==========================================
+    // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
+    // ==========================================
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111111);
     
@@ -206,6 +221,9 @@ document.getElementById('overlay').addEventListener('click', async () => {
     let velocity = new THREE.Vector3(0, 0, 0);
     let angularVelocity = 0;
 
+    // ==========================================
+    // 5. ИГРОВОЙ ЦИКЛ ANIMATE
+    // ==========================================
     function animate() {
         requestAnimationFrame(animate);
         const raycaster = new THREE.Raycaster();
@@ -219,33 +237,32 @@ document.getElementById('overlay').addEventListener('click', async () => {
             velocity.y = 0; 
         }
 
-        // 1. ИНЕРЦИОННЫЙ ОБЗОР КЛАВИАТУРОЙ (Стрелки добавляют скорость вращения)
+        // Инерционный обзор клавиатурой
         if (keys['ArrowLeft']) cameraVelocityY += LOOK_SPEED * 0.2;
         if (keys['ArrowRight']) cameraVelocityY -= LOOK_SPEED * 0.2;
         if (keys['ArrowUp']) cameraVelocityX -= LOOK_SPEED * 0.2;
         if (keys['ArrowDown']) cameraVelocityX += LOOK_SPEED * 0.2;
         
-        // Применение накопленной скорости вращения к камере
         camera.rotation.y += cameraVelocityY;
         camera.rotateX(cameraVelocityX);
         
-        // Гашение скорости вращения камеры (инерция обзора)
         cameraVelocityY *= DAMPING_LOOK;
         cameraVelocityX *= DAMPING_LOOK;
         
         camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
-        camera.rotation.z = 0;
 
-        // 2. ИНЕРЦИОННЫЙ ПОВОРОТ КОРПУСА (A/D)
+        // Инерционный поворот корпуса (A/D)
         if (keys['KeyA']) angularVelocity += TURN_SPEED;
         if (keys['KeyD']) angularVelocity -= TURN_SPEED;
         player.rotation.y += angularVelocity;
-        angularVelocity *= DAMPING_TURN; // Плавное затухание поворота тела
+        angularVelocity *= DAMPING_TURN;
 
         const totalRotationY = player.rotation.y + camera.rotation.y;
         const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, totalRotationY, 0));
         
-        // 3. ИНЕРЦИОННОЕ ПЕРЕМЕЩЕНИЕ (Клавиатура + Тач)
+        // Инерционное перемещение (Клавиатура + Тач)
+        const isMovingForward = keys['KeyW'] || touch.forward;
+
         if (keys['KeyW']) velocity.add(forward.clone().multiplyScalar(MOVE_SPEED));
         if (keys['KeyS']) velocity.add(forward.clone().multiplyScalar(-MOVE_SPEED));
         if (keys['Space']) velocity.y += FLY_SPEED;
@@ -253,11 +270,21 @@ document.getElementById('overlay').addEventListener('click', async () => {
         if (touch.forward) velocity.add(forward.clone().multiplyScalar(MOVE_SPEED));
         if (touch.up) velocity.y += FLY_SPEED;
 
+        const totalTurnSpeed = angularVelocity + cameraVelocityY;
+
+        // Расчет и применение крена (Roll) на оси Z
+        let targetRoll = 0;
+        if (isMovingForward) {
+            targetRoll = totalTurnSpeed * 15; 
+            targetRoll = Math.max(-ROLL_MAX, Math.min(ROLL_MAX, targetRoll));
+        }
+        
+        camera.rotation.z += (targetRoll - camera.rotation.z) * ROLL_SPEED;
+
         // Гравитация
         velocity.y -= 0.0015;
         player.position.add(velocity);
         
-        // Плавное гашение линейной скорости движения
         velocity.multiplyScalar(DAMPING_MOVE);
 
         if (player.position.y < 2) {
