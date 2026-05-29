@@ -138,24 +138,30 @@ let currentThrottle = 0;
 const throttleArea = document.getElementById('throttleArea');
 
 throttleArea.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse') return; // МЫШКА НЕ РАБОТАЕТ
-    throttleArea.setPointerCapture(e.pointerId);
+    if (e.pointerType === 'mouse') return;
+    activeTouches.throttle = e.pointerId; // Запоминаем ID пальца
+    updateThrottle(e);
+}, { passive: false });
+
+function updateThrottle(e) {
     const rect = throttleArea.getBoundingClientRect();
     let val = 1 - ((e.clientY - rect.top) / rect.height);
     currentThrottle = Math.max(0, Math.min(1, val));
-}, { passive: false });
+}
 
-throttleArea.addEventListener('pointermove', (e) => {
-    // ВАЖНО: Условие, чтобы тяга работала только при касании левой половины
-    if (e.clientX < window.innerWidth / 2) {
-        const rect = throttleArea.getBoundingClientRect();
-        let val = 1 - ((e.clientY - rect.top) / rect.height);
-        currentThrottle = Math.max(0, Math.min(1, val));
+// Слушаем pointermove на window, чтобы не терять контакт
+window.addEventListener('pointermove', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        updateThrottle(e);
     }
-}, { passive: false });
+});
 
-throttleArea.addEventListener('pointerup', () => currentThrottle = 0);
-throttleArea.addEventListener('pointerleave', () => currentThrottle = 0);
+window.addEventListener('pointerup', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        activeTouches.throttle = null;
+        currentThrottle = 0;
+    }
+});
 
     import * as THREE from 'three';
 
@@ -191,7 +197,11 @@ throttleArea.addEventListener('pointerleave', () => currentThrottle = 0);
     if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('landscape').catch(() => {});
     }
-
+    
+const activeTouches = {
+    throttle: null,
+    control: null
+};
     // ==========================================
     // 3. ОБРАБОТЧИКИ СОБЫТИЙ И ИНТЕРФЕЙС
     // ==========================================
@@ -200,14 +210,14 @@ const controlArea = document.getElementById('controlArea');
 
 // 1. Поворот камеры (ПРАВАЯ СТОРОНА)
 controlArea.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse') return; // МЫШКА НЕ РАБОТАЕТ
-    controlArea.setPointerCapture(e.pointerId);
+    if (e.pointerType === 'mouse') return;
+    activeTouches.control = e.pointerId;
     previousTouchX = e.pageX;
     previousTouchY = e.pageY;
 });
 
-controlArea.addEventListener('pointermove', (e) => {
-    if (e.pointerType === 'mouse' || e.isPrimary) {
+window.addEventListener('pointermove', (e) => {
+    if (e.pointerId === activeTouches.control) {
         const deltaX = e.pageX - previousTouchX;
         const deltaY = -(e.pageY - previousTouchY);
         
@@ -219,10 +229,9 @@ controlArea.addEventListener('pointermove', (e) => {
     }
 });
 
-// 2. Блокировка PointerLock (оставляем клик, но он не нужен для тача)
-window.addEventListener('click', () => {
-    if (!document.pointerLockElement) {
-        document.body.requestPointerLock();
+window.addEventListener('pointerup', (e) => {
+    if (e.pointerId === activeTouches.control) {
+        activeTouches.control = null;
     }
 });
     // ==========================================
