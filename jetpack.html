@@ -55,6 +55,17 @@ body {
     font-size: 20px;         /* Опционально: можно увеличить шрифт */
 }
 
+    #throttleArea {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100px; /* Ширина области касания */
+    height: 50vh;
+    background: rgba(255, 255, 255, 0.1); /* Временно для теста */
+    touch-action: none;
+    z-index: 1000;
+}
+
 #throttleSlider {
     -webkit-appearance: slider-vertical;
     appearance: slider-vertical;
@@ -99,7 +110,7 @@ body {
     <img src="logo.png" alt="Logo" style="width: 42px; height: 42px;">
 </a>
 <div id="controls">
-    <input type="range" id="throttleSlider" min="0" max="1" step="0.01" value="0">
+    <div id="throttleArea"></div>
 </div>
 
 <script type="importmap">
@@ -107,29 +118,26 @@ body {
 </script>
 <script type="module">
     let currentThrottle = 0;
-const throttleSlider = document.getElementById('throttleSlider');
+const throttleArea = document.getElementById('throttleArea');
 
-// Обработка начала касания (мгновенная активация)
-throttleSlider.addEventListener('pointerdown', (e) => {
-    throttleSlider.setPointerCapture(e.pointerId); // Захват ввода
-    currentThrottle = parseFloat(e.target.value);
+throttleArea.addEventListener('pointermove', (e) => {
+    if (e.buttons > 0) {
+        // Вычисляем значение от 0 до 1 в зависимости от высоты касания
+        const rect = throttleArea.getBoundingClientRect();
+        let val = 1 - ((e.clientY - rect.top) / rect.height);
+        currentThrottle = Math.max(0, Math.min(1, val));
+    }
 }, { passive: false });
 
-// Обработка движения
-throttleSlider.addEventListener('pointermove', (e) => {
-    if (e.buttons > 0) {
-        currentThrottle = parseFloat(e.target.value);
-    }
+throttleArea.addEventListener('pointerdown', (e) => {
+    throttleArea.setPointerCapture(e.pointerId);
+    const rect = throttleArea.getBoundingClientRect();
+    let val = 1 - ((e.clientY - rect.top) / rect.height);
+    currentThrottle = Math.max(0, Math.min(1, val));
 });
 
-// Сброс
-const resetThrottle = () => {
-    currentThrottle = 0;
-    throttleSlider.value = 0;
-};
-
-throttleSlider.addEventListener('pointerup', resetThrottle);
-throttleSlider.addEventListener('pointerleave', resetThrottle);
+throttleArea.addEventListener('pointerup', () => currentThrottle = 0);
+throttleArea.addEventListener('pointerleave', () => currentThrottle = 0);
 
     import * as THREE from 'three';
 
