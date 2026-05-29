@@ -14,7 +14,7 @@
         display: none; 
         justify-content: space-between; 
         padding: 0 30px; 
-        pointer-events: none; /* Чтобы не мешать другим элементам */
+        pointer-events: none;
     }
 .btn { 
     width: 100px; 
@@ -24,10 +24,10 @@
     border-radius: 50%; 
     color: white;
     pointer-events: auto; 
-    touch-action: none;          /* Отключает браузерные жесты на кнопке */
-    -webkit-user-select: none;   /* Отключает выделение текста */
-    user-select: none;           /* Отключает выделение текста */
-    -webkit-tap-highlight-color: transparent; /* Убирает "подсветку" нажатия в iOS */
+    touch-action: none;          
+    -webkit-user-select: none;   
+    user-select: none;           
+    -webkit-tap-highlight-color: transparent; 
 }
     @media (pointer: coarse) { #controls { display: flex; } }
     #logoLink {
@@ -35,7 +35,7 @@
     bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 1001; /* Поверх оверлея */
+    z-index: 1001; 
 }
 </style>
 </head>
@@ -59,20 +59,18 @@
     // ==========================================
     // 1. НАСТРОЙКИ СКОРОСТИ, ИНЕРЦИИ И КРЕНА
     // ==========================================
-    const MOVE_SPEED = 0.002;       
-    const FLY_SPEED = 0.003;       
+    const MOVE_SPEED = 0.005;       
+    const FLY_SPEED = 0.01;       
     const LOOK_SPEED = 0.001;       
-    const TURN_SPEED = 0.0002;      
+    const TURN_SPEED = 0.001;      
     const TOUCH_SENSITIVITY = 0.005; 
     
-    // Коэффициенты затухания (чем ближе к 1, тем дольше инерция)
     const DAMPING_LOOK = 0.96; 
     const DAMPING_TURN = 0.96;
     const DAMPING_MOVE = 0.98;
 
-    // Настройки силы и скорости крена
-    const ROLL_MAX = 0.35;        // Максимальный угол наклона в радианах (~20 градусов)
-    const ROLL_SPEED = 0.1;       // Скорость вхождения в крен и возврата в исходное
+    const ROLL_MAX = 0.35;        
+    const ROLL_SPEED = 0.1;       
 
     // ==========================================
     // 2. ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННЫХ И СОСТОЯНИЙ
@@ -80,13 +78,11 @@
     const touch = { forward: false, up: false };
     let previousTouchX = 0;
     let previousTouchY = 0;
-    let swipeTouchId = null; // Идентификатор пальца, который осуществляет обзор
+    let swipeTouchId = null; 
 
-    // Переменные инерции для обзора камеры (мышь/свайпы/стрелки)
-    let cameraVelocityY = 0; // Вращение по горизонтали
-    let cameraVelocityX = 0; // Вращение по вертикали
+    let cameraVelocityY = 0; 
+    let cameraVelocityX = 0; 
 
-    // Блокировка ориентации экрана
     if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('landscape').catch(() => {});
     }
@@ -95,26 +91,19 @@
     // 3. ОБРАБОТЧИКИ СОБЫТИЙ И ИНТЕРФЕЙС
     // ==========================================
     document.getElementById('overlay').addEventListener('click', async () => {
-        // Запрос разрешения для iOS (оставлен для совместимости, хотя для touch не нужен)
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
             const response = await DeviceOrientationEvent.requestPermission();
             if (response !== 'granted') return;
         }
-        
-        // Скрытие оверлея
         document.getElementById('overlay').style.display = 'none';
-        
-        // Захват курсора (для десктопа)
         document.body.requestPointerLock();
     });
 
-    // Навешивание тач-событий на управление
     document.getElementById('btnForward').addEventListener('touchstart', () => { touch.forward = true; });
     document.getElementById('btnForward').addEventListener('touchend', () => { touch.forward = false; });
     document.getElementById('btnUp').addEventListener('touchstart', () => { touch.up = true; });
     document.getElementById('btnUp').addEventListener('touchend', () => { touch.up = false; });
 
-    // Обработка начала касания (кроме кнопок управления)
     window.addEventListener('touchstart', (e) => {
         if (swipeTouchId === null) {
             for (let i = 0; i < e.changedTouches.length; i++) {
@@ -129,7 +118,6 @@
         }
     }, { passive: false });
 
-    // Обработка движения пальца (Touch-Scroll обзор с накоплением инерции)
     window.addEventListener('touchmove', (e) => {
         if (swipeTouchId !== null) {
             let activeTouch = null;
@@ -147,7 +135,6 @@
                 const deltaX = touchX - previousTouchX;
                 const deltaY = touchY - previousTouchY;
                 
-                // Вместо прямого изменения угла добавляем импульс к скорости вращения
                 cameraVelocityY -= deltaX * TOUCH_SENSITIVITY * 0.5;
                 cameraVelocityX -= deltaY * TOUCH_SENSITIVITY * 0.5;
                 
@@ -183,9 +170,9 @@
     // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
     // ==========================================
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
+    scene.background = new THREE.Color(0x0a0a12); 
     
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
     camera.rotation.order = 'YXZ';
     
     const player = new THREE.Group();
@@ -197,20 +184,117 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(5, 10, 5);
+    const light = new THREE.DirectionalLight(0xffffff, 2.5);
+    light.position.set(50, 200, 50);
     scene.add(light);
-    scene.add(new THREE.AmbientLight(0x404040));
+    scene.add(new THREE.AmbientLight(0x888888));
 
-    for(let i=0; i<20; i++) {
-        const geometry = new THREE.BoxGeometry(2, 10, 2);
-        const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
-        const box = new THREE.Mesh(geometry, material);
-        box.position.set((Math.random()-0.5)*100, 5, (Math.random()-0.5)*100);
-        scene.add(box);
+// Дополнительный свет с другой стороны, чтобы убрать черные тени
+    const backLight = new THREE.DirectionalLight(0xabcdef, 0.8);
+    backLight.position.set(-50, 100, -50); // Противоположные координаты
+    scene.add(backLight);
+
+    scene.add(new THREE.GridHelper(1000, 100, 0x4444ff, 0x222244));
+
+    const collidableObjects = [];
+
+    function addStructure(mesh) {
+        scene.add(mesh);
+        collidableObjects.push(mesh);
     }
 
-    scene.add(new THREE.GridHelper(200, 40));
+    const WORLD_SIZE = 800; 
+
+    // Столбы и квадраты
+    for(let i=0; i<40; i++) {
+        const sizeX = 10 + Math.random() * 20;
+        const sizeY = 4 + Math.random() * 15;
+        const sizeZ = 10 + Math.random() * 20;
+
+        const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
+        const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
+        const box = new THREE.Mesh(geometry, material);
+        
+        box.position.set(
+            (Math.random() - 0.5) * WORLD_SIZE,
+            sizeY / 2, 
+            (Math.random() - 0.5) * WORLD_SIZE
+        );
+        addStructure(box);
+    }
+
+    // Арки
+    for(let i=0; i<25; i++) {
+        const archGroup = new THREE.Group();
+        const archColor = Math.random() * 0xffffff;
+        const material = new THREE.MeshPhongMaterial({ color: archColor });
+
+        const w = 4;   
+        const h = 30;  
+        const d = 4;   
+        const span = 25; 
+
+        const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+        leftLeg.position.set(-span/2, h/2, 0);
+        archGroup.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+        rightLeg.position.set(span/2, h/2, 0);
+        archGroup.add(rightLeg);
+
+        const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w, d), material);
+        topBar.position.set(0, h + w/2, 0);
+        archGroup.add(topBar);
+
+        archGroup.position.set(
+            (Math.random() - 0.5) * WORLD_SIZE,
+            0,
+            (Math.random() - 0.5) * WORLD_SIZE
+        );
+        archGroup.rotation.y = Math.random() * Math.PI;
+
+        leftLeg.updateMatrixWorld();
+        rightLeg.updateMatrixWorld();
+        topBar.updateMatrixWorld();
+        collidableObjects.push(leftLeg, rightLeg, topBar);
+        
+        scene.add(archGroup);
+    }
+
+    // Мосты
+    for(let i=0; i<15; i++) {
+        const bridgeGroup = new THREE.Group();
+        const bridgeColor = 0x555566;
+        const material = new THREE.MeshPhongMaterial({ color: bridgeColor });
+
+        const length = 80;
+        const width = 12;
+        const height = 15;
+
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(width, 2, length), material);
+        deck.position.set(0, height, 0);
+        bridgeGroup.add(deck);
+
+        for(let j = -length/3; j <= length/3; j += length/3) {
+            const pillar = new THREE.Mesh(new THREE.BoxGeometry(4, height, 4), material);
+            pillar.position.set(0, height/2, j);
+            bridgeGroup.add(pillar);
+            pillar.updateMatrixWorld();
+            collidableObjects.push(pillar);
+        }
+
+        bridgeGroup.position.set(
+            (Math.random() - 0.5) * WORLD_SIZE,
+            0,
+            (Math.random() - 0.5) * WORLD_SIZE
+        );
+        bridgeGroup.rotation.y = Math.random() * Math.PI;
+
+        deck.updateMatrixWorld();
+        collidableObjects.push(deck);
+
+        scene.add(bridgeGroup);
+    }
 
     const keys = {};
     window.addEventListener('keydown', (e) => keys[e.code] = true);
@@ -230,14 +314,13 @@
         const downVector = new THREE.Vector3(0, -1, 0);
 
         raycaster.set(player.position, downVector);
-        const intersects = raycaster.intersectObjects(scene.children);
+        const intersects = raycaster.intersectObjects(collidableObjects);
 
         if (velocity.y <= 0 && intersects.length > 0 && intersects[0].distance < 2.1) {
             player.position.y = intersects[0].point.y + 2; 
             velocity.y = 0; 
         }
 
-        // Инерционный обзор клавиатурой
         if (keys['ArrowLeft']) cameraVelocityY += LOOK_SPEED * 0.2;
         if (keys['ArrowRight']) cameraVelocityY -= LOOK_SPEED * 0.2;
         if (keys['ArrowUp']) cameraVelocityX -= LOOK_SPEED * 0.2;
@@ -251,38 +334,59 @@
         
         camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
 
-        // Инерционный поворот корпуса (A/D)
         if (keys['KeyA']) angularVelocity += TURN_SPEED;
         if (keys['KeyD']) angularVelocity -= TURN_SPEED;
         player.rotation.y += angularVelocity;
         angularVelocity *= DAMPING_TURN;
 
+        // Направление движения по горизонтальной плоскости
         const totalRotationY = player.rotation.y + camera.rotation.y;
         const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, totalRotationY, 0));
         
-        // Инерционное перемещение (Клавиатура + Тач)
         const isMovingForward = keys['KeyW'] || touch.forward;
-
-        if (keys['KeyW']) velocity.add(forward.clone().multiplyScalar(MOVE_SPEED));
-        if (keys['KeyS']) velocity.add(forward.clone().multiplyScalar(-MOVE_SPEED));
-        if (keys['Space']) velocity.y += FLY_SPEED;
-
-        if (touch.forward) velocity.add(forward.clone().multiplyScalar(MOVE_SPEED));
-        if (touch.up) velocity.y += FLY_SPEED;
-
+        const isFlyingUp = keys['Space'] || touch.up;
         const totalTurnSpeed = angularVelocity + cameraVelocityY;
 
-        // Расчет и применение крена (Roll) на оси Z
+        // Расчет бокового крена на оси Z
         let targetRoll = 0;
-        if (isMovingForward) {
+        if (isMovingForward || (isFlyingUp && camera.rotation.x < 0)) {
             targetRoll = totalTurnSpeed * 15; 
             targetRoll = Math.max(-ROLL_MAX, Math.min(ROLL_MAX, targetRoll));
         }
-        
         camera.rotation.z += (targetRoll - camera.rotation.z) * ROLL_SPEED;
 
+        // --- ДИНАМИЧЕСКИЙ ПЕРЕНОС СКОРОСТЕЙ И АВТОМАТИЧЕСКИЙ ПОЛЕТ ВПЕРЕД ---
+        let addedForwardSpeed = 0;
+        let currentFlySpeed = FLY_SPEED;
+
+        if (keys['KeyW'] || touch.forward) {
+            addedForwardSpeed += MOVE_SPEED;
+        }
+
+        // Если наклоняем нос вниз (rotation.x < 0)
+        if (camera.rotation.x < 0) {
+            const pitchFactor = Math.abs(camera.rotation.x); // Величиная наклона
+            
+            if (isFlyingUp) {
+                // Преобразуем вертикальную тягу Up в движение вперед принудительно
+                addedForwardSpeed += pitchFactor * 0.018; 
+                currentFlySpeed *= (1.0 - Math.min(pitchFactor, 0.6)); 
+            }
+        }
+
+        // Применение импульсов к вектору скорости
+        if (addedForwardSpeed > 0) {
+            velocity.add(forward.clone().multiplyScalar(addedForwardSpeed));
+        }
+        if (keys['KeyS']) {
+            velocity.add(forward.clone().multiplyScalar(-MOVE_SPEED)); 
+        }
+        if (isFlyingUp) {
+            velocity.y += currentFlySpeed;
+        }
+
         // Гравитация
-        velocity.y -= 0.0015;
+        velocity.y -= 0.003;
         player.position.add(velocity);
         
         velocity.multiplyScalar(DAMPING_MOVE);
