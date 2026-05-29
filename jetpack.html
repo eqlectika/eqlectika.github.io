@@ -21,7 +21,7 @@ body {
     display: flex;
     justify-content: flex-start;
     pointer-events: none;
-    z-index: 1000;
+    z-index: 3000;
 }
 .btn { 
     width: 100px; 
@@ -55,16 +55,33 @@ body {
     font-size: 20px;         /* Опционально: можно увеличить шрифт */
 }
 
-    #throttleArea {
+#throttleArea {
     position: fixed;
     top: 0;
     left: 0;
-    width: 150px; 
+    width: 50vw; /* Ровно левая половина */
     height: 100vh;
-    z-index: 2000; /* Поверх всего */
+    z-index: 2000;
     pointer-events: auto;
     touch-action: none;
-    /* Уберите background, чтобы он был невидимым */
+}
+
+/* Добавьте зону для управления камерой */
+#controlArea {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 50vw; /* Ровно правая половина */
+    height: 100vh;
+    z-index: 2000;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+    @media (pointer: fine) {
+    #throttleArea, #controlArea {
+        pointer-events: none;
+    }
 }
 
 #throttleSlider {
@@ -108,10 +125,9 @@ body {
 </head>
 <body>
     <a href="index.html" id="logoLink">
-    <img src="logo.png" alt="Logo" style="width: 42px; height: 42px;">
-</a>
-    <div id="throttleArea"></div>
-<div id="controls"></div>
+        <img src="logo.png" alt="Logo" style="width: 42px; height: 42px;">
+    </a> 
+    <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
 
 <script type="importmap">
   { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
@@ -122,6 +138,7 @@ let currentThrottle = 0;
 const throttleArea = document.getElementById('throttleArea');
 
 throttleArea.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return; // МЫШКА НЕ РАБОТАЕТ
     throttleArea.setPointerCapture(e.pointerId);
     const rect = throttleArea.getBoundingClientRect();
     let val = 1 - ((e.clientY - rect.top) / rect.height);
@@ -129,7 +146,8 @@ throttleArea.addEventListener('pointerdown', (e) => {
 }, { passive: false });
 
 throttleArea.addEventListener('pointermove', (e) => {
-    if (e.buttons > 0) {
+    // ВАЖНО: Условие, чтобы тяга работала только при касании левой половины
+    if (e.clientX < window.innerWidth / 2) {
         const rect = throttleArea.getBoundingClientRect();
         let val = 1 - ((e.clientY - rect.top) / rect.height);
         currentThrottle = Math.max(0, Math.min(1, val));
@@ -177,78 +195,36 @@ throttleArea.addEventListener('pointerleave', () => currentThrottle = 0);
     // ==========================================
     // 3. ОБРАБОТЧИКИ СОБЫТИЙ И ИНТЕРФЕЙС
     // ==========================================
+// --- ИНИЦИАЛИЗАЦИЯ ЗОН УПРАВЛЕНИЯ ---
+const controlArea = document.getElementById('controlArea');
+
+// 1. Поворот камеры (ПРАВАЯ СТОРОНА)
+controlArea.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return; // МЫШКА НЕ РАБОТАЕТ
+    controlArea.setPointerCapture(e.pointerId);
+    previousTouchX = e.pageX;
+    previousTouchY = e.pageY;
+});
+
+controlArea.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'mouse' || e.isPrimary) {
+        const deltaX = e.pageX - previousTouchX;
+        const deltaY = -(e.pageY - previousTouchY);
+        
+        cameraVelocityY -= deltaX * TOUCH_SENSITIVITY * 0.5;
+        cameraVelocityX -= deltaY * TOUCH_SENSITIVITY * 0.5;
+        
+        previousTouchX = e.pageX;
+        previousTouchY = e.pageY;
+    }
+});
+
+// 2. Блокировка PointerLock (оставляем клик, но он не нужен для тача)
 window.addEventListener('click', () => {
     if (!document.pointerLockElement) {
         document.body.requestPointerLock();
     }
 });
-
-
-    window.addEventListener('touchstart', (e) => {
-        if (swipeTouchId === null) {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                const t = e.changedTouches[i];
-                if (t.target.closest('#controls')) continue; 
-                
-                swipeTouchId = t.identifier;
-                previousTouchX = t.pageX;
-                previousTouchY = t.pageY;
-                break;
-            }
-        }
-    }, { passive: false });
-
-    window.addEventListener('touchmove', (e) => {
-        for (let i = 0; i < e.touches.length; i++) {
-            if (e.touches[i].pageX < 150) return; 
-        }
-        if (swipeTouchId !== null) {
-            let activeTouch = null;
-            for (let i = 0; i < e.touches.length; i++) {
-                if (e.touches[i].identifier === swipeTouchId) {
-                    activeTouch = e.touches[i];
-                    break;
-                }
-            }
-
-            if (activeTouch) {
-                const touchX = activeTouch.pageX;
-                const touchY = activeTouch.pageY;
-                
-                const deltaX = touchX - previousTouchX;
-                const deltaY = -(touchY - previousTouchY);
-                
-                cameraVelocityY -= deltaX * TOUCH_SENSITIVITY * 0.5;
-                cameraVelocityX -= deltaY * TOUCH_SENSITIVITY * 0.5;
-                
-                previousTouchX = touchX;
-                previousTouchY = touchY;
-            }
-        }
-    }, { passive: false });
-
-    window.addEventListener('touchend', (e) => {
-        if (swipeTouchId !== null) {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                if (e.changedTouches[i].identifier === swipeTouchId) {
-                    swipeTouchId = null;
-                    break;
-                }
-            }
-        }
-    });
-
-    window.addEventListener('touchcancel', (e) => {
-        if (swipeTouchId !== null) {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                if (e.changedTouches[i].identifier === swipeTouchId) {
-                    swipeTouchId = null;
-                    break;
-                }
-            }
-        }
-    });
-
     // ==========================================
     // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
     // ==========================================
