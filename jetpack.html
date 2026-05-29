@@ -54,6 +54,8 @@
   { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
 </script>
 <script type="module">
+    import * as THREE from 'three';
+
     // Блокировка ориентации экрана
 if (screen.orientation && screen.orientation.lock) {
     screen.orientation.lock('landscape').catch(() => {});
@@ -72,69 +74,96 @@ document.getElementById('overlay').addEventListener('click', async () => {
     document.body.requestPointerLock();
 });
 
-// Состояние кнопок
-const touch = { forward: false, up: false };
-document.getElementById('btnForward').addEventListener('touchstart', (e) => { e.stopPropagation(); touch.forward = true; });
-document.getElementById('btnForward').addEventListener('touchend', (e) => { e.stopPropagation(); touch.forward = false; });
-document.getElementById('btnUp').addEventListener('touchstart', (e) => { e.stopPropagation(); touch.up = true; });
-document.getElementById('btnUp').addEventListener('touchend', (e) => { e.stopPropagation(); touch.up = false; });
-
-// Переменные для хранения координат тача
-let previousTouchX = 0;
-let previousTouchY = 0;
-let isTouching = false;
-const TOUCH_SENSITIVITY = 0.005; // Чувствительность свайпов
-
-// Обработка начала касания (кроме кнопок управления)
-window.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 1) {
-        previousTouchX = e.touches[0].pageX;
-        previousTouchY = e.touches[0].pageY;
-        isTouching = true;
-    }
-}, { passive: false });
-
-// Обработка движения пальца (Touch-Scroll обзор)
-window.addEventListener('touchmove', (e) => {
-    if (isTouching && e.touches.length === 1) {
-        const touchX = e.touches[0].pageX;
-        const touchY = e.touches[0].pageY;
-        
-        const deltaX = touchX - previousTouchX;
-        const deltaY = touchY - previousTouchY;
-        
-        // Влево-вправо как есть (стандартный поворот)
-        camera.rotation.y -= deltaX * TOUCH_SENSITIVITY;
-        
-        // Вверх-вниз инвертировано (свайп вверх наклоняет камеру вниз)
-        camera.rotateX(-deltaY * TOUCH_SENSITIVITY);
-        
-        // Коррекция углов
-        camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
-        camera.rotation.z = 0;
-        
-        previousTouchX = touchX;
-        previousTouchY = touchY;
-    }
-}, { passive: false });
-
-window.addEventListener('touchend', () => {
-    isTouching = false;
-});
-
-    import * as THREE from 'three';
-
     // НАСТРОЙКИ СКОРОСТИ
     const MOVE_SPEED = 0.003;       
     const FLY_SPEED = 0.003;       
     const LOOK_SPEED = 0.003;       
     const TURN_SPEED = 0.001;      
+    const TOUCH_SENSITIVITY = 0.005; 
+
+    // Состояние кнопок
+    const touch = { forward: false, up: false };
+    document.getElementById('btnForward').addEventListener('touchstart', () => { touch.forward = true; });
+    document.getElementById('btnForward').addEventListener('touchend', () => { touch.forward = false; });
+    document.getElementById('btnUp').addEventListener('touchstart', () => { touch.up = true; });
+    document.getElementById('btnUp').addEventListener('touchend', () => { touch.up = false; });
+
+    // Переменные для хранения координат тача
+    let previousTouchX = 0;
+    let previousTouchY = 0;
+    let swipeTouchId = null; // Идентификатор пальца, который осуществляет обзор
+
+    // Обработка начала касания (кроме кнопок управления)
+    window.addEventListener('touchstart', (e) => {
+        if (swipeTouchId === null) {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const t = e.changedTouches[i];
+                if (t.target.closest('#controls')) continue; 
+                
+                swipeTouchId = t.identifier;
+                previousTouchX = t.pageX;
+                previousTouchY = t.pageY;
+                break;
+            }
+        }
+    }, { passive: false });
+
+    // Обработка движения пальца (Touch-Scroll обзор)
+    window.addEventListener('touchmove', (e) => {
+        if (swipeTouchId !== null) {
+            let activeTouch = null;
+            for (let i = 0; i < e.touches.length; i++) {
+                if (e.touches[i].identifier === swipeTouchId) {
+                    activeTouch = e.touches[i];
+                    break;
+                }
+            }
+
+            if (activeTouch) {
+                const touchX = activeTouch.pageX;
+                const touchY = activeTouch.pageY;
+                
+                const deltaX = touchX - previousTouchX;
+                const deltaY = touchY - previousTouchY;
+                
+                camera.rotation.y -= deltaX * TOUCH_SENSITIVITY;
+                camera.rotateX(-deltaY * TOUCH_SENSITIVITY);
+                
+                camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
+                camera.rotation.z = 0;
+                
+                previousTouchX = touchX;
+                previousTouchY = touchY;
+            }
+        }
+    }, { passive: false });
+
+    window.addEventListener('touchend', (e) => {
+        if (swipeTouchId !== null) {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === swipeTouchId) {
+                    swipeTouchId = null;
+                    break;
+                }
+            }
+        }
+    });
+
+    window.addEventListener('touchcancel', (e) => {
+        if (swipeTouchId !== null) {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === swipeTouchId) {
+                    swipeTouchId = null;
+                    break;
+                }
+            }
+        }
+    });
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111111);
     
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    // Устанавливаем порядок вращения YXZ, чтобы избежать заклинивания осей (Gimbal Lock)
     camera.rotation.order = 'YXZ';
     
     const player = new THREE.Group();
@@ -146,18 +175,15 @@ window.addEventListener('touchend', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Добавляем освещение, чтобы предметы были видны
     const light = new THREE.DirectionalLight(0xffffff, 1);
     light.position.set(5, 10, 5);
     scene.add(light);
     scene.add(new THREE.AmbientLight(0x404040));
 
-    // Создаем ориентиры (столбы)
     for(let i=0; i<20; i++) {
         const geometry = new THREE.BoxGeometry(2, 10, 2);
         const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
         const box = new THREE.Mesh(geometry, material);
-        // Размещаем вокруг центра
         box.position.set((Math.random()-0.5)*100, 5, (Math.random()-0.5)*100);
         scene.add(box);
     }
@@ -168,7 +194,6 @@ window.addEventListener('touchend', () => {
     window.addEventListener('keydown', (e) => keys[e.code] = true);
     window.addEventListener('keyup', (e) => keys[e.code] = false);
     
-    // Поворот камеры мышью удален, оставлен только PointerLock по клику для фиксации мыши при желании
     document.body.addEventListener('click', () => document.body.requestPointerLock());
 
     let velocity = new THREE.Vector3(0, 0, 0);
@@ -176,40 +201,30 @@ window.addEventListener('touchend', () => {
 
     function animate() {
         requestAnimationFrame(animate);
-        // 1. Создаем Raycaster (вне animate)
-const raycaster = new THREE.Raycaster();
-const downVector = new THREE.Vector3(0, -1, 0);
+        const raycaster = new THREE.Raycaster();
+        const downVector = new THREE.Vector3(0, -1, 0);
 
-// 2. Внутри animate() (перед рендером):
-raycaster.set(player.position, downVector);
+        raycaster.set(player.position, downVector);
+        const intersects = raycaster.intersectObjects(scene.children);
 
-// Проверяем пересечения со всеми объектами сцены (кроме самого игрока)
-const intersects = raycaster.intersectObjects(scene.children);
+        if (velocity.y <= 0 && intersects.length > 0 && intersects[0].distance < 2.1) {
+            player.position.y = intersects[0].point.y + 2; 
+            velocity.y = 0; 
+        }
 
-// ИСПРАВЛЕНО: Приземление срабатывает только при движении вниз (velocity.y <= 0)
-if (velocity.y <= 0 && intersects.length > 0 && intersects[0].distance < 2.1) {
-    player.position.y = intersects[0].point.y + 2; // Ставим на объект
-    velocity.y = 0; // Останавливаем падение
-}
-        // Управление обзором камеры с помощью стрелок клавиатуры
         if (keys['ArrowLeft']) camera.rotation.y += LOOK_SPEED;
         if (keys['ArrowRight']) camera.rotation.y -= LOOK_SPEED;
-        
-        // НАПРАВЛЕНИЕ ИЗМЕНЕНО: теперь Стрелка Вверх наклоняет вниз (-), а Стрелка Вниз — вверх (+)
         if (keys['ArrowUp']) camera.rotateX(-LOOK_SPEED);
         if (keys['ArrowDown']) camera.rotateX(LOOK_SPEED);
         
-        // Ограничение наклона камеры вверх/вниз и сброс случайного крена Z в 0
         camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
         camera.rotation.z = 0;
 
-        // Поворот корпуса (A/D)
         if (keys['KeyA']) angularVelocity += TURN_SPEED;
         if (keys['KeyD']) angularVelocity -= TURN_SPEED;
         player.rotation.y += angularVelocity;
         angularVelocity *= 0.92;
 
-        // ИСПРАВЛЕНО: Расчет направления вперед с учетом поворота и тела, и камеры
         const totalRotationY = player.rotation.y + camera.rotation.y;
         const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, totalRotationY, 0));
         
@@ -217,7 +232,6 @@ if (velocity.y <= 0 && intersects.length > 0 && intersects[0].distance < 2.1) {
         if (keys['KeyS']) velocity.add(forward.clone().multiplyScalar(-MOVE_SPEED));
         if (keys['Space']) velocity.y += FLY_SPEED;
 
-        // Внутри animate() добавить
         if (touch.forward) velocity.add(forward.clone().multiplyScalar(MOVE_SPEED));
         if (touch.up) velocity.y += FLY_SPEED;
 
