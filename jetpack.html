@@ -111,7 +111,7 @@ body {
     let previousTouchX = 0;
     let previousTouchY = 0;
     let swipeTouchId = null; 
-let throttle = 0;
+    let throttle = 0; // Инициализируем здесь
 
     let cameraVelocityY = 0; 
     let cameraVelocityX = 0; 
@@ -119,7 +119,6 @@ let throttle = 0;
     if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('landscape').catch(() => {});
     }
-
 
     // ==========================================
     // 3. ОБРАБОТЧИКИ СОБЫТИЙ И ИНТЕРФЕЙС
@@ -130,7 +129,7 @@ let throttle = 0;
         }
     });
 
-    // Безопасная инициализация слайдера
+    // Обработчик слайдера
     const throttleSlider = document.getElementById('throttleSlider');
     if (throttleSlider) {
         throttleSlider.addEventListener('input', (e) => {
@@ -138,16 +137,19 @@ let throttle = 0;
         });
     }
 
-    document.getElementById('btnUp').addEventListener('touchstart', (e) => { e.preventDefault(); touch.up = true; });
-    document.getElementById('btnUp').addEventListener('touchend', (e) => { e.preventDefault(); touch.up = false; });
+    // Обработчики кнопок
+    const btnUp = document.getElementById('btnUp');
+    if (btnUp) {
+        btnUp.addEventListener('touchstart', (e) => { e.preventDefault(); touch.up = true; });
+        btnUp.addEventListener('touchend', (e) => { e.preventDefault(); touch.up = false; });
+    }
 
-
+    // Обработчики свайпов
     window.addEventListener('touchstart', (e) => {
         if (swipeTouchId === null) {
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const t = e.changedTouches[i];
                 if (t.target.closest('#controls')) continue; 
-                
                 swipeTouchId = t.identifier;
                 previousTouchX = t.pageX;
                 previousTouchY = t.pageY;
@@ -165,17 +167,13 @@ let throttle = 0;
                     break;
                 }
             }
-
             if (activeTouch) {
                 const touchX = activeTouch.pageX;
                 const touchY = activeTouch.pageY;
-                
                 const deltaX = touchX - previousTouchX;
                 const deltaY = -(touchY - previousTouchY);
-                
                 cameraVelocityY -= deltaX * TOUCH_SENSITIVITY * 0.5;
                 cameraVelocityX -= deltaY * TOUCH_SENSITIVITY * 0.5;
-                
                 previousTouchX = touchX;
                 previousTouchY = touchY;
             }
@@ -192,22 +190,6 @@ let throttle = 0;
             }
         }
     });
-
-    window.addEventListener('touchcancel', (e) => {
-        if (swipeTouchId !== null) {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                if (e.changedTouches[i].identifier === swipeTouchId) {
-                    swipeTouchId = null;
-                    break;
-                }
-            }
-        }
-    });
-    
-    const throttleSlider = document.getElementById('throttleSlider');
-throttleSlider.addEventListener('input', (e) => {
-    throttle = parseFloat(e.target.value);
-});
 
 
     // ==========================================
