@@ -89,10 +89,19 @@ window.addEventListener('deviceorientation', (e) => {
 
     import * as THREE from 'three';
 
+    // НАСТРОЙКИ СКОРОСТИ (Изменяйте эти значения для регулировки)
+    const MOVE_SPEED = 0.003;       // Было 0.01 (скорость ходьбы вперед/назад)
+    const FLY_SPEED = 0.005;       // Было 0.0025 (скорость взлета на пробел/Up)
+    const LOOK_SPEED = 0.002;       // Было 0.03 (скорость обзора стрелками)
+    const TURN_SPEED = 0.0005;      // Было 0.001 (скорость разворота корпуса на A/D)
+
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111111);
     
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    // Устанавливаем порядок вращения YXZ, чтобы избежать заклинивания осей (Gimbal Lock)
+    camera.rotation.order = 'YXZ';
+    
     const player = new THREE.Group();
     player.position.set(0, 2, 0);
     scene.add(player);
@@ -124,15 +133,8 @@ window.addEventListener('deviceorientation', (e) => {
     window.addEventListener('keydown', (e) => keys[e.code] = true);
     window.addEventListener('keyup', (e) => keys[e.code] = false);
     
-    // Поворот камеры мышью
+    // Поворот камеры мышью удален, оставлен только PointerLock по клику для фиксации мыши при желании
     document.body.addEventListener('click', () => document.body.requestPointerLock());
-    window.addEventListener('mousemove', (e) => {
-        if (document.pointerLockElement) {
-            camera.rotation.y -= e.movementX * 0.002;
-            camera.rotation.x -= e.movementY * 0.002;
-            camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
-        }
-    });
 
     let velocity = new THREE.Vector3(0, 0, 0);
     let angularVelocity = 0;
@@ -154,9 +156,21 @@ if (velocity.y <= 0 && intersects.length > 0 && intersects[0].distance < 2.1) {
     player.position.y = intersects[0].point.y + 2; // Ставим на объект
     velocity.y = 0; // Останавливаем падение
 }
+        // Управление обзором камеры с помощью стрелок клавиатуры
+        if (keys['ArrowLeft']) camera.rotation.y += LOOK_SPEED;
+        if (keys['ArrowRight']) camera.rotation.y -= LOOK_SPEED;
+        
+        // Используем rotateX для локального наклона без крена по Z
+        if (keys['ArrowUp']) camera.rotateX(LOOK_SPEED);
+        if (keys['ArrowDown']) camera.rotateX(-LOOK_SPEED);
+        
+        // Ограничение наклона камеры вверх/вниз и сброс случайного крена Z в 0
+        camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
+        camera.rotation.z = 0;
+
         // Поворот корпуса (A/D)
-        if (keys['KeyA']) angularVelocity += 0.001;
-        if (keys['KeyD']) angularVelocity -= 0.001;
+        if (keys['KeyA']) angularVelocity += TURN_SPEED;
+        if (keys['KeyD']) angularVelocity -= TURN_SPEED;
         player.rotation.y += angularVelocity;
         angularVelocity *= 0.92;
 
@@ -164,13 +178,13 @@ if (velocity.y <= 0 && intersects.length > 0 && intersects[0].distance < 2.1) {
         const totalRotationY = player.rotation.y + camera.rotation.y;
         const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, totalRotationY, 0));
         
-        if (keys['KeyW']) velocity.add(forward.clone().multiplyScalar(0.01));
-        if (keys['KeyS']) velocity.add(forward.clone().multiplyScalar(-0.01));
-        if (keys['Space']) velocity.y += 0.0025;
+        if (keys['KeyW']) velocity.add(forward.clone().multiplyScalar(MOVE_SPEED));
+        if (keys['KeyS']) velocity.add(forward.clone().multiplyScalar(-MOVE_SPEED));
+        if (keys['Space']) velocity.y += FLY_SPEED;
 
         // Внутри animate() добавить
-        if (touch.forward) velocity.add(forward.clone().multiplyScalar(0.01));
-        if (touch.up) velocity.y += 0.0025;
+        if (touch.forward) velocity.add(forward.clone().multiplyScalar(MOVE_SPEED));
+        if (touch.up) velocity.y += FLY_SPEED;
 
         velocity.y -= 0.0015;
         player.position.add(velocity);
