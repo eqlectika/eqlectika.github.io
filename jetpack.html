@@ -23,19 +23,7 @@ body {
     pointer-events: none;
     z-index: 3000;
 }
-.btn { 
-    width: 100px; 
-    height: 100px; 
-    background: rgba(255, 255, 255, 0.2); 
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    border-radius: 50%; 
-    color: white;
-    pointer-events: auto; 
-    touch-action: none;          
-    -webkit-user-select: none;   
-    user-select: none;           
-    -webkit-tap-highlight-color: transparent; 
-}
+
     @media (pointer: coarse) { #controls { display: flex; } }
     #logoLink {
     position: fixed;
@@ -44,16 +32,7 @@ body {
     transform: translateX(-50%);
     z-index: 1001; 
 }
-#btnForward {
-    display: none; /* Полностью убирает кнопку Go */
-}
 
-#btnUp {
-    background: transparent; /* Делает фон прозрачным */
-    border: none;            /* Убирает обводку */
-    color: white;            /* Оставляет надпись видимой */
-    font-size: 20px;         /* Опционально: можно увеличить шрифт */
-}
 
 #throttleArea {
     position: fixed;
@@ -84,43 +63,7 @@ body {
     }
 }
 
-#throttleSlider {
-    -webkit-appearance: slider-vertical;
-    appearance: slider-vertical;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    height: 50vh;          /* Высота до середины экрана */
-    width: 300px;          /* Ширина полосы 300px */
-    background: transparent;
-    z-index: 1000;
-    pointer-events: auto;
-    touch-action: none;
-    margin: 0;
-    opacity: 0.01; 
-}
 
-/* Принудительная ширина полоски */
-#throttleSlider::-webkit-slider-runnable-track {
-    width: 300px;
-    background: rgba(255, 255, 255, 0.2);
-}
-
-/* Ширина бегунка */
-#throttleSlider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 300px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.8);
-}
-
-/* 2. Если нужно, чтобы он был виден ТОЛЬКО на сенсоре, 
-   можно управлять прозрачностью через медиа-запрос */
-@media (pointer: coarse) {
-    #throttleSlider {
-        opacity: 0.01; /* Делаем видимым на тачскрине */
-    }
-}
 </style>
 </head>
 <body>
@@ -449,8 +392,7 @@ window.addEventListener('pointerup', (e) => {
         
         const isMovingForward = keys['KeyW'] || touch.forward;
 
-        const isFlyingUp = keys['Space'] || currentThrottle > 0;
-        
+const isFlyingUp = keys['Space'] || currentThrottle > 0.05; // 0.05 — это "мертвая зона", чтобы тяга не дрожала        
         const totalTurnSpeed = angularVelocity + cameraVelocityY;
 
         let targetRoll = 0;
