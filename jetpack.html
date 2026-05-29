@@ -55,14 +55,55 @@ body {
     font-size: 20px;         /* Опционально: можно увеличить шрифт */
 }
 #throttleSlider {
-    -webkit-appearance: slider-vertical; /* Для Safari и Chrome */
-    appearance: slider-vertical;         /* Стандарт */
-    width: 80px;                         /* Увеличили ширину для пальца */
+    -webkit-appearance: none; /* Убираем системный вид */
+    appearance: none;
+    width: 80px;              /* Ширина области для пальца */
     height: 50vh;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 20px;                 /* Скругление для удобства */
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 40px;      /* Скругление */
     pointer-events: auto;
-    margin: 0 auto;                      /* Центрирование внутри controls */
+    touch-action: none;
+}
+
+/* Стили для бегунка (ползунка) */
+#throttleSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 80px;              /* Ширина бегунка = ширине дорожки */
+    height: 40px;             /* Высота бегунка */
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 20px;
+    cursor: pointer;
+}
+    #throttleSlider::-moz-range-thumb {
+    width: 80px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+}
+    /* Скрываем слайдер по умолчанию для десктопов */
+#throttleSlider {
+    display: none;
+}
+
+/* 1. Скрываем слайдер полностью, но сохраняем его в DOM */
+#throttleSlider {
+    display: block; /* Убираем display: none */
+    position: fixed;
+    bottom: 50px;
+    left: 20px;
+    opacity: 0;     /* ДЕЛАЕМ НЕВИДИМЫМ */
+    z-index: 1000;
+    pointer-events: auto; /* ОСТАВЛЯЕМ ДОСТУПНЫМ ДЛЯ КАСАНИЙ */
+}
+
+/* 2. Если нужно, чтобы он был виден ТОЛЬКО на сенсоре, 
+   можно управлять прозрачностью через медиа-запрос */
+@media (pointer: coarse) {
+    #throttleSlider {
+        opacity: 1; /* Делаем видимым на тачскрине */
+    }
 }
 </style>
 </head>
@@ -85,10 +126,7 @@ throttleSlider.addEventListener('input', (e) => {
     currentThrottle = parseFloat(e.target.value);
 });
 
-throttleSlider.addEventListener('touchend', () => {
-    currentThrottle = 0.382;
-    throttleSlider.value = 0.382;
-});
+
     import * as THREE from 'three';
 
     // ==========================================
