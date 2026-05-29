@@ -120,19 +120,27 @@ let throttle = 0;
         screen.orientation.lock('landscape').catch(() => {});
     }
 
+
     // ==========================================
     // 3. ОБРАБОТЧИКИ СОБЫТИЙ И ИНТЕРФЕЙС
     // ==========================================
-window.addEventListener('click', () => {
-    if (!document.pointerLockElement) {
-        document.body.requestPointerLock();
-    }
-});
+    window.addEventListener('click', () => {
+        if (!document.pointerLockElement) {
+            document.body.requestPointerLock();
+        }
+    });
 
-    document.getElementById('btnForward').addEventListener('touchstart', () => { touch.forward = true; });
-    document.getElementById('btnForward').addEventListener('touchend', () => { touch.forward = false; });
-    document.getElementById('btnUp').addEventListener('touchstart', () => { touch.up = true; });
-    document.getElementById('btnUp').addEventListener('touchend', () => { touch.up = false; });
+    // Безопасная инициализация слайдера
+    const throttleSlider = document.getElementById('throttleSlider');
+    if (throttleSlider) {
+        throttleSlider.addEventListener('input', (e) => {
+            throttle = parseFloat(e.target.value);
+        });
+    }
+
+    document.getElementById('btnUp').addEventListener('touchstart', (e) => { e.preventDefault(); touch.up = true; });
+    document.getElementById('btnUp').addEventListener('touchend', (e) => { e.preventDefault(); touch.up = false; });
+
 
     window.addEventListener('touchstart', (e) => {
         if (swipeTouchId === null) {
