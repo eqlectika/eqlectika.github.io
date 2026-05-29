@@ -109,9 +109,17 @@ body {
     let currentThrottle = 0;
 const throttleSlider = document.getElementById('throttleSlider');
 
-throttleSlider.addEventListener('input', (e) => {
-    currentThrottle = parseFloat(e.target.value);
-});
+// Проверка: работает только если устройство поддерживает тач
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    throttleSlider.addEventListener('input', (e) => {
+        currentThrottle = parseFloat(e.target.value);
+    });
+    
+    throttleSlider.addEventListener('pointerup', () => {
+        currentThrottle = 0;
+        throttleSlider.value = 0;
+    });
+}
 
 
     import * as THREE from 'three';
