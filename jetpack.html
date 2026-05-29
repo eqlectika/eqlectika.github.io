@@ -68,7 +68,7 @@ body {
     pointer-events: auto;
     touch-action: none;
     margin: 0;
-    opacity: 0; 
+    opacity: 0.01; 
 }
 
 /* Принудительная ширина полоски */
@@ -89,7 +89,7 @@ body {
    можно управлять прозрачностью через медиа-запрос */
 @media (pointer: coarse) {
     #throttleSlider {
-        opacity: 0; /* Делаем видимым на тачскрине */
+        opacity: 0.01; /* Делаем видимым на тачскрине */
     }
 }
 </style>
@@ -109,29 +109,27 @@ body {
     let currentThrottle = 0;
 const throttleSlider = document.getElementById('throttleSlider');
 
-// 1. Сброс при отпускании (обязательно)
-throttleSlider.addEventListener('pointerup', () => {
-    currentThrottle = 0;
-    throttleSlider.value = 0;
-});
+// Обработка начала касания (мгновенная активация)
+throttleSlider.addEventListener('pointerdown', (e) => {
+    throttleSlider.setPointerCapture(e.pointerId); // Захват ввода
+    currentThrottle = parseFloat(e.target.value);
+}, { passive: false });
 
-// 2. Сброс при выходе пальца за пределы слайдера
-throttleSlider.addEventListener('pointerleave', () => {
-    currentThrottle = 0;
-    throttleSlider.value = 0;
-});
-
-// 3. Плавное управление через Pointer Events
+// Обработка движения
 throttleSlider.addEventListener('pointermove', (e) => {
-    if (e.buttons > 0) { // Если палец прижат
+    if (e.buttons > 0) {
         currentThrottle = parseFloat(e.target.value);
     }
 });
 
-// 4. Начало касания
-throttleSlider.addEventListener('pointerdown', (e) => {
-    currentThrottle = parseFloat(e.target.value);
-});
+// Сброс
+const resetThrottle = () => {
+    currentThrottle = 0;
+    throttleSlider.value = 0;
+};
+
+throttleSlider.addEventListener('pointerup', resetThrottle);
+throttleSlider.addEventListener('pointerleave', resetThrottle);
 
     import * as THREE from 'three';
 
