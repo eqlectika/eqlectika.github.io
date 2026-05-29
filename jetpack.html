@@ -57,15 +57,14 @@ body {
 
     #throttleArea {
     position: fixed;
-    bottom: 0;
+    top: 0;
     left: 0;
-    width: 300px; /* Ширина области касания */
-    height: 50vh;
-    background: rgba(255, 255, 255, 0.0); /* Временно для теста */
-    z-index: 9999; /* Чтобы быть поверх всего */
-    pointer-events: auto; /* ОБЯЗАТЕЛЬНО */
+    width: 150px; 
+    height: 100vh;
+    z-index: 2000; /* Поверх всего */
+    pointer-events: auto;
     touch-action: none;
-    z-index: 1000;
+    /* Уберите background, чтобы он был невидимым */
 }
 
 #throttleSlider {
@@ -118,24 +117,24 @@ body {
   { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
 </script>
 <script type="module">
-    let currentThrottle = 0;
+// --- БЛОК 1: Управление тягой ---
+let currentThrottle = 0;
 const throttleArea = document.getElementById('throttleArea');
-
-throttleArea.addEventListener('pointermove', (e) => {
-    if (e.buttons > 0) {
-        // Вычисляем значение от 0 до 1 в зависимости от высоты касания
-        const rect = throttleArea.getBoundingClientRect();
-        let val = 1 - ((e.clientY - rect.top) / rect.height);
-        currentThrottle = Math.max(0, Math.min(1, val));
-    }
-}, { passive: false });
 
 throttleArea.addEventListener('pointerdown', (e) => {
     throttleArea.setPointerCapture(e.pointerId);
     const rect = throttleArea.getBoundingClientRect();
     let val = 1 - ((e.clientY - rect.top) / rect.height);
     currentThrottle = Math.max(0, Math.min(1, val));
-});
+}, { passive: false });
+
+throttleArea.addEventListener('pointermove', (e) => {
+    if (e.buttons > 0) {
+        const rect = throttleArea.getBoundingClientRect();
+        let val = 1 - ((e.clientY - rect.top) / rect.height);
+        currentThrottle = Math.max(0, Math.min(1, val));
+    }
+}, { passive: false });
 
 throttleArea.addEventListener('pointerup', () => currentThrottle = 0);
 throttleArea.addEventListener('pointerleave', () => currentThrottle = 0);
@@ -200,6 +199,9 @@ window.addEventListener('click', () => {
     }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
+        for (let i = 0; i < e.touches.length; i++) {
+            if (e.touches[i].pageX < 150) return; 
+        }
         if (swipeTouchId !== null) {
             let activeTouch = null;
             for (let i = 0; i < e.touches.length; i++) {
