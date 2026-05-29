@@ -74,12 +74,17 @@ document.getElementById('overlay').addEventListener('click', async () => {
     document.body.requestPointerLock();
 });
 
-    // НАСТРОЙКИ СКОРОСТИ
-    const MOVE_SPEED = 0.003;       
+    // НАСТРОЙКИ СКОРОСТИ И ИНЕРЦИИ
+    const MOVE_SPEED = 0.002;       
     const FLY_SPEED = 0.003;       
-    const LOOK_SPEED = 0.003;       
-    const TURN_SPEED = 0.001;      
+    const LOOK_SPEED = 0.0005;       
+    const TURN_SPEED = 0.0002;      
     const TOUCH_SENSITIVITY = 0.005; 
+    
+    // Коэффициенты затухания (чем ближе к 1, тем дольше инерция)
+    const DAMPING_LOOK = 0.96; 
+    const DAMPING_TURN = 0.96;
+    const DAMPING_MOVE = 0.98;
 
     // Состояние кнопок
     const touch = { forward: false, up: false };
@@ -92,6 +97,10 @@ document.getElementById('overlay').addEventListener('click', async () => {
     let previousTouchX = 0;
     let previousTouchY = 0;
     let swipeTouchId = null; // Идентификатор пальца, который осуществляет обзор
+
+    // Переменные инерции для обзора камеры (мышь/свайпы/стрелки)
+    let cameraVelocityY = 0; // Вращение по горизонтали
+    let cameraVelocityX = 0; // Вращение по вертикали
 
     // Обработка начала касания (кроме кнопок управления)
     window.addEventListener('touchstart', (e) => {
@@ -108,7 +117,7 @@ document.getElementById('overlay').addEventListener('click', async () => {
         }
     }, { passive: false });
 
-    // Обработка движения пальца (Touch-Scroll обзор)
+    // Обработка движения пальца (Touch-Scroll обзор с накоплением инерции)
     window.addEventListener('touchmove', (e) => {
         if (swipeTouchId !== null) {
             let activeTouch = null;
@@ -126,11 +135,9 @@ document.getElementById('overlay').addEventListener('click', async () => {
                 const deltaX = touchX - previousTouchX;
                 const deltaY = touchY - previousTouchY;
                 
-                camera.rotation.y -= deltaX * TOUCH_SENSITIVITY;
-                camera.rotateX(-deltaY * TOUCH_SENSITIVITY);
-                
-                camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
-                camera.rotation.z = 0;
+                // Вместо прямого изменения угла добавляем импульс к скорости вращения
+                cameraVelocityY -= deltaX * TOUCH_SENSITIVITY * 0.5;
+                cameraVelocityX -= deltaY * TOUCH_SENSITIVITY * 0.5;
                 
                 previousTouchX = touchX;
                 previousTouchY = touchY;
@@ -212,22 +219,33 @@ document.getElementById('overlay').addEventListener('click', async () => {
             velocity.y = 0; 
         }
 
-        if (keys['ArrowLeft']) camera.rotation.y += LOOK_SPEED;
-        if (keys['ArrowRight']) camera.rotation.y -= LOOK_SPEED;
-        if (keys['ArrowUp']) camera.rotateX(-LOOK_SPEED);
-        if (keys['ArrowDown']) camera.rotateX(LOOK_SPEED);
+        // 1. ИНЕРЦИОННЫЙ ОБЗОР КЛАВИАТУРОЙ (Стрелки добавляют скорость вращения)
+        if (keys['ArrowLeft']) cameraVelocityY += LOOK_SPEED * 0.2;
+        if (keys['ArrowRight']) cameraVelocityY -= LOOK_SPEED * 0.2;
+        if (keys['ArrowUp']) cameraVelocityX -= LOOK_SPEED * 0.2;
+        if (keys['ArrowDown']) cameraVelocityX += LOOK_SPEED * 0.2;
+        
+        // Применение накопленной скорости вращения к камере
+        camera.rotation.y += cameraVelocityY;
+        camera.rotateX(cameraVelocityX);
+        
+        // Гашение скорости вращения камеры (инерция обзора)
+        cameraVelocityY *= DAMPING_LOOK;
+        cameraVelocityX *= DAMPING_LOOK;
         
         camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
         camera.rotation.z = 0;
 
+        // 2. ИНЕРЦИОННЫЙ ПОВОРОТ КОРПУСА (A/D)
         if (keys['KeyA']) angularVelocity += TURN_SPEED;
         if (keys['KeyD']) angularVelocity -= TURN_SPEED;
         player.rotation.y += angularVelocity;
-        angularVelocity *= 0.92;
+        angularVelocity *= DAMPING_TURN; // Плавное затухание поворота тела
 
         const totalRotationY = player.rotation.y + camera.rotation.y;
         const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, totalRotationY, 0));
         
+        // 3. ИНЕРЦИОННОЕ ПЕРЕМЕЩЕНИЕ (Клавиатура + Тач)
         if (keys['KeyW']) velocity.add(forward.clone().multiplyScalar(MOVE_SPEED));
         if (keys['KeyS']) velocity.add(forward.clone().multiplyScalar(-MOVE_SPEED));
         if (keys['Space']) velocity.y += FLY_SPEED;
@@ -235,9 +253,12 @@ document.getElementById('overlay').addEventListener('click', async () => {
         if (touch.forward) velocity.add(forward.clone().multiplyScalar(MOVE_SPEED));
         if (touch.up) velocity.y += FLY_SPEED;
 
+        // Гравитация
         velocity.y -= 0.0015;
         player.position.add(velocity);
-        velocity.multiplyScalar(0.97);
+        
+        // Плавное гашение линейной скорости движения
+        velocity.multiplyScalar(DAMPING_MOVE);
 
         if (player.position.y < 2) {
             player.position.y = 2;
