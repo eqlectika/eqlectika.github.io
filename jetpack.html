@@ -59,7 +59,7 @@ if (screen.orientation && screen.orientation.lock) {
     screen.orientation.lock('landscape').catch(() => {});
 }
 document.getElementById('overlay').addEventListener('click', async () => {
-    // 1. Запрос разрешения для iOS
+    // 1. Запрос разрешения для iOS (оставлен для совместимости, хотя для touch не нужен)
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
         const response = await DeviceOrientationEvent.requestPermission();
         if (response !== 'granted') return;
@@ -74,26 +74,61 @@ document.getElementById('overlay').addEventListener('click', async () => {
 
 // Состояние кнопок
 const touch = { forward: false, up: false };
-document.getElementById('btnForward').addEventListener('touchstart', () => touch.forward = true);
-document.getElementById('btnForward').addEventListener('touchend', () => touch.forward = false);
-document.getElementById('btnUp').addEventListener('touchstart', () => touch.up = true);
-document.getElementById('btnUp').addEventListener('touchend', () => touch.up = false);
+document.getElementById('btnForward').addEventListener('touchstart', (e) => { e.stopPropagation(); touch.forward = true; });
+document.getElementById('btnForward').addEventListener('touchend', (e) => { e.stopPropagation(); touch.forward = false; });
+document.getElementById('btnUp').addEventListener('touchstart', (e) => { e.stopPropagation(); touch.up = true; });
+document.getElementById('btnUp').addEventListener('touchend', (e) => { e.stopPropagation(); touch.up = false; });
 
-// Гироскоп
-window.addEventListener('deviceorientation', (e) => {
-    // В ландшафтном режиме gamma становится наклоном вверх/вниз, 
-    // а beta — поворотом влево/вправо
-    camera.rotation.x = THREE.MathUtils.degToRad(e.gamma) / 2;
-    camera.rotation.y = THREE.MathUtils.degToRad(e.beta - 90) / 2;
+// Переменные для хранения координат тача
+let previousTouchX = 0;
+let previousTouchY = 0;
+let isTouching = false;
+const TOUCH_SENSITIVITY = 0.005; // Чувствительность свайпов
+
+// Обработка начала касания (кроме кнопок управления)
+window.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+        previousTouchX = e.touches[0].pageX;
+        previousTouchY = e.touches[0].pageY;
+        isTouching = true;
+    }
+}, { passive: false });
+
+// Обработка движения пальца (Touch-Scroll обзор)
+window.addEventListener('touchmove', (e) => {
+    if (isTouching && e.touches.length === 1) {
+        const touchX = e.touches[0].pageX;
+        const touchY = e.touches[0].pageY;
+        
+        const deltaX = touchX - previousTouchX;
+        const deltaY = touchY - previousTouchY;
+        
+        // Влево-вправо как есть (стандартный поворот)
+        camera.rotation.y -= deltaX * TOUCH_SENSITIVITY;
+        
+        // Вверх-вниз инвертировано (свайп вверх наклоняет камеру вниз)
+        camera.rotateX(-deltaY * TOUCH_SENSITIVITY);
+        
+        // Коррекция углов
+        camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
+        camera.rotation.z = 0;
+        
+        previousTouchX = touchX;
+        previousTouchY = touchY;
+    }
+}, { passive: false });
+
+window.addEventListener('touchend', () => {
+    isTouching = false;
 });
 
     import * as THREE from 'three';
 
-    // НАСТРОЙКИ СКОРОСТИ (Изменяйте эти значения для регулировки)
-    const MOVE_SPEED = 0.003;       // Было 0.01 (скорость ходьбы вперед/назад)
-    const FLY_SPEED = 0.005;       // Было 0.0025 (скорость взлета на пробел/Up)
-    const LOOK_SPEED = 0.002;       // Было 0.03 (скорость обзора стрелками)
-    const TURN_SPEED = 0.0005;      // Было 0.001 (скорость разворота корпуса на A/D)
+    // НАСТРОЙКИ СКОРОСТИ
+    const MOVE_SPEED = 0.003;       
+    const FLY_SPEED = 0.003;       
+    const LOOK_SPEED = 0.003;       
+    const TURN_SPEED = 0.001;      
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x111111);
@@ -160,7 +195,7 @@ if (velocity.y <= 0 && intersects.length > 0 && intersects[0].distance < 2.1) {
         if (keys['ArrowLeft']) camera.rotation.y += LOOK_SPEED;
         if (keys['ArrowRight']) camera.rotation.y -= LOOK_SPEED;
         
-        // Используем rotateX для локального наклона без крена по Z
+        // НАПРАВЛЕНИЕ ИЗМЕНЕНО: теперь Стрелка Вверх наклоняет вниз (-), а Стрелка Вниз — вверх (+)
         if (keys['ArrowUp']) camera.rotateX(-LOOK_SPEED);
         if (keys['ArrowDown']) camera.rotateX(LOOK_SPEED);
         
