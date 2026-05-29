@@ -82,6 +82,8 @@ body {
     const TURN_SPEED = 0.0005;      
     const TOUCH_SENSITIVITY = 0.001; 
     
+    const GRAVITY = 0.005; // Чем выше значение, тем тяжелее объект
+    
     const DAMPING_LOOK = 0.96; 
     const DAMPING_TURN = 0.96;
     const DAMPING_MOVE = 0.98;
@@ -426,11 +428,13 @@ window.addEventListener('click', () => {
         if (keys['KeyS']) {
             velocity.add(forward.clone().multiplyScalar(-MOVE_SPEED)); 
         }
-        if (isFlyingUp) {
-            velocity.y += currentFlySpeed;
-        }
+        // Внутри animate()
+if (isFlyingUp) {
+    velocity.y += currentFlySpeed;
+} else {
+    velocity.y -= GRAVITY; // Гравитация тянет вниз, только если не летим
+}
 
-        velocity.y -= 0.003;
         player.position.add(velocity);
         
         velocity.multiplyScalar(DAMPING_MOVE);
