@@ -109,18 +109,29 @@ body {
     let currentThrottle = 0;
 const throttleSlider = document.getElementById('throttleSlider');
 
-// Проверка: работает только если устройство поддерживает тач
-if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-    throttleSlider.addEventListener('input', (e) => {
-        currentThrottle = parseFloat(e.target.value);
-    });
-    
-    throttleSlider.addEventListener('pointerup', () => {
-        currentThrottle = 0;
-        throttleSlider.value = 0;
-    });
-}
+// 1. Сброс при отпускании (обязательно)
+throttleSlider.addEventListener('pointerup', () => {
+    currentThrottle = 0;
+    throttleSlider.value = 0;
+});
 
+// 2. Сброс при выходе пальца за пределы слайдера
+throttleSlider.addEventListener('pointerleave', () => {
+    currentThrottle = 0;
+    throttleSlider.value = 0;
+});
+
+// 3. Плавное управление через Pointer Events
+throttleSlider.addEventListener('pointermove', (e) => {
+    if (e.buttons > 0) { // Если палец прижат
+        currentThrottle = parseFloat(e.target.value);
+    }
+});
+
+// 4. Начало касания
+throttleSlider.addEventListener('pointerdown', (e) => {
+    currentThrottle = parseFloat(e.target.value);
+});
 
     import * as THREE from 'three';
 
@@ -478,14 +489,15 @@ window.addEventListener('click', () => {
         }
 
         // ЕДИНСТВЕННЫЙ БЛОК РАСЧЕТА ВЕРТИКАЛЬНОЙ СКОРОСТИ
-        if (isFlyingUp) {
-            // Если тяга 0 (слайдер внизу), используем стандартный FLY_SPEED, 
-            // иначе умножаем на текущее значение слайдера
-            let thrust = currentThrottle > 0 ? (currentThrottle * 5) : 1.0;
-            velocity.y += currentFlySpeed * thrust;
-        } else {
-            velocity.y -= GRAVITY;
-        }
+if (isFlyingUp) {
+    // Если нажат пробел, используем полную мощность (1.0).
+    // Если тянет слайдер, используем его значение.
+    let thrust = keys['Space'] ? 1.0 : (currentThrottle * 5);
+    velocity.y += currentFlySpeed * thrust;
+} else {
+    // Если ничего не нажато, просто применяем гравитацию
+    velocity.y -= GRAVITY;
+}
 
         player.position.add(velocity);
         
