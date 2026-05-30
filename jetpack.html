@@ -388,7 +388,8 @@ const keys = {};
             velocity.y = 0; 
         }
 
-
+        if (keys['KeyA']) cameraVelocityY += LOOK_SPEED * 0.2;
+        if (keys['KeyD']) cameraVelocityY -= LOOK_SPEED * 0.2;
         if (keys['ArrowUp']) cameraVelocityX -= LOOK_SPEED * 0.2;
         if (keys['ArrowDown']) cameraVelocityX += LOOK_SPEED * 0.2;
         
@@ -408,8 +409,8 @@ const keys = {};
         const totalRotationY = player.rotation.y + camera.rotation.y;
         const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, totalRotationY, 0));
         
-const isMovingForward = touch.forward;
-        
+        const isMovingForward = keys['KeyW'] || touch.forward;
+
 const isFlyingUp = keys['Space'] || currentThrottle > 5; // 0.05 — это "мертвая зона", чтобы тяга не дрожала        
         const totalTurnSpeed = angularVelocity + cameraVelocityY;
 
@@ -423,9 +424,9 @@ const isFlyingUp = keys['Space'] || currentThrottle > 5; // 0.05 — это "м�
         let addedForwardSpeed = 0;
         let currentFlySpeed = FLY_SPEED;
 
-if (touch.forward) {
-    addedForwardSpeed += MOVE_SPEED;
-}
+        if (keys['KeyW'] || touch.forward) {
+            addedForwardSpeed += MOVE_SPEED;
+        }
 
         if (camera.rotation.x < 0) {
             const pitchFactor = Math.abs(camera.rotation.x); 
