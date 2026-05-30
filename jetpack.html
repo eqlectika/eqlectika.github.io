@@ -346,9 +346,27 @@ window.addEventListener('pointerup', (e) => {
         scene.add(bridgeGroup);
     }
 
-    const keys = {};
-    window.addEventListener('keydown', (e) => keys[e.code] = true);
-    window.addEventListener('keyup', (e) => keys[e.code] = false);
+const keys = {};
+    let lastSpaceTime = 0;
+    let superThrust = false;
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !keys['Space']) { // Срабатывает строго в момент ОДНОКРАТНОГО нажатия
+            const currentTime = performance.now();
+            if (currentTime - lastSpaceTime < 250) { // Интервал двойного клика — 250мс
+                superThrust = true;
+            }
+            lastSpaceTime = currentTime;
+        }
+        keys[e.code] = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+        if (e.code === 'Space') {
+            superThrust = false; // Сбрасываем множитель, когда Space отпущен
+        }
+    });
     
 
     let velocity = new THREE.Vector3(0, 0, 0);
@@ -425,11 +443,13 @@ const isFlyingUp = keys['Space'] || currentThrottle > 0.05; // 0.05 — это "
             velocity.add(forward.clone().multiplyScalar(-MOVE_SPEED)); 
         }
 
-        // ЕДИНСТВЕННЫЙ БЛОК РАСЧЕТА ВЕРТИКАЛЬНОЙ СКОРОСТИ
+// ЕДИНСТВЕННЫЙ БЛОК РАСЧЕТА ВЕРТИКАЛЬНОЙ СКОРОСТИ
         if (keys['Space']) {
-            velocity.y += currentFlySpeed; // Пробел — максимальный взлет
+            // Если зафиксирован двойной клик, умножаем FLY_SPEED на 2.5 (или любой нужный вам коэффициент)
+            const spaceMultiplier = superThrust ? 2.5 : 1.0; 
+            velocity.y += currentFlySpeed * spaceMultiplier; 
         } else {
-            //currentThrottle плавно добавляет скорость. При значении ~0.65 он уравновесит GRAVITY (0.02 * 0.65 = 0.013)
+            // currentThrottle плавно добавляет скорость. При значении ~0.65 он уравновесит GRAVITY
             velocity.y += currentFlySpeed * (currentThrottle * 2.0); 
         }
 
