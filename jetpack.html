@@ -426,15 +426,15 @@ const isFlyingUp = keys['Space'] || currentThrottle > 0.05; // 0.05 — это "
         }
 
         // ЕДИНСТВЕННЫЙ БЛОК РАСЧЕТА ВЕРТИКАЛЬНОЙ СКОРОСТИ
-if (isFlyingUp) {
-    // Если нажат пробел, используем полную мощность (1.0).
-    // Если тянет слайдер, используем его значение.
-    let thrust = keys['Space'] ? 1.0 : (currentThrottle * 5);
-    velocity.y += currentFlySpeed * thrust;
-} else {
-    // Если ничего не нажато, просто применяем гравитацию
-    velocity.y -= GRAVITY;
-}
+        if (keys['Space']) {
+            velocity.y += currentFlySpeed; // Пробел — максимальный взлет
+        } else {
+            //currentThrottle плавно добавляет скорость. При значении ~0.65 он уравновесит GRAVITY (0.02 * 0.65 = 0.013)
+            velocity.y += currentFlySpeed * (currentThrottle * 2.0); 
+        }
+
+        // Гравитация работает ВСЕГДА, утягивая объект вниз каждый кадр
+        velocity.y -= GRAVITY;
 
         player.position.add(velocity);
         
