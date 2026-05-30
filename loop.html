@@ -73,10 +73,19 @@ canvas { display: block; }
   { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
 </script>
 <script type="module">
-// --- БЛОК 1: Управление тягой ---
+// --- БЛОК 1: Управление тягой и наклоном ---
 let currentThrottle = 0;
-const throttleArea = document.getElementById('throttleArea');
+let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
 
+const throttleArea = document.getElementById('throttleArea');
+const controlArea = document.getElementById('controlArea');
+
+const activeTouches = {
+    throttle: null,
+    control: null
+};
+
+// События для Throttle
 throttleArea.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse') return;
     activeTouches.throttle = e.pointerId;
@@ -89,9 +98,30 @@ function updateThrottle(e) {
     currentThrottle = Math.max(0, Math.min(1, val));
 }
 
+// События для ControlArea (Правый джойстик)
+controlArea.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    activeTouches.control = e.pointerId;
+    touchJoystick.active = true;
+    touchJoystick.startX = e.clientX;
+    touchJoystick.startY = e.clientY;
+    touchJoystick.moveX = 0;
+    touchJoystick.moveY = 0;
+}, { passive: false });
+
 window.addEventListener('pointermove', (e) => {
     if (e.pointerId === activeTouches.throttle) {
         updateThrottle(e);
+    }
+    if (e.pointerId === activeTouches.control && touchJoystick.active) {
+        // Вычисляем смещение пальца от точки нажатия
+        const maxDistance = 100; // Радиус зоны чувствительности виртуального стика
+        let diffX = e.clientX - touchJoystick.startX;
+        let diffY = e.clientY - touchJoystick.startY;
+        
+        // Ограничиваем максимальное значение от -1 до 1
+        touchJoystick.moveX = Math.max(-1, Math.min(1, diffX / maxDistance));
+        touchJoystick.moveY = Math.max(-1, Math.min(1, diffY / maxDistance));
     }
 });
 
@@ -99,6 +129,12 @@ window.addEventListener('pointerup', (e) => {
     if (e.pointerId === activeTouches.throttle) {
         activeTouches.throttle = null;
         currentThrottle = 0;
+    }
+    if (e.pointerId === activeTouches.control) {
+        activeTouches.control = null;
+        touchJoystick.active = false;
+        touchJoystick.moveX = 0;
+        touchJoystick.moveY = 0;
     }
 });
 
@@ -109,6 +145,7 @@ window.addEventListener('pointerup', (e) => {
     // ==========================================
     const FLY_SPEED = 0.0171;       
     const TURN_SPEED = 0.0005;      
+    const TOUCH_TURN_SPEED = 0.0008; // Коэффициент скорости для тач-контроллера
     
     const GRAVITY = 0.013; 
     
@@ -121,11 +158,6 @@ window.addEventListener('pointerup', (e) => {
     if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('landscape').catch(() => {});
     }
-    
-const activeTouches = {
-    throttle: null,
-    control: null
-};
 
     // ==========================================
     // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
@@ -134,13 +166,11 @@ const activeTouches = {
     scene.background = new THREE.Color(0x0a0a12); 
     
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
-    // Камера жестко смотрит вдоль локальной оси X объекта
     camera.rotation.set(0, Math.PI / 2, 0);
     
     const player = new THREE.Group();
     player.position.set(0, 2, 0);
-    // Порядок вращения изменен на ZXY для корректного наклона в обеих плоскостях взора
-    player.rotation.order = 'XZY';
+    player.rotation.order = 'ZXY';
     scene.add(player);
     player.add(camera);
 
@@ -340,14 +370,19 @@ const keys = {};
             velocity.y = 0; 
         }
 
-        // Изменение углов тяги объекта стрелками относительно линии взора
-        // ArrowLeft/Right теперь наклоняют объект влево/вправо (вокруг локальной оси X)
+        // --- УПРАВЛЕНИЕ КЛАВИАТУРОЙ ---
         if (keys['ArrowLeft']) angularVelocityX += TURN_SPEED;
         if (keys['ArrowRight']) angularVelocityX -= TURN_SPEED;
-        
-        // ArrowUp/Down наклоняют объект вперед/назад (вокруг локальной оси Z)
         if (keys['ArrowUp']) angularVelocityZ += TURN_SPEED;
         if (keys['ArrowDown']) angularVelocityZ -= TURN_SPEED;
+
+        // --- УПРАВЛЕНИЕ С ТАЧ-СКРИНА (controlArea) ---
+        if (touchJoystick.active) {
+            // Движение по горизонтали (X) влияет на крен/поворот по оси X
+            angularVelocityX -= touchJoystick.moveX * TOUCH_TURN_SPEED;
+            // Движение по вертикали (Y) влияет на наклон вперед/назад по оси Z
+            angularVelocityZ -= touchJoystick.moveY * TOUCH_TURN_SPEED;
+        }
 
         player.rotation.x += angularVelocityX;
         player.rotation.z += angularVelocityZ;
