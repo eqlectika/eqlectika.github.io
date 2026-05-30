@@ -10,22 +10,22 @@ body {
     margin: 0; 
     overflow: hidden; 
     touch-action: none; 
-    user-select: none; /* <-- ДОБАВИТЬ ЭТУ СТРОКУ */
-    -webkit-user-select: none; /* Для Safari */
+    user-select: none;
+    -webkit-user-select: none;
 }
-    canvas { display: block; }
+canvas { display: block; }
 #controls {
     position: fixed;
     bottom: 50px;
-    left: 20px;                          /* Сдвинули влево */
+    left: 20px;                      
     display: flex;
     justify-content: flex-start;
     pointer-events: none;
     z-index: 3000;
 }
 
-    @media (pointer: coarse) { #controls { display: flex; } }
-    #logoLink {
+@media (pointer: coarse) { #controls { display: flex; } }
+#logoLink {
     position: fixed;
     bottom: 10px;
     left: 50%;
@@ -34,37 +34,33 @@ body {
     pointer-events: auto;
 }
 
-
 #throttleArea {
     position: fixed;
     top: 0;
     left: 0;
-    width: 50vw; /* Ровно левая половина */
+    width: 50vw;
     height: 100vh;
     z-index: 2000;
     pointer-events: auto;
     touch-action: none;
 }
 
-/* Добавьте зону для управления камерой */
 #controlArea {
     position: fixed;
     top: 0;
     right: 0;
-    width: 50vw; /* Ровно правая половина */
+    width: 50vw;
     height: 100vh;
     z-index: 2000;
     pointer-events: auto;
     touch-action: none;
 }
 
-    @media (pointer: fine) {
+@media (pointer: fine) {
     #throttleArea, #controlArea {
         pointer-events: none;
     }
 }
-
-
 </style>
 </head>
 <body>
@@ -83,7 +79,7 @@ const throttleArea = document.getElementById('throttleArea');
 
 throttleArea.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse') return;
-    activeTouches.throttle = e.pointerId; // Запоминаем ID пальца
+    activeTouches.throttle = e.pointerId;
     updateThrottle(e);
 }, { passive: false });
 
@@ -93,7 +89,6 @@ function updateThrottle(e) {
     currentThrottle = Math.max(0, Math.min(1, val));
 }
 
-// Слушаем pointermove на window, чтобы не терять контакт
 window.addEventListener('pointermove', (e) => {
     if (e.pointerId === activeTouches.throttle) {
         updateThrottle(e);
@@ -112,32 +107,17 @@ window.addEventListener('pointerup', (e) => {
     // ==========================================
     // 1. НАСТРОЙКИ СКОРОСТИ, ИНЕРЦИИ И КРЕНА
     // ==========================================
-    const MOVE_SPEED = 0.005;       
     const FLY_SPEED = 0.0171;       
-    const LOOK_SPEED = 0.001;       
     const TURN_SPEED = 0.0005;      
-    const TOUCH_SENSITIVITY = 0.001; 
     
-    const GRAVITY = 0.013; // Чем выше значение, тем тяжелее объект
+    const GRAVITY = 0.013; 
     
-    const DAMPING_LOOK = 0.96; 
     const DAMPING_TURN = 0.96;
     const DAMPING_MOVE = 0.98;
-
-    const ROLL_MAX = 0.35;        
-    const ROLL_SPEED = 0.1;       
 
     // ==========================================
     // 2. ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННЫХ И СОСТОЯНИЙ
     // ==========================================
-    const touch = { forward: false, up: false };
-    let previousTouchX = 0;
-    let previousTouchY = 0;
-    let swipeTouchId = null; 
-
-    let cameraVelocityY = 0; 
-    let cameraVelocityX = 0; 
-
     if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('landscape').catch(() => {});
     }
@@ -146,38 +126,7 @@ const activeTouches = {
     throttle: null,
     control: null
 };
-    // ==========================================
-    // 3. ОБРАБОТЧИКИ СОБЫТИЙ И ИНТЕРФЕЙС
-    // ==========================================
-// --- ИНИЦИАЛИЗАЦИЯ ЗОН УПРАВЛЕНИЯ ---
-const controlArea = document.getElementById('controlArea');
 
-// 1. Поворот камеры (ПРАВАЯ СТОРОНА)
-controlArea.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse') return;
-    activeTouches.control = e.pointerId;
-    previousTouchX = e.pageX;
-    previousTouchY = e.pageY;
-});
-
-window.addEventListener('pointermove', (e) => {
-    if (e.pointerId === activeTouches.control) {
-        const deltaX = e.pageX - previousTouchX;
-        const deltaY = -(e.pageY - previousTouchY);
-        
-        cameraVelocityY -= deltaX * TOUCH_SENSITIVITY * 0.5;
-        cameraVelocityX -= deltaY * TOUCH_SENSITIVITY * 0.5;
-        
-        previousTouchX = e.pageX;
-        previousTouchY = e.pageY;
-    }
-});
-
-window.addEventListener('pointerup', (e) => {
-    if (e.pointerId === activeTouches.control) {
-        activeTouches.control = null;
-    }
-});
     // ==========================================
     // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
     // ==========================================
@@ -185,10 +134,13 @@ window.addEventListener('pointerup', (e) => {
     scene.background = new THREE.Color(0x0a0a12); 
     
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
-    camera.rotation.order = 'YXZ';
+    // Камера жестко смотрит вдоль локальной оси X объекта
+    camera.rotation.set(0, Math.PI / 2, 0);
     
     const player = new THREE.Group();
     player.position.set(0, 2, 0);
+    // Порядок вращения изменен на ZXY для корректного наклона в обеих плоскостях взора
+    player.rotation.order = 'ZXY';
     scene.add(player);
     player.add(camera);
 
@@ -205,7 +157,6 @@ window.addEventListener('pointerup', (e) => {
     backLight.position.set(-50, 100, -50); 
     scene.add(backLight);
 
-    // Вектор коллизий и зона генерации объектов мира
     const collidableObjects = [];
     const WORLD_SIZE = 800; 
 
@@ -215,7 +166,7 @@ window.addEventListener('pointerup', (e) => {
     }
 
     // ==========================================
-    // ОПТИМИЗИРОВАННАЯ БЕСКОНЕЧНАЯ СЕТКА
+    // БЕСКОНЕЧНАЯ СЕТКА
     // ==========================================
     const gridGeometry = new THREE.PlaneGeometry(10000, 10000);
     const gridMaterial = new THREE.ShaderMaterial({
@@ -351,9 +302,9 @@ const keys = {};
     let superThrust = false;
 
     window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && !keys['Space']) { // Срабатывает строго в момент ОДНОКРАТНОГО нажатия
+        if (e.code === 'Space' && !keys['Space']) { 
             const currentTime = performance.now();
-            if (currentTime - lastSpaceTime < 250) { // Интервал двойного клика — 250мс
+            if (currentTime - lastSpaceTime < 250) { 
                 superThrust = true;
             }
             lastSpaceTime = currentTime;
@@ -364,13 +315,14 @@ const keys = {};
     window.addEventListener('keyup', (e) => {
         keys[e.code] = false;
         if (e.code === 'Space') {
-            superThrust = false; // Сбрасываем множитель, когда Space отпущен
+            superThrust = false; 
         }
     });
     
 
     let velocity = new THREE.Vector3(0, 0, 0);
-    let angularVelocity = 0;
+    let angularVelocityX = 0;
+    let angularVelocityZ = 0;
 
     // ==========================================
     // 5. ИГРОВОЙ ЦИКЛ ANIMATE
@@ -388,75 +340,43 @@ const keys = {};
             velocity.y = 0; 
         }
 
-        if (keys['KeyA']) cameraVelocityY += LOOK_SPEED * 0.2;
-        if (keys['KeyD']) cameraVelocityY -= LOOK_SPEED * 0.2;
-        if (keys['ArrowUp']) cameraVelocityX -= LOOK_SPEED * 0.2;
-        if (keys['ArrowDown']) cameraVelocityX += LOOK_SPEED * 0.2;
+        // Изменение углов тяги объекта стрелками относительно линии взора
+        // ArrowLeft/Right теперь наклоняют объект влево/вправо (вокруг локальной оси X)
+        if (keys['ArrowLeft']) angularVelocityX += TURN_SPEED;
+        if (keys['ArrowRight']) angularVelocityX -= TURN_SPEED;
         
-        camera.rotation.y += cameraVelocityY;
-        camera.rotation.x += cameraVelocityX; 
+        // ArrowUp/Down наклоняют объект вперед/назад (вокруг локальной оси Z)
+        if (keys['ArrowUp']) angularVelocityZ += TURN_SPEED;
+        if (keys['ArrowDown']) angularVelocityZ -= TURN_SPEED;
+
+        player.rotation.x += angularVelocityX;
+        player.rotation.z += angularVelocityZ;
         
-        cameraVelocityY *= DAMPING_LOOK;
-        cameraVelocityX *= DAMPING_LOOK;
-        
+        angularVelocityX *= DAMPING_TURN;
+        angularVelocityZ *= DAMPING_TURN;
 
-        if (keys['ArrowLeft']) angularVelocity += TURN_SPEED;
-        if (keys['ArrowRight']) angularVelocity -= TURN_SPEED;
-        player.rotation.y += angularVelocity;
-        angularVelocity *= DAMPING_TURN;
-
-        const totalRotationY = player.rotation.y + camera.rotation.y;
-        const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, totalRotationY, 0));
-        
-        const isMovingForward = keys['KeyW'] || touch.forward;
-
-const isFlyingUp = keys['Space'] || currentThrottle > 0.05; // 0.05 — это "мертвая зона", чтобы тяга не дрожала        
-        const totalTurnSpeed = angularVelocity + cameraVelocityY;
-
-        let targetRoll = 0;
-        if (isMovingForward || (isFlyingUp && camera.rotation.x < 0)) {
-            targetRoll = totalTurnSpeed * 15; 
-            targetRoll = Math.max(-ROLL_MAX, Math.min(ROLL_MAX, targetRoll));
-        }
-        camera.rotation.z += (targetRoll - camera.rotation.z) * ROLL_SPEED;
-
-        let addedForwardSpeed = 0;
         let currentFlySpeed = FLY_SPEED;
 
-        if (keys['KeyW'] || touch.forward) {
-            addedForwardSpeed += MOVE_SPEED;
-        }
-
-        if (camera.rotation.x < 0) {
-            const pitchFactor = Math.abs(camera.rotation.x); 
-            if (isFlyingUp) {
-                addedForwardSpeed += pitchFactor * 0.018; 
-                currentFlySpeed *= (1.0 - Math.min(pitchFactor, 0.6)); 
-            }
-        }
-
-        if (addedForwardSpeed > 0) {
-            velocity.add(forward.clone().multiplyScalar(addedForwardSpeed));
-        }
-        if (keys['KeyS']) {
-            velocity.add(forward.clone().multiplyScalar(-MOVE_SPEED)); 
-        }
-
-// ЕДИНСТВЕННЫЙ БЛОК РАСЧЕТА ВЕРТИКАЛЬНОЙ СКОРОСТИ
+        // Расчет силы тяги
+        let thrustForce = 0;
         if (keys['Space']) {
-            // Если зафиксирован двойной клик, умножаем FLY_SPEED на 2.5 (или любой нужный вам коэффициент)
             const spaceMultiplier = superThrust ? 2.5 : 1.0; 
-            velocity.y += currentFlySpeed * spaceMultiplier; 
-        } else {
-            // currentThrottle плавно добавляет скорость. При значении ~0.65 он уравновесит GRAVITY
-            velocity.y += currentFlySpeed * (currentThrottle * 2.0); 
+            thrustForce = currentFlySpeed * spaceMultiplier; 
+        } else if (currentThrottle > 0.05) {
+            thrustForce = currentFlySpeed * (currentThrottle * 2.0); 
         }
 
-        // Гравитация работает ВСЕГДА, утягивая объект вниз каждый кадр
+        // Вектор тяги совпадает с локальной осью Y объекта player
+        const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+
+        if (thrustForce > 0) {
+            velocity.add(localUp.clone().multiplyScalar(thrustForce));
+        }
+
+        // Гравитация
         velocity.y -= GRAVITY;
 
         player.position.add(velocity);
-        
         velocity.multiplyScalar(DAMPING_MOVE);
 
         if (player.position.y < 2) {
