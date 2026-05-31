@@ -100,10 +100,10 @@ pointer-events: none;
 </head>
 <body>
 <div class="container" id="app" style="--x: 50%; --y: 50%;">
-<div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" data-placeholder="Type or paste text. Long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></div><img class="img-preview"></div>
-<div class="editor-wrapper"><div class="editor" id="t1" contenteditable="true" data-placeholder="Type or paste text. Long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></div><img class="img-preview"></div>
-<div class="editor-wrapper"><div class="editor" id="t2" contenteditable="true" data-placeholder="Type or paste text. Long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></div><img class="img-preview"></div>
-<div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" data-placeholder="Type or paste text. Long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" data-placeholder="Type or paste text. Long hold to change font, size, background, color, and delete image. Move the butterfly to resize the fields, short tap to this help."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t1" contenteditable="true" data-placeholder="Type or paste text. Long hold to change font, size, background, color, and delete image. Move the butterfly to resize the fields, short tap to this help."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t2" contenteditable="true" data-placeholder="Type or paste text. Long hold to change font, size, background, color, and delete image. Move the butterfly to resize the fields, short tap to this help."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" data-placeholder="Type or paste text. Long hold to change font, size, background, color, and delete image. Move the butterfly to resize the fields, short tap to this help."></div><img class="img-preview"></div>
 <a href="index.html" class="handle" id="handle" draggable="false" onclick="return false;"><img src="logo.png" alt="Logo" draggable="false"></a>
 
 </div>
@@ -123,14 +123,18 @@ db = e.target.result;
 if(!db.objectStoreNames.contains("texts")) db.createObjectStore("texts", { keyPath: "id" });
 };
 dbRequest.onsuccess = e => { db = e.target.result; loadData(); };
-async function saveToDB(id, content, img = null) {
+async function saveToDB(id, content, img = null, clearImg = false) {
 const tx = db.transaction("texts", "readwrite");
 const store = tx.objectStore("texts");
 const req = store.get(id);
 req.onsuccess = () => {
 const data = req.result || { id };
 data.content = content;
-if (img) data.img = img;
+if (clearImg) {
+delete data.img;
+} else if (img) {
+data.img = img;
+}
 store.put(data);
 };
 }
@@ -189,7 +193,7 @@ if (!isDragging) return;
 const duration = Date.now() - dragStartTime;
 if (duration < 250 && !isLongPress) {
 navigator.clipboard.writeText('Hold to ').then(() => {
-alert('Long press logo for home page.');
+alert('Type or paste text. Long hold to change font, size, background, color, and delete image. Move the butterfly to resize the fields, short tap to this help.');
 });
 }
 isDragging = false;
@@ -228,6 +232,17 @@ const b = prompt("Background:", ta.style.getPropertyValue('--bg'));
 if (b) { ta.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
 const c = prompt("Color:", ta.style.getPropertyValue('--color'));
 if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
+
+
+// Проверка на удаление картинки, если она отображается
+if (images[i].style.display === 'block') {
+const delImg = prompt("Delete image? (yes/no):", "no");
+if (delImg && delImg.toLowerCase() === 'yes') {
+images[i].removeAttribute('src');
+images[i].style.display = 'none';
+saveToDB(i, ta.innerHTML, null, true);
+}
+}
 }, 2000);
 };
 const stopLongPress = () => clearTimeout(timer);
