@@ -108,7 +108,7 @@ canvas {
 let currentThrottle = 0;
 let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
 
-let isReverseThrust = false;
+let isReverseThrust = true;
 
 const throttleArea = document.getElementById('throttleArea');
 const controlArea = document.getElementById('controlArea');
@@ -138,7 +138,6 @@ logoLink.addEventListener('pointerup', (e) => {
     
     if (!isLongPress) {
         isReverseThrust = !isReverseThrust;
-        console.log("Reverse thrust:", isReverseThrust);
     }
 });
 
@@ -235,19 +234,18 @@ window.addEventListener('pointerup', (e) => {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a12); 
     
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 4000);
     
     const player = new THREE.Group();
-    // Спавним игрока в нижней внутренней точке сферы
+    // Размещаем в нижней точке сферы
     player.position.set(0, -(PLANET_RADIUS - PLAYER_HEIGHT), 0);
     
+    // Начальное выравнивание по кватернионам
     const initialDir = player.position.clone().normalize();
     player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), initialDir);
-    
     scene.add(player);
     
-    // Переводим камеру полностью на кватернионы
-// Задаем начальный поворот на 180 градусов (Math.PI) по оси X в кватернион
+    // Камера жестко внутри игрока, развернута на 180 градусов по X
     camera.quaternion.setFromEuler(new THREE.Euler(Math.PI, 0, 0, 'YXZ'));
     player.add(camera);
 
@@ -443,15 +441,9 @@ window.addEventListener('pointerup', (e) => {
 function animate() {
     requestAnimationFrame(animate);
 
-    // --- СФЕРИЧЕСКАЯ ГРАВИТАЦИЯ И НАПРАВЛЕНИЕ К ЦЕНТРУ ---
-    const playerDirection = player.position.clone().normalize();
-
-    const targetPlayerQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), playerDirection);
-    player.quaternion.copy(targetPlayerQuat);
-
     // --- УПРАВЛЕНИЕ КЛАВИАТУРОЙ ---
-    if (keys['ArrowLeft']) angularVelocityZ += TURN_SPEED; // Соответствует знакам из quaternion.txt
-    if (keys['ArrowRight']) angularVelocityZ -= TURN_SPEED;
+    if (keys['ArrowLeft']) angularVelocityZ -= TURN_SPEED; 
+    if (keys['ArrowRight']) angularVelocityZ += TURN_SPEED;
     if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
     if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
 
@@ -464,11 +456,11 @@ function animate() {
     angularVelocityX *= DAMPING_TURN;
     angularVelocityZ *= DAMPING_TURN;
 
-    // ВОССТАНОВЛЕНИЕ ЖЕСТКОЙ ЛОКАЛЬНОЙ ФИКСАЦИИ ЧЕРЕЗ QUATERNION.MULTIPLY
+    // ЖЕСТКАЯ ЛОКАЛЬНАЯ ФИКСАЦИЯ НА ПЛЕЕРЕ (как на плоскости)
     const deltaQuaternion = new THREE.Quaternion().setFromEuler(
         new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
     );
-    camera.quaternion.multiply(deltaQuaternion); // Вращаем камеру локально без инверсий векторов
+    player.quaternion.multiply(deltaQuaternion); 
 
     let currentFlySpeed = FLY_SPEED;
 
@@ -480,18 +472,19 @@ function animate() {
         thrustForce = currentFlySpeed * (currentThrottle * 2.0); 
     }
     
-    // Вектор тяги берется строго из трансформированного кватерниона камеры и игрока
-    let localThrustDir = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion).applyQuaternion(player.quaternion);
+    // Направление тяги строго следует за локальным вектором Y объекта
+    let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
 
     if (isReverseThrust) {
-        localThrustDir.negate();
+        localUp.negate();
     }
 
     if (thrustForce > 0) {
-        velocity.add(localThrustDir.clone().multiplyScalar(thrustForce));
+        velocity.add(localUp.clone().multiplyScalar(thrustForce));
     }
 
-    // Антигравитация: выталкивает наружу
+    // Сферическое направление гравитации (к центру)
+    const playerDirection = player.position.clone().normalize();
     velocity.addScaledVector(playerDirection, GRAVITY);
 
     player.position.add(velocity);
