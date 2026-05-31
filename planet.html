@@ -1,19 +1,530 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <link rel="manifest" href="manifest-planet.json">
-    <title>Outside-in Planet</title>
-    <style>body { margin: 0; overflow: hidden; background: #000; }</style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <link rel="manifest" href="manifest-loop.json">
+
+    <title>Jetpack</title>
+<style>
+html, body { 
+    margin: 0; 
+    padding: 0;
+    width: 100dvw;
+    height: 100dvh;
+    overflow: hidden; 
+    touch-action: none; 
+    user-select: none;
+    -webkit-user-select: none;
+    background-color: #0a0a12;
+}
+canvas { 
+    display: block; 
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#controls {
+    position: fixed;
+    bottom: 50px;
+    left: 20px;                      
+    display: flex;
+    justify-content: flex-start;
+    pointer-events: none;
+    z-index: 3000;
+}
+
+@media (pointer: coarse) { #controls { display: flex; } }
+#logoLink {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4000; 
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+#throttleArea {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 50vw;
+    height: 100vh;
+    z-index: 2000;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+#controlArea {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 50vw;
+    height: 100vh;
+    z-index: 2000;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+@media (pointer: fine) {
+    #throttleArea, #controlArea {
+        pointer-events: none;
+    }
+}
+
+#startButton {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5000;
+    padding: 15px 30px;
+    background-color: #3b3b4f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+}
+</style>
 </head>
 <body>
-  <div style="position: absolute; top: 10px; width: 100%; text-align: center; z-index: 10;">
-  <a href="index.html">
-    <img src="logo.png" alt="Logo" style="height: 50px;">
-  </a>
-</div>
-    <script type="importmap">
-      { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
-    </script>
-    <script type="module" src="planet-engine.js"></script>
+    <button id="startButton">START GAME</button>
+
+    <div id="logoLink">
+        <img src="logo.png" alt="Logo" style="width: 42px; height: 42px;">
+    </div> 
+    <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
+
+<script type="importmap">
+  { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+// --- БЛОК 1: Управление тягой и наклоном ---
+let currentThrottle = 0;
+let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
+
+let isReverseThrust = false;
+
+const throttleArea = document.getElementById('throttleArea');
+const controlArea = document.getElementById('controlArea');
+const logoLink = document.getElementById('logoLink');
+
+const activeTouches = {
+    throttle: null,
+    control: null
+};
+
+let logoTimer = null;
+let isLongPress = false;
+
+logoLink.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    isLongPress = false;
+    
+    logoTimer = setTimeout(() => {
+        isLongPress = true;
+        window.location.href = 'index.html';
+    }, 2000);
+});
+
+logoLink.addEventListener('pointerup', (e) => {
+    e.preventDefault();
+    clearTimeout(logoTimer);
+    
+    if (!isLongPress) {
+        isReverseThrust = !isReverseThrust;
+        console.log("Reverse thrust:", isReverseThrust);
+    }
+});
+
+logoLink.addEventListener('pointercancel', () => {
+    clearTimeout(logoTimer);
+});
+
+throttleArea.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    activeTouches.throttle = e.pointerId;
+    updateThrottle(e);
+}, { passive: false });
+
+function updateThrottle(e) {
+    const rect = throttleArea.getBoundingClientRect();
+    let val = 1 - ((e.clientY - rect.top) / rect.height);
+    currentThrottle = Math.max(0, Math.min(1, val));
+}
+
+controlArea.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    activeTouches.control = e.pointerId;
+    touchJoystick.active = true;
+    touchJoystick.startX = e.clientX;
+    touchJoystick.startY = e.clientY;
+    touchJoystick.moveX = 0;
+    touchJoystick.moveY = 0;
+}, { passive: false });
+
+window.addEventListener('pointermove', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        updateThrottle(e);
+    }
+    if (e.pointerId === activeTouches.control && touchJoystick.active) {
+        const maxDistance = 100;
+        let diffX = e.clientX - touchJoystick.startX;
+        let diffY = e.clientY - touchJoystick.startY;
+        
+        touchJoystick.moveX = Math.max(-1, Math.min(1, diffX / maxDistance));
+        touchJoystick.moveY = Math.max(-1, Math.min(1, diffY / maxDistance));
+    }
+});
+
+window.addEventListener('pointerup', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        activeTouches.throttle = null;
+        currentThrottle = 0;
+    }
+    if (e.pointerId === activeTouches.control) {
+        activeTouches.control = null;
+        touchJoystick.active = false;
+        touchJoystick.moveX = 0;
+        touchJoystick.moveY = 0;
+    }
+});
+
+    import * as THREE from 'three';
+
+    // ==========================================
+    // 1. НАСТРОЙКИ СКОРОСТИ, ИНЕРЦИИ И КРЕНА
+    // ==========================================
+    const FLY_SPEED = 0.0171;       
+    const TURN_SPEED = 0.0003;      
+    const TOUCH_TURN_SPEED = 0.0005; 
+    
+    const GRAVITY = 0.013; 
+    
+    const DAMPING_TURN = 0.96;
+    const DAMPING_MOVE = 0.98;
+
+    const PLANET_RADIUS = 300; 
+    const PLAYER_HEIGHT = 2; 
+
+    // ==========================================
+    // 2. ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННЫХ И СОСТОЯНИЙ
+    // ==========================================
+    document.getElementById('startButton').addEventListener('click', () => {
+        document.getElementById('startButton').style.display = 'none';
+        
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+        }
+
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => {});
+        }
+    });
+
+    // ==========================================
+    // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
+    // ==========================================
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a12); 
+    
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
+    
+    const player = new THREE.Group();
+    // Спавним игрока внутри сферы, чуть отступив от верхней внутренней границы
+    player.position.set(0, PLANET_RADIUS - PLAYER_HEIGHT, 0);
+    scene.add(player);
+    
+    camera.rotation.order = 'YXZ';
+    player.add(camera);
+
+// Добавляем 180 градусов (Math.PI) к исходному углу по оси X
+    camera.rotation.x = Math.PI;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const light = new THREE.DirectionalLight(0xffffff, 2.5);
+    light.position.set(50, 200, 50);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x888888));
+
+    const backLight = new THREE.DirectionalLight(0xabcdef, 0.8);
+    backLight.position.set(-50, 100, -50); 
+    scene.add(backLight);
+
+    const collidableObjects = [];
+    const WORLD_SIZE = 800; 
+
+    function addStructure(mesh) {
+        scene.add(mesh);
+        collidableObjects.push(mesh);
+    }
+
+    // ==========================================
+    // СФЕРИЧЕСКАЯ ПЛАНЕТАРНАЯ СЕТКА
+    // ==========================================
+    // Делаем сетку видимой с двух сторон (DoubleSide), чтобы видеть её изнутри сферы
+    const planetGeometry = new THREE.SphereGeometry(PLANET_RADIUS, 64, 64);
+    const planetMaterial = new THREE.ShaderMaterial({
+        wireframe: false,
+        transparent: true,
+        side: THREE.DoubleSide, 
+        uniforms: {
+            uSize: { value: 0.05 }, 
+        },
+        vertexShader: `
+            varying vec3 vWorldPosition;
+            varying vec3 vNormal;
+            void main() {
+                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                vWorldPosition = worldPosition.xyz;
+                vNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * viewMatrix * worldPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vWorldPosition;
+            varying vec3 vNormal;
+            uniform float uSize;
+            void main() {
+                vec2 grid = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize);
+                vec2 grid2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize);
+                float line = min(min(grid.x, grid.y), min(grid2.x, grid2.y));
+                float alpha = 1.0 - min(line, 1.0);
+                
+                if (alpha < 0.1) discard;
+                
+                gl_FragColor = vec4(0.26, 0.26, 1.0, alpha * 0.4);
+            }
+        `
+    });
+
+    const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+    planetMesh.position.set(0, 0, 0);
+    scene.add(planetMesh);
+
+    function positionOnSphere(mesh, distanceToCenter) {
+        const u = Math.random();
+        const v = Math.random();
+        const theta = u * 2.0 * Math.PI;
+        const phi = Math.acos(2.0 * v - 1.0);
+        
+        const x = distanceToCenter * Math.sin(phi) * Math.cos(theta);
+        const y = distanceToCenter * Math.sin(phi) * Math.sin(theta);
+        const z = distanceToCenter * Math.cos(phi);
+        
+        mesh.position.set(x, y, z);
+        
+        const upVector = new THREE.Vector3(x, y, z).normalize();
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), upVector);
+    }
+
+    // Разворачиваем здания пивотом внутрь сферы (строим "потолочный" город)
+    for(let i=0; i<40; i++) {
+        const sizeX = 10 + Math.random() * 20;
+        const sizeY = 4 + Math.random() * 15;
+        const sizeZ = 10 + Math.random() * 20;
+
+        const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
+        const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
+        const box = new THREE.Mesh(geometry, material);
+        
+        box.geometry.translate(0, -sizeY / 2, 0); // Пивот вверху, здание растет к центру сферы
+        positionOnSphere(box, PLANET_RADIUS);
+        addStructure(box);
+    }
+
+    // Арки на сфере (изнутри)
+    for(let i=0; i<25; i++) {
+        const archGroup = new THREE.Group();
+        const archColor = Math.random() * 0xffffff;
+        const material = new THREE.MeshPhongMaterial({ color: archColor });
+
+        const w = 4;   
+        const h = 30;  
+        const d = 4;   
+        const span = 25; 
+
+        const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+        leftLeg.position.set(-span/2, -h/2, 0);
+        archGroup.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+        rightLeg.position.set(span/2, -h/2, 0);
+        archGroup.add(rightLeg);
+
+        const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w, d), material);
+        topBar.position.set(0, -h - w/2, 0);
+        archGroup.add(topBar);
+
+        positionOnSphere(archGroup, PLANET_RADIUS);
+
+        leftLeg.updateMatrixWorld();
+        rightLeg.updateMatrixWorld();
+        topBar.updateMatrixWorld();
+        collidableObjects.push(leftLeg, rightLeg, topBar);
+        
+        scene.add(archGroup);
+    }
+
+    // Мосты на сфере (изнутри)
+    for(let i=0; i<15; i++) {
+        const bridgeGroup = new THREE.Group();
+        const bridgeColor = 0x555566;
+        const material = new THREE.MeshPhongMaterial({ color: bridgeColor });
+
+        const length = 80;
+        const width = 12;
+        const height = 15;
+
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(width, 2, length), material);
+        deck.position.set(0, -height, 0);
+        bridgeGroup.add(deck);
+
+        for(let j = -length/3; j <= length/3; j += length/3) {
+            const pillar = new THREE.Mesh(new THREE.BoxGeometry(4, height, 4), material);
+            pillar.position.set(0, -height/2, j);
+            bridgeGroup.add(pillar);
+            pillar.updateMatrixWorld();
+            collidableObjects.push(pillar);
+        }
+
+        positionOnSphere(bridgeGroup, PLANET_RADIUS);
+
+        deck.updateMatrixWorld();
+        collidableObjects.push(deck);
+
+        scene.add(bridgeGroup);
+    }
+
+const keys = {};
+    let lastSpaceTime = 0;
+    let superThrust = false;
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !keys['Space']) { 
+            const currentTime = performance.now();
+            if (currentTime - lastSpaceTime < 250) { 
+                superThrust = true;
+            }
+            lastSpaceTime = currentTime;
+        }
+        keys[e.code] = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+        if (e.code === 'Space') {
+            superThrust = false; 
+        }
+    });
+    
+
+    let velocity = new THREE.Vector3(0, 0, 0);
+    let angularVelocityX = 0;
+    let angularVelocityZ = 0;
+
+let currentPitch = 0; 
+let currentRoll = 0;  
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    // --- СФЕРИЧЕСКАЯ ГРАВИТАЦИЯ И НАПРАВЛЕНИЕ К ЦЕНТРУ ---
+    const playerDirection = player.position.clone().normalize();
+
+    const targetPlayerQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), playerDirection);
+    player.quaternion.copy(targetPlayerQuat);
+
+    // --- УПРАВЛЕНИЕ КЛАВИАТУРОЙ ---
+    if (keys['ArrowLeft']) angularVelocityZ += TURN_SPEED;
+    if (keys['ArrowRight']) angularVelocityZ -= TURN_SPEED;
+    if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
+    if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
+
+    // --- УПРАВЛЕНИЕ С ТАЧ-СКРИНА ---
+    if (touchJoystick.active) {
+        angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
+        angularVelocityZ -= touchJoystick.moveX * TOUCH_TURN_SPEED;
+    }
+
+    angularVelocityX *= DAMPING_TURN;
+    angularVelocityZ *= DAMPING_TURN;
+
+    camera.rotation.x += angularVelocityX;
+    camera.rotation.z += angularVelocityZ;
+
+    let currentFlySpeed = FLY_SPEED;
+
+    let thrustForce = 0;
+    if (keys['Space']) {
+        const spaceMultiplier = superThrust ? 2.5 : 1.0; 
+        thrustForce = currentFlySpeed * spaceMultiplier; 
+    } else if (currentThrottle > 0.05) {
+        thrustForce = currentFlySpeed * (currentThrottle * 2.0); 
+    }
+    
+    let localThrustDir = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion).applyQuaternion(player.quaternion);
+
+    if (isReverseThrust) {
+        localThrustDir.negate();
+    }
+
+    if (thrustForce > 0) {
+        velocity.add(localThrustDir.clone().multiplyScalar(thrustForce));
+    }
+
+    // Центробежная гравитация: выталкивает наружу, прижимая изнутри к своду сферы
+    velocity.addScaledVector(playerDirection, GRAVITY);
+
+    player.position.add(velocity);
+    velocity.multiplyScalar(DAMPING_MOVE);
+
+    // Коллизия со структурами, растущими внутрь сферы
+    const raycaster = new THREE.Raycaster();
+    const upVector = playerDirection.clone(); // Смотрим радиально наружу в потолок
+    raycaster.set(player.position, upVector);
+    const intersects = raycaster.intersectObjects(collidableObjects);
+
+    if (intersects.length > 0 && intersects[0].distance < PLAYER_HEIGHT + 0.1) {
+        const groundDistance = intersects[0].point.length();
+        player.position.copy(playerDirection.clone().multiplyScalar(groundDistance - PLAYER_HEIGHT));
+        
+        const normalVelocity = velocity.dot(playerDirection);
+        if (normalVelocity > 0) { // Если летим наружу в объект
+            velocity.addScaledVector(playerDirection, -normalVelocity);
+        }
+    }
+
+    // ВОЗВРАЩЕНО ОГРАНИЧЕНИЕ КОЛЛИЗИИ С ПОВЕРХНОСТЬЮ СФЕРЫ (ИЗНУТРИ):
+    if (player.position.length() > PLANET_RADIUS - PLAYER_HEIGHT) {
+        player.position.copy(playerDirection.clone().multiplyScalar(PLANET_RADIUS - PLAYER_HEIGHT));
+        
+        const normalVelocity = velocity.dot(playerDirection);
+        if (normalVelocity > 0) { // При ударе изнутри гасим скорость наружу и получаем легкий отскок обратно внутрь
+            velocity.addScaledVector(playerDirection, -normalVelocity * 1.3); 
+        }
+    }
+
+    renderer.render(scene, camera);
+}
+
+    animate();
+</script>
 </body>
 </html>
