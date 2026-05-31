@@ -238,15 +238,18 @@ window.addEventListener('pointerup', (e) => {
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
     
     const player = new THREE.Group();
-    // Спавним игрока внутри сферы, чуть отступив от верхней внутренней границы
-    player.position.set(0, PLANET_RADIUS - PLAYER_HEIGHT, 0);
+    // Спавним игрока в нижней внутренней точке сферы
+    player.position.set(0, -(PLANET_RADIUS - PLAYER_HEIGHT), 0);
+    
+    const initialDir = player.position.clone().normalize();
+    player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), initialDir);
+    
     scene.add(player);
     
-    camera.rotation.order = 'YXZ';
+    // Переводим камеру полностью на кватернионы
+// Задаем начальный поворот на 180 градусов (Math.PI) по оси X в кватернион
+    camera.quaternion.setFromEuler(new THREE.Euler(Math.PI, 0, 0, 'YXZ'));
     player.add(camera);
-
-// Добавляем 180 градусов (Math.PI) к исходному углу по оси X
-    camera.rotation.x = Math.PI;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -268,7 +271,6 @@ window.addEventListener('pointerup', (e) => {
     scene.add(backLight);
 
     const collidableObjects = [];
-    const WORLD_SIZE = 800; 
 
     function addStructure(mesh) {
         scene.add(mesh);
@@ -278,7 +280,6 @@ window.addEventListener('pointerup', (e) => {
     // ==========================================
     // СФЕРИЧЕСКАЯ ПЛАНЕТАРНАЯ СЕТКА
     // ==========================================
-    // Делаем сетку видимой с двух сторон (DoubleSide), чтобы видеть её изнутри сферы
     const planetGeometry = new THREE.SphereGeometry(PLANET_RADIUS, 64, 64);
     const planetMaterial = new THREE.ShaderMaterial({
         wireframe: false,
@@ -334,7 +335,7 @@ window.addEventListener('pointerup', (e) => {
         mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), upVector);
     }
 
-    // Разворачиваем здания пивотом внутрь сферы (строим "потолочный" город)
+    // Столбы и квадраты на сфере
     for(let i=0; i<40; i++) {
         const sizeX = 10 + Math.random() * 20;
         const sizeY = 4 + Math.random() * 15;
@@ -344,12 +345,12 @@ window.addEventListener('pointerup', (e) => {
         const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
         const box = new THREE.Mesh(geometry, material);
         
-        box.geometry.translate(0, -sizeY / 2, 0); // Пивот вверху, здание растет к центру сферы
+        box.geometry.translate(0, -sizeY / 2, 0); 
         positionOnSphere(box, PLANET_RADIUS);
         addStructure(box);
     }
 
-    // Арки на сфере (изнутри)
+    // Арки на сфере
     for(let i=0; i<25; i++) {
         const archGroup = new THREE.Group();
         const archColor = Math.random() * 0xffffff;
@@ -382,7 +383,7 @@ window.addEventListener('pointerup', (e) => {
         scene.add(archGroup);
     }
 
-    // Мосты на сфере (изнутри)
+    // Мосты на сфере
     for(let i=0; i<15; i++) {
         const bridgeGroup = new THREE.Group();
         const bridgeColor = 0x555566;
@@ -412,7 +413,7 @@ window.addEventListener('pointerup', (e) => {
         scene.add(bridgeGroup);
     }
 
-const keys = {};
+    const keys = {};
     let lastSpaceTime = 0;
     let superThrust = false;
 
@@ -439,9 +440,6 @@ const keys = {};
     let angularVelocityX = 0;
     let angularVelocityZ = 0;
 
-let currentPitch = 0; 
-let currentRoll = 0;  
-
 function animate() {
     requestAnimationFrame(animate);
 
@@ -452,7 +450,7 @@ function animate() {
     player.quaternion.copy(targetPlayerQuat);
 
     // --- УПРАВЛЕНИЕ КЛАВИАТУРОЙ ---
-    if (keys['ArrowLeft']) angularVelocityZ += TURN_SPEED;
+    if (keys['ArrowLeft']) angularVelocityZ += TURN_SPEED; // Соответствует знакам из quaternion.txt
     if (keys['ArrowRight']) angularVelocityZ -= TURN_SPEED;
     if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
     if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
@@ -466,8 +464,11 @@ function animate() {
     angularVelocityX *= DAMPING_TURN;
     angularVelocityZ *= DAMPING_TURN;
 
-    camera.rotation.x += angularVelocityX;
-    camera.rotation.z += angularVelocityZ;
+    // ВОССТАНОВЛЕНИЕ ЖЕСТКОЙ ЛОКАЛЬНОЙ ФИКСАЦИИ ЧЕРЕЗ QUATERNION.MULTIPLY
+    const deltaQuaternion = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
+    );
+    camera.quaternion.multiply(deltaQuaternion); // Вращаем камеру локально без инверсий векторов
 
     let currentFlySpeed = FLY_SPEED;
 
@@ -479,6 +480,7 @@ function animate() {
         thrustForce = currentFlySpeed * (currentThrottle * 2.0); 
     }
     
+    // Вектор тяги берется строго из трансформированного кватерниона камеры и игрока
     let localThrustDir = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion).applyQuaternion(player.quaternion);
 
     if (isReverseThrust) {
@@ -489,15 +491,15 @@ function animate() {
         velocity.add(localThrustDir.clone().multiplyScalar(thrustForce));
     }
 
-    // Центробежная гравитация: выталкивает наружу, прижимая изнутри к своду сферы
+    // Антигравитация: выталкивает наружу
     velocity.addScaledVector(playerDirection, GRAVITY);
 
     player.position.add(velocity);
     velocity.multiplyScalar(DAMPING_MOVE);
 
-    // Коллизия со структурами, растущими внутрь сферы
+    // Коллизия со структурами
     const raycaster = new THREE.Raycaster();
-    const upVector = playerDirection.clone(); // Смотрим радиально наружу в потолок
+    const upVector = playerDirection.clone(); 
     raycaster.set(player.position, upVector);
     const intersects = raycaster.intersectObjects(collidableObjects);
 
@@ -506,17 +508,17 @@ function animate() {
         player.position.copy(playerDirection.clone().multiplyScalar(groundDistance - PLAYER_HEIGHT));
         
         const normalVelocity = velocity.dot(playerDirection);
-        if (normalVelocity > 0) { // Если летим наружу в объект
+        if (normalVelocity > 0) { 
             velocity.addScaledVector(playerDirection, -normalVelocity);
         }
     }
 
-    // ВОЗВРАЩЕНО ОГРАНИЧЕНИЕ КОЛЛИЗИИ С ПОВЕРХНОСТЬЮ СФЕРЫ (ИЗНУТРИ):
+    // Коллизия с поверхностью сферы (изнутри)
     if (player.position.length() > PLANET_RADIUS - PLAYER_HEIGHT) {
         player.position.copy(playerDirection.clone().multiplyScalar(PLANET_RADIUS - PLAYER_HEIGHT));
         
         const normalVelocity = velocity.dot(playerDirection);
-        if (normalVelocity > 0) { // При ударе изнутри гасим скорость наружу и получаем легкий отскок обратно внутрь
+        if (normalVelocity > 0) { 
             velocity.addScaledVector(playerDirection, -normalVelocity * 1.3); 
         }
     }
