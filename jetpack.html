@@ -6,14 +6,25 @@
 
     <title>Jetpack</title>
 <style>
-body { 
+html, body { 
     margin: 0; 
+    padding: 0;
+    width: 100dvw;
+    height: 100dvh; /* Гарантирует адаптивную высоту без белых зазоров */
     overflow: hidden; 
     touch-action: none; 
-    user-select: none; /* <-- ДОБАВИТЬ ЭТУ СТРОКУ */
-    -webkit-user-select: none; /* Для Safari */
+    user-select: none;
+    -webkit-user-select: none;
+    background-color: #0a0a12; /* Родной цвет фона вашей сцены */
 }
-    canvas { display: block; }
+canvas { 
+    display: block; 
+    position: absolute; /* Фиксирует холст, не давая ему смещаться под шторки */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
 #controls {
     position: fixed;
     bottom: 50px;
@@ -77,15 +88,6 @@ body {
   { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
 </script>
 <script type="module">
-window.addEventListener('resize', () => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
-
-    renderer.setSize(width, height);
-});
 // --- БЛОК 1: Управление тягой ---
 let currentThrottle = 0;
 const throttleArea = document.getElementById('throttleArea');
