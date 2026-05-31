@@ -45,6 +45,7 @@ canvas {
     transform: translateX(-50%);
     z-index: 4000; 
     pointer-events: auto;
+    cursor: pointer;
 }
 
 #throttleArea {
@@ -95,9 +96,9 @@ canvas {
 <body>
     <button id="startButton">START GAME</button>
 
-    <a href="index.html" id="logoLink">
+    <div id="logoLink">
         <img src="logo.png" alt="Logo" style="width: 42px; height: 42px;">
-    </a> 
+    </div> 
     <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
 
 <script type="importmap">
@@ -108,13 +109,47 @@ canvas {
 let currentThrottle = 0;
 let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
 
+// Флаг обратной тяги
+let isReverseThrust = false;
+
 const throttleArea = document.getElementById('throttleArea');
 const controlArea = document.getElementById('controlArea');
+const logoLink = document.getElementById('logoLink');
 
 const activeTouches = {
     throttle: null,
     control: null
 };
+
+// Переменные для обработки Hold (удержания) логотипа
+let logoTimer = null;
+let isLongPress = false;
+
+logoLink.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    isLongPress = false;
+    
+    // Запускаем таймер на 2000мс для перехода на index.html
+    logoTimer = setTimeout(() => {
+        isLongPress = true;
+        window.location.href = 'index.html';
+    }, 2000);
+});
+
+logoLink.addEventListener('pointerup', (e) => {
+    e.preventDefault();
+    clearTimeout(logoTimer);
+    
+    // Если отпустили раньше 2 секунд — это короткий клик, меняем направление тяги
+    if (!isLongPress) {
+        isReverseThrust = !isReverseThrust;
+        console.log("Reverse thrust:", isReverseThrust);
+    }
+});
+
+logoLink.addEventListener('pointercancel', () => {
+    clearTimeout(logoTimer);
+});
 
 // События для Throttle
 throttleArea.addEventListener('pointerdown', (e) => {
@@ -460,7 +495,12 @@ function animate() {
     }
 
     // Направление тяги строго следует за локальным вектором Y объекта
-    const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+    let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+    
+    // Если включена обратная тяга, инвертируем вектор направления силы
+    if (isReverseThrust) {
+        localUp.negate();
+    }
 
     if (thrustForce > 0) {
         velocity.add(localUp.clone().multiplyScalar(thrustForce));
