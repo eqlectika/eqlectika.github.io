@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <link rel="manifest" href="manifest-life.json">
+
+    <title>Outside-in Planet Total Fractalization</title>
+<style>
+html, body { 
+    margin: 0; 
+    padding: 0;
+    width: 100dvw;
+    height: 100dvh;
+    overflow: hidden; 
+    touch-action: none; 
+    user-select: none;
+    -webkit-user-select: none;
+    background-color: #0a0a12;
+}
+canvas { 
+    display: block; 
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#controls {
+    position: fixed;
+    bottom: 50px;
+    left: 20px;                      
+    display: flex;
+    justify-content: flex-start;
+    pointer-events: none;
+    z-index: 3000;
+}
+
+@media (pointer: coarse) { #controls { display: flex; } }
+#logoLink {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4000; 
+    pointer-events: auto;
+    cursor: pointer;
+    -webkit-touch-callout: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#throttleArea {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 50vw;
+    height: 100vh;
+    z-index: 2000;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+#controlArea {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 50vw;
+    height: 100vh;
+    z-index: 2000;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+@media (pointer: fine) {
+    #throttleArea, #controlArea {
+        pointer-events: none;
+    }
+}
+
+#startButton {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5000;
+    padding: 15px 30px;
+    background-color: #3b3b4f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+}
+</style>
+</head>
+<body>
+    <button id="startButton">START GAME</button>
+
+<div id="logoLink">
+    <img src="logo.png" alt="Logo" draggable="false" style="margin-bottom: 20px; width: 42px; height: 42px; opacity: 0.2;">
+</div>
+    
+    <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
+
+<script type="importmap">
+  { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+// --- РЕГИСТРАЦИЯ SERVICE WORKER ДЛЯ ОФЛАЙН-РЕЖИМА ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-life.js')
+            .then(reg => console.log('Service Worker зарегистрирован для index.html:', reg.scope))
+            .catch(err => console.log('Ошибка Service Worker:', err));
+    });
+}
+
+// --- БЛОК 1: Управление тягой и наклоном ---
+let currentThrottle = 0;
+let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
+
+let isReverseThrust = true;
+
+const throttleArea = document.getElementById('throttleArea');
+const controlArea = document.getElementById('controlArea');
+const logoLink = document.getElementById('logoLink');
+
+const activeTouches = {
+    throttle: null,
+    control: null
+};
+
+let logoTimer = null;
+let isLongPress = false;
+
+logoLink.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    isLongPress = false;
+    
+    logoTimer = setTimeout(() => {
+        isLongPress = true;
+        window.location.href = 'index.html';
+    }, 2000);
+});
+
+logoLink.addEventListener('pointerup', (e) => {
+    e.preventDefault();
+    clearTimeout(logoTimer);
+    
+    if (!isLongPress) {
+        isReverseThrust = !isReverseThrust;
+    }
+});
+
+logoLink.addEventListener('pointercancel', () => {
+    clearTimeout(logoTimer);
+});
+
+throttleArea.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    activeTouches.throttle = e.pointerId;
+    updateThrottle(e);
+}, { passive: false });
+
+function updateThrottle(e) {
+    const rect = throttleArea.getBoundingClientRect();
+    let val = 1 - ((e.clientY - rect.top) / rect.height);
+    currentThrottle = Math.max(0, Math.min(1, val));
+}
+
+controlArea.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    activeTouches.control = e.pointerId;
+    touchJoystick.active = true;
+    touchJoystick.startX = e.clientX;
+    touchJoystick.startY = e.clientY;
+    touchJoystick.moveX = 0;
+    touchJoystick.moveY = 0;
+}, { passive: false });
+
+window.addEventListener('pointermove', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        updateThrottle(e);
+    }
+    if (e.pointerId === activeTouches.control && touchJoystick.active) {
+        const maxDistance = 100;
+        let diffX = e.clientX - touchJoystick.startX;
+        let diffY = e.clientY - touchJoystick.startY;
+        
+        touchJoystick.moveX = Math.max(-1, Math.min(1, diffX / maxDistance));
+        touchJoystick.moveY = Math.max(-1, Math.min(1, diffY / maxDistance));
+    }
+});
+
+window.addEventListener('pointerup', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        activeTouches.throttle = null;
+        currentThrottle = 0;
+    }
+    if (e.pointerId === activeTouches.control) {
+        activeTouches.control = null;
+        touchJoystick.active = false;
+        touchJoystick.moveX = 0;
+        touchJoystick.moveY = 0;
+    }
+});
+
+    import * as THREE from 'three';
+
+    // ==========================================
+    // 1. НАСТРОЙКИ СКОРОСТИ, ИНЕРЦИИ И КРЕНА
+    // ==========================================
+    const FLY_SPEED = 0.0057;       
+    const TURN_SPEED = 0.0003;      
+    const TOUCH_TURN_SPEED = 0.0005; 
+    
+    const GRAVITY = 0.0043333; 
+    
+    const DAMPING_TURN = 0.96;
+    const DAMPING_MOVE = 0.98;
+
+    const PLANET_RADIUS = 1500; 
+    const PLAYER_HEIGHT = 2; 
+
+    const WATER_RADIUS = PLANET_RADIUS - 75; 
+
+    const clock = new THREE.Clock();
+
+    // ==========================================
+    // 2. ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННЫХ И СОСТОЯНИЙ
+    // ==========================================
+    document.getElementById('startButton').addEventListener('click', () => {
+        document.getElementById('startButton').style.display = 'none';
+        
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+        }
+
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => {});
+        }
+    });
+
+    // ==========================================
+    // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
+    // ==========================================
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a12); 
+    
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 12000);
+    
+    const player = new THREE.Group();
+    player.position.set(0, -(PLANET_RADIUS - PLAYER_HEIGHT), 0);
+    
+    const initialDir = player.position.clone().normalize();
+    player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), initialDir);
+    scene.add(player);
+    
+    camera.quaternion.setFromEuler(new THREE.Euler(Math.PI, 0, 0, 'YXZ'));
+    player.add(camera);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const light = new THREE.DirectionalLight(0xffffff, 2.5);
+    light.position.set(50, 200, 50);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x888888));
+
+    const backLight = new THREE.DirectionalLight(0xabcdef, 0.8);
+    backLight.position.set(-50, 100, -50); 
+    scene.add(backLight);
+
+    const collidableObjects = [];
+
+    function addStructure(mesh) {
+        scene.add(mesh);
+        collidableObjects.push(mesh);
+    }
+
+    // ==========================================
+    // СФЕРИЧЕСКАЯ ПЛАНЕТАРНАЯ СЕТКА С СИНХРОННЫМ ИЛИ СПОНТАННЫМ РОСТОМ
+    // ==========================================
+    const planetMaterial = new THREE.ShaderMaterial({
+        wireframe: false,
+        transparent: true,
+        side: THREE.DoubleSide, 
+        uniforms: {
+            uSize: { value: 0.05 }, 
+            uTime: { value: 0.0 },
+            uWaterRadius: { value: WATER_RADIUS }
+        },
+        vertexShader: `
+            attribute float aDepth;
+            attribute float aDelay;
+            varying vec3 vWorldPosition;
+            varying float vDepth;
+            varying float vDelay;
+            uniform float uTime;
+
+            void main() {
+                vDepth = aDepth;
+                vDelay = aDelay;
+                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                
+                float personalProgress = mod(uTime + vDelay, 14.0) / 14.0;
+                float growthFactor = smoothstep(vDepth - 1.0, vDepth, personalProgress * 7.0);
+                worldPosition.xyz *= mix(0.995, 1.0, growthFactor);
+
+                vWorldPosition = worldPosition.xyz;
+                gl_Position = projectionMatrix * viewMatrix * worldPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vWorldPosition;
+            varying float vDepth;
+            varying float vDelay;
+            uniform float uSize;
+            uniform float uTime;
+            uniform float uWaterRadius;
+
+            float getCaustic(vec3 pos, float time) {
+                vec3 p = pos * 0.07;
+                float t = time * 1.5;
+                float k = sin(p.x + t) + sin(p.y + t) + sin(p.z + t);
+                k += sin(p.x * 2.1 + t * 1.2) + sin(p.y * 1.8 + t * 1.5);
+                k += sin(p.z * 1.5 + t * 0.9) + sin((p.x + p.y) * 1.2 + t);
+                k = k * 0.125 + 0.5;
+                return pow(k, 4.0) * 2.5;
+            }
+
+            void main() {
+                float personalProgress = mod(uTime + vDelay, 14.0) / 14.0;
+                float visibility = smoothstep(vDepth, vDepth - 0.8, personalProgress * 7.0);
+                if (vDepth > 0.0 && visibility < 0.01) discard;
+
+                vec2 grid = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize);
+                vec2 grid2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize);
+                float line = min(min(grid.x, grid.y), min(grid2.x, grid2.y));
+                float alpha = 1.0 - min(line, 1.0);
+                
+                if (alpha < 0.1) discard;
+                
+                vec3 neonColor = mix(vec3(0.26, 0.26, 1.0), vec3(1.0, 0.75, 0.0), vDepth / 6.0);
+                vec4 baseColor = vec4(neonColor, alpha * (0.4 * visibility));
+                
+                float currentRadius = length(vWorldPosition);
+
+                if (currentRadius > uWaterRadius) {
+                    float causticEffect = getCaustic(vWorldPosition, uTime);
+                    float depthFactor = smoothstep(uWaterRadius, uWaterRadius + 75.0, currentRadius);
+                    baseColor.rgb += vec3(0.0, 0.7, 0.9) * causticEffect * depthFactor * 0.6;
+                    baseColor.a += causticEffect * depthFactor * 0.2;
+                }
+                gl_FragColor = baseColor;
+            }
+        `
+    });
+
+    const planetGeometry = new THREE.SphereGeometry(PLANET_RADIUS, 64, 64);
+    
+    const baseDepths = new Float32Array(planetGeometry.attributes.position.count).fill(0.0);
+    const baseDelays = new Float32Array(planetGeometry.attributes.position.count).fill(0.0);
+    planetGeometry.setAttribute('aDepth', new THREE.BufferAttribute(baseDepths, 1));
+    planetGeometry.setAttribute('aDelay', new THREE.BufferAttribute(baseDelays, 1));
+
+    const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+    planetMesh.position.set(0, 0, 0);
+    scene.add(planetMesh);
+
+    // ==========================================
+    // СФЕРА ВОДЫ (Заливаем изнутри)
+    // ==========================================
+    const waterGeometry = new THREE.SphereGeometry(WATER_RADIUS, 64, 64);
+    const waterMaterial = new THREE.MeshPhongMaterial({
+        color: 0x0055ff,
+        transparent: true,
+        opacity: 0.45,
+        side: THREE.DoubleSide
+    });
+    const waterMesh = new THREE.Mesh(waterGeometry, waterMaterial);
+    waterMesh.position.set(0, 0, 0);
+    scene.add(waterMesh);
+
+    function positionOnSphere(mesh, distanceToCenter) {
+        const u = Math.random();
+        const v = Math.random();
+        const theta = u * 2.0 * Math.PI;
+        const phi = Math.acos(2.0 * v - 1.0);
+        
+        const x = distanceToCenter * Math.sin(phi) * Math.cos(theta);
+        const y = distanceToCenter * Math.sin(phi) * Math.sin(theta);
+        const z = distanceToCenter * Math.cos(phi);
+        
+        mesh.position.set(x, y, z);
+        
+        const upVector = new THREE.Vector3(x, y, z).normalize();
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), upVector);
+        return upVector;
+    }
+
+    // ==========================================
+    // УНИВЕРСАЛЬНЫЙ АЛГОРИТМ ФРАКТАЛЬНОГО РОСТА
+    // ==========================================
+    function createRect(p1, p2, p3, p4, depth, delay) {
+        const geo = new THREE.BufferGeometry();
+        const v = [p1.x,p1.y,p1.z, p2.x,p2.y,p2.z, p3.x,p3.y,p3.z, p3.x,p3.y,p3.z, p4.x,p4.y,p4.z, p1.x,p1.y,p1.z];
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+        
+        const depths = new Float32Array([depth, depth, depth, depth, depth, depth]);
+        const delays = new Float32Array([delay, delay, delay, delay, delay, delay]);
+        geo.setAttribute('aDepth', new THREE.BufferAttribute(depths, 1));
+        geo.setAttribute('aDelay', new THREE.BufferAttribute(delays, 1));
+        geo.computeVertexNormals();
+        
+        const mesh = new THREE.Mesh(geo, planetMaterial);
+        mesh.userData = { depth: depth, corners: [p1.clone(), p2.clone(), p3.clone(), p4.clone()] };
+        collidableObjects.push(mesh);
+        scene.add(mesh);
+        return mesh;
+    }
+
+    function growFractal(mesh, maxDepth, currentDepth, polarity, delay, scaleModifier = 1.0) {
+        if (currentDepth > maxDepth) return;
+        const c = mesh.userData.corners;
+        const center = new THREE.Vector3().add(c[0]).add(c[1]).add(c[2]).add(c[3]).divideScalar(4);
+        
+        const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
+        const v2 = new THREE.Vector3().subVectors(c[3], c[0]);
+        let normal = new THREE.Vector3().crossVectors(v1, v2).normalize();
+        
+        if (polarity > 0) {
+            if (normal.dot(center) > 0) normal.multiplyScalar(-1);
+        } else {
+            if (normal.dot(center) < 0) normal.multiplyScalar(-1);
+        }
+
+        const stepLength = (18.0 + Math.random() * 14.0) * scaleModifier;
+        const offset = normal.clone().multiplyScalar(stepLength);
+        const lerpFactor = 0.16 + Math.random() * 0.08;
+        const inner = c.map(pt => pt.clone().lerp(center, lerpFactor).add(offset));
+        
+        const nextMeshes = [];
+        nextMeshes.push(createRect(c[0], c[1], inner[1], inner[0], currentDepth, delay));
+        nextMeshes.push(createRect(c[1], c[2], inner[2], inner[1], currentDepth, delay));
+        nextMeshes.push(createRect(c[2], c[3], inner[3], inner[2], currentDepth, delay));
+        nextMeshes.push(createRect(c[3], c[0], inner[0], inner[3], currentDepth, delay));
+        
+        createRect(inner[0], inner[1], inner[2], inner[3], currentDepth, delay);
+        
+        if (nextMeshes.length > 0) {
+            const randomBranch = nextMeshes[Math.floor(Math.random() * nextMeshes.length)];
+            growFractal(randomBranch, maxDepth, currentDepth + 1, polarity, delay, scaleModifier);
+        }
+    }
+
+    function generateBismuthColony(distanceToCenter, polarity) {
+        const baseGroup = new THREE.Group();
+        positionOnSphere(baseGroup, distanceToCenter);
+        
+        const s = 30.0; 
+        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(baseGroup.quaternion).multiplyScalar(s);
+        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(baseGroup.quaternion).multiplyScalar(s);
+        
+        const p1 = baseGroup.position.clone().add(right).add(forward);
+        const p2 = baseGroup.position.clone().sub(right).add(forward);
+        const p3 = baseGroup.position.clone().sub(right).sub(forward);
+        const p4 = baseGroup.position.clone().add(right).sub(forward);
+        
+        const randomDelay = Math.random() * 14.0;
+        
+        const rootMesh = createRect(p1, p2, p3, p4, 0, randomDelay);
+        growFractal(rootMesh, 5, 1, polarity, randomDelay);
+    }
+
+    // Первоначальные чистые ландшафтные фракталы
+    for(let i=0; i<25; i++) {
+        generateBismuthColony(PLANET_RADIUS, 1);  
+        generateBismuthColony(PLANET_RADIUS, -1); 
+    }
+
+    // ==========================================
+    // СТРОЕНИЕ ФРАКТАЛОВ НА ОСНОВЕ АРОК И МОСТОВ
+    // ==========================================
+    function fractalizeMeshGrown(geometry, matrixWorld, scaleModifier = 0.5) {
+        const positionAttribute = geometry.attributes.position;
+        const indexAttribute = geometry.index;
+        
+        const randomDelay = Math.random() * 14.0;
+
+        const faceCount = indexAttribute ? indexAttribute.count / 3 : positionAttribute.count / 3;
+        const step = Math.max(1, Math.floor(faceCount / 6)); 
+
+        for (let i = 0; i < faceCount; i += step) {
+            let idx0, idx1, idx2;
+            if (indexAttribute) {
+                idx0 = indexAttribute.getX(i * 3);
+                idx1 = indexAttribute.getY(i * 3);
+                idx2 = indexAttribute.getZ(i * 3);
+            } else {
+                idx0 = i * 3;
+                idx1 = i * 3 + 1;
+                idx2 = i * 3 + 2;
+            }
+
+            const p1 = new THREE.Vector3().fromBufferAttribute(positionAttribute, idx0).applyMatrix4(matrixWorld);
+            const p2 = new THREE.Vector3().fromBufferAttribute(positionAttribute, idx1).applyMatrix4(matrixWorld);
+            const p3 = new THREE.Vector3().fromBufferAttribute(positionAttribute, idx2).applyMatrix4(matrixWorld);
+            
+            const edge1 = new THREE.Vector3().subVectors(p2, p1);
+            const edge2 = new THREE.Vector3().subVectors(p3, p2);
+            const p4 = p1.clone().add(edge2);
+
+            const rootMesh = createRect(p1, p2, p3, p4, 0, randomDelay);
+            growFractal(rootMesh, 4, 1, -1, randomDelay, scaleModifier);
+        }
+    }
+
+    // Арки
+    for(let i=0; i<15; i++) {
+        const archGroup = new THREE.Group();
+        
+        const w = 10;   
+        const h = 80;  
+        const d = 10;   
+        const span = 65; 
+
+        const leftLegGeo = new THREE.BoxGeometry(w, h, d);
+        const rightLegGeo = new THREE.BoxGeometry(w, h, d);
+        const topBarGeo = new THREE.BoxGeometry(span + w, w, d);
+
+        const leftCount = leftLegGeo.attributes.position.count;
+        leftLegGeo.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(leftCount).fill(0.0), 1));
+        leftLegGeo.setAttribute('aDelay', new THREE.BufferAttribute(new Float32Array(leftCount).fill(0.0), 1));
+
+        const rightCount = rightLegGeo.attributes.position.count;
+        rightLegGeo.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(rightCount).fill(0.0), 1));
+        rightLegGeo.setAttribute('aDelay', new THREE.BufferAttribute(new Float32Array(rightCount).fill(0.0), 1));
+
+        const topCount = topBarGeo.attributes.position.count;
+        topBarGeo.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(topCount).fill(0.0), 1));
+        topBarGeo.setAttribute('aDelay', new THREE.BufferAttribute(new Float32Array(topCount).fill(0.0), 1));
+
+        const leftLeg = new THREE.Mesh(leftLegGeo, planetMaterial);
+        leftLeg.position.set(-span/2, -h/2, 0);
+        archGroup.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(rightLegGeo, planetMaterial);
+        rightLeg.position.set(span/2, -h/2, 0);
+        archGroup.add(rightLeg);
+
+        const topBar = new THREE.Mesh(topBarGeo, planetMaterial);
+        topBar.position.set(0, -h - w/2, 0);
+        archGroup.add(topBar);
+
+        positionOnSphere(archGroup, PLANET_RADIUS);
+
+        leftLeg.updateMatrixWorld();
+        rightLeg.updateMatrixWorld();
+        topBar.updateMatrixWorld();
+        
+        collidableObjects.push(leftLeg, rightLeg, topBar);
+        scene.add(archGroup);
+
+        fractalizeMeshGrown(leftLegGeo, leftLeg.matrixWorld, 0.4);
+        fractalizeMeshGrown(rightLegGeo, rightLeg.matrixWorld, 0.4);
+        fractalizeMeshGrown(topBarGeo, topBar.matrixWorld, 0.5);
+    }
+
+    // Мосты
+    for(let i=0; i<10; i++) {
+        const bridgeGroup = new THREE.Group();
+
+        const length = 200;
+        const width = 30;
+        const height = 45;
+
+        const deckGeo = new THREE.BoxGeometry(width, 5, length);
+        const deckCount = deckGeo.attributes.position.count;
+        deckGeo.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(deckCount).fill(0.0), 1));
+        deckGeo.setAttribute('aDelay', new THREE.BufferAttribute(new Float32Array(deckCount).fill(0.0), 1));
+
+        const deck = new THREE.Mesh(deckGeo, planetMaterial);
+        deck.position.set(0, -height, 0);
+        bridgeGroup.add(deck);
+
+        positionOnSphere(bridgeGroup, PLANET_RADIUS);
+        deck.updateMatrixWorld();
+        collidableObjects.push(deck);
+
+        for(let j = -length/3; j <= length/3; j += length/3) {
+            const pillarGeo = new THREE.BoxGeometry(10, height, 10);
+            const pillarCount = pillarGeo.attributes.position.count;
+            pillarGeo.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(pillarCount).fill(0.0), 1));
+            pillarGeo.setAttribute('aDelay', new THREE.BufferAttribute(new Float32Array(pillarCount).fill(0.0), 1));
+
+            const pillar = new THREE.Mesh(pillarGeo, planetMaterial);
+            pillar.position.set(0, -height/2, j);
+            bridgeGroup.add(pillar);
+            pillar.updateMatrixWorld();
+            collidableObjects.push(pillar);
+            
+            fractalizeMeshGrown(pillarGeo, pillar.matrixWorld, 0.4);
+        }
+
+        scene.add(bridgeGroup);
+        fractalizeMeshGrown(deckGeo, deck.matrixWorld, 0.6);
+    }
+
+    // ==========================================
+    // КРУПНЫЕ ПЛАНЕТЫ ЗА ПРЕДЕЛАМИ СФЕРЫ
+    // ==========================================
+    const backgroundPlanets = []; 
+    const planetData = [
+        { radius: 500, color: 0xe27b58, x: 3500, y: 1500, z: -2000, rotSpeed: 0.002 },  
+        { radius: 800, color: 0x47637c, x: -4500, y: -2000, z: -3000, rotSpeed: 0.001 }, 
+        { radius: 300, color: 0x8d5b9c, x: -4000, y: -4000, z: -4000, rotSpeed: 0.003 }   
+    ];
+
+    planetData.forEach(data => {
+        const bgPlanetGeom = new THREE.SphereGeometry(data.radius, 32, 32);
+        const bgPlanetMat = new THREE.MeshPhongMaterial({ 
+            color: data.color, 
+            shininess: 10,
+            flatShading: true 
+        });
+        const bgPlanetMesh = new THREE.Mesh(bgPlanetGeom, bgPlanetMat);
+        bgPlanetMesh.position.set(data.x, data.y, data.z);
+        scene.add(bgPlanetMesh);
+        
+        backgroundPlanets.push({
+            mesh: bgPlanetMesh,
+            rotSpeed: data.rotSpeed
+        });
+    });
+
+    const keys = {};
+    let lastSpaceTime = 0;
+    let superThrust = false;
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !keys['Space']) { 
+            const currentTime = performance.now();
+            if (currentTime - lastSpaceTime < 250) { 
+                superThrust = true; 
+            }
+            lastSpaceTime = currentTime;
+        }
+        keys[e.code] = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+        if (e.code === 'Space') {
+            superThrust = false; 
+        }
+    });
+    
+    let velocity = new THREE.Vector3(0, 0, 0);
+    let angularVelocityX = 0;
+    let angularVelocityZ = 0;
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    const elapsedTime = clock.getElapsedTime();
+    planetMaterial.uniforms.uTime.value = elapsedTime;
+
+    const playerCurrentRadius = player.position.length();
+    const isSubmerged = playerCurrentRadius > WATER_RADIUS;
+
+    if (keys['ArrowLeft']) angularVelocityZ -= TURN_SPEED; 
+    if (keys['ArrowRight']) angularVelocityZ += TURN_SPEED;
+    if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
+    if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
+
+    if (touchJoystick.active) {
+        angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
+        angularVelocityZ += touchJoystick.moveX * TOUCH_TURN_SPEED;
+    }
+
+    if (isSubmerged) {
+        angularVelocityX *= (DAMPING_TURN * 0.88);
+        angularVelocityZ *= (DAMPING_TURN * 0.88);
+    } else {
+        angularVelocityX *= DAMPING_TURN;
+        angularVelocityZ *= DAMPING_TURN;
+    }
+
+    const deltaQuaternion = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
+    );
+    player.quaternion.multiply(deltaQuaternion); 
+
+    let currentFlySpeed = FLY_SPEED;
+
+    let thrustForce = 0; 
+    if (keys['Space']) {
+        const spaceMultiplier = superThrust ? 2.5 : 1.0; 
+        thrustForce = currentFlySpeed * spaceMultiplier; 
+    } else if (currentThrottle > 0.05) {
+        thrustForce = currentFlySpeed * (currentThrottle * 2.0); 
+    }
+    
+    let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+
+    if (isReverseThrust) {
+        localUp.negate();
+    }
+
+    if (thrustForce > 0) {
+        velocity.add(localUp.clone().multiplyScalar(thrustForce));
+    }
+
+    const playerDirection = player.position.clone().normalize();
+    
+    if (isSubmerged) {
+        velocity.addScaledVector(playerDirection, GRAVITY * 0.2); 
+    } else {
+        velocity.addScaledVector(playerDirection, GRAVITY);
+    }
+
+    player.position.add(velocity);
+
+    if (isSubmerged) {
+        velocity.multiplyScalar(DAMPING_MOVE * 0.82);
+    } else {
+        velocity.multiplyScalar(DAMPING_MOVE);
+    }
+
+    const raycaster = new THREE.Raycaster();
+    const upVector = playerDirection.clone(); 
+    raycaster.set(player.position, upVector);
+    const intersects = raycaster.intersectObjects(collidableObjects);
+
+    if (intersects.length > 0 && intersects[0].distance < PLAYER_HEIGHT + 0.1) {
+        const groundDistance = intersects[0].point.length();
+        player.position.copy(playerDirection.clone().multiplyScalar(groundDistance - PLAYER_HEIGHT));
+        
+        const normalVelocity = velocity.dot(playerDirection);
+        if (normalVelocity > 0) { 
+            velocity.addScaledVector(playerDirection, -normalVelocity);
+        }
+    }
+
+    if (player.position.length() > PLANET_RADIUS - PLAYER_HEIGHT) {
+        player.position.copy(playerDirection.clone().multiplyScalar(PLANET_RADIUS - PLAYER_HEIGHT));
+        
+        const normalVelocity = velocity.dot(playerDirection);
+        if (normalVelocity > 0) { 
+            velocity.addScaledVector(playerDirection, -normalVelocity * 1.3); 
+        }
+    }
+
+    backgroundPlanets.forEach(planet => {
+        planet.mesh.rotation.y += planet.rotSpeed;
+        planet.mesh.rotation.x += planet.rotSpeed * 0.2;
+    });
+
+    renderer.render(scene, camera);
+}
+
+    animate();
+</script>
+</body>
+</html>
