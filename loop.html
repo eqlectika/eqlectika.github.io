@@ -166,11 +166,11 @@ window.addEventListener('pointerup', (e) => {
     scene.background = new THREE.Color(0x0a0a12); 
     
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
-    camera.rotation.set(0, Math.PI / 2, 0);
+    camera.rotation.set(0, 0, 0);
     
     const player = new THREE.Group();
     player.position.set(0, 2, 0);
-    player.rotation.order = 'ZXY';
+    player.rotation.order = 'YXZ';
     scene.add(player);
     player.add(camera);
 
@@ -371,22 +371,22 @@ const keys = {};
         }
 
         // --- УПРАВЛЕНИЕ КЛАВИАТУРОЙ ---
-        if (keys['ArrowLeft']) angularVelocityX += TURN_SPEED;
-        if (keys['ArrowRight']) angularVelocityX -= TURN_SPEED;
-        if (keys['ArrowUp']) angularVelocityZ += TURN_SPEED;
-        if (keys['ArrowDown']) angularVelocityZ -= TURN_SPEED;
+        if (keys['ArrowLeft']) angularVelocityZ += TURN_SPEED;
+        if (keys['ArrowRight']) angularVelocityZ -= TURN_SPEED;
+        if (keys['ArrowUp']) angularVelocityX += TURN_SPEED;
+        if (keys['ArrowDown']) angularVelocityX -= TURN_SPEED;
 
         // --- УПРАВЛЕНИЕ С ТАЧ-СКРИНА (controlArea) ---
         if (touchJoystick.active) {
-            // Движение по горизонтали (X) влияет на крен/поворот по оси X
-            angularVelocityX -= touchJoystick.moveX * TOUCH_TURN_SPEED;
-            // Движение по вертикали (Y) влияет на наклон вперед/назад по оси Z
-            angularVelocityZ -= touchJoystick.moveY * TOUCH_TURN_SPEED;
+            // swipeUp/down (moveY) управляет наклоном вперед/назад по оси X
+            angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
+            // swipeLeft/right (moveX) управляет наклоном влево/вправо по оси Z
+            angularVelocityZ += touchJoystick.moveX * TOUCH_TURN_SPEED;
         }
 
         player.rotation.x += angularVelocityX;
         player.rotation.z += angularVelocityZ;
-        
+
         angularVelocityX *= DAMPING_TURN;
         angularVelocityZ *= DAMPING_TURN;
 
