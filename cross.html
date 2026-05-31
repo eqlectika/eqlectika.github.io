@@ -35,13 +35,12 @@ height: 100%;
 overflow: hidden;
 }
 
-textarea {
+.editor {
 width: 100%;
 height: 100%;
 border: 0.5px solid #333;
 background: var(--bg, #111);
 color: var(--color, #eee);
-resize: none;
 box-sizing: border-box;
 padding: 15px;
 font-size: 18px;
@@ -51,7 +50,15 @@ font-family: var(--font, sans-serif);
 -webkit-user-select: text;
 user-select: text;
 -webkit-touch-callout: default;
--webkit-user-modify: read-write;
+overflow-y: auto;
+}
+
+/* Эмуляция placeholder для contenteditable */
+.editor:empty::before {
+content: attr(data-placeholder);
+color: #666;
+pointer-events: none;
+display: block;
 }
 
 .img-preview {
@@ -93,17 +100,17 @@ pointer-events: none;
 </head>
 <body>
 <div class="container" id="app" style="--x: 50%; --y: 50%;">
-<div class="editor-wrapper"><textarea id="t0" placeholder="Type or paste text. Long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></textarea><img id="i0" class="img-preview"></div>
-<div class="editor-wrapper"><textarea id="t1" placeholder="Type or paste text. Long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></textarea><img id="i0" class="img-preview"></div>
-<div class="editor-wrapper"><textarea id="t2" placeholder="Type or paste text. Long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></textarea><img id="i0" class="img-preview"></div>
-<div class="editor-wrapper"><textarea id="t3" placeholder="Type or paste text. Long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></textarea><img id="i0" class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" data-placeholder="Type or paste text. Long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t1" contenteditable="true" data-placeholder="Type or paste text. Long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t2" contenteditable="true" data-placeholder="Type or paste text. Long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" data-placeholder="Type or paste text. Long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></div><img class="img-preview"></div>
 <a href="index.html" class="handle" id="handle" draggable="false" onclick="return false;"><img src="logo.png" alt="Logo" draggable="false"></a>
 
 </div>
 <script>
 const container = document.getElementById('app');
 const handle = document.getElementById('handle');
-const textareas = document.querySelectorAll('textarea');
+const textareas = document.querySelectorAll('.editor');
 const images = document.querySelectorAll('.img-preview');
 let isDragging = false;
 let dragStartTime = 0;
@@ -138,12 +145,12 @@ const tx = db.transaction("texts", "readonly");
 const req = tx.objectStore("texts").get(i);
 req.onsuccess = () => {
 if (req.result) {
-ta.value = req.result.content || '';
+ta.innerHTML = req.result.content || '';
 if (req.result.img) { images[i].src = req.result.img; images[i].style.display = 'block'; }
 }
 };
 ta.style.setProperty('--font', localStorage.getItem(`q_f_${i}`) || defFonts[i]);
-ta.style.fontSize = localStorage.getItem(`q_s_${i}`) || '16px';
+ta.style.fontSize = localStorage.getItem(`q_s_${i}`) || '18px';
 ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`) || defBgs[i]);
 ta.style.setProperty('--color', localStorage.getItem(`q_c_${i}`) || defColors[i]);
 });
@@ -194,15 +201,16 @@ handle.addEventListener('click', (e) => e.preventDefault());
 handle.addEventListener('contextmenu', (e) => e.preventDefault());
 
 textareas.forEach((ta, i) => {
-ta.addEventListener('input', () => saveToDB(i, ta.value));
+ta.addEventListener('input', () => saveToDB(i, ta.innerHTML));
 ta.addEventListener('paste', (e) => {
 const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
 if (item) {
+e.preventDefault();
 const reader = new FileReader();
 reader.onload = (ev) => {
 images[i].src = ev.target.result;
 images[i].style.display = 'block';
-saveToDB(i, ta.value, ev.target.result);
+saveToDB(i, ta.innerHTML, ev.target.result);
 };
 reader.readAsDataURL(item.getAsFile());
 }
