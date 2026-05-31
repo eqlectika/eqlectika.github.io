@@ -234,7 +234,8 @@ window.addEventListener('pointerup', (e) => {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a12); 
     
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 4000);
+    // Увеличили дальнюю плоскость отсечения (Far) с 4000 до 12000, чтобы крупные далекие планеты не исчезали из видимости
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 12000);
     
     const player = new THREE.Group();
     // Размещаем в нижней точке сферы
@@ -411,6 +412,33 @@ window.addEventListener('pointerup', (e) => {
         scene.add(bridgeGroup);
     }
 
+    // ==========================================
+    // КРУПНЫЕ ПЛАНЕТЫ ЗА ПРЕДЕЛАМИ СФЕРЫ
+    // ==========================================
+    const backgroundPlanets = []; 
+    const planetData = [
+        { radius: 500, color: 0xe27b58, x: 3500, y: 1500, z: -2000, rotSpeed: 0.002 },  
+        { radius: 800, color: 0x47637c, x: -4500, y: -2000, z: 3000, rotSpeed: 0.001 }, 
+        { radius: 300, color: 0x8d5b9c, x: -4000, y: -4000, z: -4000, rotSpeed: 0.003 }   
+    ];
+
+    planetData.forEach(data => {
+        const bgPlanetGeom = new THREE.SphereGeometry(data.radius, 32, 32);
+        const bgPlanetMat = new THREE.MeshPhongMaterial({ 
+            color: data.color, 
+            shininess: 10,
+            flatShening: true 
+        });
+        const bgPlanetMesh = new THREE.Mesh(bgPlanetGeom, bgPlanetMat);
+        bgPlanetMesh.position.set(data.x, data.y, data.z);
+        scene.add(bgPlanetMesh);
+        
+        backgroundPlanets.push({
+            mesh: bgPlanetMesh,
+            rotSpeed: data.rotSpeed
+        });
+    });
+
     const keys = {};
     let lastSpaceTime = 0;
     let superThrust = false;
@@ -464,7 +492,7 @@ function animate() {
 
     let currentFlySpeed = FLY_SPEED;
 
-    let thrustForce = 0;
+    let thrustForce = 0; 
     if (keys['Space']) {
         const spaceMultiplier = superThrust ? 2.5 : 1.0; 
         thrustForce = currentFlySpeed * spaceMultiplier; 
@@ -515,6 +543,12 @@ function animate() {
             velocity.addScaledVector(playerDirection, -normalVelocity * 1.3); 
         }
     }
+
+    // Медленное вращение фоновых планет вокруг своей оси
+    backgroundPlanets.forEach(planet => {
+        planet.mesh.rotation.y += planet.rotSpeed;
+        planet.mesh.rotation.x += planet.rotSpeed * 0.2;
+    });
 
     renderer.render(scene, camera);
 }
