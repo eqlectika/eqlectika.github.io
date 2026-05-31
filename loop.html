@@ -1,19 +1,451 @@
-    // --- УПРАВЛЕНИЕ КЛАВИАТУРОЙ (Здесь изменены знаки для лево/право) ---
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <link rel="manifest" href="manifest-loop.json">
+
+    <title>Jetpack</title>
+<style>
+html, body { 
+    margin: 0; 
+    padding: 0;
+    width: 100dvw;
+    height: 100dvh; /* Гарантирует адаптивную высоту без белых зазоров */
+    overflow: hidden; 
+    touch-action: none; 
+    user-select: none;
+    -webkit-user-select: none;
+    background-color: #0a0a12; /* Родной цвет фона вашей сцены */
+}
+canvas { 
+    display: block; 
+    position: absolute; /* Фиксирует холст, не давая ему смещаться под шторки */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#controls {
+    position: fixed;
+    bottom: 50px;
+    left: 20px;                      
+    display: flex;
+    justify-content: flex-start;
+    pointer-events: none;
+    z-index: 3000;
+}
+
+@media (pointer: coarse) { #controls { display: flex; } }
+#logoLink {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4000; 
+    pointer-events: auto;
+}
+
+#throttleArea {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 50vw;
+    height: 100vh;
+    z-index: 2000;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+#controlArea {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 50vw;
+    height: 100vh;
+    z-index: 2000;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+@media (pointer: fine) {
+    #throttleArea, #controlArea {
+        pointer-events: none;
+    }
+}
+</style>
+</head>
+<body>
+    <a href="index.html" id="logoLink">
+        <img src="logo.png" alt="Logo" style="width: 42px; height: 42px;">
+    </a> 
+    <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
+
+<script type="importmap">
+  { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+// --- БЛОК 1: Управление тягой и наклоном ---
+let currentThrottle = 0;
+let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
+
+const throttleArea = document.getElementById('throttleArea');
+const controlArea = document.getElementById('controlArea');
+
+const activeTouches = {
+    throttle: null,
+    control: null
+};
+
+// События для Throttle
+throttleArea.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    activeTouches.throttle = e.pointerId;
+    updateThrottle(e);
+}, { passive: false });
+
+function updateThrottle(e) {
+    const rect = throttleArea.getBoundingClientRect();
+    let val = 1 - ((e.clientY - rect.top) / rect.height);
+    currentThrottle = Math.max(0, Math.min(1, val));
+}
+
+// События для ControlArea (Правый джойстик)
+controlArea.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    activeTouches.control = e.pointerId;
+    touchJoystick.active = true;
+    touchJoystick.startX = e.clientX;
+    touchJoystick.startY = e.clientY;
+    touchJoystick.moveX = 0;
+    touchJoystick.moveY = 0;
+}, { passive: false });
+
+window.addEventListener('pointermove', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        updateThrottle(e);
+    }
+    if (e.pointerId === activeTouches.control && touchJoystick.active) {
+        // Вычисляем смещение пальца от точки нажатия
+        const maxDistance = 100; // Радиус зоны чувствительности виртуального стика
+        let diffX = e.clientX - touchJoystick.startX;
+        let diffY = e.clientY - touchJoystick.startY;
+        
+        // Ограничиваем максимальное значение от -1 до 1
+        touchJoystick.moveX = Math.max(-1, Math.min(1, diffX / maxDistance));
+        touchJoystick.moveY = Math.max(-1, Math.min(1, diffY / maxDistance));
+    }
+});
+
+window.addEventListener('pointerup', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        activeTouches.throttle = null;
+        currentThrottle = 0;
+    }
+    if (e.pointerId === activeTouches.control) {
+        activeTouches.control = null;
+        touchJoystick.active = false;
+        touchJoystick.moveX = 0;
+        touchJoystick.moveY = 0;
+    }
+});
+
+    import * as THREE from 'three';
+
+    // ==========================================
+    // 1. НАСТРОЙКИ СКОРОСТИ, ИНЕРЦИИ И КРЕНА
+    // ==========================================
+    const FLY_SPEED = 0.0171;       
+    const TURN_SPEED = 0.0005;      
+    const TOUCH_TURN_SPEED = 0.0008; // Коэффициент скорости для тач-контроллера
+    
+    const GRAVITY = 0.013; 
+    
+    const DAMPING_TURN = 0.96;
+    const DAMPING_MOVE = 0.98;
+
+    // ==========================================
+    // 2. ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННЫХ И СОСТОЯНИЙ
+    // ==========================================
+    if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+    }
+
+    // ==========================================
+    // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
+    // ==========================================
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a12); 
+    
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
+    camera.rotation.set(0, 0, 0);
+    
+    const player = new THREE.Group();
+    player.position.set(0, 2, 0);
+    player.rotation.order = 'YXZ';
+    scene.add(player);
+    player.add(camera);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const light = new THREE.DirectionalLight(0xffffff, 2.5);
+    light.position.set(50, 200, 50);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x888888));
+
+    const backLight = new THREE.DirectionalLight(0xabcdef, 0.8);
+    backLight.position.set(-50, 100, -50); 
+    scene.add(backLight);
+
+    const collidableObjects = [];
+    const WORLD_SIZE = 800; 
+
+    function addStructure(mesh) {
+        scene.add(mesh);
+        collidableObjects.push(mesh);
+    }
+
+    // ==========================================
+    // БЕСКОНЕЧНАЯ СЕТКА
+    // ==========================================
+    const gridGeometry = new THREE.PlaneGeometry(10000, 10000);
+    const gridMaterial = new THREE.ShaderMaterial({
+        side: THREE.DoubleSide,
+        transparent: true,
+        uniforms: {
+            uSize: { value: 10.0 },
+        },
+        vertexShader: `
+            varying vec3 vWorldPosition;
+            void main() {
+                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                vWorldPosition = worldPosition.xyz;
+                gl_Position = projectionMatrix * viewMatrix * worldPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vWorldPosition;
+            uniform float uSize;
+            void main() {
+                vec2 grid = abs(fract(vWorldPosition.xz / uSize - 0.5) - 0.5) / fwidth(vWorldPosition.xz / uSize);
+                float line = min(grid.x, grid.y);
+                float alpha = 1.0 - min(line, 1.0);
+                
+                float dist = length(vWorldPosition.xz);
+                float fade = 1.0 - smoothstep(100.0, 800.0, dist); 
+                
+                if (alpha < 0.1) discard;
+                
+                gl_FragColor = vec4(0.26, 0.26, 1.0, alpha * fade * 0.5);
+            }
+        `
+    });
+
+    const infiniteGrid = new THREE.Mesh(gridGeometry, gridMaterial);
+    infiniteGrid.rotation.x = -Math.PI / 2; 
+    infiniteGrid.position.y = 0;
+    scene.add(infiniteGrid);
+
+    // Столбы и квадраты
+    for(let i=0; i<40; i++) {
+        const sizeX = 10 + Math.random() * 20;
+        const sizeY = 4 + Math.random() * 15;
+        const sizeZ = 10 + Math.random() * 20;
+
+        const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
+        const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
+        const box = new THREE.Mesh(geometry, material);
+        
+        box.position.set(
+            (Math.random() - 0.5) * WORLD_SIZE,
+            sizeY / 2, 
+            (Math.random() - 0.5) * WORLD_SIZE
+        );
+        addStructure(box);
+    }
+
+    // Арки
+    for(let i=0; i<25; i++) {
+        const archGroup = new THREE.Group();
+        const archColor = Math.random() * 0xffffff;
+        const material = new THREE.MeshPhongMaterial({ color: archColor });
+
+        const w = 4;   
+        const h = 30;  
+        const d = 4;   
+        const span = 25; 
+
+        const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+        leftLeg.position.set(-span/2, h/2, 0);
+        archGroup.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+        rightLeg.position.set(span/2, h/2, 0);
+        archGroup.add(rightLeg);
+
+        const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w, d), material);
+        topBar.position.set(0, h + w/2, 0);
+        archGroup.add(topBar);
+
+        archGroup.position.set(
+            (Math.random() - 0.5) * WORLD_SIZE,
+            0,
+            (Math.random() - 0.5) * WORLD_SIZE
+        );
+        archGroup.rotation.y = Math.random() * Math.PI;
+
+        leftLeg.updateMatrixWorld();
+        rightLeg.updateMatrixWorld();
+        topBar.updateMatrixWorld();
+        collidableObjects.push(leftLeg, rightLeg, topBar);
+        
+        scene.add(archGroup);
+    }
+
+    // Мосты
+    for(let i=0; i<15; i++) {
+        const bridgeGroup = new THREE.Group();
+        const bridgeColor = 0x555566;
+        const material = new THREE.MeshPhongMaterial({ color: bridgeColor });
+
+        const length = 80;
+        const width = 12;
+        const height = 15;
+
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(width, 2, length), material);
+        deck.position.set(0, height, 0);
+        bridgeGroup.add(deck);
+
+        for(let j = -length/3; j <= length/3; j += length/3) {
+            const pillar = new THREE.Mesh(new THREE.BoxGeometry(4, height, 4), material);
+            pillar.position.set(0, height/2, j);
+            bridgeGroup.add(pillar);
+            pillar.updateMatrixWorld();
+            collidableObjects.push(pillar);
+        }
+
+        bridgeGroup.position.set(
+            (Math.random() - 0.5) * WORLD_SIZE,
+            0,
+            (Math.random() - 0.5) * WORLD_SIZE
+        );
+        bridgeGroup.rotation.y = Math.random() * Math.PI;
+
+        deck.updateMatrixWorld();
+        collidableObjects.push(deck);
+
+        scene.add(bridgeGroup);
+    }
+
+const keys = {};
+    let lastSpaceTime = 0;
+    let superThrust = false;
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !keys['Space']) { 
+            const currentTime = performance.now();
+            if (currentTime - lastSpaceTime < 250) { 
+                superThrust = true;
+            }
+            lastSpaceTime = currentTime;
+        }
+        keys[e.code] = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+        if (e.code === 'Space') {
+            superThrust = false; 
+        }
+    });
+    
+
+    let velocity = new THREE.Vector3(0, 0, 0);
+    let angularVelocityX = 0;
+    let angularVelocityZ = 0;
+
+// 1. ДОБАВЬТЕ ЭТИ ДВЕ ПЕРЕМЕННЫЕ СТРОГО ВЫШЕ ФУНКЦИИ ANIMATE (в самый верх скрипта)
+let currentPitch = 0; // Тангаж (вперед/назад)
+let currentRoll = 0;  // Крен (влево/вправо)
+
+function animate() {
+    requestAnimationFrame(animate);
+    const raycaster = new THREE.Raycaster();
+    const downVector = new THREE.Vector3(0, -1, 0);
+
+    raycaster.set(player.position, downVector);
+    const intersects = raycaster.intersectObjects(collidableObjects);
+
+    if (velocity.y <= 0 && intersects.length > 0 && intersects[0].distance < 2.1) {
+        player.position.y = intersects[0].point.y + 2; 
+        velocity.y = 0; 
+    }
+
+    // --- УПРАВЛЕНИЕ КЛАВИАТУРОЙ ---
     if (keys['ArrowLeft']) angularVelocityZ -= TURN_SPEED;
     if (keys['ArrowRight']) angularVelocityZ += TURN_SPEED;
     if (keys['ArrowUp']) angularVelocityX += TURN_SPEED;
     if (keys['ArrowDown']) angularVelocityX -= TURN_SPEED;
 
-    // --- УПРАВЛЕНИЕ С ТАЧ-СКРИНА (Здесь изменен знак на минус для инверсии лево/право) ---
+    // --- УПРАВЛЕНИЕ С ТАЧ-СКРИНА ---
     if (touchJoystick.active) {
         angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
         angularVelocityZ -= touchJoystick.moveX * TOUCH_TURN_SPEED;
     }
 
-    // Применяем трение
+    // Применяем трение к угловым скоростям
     angularVelocityX *= DAMPING_TURN;
     angularVelocityZ *= DAMPING_TURN;
 
-    // Накапливаем чистые углы в наших изолированных переменных
-    currentPitch += angularVelocityX;
-    currentRoll += angularVelocityZ;
+    // ЖЕСТКАЯ ФИКСАЦИЯ ЛОКАЛЬНЫХ ОСЕЙ:
+    // Каждым кадром создаем дельту вращения на основе текущих скоростей.
+    // Порядок 'YXZ' изолирует локальный крен от тангажа внутри кадра.
+    const deltaQuaternion = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
+    );
+    
+    // Умножаем ТЕКУЩИЙ кватернион на дельту. 
+    // Это заставляет объект вращаться относительно его собственного «актуального» верха и лева.
+    player.quaternion.multiply(deltaQuaternion);
+
+    let currentFlySpeed = FLY_SPEED;
+
+    // Расчет силы тяги
+    let thrustForce = 0;
+    if (keys['Space']) {
+        const spaceMultiplier = superThrust ? 2.5 : 1.0; 
+        thrustForce = currentFlySpeed * spaceMultiplier; 
+    } else if (currentThrottle > 0.05) {
+        thrustForce = currentFlySpeed * (currentThrottle * 2.0); 
+    }
+
+    // Направление тяги строго следует за локальным вектором Y объекта
+    const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+
+    if (thrustForce > 0) {
+        velocity.add(localUp.clone().multiplyScalar(thrustForce));
+    }
+
+    // Гравитация
+    velocity.y -= GRAVITY;
+
+    player.position.add(velocity);
+    velocity.multiplyScalar(DAMPING_MOVE);
+
+    if (player.position.y < 2) {
+        player.position.y = 2;
+        velocity.y = Math.max(0, velocity.y * -0.3);
+    }
+
+    infiniteGrid.position.set(player.position.x, 0, player.position.z);
+    renderer.render(scene, camera);
+}
+
+
+    animate();
+</script>
+</body>
+</html>
