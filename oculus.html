@@ -39,6 +39,15 @@
     document.body.appendChild(renderer.domElement);
     document.body.appendChild(VRButton.createButton(renderer));
 
+    // Добавлена сетка
+    const planetMaterial = new THREE.ShaderMaterial({
+        wireframe: false, transparent: true, side: THREE.DoubleSide,
+        uniforms: { uSize: { value: 0.05 } },
+        vertexShader: `varying vec3 vWorldPosition; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vWorldPosition = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+        fragmentShader: `varying vec3 vWorldPosition; uniform float uSize; void main() { vec2 g = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize); vec2 g2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize); float l = min(min(g.x, g.y), min(g2.x, g2.y)); if (1.0 - min(l, 1.0) < 0.1) discard; gl_FragColor = vec4(0.26, 0.26, 1.0, 0.4); }`
+    });
+    scene.add(new THREE.Mesh(new THREE.SphereGeometry(PLANET_RADIUS, 64, 64), planetMaterial));
+
     scene.add(new THREE.DirectionalLight(0xffffff, 2.5));
     scene.add(new THREE.AmbientLight(0x888888));
     const backLight = new THREE.DirectionalLight(0xabcdef, 0.8);
@@ -57,7 +66,7 @@
         mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(x, y, z).normalize());
     }
 
-    // Генерация структур (исходная логика)
+    // Генерация структур
     for(let i=0; i<40; i++) {
         const sizeY = 4 + Math.random() * 15;
         const box = new THREE.Mesh(new THREE.BoxGeometry(10 + Math.random()*20, sizeY, 10 + Math.random()*20), new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff }));
@@ -94,7 +103,6 @@
         const session = renderer.xr.getSession();
         let thrust = 0;
         
-        // Управление: если нажата кнопка на контроллере (состояние XR)
         if (session && session.inputSources) {
             for (const source of session.inputSources) {
                 if (source.gamepad && source.gamepad.buttons[0] && source.gamepad.buttons[0].pressed) {
