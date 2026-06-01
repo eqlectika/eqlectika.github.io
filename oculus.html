@@ -34,30 +34,31 @@ html, body {
     user-select: none;
     -webkit-user-select: none;
 }
-#VRButton {
+/* Добавьте контейнер-центровщик */
+#vr-button-container {
     position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    
-    /* Сбрасываем принудительную высоту */
-    height: auto !important;
-    min-height: 50px !important;
-    width: auto !important;
-    padding: 10px 20px !important;
-    
-    /* Центрирование текста */
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
     display: flex !important;
-    align-items: center !important;
     justify-content: center !important;
+    align-items: center !important;
+    pointer-events: none !important; /* Чтобы клики проходили сквозь контейнер */
+    z-index: 10000 !important;
+}
+
+#VRButton {
+    /* Сбрасываем все позиционирование */
+    position: static !important;
+    pointer-events: auto !important; /* Кнопка должна реагировать на клик */
     
-    /* Визуальный стиль */
-    background-color: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    color: white !important;
-    cursor: pointer !important;
-    z-index: 9999 !important;
+    /* Стили */
+    width: auto !important;
+    height: auto !important;
+    padding: 15px 30px !important;
     opacity: 0.3 !important;
+    border: 1px solid white !important;
 }
 
     #VRButton:hover, #VRButton:active {
@@ -216,7 +217,7 @@ if (touchJoystick.active) {
     // moveY отвечает за тангаж (tX), moveX - за поворот (tY)
     tX += touchJoystick.moveY; 
     tY += touchJoystick.moveX;
-}
+}    
         // 1. Считывание ввода
         if (keys.w) tX -= 1; if (keys.s) tX += 1;
         if (keys.d) tY += 1; if (keys.a) tY -= 1; // A/D теперь отвечают за связку Поворот+Крен
@@ -255,7 +256,7 @@ if (touchJoystick.active) {
 // 1. Применяем физику движения
         const gravDir = player.position.clone().normalize();
         velocity.addScaledVector(gravDir, GRAVITY);
-        player.position.add(velocity);
+        player.position.add(velocity); 
         velocity.multiplyScalar(DAMPING_MOVE);
 
         // 2. БЕТОННАЯ ГРАНИЦА (Safety Check)
