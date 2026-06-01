@@ -88,7 +88,7 @@ canvas {
 </style>
 </head>
 <body>
-    <button id="startButton">START GAME</button>
+    <button id="startButton">FULL SCREEN</button>
 
 <div id="logoLink">
     <img src="logo.png" alt="Logo" draggable="false" style="margin-bottom: 20px; width: 42px; height: 42px; opacity: 0.2;">
@@ -621,8 +621,8 @@ function animate() {
     }
 
     if (isSubmerged) {
-        angularVelocityX *= (DAMPING_TURN * 0.88);
-        angularVelocityZ *= (DAMPING_TURN * 0.88);
+        angularVelocityX *= (DAMPING_TURN * 0.92);
+        angularVelocityZ *= (DAMPING_TURN * 0.92);
     } else {
         angularVelocityX *= DAMPING_TURN;
         angularVelocityZ *= DAMPING_TURN;
@@ -644,18 +644,21 @@ function animate() {
     
     let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
     if (isReverseThrust) { localUp.negate(); }
-    if (thrustForce > 0) { velocity.add(localUp.clone().multiplyScalar(thrustForce)); }
-
+if (thrustForce > 0) { 
+    // Если под водой, можно искусственно докручивать импульс
+    const waterMultiplier = isSubmerged ? 2.0 : 1.0; 
+    velocity.add(localUp.clone().multiplyScalar(thrustForce * waterMultiplier)); 
+}
     const playerDirection = player.position.clone().normalize();
     if (isSubmerged) { 
-        velocity.addScaledVector(playerDirection, GRAVITY * 0.2); 
+        velocity.addScaledVector(playerDirection, -GRAVITY * 0.5); 
     } else { 
         velocity.addScaledVector(playerDirection, GRAVITY); 
     }
 
     player.position.add(velocity);
 
-    if (isSubmerged) { velocity.multiplyScalar(DAMPING_MOVE * 0.82); } 
+    if (isSubmerged) { velocity.multiplyScalar(DAMPING_MOVE * 0.99); } 
     else { velocity.multiplyScalar(DAMPING_MOVE); }
 
     const raycaster = new THREE.Raycaster();
