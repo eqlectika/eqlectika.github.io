@@ -84,25 +84,26 @@
 renderer.setAnimationLoop(() => {
         const session = renderer.xr.getSession();
         let thrust = 0;
+        const deadzone = 0.2; // Игнорируем слабые случайные сигналы
         
         if (session && session.inputSources) {
             for (const source of session.inputSources) {
                 const gp = source.gamepad;
                 if (!gp) continue;
 
-                // Управление через кликабельные кнопки (нажатия на тачпаде)
-                // Предполагаем маппинг кнопок Oculus (настройте индекс, если нужно)
-                // gp.buttons[2] = Left, gp.buttons[3] = Right, gp.buttons[4] = Up, gp.buttons[5] = Down
-                if (gp.buttons[2]?.pressed) player.rotateOnAxis(new THREE.Vector3(0, 0, 1), TURN_SPEED);
-                if (gp.buttons[3]?.pressed) player.rotateOnAxis(new THREE.Vector3(0, 0, 1), -TURN_SPEED);
-                if (gp.buttons[4]?.pressed) player.rotateOnAxis(new THREE.Vector3(1, 0, 0), TURN_SPEED);
-                if (gp.buttons[5]?.pressed) player.rotateOnAxis(new THREE.Vector3(1, 0, 0), -TURN_SPEED);
+                // Управление с мертвой зоной
+                let axisX = Math.abs(gp.axes[0]) > deadzone ? gp.axes[0] : 0;
+                let axisY = Math.abs(gp.axes[1]) > deadzone ? gp.axes[1] : 0;
 
-                // Тяга на Trigger
+                // Используем rotateOnAxis для корректного вращения относительно локальных координат
+                if (axisY !== 0) player.rotateOnAxis(new THREE.Vector3(1, 0, 0), axisY * TURN_SPEED);
+                if (axisX !== 0) player.rotateOnAxis(new THREE.Vector3(0, 0, 1), -axisX * TURN_SPEED);
+
                 if (gp.buttons[0]?.pressed) thrust = FLY_SPEED * 2;
             }
         }
 
+        // Вектор тяги всегда учитывает текущий наклон группы player
         const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
         if (thrust > 0) velocity.add(localUp.multiplyScalar(thrust));
         
