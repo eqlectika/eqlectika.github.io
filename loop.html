@@ -96,9 +96,10 @@ canvas {
 <body>
     <button id="startButton">START GAME</button>
 
-    <div id="logoLink">
-        <img src="logo.png" alt="Logo" style="width: 42px; height: 42px;">
-    </div> 
+<a href="index.html" id="logoLink">
+    <img src="logo.png" alt="Logo" draggable="false" style="margin-bottom: 20px; width: 42px; height: 42px; opacity: 0.2;">
+</a>
+    
     <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
 
 <script type="importmap">
@@ -121,35 +122,7 @@ const activeTouches = {
     control: null
 };
 
-// Переменные для обработки Hold (удержания) логотипа
-let logoTimer = null;
-let isLongPress = false;
 
-logoLink.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    isLongPress = false;
-    
-    // Запускаем таймер на 2000мс для перехода на index.html
-    logoTimer = setTimeout(() => {
-        isLongPress = true;
-        window.location.href = 'index.html';
-    }, 2000);
-});
-
-logoLink.addEventListener('pointerup', (e) => {
-    e.preventDefault();
-    clearTimeout(logoTimer);
-    
-    // Если отпустили раньше 2 секунд — это короткий клик, меняем направление тяги
-    if (!isLongPress) {
-        isReverseThrust = !isReverseThrust;
-        console.log("Reverse thrust:", isReverseThrust);
-    }
-});
-
-logoLink.addEventListener('pointercancel', () => {
-    clearTimeout(logoTimer);
-});
 
 // События для Throttle
 throttleArea.addEventListener('pointerdown', (e) => {
