@@ -1,0 +1,1178 @@
+
+Розмова з Gemini
+perepiwi yetot kod dlq vr oculus go
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+
+
+    <link rel="manifest" href="manifest.json">
+
+
+
+    <title>Outside-in Planet</title>
+
+<style>
+
+html, body { 
+
+    margin: 0; 
+
+    padding: 0;
+
+    width: 100dvw;
+
+    height: 100dvh;
+
+    overflow: hidden; 
+
+    touch-action: none; 
+
+    user-select: none;
+
+    -webkit-user-select: none;
+
+    background-color: #0a0a12;
+
+}
+
+canvas { 
+
+    display: block; 
+
+    position: absolute;
+
+    top: 0;
+
+    left: 0;
+
+    width: 100%;
+
+    height: 100%;
+
+}
+
+
+
+#controls {
+
+    position: fixed;
+
+    bottom: 50px;
+
+    left: 20px;                      
+
+    display: flex;
+
+    justify-content: flex-start;
+
+    pointer-events: none;
+
+    z-index: 3000;
+
+}
+
+
+
+@media (pointer: coarse) { #controls { display: flex; } }
+
+#logoLink {
+
+    position: fixed;
+
+    bottom: 10px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    z-index: 4000; 
+
+    pointer-events: auto;
+
+    cursor: pointer;
+
+    -webkit-touch-callout: none; /* Отключает системное меню при долгом нажатии на iOS */
+
+    user-select: none;           /* Запрещает выделение */
+
+    -webkit-user-select: none;
+
+}
+
+
+
+#throttleArea {
+
+    position: fixed;
+
+    top: 0;
+
+    left: 0;
+
+    width: 50vw;
+
+    height: 100vh;
+
+    z-index: 2000;
+
+    pointer-events: auto;
+
+    touch-action: none;
+
+}
+
+
+
+#controlArea {
+
+    position: fixed;
+
+    top: 0;
+
+    right: 0;
+
+    width: 50vw;
+
+    height: 100vh;
+
+    z-index: 2000;
+
+    pointer-events: auto;
+
+    touch-action: none;
+
+}
+
+
+
+@media (pointer: fine) {
+
+    #throttleArea, #controlArea {
+
+        pointer-events: none;
+
+    }
+
+}
+
+
+
+#startButton {
+
+    position: fixed;
+
+    top: 50%;
+
+    left: 50%;
+
+    transform: translate(-50%, -50%);
+
+    z-index: 5000;
+
+    padding: 15px 30px;
+
+    background-color: #3b3b4f;
+
+    color: white;
+
+    border: none;
+
+    border-radius: 8px;
+
+    font-size: 18px;
+
+    cursor: pointer;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+    <button id="startButton">FULL SCREEN</button>
+
+
+
+<a href="index.html" id="logoLink">
+
+    <img src="logo.png" alt="Logo" draggable="false" style="margin-bottom: 20px; width: 42px; height: 42px; opacity: 0.2;">
+
+</a>
+
+    
+
+    <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
+
+
+
+<script type="importmap">
+
+  { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+
+</script>
+
+<script type="module">
+
+// --- БЛОК 1: Управление тягой и наклоном ---
+
+let currentThrottle = 0;
+
+let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
+
+
+
+let isReverseThrust = true;
+
+
+
+const throttleArea = document.getElementById('throttleArea');
+
+const controlArea = document.getElementById('controlArea');
+
+const logoLink = document.getElementById('logoLink');
+
+
+
+const activeTouches = {
+
+    throttle: null,
+
+    control: null
+
+};
+
+
+
+throttleArea.addEventListener('pointerdown', (e) => {
+
+    if (e.pointerType === 'mouse') return;
+
+    activeTouches.throttle = e.pointerId;
+
+    updateThrottle(e);
+
+}, { passive: false });
+
+
+
+function updateThrottle(e) {
+
+    const rect = throttleArea.getBoundingClientRect();
+
+    let val = 1 - ((e.clientY - rect.top) / rect.height);
+
+    currentThrottle = Math.max(0, Math.min(1, val));
+
+}
+
+
+
+controlArea.addEventListener('pointerdown', (e) => {
+
+    if (e.pointerType === 'mouse') return;
+
+    activeTouches.control = e.pointerId;
+
+    touchJoystick.active = true;
+
+    touchJoystick.startX = e.clientX;
+
+    touchJoystick.startY = e.clientY;
+
+    touchJoystick.moveX = 0;
+
+    touchJoystick.moveY = 0;
+
+}, { passive: false });
+
+
+
+window.addEventListener('pointermove', (e) => {
+
+    if (e.pointerId === activeTouches.throttle) {
+
+        updateThrottle(e);
+
+    }
+
+    if (e.pointerId === activeTouches.control && touchJoystick.active) {
+
+        const maxDistance = 100;
+
+        let diffX = e.clientX - touchJoystick.startX;
+
+        let diffY = e.clientY - touchJoystick.startY;
+
+        
+
+        touchJoystick.moveX = Math.max(-1, Math.min(1, diffX / maxDistance));
+
+        touchJoystick.moveY = Math.max(-1, Math.min(1, diffY / maxDistance));
+
+    }
+
+});
+
+
+
+window.addEventListener('pointerup', (e) => {
+
+    if (e.pointerId === activeTouches.throttle) {
+
+        activeTouches.throttle = null;
+
+        currentThrottle = 0;
+
+    }
+
+    if (e.pointerId === activeTouches.control) {
+
+        activeTouches.control = null;
+
+        touchJoystick.active = false;
+
+        touchJoystick.moveX = 0;
+
+        touchJoystick.moveY = 0;
+
+    }
+
+});
+
+
+
+    import * as THREE from 'three';
+
+
+
+    // ==========================================
+
+    // 1. НАСТРОЙКИ СКОРОСТИ, ИНЕРЦИИ И КРЕНА
+
+    // ==========================================
+
+    const FLY_SPEED = 0.0057;       
+
+    const TURN_SPEED = 0.0003;      
+
+    const TOUCH_TURN_SPEED = 0.0005; 
+
+    
+
+    const GRAVITY = 0.0043333; 
+
+    
+
+    const DAMPING_TURN = 0.99;
+
+    const DAMPING_MOVE = 0.99;
+
+
+
+    const PLANET_RADIUS = 1500; 
+
+    const PLAYER_HEIGHT = 2; 
+
+
+
+    // ==========================================
+
+    // 2. ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННЫХ И СОСТОЯНИЙ
+
+    // ==========================================
+
+    document.getElementById('startButton').addEventListener('click', () => {
+
+        document.getElementById('startButton').style.display = 'none';
+
+        
+
+        if (document.documentElement.requestFullscreen) {
+
+            document.documentElement.requestFullscreen().catch(() => {});
+
+        } else if (document.documentElement.webkitRequestFullscreen) {
+
+            document.documentElement.webkitRequestFullscreen();
+
+        }
+
+
+
+        if (screen.orientation && screen.orientation.lock) {
+
+            screen.orientation.lock('landscape').catch(() => {});
+
+        }
+
+    });
+
+
+
+    // ==========================================
+
+    // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
+
+    // ==========================================
+
+    const scene = new THREE.Scene();
+
+    scene.background = new THREE.Color(0x0a0a12); 
+
+    
+
+    // Увеличили дальнюю плоскость отсечения (Far) с 4000 до 12000, чтобы крупные далекие планеты не исчезали из видимости
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 12000);
+
+    
+
+    const player = new THREE.Group();
+
+    // Размещаем в нижней точке сферы
+
+    player.position.set(0, -(PLANET_RADIUS - PLAYER_HEIGHT), 0);
+
+    
+
+    // Начальное выравнивание по кватернионам
+
+    const initialDir = player.position.clone().normalize();
+
+    player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), initialDir);
+
+    scene.add(player);
+
+    
+
+    // Камера жестко внутри игрока, развернута на 180 градусов по X
+
+    camera.quaternion.setFromEuler(new THREE.Euler(Math.PI, 0, 0, 'YXZ'));
+
+    player.add(camera);
+
+
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    document.body.appendChild(renderer.domElement);
+
+
+
+    window.addEventListener('resize', () => {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+    });
+
+
+
+    const light = new THREE.DirectionalLight(0xffffff, 2.5);
+
+    light.position.set(50, 200, 50);
+
+    scene.add(light);
+
+    scene.add(new THREE.AmbientLight(0x888888));
+
+
+
+    const backLight = new THREE.DirectionalLight(0xabcdef, 0.8);
+
+    backLight.position.set(-50, 100, -50); 
+
+    scene.add(backLight);
+
+
+
+    const collidableObjects = [];
+
+
+
+    function addStructure(mesh) {
+
+        scene.add(mesh);
+
+        collidableObjects.push(mesh);
+
+    }
+
+
+
+    // ==========================================
+
+    // СФЕРИЧЕСКАЯ ПЛАНЕТАРНАЯ СЕТКА
+
+    // ==========================================
+
+    const planetGeometry = new THREE.SphereGeometry(PLANET_RADIUS, 64, 64);
+
+    const planetMaterial = new THREE.ShaderMaterial({
+
+        wireframe: false,
+
+        transparent: true,
+
+        side: THREE.DoubleSide, 
+
+        uniforms: {
+
+            uSize: { value: 0.05 }, 
+
+        },
+
+        vertexShader: `
+
+            varying vec3 vWorldPosition;
+
+            varying vec3 vNormal;
+
+            void main() {
+
+                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+
+                vWorldPosition = worldPosition.xyz;
+
+                vNormal = normalize(normalMatrix * normal);
+
+                gl_Position = projectionMatrix * viewMatrix * worldPosition;
+
+            }
+
+        `,
+
+        fragmentShader: `
+
+            varying vec3 vWorldPosition;
+
+            varying vec3 vNormal;
+
+            uniform float uSize;
+
+            void main() {
+
+                vec2 grid = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize);
+
+                vec2 grid2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize);
+
+                float line = min(min(grid.x, grid.y), min(grid2.x, grid2.y));
+
+                float alpha = 1.0 - min(line, 1.0);
+
+                
+
+                if (alpha < 0.1) discard;
+
+                
+
+                gl_FragColor = vec4(0.26, 0.26, 1.0, alpha * 0.4);
+
+            }
+
+        `
+
+    });
+
+
+
+    const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+
+    planetMesh.position.set(0, 0, 0);
+
+    scene.add(planetMesh);
+
+
+
+    function positionOnSphere(mesh, distanceToCenter) {
+
+        const u = Math.random();
+
+        const v = Math.random();
+
+        const theta = u * 2.0 * Math.PI;
+
+        const phi = Math.acos(2.0 * v - 1.0);
+
+        
+
+        const x = distanceToCenter * Math.sin(phi) * Math.cos(theta);
+
+        const y = distanceToCenter * Math.sin(phi) * Math.sin(theta);
+
+        const z = distanceToCenter * Math.cos(phi);
+
+        
+
+        mesh.position.set(x, y, z);
+
+        
+
+        const upVector = new THREE.Vector3(x, y, z).normalize();
+
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), upVector);
+
+    }
+
+
+
+    // Столбы и квадраты на сфере
+
+    for(let i=0; i<40; i++) {
+
+        const sizeX = 10 + Math.random() * 20;
+
+        const sizeY = 4 + Math.random() * 15;
+
+        const sizeZ = 10 + Math.random() * 20;
+
+
+
+        const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
+
+        const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
+
+        const box = new THREE.Mesh(geometry, material);
+
+        
+
+        box.geometry.translate(0, -sizeY / 2, 0); 
+
+        positionOnSphere(box, PLANET_RADIUS);
+
+        addStructure(box);
+
+    }
+
+
+
+    // Арки на сфере
+
+    for(let i=0; i<25; i++) {
+
+        const archGroup = new THREE.Group();
+
+        const archColor = Math.random() * 0xffffff;
+
+        const material = new THREE.MeshPhongMaterial({ color: archColor });
+
+
+
+        const w = 4;   
+
+        const h = 30;  
+
+        const d = 4;   
+
+        const span = 25; 
+
+
+
+        const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+
+        leftLeg.position.set(-span/2, -h/2, 0);
+
+        archGroup.add(leftLeg);
+
+
+
+        const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+
+        rightLeg.position.set(span/2, -h/2, 0);
+
+        archGroup.add(rightLeg);
+
+
+
+        const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w, d), material);
+
+        topBar.position.set(0, -h - w/2, 0);
+
+        archGroup.add(topBar);
+
+
+
+        positionOnSphere(archGroup, PLANET_RADIUS);
+
+
+
+        leftLeg.updateMatrixWorld();
+
+        rightLeg.updateMatrixWorld();
+
+        topBar.updateMatrixWorld();
+
+        collidableObjects.push(leftLeg, rightLeg, topBar);
+
+        
+
+        scene.add(archGroup);
+
+    }
+
+
+
+    // Мосты на сфере
+
+    for(let i=0; i<15; i++) {
+
+        const bridgeGroup = new THREE.Group();
+
+        const bridgeColor = 0x555566;
+
+        const material = new THREE.MeshPhongMaterial({ color: bridgeColor });
+
+
+
+        const length = 80;
+
+        const width = 12;
+
+        const height = 15;
+
+
+
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(width, 2, length), material);
+
+        deck.position.set(0, -height, 0);
+
+        bridgeGroup.add(deck);
+
+
+
+        for(let j = -length/3; j <= length/3; j += length/3) {
+
+            const pillar = new THREE.Mesh(new THREE.BoxGeometry(4, height, 4), material);
+
+            pillar.position.set(0, -height/2, j);
+
+            bridgeGroup.add(pillar);
+
+            pillar.updateMatrixWorld();
+
+            collidableObjects.push(pillar);
+
+        }
+
+
+
+        positionOnSphere(bridgeGroup, PLANET_RADIUS);
+
+
+
+        deck.updateMatrixWorld();
+
+        collidableObjects.push(deck);
+
+
+
+        scene.add(bridgeGroup);
+
+    }
+
+
+
+    // ==========================================
+
+    // КРУПНЫЕ ПЛАНЕТЫ ЗА ПРЕДЕЛАМИ СФЕРЫ
+
+    // ==========================================
+
+    const backgroundPlanets = []; 
+
+    const planetData = [
+
+        { radius: 500, color: 0xe27b58, x: 3500, y: 1500, z: -2000, rotSpeed: 0.002 },  
+
+        { radius: 800, color: 0x47637c, x: -4500, y: -2000, z: -3000, rotSpeed: 0.001 }, 
+
+        { radius: 300, color: 0x8d5b9c, x: -4000, y: -4000, z: -4000, rotSpeed: 0.003 }   
+
+    ];
+
+
+
+    planetData.forEach(data => {
+
+        const bgPlanetGeom = new THREE.SphereGeometry(data.radius, 32, 32);
+
+        const bgPlanetMat = new THREE.MeshPhongMaterial({ 
+
+            color: data.color, 
+
+            shininess: 10,
+
+            flatShading: true 
+
+        });
+
+        const bgPlanetMesh = new THREE.Mesh(bgPlanetGeom, bgPlanetMat);
+
+        bgPlanetMesh.position.set(data.x, data.y, data.z);
+
+        scene.add(bgPlanetMesh);
+
+        
+
+        backgroundPlanets.push({
+
+            mesh: bgPlanetMesh,
+
+            rotSpeed: data.rotSpeed
+
+        });
+
+    });
+
+
+
+    const keys = {};
+
+    let lastSpaceTime = 0;
+
+    let superThrust = false;
+
+
+
+    window.addEventListener('keydown', (e) => {
+
+        if (e.code === 'Space' && !keys['Space']) { 
+
+            const currentTime = performance.now();
+
+            if (currentTime - lastSpaceTime < 250) { 
+
+                superThrust = true; 
+
+            }
+
+            lastSpaceTime = currentTime;
+
+        }
+
+        keys[e.code] = true;
+
+    });
+
+
+
+    window.addEventListener('keyup', (e) => {
+
+        keys[e.code] = false;
+
+        if (e.code === 'Space') {
+
+            superThrust = false; 
+
+        }
+
+    });
+
+    
+
+
+
+    let velocity = new THREE.Vector3(0, 0, 0);
+
+    let angularVelocityX = 0;
+
+    let angularVelocityZ = 0;
+
+
+
+function animate() {
+
+    requestAnimationFrame(animate);
+
+
+
+    // --- УПРАВЛЕНИЕ КЛАВИАТУРОЙ ---
+
+    if (keys['ArrowLeft']) angularVelocityZ -= TURN_SPEED; 
+
+    if (keys['ArrowRight']) angularVelocityZ += TURN_SPEED;
+
+    if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
+
+    if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
+
+
+
+    // --- УПРАВЛЕНИЕ С ТАЧ-СКРИНА ---
+
+    if (touchJoystick.active) {
+
+        angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
+
+        angularVelocityZ += touchJoystick.moveX * TOUCH_TURN_SPEED;
+
+    }
+
+
+
+    angularVelocityX *= DAMPING_TURN;
+
+    angularVelocityZ *= DAMPING_TURN;
+
+
+
+    // ЖЕСТКАЯ ЛОКАЛЬНАЯ ФИКСАЦИЯ НА ПЛЕЕРЕ (как на плоскости)
+
+    const deltaQuaternion = new THREE.Quaternion().setFromEuler(
+
+        new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
+
+    );
+
+    player.quaternion.multiply(deltaQuaternion); 
+
+
+
+    let currentFlySpeed = FLY_SPEED;
+
+
+
+    let thrustForce = 0; 
+
+    if (keys['Space']) {
+
+        const spaceMultiplier = superThrust ? 2.5 : 1.0; 
+
+        thrustForce = currentFlySpeed * spaceMultiplier; 
+
+    } else if (currentThrottle > 0.05) {
+
+        thrustForce = currentFlySpeed * (currentThrottle * 2.0); 
+
+    }
+
+    
+
+    // Направление тяги строго следует за локальным вектором Y объекта
+
+    let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+
+
+
+    if (isReverseThrust) {
+
+        localUp.negate();
+
+    }
+
+
+
+    if (thrustForce > 0) {
+
+        velocity.add(localUp.clone().multiplyScalar(thrustForce));
+
+    }
+
+
+
+    // Сферическое направление гравитации (к центру)
+
+    const playerDirection = player.position.clone().normalize();
+
+    velocity.addScaledVector(playerDirection, GRAVITY);
+
+
+
+    player.position.add(velocity);
+
+    velocity.multiplyScalar(DAMPING_MOVE);
+
+
+
+    // Коллизия со структурами
+
+    const raycaster = new THREE.Raycaster();
+
+    const upVector = playerDirection.clone(); 
+
+    raycaster.set(player.position, upVector);
+
+    const intersects = raycaster.intersectObjects(collidableObjects);
+
+
+
+    if (intersects.length > 0 && intersects[0].distance < PLAYER_HEIGHT + 0.1) {
+
+        const groundDistance = intersects[0].point.length();
+
+        player.position.copy(playerDirection.clone().multiplyScalar(groundDistance - PLAYER_HEIGHT));
+
+        
+
+        const normalVelocity = velocity.dot(playerDirection);
+
+        if (normalVelocity > 0) { 
+
+            velocity.addScaledVector(playerDirection, -normalVelocity);
+
+        }
+
+    }
+
+
+
+    // Коллизия с поверхностью сферы (изнутри)
+
+    if (player.position.length() > PLANET_RADIUS - PLAYER_HEIGHT) {
+
+        player.position.copy(playerDirection.clone().multiplyScalar(PLANET_RADIUS - PLAYER_HEIGHT));
+
+        
+
+        const normalVelocity = velocity.dot(playerDirection);
+
+        if (normalVelocity > 0) { 
+
+            velocity.addScaledVector(playerDirection, -normalVelocity * 1.3); 
+
+        }
+
+    }
+
+
+
+    // Медленное вращение фоновых планет вокруг своей оси
+
+    backgroundPlanets.forEach(planet => {
+
+        planet.mesh.rotation.y += planet.rotSpeed;
+
+        planet.mesh.rotation.x += planet.rotSpeed * 0.2;
+
+    });
+
+
+
+    renderer.render(scene, camera);
+
+}
+
+
+
+    animate();
+
+</script>
+
+</body>
+
+</html>
+
+Для работы в Oculus Go необходимо адаптировать код под WebXR. Oculus Go использует браузер Oculus Browser, который поддерживает WebXR Device API.
+
+Основные изменения:
+
+Использование renderer.xr.enabled = true.
+
+Добавление VRButton из примеров Three.js.
+
+Использование renderer.setAnimationLoop вместо стандартного requestAnimationFrame (критично для VR).
+
+Управление камерой через VR-шлем (интеграция данных поворота головы).
+
+HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Outside-in Planet VR</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0a0a12; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+<script type="importmap">
+  { "imports": { 
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  } }
+</script>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { VRButton } from 'three/addons/webxr/VRButton.js';
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a12);
+    
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 12000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true; // ВКЛЮЧАЕМ VR
+    document.body.appendChild(renderer.domElement);
+    document.body.appendChild(VRButton.createButton(renderer)); // Кнопка "Enter VR"
+
+    const PLANET_RADIUS = 1500;
+    const player = new THREE.Group();
+    player.position.set(0, -(PLANET_RADIUS - 2), 0);
+    scene.add(player);
+    player.add(camera); // Камера теперь следует за движениями шлема автоматически
+
+    // Освещение и объекты (добавьте вашу логику генерации объектов здесь)
+    scene.add(new THREE.AmbientLight(0x888888));
+    const planetGeometry = new THREE.SphereGeometry(PLANET_RADIUS, 64, 64);
+    const planetMaterial = new THREE.MeshBasicMaterial({ color: 0x2626ff, wireframe: true, side: THREE.BackSide });
+    scene.add(new THREE.Mesh(planetGeometry, planetMaterial));
+
+    // Игровой цикл для WebXR
+    renderer.setAnimationLoop(function () {
+        // Управление в VR: 
+        // Поворот камеры (взгляд) обрабатывается самим WebXR автоматически.
+        // Для перемещения используйте контроллер (Gamepad API):
+        const session = renderer.xr.getSession();
+        if (session) {
+            for (const source of session.inputSources) {
+                if (source.gamepad) {
+                    // Пример чтения стика контроллера Oculus Go
+                    // source.gamepad.axes[2] - горизонталь, axes[3] - вертикаль
+                }
+            }
+        }
+        
+        renderer.render(scene, camera);
+    });
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+</script>
+</body>
+</html>
+Важные примечания для Oculus Go:
+Камера: В WebXR не нужно вручную менять кватернионы камеры через клавиатуру, как в десктопной версии. WebXR сам подставляет матрицу проекции и поворота шлема.
+
+Ввод: Oculus Go имеет один пульт. Вы должны считывать данные контроллера через renderer.xr.getSession().inputSources.
+
+Производительность: Oculus Go — старое устройство. Старайтесь минимизировать количество draw calls (используйте InstancedMesh для деревьев/объектов на сфере) и избегайте сложных шейдеров в fragmentShader.
+
+HTTPS: WebXR работает только через https или localhost. Вам потребуется запустить локальный сервер для тестирования.
+
+Готовы ли вы перейти к реализации логики опроса контроллера Oculus для перемещения в VR?
+
+
+
+
+Gemini – це штучний інтелект, і він може помилятися.
+
