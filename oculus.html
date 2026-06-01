@@ -66,9 +66,9 @@
     // Сетка
     const planetMaterial = new THREE.ShaderMaterial({
         transparent: true, side: THREE.DoubleSide,
-        uniforms: { uSize: { value: 0.05 } },
+        uniforms: { uSize: { value: 0.02 } },
         vertexShader: `varying vec3 vWorldPosition; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vWorldPosition = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-        fragmentShader: `varying vec3 vWorldPosition; uniform float uSize; void main() { vec2 g = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize); vec2 g2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize); float l = min(min(g.x, g.y), min(g2.x, g2.y)); if (1.0 - min(l, 1.0) < 0.1) discard; gl_FragColor = vec4(0.26, 0.26, 1.0, 0.4); }`
+        fragmentShader: `varying vec3 vWorldPosition; uniform float uSize; void main() { vec2 g = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize); vec2 g2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize); float l = min(min(g.x, g.y), min(g2.x, g2.y)); if (1.0 - min(l, 1.0) < 0.5) discard; gl_FragColor = vec4(0.26, 0.26, 1.0, 0.4); }`
     });
     scene.add(new THREE.Mesh(new THREE.SphereGeometry(PLANET_RADIUS, 64, 64), planetMaterial));
 
@@ -149,9 +149,10 @@ window.addEventListener('pointerup', (e) => {
 let thrust = 0;
         let tX = 0, tY = 0; // Теперь используем только tX и tY
 if (currentThrottle > 0.05) {
-    thrust += currentThrottle * FLY_SPEED * 2;
+    // Возведение в квадрат (Math.pow) дает более быстрый прирост мощности
+    const powerCurve = Math.pow(currentThrottle, 2); 
+    thrust += powerCurve * FLY_SPEED * 15; // 15 — коэффициент максимальной мощности
 }
-
 // 2. Управление поворотом/креном (добавьте это к блоку с tX и tY)
 if (touchJoystick.active) {
     // moveY отвечает за тангаж (tX), moveX - за поворот (tY)
