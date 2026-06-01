@@ -34,31 +34,17 @@ html, body {
     user-select: none;
     -webkit-user-select: none;
 }
-/* Добавьте контейнер-центровщик */
-#vr-button-container {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    pointer-events: none !important; /* Чтобы клики проходили сквозь контейнер */
-    z-index: 10000 !important;
-}
+
 
 #VRButton {
-    /* Сбрасываем все позиционирование */
-    position: static !important;
-    pointer-events: auto !important; /* Кнопка должна реагировать на клик */
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 9999 !important;
     
-    /* Стили */
-    width: auto !important;
-    height: auto !important;
-    padding: 15px 30px !important;
+    /* Добавьте это, если хотите её сделать полупрозрачной, как хотели ранее */
     opacity: 0.3 !important;
-    border: 1px solid white !important;
 }
 
     #VRButton:hover, #VRButton:active {
@@ -102,30 +88,14 @@ camera.position.set(0, PLAYER_HEIGHT, 0);
     document.body.appendChild(renderer.domElement);
     document.body.appendChild(VRButton.createButton(renderer));
 
-// 1. Создаем кнопку
 const vrButton = VRButton.createButton(renderer);
-// Создаем контейнер-центровщик
-const container = document.createElement('div');
-container.id = 'vr-button-container';
-document.body.appendChild(container);
-
-// Вставляем кнопку ВНУТРЬ контейнера
-container.appendChild(vrButton);
-// 2. Проверяем поддержку WebXR
-if (navigator.xr) {
-    navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
-        if (supported) {
-            // Если VR поддерживается, добавляем кнопку
-            document.body.appendChild(vrButton);
-        } else {
-            // Если не поддерживается (десктоп), просто не добавляем её
-            console.log("VR не поддерживается на этом устройстве");
-        }
-    });
+// Удаляем её из DOM сразу, если устройство не поддерживает VR
+if (!('xr' in navigator)) {
+    vrButton.remove();
 } else {
-
-    // Если браузер вообще не знает, что такое XR
-    console.log("WebXR не доступен");
+    navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+        if (!supported) vrButton.remove();
+    });
 }
 
     // Сетка
