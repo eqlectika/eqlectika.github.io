@@ -4,7 +4,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Outside-in Planet VR</title>
     <style>
-        html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #0a0a12; }
+html, body {
+        margin: 0; padding: 0; 
+        width: 100vw; height: 100vh; 
+        overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent; /* Убирает серый фон при тапе на iPhone */
+        touch-action: none; /* Запрещает браузеру "дергать" экран */
+    }
+
         canvas { display: block; }
 #throttleArea {
     position: fixed; top: 0; left: 0; width: 50vw; height: 100vh;
@@ -25,27 +34,35 @@
     user-select: none;
     -webkit-user-select: none;
 }
-/* Добавьте это в ваш блок <style> */
 #VRButton {
-    /* Центрирование самого блока кнопки на экране */
     position: fixed !important;
-    bottom: 50% !important;
+    top: 50% !important;
     left: 50% !important;
-    transform: translate(-50%, 50%) !important;
+    transform: translate(-50%, -50%) !important;
     
-    /* Центрирование текста ВНУТРИ кнопки */
+    /* Сбрасываем принудительную высоту */
+    height: auto !important;
+    min-height: 50px !important;
+    width: auto !important;
+    padding: 10px 20px !important;
+    
+    /* Центрирование текста */
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    text-align: center !important;
     
-    /* Размеры */
-    padding: 20px 40px !important;
-    font-size: 20px !important;
-    width: auto !important;
-    height: auto !important;
-    white-space: nowrap !important;
+    /* Визуальный стиль */
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    cursor: pointer !important;
+    z-index: 9999 !important;
+    opacity: 0.3 !important;
 }
+
+    #VRButton:hover, #VRButton:active {
+        opacity: 0.8 !important; /* Становится ярче при взаимодействии */
+    }
     </style>
 </head>
 <body>
@@ -99,6 +116,7 @@ if (navigator.xr) {
         }
     });
 } else {
+
     // Если браузер вообще не знает, что такое XR
     console.log("WebXR не доступен");
 }
@@ -112,7 +130,7 @@ if (navigator.xr) {
     });
     scene.add(new THREE.Mesh(new THREE.SphereGeometry(PLANET_RADIUS, 64, 64), planetMaterial));
 
-    // Генерация структур и арок
+    // Генерация структур и арок 
     function positionOnSphere(mesh, distance) {
         const u = Math.random(), v = Math.random();
         const theta = u * 2.0 * Math.PI, phi = Math.acos(2.0 * v - 1.0);
