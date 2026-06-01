@@ -6,10 +6,19 @@
     <style>
         html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #0a0a12; }
         canvas { display: block; }
+#throttleArea {
+    position: fixed; top: 0; left: 0; width: 50vw; height: 100vh;
+    z-index: 2000; touch-action: none; pointer-events: auto;
+}
+#controlArea {
+    position: fixed; top: 0; right: 0; width: 50vw; height: 100vh;
+    z-index: 2000; touch-action: none; pointer-events: auto;
+}
     </style>
 </head>
 <body>
-
+<div id="throttleArea"></div> 
+<div id="controlArea"></div>
 <script type="importmap">
   { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
 </script>
@@ -71,6 +80,47 @@
 
     scene.add(new THREE.DirectionalLight(0xffffff, 2.5), new THREE.AmbientLight(0x888888));
 
+// Переменные состояния сенсора
+let currentThrottle = 0;
+let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
+const activeTouches = { throttle: null, control: null };
+
+// Обработка газа (левая часть)
+document.getElementById('throttleArea').addEventListener('pointerdown', (e) => {
+    activeTouches.throttle = e.pointerId;
+    updateThrottle(e);
+}, { passive: false });
+
+function updateThrottle(e) {
+    const rect = document.getElementById('throttleArea').getBoundingClientRect();
+    let val = 1 - ((e.clientY - rect.top) / rect.height);
+    currentThrottle = Math.max(0, Math.min(1, val));
+}
+
+// Обработка джойстика (правая часть)
+document.getElementById('controlArea').addEventListener('pointerdown', (e) => {
+    activeTouches.control = e.pointerId;
+    touchJoystick.active = true;
+    touchJoystick.startX = e.clientX;
+    touchJoystick.startY = e.clientY;
+}, { passive: false });
+
+window.addEventListener('pointermove', (e) => {
+    if (e.pointerId === activeTouches.throttle) updateThrottle(e);
+    if (e.pointerId === activeTouches.control && touchJoystick.active) {
+        touchJoystick.moveX = Math.max(-1, Math.min(1, (e.clientX - touchJoystick.startX) / 100));
+        touchJoystick.moveY = Math.max(-1, Math.min(1, (e.clientY - touchJoystick.startY) / 100));
+    }
+});
+
+window.addEventListener('pointerup', (e) => {
+    if (e.pointerId === activeTouches.throttle) { activeTouches.throttle = null; currentThrottle = 0; }
+    if (e.pointerId === activeTouches.control) { 
+        activeTouches.control = null; touchJoystick.active = false; 
+        touchJoystick.moveX = 0; touchJoystick.moveY = 0;
+    }
+});
+
     // Управление
     const keys = { w: false, s: false, a: false, d: false, q: false, e: false, shift: false };
     window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; });
@@ -84,7 +134,16 @@
         const session = renderer.xr.getSession();
 let thrust = 0;
         let tX = 0, tY = 0; // Теперь используем только tX и tY
+if (currentThrottle > 0.05) {
+    thrust += currentThrottle * FLY_SPEED * 2;
+}
 
+// 2. Управление поворотом/креном (добавьте это к блоку с tX и tY)
+if (touchJoystick.active) {
+    // moveY отвечает за тангаж (tX), moveX - за поворот (tY)
+    tX += touchJoystick.moveY; 
+    tY += touchJoystick.moveX;
+}
         // 1. Считывание ввода
         if (keys.w) tX -= 1; if (keys.s) tX += 1;
         if (keys.d) tY += 1; if (keys.a) tY -= 1; // A/D теперь отвечают за связку Поворот+Крен
