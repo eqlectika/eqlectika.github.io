@@ -205,7 +205,7 @@ window.addEventListener('pointerup', (e) => {
     const DAMPING_MOVE = 0.98;
     const PLANET_RADIUS = 1500; 
     const PLAYER_HEIGHT = 2; 
-    const WATER_RADIUS = PLANET_RADIUS - 375; 
+    const WATER_RADIUS = PLANET_RADIUS - 75; 
     const clock = new THREE.Clock();
 
     document.getElementById('startButton').addEventListener('click', () => {
@@ -377,7 +377,7 @@ window.addEventListener('pointerup', (e) => {
             if (normal.dot(center) < 0) normal.multiplyScalar(-1);
         }
 
-        const stepLength = (48.0 + Math.random() * 34.0) * scaleModifier;
+        const stepLength = (18.0 + Math.random() * 14.0) * scaleModifier;
         const offset = normal.clone().multiplyScalar(stepLength);
         const lerpFactor = 0.16 + Math.random() * 0.08;
         const inner = corners.map(pt => pt.clone().lerp(center, lerpFactor).add(offset));
@@ -403,7 +403,7 @@ window.addEventListener('pointerup', (e) => {
     function generateBismuthColonyBuffered(distanceToCenter, polarity) {
         const dummy = new THREE.Group();
         positionOnSphere(dummy, distanceToCenter);
-        const s = 72.0; 
+        const s = 30.0; 
         const right = new THREE.Vector3(1, 0, 0).applyQuaternion(dummy.quaternion).multiplyScalar(s);
         const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(dummy.quaternion).multiplyScalar(s);
         
@@ -621,8 +621,8 @@ function animate() {
     }
 
     if (isSubmerged) {
-        angularVelocityX *= (DAMPING_TURN * 0.98);
-        angularVelocityZ *= (DAMPING_TURN * 0.98);
+        angularVelocityX *= (DAMPING_TURN * 0.88);
+        angularVelocityZ *= (DAMPING_TURN * 0.88);
     } else {
         angularVelocityX *= DAMPING_TURN;
         angularVelocityZ *= DAMPING_TURN;
@@ -644,10 +644,8 @@ function animate() {
     
     let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
     if (isReverseThrust) { localUp.negate(); }
-if (thrustForce > 0) { 
-    const speedBoost = isSubmerged ? 8.0 : 1.0; // Под водой двигатель работает в 3 раза мощнее
-    velocity.add(localUp.clone().multiplyScalar(thrustForce * speedBoost)); 
-}
+    if (thrustForce > 0) { velocity.add(localUp.clone().multiplyScalar(thrustForce)); }
+
     const playerDirection = player.position.clone().normalize();
     if (isSubmerged) { 
         velocity.addScaledVector(playerDirection, GRAVITY * 0.2); 
@@ -657,7 +655,7 @@ if (thrustForce > 0) {
 
     player.position.add(velocity);
 
-    if (isSubmerged) { velocity.multiplyScalar(DAMPING_MOVE * 0.99); } 
+    if (isSubmerged) { velocity.multiplyScalar(DAMPING_MOVE * 0.82); } 
     else { velocity.multiplyScalar(DAMPING_MOVE); }
 
     const raycaster = new THREE.Raycaster();
