@@ -81,24 +81,29 @@
 
     let velocity = new THREE.Vector3(0, 0, 0);
 
-    renderer.setAnimationLoop(() => {
+renderer.setAnimationLoop(() => {
         const session = renderer.xr.getSession();
         let thrust = 0;
+        const deadzone = 0.2; // Игнорируем слабые случайные сигналы
         
         if (session && session.inputSources) {
             for (const source of session.inputSources) {
                 const gp = source.gamepad;
                 if (!gp) continue;
 
-                // Джойстик: тангаж (axes[1]) и крен (axes[0])
-                if (Math.abs(gp.axes[1]) > 0.1) player.rotateX(gp.axes[1] * TURN_SPEED);
-                if (Math.abs(gp.axes[0]) > 0.1) player.rotateZ(-gp.axes[0] * TURN_SPEED);
+                // Управление с мертвой зоной
+                let axisX = Math.abs(gp.axes[0]) > deadzone ? gp.axes[0] : 0;
+                let axisY = Math.abs(gp.axes[1]) > deadzone ? gp.axes[1] : 0;
 
-                // Тяга на курок (Trigger)
+                // Используем rotateOnAxis для корректного вращения относительно локальных координат
+                if (axisY !== 0) player.rotateOnAxis(new THREE.Vector3(1, 0, 0), axisY * TURN_SPEED);
+                if (axisX !== 0) player.rotateOnAxis(new THREE.Vector3(0, 0, 1), -axisX * TURN_SPEED);
+
                 if (gp.buttons[0]?.pressed) thrust = FLY_SPEED * 2;
             }
         }
 
+        // Вектор тяги всегда учитывает текущий наклон группы player
         const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
         if (thrust > 0) velocity.add(localUp.multiplyScalar(thrust));
         
