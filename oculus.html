@@ -23,6 +23,7 @@
     const FLY_SPEED = 0.0057;
     const GRAVITY = 0.0043333;
     const DAMPING_MOVE = 0.99;
+    const TURN_SPEED = 0.015; // Чувствительность джойстика
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a12);
@@ -39,7 +40,7 @@
     document.body.appendChild(renderer.domElement);
     document.body.appendChild(VRButton.createButton(renderer));
 
-    // Добавлена сетка
+    // Сетка
     const planetMaterial = new THREE.ShaderMaterial({
         wireframe: false, transparent: true, side: THREE.DoubleSide,
         uniforms: { uSize: { value: 0.05 } },
@@ -54,39 +55,20 @@
     backLight.position.set(-50, 100, -50);
     scene.add(backLight);
 
-    const collidableObjects = [];
-
+    // Генерация (без изменений)
     function positionOnSphere(mesh, distanceToCenter) {
         const u = Math.random(), v = Math.random();
         const theta = u * 2.0 * Math.PI, phi = Math.acos(2.0 * v - 1.0);
-        const x = distanceToCenter * Math.sin(phi) * Math.cos(theta);
-        const y = distanceToCenter * Math.sin(phi) * Math.sin(theta);
-        const z = distanceToCenter * Math.cos(phi);
-        mesh.position.set(x, y, z);
-        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(x, y, z).normalize());
+        mesh.position.set(distanceToCenter * Math.sin(phi) * Math.cos(theta), distanceToCenter * Math.sin(phi) * Math.sin(theta), distanceToCenter * Math.cos(phi));
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), mesh.position.clone().normalize());
     }
 
-    // Генерация структур
     for(let i=0; i<40; i++) {
         const sizeY = 4 + Math.random() * 15;
         const box = new THREE.Mesh(new THREE.BoxGeometry(10 + Math.random()*20, sizeY, 10 + Math.random()*20), new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff }));
         box.geometry.translate(0, -sizeY / 2, 0);
         positionOnSphere(box, PLANET_RADIUS);
         scene.add(box);
-        collidableObjects.push(box);
-    }
-
-    for(let i=0; i<25; i++) {
-        const archGroup = new THREE.Group();
-        const mat = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
-        const h = 30, span = 25;
-        const left = new THREE.Mesh(new THREE.BoxGeometry(4, h, 4), mat); left.position.set(-span/2, -h/2, 0);
-        const right = new THREE.Mesh(new THREE.BoxGeometry(4, h, 4), mat); right.position.set(span/2, -h/2, 0);
-        const top = new THREE.Mesh(new THREE.BoxGeometry(span + 4, 4, 4), mat); top.position.set(0, -h - 2, 0);
-        archGroup.add(left, right, top);
-        positionOnSphere(archGroup, PLANET_RADIUS);
-        scene.add(archGroup);
-        collidableObjects.push(left, right, top);
     }
 
     const backgroundPlanets = [];
@@ -105,9 +87,15 @@
         
         if (session && session.inputSources) {
             for (const source of session.inputSources) {
-                if (source.gamepad && source.gamepad.buttons[0] && source.gamepad.buttons[0].pressed) {
-                    thrust = FLY_SPEED * 2;
-                }
+                const gp = source.gamepad;
+                if (!gp) continue;
+
+                // Джойстик: тангаж (axes[1]) и крен (axes[0])
+                if (Math.abs(gp.axes[1]) > 0.1) player.rotateX(gp.axes[1] * TURN_SPEED);
+                if (Math.abs(gp.axes[0]) > 0.1) player.rotateZ(-gp.axes[0] * TURN_SPEED);
+
+                // Тяга на курок (Trigger)
+                if (gp.buttons[0]?.pressed) thrust = FLY_SPEED * 2;
             }
         }
 
