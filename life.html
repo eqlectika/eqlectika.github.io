@@ -2,9 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-
     <link rel="manifest" href="manifest-life.json">
-
     <title>Outside-in Planet Total Fractalization</title>
 <style>
 html, body { 
@@ -26,17 +24,15 @@ canvas {
     width: 100%;
     height: 100%;
 }
-
 #controls {
     position: fixed;
     bottom: 50px;
-    left: 20px;                      
+    left: 20px;                     
     display: flex;
     justify-content: flex-start;
     pointer-events: none;
     z-index: 3000;
 }
-
 @media (pointer: coarse) { #controls { display: flex; } }
 #logoLink {
     position: fixed;
@@ -50,7 +46,6 @@ canvas {
     user-select: none;
     -webkit-user-select: none;
 }
-
 #throttleArea {
     position: fixed;
     top: 0;
@@ -61,7 +56,6 @@ canvas {
     pointer-events: auto;
     touch-action: none;
 }
-
 #controlArea {
     position: fixed;
     top: 0;
@@ -72,13 +66,11 @@ canvas {
     pointer-events: auto;
     touch-action: none;
 }
-
 @media (pointer: fine) {
     #throttleArea, #controlArea {
         pointer-events: none;
     }
 }
-
 #startButton {
     position: fixed;
     top: 50%;
@@ -105,10 +97,14 @@ canvas {
     <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
 
 <script type="importmap">
-  { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+  { 
+    "imports": { 
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    } 
+  }
 </script>
 <script type="module">
-// --- РЕГИСТРАЦИЯ SERVICE WORKER ДЛЯ ОФЛАЙН-РЕЖИМА ---
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-life.js')
@@ -117,28 +113,21 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// --- БЛОК 1: Управление тягой и наклоном ---
 let currentThrottle = 0;
 let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
-
 let isReverseThrust = true;
 
 const throttleArea = document.getElementById('throttleArea');
 const controlArea = document.getElementById('controlArea');
 const logoLink = document.getElementById('logoLink');
 
-const activeTouches = {
-    throttle: null,
-    control: null
-};
-
+const activeTouches = { throttle: null, control: null };
 let logoTimer = null;
 let isLongPress = false;
 
 logoLink.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     isLongPress = false;
-    
     logoTimer = setTimeout(() => {
         isLongPress = true;
         window.location.href = 'index.html';
@@ -148,7 +137,6 @@ logoLink.addEventListener('pointerdown', (e) => {
 logoLink.addEventListener('pointerup', (e) => {
     e.preventDefault();
     clearTimeout(logoTimer);
-    
     if (!isLongPress) {
         isReverseThrust = !isReverseThrust;
     }
@@ -188,7 +176,6 @@ window.addEventListener('pointermove', (e) => {
         const maxDistance = 100;
         let diffX = e.clientX - touchJoystick.startX;
         let diffY = e.clientY - touchJoystick.startY;
-        
         touchJoystick.moveX = Math.max(-1, Math.min(1, diffX / maxDistance));
         touchJoystick.moveY = Math.max(-1, Math.min(1, diffY / maxDistance));
     }
@@ -208,58 +195,39 @@ window.addEventListener('pointerup', (e) => {
 });
 
     import * as THREE from 'three';
+    import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
-    // ==========================================
-    // 1. НАСТРОЙКИ СКОРОСТИ, ИНЕРЦИИ И КРЕНА
-    // ==========================================
     const FLY_SPEED = 0.0057;       
     const TURN_SPEED = 0.0003;      
     const TOUCH_TURN_SPEED = 0.0005; 
-    
     const GRAVITY = 0.0043333; 
-    
     const DAMPING_TURN = 0.96;
     const DAMPING_MOVE = 0.98;
-
     const PLANET_RADIUS = 1500; 
     const PLAYER_HEIGHT = 2; 
-
     const WATER_RADIUS = PLANET_RADIUS - 75; 
-
     const clock = new THREE.Clock();
 
-    // ==========================================
-    // 2. ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННЫХ И СОСТОЯНИЙ
-    // ==========================================
     document.getElementById('startButton').addEventListener('click', () => {
         document.getElementById('startButton').style.display = 'none';
-        
         if (document.documentElement.requestFullscreen) {
             document.documentElement.requestFullscreen().catch(() => {});
         } else if (document.documentElement.webkitRequestFullscreen) {
             document.documentElement.webkitRequestFullscreen();
         }
-
         if (screen.orientation && screen.orientation.lock) {
             screen.orientation.lock('landscape').catch(() => {});
         }
     });
 
-    // ==========================================
-    // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
-    // ==========================================
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a12); 
-    
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 12000);
-    
     const player = new THREE.Group();
     player.position.set(0, -(PLANET_RADIUS - PLAYER_HEIGHT), 0);
-    
     const initialDir = player.position.clone().normalize();
     player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), initialDir);
     scene.add(player);
-    
     camera.quaternion.setFromEuler(new THREE.Euler(Math.PI, 0, 0, 'YXZ'));
     player.add(camera);
 
@@ -277,21 +245,12 @@ window.addEventListener('pointerup', (e) => {
     light.position.set(50, 200, 50);
     scene.add(light);
     scene.add(new THREE.AmbientLight(0x888888));
-
     const backLight = new THREE.DirectionalLight(0xabcdef, 0.8);
     backLight.position.set(-50, 100, -50); 
     scene.add(backLight);
 
     const collidableObjects = [];
 
-    function addStructure(mesh) {
-        scene.add(mesh);
-        collidableObjects.push(mesh);
-    }
-
-    // ==========================================
-    // СФЕРИЧЕСКАЯ ПЛАНЕТАРНАЯ СЕТКА С СИНХРОННЫМ ИЛИ СПОНТАННЫМ РОСТОМ
-    // ==========================================
     const planetMaterial = new THREE.ShaderMaterial({
         wireframe: false,
         transparent: true,
@@ -308,16 +267,13 @@ window.addEventListener('pointerup', (e) => {
             varying float vDepth;
             varying float vDelay;
             uniform float uTime;
-
             void main() {
                 vDepth = aDepth;
                 vDelay = aDelay;
                 vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-                
                 float personalProgress = mod(uTime + vDelay, 14.0) / 14.0;
                 float growthFactor = smoothstep(vDepth - 1.0, vDepth, personalProgress * 7.0);
                 worldPosition.xyz *= mix(0.995, 1.0, growthFactor);
-
                 vWorldPosition = worldPosition.xyz;
                 gl_Position = projectionMatrix * viewMatrix * worldPosition;
             }
@@ -329,7 +285,6 @@ window.addEventListener('pointerup', (e) => {
             uniform float uSize;
             uniform float uTime;
             uniform float uWaterRadius;
-
             float getCaustic(vec3 pos, float time) {
                 vec3 p = pos * 0.07;
                 float t = time * 1.5;
@@ -339,24 +294,18 @@ window.addEventListener('pointerup', (e) => {
                 k = k * 0.125 + 0.5;
                 return pow(k, 4.0) * 2.5;
             }
-
             void main() {
                 float personalProgress = mod(uTime + vDelay, 14.0) / 14.0;
                 float visibility = smoothstep(vDepth, vDepth - 0.8, personalProgress * 7.0);
                 if (vDepth > 0.0 && visibility < 0.01) discard;
-
                 vec2 grid = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize);
                 vec2 grid2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize);
                 float line = min(min(grid.x, grid.y), min(grid2.x, grid2.y));
                 float alpha = 1.0 - min(line, 1.0);
-                
                 if (alpha < 0.1) discard;
-                
                 vec3 neonColor = mix(vec3(0.26, 0.26, 1.0), vec3(1.0, 0.75, 0.0), vDepth / 6.0);
                 vec4 baseColor = vec4(neonColor, alpha * (0.4 * visibility));
-                
                 float currentRadius = length(vWorldPosition);
-
                 if (currentRadius > uWaterRadius) {
                     float causticEffect = getCaustic(vWorldPosition, uTime);
                     float depthFactor = smoothstep(uWaterRadius, uWaterRadius + 75.0, currentRadius);
@@ -369,19 +318,13 @@ window.addEventListener('pointerup', (e) => {
     });
 
     const planetGeometry = new THREE.SphereGeometry(PLANET_RADIUS, 64, 64);
-    
     const baseDepths = new Float32Array(planetGeometry.attributes.position.count).fill(0.0);
     const baseDelays = new Float32Array(planetGeometry.attributes.position.count).fill(0.0);
     planetGeometry.setAttribute('aDepth', new THREE.BufferAttribute(baseDepths, 1));
     planetGeometry.setAttribute('aDelay', new THREE.BufferAttribute(baseDelays, 1));
-
     const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
-    planetMesh.position.set(0, 0, 0);
     scene.add(planetMesh);
 
-    // ==========================================
-    // СФЕРА ВОДЫ (Заливаем изнутри)
-    // ==========================================
     const waterGeometry = new THREE.SphereGeometry(WATER_RADIUS, 64, 64);
     const waterMaterial = new THREE.MeshPhongMaterial({
         color: 0x0055ff,
@@ -390,7 +333,6 @@ window.addEventListener('pointerup', (e) => {
         side: THREE.DoubleSide
     });
     const waterMesh = new THREE.Mesh(waterGeometry, waterMaterial);
-    waterMesh.position.set(0, 0, 0);
     scene.add(waterMesh);
 
     function positionOnSphere(mesh, distanceToCenter) {
@@ -398,46 +340,35 @@ window.addEventListener('pointerup', (e) => {
         const v = Math.random();
         const theta = u * 2.0 * Math.PI;
         const phi = Math.acos(2.0 * v - 1.0);
-        
         const x = distanceToCenter * Math.sin(phi) * Math.cos(theta);
         const y = distanceToCenter * Math.sin(phi) * Math.sin(theta);
         const z = distanceToCenter * Math.cos(phi);
-        
         mesh.position.set(x, y, z);
-        
         const upVector = new THREE.Vector3(x, y, z).normalize();
         mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), upVector);
         return upVector;
     }
 
-    // ==========================================
-    // УНИВЕРСАЛЬНЫЙ АЛГОРИТМ ФРАКТАЛЬНОГО РОСТА
-    // ==========================================
-    function createRect(p1, p2, p3, p4, depth, delay) {
-        const geo = new THREE.BufferGeometry();
-        const v = [p1.x,p1.y,p1.z, p2.x,p2.y,p2.z, p3.x,p3.y,p3.z, p3.x,p3.y,p3.z, p4.x,p4.y,p4.z, p1.x,p1.y,p1.z];
-        geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
-        
-        const depths = new Float32Array([depth, depth, depth, depth, depth, depth]);
-        const delays = new Float32Array([delay, delay, delay, delay, delay, delay]);
-        geo.setAttribute('aDepth', new THREE.BufferAttribute(depths, 1));
-        geo.setAttribute('aDelay', new THREE.BufferAttribute(delays, 1));
-        geo.computeVertexNormals();
-        
-        const mesh = new THREE.Mesh(geo, planetMaterial);
-        mesh.userData = { depth: depth, corners: [p1.clone(), p2.clone(), p3.clone(), p4.clone()] };
-        collidableObjects.push(mesh);
-        scene.add(mesh);
-        return mesh;
+    let globalVertices = [];
+    let globalDepths = [];
+    let globalDelays = [];
+
+    function addRectToBuffer(p1, p2, p3, p4, depth, delay) {
+        globalVertices.push(
+            p1.x, p1.y, p1.z,  p2.x, p2.y, p2.z,  p3.x, p3.y, p3.z,
+            p3.x, p3.y, p3.z,  p4.x, p4.y, p4.z,  p1.x, p1.y, p1.z
+        );
+        for(let i = 0; i < 6; i++) {
+            globalDepths.push(depth);
+            globalDelays.push(delay);
+        }
     }
 
-    function growFractal(mesh, maxDepth, currentDepth, polarity, delay, scaleModifier = 1.0) {
+    function growFractalBuffered(corners, maxDepth, currentDepth, polarity, delay, scaleModifier = 1.0) {
         if (currentDepth > maxDepth) return;
-        const c = mesh.userData.corners;
-        const center = new THREE.Vector3().add(c[0]).add(c[1]).add(c[2]).add(c[3]).divideScalar(4);
-        
-        const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
-        const v2 = new THREE.Vector3().subVectors(c[3], c[0]);
+        const center = new THREE.Vector3().add(corners[0]).add(corners[1]).add(corners[2]).add(corners[3]).divideScalar(4);
+        const v1 = new THREE.Vector3().subVectors(corners[1], corners[0]);
+        const v2 = new THREE.Vector3().subVectors(corners[3], corners[0]);
         let normal = new THREE.Vector3().crossVectors(v1, v2).normalize();
         
         if (polarity > 0) {
@@ -449,56 +380,52 @@ window.addEventListener('pointerup', (e) => {
         const stepLength = (18.0 + Math.random() * 14.0) * scaleModifier;
         const offset = normal.clone().multiplyScalar(stepLength);
         const lerpFactor = 0.16 + Math.random() * 0.08;
-        const inner = c.map(pt => pt.clone().lerp(center, lerpFactor).add(offset));
+        const inner = corners.map(pt => pt.clone().lerp(center, lerpFactor).add(offset));
         
-        const nextMeshes = [];
-        nextMeshes.push(createRect(c[0], c[1], inner[1], inner[0], currentDepth, delay));
-        nextMeshes.push(createRect(c[1], c[2], inner[2], inner[1], currentDepth, delay));
-        nextMeshes.push(createRect(c[2], c[3], inner[3], inner[2], currentDepth, delay));
-        nextMeshes.push(createRect(c[3], c[0], inner[0], inner[3], currentDepth, delay));
+        addRectToBuffer(corners[0], corners[1], inner[1], inner[0], currentDepth, delay);
+        addRectToBuffer(corners[1], corners[2], inner[2], inner[1], currentDepth, delay);
+        addRectToBuffer(corners[2], corners[3], inner[3], inner[2], currentDepth, delay);
+        addRectToBuffer(corners[3], corners[0], inner[0], inner[3], currentDepth, delay);
+        addRectToBuffer(inner[0], inner[1], inner[2], inner[3], currentDepth, delay);
         
-        createRect(inner[0], inner[1], inner[2], inner[3], currentDepth, delay);
-        
-        if (nextMeshes.length > 0) {
-            const randomBranch = nextMeshes[Math.floor(Math.random() * nextMeshes.length)];
-            growFractal(randomBranch, maxDepth, currentDepth + 1, polarity, delay, scaleModifier);
+        if (currentDepth < maxDepth) {
+            const branches = [
+                [corners[0], corners[1], inner[1], inner[0]],
+                [corners[1], corners[2], inner[2], inner[1]],
+                [corners[2], corners[3], inner[3], inner[2]],
+                [corners[3], corners[0], inner[0], inner[3]]
+            ];
+            const randomBranch = branches[Math.floor(Math.random() * branches.length)];
+            growFractalBuffered(randomBranch, maxDepth, currentDepth + 1, polarity, delay, scaleModifier);
         }
     }
 
-    function generateBismuthColony(distanceToCenter, polarity) {
-        const baseGroup = new THREE.Group();
-        positionOnSphere(baseGroup, distanceToCenter);
-        
+    function generateBismuthColonyBuffered(distanceToCenter, polarity) {
+        const dummy = new THREE.Group();
+        positionOnSphere(dummy, distanceToCenter);
         const s = 30.0; 
-        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(baseGroup.quaternion).multiplyScalar(s);
-        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(baseGroup.quaternion).multiplyScalar(s);
+        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(dummy.quaternion).multiplyScalar(s);
+        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(dummy.quaternion).multiplyScalar(s);
         
-        const p1 = baseGroup.position.clone().add(right).add(forward);
-        const p2 = baseGroup.position.clone().sub(right).add(forward);
-        const p3 = baseGroup.position.clone().sub(right).sub(forward);
-        const p4 = baseGroup.position.clone().add(right).sub(forward);
+        const p1 = dummy.position.clone().add(right).add(forward);
+        const p2 = dummy.position.clone().sub(right).add(forward);
+        const p3 = dummy.position.clone().sub(right).sub(forward);
+        const p4 = dummy.position.clone().add(right).sub(forward);
         
         const randomDelay = Math.random() * 14.0;
-        
-        const rootMesh = createRect(p1, p2, p3, p4, 0, randomDelay);
-        growFractal(rootMesh, 5, 1, polarity, randomDelay);
+        addRectToBuffer(p1, p2, p3, p4, 0, randomDelay);
+        growFractalBuffered([p1, p2, p3, p4], 5, 1, polarity, randomDelay);
     }
 
-    // Первоначальные чистые ландшафтные фракталы
     for(let i=0; i<25; i++) {
-        generateBismuthColony(PLANET_RADIUS, 1);  
-        generateBismuthColony(PLANET_RADIUS, -1); 
+        generateBismuthColonyBuffered(PLANET_RADIUS, 1);  
+        generateBismuthColonyBuffered(PLANET_RADIUS, -1); 
     }
 
-    // ==========================================
-    // СТРОЕНИЕ ФРАКТАЛОВ НА ОСНОВЕ АРОК И МОСТОВ
-    // ==========================================
-    function fractalizeMeshGrown(geometry, matrixWorld, scaleModifier = 0.5) {
+    function fractalizeMeshGrownBuffered(geometry, matrixWorld, scaleModifier = 0.5) {
         const positionAttribute = geometry.attributes.position;
         const indexAttribute = geometry.index;
-        
         const randomDelay = Math.random() * 14.0;
-
         const faceCount = indexAttribute ? indexAttribute.count / 3 : positionAttribute.count / 3;
         const step = Math.max(1, Math.floor(faceCount / 6)); 
 
@@ -513,28 +440,23 @@ window.addEventListener('pointerup', (e) => {
                 idx1 = i * 3 + 1;
                 idx2 = i * 3 + 2;
             }
-
             const p1 = new THREE.Vector3().fromBufferAttribute(positionAttribute, idx0).applyMatrix4(matrixWorld);
             const p2 = new THREE.Vector3().fromBufferAttribute(positionAttribute, idx1).applyMatrix4(matrixWorld);
             const p3 = new THREE.Vector3().fromBufferAttribute(positionAttribute, idx2).applyMatrix4(matrixWorld);
-            
-            const edge1 = new THREE.Vector3().subVectors(p2, p1);
             const edge2 = new THREE.Vector3().subVectors(p3, p2);
             const p4 = p1.clone().add(edge2);
 
-            const rootMesh = createRect(p1, p2, p3, p4, 0, randomDelay);
-            growFractal(rootMesh, 4, 1, -1, randomDelay, scaleModifier);
+            addRectToBuffer(p1, p2, p3, p4, 0, randomDelay);
+            growFractalBuffered([p1, p2, p3, p4], 4, 1, -1, randomDelay, scaleModifier);
         }
     }
+
+    const staticGeometries = [];
 
     // Арки
     for(let i=0; i<15; i++) {
         const archGroup = new THREE.Group();
-        
-        const w = 10;   
-        const h = 80;  
-        const d = 10;   
-        const span = 65; 
+        const w = 10, h = 80, d = 10, span = 65; 
 
         const leftLegGeo = new THREE.BoxGeometry(w, h, d);
         const rightLegGeo = new THREE.BoxGeometry(w, h, d);
@@ -570,21 +492,19 @@ window.addEventListener('pointerup', (e) => {
         rightLeg.updateMatrixWorld();
         topBar.updateMatrixWorld();
         
-        collidableObjects.push(leftLeg, rightLeg, topBar);
-        scene.add(archGroup);
+        fractalizeMeshGrownBuffered(leftLegGeo, leftLeg.matrixWorld, 0.4);
+        fractalizeMeshGrownBuffered(rightLegGeo, rightLeg.matrixWorld, 0.4);
+        fractalizeMeshGrownBuffered(topBarGeo, topBar.matrixWorld, 0.5);
 
-        fractalizeMeshGrown(leftLegGeo, leftLeg.matrixWorld, 0.4);
-        fractalizeMeshGrown(rightLegGeo, rightLeg.matrixWorld, 0.4);
-        fractalizeMeshGrown(topBarGeo, topBar.matrixWorld, 0.5);
+        staticGeometries.push(leftLegGeo.clone().applyMatrix4(leftLeg.matrixWorld));
+        staticGeometries.push(rightLegGeo.clone().applyMatrix4(rightLeg.matrixWorld));
+        staticGeometries.push(topBarGeo.clone().applyMatrix4(topBar.matrixWorld));
     }
 
     // Мосты
     for(let i=0; i<10; i++) {
         const bridgeGroup = new THREE.Group();
-
-        const length = 200;
-        const width = 30;
-        const height = 45;
+        const length = 200, width = 30, height = 45;
 
         const deckGeo = new THREE.BoxGeometry(width, 5, length);
         const deckCount = deckGeo.attributes.position.count;
@@ -597,7 +517,8 @@ window.addEventListener('pointerup', (e) => {
 
         positionOnSphere(bridgeGroup, PLANET_RADIUS);
         deck.updateMatrixWorld();
-        collidableObjects.push(deck);
+        fractalizeMeshGrownBuffered(deckGeo, deck.matrixWorld, 0.6);
+        staticGeometries.push(deckGeo.clone().applyMatrix4(deck.matrixWorld));
 
         for(let j = -length/3; j <= length/3; j += length/3) {
             const pillarGeo = new THREE.BoxGeometry(10, height, 10);
@@ -609,18 +530,33 @@ window.addEventListener('pointerup', (e) => {
             pillar.position.set(0, -height/2, j);
             bridgeGroup.add(pillar);
             pillar.updateMatrixWorld();
-            collidableObjects.push(pillar);
             
-            fractalizeMeshGrown(pillarGeo, pillar.matrixWorld, 0.4);
+            fractalizeMeshGrownBuffered(pillarGeo, pillar.matrixWorld, 0.4);
+            staticGeometries.push(pillarGeo.clone().applyMatrix4(pillar.matrixWorld));
         }
-
-        scene.add(bridgeGroup);
-        fractalizeMeshGrown(deckGeo, deck.matrixWorld, 0.6);
     }
 
-    // ==========================================
+    // Сборка всех динамических фракталов в один Mesh
+    if (globalVertices.length > 0) {
+        const fractalGeo = new THREE.BufferGeometry();
+        fractalGeo.setAttribute('position', new THREE.Float32BufferAttribute(globalVertices, 3));
+        fractalGeo.setAttribute('aDepth', new THREE.BufferAttribute(new Float32Array(globalDepths), 1));
+        fractalGeo.setAttribute('aDelay', new THREE.BufferAttribute(new Float32Array(globalDelays), 1));
+        fractalGeo.computeVertexNormals();
+        const mainFractalMesh = new THREE.Mesh(fractalGeo, planetMaterial);
+        scene.add(mainFractalMesh);
+        collidableObjects.push(mainFractalMesh);
+    }
+
+    // Сборка статичных базовых объектов (мосты и арки)
+    if (staticGeometries.length > 0) {
+        const mergedStaticGeo = BufferGeometryUtils.mergeGeometries(staticGeometries, false);
+        const mainStaticMesh = new THREE.Mesh(mergedStaticGeo, planetMaterial);
+        scene.add(mainStaticMesh);
+        collidableObjects.push(mainStaticMesh);
+    }
+
     // КРУПНЫЕ ПЛАНЕТЫ ЗА ПРЕДЕЛАМИ СФЕРЫ
-    // ==========================================
     const backgroundPlanets = []; 
     const planetData = [
         { radius: 500, color: 0xe27b58, x: 3500, y: 1500, z: -2000, rotSpeed: 0.002 },  
@@ -638,11 +574,7 @@ window.addEventListener('pointerup', (e) => {
         const bgPlanetMesh = new THREE.Mesh(bgPlanetGeom, bgPlanetMat);
         bgPlanetMesh.position.set(data.x, data.y, data.z);
         scene.add(bgPlanetMesh);
-        
-        backgroundPlanets.push({
-            mesh: bgPlanetMesh,
-            rotSpeed: data.rotSpeed
-        });
+        backgroundPlanets.push({ mesh: bgPlanetMesh, rotSpeed: data.rotSpeed });
     });
 
     const keys = {};
@@ -662,9 +594,7 @@ window.addEventListener('pointerup', (e) => {
 
     window.addEventListener('keyup', (e) => {
         keys[e.code] = false;
-        if (e.code === 'Space') {
-            superThrust = false; 
-        }
+        if (e.code === 'Space') { superThrust = false; }
     });
     
     let velocity = new THREE.Vector3(0, 0, 0);
@@ -704,7 +634,6 @@ function animate() {
     player.quaternion.multiply(deltaQuaternion); 
 
     let currentFlySpeed = FLY_SPEED;
-
     let thrustForce = 0; 
     if (keys['Space']) {
         const spaceMultiplier = superThrust ? 2.5 : 1.0; 
@@ -714,53 +643,36 @@ function animate() {
     }
     
     let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
-
-    if (isReverseThrust) {
-        localUp.negate();
-    }
-
-    if (thrustForce > 0) {
-        velocity.add(localUp.clone().multiplyScalar(thrustForce));
-    }
+    if (isReverseThrust) { localUp.negate(); }
+    if (thrustForce > 0) { velocity.add(localUp.clone().multiplyScalar(thrustForce)); }
 
     const playerDirection = player.position.clone().normalize();
-    
-    if (isSubmerged) {
+    if (isSubmerged) { 
         velocity.addScaledVector(playerDirection, GRAVITY * 0.2); 
-    } else {
-        velocity.addScaledVector(playerDirection, GRAVITY);
+    } else { 
+        velocity.addScaledVector(playerDirection, GRAVITY); 
     }
 
     player.position.add(velocity);
 
-    if (isSubmerged) {
-        velocity.multiplyScalar(DAMPING_MOVE * 0.82);
-    } else {
-        velocity.multiplyScalar(DAMPING_MOVE);
-    }
+    if (isSubmerged) { velocity.multiplyScalar(DAMPING_MOVE * 0.82); } 
+    else { velocity.multiplyScalar(DAMPING_MOVE); }
 
     const raycaster = new THREE.Raycaster();
-    const upVector = playerDirection.clone(); 
-    raycaster.set(player.position, upVector);
+    raycaster.set(player.position, playerDirection);
     const intersects = raycaster.intersectObjects(collidableObjects);
 
     if (intersects.length > 0 && intersects[0].distance < PLAYER_HEIGHT + 0.1) {
         const groundDistance = intersects[0].point.length();
         player.position.copy(playerDirection.clone().multiplyScalar(groundDistance - PLAYER_HEIGHT));
-        
         const normalVelocity = velocity.dot(playerDirection);
-        if (normalVelocity > 0) { 
-            velocity.addScaledVector(playerDirection, -normalVelocity);
-        }
+        if (normalVelocity > 0) { velocity.addScaledVector(playerDirection, -normalVelocity); }
     }
 
     if (player.position.length() > PLANET_RADIUS - PLAYER_HEIGHT) {
         player.position.copy(playerDirection.clone().multiplyScalar(PLANET_RADIUS - PLAYER_HEIGHT));
-        
         const normalVelocity = velocity.dot(playerDirection);
-        if (normalVelocity > 0) { 
-            velocity.addScaledVector(playerDirection, -normalVelocity * 1.3); 
-        }
+        if (normalVelocity > 0) { velocity.addScaledVector(playerDirection, -normalVelocity * 1.3); }
     }
 
     backgroundPlanets.forEach(planet => {
