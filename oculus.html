@@ -80,30 +80,40 @@
     });
 
     let velocity = new THREE.Vector3(0, 0, 0);
-
+let angularVelocity = new THREE.Vector3(0, 0, 0); // Новая переменная для инерции
+    
 renderer.setAnimationLoop(() => {
         const session = renderer.xr.getSession();
         let thrust = 0;
-        const deadzone = 0.2; // Игнорируем слабые случайные сигналы
+        const deadzone = 0.2;
+        const FRICTION = 0.92; // Регулируйте: 0.95 — очень плавно, 0.85 — резче
         
         if (session && session.inputSources) {
             for (const source of session.inputSources) {
                 const gp = source.gamepad;
                 if (!gp) continue;
 
-                // Управление с мертвой зоной
                 let axisX = Math.abs(gp.axes[0]) > deadzone ? gp.axes[0] : 0;
                 let axisY = Math.abs(gp.axes[1]) > deadzone ? gp.axes[1] : 0;
 
-                // Используем rotateOnAxis для корректного вращения относительно локальных координат
-                if (axisY !== 0) player.rotateOnAxis(new THREE.Vector3(1, 0, 0), axisY * TURN_SPEED);
-                if (axisX !== 0) player.rotateOnAxis(new THREE.Vector3(0, 0, 1), -axisX * TURN_SPEED);
+                // Накапливаем угловую скорость для всех осей (X, Y, Z)
+                // axisX управляет креном (Z) и рысканием (Y)
+                angularVelocity.x += axisY * (TURN_SPEED * 0.1); // Тангаж
+                angularVelocity.z += -axisX * (TURN_SPEED * 0.1); // Крен
+                angularVelocity.y += axisX * (TURN_SPEED * 0.1); // Плавный поворот (Yaw)
 
                 if (gp.buttons[0]?.pressed) thrust = FLY_SPEED * 2;
             }
         }
 
-        // Вектор тяги всегда учитывает текущий наклон группы player
+        // Применяем инерционное вращение
+        player.rotateOnAxis(new THREE.Vector3(1, 0, 0), angularVelocity.x);
+        player.rotateOnAxis(new THREE.Vector3(0, 1, 0), angularVelocity.y);
+        player.rotateOnAxis(new THREE.Vector3(0, 0, 1), angularVelocity.z);
+        
+        angularVelocity.multiplyScalar(FRICTION);
+
+        // ... остальная физика движения (без изменений)
         const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
         if (thrust > 0) velocity.add(localUp.multiplyScalar(thrust));
         
