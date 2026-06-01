@@ -205,7 +205,7 @@ window.addEventListener('pointerup', (e) => {
     const DAMPING_MOVE = 0.98;
     const PLANET_RADIUS = 1500; 
     const PLAYER_HEIGHT = 2; 
-    const WATER_RADIUS = PLANET_RADIUS - 75; 
+    const WATER_RADIUS = PLANET_RADIUS - 375; 
     const clock = new THREE.Clock();
 
     document.getElementById('startButton').addEventListener('click', () => {
@@ -644,8 +644,10 @@ function animate() {
     
     let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
     if (isReverseThrust) { localUp.negate(); }
-    if (thrustForce > 0) { velocity.add(localUp.clone().multiplyScalar(thrustForce)); }
-
+if (thrustForce > 0) { 
+    const speedBoost = isSubmerged ? 8.0 : 1.0; // Под водой двигатель работает в 3 раза мощнее
+    velocity.add(localUp.clone().multiplyScalar(thrustForce * speedBoost)); 
+}
     const playerDirection = player.position.clone().normalize();
     if (isSubmerged) { 
         velocity.addScaledVector(playerDirection, GRAVITY * 0.2); 
@@ -655,7 +657,7 @@ function animate() {
 
     player.position.add(velocity);
 
-    if (isSubmerged) { velocity.multiplyScalar(DAMPING_MOVE * 0.82); } 
+    if (isSubmerged) { velocity.multiplyScalar(DAMPING_MOVE * 0.99); } 
     else { velocity.multiplyScalar(DAMPING_MOVE); }
 
     const raycaster = new THREE.Raycaster();
