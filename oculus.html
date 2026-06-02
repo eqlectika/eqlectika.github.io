@@ -128,6 +128,30 @@ if (!('xr' in navigator)) {
     }
 
     scene.add(new THREE.DirectionalLight(0xffffff, 2.5), new THREE.AmbientLight(0x888888));
+    
+        const backgroundPlanets = []; 
+    const planetData = [
+        { radius: 500, color: 0xe27b58, x: 3500, y: 1500, z: -2000, rotSpeed: 0.002 },  
+        { radius: 800, color: 0x47637c, x: -4500, y: -2000, z: -3000, rotSpeed: 0.001 }, 
+        { radius: 300, color: 0x8d5b9c, x: -4000, y: -4000, z: -4000, rotSpeed: 0.003 }   
+    ];
+
+    planetData.forEach(data => {
+        const bgPlanetGeom = new THREE.SphereGeometry(data.radius, 32, 32);
+        const bgPlanetMat = new THREE.MeshPhongMaterial({ 
+            color: data.color, 
+            shininess: 10,
+            flatShading: true 
+        });
+        const bgPlanetMesh = new THREE.Mesh(bgPlanetGeom, bgPlanetMat);
+        bgPlanetMesh.position.set(data.x, data.y, data.z);
+        scene.add(bgPlanetMesh);
+        
+        backgroundPlanets.push({
+            mesh: bgPlanetMesh,
+            rotSpeed: data.rotSpeed
+        });
+    });
 
 // Переменные состояния сенсора
 let currentThrottle = 0;
