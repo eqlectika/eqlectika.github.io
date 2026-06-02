@@ -351,12 +351,18 @@ function loadSavedState() {
         collidableObjects.push(mesh);
     }
 
-    // --- ФРАКТАЛЬНЫЙ РОСТ ---
+// --- ФРАКТАЛЬНЫЙ РОСТ ---
     function grow(mesh) {
         const c = mesh.userData.corners;
         const d = mesh.userData.depth;
         const normalSteps = mesh.userData.normalSteps;
         if (normalSteps >= 14) return;
+
+        // --- КРИТИЧЕСКАЯ ПРАВКА: Убираем индекс из базы, чтобы открыть «дыру» в физике ---
+        if (mesh.userData.geoFaceIndex !== -1) {
+            activeTriangleIds.delete(mesh.userData.geoFaceIndex);
+            saveCurrentState(); // Обновляем кэш
+        }
 
         const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
         const v2 = new THREE.Vector3().subVectors(c[2], c[0]);
@@ -380,6 +386,7 @@ function loadSavedState() {
 
         for (let i = 0; i < c.length; i++) {
             const nextIdx = (i + 1) % c.length;
+            // У новых панелей geoFaceIndex всегда -1, так как они вторичны
             createPolygonPanel([c[i], c[nextIdx], inner[nextIdx], inner[i]], d + 1, normalSteps + 1, -1, true);
         }
         createPolygonPanel(inner, d + 1, normalSteps + 1, -1, true);
