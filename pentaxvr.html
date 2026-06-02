@@ -460,7 +460,9 @@ controller.addEventListener('selectstart', onVRSelect); // Событие кли
 player.add(controller);
 
 // Функция для обработки клика в VR
-function onVRSelect() {
+function onVRSelect(event) {
+    // Получаем контроллер из события
+    const controller = event.target;
     const tempMatrix = new THREE.Matrix4();
     tempMatrix.identity().extractRotation(controller.matrixWorld);
     raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
@@ -491,7 +493,19 @@ function removeMesh(targetMesh) {
 }
 
     function animate() {
-        requestAnimationFrame(animate);
+        renderer.setAnimationLoop(animate);
+
+const session = renderer.xr.getSession();
+if (session && session.inputSources) {
+    for (const source of session.inputSources) {
+        if (source.handedness === 'right' && source.gamepad) {
+            const gp = source.gamepad;
+            // Ось Y тачпада - крен, Ось X - поворот
+            if (Math.abs(gp.axes[1]) > 0.2) angularVelocityX += gp.axes[1] * TURN_SPEED * 5;
+            if (Math.abs(gp.axes[0]) > 0.2) angularVelocityZ += gp.axes[0] * TURN_SPEED * 5;
+        }
+    }
+}
 
         spacePlanets.forEach(p => {
             p.angle += p.speed;
