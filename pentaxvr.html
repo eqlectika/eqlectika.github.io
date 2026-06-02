@@ -454,30 +454,27 @@ function loadSavedState() {
     let angularVelocityZ = 0;
     const lookDirection = new THREE.Vector3();
 
-// Вне функции animate создайте контроллер
+// --- ИНИЦИАЛИЗАЦИЯ VR ---
 const controller = renderer.xr.getController(0);
-controller.addEventListener('selectstart', onVRSelect); // Событие клика на триггер
+// Слушатель событий для взаимодействия (клик пада/триггер)
+controller.addEventListener('selectstart', onVRSelect);
 player.add(controller);
-
-// Функция для обработки клика в VR
+ 
 function onVRSelect(event) {
-    // Получаем контроллер из события
     const controller = event.target;
-    const tempMatrix = new THREE.Matrix4();
-    tempMatrix.identity().extractRotation(controller.matrixWorld);
+    const tempMatrix = new THREE.Matrix4().identity().extractRotation(controller.matrixWorld);
     raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
     raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
 
-    // Логика идентична вашей мышиной:
     const intersectsBismuth = raycaster.intersectObjects(bismuthGroup.children);
     if (intersectsBismuth.length > 0) {
         const targetMesh = intersectsBismuth[0].object;
         isDeleteMode ? removeMesh(targetMesh) : grow(targetMesh);
-        return;
-    }
-    const intersectsPlanet = raycaster.intersectObject(planetMesh);
-    if (intersectsPlanet.length > 0 && !isDeleteMode) {
-        spawnTriangleBase(intersectsPlanet[0]);
+    } else {
+        const intersectsPlanet = raycaster.intersectObject(planetMesh);
+        if (intersectsPlanet.length > 0 && !isDeleteMode) {
+            spawnTriangleBase(intersectsPlanet[0]);
+        }
     }
 }
 
@@ -492,20 +489,34 @@ function removeMesh(targetMesh) {
     bismuthGroup.remove(targetMesh);
 }
 
-    function animate() {
-        renderer.setAnimationLoop(animate);
+function animate(time, frame) { // Добавьте аргументы для WebXR
+    const session = renderer.xr.getSession();
+    const isVR = session !== null;
 
-const session = renderer.xr.getSession();
-if (session && session.inputSources) {
-    for (const source of session.inputSources) {
-        if (source.handedness === 'right' && source.gamepad) {
+    if (isVR) {
+        // VR РЕЖИМ
+        for (const source of session.inputSources) {
+            if (!source.gamepad) continue;
             const gp = source.gamepad;
-            // Ось Y тачпада - крен, Ось X - поворот
-            if (Math.abs(gp.axes[1]) > 0.2) angularVelocityX += gp.axes[1] * TURN_SPEED * 5;
-            if (Math.abs(gp.axes[0]) > 0.2) angularVelocityZ += gp.axes[0] * TURN_SPEED * 5;
+
+            // 1. ТРИГГЕР (кнопка 0) — ТЯГА
+            if (gp.buttons[0] && gp.buttons[0].pressed) {
+                camera.getWorldDirection(lookDirection);
+                velocity.addScaledVector(lookDirection, FLY_SPEED * 2.0);
+            }
+
+            // 2. НАВИГАЦИЯ (Оси тачпада)
+            if (Math.abs(gp.axes[1]) > 0.2) angularVelocityX = gp.axes[1] * TURN_SPEED * 5;
+            if (Math.abs(gp.axes[0]) > 0.2) angularVelocityZ = gp.axes[0] * TURN_SPEED * 5;
+            
+            // Клик тачпада (строительство) уже обрабатывается через onVRSelect (selectstart)
         }
-    }
-}
+    } else {
+        // 2D РЕЖИМ (Клавиатура + Тачскрин)
+        if (keysPressed['ArrowLeft']) angularVelocityZ -= TURN_SPEED; 
+        if (keysPressed['ArrowRight']) angularVelocityZ += TURN_SPEED;
+        }
+    
 
         spacePlanets.forEach(p => {
             p.angle += p.speed;
@@ -592,9 +603,12 @@ if (session && session.inputSources) {
 
         renderer.render(scene, camera);
     }
+
+// Запуск цикла
+renderer.setAnimationLoop(animate);
+
 // Восстанавливаем сохраненную архитектуру блоков перед стартом рендера
 loadSavedState();
-    animate();
 </script>     
 </body>
 </html>
