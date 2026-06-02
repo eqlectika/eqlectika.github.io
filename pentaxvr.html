@@ -161,20 +161,23 @@ document.addEventListener('touchmove', (e) => {
         if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
     });
 
-    window.addEventListener('keydown', (e) => { 
-        if (e.code === 'Space') {
-            if (!e.repeat) { // Игнорируем системный автоповтор зажатой клавиши
-                const currentTime = performance.now();
-                if (currentTime - lastSpaceTime < 250) {
-                    isDoubleSpace = true;
-                } else {
-                    isDoubleSpace = false;
-                }
-                lastSpaceTime = currentTime;
-            }
+window.addEventListener('keydown', (e) => {
+    keysPressed[e.code] = true;
+    if (e.code === 'Space') {
+        if (!e.repeat) {
+            const currentTime = performance.now();
+            isDoubleSpace = (currentTime - lastSpaceTime < 250);
+            lastSpaceTime = currentTime;
         }
-        keysPressed[e.code] = true; 
-    });
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    keysPressed[e.code] = false;
+    if (e.code === 'Space') {
+        isDoubleSpace = false;
+    }
+});
     window.addEventListener('keyup', (e) => { 
         keysPressed[e.code] = false; 
         if (e.code === 'Space') isDoubleSpace = false;
@@ -528,13 +531,22 @@ function animate(time, frame) {
     angularVelocityX *= DAMPING_TURN;
     angularVelocityZ *= DAMPING_TURN;
     
+angularVelocityX *= DAMPING_TURN;
+    angularVelocityZ *= DAMPING_TURN;
     player.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')));
+// --- ЛОГИКА ТЯГИ ---
+// Если Space зажат, добавляем импульс
+if (keysPressed['Space']) {
+        const thrust = isDoubleSpace ? (FLY_SPEED * 2.0) : FLY_SPEED;
+        camera.getWorldDirection(lookDirection);
+        velocity.addScaledVector(lookDirection, thrust);
+    }
+
     player.position.add(velocity);
-    velocity.multiplyScalar(DAMPING_MOVE);
-        velocity.multiplyScalar(DAMPING_MOVE);
+    velocity.multiplyScalar(DAMPING_MOVE)
 
 // --- СЕЛЕКТИВНЫЕ КОЛЛИЗИИ: ИНТЕЛЛЕКТУАЛЬНЫЙ БАРЬЕР ---
-        const playerDirection = player.position.clone().normalize();
+const playerDirection = player.position.clone().normalize();
         const currentPlayerRadius = player.position.length();
 
         // 1. Коллизия с фрактальными структурами (всегда твердые)
@@ -583,6 +595,7 @@ renderer.setAnimationLoop(animate);
 
 // Восстанавливаем сохраненную архитектуру блоков перед стартом рендера
 loadSavedState();
+  
 </script>     
 </body>
 </html>
