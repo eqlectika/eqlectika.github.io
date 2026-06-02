@@ -548,6 +548,15 @@ document.addEventListener('touchend', (event) => {
     lastTouchEnd = now;
 }, false);
 
+// Запрещаем создание объектов и звук при клике на UI-слой
+const uiLayer = document.getElementById('ui-layer');
+['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click'].forEach(eventType => {
+    uiLayer.addEventListener(eventType, (e) => {
+        e.stopPropagation();
+    });
+});
+
+
 function toggleDonate() { 
   const info = document.getElementById("cryptoInfo"); 
   const isOpening = info.style.display !== "flex";
