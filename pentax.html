@@ -54,6 +54,34 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
 </script>
 
 <script type="module">
+    // 1. Блокировка контекстного меню (правый клик)
+window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// 2. Блокировка жестов масштабирования (pinch-to-zoom) на уровне тач-событий
+document.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 1) {
+        e.preventDefault(); // Запрет зума двумя пальцами
+    }
+}, { passive: false });
+
+// 3. Полный запрет double-tap zoom (двойного тапа для масштабирования)
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+    const now = performance.now();
+    if (now - lastTouchEnd <= 300) {
+        e.preventDefault(); // Блокируем зум, но сохраняем генерацию клика
+    }
+    lastTouchEnd = now;
+}, { passive: false });
+
+// 4. Запрет скролла и pull-to-refresh (обновления страницы свайпом вниз)
+document.addEventListener('touchmove', (e) => {
+    // Если тач происходит на интерактивных зонах управления, не даем браузеру двигать саму страницу
+    if (e.target.closest('#throttleArea') || e.target.closest('#controlArea') || e.target.tagName === 'CANVAS') {
+        if (e.cancelable) e.preventDefault();
+    }
+}, { passive: false });
+    
     import * as THREE from 'three';
 
     // --- СТРОГИЕ КОНСТАНТЫ КИНЕМАТИКИ ИЗ PLANET.HTML ---
