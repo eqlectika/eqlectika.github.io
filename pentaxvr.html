@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="manifest" href="manifest.json">
+
+    <title>Perfect Horizon Pentax</title>
+<style>
+html, body { 
+    margin: 0; padding: 0; width: 100dvw; height: 100dvh; overflow: hidden; 
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    background-color: #010103; font-family: Menlo, sans-serif;
+    overscroll-behavior: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    /* 4. Удаляет синюю полупрозрачную вспышку при нажатии на интерактивные зоны в iOS/Safari */
+    -webkit-tap-highlight-color: transparent;
+}
+canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+#controls { position: fixed; bottom: 50px; left: 20px; display: flex; justify-content: flex-start; pointer-events: none; z-index: 3000; }
+.interface-top { position: absolute; top: 10px; width: 100%; display: flex; justify-content: center; gap: 10px; z-index: 3500; pointer-events: none; }
+.mode-toggle { background: transparent; border: 0px solid #00ffaa; color: #00ffaa; padding: 6px 12px; font-size: 0.8rem; cursor: pointer; pointer-events: auto; text-transform: uppercase; }
+#throttleArea { position: fixed; top: 0; left: 0; width: 50vw; height: 100vh; z-index: 2000; pointer-events: auto; touch-action: none; }
+#controlArea { position: fixed; top: 0; right: 0; width: 50vw; height: 100vh; z-index: 2000; pointer-events: auto; touch-action: none; }
+@media (pointer: fine) { #throttleArea, #controlArea { pointer-events: none; } }
+#startButton { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 5000; padding: 15px 30px; background-color: #1a1a2e; color: #00ffaa; border: 1px solid #00ffaa; border-radius: 8px; font-size: 18px; cursor: pointer; }
+
+/* НЕОНОВЫЙ КРЕСТОВОЙ ПРИЦЕЛ ЦЕНТРА ТЯГИ */
+#reticle {
+    position: fixed; top: 50%; left: 50%;
+    width: 20px; height: 20px;
+    transform: translate(-50%, -50%);
+    pointer-events: none; z-index: 4000;
+}
+#reticle::before, #reticle::after {
+    content: ''; position: absolute; background: #00ffaa;
+    box-shadow: 0 0 4px #00ffaa;
+}
+#reticle::before { top: 9px; left: 0; width: 20px; height: 2px; }
+#reticle::after { top: 0; left: 9px; width: 2px; height: 20px; }
+</style>
+</head>
+<body>
+
+    <button id="startButton">START SIMULATION</button>
+    <div id="reticle"></div>
+
+    <div class="interface-top">
+        <button id="deleteMode" class="mode-toggle">Build Mode</button>
+        <button id="polarityBtn" class="mode-toggle">Grow Inward</button>
+    </div>
+    
+    <div id="throttleArea"></div> 
+    <div id="controlArea"></div>  
+    <div id="controls"></div>
+
+<script type="importmap">
+  { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+
+<script type="module">
+
+import { VRButton } from 'https://unpkg.com/three@0.160.0/examples/jsm/webxr/VRButton.js';
+
+    // 1. Блокировка контекстного меню (правый клик)
+window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// 2. Блокировка жестов масштабирования (pinch-to-zoom) на уровне тач-событий
+document.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 1) {
+        e.preventDefault(); // Запрет зума двумя пальцами
+    }
+}, { passive: false });
+
+// 3. Полный запрет double-tap zoom (двойного тапа для масштабирования)
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+    const now = performance.now();
+    if (now - lastTouchEnd <= 300) {
+        e.preventDefault(); // Блокируем зум, но сохраняем генерацию клика
+    }
+    lastTouchEnd = now;
+}, { passive: false });
+
+// 4. Запрет скролла и pull-to-refresh (обновления страницы свайпом вниз)
+document.addEventListener('touchmove', (e) => {
+    // Если тач происходит на интерактивных зонах управления, не даем браузеру двигать саму страницу
+    if (e.target.closest('#throttleArea') || e.target.closest('#controlArea') || e.target.tagName === 'CANVAS') {
+        if (e.cancelable) e.preventDefault();
+    }
+}, { passive: false });
+    
+    import * as THREE from 'three';
+
+    // --- СТРОГИЕ КОНСТАНТЫ КИНЕМАТИКИ ИЗ PLANET.HTML ---
+    const FLY_SPEED = 0.0057;       
+    const TURN_SPEED = 0.0003;      
+    const TOUCH_TURN_SPEED = 0.0005; 
+    const DAMPING_TURN = 0.99;
+    const DAMPING_MOVE = 0.99;
+
+    const PLANET_RADIUS = 1500; 
+    const PLAYER_HEIGHT = 40; 
+
+    let isDeleteMode = false;
+    let polarity = -1; 
+    
+    const collidableObjects = [];
+    const keysPressed = {};
+    let currentThrottle = 0;
+    let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
+    const activeTouches = { throttle: null, control: null };
+
+    // Исправленный таймер двойного клика Space
+    let lastSpaceTime = 0;
+    let isDoubleSpace = false;
+
+    // --- ТАЧ-ИНТЕРФЕЙС УПРАВЛЕНИЯ ---
+    const throttleArea = document.getElementById('throttleArea');
+    const controlArea = document.getElementById('controlArea');
+
+    throttleArea.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse') return;
+        activeTouches.throttle = e.pointerId;
+        updateThrottle(e);
+    });
+    function updateThrottle(e) {
+        const rect = throttleArea.getBoundingClientRect();
+        currentThrottle = Math.max(0, Math.min(1, 1 - ((e.clientY - rect.top) / rect.height)));
+    }
+    controlArea.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse') return;
+        activeTouches.control = e.pointerId;
+        touchJoystick.active = true;
+        touchJoystick.startX = e.clientX; touchJoystick.startY = e.clientY;
+    });
+    window.addEventListener('pointermove', (e) => {
+        if (e.pointerId === activeTouches.throttle) updateThrottle(e);
+        if (e.pointerId === activeTouches.control && touchJoystick.active) {
+            touchJoystick.moveX = Math.max(-1, Math.min(1, (e.clientX - touchJoystick.startX) / 100));
+            touchJoystick.moveY = Math.max(-1, Math.min(1, (e.clientY - touchJoystick.startY) / 100));
+        }
+    });
+    window.addEventListener('pointerup', (e) => {
+        if (e.pointerId === activeTouches.throttle) { activeTouches.throttle = null; currentThrottle = 0; }
+        if (e.pointerId === activeTouches.control) { activeTouches.control = null; touchJoystick.active = false; }
+    });
+
+    document.getElementById('deleteMode').addEventListener('click', (e) => {
+        isDeleteMode = !isDeleteMode;
+        e.target.innerText = isDeleteMode ? 'Delete Mode' : 'Build Mode';
+        e.target.style.color = isDeleteMode ? '#ff0055' : '#00ffaa';
+    });
+    document.getElementById('polarityBtn').addEventListener('click', (e) => {
+        polarity *= -1;
+        e.target.innerText = polarity === -1 ? 'Grow Inward' : 'Grow Outward';
+    });
+
+    document.getElementById('startButton').addEventListener('click', () => {
+        document.getElementById('startButton').style.display = 'none';
+        if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+    });
+
+    window.addEventListener('keydown', (e) => { 
+        if (e.code === 'Space') {
+            if (!e.repeat) { // Игнорируем системный автоповтор зажатой клавиши
+                const currentTime = performance.now();
+                if (currentTime - lastSpaceTime < 250) {
+                    isDoubleSpace = true;
+                } else {
+                    isDoubleSpace = false;
+                }
+                lastSpaceTime = currentTime;
+            }
+        }
+        keysPressed[e.code] = true; 
+    });
+    window.addEventListener('keyup', (e) => { 
+        keysPressed[e.code] = false; 
+        if (e.code === 'Space') isDoubleSpace = false;
+    });
+
+    // --- НАСТРОЙКА СЦЕНЫ И СУБЪЕКТА ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x010103);
+    
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 50000);
+    const player = new THREE.Group();
+    
+    player.position.set(0, -(PLANET_RADIUS - PLAYER_HEIGHT - 300), 0);
+    
+    let initialUp = player.position.clone().normalize();
+    player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), initialUp);
+    scene.add(player);
+    
+    camera.quaternion.setFromEuler(new THREE.Euler(Math.PI, 0, 0, 'YXZ'));
+    player.add(camera);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.xr.enabled = true; // Важно!
+document.body.appendChild(renderer.domElement);
+document.body.appendChild(VRButton.createButton(renderer)); // Кнопка входа в VR
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+// --- СЛОЖНОЕ ОСВЕЩЕНИЕ ---
+const lightTop = new THREE.DirectionalLight(0xffffff, 5.0); 
+lightTop.position.set(0, PLANET_RADIUS, 0);
+scene.add(lightTop);
+
+const lightBottom = new THREE.DirectionalLight(0x3a4f7c, 3.0); 
+lightBottom.position.set(0, -PLANET_RADIUS, 0);
+scene.add(lightBottom);
+
+// НОВЫЙ ИСТОЧНИК: Встречный заполняющий свет для устранения темных сторон планет
+const lightFrontBack = new THREE.DirectionalLight(0xffffff, 4.0);
+lightFrontBack.position.set(0, 0, -PLANET_RADIUS * 5); // Светит глубоко из пронзающей оси Z
+scene.add(lightFrontBack);
+
+const neonPoint1 = new THREE.PointLight(0x00ffaa, 6.0, PLANET_RADIUS * 2.0);
+neonPoint1.position.set(PLANET_RADIUS * 0.5, 0, PLANET_RADIUS * 0.5);
+scene.add(neonPoint1);
+
+const neonPoint2 = new THREE.PointLight(0x7700ff, 7.0, PLANET_RADIUS * 2.0);
+neonPoint2.position.set(-PLANET_RADIUS * 0.5, PLANET_RADIUS * 0.2, -PLANET_RADIUS * 0.5);
+scene.add(neonPoint2);
+
+// Сделали фоновую подстветку еще ярче, чтобы полностью убрать черноту на скрытых гранях
+scene.add(new THREE.AmbientLight(0x253530));
+    // --- ВНЕШНИЕ КОСМИЧЕСКИЕ ПЛАНЕТЫ ---
+    const spacePlanets = [];
+    const planetColors = [0x442266, 0x114455, 0x553311];
+    const planetSizes = [250, 400, 180];
+    const planetOrbits = [6000, 11000, 15000];
+
+    for (let i = 0; i < 3; i++) {
+        const planetGeo = new THREE.IcosahedronGeometry(planetSizes[i], 1);
+        const planetMat = new THREE.MeshPhongMaterial({
+            color: planetColors[i],
+            shininess: 30,
+            flatShading: true
+        });
+        const externalPlanet = new THREE.Mesh(planetGeo, planetMat);
+        
+        const angle = Math.random() * Math.PI * 2;
+        externalPlanet.position.set(Math.cos(angle) * planetOrbits[i], (Math.random() - 0.5) * 3000, Math.sin(angle) * planetOrbits[i]);
+        
+        scene.add(externalPlanet);
+        spacePlanets.push({
+            mesh: externalPlanet,
+            orbit: planetOrbits[i],
+            speed: 0.00003 + (Math.random() * 0.00004),
+            angle: angle
+        });
+    }
+
+    // --- МАТЕРИАЛЫ БЛОКОВ И СЕТКИ ---
+    const bismuthGroup = new THREE.Group();
+    scene.add(bismuthGroup);
+
+    const faceMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0x032412, 
+        side: THREE.DoubleSide, 
+        shininess: 45,
+        transparent: true,
+        opacity: 0.70
+    });
+    
+    const lineMaterialNormal = new THREE.LineBasicMaterial({ color: 0x00ffaa });
+    const lineMaterialHighlighted = new THREE.LineBasicMaterial({ color: 0x00ffaa });
+
+    const planetGeometry = new THREE.IcosahedronGeometry(PLANET_RADIUS, 0);
+    const planetMaterial = new THREE.MeshBasicMaterial({
+        color: 0x00ffaa, 
+        wireframe: true,
+        transparent: true,
+        opacity: 0.7,
+        side: THREE.BackSide
+    });
+    const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+    scene.add(planetMesh);
+
+    const activeTriangleIds = new Set();
+
+// ФУНКЦИЯ КЭШИРОВАНИЯ: Сохранение состояния в LocalStorage
+function saveCurrentState() {
+    const dataToSave = Array.from(activeTriangleIds);
+    localStorage.setItem('icosahedron_syntax_cache', JSON.stringify(dataToSave));
+}
+
+// ФУНКЦИЯ ВОССТАНОВЛЕНИЯ: Вызывается один раз при загрузке
+function loadSavedState() {
+    const savedData = localStorage.getItem('icosahedron_syntax_cache');
+    if (!savedData) return;
+
+    const idsToRestore = JSON.parse(savedData);
+    
+    // Ждем один кадр, чтобы геометрия planetMesh гарантированно инициализировалась
+    requestAnimationFrame(() => {
+        idsToRestore.forEach(faceIndex => {
+            // Искусственный объект пересечения для функции spawnTriangleBase
+            const mockIntersect = {
+                faceIndex: faceIndex,
+                object: planetMesh
+            };
+            spawnTriangleBase(mockIntersect);
+        });
+    });
+}
+    // --- СТРОИТЕЛЬ ПАНЕЛЕЙ ---
+    function createPolygonPanel(points, depth, normalSteps = 0, geoFaceIndex = -1, useHighlight = false) {
+        const geo = new THREE.BufferGeometry();
+        const vertices = [];
+        
+        if (points.length === 3) {
+            vertices.push(points[0].x, points[0].y, points[0].z);
+            vertices.push(points[1].x, points[1].y, points[1].z);
+            vertices.push(points[2].x, points[2].y, points[2].z);
+        } else {
+            vertices.push(points[0].x, points[0].y, points[0].z);
+            vertices.push(points[1].x, points[1].y, points[1].z);
+            vertices.push(points[2].x, points[2].y, points[2].z);
+            vertices.push(points[2].x, points[2].y, points[2].z);
+            vertices.push(points[3].x, points[3].y, points[3].z);
+            vertices.push(points[0].x, points[0].y, points[0].z);
+        }
+        
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geo.computeVertexNormals();
+        
+        const mesh = new THREE.Mesh(geo, faceMaterial);
+        
+        const lineVertices = [];
+        for (let i = 0; i < points.length; i++) {
+            const pCurrent = points[i];
+            const pNext = points[(i + 1) % points.length];
+            lineVertices.push(pCurrent.x, pCurrent.y, pCurrent.z, pNext.x, pNext.y, pNext.z);
+        }
+        const lineGeo = new THREE.BufferGeometry();
+        lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(lineVertices, 3));
+        
+        const currentLineMat = useHighlight ? lineMaterialHighlighted : lineMaterialNormal;
+        const wireframe = new THREE.LineSegments(lineGeo, currentLineMat);
+        mesh.add(wireframe);
+
+        mesh.userData = { 
+            isBismuth: true, depth: depth, normalSteps: normalSteps, 
+            geoFaceIndex: geoFaceIndex, corners: points.map(p => p.clone()) 
+        };
+        bismuthGroup.add(mesh);
+        collidableObjects.push(mesh);
+    }
+
+// --- ФРАКТАЛЬНЫЙ РОСТ ---
+    function grow(mesh) {
+        const c = mesh.userData.corners;
+        const d = mesh.userData.depth;
+        const normalSteps = mesh.userData.normalSteps;
+        if (normalSteps >= 14) return;
+
+        // --- КРИТИЧЕСКАЯ ПРАВКА: Убираем индекс из базы, чтобы открыть «дыру» в физике ---
+        if (mesh.userData.geoFaceIndex !== -1) {
+            activeTriangleIds.delete(mesh.userData.geoFaceIndex);
+            saveCurrentState(); // Обновляем кэш
+        }
+
+        const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
+        const v2 = new THREE.Vector3().subVectors(c[2], c[0]);
+        let normal = new THREE.Vector3().crossVectors(v1, v2).normalize();
+        
+        const center = new THREE.Vector3();
+        c.forEach(p => center.add(p));
+        center.divideScalar(c.length);
+
+        if (normal.dot(center) > 0) {
+            normal.negate();
+        }
+        
+        const offset = normal.clone().multiplyScalar(v1.length() * 0.3 * polarity);
+        const inner = c.map(p => p.clone().lerp(center, 0.2).add(offset));
+        
+        const idx = collidableObjects.indexOf(mesh);
+        if (idx > -1) collidableObjects.splice(idx, 1);
+        bismuthGroup.remove(mesh);
+        if (mesh.geometry) mesh.geometry.dispose();
+
+        for (let i = 0; i < c.length; i++) {
+            const nextIdx = (i + 1) % c.length;
+            // У новых панелей geoFaceIndex всегда -1, так как они вторичны
+            createPolygonPanel([c[i], c[nextIdx], inner[nextIdx], inner[i]], d + 1, normalSteps + 1, -1, true);
+        }
+        createPolygonPanel(inner, d + 1, normalSteps + 1, -1, true);
+    }
+
+    function spawnTriangleBase(intersect) {
+        const faceIndex = intersect.faceIndex;
+        if (activeTriangleIds.has(faceIndex)) return; 
+
+        const geom = intersect.object.geometry;
+        const positionAttr = geom.attributes.position;
+
+        const pA = new THREE.Vector3().fromBufferAttribute(positionAttr, faceIndex * 3).applyMatrix4(intersect.object.matrixWorld);
+        const pB = new THREE.Vector3().fromBufferAttribute(positionAttr, faceIndex * 3 + 1).applyMatrix4(intersect.object.matrixWorld);
+        const pC = new THREE.Vector3().fromBufferAttribute(positionAttr, faceIndex * 3 + 2).applyMatrix4(intersect.object.matrixWorld);
+
+        activeTriangleIds.add(faceIndex);
+        saveCurrentState(); // Сохраняем появление новой панели
+        createPolygonPanel([pA, pB, pC], 0, 0, faceIndex, false); 
+    }
+
+    // --- РЕЙКАСТИНГ КЛИКА ---
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    window.addEventListener('pointerdown', (e) => {
+        if(e.target.tagName === 'BUTTON' || e.target.closest('#throttleArea') || e.target.closest('#controlArea')) return;
+        
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        
+        const intersectsBismuth = raycaster.intersectObjects(bismuthGroup.children);
+        if (intersectsBismuth.length > 0) {
+            const targetMesh = intersectsBismuth[0].object;
+            if (isDeleteMode) {
+                if (targetMesh.userData.geoFaceIndex !== -1) {
+                    activeTriangleIds.delete(targetMesh.userData.geoFaceIndex);
+                    saveCurrentState(); // Сохраняем удаление панели
+                }
+                const idx = collidableObjects.indexOf(targetMesh);
+                if (idx > -1) collidableObjects.splice(idx, 1);
+                bismuthGroup.remove(targetMesh);
+            } else {
+                grow(targetMesh); 
+            }
+            return;
+        }
+
+        const intersectsPlanet = raycaster.intersectObject(planetMesh);
+        if (intersectsPlanet.length > 0 && !isDeleteMode) {
+            spawnTriangleBase(intersectsPlanet[0]);
+        }
+    });
+
+    // --- ЦИКЛ АНИМАЦИИ И НАПРАВЛЕННОЙ ТЯГИ ---
+    let velocity = new THREE.Vector3(0, 0, 0);
+    let angularVelocityX = 0;
+    let angularVelocityZ = 0;
+    const lookDirection = new THREE.Vector3();
+
+// Вне функции animate создайте контроллер
+const controller = renderer.xr.getController(0);
+controller.addEventListener('selectstart', onVRSelect); // Событие клика на триггер
+player.add(controller);
+
+// Функция для обработки клика в VR
+function onVRSelect() {
+    const tempMatrix = new THREE.Matrix4();
+    tempMatrix.identity().extractRotation(controller.matrixWorld);
+    raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+    raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+
+    // Логика идентична вашей мышиной:
+    const intersectsBismuth = raycaster.intersectObjects(bismuthGroup.children);
+    if (intersectsBismuth.length > 0) {
+        const targetMesh = intersectsBismuth[0].object;
+        isDeleteMode ? removeMesh(targetMesh) : grow(targetMesh);
+        return;
+    }
+    const intersectsPlanet = raycaster.intersectObject(planetMesh);
+    if (intersectsPlanet.length > 0 && !isDeleteMode) {
+        spawnTriangleBase(intersectsPlanet[0]);
+    }
+}
+
+// Вынесите логику удаления в отдельную функцию для чистоты
+function removeMesh(targetMesh) {
+    if (targetMesh.userData.geoFaceIndex !== -1) {
+        activeTriangleIds.delete(targetMesh.userData.geoFaceIndex);
+        saveCurrentState();
+    }
+    const idx = collidableObjects.indexOf(targetMesh);
+    if (idx > -1) collidableObjects.splice(idx, 1);
+    bismuthGroup.remove(targetMesh);
+}
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        spacePlanets.forEach(p => {
+            p.angle += p.speed;
+            p.mesh.position.x = Math.cos(p.angle) * p.orbit;
+            p.mesh.position.z = Math.sin(p.angle) * p.orbit;
+            p.mesh.rotation.y += 0.002;
+        });
+
+        if (keysPressed['ArrowLeft']) angularVelocityZ -= TURN_SPEED; 
+        if (keysPressed['ArrowRight']) angularVelocityZ += TURN_SPEED;
+        if (keysPressed['ArrowUp']) angularVelocityX -= TURN_SPEED;
+        if (keysPressed['ArrowDown']) angularVelocityX += TURN_SPEED;
+
+        if (touchJoystick.active) {
+            angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
+            angularVelocityZ += touchJoystick.moveX * TOUCH_TURN_SPEED;
+        }
+
+        angularVelocityX *= DAMPING_TURN;
+        angularVelocityZ *= DAMPING_TURN;
+
+        const deltaQuaternion = new THREE.Quaternion().setFromEuler(
+            new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
+        );
+        player.quaternion.multiply(deltaQuaternion); 
+
+        // ИСПРАВЛЕНО: Безупречный расчет вектора тяги СТРОГО вперед по направлению взгляда
+        let thrustForce = 0; 
+        if (keysPressed['Space']) {
+            thrustForce = isDoubleSpace ? (FLY_SPEED * 2.0) : FLY_SPEED; 
+        } else if (currentThrottle > 0.05) {
+            thrustForce = FLY_SPEED * (currentThrottle * 2.0); 
+        } 
+        
+        if (thrustForce > 0) {
+            camera.getWorldDirection(lookDirection); // Берем чистый мировой вектор направления камеры
+            velocity.addScaledVector(lookDirection, thrustForce);
+        }
+
+        player.position.add(velocity);
+        velocity.multiplyScalar(DAMPING_MOVE);
+
+// --- СЕЛЕКТИВНЫЕ КОЛЛИЗИИ: ИНТЕЛЛЕКТУАЛЬНЫЙ БАРЬЕР ---
+        const playerDirection = player.position.clone().normalize();
+        const currentPlayerRadius = player.position.length();
+
+        // 1. Коллизия с фрактальными структурами (всегда твердые)
+        const raycasterCollision = new THREE.Raycaster();
+        raycasterCollision.set(player.position, playerDirection);
+        const intersects = raycasterCollision.intersectObjects(collidableObjects);
+
+        if (intersects.length > 0 && intersects[0].distance < PLAYER_HEIGHT + 0.1) {
+            const groundDistance = intersects[0].point.length();
+            player.position.copy(playerDirection.clone().multiplyScalar(groundDistance - PLAYER_HEIGHT));
+            
+            const normalVelocity = velocity.dot(playerDirection);
+            if (normalVelocity > 0) { 
+                velocity.addScaledVector(playerDirection, -normalVelocity);
+            }
+        }
+
+        // 2. Коллизия с границами макро-икосаэдра (только если грань НЕ удалена)
+        if (currentPlayerRadius > PLANET_RADIUS - PLAYER_HEIGHT) {
+            
+            // Пускаем луч из центра строго через игрока, чтобы узнать, в какой конкретно faceIndex мы уперлись
+            const rayToOutside = new THREE.Raycaster(new THREE.Vector3(0,0,0), playerDirection);
+            const planetIntersects = rayToOutside.intersectObject(planetMesh);
+            
+            if (planetIntersects.length > 0) {
+                const targetFaceIndex = planetIntersects[0].faceIndex;
+                
+                // Если эта треугольная грань АКТИВНА (плита построена), икосаэдр твердый
+                if (activeTriangleIds.has(targetFaceIndex)) {
+                    player.position.copy(playerDirection.clone().multiplyScalar(PLANET_RADIUS - PLAYER_HEIGHT));
+                    const normalVelocity = velocity.dot(playerDirection);
+                    if (normalVelocity > 0) { 
+                        velocity.addScaledVector(playerDirection, -normalVelocity * 1.3); 
+                    }
+                }
+                // Если грань удалена (activeTriangleIds её не содержит) — луч игнорируется, 
+                // и субъект беспрепятственно вылетает сквозь эту конкретную «дыру» в космос к планетам!
+            }
+        }
+
+        renderer.render(scene, camera);
+    }
+// Восстанавливаем сохраненную архитектуру блоков перед стартом рендера
+loadSavedState();
+    animate();
+</script>     
+</body>
+</html>
