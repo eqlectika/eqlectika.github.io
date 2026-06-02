@@ -489,74 +489,48 @@ function removeMesh(targetMesh) {
     bismuthGroup.remove(targetMesh);
 }
 
-function animate(time, frame) { // Добавьте аргументы для WebXR
+// --- ЦИКЛ АНИМАЦИИ ---
+function animate(time, frame) {
     const session = renderer.xr.getSession();
     const isVR = session !== null;
 
     if (isVR) {
-        // VR РЕЖИМ
-        for (const source of session.inputSources) {
+        // VR УПРАВЛЕНИЕ
+        const inputSources = session.inputSources;
+        for (const source of inputSources) {
             if (!source.gamepad) continue;
             const gp = source.gamepad;
 
-            // 1. ТРИГГЕР (кнопка 0) — ТЯГА
+            // 1. ТЯГА (Триггер)
             if (gp.buttons[0] && gp.buttons[0].pressed) {
                 camera.getWorldDirection(lookDirection);
                 velocity.addScaledVector(lookDirection, FLY_SPEED * 2.0);
             }
 
-            // 2. НАВИГАЦИЯ (Оси тачпада)
-            if (Math.abs(gp.axes[1]) > 0.2) angularVelocityX = gp.axes[1] * TURN_SPEED * 5;
-            if (Math.abs(gp.axes[0]) > 0.2) angularVelocityZ = gp.axes[0] * TURN_SPEED * 5;
-            
-            // Клик тачпада (строительство) уже обрабатывается через onVRSelect (selectstart)
+            // 2. ПОВОРОТЫ (Тачпад)
+            if (Math.abs(gp.axes[1]) > 0.1) angularVelocityX = gp.axes[1] * TURN_SPEED * 10;
+            if (Math.abs(gp.axes[0]) > 0.1) angularVelocityZ = gp.axes[0] * TURN_SPEED * 10;
         }
     } else {
-        // 2D РЕЖИМ (Клавиатура + Тачскрин)
-        if (keysPressed['ArrowLeft']) angularVelocityZ -= TURN_SPEED; 
-        if (keysPressed['ArrowRight']) angularVelocityZ += TURN_SPEED;
-        }
-    
-
-        spacePlanets.forEach(p => {
-            p.angle += p.speed;
-            p.mesh.position.x = Math.cos(p.angle) * p.orbit;
-            p.mesh.position.z = Math.sin(p.angle) * p.orbit;
-            p.mesh.rotation.y += 0.002;
-        });
-
-        if (keysPressed['ArrowLeft']) angularVelocityZ -= TURN_SPEED; 
-        if (keysPressed['ArrowRight']) angularVelocityZ += TURN_SPEED;
+        // 2D УПРАВЛЕНИЕ (Клавиатура + Тачскрин)
         if (keysPressed['ArrowUp']) angularVelocityX -= TURN_SPEED;
         if (keysPressed['ArrowDown']) angularVelocityX += TURN_SPEED;
-
+        if (keysPressed['ArrowLeft']) angularVelocityZ -= TURN_SPEED;
+        if (keysPressed['ArrowRight']) angularVelocityZ += TURN_SPEED;
+        
         if (touchJoystick.active) {
             angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
             angularVelocityZ += touchJoystick.moveX * TOUCH_TURN_SPEED;
         }
+    }
 
-        angularVelocityX *= DAMPING_TURN;
-        angularVelocityZ *= DAMPING_TURN;
-
-        const deltaQuaternion = new THREE.Quaternion().setFromEuler(
-            new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
-        );
-        player.quaternion.multiply(deltaQuaternion); 
-
-        // ИСПРАВЛЕНО: Безупречный расчет вектора тяги СТРОГО вперед по направлению взгляда
-        let thrustForce = 0; 
-        if (keysPressed['Space']) {
-            thrustForce = isDoubleSpace ? (FLY_SPEED * 2.0) : FLY_SPEED; 
-        } else if (currentThrottle > 0.05) {
-            thrustForce = FLY_SPEED * (currentThrottle * 2.0); 
-        } 
-        
-        if (thrustForce > 0) {
-            camera.getWorldDirection(lookDirection); // Берем чистый мировой вектор направления камеры
-            velocity.addScaledVector(lookDirection, thrustForce);
-        }
-
-        player.position.add(velocity);
+    // --- ОБЩАЯ ФИЗИКА (работает в обоих режимах) ---
+    angularVelocityX *= DAMPING_TURN;
+    angularVelocityZ *= DAMPING_TURN;
+    
+    player.quaternion.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')));
+    player.position.add(velocity);
+    velocity.multiplyScalar(DAMPING_MOVE);
         velocity.multiplyScalar(DAMPING_MOVE);
 
 // --- СЕЛЕКТИВНЫЕ КОЛЛИЗИИ: ИНТЕЛЛЕКТУАЛЬНЫЙ БАРЬЕР ---
