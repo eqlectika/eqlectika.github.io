@@ -426,9 +426,11 @@ scene.add(new THREE.AmbientLight(0x253530));
         player.position.add(velocity);
         velocity.multiplyScalar(DAMPING_MOVE);
 
+// --- СЕЛЕКТИВНЫЕ КОЛЛИЗИИ: ИНТЕЛЛЕКТУАЛЬНЫЙ БАРЬЕР ---
         const playerDirection = player.position.clone().normalize();
+        const currentPlayerRadius = player.position.length();
 
-        // Коллизии
+        // 1. Коллизия с фрактальными структурами (всегда твердые)
         const raycasterCollision = new THREE.Raycaster();
         raycasterCollision.set(player.position, playerDirection);
         const intersects = raycasterCollision.intersectObjects(collidableObjects);
@@ -439,17 +441,31 @@ scene.add(new THREE.AmbientLight(0x253530));
             
             const normalVelocity = velocity.dot(playerDirection);
             if (normalVelocity > 0) { 
-                velocity.addScaledVector(playerDirection, -normalVelocity);                        
+                velocity.addScaledVector(playerDirection, -normalVelocity);
             }
         }
 
-        // Границы икосаэдра
-        if (player.position.length() > PLANET_RADIUS - PLAYER_HEIGHT) {
-            player.position.copy(playerDirection.clone().multiplyScalar(PLANET_RADIUS - PLAYER_HEIGHT));
-            const normalVelocity = velocity.dot(playerDirection);
-            if (normalVelocity > 0) { 
-                velocity.addScaledVector(playerDirection, -normalVelocity * 1.3); 
-            } 
+        // 2. Коллизия с границами макро-икосаэдра (только если грань НЕ удалена)
+        if (currentPlayerRadius > PLANET_RADIUS - PLAYER_HEIGHT) {
+            
+            // Пускаем луч из центра строго через игрока, чтобы узнать, в какой конкретно faceIndex мы уперлись
+            const rayToOutside = new THREE.Raycaster(new THREE.Vector3(0,0,0), playerDirection);
+            const planetIntersects = rayToOutside.intersectObject(planetMesh);
+            
+            if (planetIntersects.length > 0) {
+                const targetFaceIndex = planetIntersects[0].faceIndex;
+                
+                // Если эта треугольная грань АКТИВНА (плита построена), икосаэдр твердый
+                if (activeTriangleIds.has(targetFaceIndex)) {
+                    player.position.copy(playerDirection.clone().multiplyScalar(PLANET_RADIUS - PLAYER_HEIGHT));
+                    const normalVelocity = velocity.dot(playerDirection);
+                    if (normalVelocity > 0) { 
+                        velocity.addScaledVector(playerDirection, -normalVelocity * 1.3); 
+                    }
+                }
+                // Если грань удалена (activeTriangleIds её не содержит) — луч игнорируется, 
+                // и субъект беспрепятственно вылетает сквозь эту конкретную «дыру» в космос к планетам!
+            }
         }
 
         renderer.render(scene, camera);
