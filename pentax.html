@@ -282,6 +282,31 @@ scene.add(new THREE.AmbientLight(0x253530));
 
     const activeTriangleIds = new Set();
 
+// ФУНКЦИЯ КЭШИРОВАНИЯ: Сохранение состояния в LocalStorage
+function saveCurrentState() {
+    const dataToSave = Array.from(activeTriangleIds);
+    localStorage.setItem('icosahedron_syntax_cache', JSON.stringify(dataToSave));
+}
+
+// ФУНКЦИЯ ВОССТАНОВЛЕНИЯ: Вызывается один раз при загрузке
+function loadSavedState() {
+    const savedData = localStorage.getItem('icosahedron_syntax_cache');
+    if (!savedData) return;
+
+    const idsToRestore = JSON.parse(savedData);
+    
+    // Ждем один кадр, чтобы геометрия planetMesh гарантированно инициализировалась
+    requestAnimationFrame(() => {
+        idsToRestore.forEach(faceIndex => {
+            // Искусственный объект пересечения для функции spawnTriangleBase
+            const mockIntersect = {
+                faceIndex: faceIndex,
+                object: planetMesh
+            };
+            spawnTriangleBase(mockIntersect);
+        });
+    });
+}
     // --- СТРОИТЕЛЬ ПАНЕЛЕЙ ---
     function createPolygonPanel(points, depth, normalSteps = 0, geoFaceIndex = -1, useHighlight = false) {
         const geo = new THREE.BufferGeometry();
@@ -372,6 +397,7 @@ scene.add(new THREE.AmbientLight(0x253530));
         const pC = new THREE.Vector3().fromBufferAttribute(positionAttr, faceIndex * 3 + 2).applyMatrix4(intersect.object.matrixWorld);
 
         activeTriangleIds.add(faceIndex);
+        saveCurrentState(); // Сохраняем появление новой панели
         createPolygonPanel([pA, pB, pC], 0, 0, faceIndex, false); 
     }
 
@@ -393,6 +419,7 @@ scene.add(new THREE.AmbientLight(0x253530));
             if (isDeleteMode) {
                 if (targetMesh.userData.geoFaceIndex !== -1) {
                     activeTriangleIds.delete(targetMesh.userData.geoFaceIndex);
+                    saveCurrentState(); // Сохраняем удаление панели
                 }
                 const idx = collidableObjects.indexOf(targetMesh);
                 if (idx > -1) collidableObjects.splice(idx, 1);
@@ -503,7 +530,8 @@ scene.add(new THREE.AmbientLight(0x253530));
 
         renderer.render(scene, camera);
     }
-
+// Восстанавливаем сохраненную архитектуру блоков перед стартом рендера
+loadSavedState();
     animate();
 </script>     
 </body>
