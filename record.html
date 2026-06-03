@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <link rel="manifest" href="manifest-planet.json">
+
+    <title>Outside-in Planet</title>
+<style>
+#directorMenuBtn {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4000;
+    background: rgba(20, 20, 20, 0.0);
+    color: #00ffcc;
+    border: 0px solid #00ffcc;
+    padding: 6px 14px;
+    font-family: monospace;
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    margin-top: 20px;
+}
+#director-panel {
+    display: none;
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 15, 25, 0.95);
+    border: 1px solid #333355;
+    color: #fff;
+    font-family: monospace;
+    font-size: 16px !important;     
+    padding: 15px;
+    border-radius: 8px;
+    z-index: 9999;
+    width: 600px; 
+    min-height: 560px !important;   
+    box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+}
+
+#scenario-editor {
+    width: 100% !important;
+    height: 520px !important;       
+    min-height: 380px !important;
+    background: #05050a;
+    color: #00ffcc;
+    border: 1px solid #333;
+    font-family: monospace;
+    font-size: 16px !important;     
+    padding: 8px;
+    resize: none !important;        
+    box-sizing: border-box;
+    border-radius: 4px;
+}
+#director-panel h3 { margin: 0 0 12px 0; font-size: 13px; color: #00ffcc; letter-spacing: 1px; }
+#close-panel-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 18px;
+    cursor: pointer;
+}
+.timeline-section { margin-bottom: 12px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; border-left: 2px solid #ff3366; }
+.timeline-section-title { font-size: 11px; color: #888; margin-bottom: 6px; text-transform: uppercase; }
+
+#action-record-btn {
+    width: 100%; background: #ff3366; color: #fff; border: none; padding: 10px;
+    border-radius: 4px; font-weight: bold; cursor: pointer; letter-spacing: 1px; font-family: monospace;
+    transition: background 0.2s;
+}
+
+html, body { 
+    margin: 0; 
+    padding: 0;
+    width: 100dvw;
+    height: 100dvh;
+    overflow: hidden; 
+    touch-action: none; 
+    user-select: none;
+    -webkit-user-select: none;
+    background-color: #0a0a12;
+}
+canvas { 
+    display: block; 
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#controls {
+    position: fixed;
+    bottom: 50px;
+    left: 20px;                      
+    display: flex;
+    justify-content: flex-start;
+    pointer-events: none;
+    z-index: 3000;
+}
+
+@media (pointer: coarse) { #controls { display: flex; } }
+#logoLink {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4000; 
+    pointer-events: auto;
+    cursor: pointer;
+    -webkit-touch-callout: none;
+    user-select: none;           
+    -webkit-user-select: none;
+}
+
+#throttleArea {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 50vw;
+    height: 100vh;
+    z-index: 2000;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+#controlArea {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 50vw;
+    height: 100vh;
+    z-index: 2000;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+@media (pointer: fine) {
+    #throttleArea, #controlArea {
+        pointer-events: none;
+    }
+}
+
+#startButton {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5000;
+    padding: 15px 30px;
+    background-color: #3b3b4f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+}
+</style>
+</head>
+<body>
+    <button id="startButton">FULL SCREEN</button>
+<button id="directorMenuBtn" onclick="toggleDirectorPanel()">DIRECTOR</button>
+
+<div id="director-panel">
+    <button id="close-panel-btn" onclick="toggleDirectorPanel()">&times;</button>
+    
+    <div id="editor-container">
+        <textarea id="scenario-editor"></textarea>
+    </div>
+
+    <button id="action-record-btn" onclick="startAutoRecording()">RENDER & RECORD</button>
+</div>
+
+<a href="index.html" id="logoLink">
+    <img src="logo.png" alt="Logo" draggable="false" style="margin-bottom: 20px; width: 42px; height: 42px; opacity: 0.2;">
+</a>
+    
+    <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
+
+<script type="importmap">
+  { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+let currentThrottle = 0;
+let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
+
+let recordScenario = {
+    totalFrames: 150, 
+    thrustTimeline: {
+        "0": true,  
+        "80": false, 
+        "120": true   
+    },
+    rotationTimeline: {
+        "0":   { "x": 0,       "z": 0 },
+        "30":  { "x": -0.0004, "z": 0 },       
+        "70":  { "x": 0,       "z": 0.0006 },  
+        "110": { "x": 0,       "z": 0 }        
+    }
+};
+
+let isRecordingMode = false;
+let currentRecordFrame = 0;
+let scriptThrustActive = false;
+
+document.getElementById('scenario-editor').value = JSON.stringify(recordScenario, null, 2);
+
+window.toggleDirectorPanel = function() {
+    const panel = document.getElementById('director-panel');
+    const btn = document.getElementById('action-record-btn');
+    const editorContainer = document.getElementById('editor-container');
+    
+    if (panel.style.display === 'block') {
+        panel.style.display = 'none';
+    } else {
+        panel.style.display = 'block';
+        if (!isRecordingMode) {
+            editorContainer.style.display = 'block';
+            panel.style.minHeight = '640px';
+            document.getElementById('scenario-editor').value = JSON.stringify(recordScenario, null, 2);
+            btn.innerText = "RENDER & RECORD";
+            btn.style.background = "#ff3366";
+        }
+    }
+};
+
+window.startAutoRecording = async function() {
+    const btn = document.getElementById('action-record-btn');
+    const panel = document.getElementById('director-panel');
+    const editorContainer = document.getElementById('editor-container');
+    
+    if (isRecordingMode) {
+        isRecordingMode = false;
+        return;
+    }
+
+    try {
+        const editedScenario = JSON.parse(document.getElementById('scenario-editor').value);
+        recordScenario = editedScenario;
+    } catch (e) {
+        alert("Ошибка в синтаксисе JSON! Проверьте запятые и кавычки.");
+        return;
+    }
+    
+    isRecordingMode = true;
+    currentRecordFrame = 0;
+    
+    btn.innerText = "STOP RECORDING";
+    btn.style.background = "#ffoooo";
+    
+    // Скрываем текстовое поле, уменьшаем окно и оставляем ТОЛЬКО кнопку стопа на экране
+    editorContainer.style.display = 'none';
+    panel.style.setProperty('min-height', 'auto', 'important');
+
+    while (currentRecordFrame < recordScenario.totalFrames) {
+        if (!isRecordingMode) break;
+
+        if (recordScenario.thrustTimeline[currentRecordFrame] !== undefined) {
+            scriptThrustActive = recordScenario.thrustTimeline[currentRecordFrame];
+        }
+        if (recordScenario.rotationTimeline[currentRecordFrame] !== undefined) {
+            const rot = recordScenario.rotationTimeline[currentRecordFrame];
+            angularVelocityX = rot.x;
+            angularVelocityZ = rot.z;
+        }
+
+        window.executeSingleRecordedStep(scriptThrustActive);
+        
+        await new Promise((resolve) => {
+            const canvas = renderer.domElement;
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `frame_${String(currentRecordFrame).padStart(4, '0')}.png`;
+            link.href = dataURL;
+            link.click();
+            setTimeout(resolve, 320); 
+        });
+
+        currentRecordFrame++;
+    }
+
+    const wasStopped = !isRecordingMode || (currentRecordFrame < recordScenario.totalFrames);
+    isRecordingMode = false;
+    
+    // Возвращаем панель в режим редактирования
+    editorContainer.style.display = 'block';
+    panel.style.setProperty('min-height', '640px', 'important');
+    btn.style.background = "#ff3366";
+    btn.innerText = "RENDER & RECORD";
+    
+    alert(wasStopped ? `Запись остановлена на кадре ${currentRecordFrame}!` : "Рендер сценария полностью завершен!");
+};
+
+let isReverseThrust = true;
+
+const throttleArea = document.getElementById('throttleArea');
+const controlArea = document.getElementById('controlArea');
+const logoLink = document.getElementById('logoLink');
+
+const activeTouches = { throttle: null, control: null };
+
+throttleArea.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    activeTouches.throttle = e.pointerId;
+    updateThrottle(e);
+}, { passive: false });
+
+function updateThrottle(e) {
+    const rect = throttleArea.getBoundingClientRect();
+    let val = 1 - ((e.clientY - rect.top) / rect.height);
+    currentThrottle = Math.max(0, Math.min(1, val));
+}
+
+controlArea.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    activeTouches.control = e.pointerId;
+    touchJoystick.active = true;
+    touchJoystick.startX = e.clientX;
+    touchJoystick.startY = e.clientY;
+    touchJoystick.moveX = 0;
+    touchJoystick.moveY = 0;
+}, { passive: false });
+
+window.addEventListener('pointermove', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        updateThrottle(e);
+    }
+    if (e.pointerId === activeTouches.control && touchJoystick.active) {
+        const maxDistance = 100;
+        let diffX = e.clientX - touchJoystick.startX;
+        let diffY = e.clientY - touchJoystick.startY;
+        touchJoystick.moveX = Math.max(-1, Math.min(1, diffX / maxDistance));
+        touchJoystick.moveY = Math.max(-1, Math.min(1, diffY / maxDistance));
+    }
+});
+
+window.addEventListener('pointerup', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        activeTouches.throttle = null;
+        currentThrottle = 0;
+    }
+    if (e.pointerId === activeTouches.control) {
+        activeTouches.control = null;
+        touchJoystick.active = false;
+        touchJoystick.moveX = 0;
+        touchJoystick.moveY = 0;
+    }
+});
+
+    import * as THREE from 'three';
+
+    const FLY_SPEED = 0.0057;       
+    const TURN_SPEED = 0.0003;      
+    const TOUCH_TURN_SPEED = 0.0005; 
+    const GRAVITY = 0.0043333; 
+    const DAMPING_TURN = 0.99;
+    const DAMPING_MOVE = 0.99;
+    const PLANET_RADIUS = 1500; 
+    const PLAYER_HEIGHT = 2; 
+
+    document.getElementById('startButton').addEventListener('click', () => {
+        document.getElementById('startButton').style.display = 'none';
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+        }
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => {});
+        }
+    });
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a12); 
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 12000);
+    const player = new THREE.Group();
+    player.position.set(0, -(PLANET_RADIUS - PLAYER_HEIGHT), 0);
+    const initialDir = player.position.clone().normalize();
+    player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), initialDir);
+    scene.add(player);
+    camera.quaternion.setFromEuler(new THREE.Euler(Math.PI, 0, 0, 'YXZ'));
+    player.add(camera);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const light = new THREE.DirectionalLight(0xffffff, 2.5);
+    light.position.set(50, 200, 50);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x888888));
+
+    const backLight = new THREE.DirectionalLight(0xabcdef, 0.8);
+    backLight.position.set(-50, 100, -50); 
+    scene.add(backLight);
+
+    const collidableObjects = [];
+    function addStructure(mesh) {
+        scene.add(mesh);
+        collidableObjects.push(mesh);
+    }
+
+    const planetGeometry = new THREE.SphereGeometry(PLANET_RADIUS, 64, 64);
+    const planetMaterial = new THREE.ShaderMaterial({
+        wireframe: false, transparent: true, side: THREE.DoubleSide, 
+        uniforms: { uSize: { value: 0.05 } },
+        vertexShader: `
+            varying vec3 vWorldPosition;
+            varying vec3 vNormal;
+            void main() {
+                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                vWorldPosition = worldPosition.xyz;
+                vNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * viewMatrix * worldPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vWorldPosition;
+            varying vec3 vNormal;
+            uniform float uSize;
+            void main() {
+                vec2 grid = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize);
+                vec2 grid2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize);
+                float line = min(min(grid.x, grid.y), min(grid2.x, grid2.y));
+                float alpha = 1.0 - min(line, 1.0);
+                if (alpha < 0.1) discard;
+                gl_FragColor = vec4(0.26, 0.26, 1.0, alpha * 0.4);
+            }
+        `
+    });
+
+    const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+    planetMesh.position.set(0, 0, 0);
+    scene.add(planetMesh);
+
+    function positionOnSphere(mesh, distanceToCenter) {
+        const u = Math.random();
+        const v = Math.random();
+        const theta = u * 2.0 * Math.PI;
+        const phi = Math.acos(2.0 * v - 1.0);
+        const x = distanceToCenter * Math.sin(phi) * Math.cos(theta);
+        const y = distanceToCenter * Math.sin(phi) * Math.sin(theta);
+        const z = distanceToCenter * Math.cos(phi);
+        mesh.position.set(x, y, z);
+        const upVector = new THREE.Vector3(x, y, z).normalize();
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), upVector);
+    }
+
+    for(let i=0; i<40; i++) {
+        const sizeX = 10 + Math.random() * 20;
+        const sizeY = 4 + Math.random() * 15;
+        const sizeZ = 10 + Math.random() * 20;
+        const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
+        const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
+        const box = new THREE.Mesh(geometry, material);
+        box.geometry.translate(0, -sizeY / 2, 0); 
+        positionOnSphere(box, PLANET_RADIUS);
+        addStructure(box);
+    }
+
+    for(let i=0; i<25; i++) {
+        const archGroup = new THREE.Group();
+        const archColor = Math.random() * 0xffffff;
+        const material = new THREE.MeshPhongMaterial({ color: archColor });
+        const w = 4; const h = 30; const d = 4; const span = 25; 
+        const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+        leftLeg.position.set(-span/2, -h/2, 0); archGroup.add(leftLeg);
+        const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+        rightLeg.position.set(span/2, -h/2, 0); archGroup.add(rightLeg);
+        const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w, d), material);
+        topBar.position.set(0, -h - w/2, 0); archGroup.add(topBar);
+        positionOnSphere(archGroup, PLANET_RADIUS);
+        leftLeg.updateMatrixWorld(); rightLeg.updateMatrixWorld(); topBar.updateMatrixWorld();
+        collidableObjects.push(leftLeg, rightLeg, topBar);
+        scene.add(archGroup);
+    }
+
+    for(let i=0; i<15; i++) {
+        const bridgeGroup = new THREE.Group();
+        const material = new THREE.MeshPhongMaterial({ color: 0x555566 });
+        const length = 80; const width = 12; const height = 15;
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(width, 2, length), material);
+        deck.position.set(0, -height, 0); bridgeGroup.add(deck);
+        for(let j = -length/3; j <= length/3; j += length/3) {
+            const pillar = new THREE.Mesh(new THREE.BoxGeometry(4, height, 4), material);
+            pillar.position.set(0, -height/2, j); bridgeGroup.add(pillar);
+            pillar.updateMatrixWorld(); collidableObjects.push(pillar);
+        }
+        positionOnSphere(bridgeGroup, PLANET_RADIUS);
+        deck.updateMatrixWorld(); collidableObjects.push(deck);
+        scene.add(bridgeGroup);
+    }
+
+    const backgroundPlanets = []; 
+    const planetData = [
+        { radius: 500, color: 0xe27b58, x: 3500, y: 1500, z: -2000, rotSpeed: 0.002 },  
+        { radius: 800, color: 0x47637c, x: -4500, y: -2000, z: -3000, rotSpeed: 0.001 }, 
+        { radius: 300, color: 0x8d5b9c, x: -4000, y: -4000, z: -4000, rotSpeed: 0.003 }   
+    ];
+
+    planetData.forEach(data => {
+        const bgPlanetGeom = new THREE.SphereGeometry(data.radius, 32, 32);
+        const bgPlanetMat = new THREE.MeshPhongMaterial({ color: data.color, shininess: 10, flatShading: true });
+        const bgPlanetMesh = new THREE.Mesh(bgPlanetGeom, bgPlanetMat);
+        bgPlanetMesh.position.set(data.x, data.y, data.z);
+        scene.add(bgPlanetMesh);
+        backgroundPlanets.push({ mesh: bgPlanetMesh, rotSpeed: data.rotSpeed });
+    });
+
+    const keys = {};
+    let lastSpaceTime = 0;
+    let superThrust = false;
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !keys['Space']) { 
+            const currentTime = performance.now();
+            if (currentTime - lastSpaceTime < 250) { superThrust = true; }
+            lastSpaceTime = currentTime;
+        }
+        keys[e.code] = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+        if (e.code === 'Space') { superThrust = false; }
+    });
+    
+    let velocity = new THREE.Vector3(0, 0, 0);
+    let angularVelocityX = 0;
+    let angularVelocityZ = 0;
+
+function runSinglePhysicsStep(forcedThrust) {
+    if (!isRecordingMode) {
+        if (keys['ArrowLeft']) angularVelocityZ -= TURN_SPEED; 
+        if (keys['ArrowRight']) angularVelocityZ += TURN_SPEED;
+        if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
+        if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
+        if (touchJoystick.active) {
+            angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
+            angularVelocityZ += touchJoystick.moveX * TOUCH_TURN_SPEED;
+        }
+        angularVelocityX *= DAMPING_TURN;
+        angularVelocityZ *= DAMPING_TURN;
+    }
+
+    const deltaQuaternion = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
+    );
+    player.quaternion.multiply(deltaQuaternion); 
+
+    let currentFlySpeed = FLY_SPEED;
+    let thrustForce = 0; 
+
+    if (isRecordingMode) {
+        if (forcedThrust) thrustForce = currentFlySpeed;
+    } else {
+        if (keys['Space']) {
+            const spaceMultiplier = superThrust ? 2.5 : 1.0; 
+            thrustForce = currentFlySpeed * spaceMultiplier; 
+        } else if (currentThrottle > 0.05) {
+            thrustForce = currentFlySpeed * (currentThrottle * 2.0); 
+        }
+    }
+    
+    let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+    if (isReverseThrust) { localUp.negate(); }
+
+    if (thrustForce > 0) { velocity.add(localUp.clone().multiplyScalar(thrustForce)); }
+    const playerDirection = player.position.clone().normalize();
+    velocity.addScaledVector(playerDirection, GRAVITY);
+    player.position.add(velocity);
+    velocity.multiplyScalar(DAMPING_MOVE);
+
+    const raycaster = new THREE.Raycaster();
+    const upVector = playerDirection.clone(); 
+    raycaster.set(player.position, upVector);
+    const intersects = raycaster.intersectObjects(collidableObjects);
+
+    if (intersects.length > 0 && intersects[0].distance < PLAYER_HEIGHT + 0.1) {
+        const groundDistance = intersects[0].point.length();
+        player.position.copy(playerDirection.clone().multiplyScalar(groundDistance - PLAYER_HEIGHT));
+        const normalVelocity = velocity.dot(playerDirection);
+        if (normalVelocity > 0) { velocity.addScaledVector(playerDirection, -normalVelocity); }
+    }
+
+    if (player.position.length() > PLANET_RADIUS - PLAYER_HEIGHT) {
+        player.position.copy(playerDirection.clone().multiplyScalar(PLANET_RADIUS - PLAYER_HEIGHT));
+        const normalVelocity = velocity.dot(playerDirection);
+        if (normalVelocity > 0) { velocity.addScaledVector(playerDirection, -normalVelocity * 1.3); }
+    }
+
+    backgroundPlanets.forEach(planet => {
+        planet.mesh.rotation.y += planet.rotSpeed;
+        planet.mesh.rotation.x += planet.rotSpeed * 0.2;
+    });
+
+    renderer.render(scene, camera);
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    if (isRecordingMode) return; 
+    runSinglePhysicsStep(null);
+}
+
+window.executeSingleRecordedStep = function(forcedThrust) {
+    runSinglePhysicsStep(forcedThrust);
+};
+
+animate();
+</script>
+</body>
+</html>
