@@ -39,13 +39,13 @@
     border-radius: 8px;
     z-index: 9999;
     width: 600px; 
-    min-height: 560px !important;   
+    min-height: 720px !important;   
     box-shadow: 0 10px 25px rgba(0,0,0,0.7);
 }
 
 #scenario-editor {
     width: 100% !important;
-    height: 520px !important;       
+    height: 640px !important;       
     min-height: 380px !important;
     background: #05050a;
     color: #00ffcc;
@@ -170,8 +170,9 @@ canvas {
 <button id="directorMenuBtn" onclick="toggleDirectorPanel()">DIRECTOR</button>
 
 <div id="director-panel">
-    <button id="close-panel-btn" onclick="toggleDirectorPanel()">&times;</button>
-    
+<div style="display: flex; gap: 10px;">
+    <button id="action-preview-btn" onclick="startAutoRecording(true)" style="width: 100%; background: #00ffcc; color: #000; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace;">PREVIEW</button>
+</div>    
     <div id="editor-container">
         <textarea id="scenario-editor"></textarea>
     </div>
@@ -197,13 +198,14 @@ let recordScenario = {
     thrustTimeline: {
         "0": true,  
         "80": false, 
-        "120": true   
+        "120": true,
+        "180": false,  
     },
     rotationTimeline: {
-        "0":   { "x": 0,       "z": 0 },
-        "30":  { "x": -0.0004, "z": 0 },       
-        "70":  { "x": 0,       "z": 0.0006 },  
-        "110": { "x": 0,       "z": 0 }        
+        "0":   { "x": 0,       "z": 0,        "y": 0 },
+        "30":  { "x": -0.0004, "z": 0,        "y": 0 },
+        "70":  { "x": 0,       "z": 0.0006,   "y": 0 },  
+        "110": { "x": 0,       "z": 0,        "y": 0 }        
     }
 };
 
@@ -232,8 +234,11 @@ window.toggleDirectorPanel = function() {
     }
 };
 
-window.startAutoRecording = async function() {
-    const btn = document.getElementById('action-record-btn');
+let isPreviewMode = false; // Флаг режима превью
+
+window.startAutoRecording = async function(isPreview = false) {
+    const btnRecord = document.getElementById('action-record-btn');
+    const btnPreview = document.getElementById('action-preview-btn');
     const panel = document.getElementById('director-panel');
     const editorContainer = document.getElementById('editor-container');
     
@@ -251,12 +256,20 @@ window.startAutoRecording = async function() {
     }
     
     isRecordingMode = true;
+    isPreviewMode = isPreview;
     currentRecordFrame = 0;
     
-    btn.innerText = "STOP RECORDING";
-    btn.style.background = "#ffoooo";
+    if (isPreviewMode) {
+        btnPreview.innerText = "STOP PREVIEW";
+        btnPreview.style.background = "#333333";
+        btnPreview.style.color = "#fff";
+        btnRecord.style.display = "none"; // Прячем вторую кнопку
+    } else {
+        btnRecord.innerText = "STOP RECORDING";
+        btnRecord.style.background = "#333333";
+        btnPreview.style.display = "none"; // Прячем вторую кнопку
+    }
     
-    // Скрываем текстовое поле, уменьшаем окно и оставляем ТОЛЬКО кнопку стопа на экране
     editorContainer.style.display = 'none';
     panel.style.setProperty('min-height', 'auto', 'important');
 
@@ -274,15 +287,22 @@ window.startAutoRecording = async function() {
 
         window.executeSingleRecordedStep(scriptThrustActive);
         
-        await new Promise((resolve) => {
-            const canvas = renderer.domElement;
-            const dataURL = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = `frame_${String(currentRecordFrame).padStart(4, '0')}.png`;
-            link.href = dataURL;
-            link.click();
-            setTimeout(resolve, 320); 
-        });
+        // РАЗДЕЛЕНИЕ РЕЖИМОВ: Запись или Превью
+        if (isPreviewMode) {
+            await new Promise((resolve) => {
+                requestAnimationFrame(resolve); 
+            });
+        } else {
+            await new Promise((resolve) => {
+                const canvas = renderer.domElement;
+                const dataURL = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `frame_${String(currentRecordFrame).padStart(4, '0')}.png`;
+                link.href = dataURL;
+                link.click();
+                setTimeout(resolve, 320); 
+            });
+        }
 
         currentRecordFrame++;
     }
@@ -290,13 +310,19 @@ window.startAutoRecording = async function() {
     const wasStopped = !isRecordingMode || (currentRecordFrame < recordScenario.totalFrames);
     isRecordingMode = false;
     
-    // Возвращаем панель в режим редактирования
     editorContainer.style.display = 'block';
     panel.style.setProperty('min-height', '640px', 'important');
-    btn.style.background = "#ff3366";
-    btn.innerText = "RENDER & RECORD";
     
-    alert(wasStopped ? `Запись остановлена на кадре ${currentRecordFrame}!` : "Рендер сценария полностью завершен!");
+    // Возвращаем кнопки в исходное состояние
+    btnPreview.style.display = "block";
+    btnPreview.innerText = "PREVIEW";
+    btnPreview.style.background = "#00ffcc";
+    btnPreview.style.color = "#000";
+
+    btnRecord.style.display = "block";
+    btnRecord.style.background = "#ff3366";
+    btnRecord.innerText = "RENDER & RECORD";
+    
 };
 
 let isReverseThrust = true;
