@@ -46,7 +46,7 @@ The current focus is on developing the landscape mechanics and terrain generatio
 ### Live Demo
 
 You can test the mechanics and explore the inverted world directly in your browser:
-<a href="eqlectika.github.io/life.html'>Life</a>
+<a href="https://eqlectika.github.io/life.html">Life</a>
 
 ### Desktop Controls:
 * Arrow keys – Movement.
