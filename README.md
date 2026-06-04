@@ -1,6 +1,6 @@
 <a href="https://eqlectika.github.io"><img src="logo.png" width="48" height="48" alt="logo"></a>
 
-# The Concept of Project Eqlectika: Building an Outside-in Planet & Semantic Field Core
+# The Concept of Project Eqlectika: Semantic Field Core & Building an Outside-in Planets Network
 
 Imagine for a moment that anything is possible. Imagine, for example, that the laws of physics were suddenly replaced by the laws of imagination. And this is a very interesting meditation, because it begins like this: "Well, if I could have anything I wanted, what would I want, or what would I prefer to have?" For example, I would somehow move the Vatican Library to Versailles and live in Versailles, have access to every book and work of art that ever existed, and stroll in the garden.
 
@@ -15,6 +15,8 @@ There's not a single civilization in the history of creation, not a single work 
 And I maintain that within minutes of this transformation, we would become unrecognizable to ourselves, since we're usually completely defined by our limitations.
 
 And that's how I imagine death to be. Death is a peace, so profoundly subconscious that it becomes a revelation that you can be, do, see, think, and feel anything.
+
+## Semantic Core
 
 In the context of singularity, beyond the dualism of matter and consciousness, a third force emerges—Information. 
 
@@ -58,6 +60,8 @@ Imagine a world where the landscape doesn’t sink below the horizon but rises a
 
 Since existing visual tools couldn’t capture this specific concave geometry properly, the project was built from scratch using JavaScript.
 
+![My fantasy first step preview](link to image)
+
 ## Current Features
 
 The project is currently a live web-based physics and environment simulation:
@@ -94,5 +98,4 @@ How you can support the project:
 
 If you are fascinated by non-standard astrophysics and creative coding, feel free to dive in!
 To achieve smooth, independent movement inside a concave sphere without running into the infamous Gimbal Lock, we had to abandon standard Euler angles for player rotation. Instead, we use quaternions to calculate rotation deltas relative to the object’s current orientation.
-
 
