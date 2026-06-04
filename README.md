@@ -60,7 +60,7 @@ Imagine a world where the landscape doesn’t sink below the horizon but rises a
 
 Since existing visual tools couldn’t capture this specific concave geometry properly, the project was built from scratch using JavaScript.
 
-![My fantasy first step preview](image.PNG)
+![My fantasy first step preview](quaternion.PNG)
 
 ## Current Features
 
