@@ -83,6 +83,9 @@
         }
 
         #toggleBtn {
+
+visibility: hidden;
+
             background: #fff;
             color: #000;
             border: none;
@@ -172,11 +175,15 @@ footer {
 <p>Schulte Elite Square</p>
     <div class="grid" id="schulteGrid"></div>
 
+<p id="hint" style="font-size: 12px; opacity: 0.6;">Press 1 to start</p>
+
     <div class="timer-container">
         <span id="display">00:00.0</span>
         <div class="controls">
             <button id="mixBtn" class="btn-symbol" title="Mix">Mix</button>
-            <button id="toggleBtn">Start</button>
+
+<button id="toggleBtn" style="display: none;">Start</button>
+
             <button id="resetBtn" class="btn-symbol" title="Reset">Rst</button>
         </div>
     </div>
@@ -192,6 +199,8 @@ footer {
         const bestDisplay = document.getElementById("bestTimeDisplay");
         let numbers = Array.from({length: 25}, (_, i) => i + 1);
 
+let nextExpectedNumber = 1;
+
         let bestTime = localStorage.getItem('schulte_best') || Infinity;
         if (bestTime !== Infinity) bestDisplay.innerText = "Best: " + timeToString(parseInt(bestTime));
 
@@ -203,15 +212,40 @@ footer {
             return array;
         }
 
-        function renderGrid() {
-            gridElement.innerHTML = '';
-            numbers.forEach(num => {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                cell.textContent = num;
-                gridElement.appendChild(cell);
-            });
+function renderGrid() {
+    gridElement.innerHTML = '';
+    numbers.forEach(num => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.textContent = num;
+        // Добавляем проверку клика
+        cell.onclick = () => checkCell(num, cell);
+        gridElement.appendChild(cell);
+    });
+
+}
+
+function checkCell(num, cellElement) {
+    // Если нажимаем 1 и игра еще не запущена — запускаем таймер
+    if (num === 1 && !timerInterval) {
+        toggleTimer(); 
+    }
+
+    // Если игра запущена, проверяем число
+    if (timerInterval && num === nextExpectedNumber) {
+        cellElement.style.background = "#000";
+        nextExpectedNumber++;
+        
+        if (nextExpectedNumber > 25) {
+            toggleTimer(); // Останавливаем игру
+            alert("Готово! Время: " + document.getElementById("display").innerText);
+            // nextExpectedNumber уже равен 26, сбросим его
+            nextExpectedNumber = 1; 
         }
+    }
+}
+
+
 
         function timeToString(time) {
             let mm = Math.floor(time / 60000);
@@ -246,25 +280,32 @@ footer {
             }
         }
 
-        function reset() {
-            clearInterval(timerInterval);
-            timerInterval = null;
-            elapsedTime = 0;
-            document.getElementById("display").innerText = "00:00.0";
-            toggleBtn.innerText = "Start";
-            toggleBtn.style.background = "#fff";
-            toggleBtn.style.color = "#000";
-        }
+function resetStyles() {
+    document.querySelectorAll('.cell').forEach(cell => {
+        cell.style.background = "transparent";
+    });
+}
 
-        function mix() {
+function reset() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    elapsedTime = 0;
+    nextExpectedNumber = 1;
+    document.getElementById("display").innerText = "00:00.0";
+    
+    // Удаляем класс у всех ячеек
+    document.querySelectorAll('.cell').forEach(cell => cell.classList.remove('active'));
+}
+
+
+function mix() {
     shuffle(numbers);
     renderGrid();
-    
-    bestTime = Infinity;
-    localStorage.removeItem('schulte_best');
-    
-    bestDisplay.innerText = "Best: --:--.-";
+    nextExpectedNumber = 1;
+    // resetStyles не нужен, так как renderGrid перерисовывает DOM
 }
+
+
 
 
 function toggleDonate() { 
