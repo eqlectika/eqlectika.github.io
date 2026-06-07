@@ -44,7 +44,7 @@
 
 #scenario-editor {
     width: 100% !important;
-    height: 100% !important;       
+    height: 280px !important;       
     min-height: 280px !important;
     background: #05050a;
     color: #00ffcc;
@@ -193,19 +193,23 @@ let currentThrottle = 0;
 let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
 
 let recordScenario = {
-    totalFrames: 1500, 
+    totalFrames: 2500, 
     startPosition: { "x": 0, "y": 0, "z": 0 }, 
     startRotation: { "x": 0, "y": 0, "z": 0 }, 
     thrustTimeline: {
         "0": 0,  
         "60": 1, 
         "300": 2, 
-        "900": 0,
+        "900": 0
     },
     rotationTimeline: {
-        "0":    { "x": 0,      "z": 0,       "y": 0 },
-        "450":  { "x": 0.0001,   "z": 0,       "y": 0 },
-        "750":  { "x": -0.0001,   "z": 0,       "y": 0 }
+        "60":  { "x": -0.002 },
+        "240":  { "x": 0.002 },
+        "600":  { "x": -0.002 },
+        "960":  { "x": 0 },
+        "1000":  { "z": -0.002 },
+        "1100":  { "z": 0.002 },
+        "1200":  { "z": 0 },
     }
 };
 
@@ -226,7 +230,6 @@ window.toggleDirectorPanel = function() {
         panel.style.display = 'block';
         if (!isRecordingMode) {
             editorContainer.style.display = 'block';
-            panel.style.minHeight = '640px';
             document.getElementById('scenario-editor').value = JSON.stringify(recordScenario, null, 2);
             btn.innerText = "RENDER & RECORD";
             btn.style.background = "#ff3366";
@@ -274,21 +277,29 @@ editorContainer.style.display = 'none';
     panel.style.setProperty('min-height', 'auto', 'important');
 
     // === КОРРЕКТНЫЙ СБРОС ПОЗИЦИИ И НАКЛОНА ПЕРЕД СТАРТОМ ===
+// === КОРРЕКТНЫЙ СБРОС ПОЗИЦИИ И НАКЛОНА ПЕРЕД СТАРТОМ ===
     velocity.set(0, 0, 0);
     angularVelocityX = 0;
     angularVelocityZ = 0;
 
-    const startDir = new THREE.Vector3(
+    // Считываем начальную позицию из сценария
+    const startPosConfig = new THREE.Vector3(
         recordScenario.startPosition.x || 0,
         recordScenario.startPosition.y || 0,
         recordScenario.startPosition.z || 0
-    ).normalize();
-    
-    // Если вектор нулевой (0,0,0), используем дефолтный Южный полюс
-    if (startDir.lengthSq() === 0) startDir.set(0, -1, 0);
+    );
 
-    player.position.copy(startDir.clone().multiplyScalar(-(PLANET_RADIUS - PLAYER_HEIGHT)));
-    player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), startDir);
+    // Если координаты нулевые, используем ту же логику, что и при старте приложения
+    if (startPosConfig.lengthSq() === 0) {
+        player.position.set(0, -(PLANET_RADIUS - PLAYER_HEIGHT), 0);
+        const initialDir = player.position.clone().normalize();
+        player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), initialDir);
+    } else {
+        // Если заданы кастомные координаты
+        const startDir = startPosConfig.clone().normalize();
+        player.position.copy(startDir.clone().multiplyScalar(-(PLANET_RADIUS - PLAYER_HEIGHT)));
+        player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), startDir);
+    }
     
     if (recordScenario.startRotation) {
         player.rotateX(recordScenario.startRotation.x);
@@ -334,7 +345,6 @@ editorContainer.style.display = 'none';
     isRecordingMode = false;
     
     editorContainer.style.display = 'block';
-    panel.style.setProperty('min-height', '640px', 'important');
     
     // Возвращаем кнопки в исходное состояние
     btnPreview.style.display = "block";
@@ -611,11 +621,14 @@ function runSinglePhysicsStep(forcedThrust) {
     );
     player.quaternion.multiply(deltaQuaternion); 
 
-    let currentFlySpeed = FLY_SPEED;
+let currentFlySpeed = FLY_SPEED;
     let thrustForce = 0; 
 
     if (isRecordingMode) {
-        if (forcedThrust) thrustForce = currentFlySpeed;
+        // forcedThrust теперь используется как числовой множитель тяги из JSON
+        if (forcedThrust > 0) {
+            thrustForce = currentFlySpeed * forcedThrust;
+        }
     } else {
         if (keys['Space']) {
             const spaceMultiplier = superThrust ? 2.5 : 1.0; 
