@@ -176,12 +176,12 @@ window.addEventListener('pointerup', (e) => {
 
     const FLY_SPEED = 0.0057;       
     const TURN_SPEED = 0.0003;      
-    const TOUCH_TURN_SPEED = 0.0002; 
+    const TOUCH_TURN_SPEED = 0.0005; 
     const GRAVITY = 0.0043333; 
     const DAMPING_TURN = 0.99;
     const DAMPING_MOVE = 0.99;
     const PLANET_RADIUS = 1500; 
-    const PLAYER_HEIGHT = 1; 
+    const PLAYER_HEIGHT = 2; 
     const WATER_RADIUS = PLANET_RADIUS - 75; 
     const clock = new THREE.Clock();
 
@@ -233,7 +233,7 @@ window.addEventListener('pointerup', (e) => {
         transparent: true,
         side: THREE.DoubleSide, 
         uniforms: {
-            uSize: { value: 0.1 }, 
+            uSize: { value: 0.05 }, 
             uTime: { value: 0.0 },
             uWaterRadius: { value: WATER_RADIUS }
         },
@@ -263,7 +263,7 @@ window.addEventListener('pointerup', (e) => {
             uniform float uTime;
             uniform float uWaterRadius;
             float getCaustic(vec3 pos, float time) {
-                vec3 p = pos * 0.2;
+                vec3 p = pos * 0.07;
                 float t = time * 1.5;
                 float k = sin(p.x + t) + sin(p.y + t) + sin(p.z + t);
                 k += sin(p.x * 2.1 + t * 1.2) + sin(p.y * 1.8 + t * 1.5);
@@ -354,7 +354,7 @@ window.addEventListener('pointerup', (e) => {
             if (normal.dot(center) < 0) normal.multiplyScalar(-1);
         }
 
-        const stepLength = (9.0 + Math.random() * 7.0) * scaleModifier;
+        const stepLength = (18.0 + Math.random() * 14.0) * scaleModifier;
         const offset = normal.clone().multiplyScalar(stepLength);
         const lerpFactor = 0.16 + Math.random() * 0.08;
         const inner = corners.map(pt => pt.clone().lerp(center, lerpFactor).add(offset));
@@ -380,7 +380,7 @@ window.addEventListener('pointerup', (e) => {
     function generateBismuthColonyBuffered(distanceToCenter, polarity) {
         const dummy = new THREE.Group();
         positionOnSphere(dummy, distanceToCenter);
-        const s = 15.0; 
+        const s = 30.0; 
         const right = new THREE.Vector3(1, 0, 0).applyQuaternion(dummy.quaternion).multiplyScalar(s);
         const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(dummy.quaternion).multiplyScalar(s);
         
@@ -433,7 +433,7 @@ window.addEventListener('pointerup', (e) => {
     // Арки
     for(let i=0; i<15; i++) {
         const archGroup = new THREE.Group();
-        const w = 5, h = 40, d = 5, span = 32.5; 
+        const w = 10, h = 80, d = 10, span = 65; 
 
         const leftLegGeo = new THREE.BoxGeometry(w, h, d);
         const rightLegGeo = new THREE.BoxGeometry(w, h, d);
@@ -481,7 +481,7 @@ window.addEventListener('pointerup', (e) => {
     // Мосты
     for(let i=0; i<10; i++) {
         const bridgeGroup = new THREE.Group();
-        const length = 100, width = 15, height = 22.5;
+        const length = 200, width = 30, height = 45;
 
         const deckGeo = new THREE.BoxGeometry(width, 5, length);
         const deckCount = deckGeo.attributes.position.count;
@@ -598,8 +598,8 @@ function animate() {
     }
 
     if (isSubmerged) {
-        angularVelocityX *= (DAMPING_TURN * 0.95);
-        angularVelocityZ *= (DAMPING_TURN * 0.95);
+        angularVelocityX *= (DAMPING_TURN * 0.88);
+        angularVelocityZ *= (DAMPING_TURN * 0.88);
     } else {
         angularVelocityX *= DAMPING_TURN;
         angularVelocityZ *= DAMPING_TURN;
@@ -625,14 +625,14 @@ function animate() {
 
     const playerDirection = player.position.clone().normalize();
     if (isSubmerged) { 
-        velocity.addScaledVector(playerDirection, GRAVITY * 1.0); 
+        velocity.addScaledVector(playerDirection, GRAVITY * 0.2); 
     } else { 
         velocity.addScaledVector(playerDirection, GRAVITY); 
     }
 
     player.position.add(velocity);
 
-    if (isSubmerged) { velocity.multiplyScalar(DAMPING_MOVE * 0.95); } 
+    if (isSubmerged) { velocity.multiplyScalar(DAMPING_MOVE * 0.82); } 
     else { velocity.multiplyScalar(DAMPING_MOVE); }
 
     const raycaster = new THREE.Raycaster();
