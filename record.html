@@ -204,7 +204,7 @@ let recordScenario = {
     },
     rotationTimeline: {
         "0":    { "x": 0,      "z": 0,       "y": 0 },
-        "450":  { "x": 0.0001,   "z": 0,       "y": 0 }
+        "450":  { "x": 0.0001,   "z": 0,       "y": 0 },
         "750":  { "x": -0.0001,   "z": 0,       "y": 0 }
     }
 };
@@ -270,8 +270,31 @@ window.startAutoRecording = async function(isPreview = false) {
         btnPreview.style.display = "none"; // Прячем вторую кнопку
     }
     
-    editorContainer.style.display = 'none';
+editorContainer.style.display = 'none';
     panel.style.setProperty('min-height', 'auto', 'important');
+
+    // === КОРРЕКТНЫЙ СБРОС ПОЗИЦИИ И НАКЛОНА ПЕРЕД СТАРТОМ ===
+    velocity.set(0, 0, 0);
+    angularVelocityX = 0;
+    angularVelocityZ = 0;
+
+    const startDir = new THREE.Vector3(
+        recordScenario.startPosition.x || 0,
+        recordScenario.startPosition.y || 0,
+        recordScenario.startPosition.z || 0
+    ).normalize();
+    
+    // Если вектор нулевой (0,0,0), используем дефолтный Южный полюс
+    if (startDir.lengthSq() === 0) startDir.set(0, -1, 0);
+
+    player.position.copy(startDir.clone().multiplyScalar(-(PLANET_RADIUS - PLAYER_HEIGHT)));
+    player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), startDir);
+    
+    if (recordScenario.startRotation) {
+        player.rotateX(recordScenario.startRotation.x);
+        player.rotateY(recordScenario.startRotation.y);
+        player.rotateZ(recordScenario.startRotation.z);
+    }
 
     while (currentRecordFrame < recordScenario.totalFrames) {
         if (!isRecordingMode) break;
