@@ -25,7 +25,7 @@
     .footer-block { 
       z-index: 100; width: 100%;
       display: flex; flex-direction: column; align-items: center; 
-      position: fixed;
+      position: relative;
       padding-top: 100px;
       padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 20px);
     }
@@ -34,6 +34,12 @@
       position: relative; flex-shrink: 0; padding: 0px 5px 0px; 
       z-index: 100; width: 100%; display: flex; flex-direction: column; 
       align-items: center; box-sizing: border-box; transition: opacity 0.6s ease;
+    }
+
+
+
+    .footer-block {
+      z-index: 100;
     }
 
     #mainButtons, #backBtn {
@@ -112,14 +118,13 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
       position: relative; z-index: 110;
     }
 
-#settingsContainer {
-  display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 10px; margin: 20px 0; z-index: 110; transition: opacity 0.6s ease;
-}
-
+    #settingsContainer {
+      display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 20px 0; z-index: 110; transition: opacity 0.6s ease;
+    }
 
     .setting-btn {
       display: inline-flex; align-items: center; justify-content: center;
-      width: auto; min-width: 0px; border: 1px solid rgba(255, 255, 255, 0.5);
+      width: auto; min-width: 150px; border: 2px solid rgba(255, 255, 255, 0.5);
       border-radius: 2px; padding: 12px 20px; font-size: 12px;
       cursor: pointer; color: rgba(255, 255, 255, 0.5); background: transparent;
     }
@@ -204,10 +209,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
 
   <div class="footer-block">
     <div id="inputContainer">
-      <textarea id="inputText" placeholder="Welcome to speed reading. 
-Copy, paste, and press Start button to read your texts quickly in a stream. 
-Use any background or text color. 
-The world is made of language, and energy follows attention."></textarea>
+      <textarea id="inputText" placeholder="Paste your text here..."></textarea>
     </div>
 
     <div id="settingsContainer">
@@ -317,7 +319,7 @@ if (rawTxt.match(/\n{2,}/)) {
     else if (/[.!?—]/.test(rawTxt)) pauses = 4.5;  // Точка, воскл/вопр знаки, тире
     
     // Дополнительная задержка для длинных слов
-    if (rawTxt.length > 13) pauses += 3.0;
+    if (rawTxt.length > 8) pauses += 0.5;
     if (isLongHold) pauses += 2.0;
 }
 
