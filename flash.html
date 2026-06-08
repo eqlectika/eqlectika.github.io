@@ -33,7 +33,7 @@
     #inputContainer { 
       position: relative; flex-shrink: 0; padding: 0px 5px 0px; 
       z-index: 100; width: 100%; display: flex; flex-direction: column; 
-      align-items: center; box-sizing: border-box; transition: opacity 0.6s ease;
+      align-items: center; box-sizing: border-box; transition: opacity 0.5s ease;
     }
 
 
@@ -85,14 +85,14 @@
       opacity: 0; 
       transform: translate(-50%, -50%) scale(0);
       filter: blur(10px); 
-      transition: transform 0.2s ease-in, opacity 0.6s linear, filter 0.4s 0.2s ease-in;
+      transition: transform 0.2s ease-in, opacity 0.5s linear, filter 0.4s 0.2s ease-in;
     }
 
     .word-exit-long { 
       opacity: 0; 
       transform: translate(-50%, -50%) scale(1);
       filter: blur(20px); 
-      transition: transform 0.4s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 1.5s linear, filter 0.7s 0.8s ease-in;
+      transition: transform 0.4s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 1.0s linear, filter 0.7s 0.8s ease-in;
     }}
 
     body.is-reading .footer-block { 
@@ -113,20 +113,20 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
 
     button {
       font-size: 14px; background: transparent; color: white;
-      border-radius: 25px; border: 2px solid rgba(255,255,255,0.5); 
+      border-radius: 25px; border: 2px solid rgba(255,255,255,0.38); 
       padding: 10px 20px; cursor: pointer; touch-action: manipulation;
       position: relative; z-index: 110;
     }
 
     #settingsContainer {
-      display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 20px 0; z-index: 110; transition: opacity 0.6s ease;
+      display: flex; flex-direction: column; align-items: center; gap: 0px; margin: 20px 0; z-index: 110;
     }
 
     .setting-btn {
       display: inline-flex; align-items: center; justify-content: center;
-      width: auto; min-width: 150px; border: 2px solid rgba(255, 255, 255, 0.5);
+      width: auto; min-width: 150px; border: 2px solid rgba(255, 255, 255, 0.0);
       border-radius: 2px; padding: 12px 20px; font-size: 12px;
-      cursor: pointer; color: rgba(255, 255, 255, 0.5); background: transparent;
+      cursor: pointer; color: rgba(255, 255, 255, 0.38); background: transparent;
     }
 
     body.is-reading #settingsContainer { opacity: 0; pointer-events: none; }
@@ -141,15 +141,15 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
     body.is-paused #backBtn { display: block; }
     #startBtn { background: #fff; color: #000; font-weight: bold; border: none; min-width: 100px; }
     body.is-reading #startBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn { 
-      opacity: 0.5; background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.5); 
+      opacity: 0.38; background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.38); 
     }
 
     body.is-paused #startBtn { background: #fff; color: #000; opacity: 1; }
 
     #accelBtn {
       display: inline-flex; margin-top: 10px; border-radius: 2px; 
-      border: 2px solid rgba(255, 255, 255, 1.0);
-      font-size: 11px; opacity: 0.5; color: #fff;
+      width: auto; min-width: 150px; border: 2px solid rgba(255, 255, 255, 0.38);
+      font-size: 11px; opacity: 0.38; color: #fff;
     }
 
     body.is-paused #accelBtn { display: inline-flex; }
@@ -160,7 +160,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
   pointer-events: auto !important;
   width: 90%; max-width: 650px; min-height: 190px;
   padding: 10px 14px; background: rgba(255,255,255,0.05); 
-  color: #fff; border: 2px solid rgba(255,255,255,0.2); 
+  color: #fff; border: 2px solid rgba(255,255,255,0.38); 
   border-radius: 0px; font-size: 16px; outline: none; 
   box-sizing: border-box; display: block;
   font-family: Arial, sans-serif;
@@ -322,7 +322,7 @@ if (rawTxt.match(/\n{2,}/)) {
     else if (/[.!?—]/.test(rawTxt)) pauses = 4.5;  // Точка, воскл/вопр знаки, тире
     
     // Дополнительная задержка для длинных слов
-    if (rawTxt.length > 8) pauses += 0.5;
+    if (rawTxt.length > 8) pauses += 0.38;
     if (isLongHold) pauses += 2.0;
 }
 
@@ -398,7 +398,7 @@ words = text
     fasterBtn.onclick = (e) => { e.stopPropagation(); interval = Math.max(50, interval - 50); localStorage.setItem('reading_interval', interval); };
     slowerBtn.onclick = (e) => { e.stopPropagation(); interval += 50; localStorage.setItem('reading_interval', interval); };
     colorControl.onclick = (e) => { e.stopPropagation(); colorIndex = (colorIndex + 1) % colors.length; document.body.style.backgroundColor = colors[colorIndex]; localStorage.setItem('reading_colorIndex', colorIndex); };
-    textColorControl.onclick = (e) => { e.stopPropagation(); textColorIndex = (textColorIndex + 1) % textColors.length; localStorage.setItem('reading_textColorIndex', textColorIndex); textColorControl.style.color = textColors[textColorIndex]; setTimeout(() => { textColorControl.style.color = 'rgba(255, 255, 255, 0.5)'; }, 300); };
+    textColorControl.onclick = (e) => { e.stopPropagation(); textColorIndex = (textColorIndex + 1) % textColors.length; localStorage.setItem('reading_textColorIndex', textColorIndex); textColorControl.style.color = textColors[textColorIndex]; setTimeout(() => { textColorControl.style.color = 'rgba(255, 255, 255, 0.38)'; }, 300); };
 
     const handleExit = (e) => {
         e.preventDefault();
