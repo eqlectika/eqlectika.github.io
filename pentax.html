@@ -48,8 +48,8 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
     content: ''; position: absolute; background: #00ffaa;
     box-shadow: 0 0 4px #00ffaa;
 }
-#reticle::before { top: 9px; left: 0; width: 20px; height: 2px; }
-#reticle::after { top: 0; left: 9px; width: 2px; height: 20px; }
+#reticle::before { top: 9px; left: 0; width: 20px; height: 1px; }
+#reticle::after { top: 0; left: 9px; width: 1px; height: 20px; }
 </style>
 </head>
 <body>
@@ -427,8 +427,26 @@ function loadSavedState() {
     const mouse = new THREE.Vector2();
 
     window.addEventListener('pointerdown', (e) => {
-        if(e.target.tagName === 'BUTTON' || e.target.closest('#throttleArea') || e.target.closest('#controlArea')) return;
+        if(e.target.tagName === 'BUTTON' || e.target.classList.contains('mode-toggle')) return;
         
+        // 1. Находим центр экрана (координаты прицела)
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        
+        // 2. Считаем расстояние от тапа до центра экрана (в пикселях)
+        const distanceToCenter = Math.hypot(e.clientX - centerX, e.clientY - centerY);
+        
+        // 3. Задаем радиус действия прицела (например, 60 пикселей вокруг центра)
+        const reticleRadius = 60; 
+
+        // 4. Если тап ЗА пределами радиуса прицела — проверяем зоны управления
+        if (distanceToCenter > reticleRadius) {
+            if (e.target.closest('#throttleArea') || e.target.closest('#controlArea')) {
+                return; // Обычное управление полетом, блокируем строительство
+            }
+        }
+        
+        // Если тап попал ВНУТРЬ радиуса прицела (или мимо зон газа/руля) — строим блок!
         mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
@@ -440,7 +458,7 @@ function loadSavedState() {
             if (isDeleteMode) {
                 if (targetMesh.userData.geoFaceIndex !== -1) {
                     activeTriangleIds.delete(targetMesh.userData.geoFaceIndex);
-                    saveCurrentState(); // Сохраняем удаление панели
+                    saveCurrentState();
                 }
                 const idx = collidableObjects.indexOf(targetMesh);
                 if (idx > -1) collidableObjects.splice(idx, 1);
@@ -456,6 +474,7 @@ function loadSavedState() {
             spawnTriangleBase(intersectsPlanet[0]);
         }
     });
+
 
     // --- ЦИКЛ АНИМАЦИИ И НАПРАВЛЕННОЙ ТЯГИ ---
     let velocity = new THREE.Vector3(0, 0, 0);
