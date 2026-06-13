@@ -16,7 +16,7 @@ And I maintain that within minutes of this transformation, we would become unrec
 
 And that's how I imagine death to be. Death is a peace, so profoundly subconscious that it becomes a revelation that you can be, do, see, think, and feel anything.
 
-## Semantic Core
+### Semantic Core
 
 In the context of singularity, beyond the dualism of matter and consciousness, a third force emerges—Information. 
 
@@ -54,7 +54,7 @@ This is a living process, where users themselves shape their illusion, recording
 
 Concentration occurs automatically as needed.
 
-## Outside-in Planet
+### Outside-in Planet
 
 Imagine a world where the landscape doesn’t sink below the horizon but rises above you, closing into a massive dome overhead: standing in London, you could look straight up and see Australia, other continents, oceans, and cities. Everything on the planet is visible through a telescope because you are inside a sphere, and gravity points outward.
 
@@ -62,7 +62,7 @@ Since existing visual tools couldn’t capture this specific concave geometry pr
 
 ![My fantasy first step preview](quaternion.PNG)
 
-## Current Features
+### Current Features
 
 The project is currently a live web-based physics and environment simulation:
 
