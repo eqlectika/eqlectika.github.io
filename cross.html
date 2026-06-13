@@ -36,8 +36,6 @@
         /* Эффектный фокус в стиле декларативных интерфейсов */
         .editor:focus { 
             box-shadow: inset 0 0 25px rgba(255, 255, 255, 0.15); 
-            border-color: var(--color);
-            transform: scale(0.99);
         }
 
         .handle { 
@@ -76,9 +74,7 @@ const State = {
     x: parseFloat(localStorage.getItem('q_x')) || 50,
     y: parseFloat(localStorage.getItem('q_y')) || 50,
     isDragging: false,
-    dragStartTime: 0,
-    holdTimer: null,
-    isLongPress: false,
+    hasMoved: false, // Флаг для определения перемещения
     
     render() {
         document.getElementById('app').style.setProperty('--x', `${this.x}%`);
@@ -99,28 +95,14 @@ State.render();
 // Обработка начала взаимодействия
 handle.addEventListener('pointerdown', (e) => {
     State.isDragging = true;
-    State.isLongPress = false;
-    State.dragStartTime = Date.now();
-    
-    // Запуск таймера индукции перехода (1000 мс)
-    State.holdTimer = setTimeout(() => {
-        if (State.isDragging) {
-            State.isLongPress = true;
-            window.location.href = 'index.html'; // Переход при удержании
-        }
-    }, 1000);
+    State.hasMoved = false; // Сбрасываем при каждом новом нажатии
 });
 
 // Движение (изменение геометрии среды)
 window.addEventListener('pointermove', (e) => {
     if (!State.isDragging) return;
 
-    // Если палец/мышь начали смещаться, сбрасываем таймер перехода, 
-    // так как оператор выбрал режим изменения размера, а не удержания
-    const currentDuration = Date.now() - State.dragStartTime;
-    if (currentDuration < 1000) {
-        clearTimeout(State.holdTimer);
-    }
+    State.hasMoved = true; // Если было движение, это не простой клик
 
     const rawX = (e.clientX / window.innerWidth) * 100;
     const rawY = (e.clientY / window.innerHeight) * 100;
@@ -133,18 +115,23 @@ window.addEventListener('pointermove', (e) => {
 
 // Завершение взаимодействия
 window.addEventListener('pointerup', () => {
-    clearTimeout(State.holdTimer);
     if (State.isDragging) {
         State.isDragging = false;
         State.save();
     }
 });
 
-// Предотвращение деструктивного системного скролла и дефолтных переходов по клику
-handle.addEventListener('click', (e) => e.preventDefault());
+// Переход по обычному клику, если не было перетаскивания
+handle.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!State.hasMoved) {
+        window.location.href = 'index.html';
+    }
+});
+
 window.addEventListener('dragstart', (e) => e.preventDefault());
 
 </script>
 
 </body>
-</html> 
+</html>
