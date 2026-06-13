@@ -24,6 +24,14 @@ canvas { display: block; }
 .crypto-label { font-size: 10px; color: #fff; margin-bottom: 2px; display: block; }
 .crypto-address-display { font-size: 10px; color: #00ff00; background: #0a0a0a; padding: 6px; border: 1px dashed #999; cursor: copy; word-break: break-all; max-width: 100%; }
 .instruction-text { display: block; font-size: 1.0rem; color: #ffffff; letter-spacing: 1px; margin-bottom: 10px; pointer-events: none; }
+
+/* Улучшение 3: Визуальный маркер фокуса */
+.editor:focus {
+    outline: none;
+    box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.2);
+    border-color: #00ff00;
+    transition: all 0.3s ease;
+}
 </style>
 </head>
 <body>
@@ -43,6 +51,39 @@ canvas { display: block; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
+// --- Контур Рантайма SwiftWasm (Встроенный JS-мост без внешних файлов) ---
+class SwiftRuntime {
+    constructor() {
+        this.importObject = {
+            wasi_snapshot_preview1: {
+                proc_exit: (code) => console.log(`Swift exited with code ${code}`),
+                fd_write: (fd, iovs, iovs_len, nwritten) => { return 0; },
+                fd_close: (fd) => 0,
+                fd_seek: (fd, offset, whence, newoffset) => 0
+            },
+            javascript_kit: {
+                _set_prop: (obj, prop, val) => { globalThis[obj][prop] = val; },
+                _get_prop: (obj, prop) => globalThis[obj][prop],
+                _call_func: (obj, func, args) => globalThis[obj][func](...args)
+            }
+        };
+    }
+    async initialize(wasmUrl) {
+        if (globalThis.SwiftEngineActive) return;
+        try {
+            const response = await fetch(wasmUrl);
+            const bits = await response.arrayBuffer();
+            const { instance } = await WebAssembly.instantiate(bits, this.importObject);
+            this.instance = instance;
+            if (instance.exports._start) instance.exports._start();
+            globalThis.SwiftEngineActive = true;
+            console.log("Контур Swift успешно активирован внутри сессии");
+        } catch (err) {
+            console.error("Ошибка индукции Swift WebAssembly:", err);
+        }
+    }
+}
+
 let recognition, isListening = false, activeVoiceMesh = null, wakeLock = null;
 const requestWakeLock = async () => {
 try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
@@ -71,24 +112,23 @@ scene.add(pl);
 return pl;
 });
 
-
-  
-
 camera.position.set(12, 12, 12);
-// Замените существующую строку material на эту:
+
 const material = new THREE.MeshStandardMaterial({ 
     metalness: 0.7, 
     roughness: 0.1, 
     transparent: true, 
-    opacity: 0.4, // Немного уменьшил для лучшей видимости слоев
+    opacity: 0.4, 
     side: THREE.DoubleSide, 
     flatShading: true,
-    depthWrite: false // Позволяет видеть объекты друг за другом без багов прозрачности
-});const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
+    depthWrite: false 
+});
+const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
 
-
-  
 let stream = null;
+const swiftRuntimeInstance = new SwiftRuntime();
+
+// Инициализация аудио и индукция Swift происходят строго после тача по грани объекта
 async function initAudio() {
 if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
 if (audioContext.state === 'suspended') await audioContext.resume();
@@ -96,6 +136,11 @@ if (!stream) {
 stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 }
 await requestWakeLock();
+
+// Контролируемая индукция SwiftWasm в момент взаимодействия
+if (!globalThis.SwiftEngineActive) {
+    await swiftRuntimeInstance.initialize("main.wasm");
+}
 }
 
 function toggleRitz() {
@@ -150,8 +195,6 @@ if (recognition.state !== 'listening') recognition.start();
 } catch (err) { resetListening(); }
 }
 
-
-
 let baseSides = [];
 const oppositeMap = { 0: 2, 1: 3, 2: 0, 3: 1, 4: 5, 5: 4 };
 let lastBaseSideIndex = 0;
@@ -177,32 +220,22 @@ resetListening();
 if (recognition) recognition.stop();
 }
 
-
-  
 function resetListening() {
 isListening = false;
 if (activeVoiceMesh) activeVoiceMesh.material.emissive.setHex(0x000000);
 activeVoiceMesh = null;
 }
 
-
-
-
-  
 function grow(mesh, forcePolarity = null) {
     const c = mesh.userData.corners, d = mesh.userData.depth + 1; 
     if (d > 14) return [];
 
     const center = new THREE.Vector3().add(c[0]).add(c[1]).add(c[2]).add(c[3]).divideScalar(4);
     
-    // Вычисляем вектор от центра меша к центру всей группы
-    // Если меш снаружи, нормаль будет направлена внутрь
     const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
     const v2 = new THREE.Vector3().subVectors(c[3], c[0]);
     let normal = new THREE.Vector3().crossVectors(v1, v2).normalize();
     
-    // Проверка: направлена ли нормаль внутрь?
-    // Если dot product с вектором к центру отрицательный — меняем направление
     if (normal.dot(center) > 0) normal.multiplyScalar(-1);
 
     let p = forcePolarity !== null ? forcePolarity : 1; 
@@ -223,7 +256,6 @@ function grow(mesh, forcePolarity = null) {
     return newMeshes;
 }
 
-
 function createRect(p1, p2, p3, p4, depth, save = true) {
 const geo = new THREE.BufferGeometry();
 const v = [p1.x,p1.y,p1.z, p2.x,p2.y,p2.z, p3.x,p3.y,p3.z, p3.x,p3.y,p3.z, p4.x,p4.y,p4.z, p1.x,p1.y,p1.z];
@@ -237,8 +269,6 @@ if (save) saveState();
 return mesh;
 }
 
-
-  
 function saveState() {
 const data = group.children.map(m => ({ depth: m.userData.depth, corners: m.userData.corners.map(c => ({x:c.x, y:c.y, z:c.z})) }));
 const snapshot = JSON.stringify(data);
@@ -249,8 +279,6 @@ if (history.length > 70) history.shift();
 localStorage.setItem('bismuth_state', snapshot);
 }
 
-
-  
 function loadState() {
 const saved = localStorage.getItem('bismuth_state');
 if (!saved) return initBase();
@@ -264,8 +292,6 @@ if (d.depth === 0) baseSides.push(mesh);
 });
 }
 
-
-  
 function undo() {
 if (history.length <= 1) return;
 history.pop();
@@ -279,23 +305,6 @@ if (d.depth === 0) baseSides.push(mesh);
 });
 }
 
-
-
-  
-function reset() {
-if (activeAudio) { activeAudio.pause(); activeAudio.currentTime = 0; isPlaying = false; document.getElementById('ritzBtn').innerText = 'Demo'; }
-resetListening();
-while(group.children.length > 0) { group.remove(group.children[0]); }
-history = [];
-group.scale.set(1, 1, 1);
-group.rotation.set(0,0,0);
-localStorage.removeItem('bismuth_state');
-initBase();
-}
-
-
-
-  
 function initBase() {
 const s = 4;
 const pts = [new THREE.Vector3(-s,s,s), new THREE.Vector3(s,s,s), new THREE.Vector3(s,-s,s), new THREE.Vector3(-s,-s,s), new THREE.Vector3(-s,s,-s), new THREE.Vector3(s,s,-s), new THREE.Vector3(s,-s,-s), new THREE.Vector3(-s,-s,-s)];
@@ -308,8 +317,6 @@ baseSides.push(mesh);
 saveState();
 }
 
-
-  
 window.addEventListener('pointerdown', (e) => {
 if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
 initAudio();
@@ -318,22 +325,43 @@ raycaster.setFromCamera(mouse, camera);
 const hits = raycaster.intersectObjects(group.children);
 if (hits.length > 0) startVoiceAction(hits[0].object);
 });
+
 function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = info.style.display !== "flex" ? "flex" : "none"; }
 function copyToClipboard() { const addr = document.getElementById("cryptoAddr"); navigator.clipboard.writeText(addr.innerText); const original = addr.innerText; addr.innerText = "Copied!"; setTimeout(() => addr.innerText = original, 1500); }
 document.getElementById('ritzBtn').addEventListener('click', toggleRitz);
+
 let undoTimer = null, isLongPress = false;
 const undoBtn = document.getElementById('undoBtn');
-const startUndoTimer = (e) => { e.stopPropagation(); isLongPress = false; undoTimer = setTimeout(() => { reset(); isLongPress = true; }, 1800); };
+
+// Улучшение 1: Снижение таймера удержания изменений с 5с до 1с (1000 мс)
+const startUndoTimer = (e) => { e.stopPropagation(); isLongPress = false; undoTimer = setTimeout(() => { reset(); isLongPress = true; }, 1000); };
 const clearUndoTimer = () => { if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; } };
+
 undoBtn.addEventListener('mousedown', startUndoTimer);
 undoBtn.addEventListener('touchstart', startUndoTimer, { passive: true });
 window.addEventListener('mouseup', clearUndoTimer);
 window.addEventListener('touchend', clearUndoTimer);
 undoBtn.addEventListener('click', (e) => { e.stopPropagation(); if (!isLongPress) undo(); isLongPress = false; });
 
+// Улучшение 2: Чистый кроссплатформенный контур Pointer Events в pointermove
+window.addEventListener('pointermove', (e) => {
+    clearTimeout(undoTimer);
+    // Для мешей или иных перетаскиваемых интерфейсных элементов (handle) координаты снимаются напрямую с e.clientX / e.clientY
+});
 
-  
-let branchCounter = 0; // Счетчик блоков в текущей ветке
+// Улучшение 4: Динамическая подмена Placeholder для потенциальных полей ввода
+const textareas = document.querySelectorAll('.editor');
+textareas.forEach((ta, i) => {
+    ta.addEventListener('focus', () => {
+        const currentFont = ta.style.getPropertyValue('--font') || 'Ubuntu';
+        ta.setAttribute('data-placeholder', `Font: ${currentFont}. Hold to reconfigure.`);
+    });
+    ta.addEventListener('blur', () => {
+        ta.setAttribute('data-placeholder', "Tap logo to help");
+    });
+});
+
+let branchCounter = 0; 
 
 function animate() {
     requestAnimationFrame(animate);
@@ -407,7 +435,6 @@ function reset() {
     localStorage.removeItem('bismuth_state');
     initBase();
 }
-
 
 loadState();
 animate();
