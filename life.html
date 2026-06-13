@@ -51,7 +51,7 @@ canvas {
     top: 0;
     left: 0;
     width: 50vw;
-    height: 100vh;
+    height: calc(100vh); /* Физически освобождаем нижние 80px для нативного клика по логотипу */
     z-index: 2000;
     pointer-events: auto;
     touch-action: none;
@@ -61,7 +61,7 @@ canvas {
     top: 0;
     right: 0;
     width: 50vw;
-    height: 100vh;
+    height: calc(100vh); /* Физически освобождаем нижние 80px для нативного клика по логотипу */
     z-index: 2000;
     pointer-events: auto;
     touch-action: none;
@@ -119,15 +119,8 @@ let isReverseThrust = true;
 
 const throttleArea = document.getElementById('throttleArea');
 const controlArea = document.getElementById('controlArea');
-const logoLink = document.getElementById('logoLink');
 
 const activeTouches = { throttle: null, control: null };
-
-throttleArea.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse') return;
-    activeTouches.throttle = e.pointerId;
-    updateThrottle(e);
-}, { passive: false }); 
 
 function updateThrottle(e) {
     const rect = throttleArea.getBoundingClientRect();
@@ -135,20 +128,39 @@ function updateThrottle(e) {
     currentThrottle = Math.max(0, Math.min(1, val));
 }
 
+throttleArea.addEventListener('pointerdown', (e) => {
+    throttleArea.setPointerCapture(e.pointerId); 
+    activeTouches.throttle = e.pointerId;
+    updateThrottle(e);
+});
+
+throttleArea.addEventListener('pointermove', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        updateThrottle(e);
+    }
+});
+
+const resetThrottle = (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        throttleArea.releasePointerCapture(e.pointerId);
+        activeTouches.throttle = null;
+        currentThrottle = 0;
+    }
+};
+throttleArea.addEventListener('pointerup', resetThrottle);
+throttleArea.addEventListener('pointercancel', resetThrottle);
+
 controlArea.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse') return;
+    controlArea.setPointerCapture(e.pointerId); 
     activeTouches.control = e.pointerId;
     touchJoystick.active = true;
     touchJoystick.startX = e.clientX;
     touchJoystick.startY = e.clientY;
     touchJoystick.moveX = 0;
     touchJoystick.moveY = 0;
-}, { passive: false });
+});
 
-window.addEventListener('pointermove', (e) => {
-    if (e.pointerId === activeTouches.throttle) {
-        updateThrottle(e);
-    }
+controlArea.addEventListener('pointermove', (e) => {
     if (e.pointerId === activeTouches.control && touchJoystick.active) {
         const maxDistance = 100;
         let diffX = e.clientX - touchJoystick.startX;
@@ -158,18 +170,19 @@ window.addEventListener('pointermove', (e) => {
     }
 });
 
-window.addEventListener('pointerup', (e) => {
-    if (e.pointerId === activeTouches.throttle) {
-        activeTouches.throttle = null;
-        currentThrottle = 0;
-    }
+const resetJoystick = (e) => {
     if (e.pointerId === activeTouches.control) {
+        controlArea.releasePointerCapture(e.pointerId);
         activeTouches.control = null;
         touchJoystick.active = false;
         touchJoystick.moveX = 0;
         touchJoystick.moveY = 0;
     }
-});
+};
+controlArea.addEventListener('pointerup', resetJoystick);
+controlArea.addEventListener('pointercancel', resetJoystick);
+
+window.addEventListener('dragstart', (e) => e.preventDefault());
 
     import * as THREE from 'three';
     import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
@@ -275,13 +288,11 @@ window.addEventListener('pointerup', (e) => {
                 float personalProgress = mod(uTime + vDelay, 14.0) / 14.0;
                 float visibility = smoothstep(vDepth, vDepth - 0.8, personalProgress * 7.0);
                 if (vDepth > 0.0 && visibility < 0.01) discard;
-                vec2 grid = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize);
-                vec2 grid2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize);
-                float line = min(min(grid.x, grid.y), min(grid2.x, grid2.y));
-                float alpha = 1.0 - min(line, 1.0);
-                if (alpha < 0.1) discard;
+
+                // Убрано вычисление линий сетки (grid/discard). Поверхность теперь Solid.
                 vec3 neonColor = mix(vec3(0.26, 0.26, 1.0), vec3(1.0, 0.75, 0.0), vDepth / 6.0);
-                vec4 baseColor = vec4(neonColor, alpha * (0.4 * visibility));
+                vec4 baseColor = vec4(neonColor, visibility * 0.85); // Полноценная непрозрачная заливка граней
+                
                 float currentRadius = length(vWorldPosition);
                 if (currentRadius > uWaterRadius) {
                     float causticEffect = getCaustic(vWorldPosition, uTime);
@@ -513,7 +524,6 @@ window.addEventListener('pointerup', (e) => {
         }
     }
 
-    // Сборка всех динамических фракталов в один Mesh
     if (globalVertices.length > 0) {
         const fractalGeo = new THREE.BufferGeometry();
         fractalGeo.setAttribute('position', new THREE.Float32BufferAttribute(globalVertices, 3));
@@ -525,7 +535,6 @@ window.addEventListener('pointerup', (e) => {
         collidableObjects.push(mainFractalMesh);
     }
 
-    // Сборка статичных базовых объектов (мосты и арки)
     if (staticGeometries.length > 0) {
         const mergedStaticGeo = BufferGeometryUtils.mergeGeometries(staticGeometries, false);
         const mainStaticMesh = new THREE.Mesh(mergedStaticGeo, planetMaterial);
@@ -533,7 +542,6 @@ window.addEventListener('pointerup', (e) => {
         collidableObjects.push(mainStaticMesh);
     }
 
-    // КРУПНЫЕ ПЛАНЕТЫ ЗА ПРЕДЕЛАМИ СФЕРЫ
     const backgroundPlanets = []; 
     const planetData = [
         { radius: 500, color: 0xe27b58, x: 3500, y: 1500, z: -2000, rotSpeed: 0.002 },  
