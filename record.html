@@ -2,9 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-
     <link rel="manifest" href="manifest-planet.json">
-
     <title>Outside-in Planet</title>
 <style>
 #directorMenuBtn {
@@ -14,7 +12,8 @@
     transform: translateX(-50%);
     z-index: 4000;
     background: rgba(20, 20, 20, 0.0);
-    color: #00ffcc80;    border: 0px solid #00ffcc;
+    color: #00ffcc80;    
+    border: 0px solid #00ffcc;
     padding: 6px 14px;
     font-family: monospace;
     font-size: 12px;
@@ -34,14 +33,14 @@
     color: #fff;
     font-family: monospace;
     font-size: 16px !important;     
-    padding: 0px;
+    padding: 10px;
     border-radius: 8px;
     z-index: 9999;
     width: 80%; 
     min-height: 300px !important;   
     box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+    box-sizing: border-box;
 }
-
 #scenario-editor {
     width: 100% !important;
     height: 280px !important;       
@@ -51,31 +50,26 @@
     border: 0px solid #333;
     font-family: monospace;
     font-size: 16px !important;     
-    padding: 0px;
+    padding: 5px;
     resize: none !important;        
     box-sizing: border-box;
     border-radius: 4px;
+    margin-bottom: 10px;
 }
-#director-panel h3 { margin: 0 0 12px 0; font-size: 13px; color: #00ffcc; letter-spacing: 1px; }
-#close-panel-btn {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: none;
-    border: none;
-    color: #888;
-    font-size: 18px;
-    cursor: pointer;
-}
-.timeline-section { margin-bottom: 12px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; border-left: 2px solid #ff3366; }
-.timeline-section-title { font-size: 11px; color: #888; margin-bottom: 6px; text-transform: uppercase; }
-
 #action-record-btn {
-    width: 100%; background: #ff3366; color: #fff; border: none; padding: 10px;
-    border-radius: 4px; font-weight: bold; cursor: pointer; letter-spacing: 1px; font-family: monospace;
+    width: 100%; 
+    background: #ff3366; 
+    color: #fff; 
+    border: none; 
+    padding: 10px;
+    border-radius: 4px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    letter-spacing: 1px; 
+    font-family: monospace;
     transition: background 0.2s;
+    margin-top: 10px;
 }
-
 html, body { 
     margin: 0; 
     padding: 0;
@@ -95,7 +89,6 @@ canvas {
     width: 100%;
     height: 100%;
 }
-
 #controls {
     position: fixed;
     bottom: 50px;
@@ -105,7 +98,6 @@ canvas {
     pointer-events: none;
     z-index: 3000;
 }
-
 @media (pointer: coarse) { #controls { display: flex; } }
 #logoLink {
     position: fixed;
@@ -115,11 +107,7 @@ canvas {
     z-index: 4000; 
     pointer-events: auto;
     cursor: pointer;
-    -webkit-touch-callout: none;
-    user-select: none;           
-    -webkit-user-select: none;
 }
-
 #throttleArea {
     position: fixed;
     top: 0;
@@ -130,7 +118,6 @@ canvas {
     pointer-events: auto;
     touch-action: none;
 }
-
 #controlArea {
     position: fixed;
     top: 0;
@@ -141,13 +128,11 @@ canvas {
     pointer-events: auto;
     touch-action: none;
 }
-
 @media (pointer: fine) {
     #throttleArea, #controlArea {
         pointer-events: none;
     }
 }
-
 #startButton {
     position: fixed;
     top: 50%;
@@ -165,30 +150,33 @@ canvas {
 </style>
 </head>
 <body>
-    <button id="startButton">FULL SCREEN</button>
+<button id="startButton">FULL SCREEN</button>
 <button id="directorMenuBtn" onclick="toggleDirectorPanel()">DIRECTOR</button>
 
 <div id="director-panel">
-<div style="display: flex; gap: 10px;">
-    <button id="action-preview-btn" onclick="startAutoRecording(true)" style="width: 100%; background: #00ffcc; color: #000; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace;">PREVIEW</button>
-</div>    
+    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <button id="action-preview-btn" onclick="startAutoRecording(true)" style="width: 100%; background: #00ffcc; color: #000; border: none; padding: 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-family: monospace;">PREVIEW</button>
+    </div>    
     <div id="editor-container">
         <textarea id="scenario-editor"></textarea>
     </div>
-
-    <button id="action-record-btn" onclick="startAutoRecording()">RENDER & RECORD</button>
+    <button id="action-record-btn" onclick="startAutoRecording(false)">RENDER & RECORD</button>
 </div>
 
 <a href="index.html" id="logoLink">
     <img src="logo.png" alt="Logo" draggable="false" style="margin-bottom: 20px; width: 42px; height: 42px; opacity: 0.2;">
 </a>
     
-    <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
+<div id="throttleArea"></div> 
+<div id="controlArea"></div>  
+<div id="controls"></div>
 
 <script type="importmap">
   { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
 </script>
 <script type="module">
+import * as THREE from 'three';
+
 let currentThrottle = 0;
 let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
 
@@ -203,17 +191,18 @@ let recordScenario = {
         "1200": 0
     },
     rotationTimeline: {
-        "60":  { "x": -0.002 },
-        "240":  { "x": 0.002 },
-        "600":  { "x": -0.002 },
-        "960":  { "x": 0 },
-        "1000":  { "z": -0.003 },
-        "1100":  { "z": 0.003 },
-        "1200":  { "z": 0 },
+        "60":  { "x": -0.002, "z": 0 },
+        "240":  { "x": 0.002, "z": 0 },
+        "600":  { "x": -0.002, "z": 0 },
+        "960":  { "x": 0, "z": 0 },
+        "1000":  { "x": 0, "z": -0.003 },
+        "1100":  { "x": 0, "z": 0.003 },
+        "1200":  { "x": 0, "z": 0 }
     }
 };
 
 let isRecordingMode = false;
+let isPreviewMode = false;
 let currentRecordFrame = 0;
 let scriptThrustActive = false;
 
@@ -236,8 +225,6 @@ window.toggleDirectorPanel = function() {
         }
     }
 };
-
-let isPreviewMode = false; // Флаг режима превью
 
 window.startAutoRecording = async function(isPreview = false) {
     const btnRecord = document.getElementById('action-record-btn');
@@ -266,45 +253,40 @@ window.startAutoRecording = async function(isPreview = false) {
         btnPreview.innerText = "STOP PREVIEW";
         btnPreview.style.background = "#333333";
         btnPreview.style.color = "#fff";
-        btnRecord.style.display = "none"; // Прячем вторую кнопку
+        btnRecord.style.display = "none";
     } else {
         btnRecord.innerText = "STOP RECORDING";
         btnRecord.style.background = "#333333";
-        btnPreview.style.display = "none"; // Прячем вторую кнопку
+        btnPreview.style.display = "none";
     }
     
-editorContainer.style.display = 'none';
+    editorContainer.style.display = 'none';
     panel.style.setProperty('min-height', 'auto', 'important');
 
-    // === КОРРЕКТНЫЙ СБРОС ПОЗИЦИИ И НАКЛОНА ПЕРЕД СТАРТОМ ===
-// === КОРРЕКТНЫЙ СБРОС ПОЗИЦИИ И НАКЛОНА ПЕРЕД СТАРТОМ ===
     velocity.set(0, 0, 0);
     angularVelocityX = 0;
     angularVelocityZ = 0;
 
-    // Считываем начальную позицию из сценария
     const startPosConfig = new THREE.Vector3(
         recordScenario.startPosition.x || 0,
         recordScenario.startPosition.y || 0,
         recordScenario.startPosition.z || 0
     );
 
-    // Если координаты нулевые, используем ту же логику, что и при старте приложения
     if (startPosConfig.lengthSq() === 0) {
         player.position.set(0, -(PLANET_RADIUS - PLAYER_HEIGHT), 0);
         const initialDir = player.position.clone().normalize();
         player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), initialDir);
     } else {
-        // Если заданы кастомные координаты
         const startDir = startPosConfig.clone().normalize();
         player.position.copy(startDir.clone().multiplyScalar(-(PLANET_RADIUS - PLAYER_HEIGHT)));
         player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), startDir);
     }
     
     if (recordScenario.startRotation) {
-        player.rotateX(recordScenario.startRotation.x);
-        player.rotateY(recordScenario.startRotation.y);
-        player.rotateZ(recordScenario.startRotation.z);
+        player.rotateX(recordScenario.startRotation.x || 0);
+        player.rotateY(recordScenario.startRotation.y || 0);
+        player.rotateZ(recordScenario.startRotation.z || 0);
     }
 
     while (currentRecordFrame < recordScenario.totalFrames) {
@@ -315,13 +297,12 @@ editorContainer.style.display = 'none';
         }
         if (recordScenario.rotationTimeline[currentRecordFrame] !== undefined) {
             const rot = recordScenario.rotationTimeline[currentRecordFrame];
-            angularVelocityX = rot.x;
-            angularVelocityZ = rot.z;
+            angularVelocityX = rot.x !== undefined ? rot.x : 0;
+            angularVelocityZ = rot.z !== undefined ? rot.z : 0;
         }
 
         window.executeSingleRecordedStep(scriptThrustActive);
         
-        // РАЗДЕЛЕНИЕ РЕЖИМОВ: Запись или Превью
         if (isPreviewMode) {
             await new Promise((resolve) => {
                 requestAnimationFrame(resolve); 
@@ -341,12 +322,9 @@ editorContainer.style.display = 'none';
         currentRecordFrame++;
     }
 
-    const wasStopped = !isRecordingMode || (currentRecordFrame < recordScenario.totalFrames);
     isRecordingMode = false;
-    
     editorContainer.style.display = 'block';
     
-    // Возвращаем кнопки в исходное состояние
     btnPreview.style.display = "block";
     btnPreview.innerText = "PREVIEW";
     btnPreview.style.background = "#00ffcc";
@@ -355,14 +333,13 @@ editorContainer.style.display = 'none';
     btnRecord.style.display = "block";
     btnRecord.style.background = "#ff3366";
     btnRecord.innerText = "RENDER & RECORD";
-    
+    animate();
 };
 
 let isReverseThrust = true;
 
 const throttleArea = document.getElementById('throttleArea');
 const controlArea = document.getElementById('controlArea');
-const logoLink = document.getElementById('logoLink');
 
 const activeTouches = { throttle: null, control: null };
 
@@ -414,193 +391,192 @@ window.addEventListener('pointerup', (e) => {
     }
 });
 
-    import * as THREE from 'three';
+const FLY_SPEED = 0.0057;       
+const TURN_SPEED = 0.0003;      
+const TOUCH_TURN_SPEED = 0.0005; 
+const GRAVITY = 0.0043333; 
+const DAMPING_TURN = 0.99;
+const DAMPING_MOVE = 0.99;
+const PLANET_RADIUS = 1500; 
+const PLAYER_HEIGHT = 2; 
 
-    const FLY_SPEED = 0.0057;       
-    const TURN_SPEED = 0.0003;      
-    const TOUCH_TURN_SPEED = 0.0005; 
-    const GRAVITY = 0.0043333; 
-    const DAMPING_TURN = 0.99;
-    const DAMPING_MOVE = 0.99;
-    const PLANET_RADIUS = 1500; 
-    const PLAYER_HEIGHT = 2; 
+document.getElementById('startButton').addEventListener('click', () => {
+    document.getElementById('startButton').style.display = 'none';
+    if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    } else if (document.documentElement.webkitRequestFullscreen) {
+        document.documentElement.webkitRequestFullscreen();
+    }
+    if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+    }
+});
 
-    document.getElementById('startButton').addEventListener('click', () => {
-        document.getElementById('startButton').style.display = 'none';
-        if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch(() => {});
-        } else if (document.documentElement.webkitRequestFullscreen) {
-            document.documentElement.webkitRequestFullscreen();
-        }
-        if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock('landscape').catch(() => {});
-        }
-    });
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a12); 
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 12000);
+const player = new THREE.Group();
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a12); 
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 12000);
-    const player = new THREE.Group();
-    player.position.set(0, -(PLANET_RADIUS - PLAYER_HEIGHT), 0);
-    const initialDir = player.position.clone().normalize();
-    player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), initialDir);
-    scene.add(player);
-    camera.quaternion.setFromEuler(new THREE.Euler(Math.PI, 0, 0, 'YXZ'));
-    player.add(camera);
+player.position.set(0, -(PLANET_RADIUS - PLAYER_HEIGHT), 0);
+const initialDir = player.position.clone().normalize();
+player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), initialDir);
+scene.add(player);
+camera.quaternion.setFromEuler(new THREE.Euler(Math.PI, 0, 0, 'YXZ'));
+player.add(camera);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+});
 
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+const light = new THREE.DirectionalLight(0xffffff, 2.5);
+light.position.set(50, 200, 50);
+scene.add(light);
+scene.add(new THREE.AmbientLight(0x888888));
 
-    const light = new THREE.DirectionalLight(0xffffff, 2.5);
-    light.position.set(50, 200, 50);
-    scene.add(light);
-    scene.add(new THREE.AmbientLight(0x888888));
+const backLight = new THREE.DirectionalLight(0xabcdef, 0.8);
+backLight.position.set(-50, 100, -50); 
+scene.add(backLight);
 
-    const backLight = new THREE.DirectionalLight(0xabcdef, 0.8);
-    backLight.position.set(-50, 100, -50); 
-    scene.add(backLight);
+const collidableObjects = [];
+function addStructure(mesh) {
+    scene.add(mesh);
+    collidableObjects.push(mesh);
+}
 
-    const collidableObjects = [];
-    function addStructure(mesh) {
-        scene.add(mesh);
-        collidableObjects.push(mesh);
-    }
-
-    const planetGeometry = new THREE.SphereGeometry(PLANET_RADIUS, 64, 64);
-    const planetMaterial = new THREE.ShaderMaterial({
-        wireframe: false, transparent: true, side: THREE.DoubleSide, 
-        uniforms: { uSize: { value: 0.05 } },
-        vertexShader: `
-            varying vec3 vWorldPosition;
-            varying vec3 vNormal;
-            void main() {
-                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-                vWorldPosition = worldPosition.xyz;
-                vNormal = normalize(normalMatrix * normal);
-                gl_Position = projectionMatrix * viewMatrix * worldPosition;
-            }
-        `,
-        fragmentShader: `
-            varying vec3 vWorldPosition;
-            varying vec3 vNormal;
-            uniform float uSize;
-            void main() {
-                vec2 grid = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize);
-                vec2 grid2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize);
-                float line = min(min(grid.x, grid.y), min(grid2.x, grid2.y));
-                float alpha = 1.0 - min(line, 1.0);
-                if (alpha < 0.1) discard;
-                gl_FragColor = vec4(0.26, 0.26, 1.0, alpha * 0.4);
-            }
-        `
-    });
-
-    const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
-    planetMesh.position.set(0, 0, 0);
-    scene.add(planetMesh);
-
-    function positionOnSphere(mesh, distanceToCenter) {
-        const u = Math.random();
-        const v = Math.random();
-        const theta = u * 2.0 * Math.PI;
-        const phi = Math.acos(2.0 * v - 1.0);
-        const x = distanceToCenter * Math.sin(phi) * Math.cos(theta);
-        const y = distanceToCenter * Math.sin(phi) * Math.sin(theta);
-        const z = distanceToCenter * Math.cos(phi);
-        mesh.position.set(x, y, z);
-        const upVector = new THREE.Vector3(x, y, z).normalize();
-        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), upVector);
-    }
-
-    for(let i=0; i<40; i++) {
-        const sizeX = 10 + Math.random() * 20;
-        const sizeY = 4 + Math.random() * 15;
-        const sizeZ = 10 + Math.random() * 20;
-        const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
-        const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
-        const box = new THREE.Mesh(geometry, material);
-        box.geometry.translate(0, -sizeY / 2, 0); 
-        positionOnSphere(box, PLANET_RADIUS);
-        addStructure(box);
-    }
-
-    for(let i=0; i<25; i++) {
-        const archGroup = new THREE.Group();
-        const archColor = Math.random() * 0xffffff;
-        const material = new THREE.MeshPhongMaterial({ color: archColor });
-        const w = 4; const h = 30; const d = 4; const span = 25; 
-        const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-        leftLeg.position.set(-span/2, -h/2, 0); archGroup.add(leftLeg);
-        const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-        rightLeg.position.set(span/2, -h/2, 0); archGroup.add(rightLeg);
-        const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w, d), material);
-        topBar.position.set(0, -h - w/2, 0); archGroup.add(topBar);
-        positionOnSphere(archGroup, PLANET_RADIUS);
-        leftLeg.updateMatrixWorld(); rightLeg.updateMatrixWorld(); topBar.updateMatrixWorld();
-        collidableObjects.push(leftLeg, rightLeg, topBar);
-        scene.add(archGroup);
-    }
-
-    for(let i=0; i<15; i++) {
-        const bridgeGroup = new THREE.Group();
-        const material = new THREE.MeshPhongMaterial({ color: 0x555566 });
-        const length = 80; const width = 12; const height = 15;
-        const deck = new THREE.Mesh(new THREE.BoxGeometry(width, 2, length), material);
-        deck.position.set(0, -height, 0); bridgeGroup.add(deck);
-        for(let j = -length/3; j <= length/3; j += length/3) {
-            const pillar = new THREE.Mesh(new THREE.BoxGeometry(4, height, 4), material);
-            pillar.position.set(0, -height/2, j); bridgeGroup.add(pillar);
-            pillar.updateMatrixWorld(); collidableObjects.push(pillar);
+const planetGeometry = new THREE.SphereGeometry(PLANET_RADIUS, 64, 64);
+const planetMaterial = new THREE.ShaderMaterial({
+    wireframe: false, transparent: true, side: THREE.DoubleSide, 
+    uniforms: { uSize: { value: 0.05 } },
+    vertexShader: `
+        varying vec3 vWorldPosition;
+        varying vec3 vNormal;
+        void main() {
+            vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+            vWorldPosition = worldPosition.xyz;
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * viewMatrix * worldPosition;
         }
-        positionOnSphere(bridgeGroup, PLANET_RADIUS);
-        deck.updateMatrixWorld(); collidableObjects.push(deck);
-        scene.add(bridgeGroup);
-    }
-
-    const backgroundPlanets = []; 
-    const planetData = [
-        { radius: 500, color: 0xe27b58, x: 3500, y: 1500, z: -2000, rotSpeed: 0.002 },  
-        { radius: 800, color: 0x47637c, x: -4500, y: -2000, z: -3000, rotSpeed: 0.001 }, 
-        { radius: 300, color: 0x8d5b9c, x: -4000, y: -4000, z: -4000, rotSpeed: 0.003 }   
-    ];
-
-    planetData.forEach(data => {
-        const bgPlanetGeom = new THREE.SphereGeometry(data.radius, 32, 32);
-        const bgPlanetMat = new THREE.MeshPhongMaterial({ color: data.color, shininess: 10, flatShading: true });
-        const bgPlanetMesh = new THREE.Mesh(bgPlanetGeom, bgPlanetMat);
-        bgPlanetMesh.position.set(data.x, data.y, data.z);
-        scene.add(bgPlanetMesh);
-        backgroundPlanets.push({ mesh: bgPlanetMesh, rotSpeed: data.rotSpeed });
-    });
-
-    const keys = {};
-    let lastSpaceTime = 0;
-    let superThrust = false;
-
-    window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && !keys['Space']) { 
-            const currentTime = performance.now();
-            if (currentTime - lastSpaceTime < 250) { superThrust = true; }
-            lastSpaceTime = currentTime;
+    `,
+    fragmentShader: `
+        varying vec3 vWorldPosition;
+        varying vec3 vNormal;
+        uniform float uSize;
+        void main() {
+            vec2 grid = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize);
+            vec2 grid2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize);
+            float line = min(min(grid.x, grid.y), min(grid2.x, grid2.y));
+            float alpha = 1.0 - min(line, 1.0);
+            if (alpha < 0.1) discard;
+            gl_FragColor = vec4(0.26, 0.26, 1.0, alpha * 0.4);
         }
-        keys[e.code] = true;
-    });
+    `
+});
 
-    window.addEventListener('keyup', (e) => {
-        keys[e.code] = false;
-        if (e.code === 'Space') { superThrust = false; }
-    });
+const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+planetMesh.position.set(0, 0, 0);
+scene.add(planetMesh);
+
+function positionOnSphere(mesh, distanceToCenter) {
+    const u = Math.random();
+    const v = Math.random();
+    const theta = u * 2.0 * Math.PI;
+    const phi = Math.acos(2.0 * v - 1.0);
+    const x = distanceToCenter * Math.sin(phi) * Math.cos(theta);
+    const y = distanceToCenter * Math.sin(phi) * Math.sin(theta);
+    const z = distanceToCenter * Math.cos(phi);
+    mesh.position.set(x, y, z);
+    const upVector = new THREE.Vector3(x, y, z).normalize();
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), upVector);
+}
+
+for(let i=0; i<40; i++) {
+    const sizeX = 10 + Math.random() * 20;
+    const sizeY = 4 + Math.random() * 15;
+    const sizeZ = 10 + Math.random() * 20;
+    const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
+    const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
+    const box = new THREE.Mesh(geometry, material);
+    box.geometry.translate(0, -sizeY / 2, 0); 
+    positionOnSphere(box, PLANET_RADIUS);
+    addStructure(box);
+}
+
+for(let i=0; i<25; i++) {
+    const archGroup = new THREE.Group();
+    const archColor = Math.random() * 0xffffff;
+    const material = new THREE.MeshPhongMaterial({ color: archColor });
+    const w = 4; const h = 30; const d = 4; const span = 25; 
+    const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+    leftLeg.position.set(-span/2, -h/2, 0); archGroup.add(leftLeg);
+    const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+    rightLeg.position.set(span/2, -h/2, 0); archGroup.add(rightLeg);
+    const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w, d), material);
+    topBar.position.set(0, -h - w/2, 0); archGroup.add(topBar);
+    positionOnSphere(archGroup, PLANET_RADIUS);
+    leftLeg.updateMatrixWorld(); rightLeg.updateMatrixWorld(); topBar.updateMatrixWorld();
+    collidableObjects.push(leftLeg, rightLeg, topBar);
+    scene.add(archGroup);
+}
+
+for(let i=0; i<15; i++) {
+    const bridgeGroup = new THREE.Group();
+    const material = new THREE.MeshPhongMaterial({ color: 0x555566 });
+    const length = 80; const width = 12; const height = 15;
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(width, 2, length), material);
+    deck.position.set(0, -height, 0); bridgeGroup.add(deck);
+    for(let j = -length/3; j <= length/3; j += length/3) {
+        const pillar = new THREE.Mesh(new THREE.BoxGeometry(4, height, 4), material);
+        pillar.position.set(0, -height/2, j); bridgeGroup.add(pillar);
+        pillar.updateMatrixWorld(); collidableObjects.push(pillar);
+    }
+    positionOnSphere(bridgeGroup, PLANET_RADIUS);
+    deck.updateMatrixWorld(); collidableObjects.push(deck);
+    scene.add(bridgeGroup);
+}
+
+const backgroundPlanets = []; 
+const planetData = [
+    { radius: 500, color: 0xe27b58, x: 3500, y: 1500, z: -2000, rotSpeed: 0.002 },  
+    { radius: 800, color: 0x47637c, x: -4500, y: -2000, z: -3000, rotSpeed: 0.001 }, 
+    { radius: 300, color: 0x8d5b9c, x: -4000, y: -4000, z: -4000, rotSpeed: 0.003 }   
+];
+
+planetData.forEach(data => {
+    const bgPlanetGeom = new THREE.SphereGeometry(data.radius, 32, 32);
+    const bgPlanetMat = new THREE.MeshPhongMaterial({ color: data.color, shininess: 10, flatShading: true });
+    const bgPlanetMesh = new THREE.Mesh(bgPlanetGeom, bgPlanetMat);
+    bgPlanetMesh.position.set(data.x, data.y, data.z);
+    scene.add(bgPlanetMesh);
+    backgroundPlanets.push({ mesh: bgPlanetMesh, rotSpeed: data.rotSpeed });
+});
+
+const keys = {};
+let lastSpaceTime = 0;
+let superThrust = false;
+
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && !keys['Space']) { 
+        const currentTime = performance.now();
+        if (currentTime - lastSpaceTime < 250) { superThrust = true; }
+        lastSpaceTime = currentTime;
+    }
+    keys[e.code] = true;
+});
+
+window.addEventListener('keyup', (e) => {
+    keys[e.code] = false;
+    if (e.code === 'Space') { superThrust = false; }
+});
     
-    let velocity = new THREE.Vector3(0, 0, 0);
-    let angularVelocityX = 0;
-    let angularVelocityZ = 0;
+let velocity = new THREE.Vector3(0, 0, 0);
+let angularVelocityX = 0;
+let angularVelocityZ = 0;
 
 function runSinglePhysicsStep(forcedThrust) {
     if (!isRecordingMode) {
@@ -621,11 +597,10 @@ function runSinglePhysicsStep(forcedThrust) {
     );
     player.quaternion.multiply(deltaQuaternion); 
 
-let currentFlySpeed = FLY_SPEED;
+    let currentFlySpeed = FLY_SPEED;
     let thrustForce = 0; 
 
     if (isRecordingMode) {
-        // forcedThrust теперь используется как числовой множитель тяги из JSON
         if (forcedThrust > 0) {
             thrustForce = currentFlySpeed * forcedThrust;
         }
@@ -674,8 +649,8 @@ let currentFlySpeed = FLY_SPEED;
 }
 
 function animate() {
-    requestAnimationFrame(animate);
     if (isRecordingMode) return; 
+    requestAnimationFrame(animate);
     runSinglePhysicsStep(null);
 }
 
