@@ -61,7 +61,6 @@
         <div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" style="--bg: #000080; --color: #FFD54F; font-size: 22px;"></div></div>
         <div class="editor-wrapper"><div class="editor" id="t1" contenteditable="true" style="--bg: #005f00; --color: #ffffff; font-size: 22px;"></div></div>
         <div class="editor-wrapper"><div class="editor" id="t2" contenteditable="true" style="--bg: #870000; --color: #ffffff; font-size: 22px;"></div></div>
-
         <div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" style="--bg: #ff8700; --color: #000000; font-size: 22px; font-weight: bold;"></div></div>
 
         <div class="handle" id="handle"><img src="logo.png" alt="Logo"></div>
@@ -84,13 +83,41 @@ const State = {
     save() {
         localStorage.setItem('q_x', this.x);
         localStorage.setItem('q_y', this.y);
+    },
+
+    // Метод для загрузки текста заметок
+    loadNotes() {
+        const editors = document.querySelectorAll('.editor');
+        editors.forEach(editor => {
+            const savedText = localStorage.getItem(`note_${editor.id}`);
+            if (savedText !== null) {
+                editor.innerHTML = savedText;
+            }
+        });
     }
 };
 
 const handle = document.getElementById('handle');
 
-// Инициализация
+// Инициализация геометрии и загрузка сохраненного контента
 State.render();
+State.loadNotes();
+
+// Управление поведением текстовых редакторов
+document.querySelectorAll('.editor').forEach(editor => {
+    // Автосохранение текста в localStorage при вводе
+    editor.addEventListener('input', (e) => {
+        localStorage.setItem(`note_${e.target.id}`, e.target.innerHTML);
+    });
+
+    // Перехват вставки для очистки форматирования (удаление чужих шрифтов, фонов и CSS-стилей)
+    editor.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+        document.execCommand('insertText', false, text);
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+});
 
 // Обработка начала взаимодействия
 handle.addEventListener('pointerdown', (e) => {
