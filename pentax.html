@@ -7,13 +7,12 @@
     <title>Perfect Horizon Pentax</title>
 <style>
 html, body { 
-    margin: 0; padding: 0; width: 100dvw; height: 100dvh; overflow: hidden; 
+    margin: 0; padding: 0; width: 100dvw; height: 100dvh; overflow: hidden; \
     touch-action: none; user-select: none; -webkit-user-select: none;
     background-color: #010103; font-family: Menlo, sans-serif;
     overscroll-behavior: none;
     -moz-user-select: none;
     -ms-user-select: none;
-    /* 4. Удаляет синюю полупрозрачную вспышку при нажатии на интерактивные зоны в iOS/Safari */
     -webkit-tap-highlight-color: transparent;
 }
 canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
@@ -33,11 +32,10 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
     z-index: 4000; 
     pointer-events: auto;
     cursor: pointer;
-    -webkit-touch-callout: none; /* Отключает системное меню при долгом нажатии на iOS */
-    user-select: none;           /* Запрещает выделение */
+    -webkit-touch-callout: none;
+    user-select: none;
     -webkit-user-select: none;
 }
-/* НЕОНОВЫЙ КРЕСТОВОЙ ПРИЦЕЛ ЦЕНТРА ТЯГИ */
 #reticle {
     position: fixed; top: 50%; left: 50%;
     width: 20px; height: 20px;
@@ -73,36 +71,31 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
 </script>
 
 <script type="module">
-    // 1. Блокировка контекстного меню (правый клик)
+import * as THREE from 'three';
+
 window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-// 2. Блокировка жестов масштабирования (pinch-to-zoom) на уровне тач-событий
 document.addEventListener('touchstart', (e) => {
     if (e.touches.length > 1) {
-        e.preventDefault(); // Запрет зума двумя пальцами
+        e.preventDefault();
     }
 }, { passive: false });
 
-// 3. Полный запрет double-tap zoom (двойного тапа для масштабирования)
 let lastTouchEnd = 0;
 document.addEventListener('touchend', (e) => {
     const now = performance.now();
     if (now - lastTouchEnd <= 300) {
-        e.preventDefault(); // Блокируем зум, но сохраняем генерацию клика
+        e.preventDefault();
     }
     lastTouchEnd = now;
 }, { passive: false });
 
-// 4. Запрет скролла и pull-to-refresh (обновления страницы свайпом вниз)
 document.addEventListener('touchmove', (e) => {
-    // Если тач происходит на интерактивных зонах управления, не даем браузеру двигать саму страницу
     if (e.target.closest('#throttleArea') || e.target.closest('#controlArea') || e.target.tagName === 'CANVAS') {
         if (e.cancelable) e.preventDefault();
     }
 }, { passive: false });
     
-    import * as THREE from 'three';
-
     // --- СТРОГИЕ КОНСТАНТЫ КИНЕМАТИКИ ИЗ PLANET.HTML ---
     const FLY_SPEED = 0.0057;       
     const TURN_SPEED = 0.0003;      
@@ -122,7 +115,6 @@ document.addEventListener('touchmove', (e) => {
     let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
     const activeTouches = { throttle: null, control: null };
 
-    // Исправленный таймер двойного клика Space
     let lastSpaceTime = 0;
     let isDoubleSpace = false;
 
@@ -174,7 +166,7 @@ document.addEventListener('touchmove', (e) => {
 
     window.addEventListener('keydown', (e) => { 
         if (e.code === 'Space') {
-            if (!e.repeat) { // Игнорируем системный автоповтор зажатой клавиши
+            if (!e.repeat) { 
                 const currentTime = performance.now();
                 if (currentTime - lastSpaceTime < 250) {
                     isDoubleSpace = true;
@@ -226,9 +218,8 @@ const lightBottom = new THREE.DirectionalLight(0x3a4f7c, 3.0);
 lightBottom.position.set(0, -PLANET_RADIUS, 0);
 scene.add(lightBottom);
 
-// НОВЫЙ ИСТОЧНИК: Встречный заполняющий свет для устранения темных сторон планет
 const lightFrontBack = new THREE.DirectionalLight(0xffffff, 4.0);
-lightFrontBack.position.set(0, 0, -PLANET_RADIUS * 5); // Светит глубоко из пронзающей оси Z
+lightFrontBack.position.set(0, 0, -PLANET_RADIUS * 5); 
 scene.add(lightFrontBack);
 
 const neonPoint1 = new THREE.PointLight(0x00ffaa, 6.0, PLANET_RADIUS * 2.0);
@@ -239,8 +230,8 @@ const neonPoint2 = new THREE.PointLight(0x7700ff, 7.0, PLANET_RADIUS * 2.0);
 neonPoint2.position.set(-PLANET_RADIUS * 0.5, PLANET_RADIUS * 0.2, -PLANET_RADIUS * 0.5);
 scene.add(neonPoint2);
 
-// Сделали фоновую подстветку еще ярче, чтобы полностью убрать черноту на скрытых гранях
 scene.add(new THREE.AmbientLight(0x253530));
+
     // --- ВНЕШНИЕ КОСМИЧЕСКИЕ ПЛАНЕТЫ ---
     const spacePlanets = [];
     const planetColors = [0x442266, 0x114455, 0x553311];
@@ -296,23 +287,19 @@ scene.add(new THREE.AmbientLight(0x253530));
 
     const activeTriangleIds = new Set();
 
-// ФУНКЦИЯ КЭШИРОВАНИЯ: Сохранение состояния в LocalStorage
 function saveCurrentState() {
     const dataToSave = Array.from(activeTriangleIds);
     localStorage.setItem('icosahedron_syntax_cache', JSON.stringify(dataToSave));
 }
 
-// ФУНКЦИЯ ВОССТАНОВЛЕНИЯ: Вызывается один раз при загрузке
 function loadSavedState() {
     const savedData = localStorage.getItem('icosahedron_syntax_cache');
     if (!savedData) return;
 
     const idsToRestore = JSON.parse(savedData);
     
-    // Ждем один кадр, чтобы геометрия planetMesh гарантированно инициализировалась
     requestAnimationFrame(() => {
         idsToRestore.forEach(faceIndex => {
-            // Искусственный объект пересечения для функции spawnTriangleBase
             const mockIntersect = {
                 faceIndex: faceIndex,
                 object: planetMesh
@@ -321,6 +308,7 @@ function loadSavedState() {
         });
     });
 }
+
     // --- СТРОИТЕЛЬ ПАНЕЛЕЙ ---
     function createPolygonPanel(points, depth, normalSteps = 0, geoFaceIndex = -1, useHighlight = false) {
         const geo = new THREE.BufferGeometry();
@@ -365,17 +353,15 @@ function loadSavedState() {
         collidableObjects.push(mesh);
     }
 
-// --- ФРАКТАЛЬНЫЙ РОСТ ---
     function grow(mesh) {
         const c = mesh.userData.corners;
         const d = mesh.userData.depth;
         const normalSteps = mesh.userData.normalSteps;
         if (normalSteps >= 14) return;
 
-        // --- КРИТИЧЕСКАЯ ПРАВКА: Убираем индекс из базы, чтобы открыть «дыру» в физике ---
         if (mesh.userData.geoFaceIndex !== -1) {
             activeTriangleIds.delete(mesh.userData.geoFaceIndex);
-            saveCurrentState(); // Обновляем кэш
+            saveCurrentState(); 
         }
 
         const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
@@ -400,7 +386,6 @@ function loadSavedState() {
 
         for (let i = 0; i < c.length; i++) {
             const nextIdx = (i + 1) % c.length;
-            // У новых панелей geoFaceIndex всегда -1, так как они вторичны
             createPolygonPanel([c[i], c[nextIdx], inner[nextIdx], inner[i]], d + 1, normalSteps + 1, -1, true);
         }
         createPolygonPanel(inner, d + 1, normalSteps + 1, -1, true);
@@ -418,35 +403,27 @@ function loadSavedState() {
         const pC = new THREE.Vector3().fromBufferAttribute(positionAttr, faceIndex * 3 + 2).applyMatrix4(intersect.object.matrixWorld);
 
         activeTriangleIds.add(faceIndex);
-        saveCurrentState(); // Сохраняем появление новой панели
+        saveCurrentState(); 
         createPolygonPanel([pA, pB, pC], 0, 0, faceIndex, false); 
     }
 
-    // --- РЕЙКАСТИНГ КЛИКА ---
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
     window.addEventListener('pointerdown', (e) => {
         if(e.target.tagName === 'BUTTON' || e.target.classList.contains('mode-toggle')) return;
         
-        // 1. Находим центр экрана (координаты прицела)
         const centerX = window.innerWidth / 2;
         const centerY = window.innerHeight / 2;
-        
-        // 2. Считаем расстояние от тапа до центра экрана (в пикселях)
         const distanceToCenter = Math.hypot(e.clientX - centerX, e.clientY - centerY);
-        
-        // 3. Задаем радиус действия прицела (например, 60 пикселей вокруг центра)
         const reticleRadius = 60; 
 
-        // 4. Если тап ЗА пределами радиуса прицела — проверяем зоны управления
         if (distanceToCenter > reticleRadius) {
             if (e.target.closest('#throttleArea') || e.target.closest('#controlArea')) {
-                return; // Обычное управление полетом, блокируем строительство
+                return; 
             }
         }
         
-        // Если тап попал ВНУТРЬ радиуса прицела (или мимо зон газа/руля) — строим блок!
         mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
         mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
@@ -474,7 +451,6 @@ function loadSavedState() {
             spawnTriangleBase(intersectsPlanet[0]);
         }
     });
-
 
     // --- ЦИКЛ АНИМАЦИИ И НАПРАВЛЕННОЙ ТЯГИ ---
     let velocity = new THREE.Vector3(0, 0, 0);
@@ -510,7 +486,6 @@ function loadSavedState() {
         );
         player.quaternion.multiply(deltaQuaternion); 
 
-        // ИСПРАВЛЕНО: Безупречный расчет вектора тяги СТРОГО вперед по направлению взгляда
         let thrustForce = 0; 
         if (keysPressed['Space']) {
             thrustForce = isDoubleSpace ? (FLY_SPEED * 2.0) : FLY_SPEED; 
@@ -519,18 +494,16 @@ function loadSavedState() {
         } 
         
         if (thrustForce > 0) {
-            camera.getWorldDirection(lookDirection); // Берем чистый мировой вектор направления камеры
+            camera.getWorldDirection(lookDirection); 
             velocity.addScaledVector(lookDirection, thrustForce);
         }
 
         player.position.add(velocity);
         velocity.multiplyScalar(DAMPING_MOVE);
 
-// --- СЕЛЕКТИВНЫЕ КОЛЛИЗИИ: ИНТЕЛЛЕКТУАЛЬНЫЙ БАРЬЕР ---
         const playerDirection = player.position.clone().normalize();
         const currentPlayerRadius = player.position.length();
 
-        // 1. Коллизия с фрактальными структурами (всегда твердые)
         const raycasterCollision = new THREE.Raycaster();
         raycasterCollision.set(player.position, playerDirection);
         const intersects = raycasterCollision.intersectObjects(collidableObjects);
@@ -545,17 +518,13 @@ function loadSavedState() {
             }
         }
 
-        // 2. Коллизия с границами макро-икосаэдра (только если грань НЕ удалена)
         if (currentPlayerRadius > PLANET_RADIUS - PLAYER_HEIGHT) {
-            
-            // Пускаем луч из центра строго через игрока, чтобы узнать, в какой конкретно faceIndex мы уперлись
             const rayToOutside = new THREE.Raycaster(new THREE.Vector3(0,0,0), playerDirection);
             const planetIntersects = rayToOutside.intersectObject(planetMesh);
             
             if (planetIntersects.length > 0) {
                 const targetFaceIndex = planetIntersects[0].faceIndex;
                 
-                // Если эта треугольная грань АКТИВНА (плита построена), икосаэдр твердый
                 if (activeTriangleIds.has(targetFaceIndex)) {
                     player.position.copy(playerDirection.clone().multiplyScalar(PLANET_RADIUS - PLAYER_HEIGHT));
                     const normalVelocity = velocity.dot(playerDirection);
@@ -563,14 +532,12 @@ function loadSavedState() {
                         velocity.addScaledVector(playerDirection, -normalVelocity * 1.3); 
                     }
                 }
-                // Если грань удалена (activeTriangleIds её не содержит) — луч игнорируется, 
-                // и субъект беспрепятственно вылетает сквозь эту конкретную «дыру» в космос к планетам!
             }
         }
 
         renderer.render(scene, camera);
     }
-// Восстанавливаем сохраненную архитектуру блоков перед стартом рендера
+
 loadSavedState();
     animate();
 </script>     
