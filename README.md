@@ -1,6 +1,6 @@
 <a href="https://eqlectika.github.io"><img src="logo.png" width="48" height="48" alt="logo"></a>
 
-# The Concept of Project Eqlectika: Semantic Field Core & Building an Outside-in Planets Network
+## The Concept of Project Eqlectika: Semantic Field Core & Building an Outside-in Planets Network
 
 Imagine for a moment that anything is possible. Imagine, for example, that the laws of physics were suddenly replaced by the laws of imagination. And this is a very interesting meditation, because it begins like this: "Well, if I could have anything I wanted, what would I want, or what would I prefer to have?" For example, I would somehow move the Vatican Library to Versailles and live in Versailles, have access to every book and work of art that ever existed, and stroll in the garden.
 
