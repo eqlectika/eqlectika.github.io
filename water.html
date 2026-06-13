@@ -108,26 +108,16 @@ canvas {
   { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
 </script>
 <script type="module">
-// --- БЛОК 1: Управление тягой и наклоном ---
+// --- БЛОК 1: Избыточно устойчивое управление тягой и наклоном (Pointer Events) ---
 let currentThrottle = 0;
 let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
-
 let isReverseThrust = true;
 
 const throttleArea = document.getElementById('throttleArea');
 const controlArea = document.getElementById('controlArea');
-const logoLink = document.getElementById('logoLink');
 
-const activeTouches = {
-    throttle: null,
-    control: null
-};
-
-throttleArea.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse') return;
-    activeTouches.throttle = e.pointerId;
-    updateThrottle(e);
-}, { passive: false });
+// Единая изолированная метрика pointer-идентификаторов
+const activeTouches = { throttle: null, control: null };
 
 function updateThrottle(e) {
     const rect = throttleArea.getBoundingClientRect();
@@ -135,22 +125,44 @@ function updateThrottle(e) {
     currentThrottle = Math.max(0, Math.min(1, val));
 }
 
+// --- КОНТУР ЛЕВОЙ ЗОНЫ (ТЯГА) ---
+throttleArea.addEventListener('pointerdown', (e) => {
+    throttleArea.setPointerCapture(e.pointerId); // Намертво привязываем поток данных к зоне
+    activeTouches.throttle = e.pointerId;
+    updateThrottle(e);
+});
+
+throttleArea.addEventListener('pointermove', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        updateThrottle(e);
+    }
+});
+
+const resetThrottle = (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        throttleArea.releasePointerCapture(e.pointerId);
+        activeTouches.throttle = null;
+        currentThrottle = 0;
+    }
+};
+throttleArea.addEventListener('pointerup', resetThrottle);
+throttleArea.addEventListener('pointercancel', resetThrottle);
+
+
+// --- КОНТУР ПРАВОЙ ЗОНЫ (НАПРАВЛЕНИЕ / ДЖОЙСТИК) ---
 controlArea.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse') return;
+    controlArea.setPointerCapture(e.pointerId); // Изолируем маневрирование от левой зоны
     activeTouches.control = e.pointerId;
     touchJoystick.active = true;
     touchJoystick.startX = e.clientX;
     touchJoystick.startY = e.clientY;
     touchJoystick.moveX = 0;
     touchJoystick.moveY = 0;
-}, { passive: false });
+});
 
-window.addEventListener('pointermove', (e) => {
-    if (e.pointerId === activeTouches.throttle) {
-        updateThrottle(e);
-    }
+controlArea.addEventListener('pointermove', (e) => {
     if (e.pointerId === activeTouches.control && touchJoystick.active) {
-        const maxDistance = 100;
+        const maxDistance = 100; // Радиус виртуального джойстика в пикселях
         let diffX = e.clientX - touchJoystick.startX;
         let diffY = e.clientY - touchJoystick.startY;
         
@@ -159,18 +171,20 @@ window.addEventListener('pointermove', (e) => {
     }
 });
 
-window.addEventListener('pointerup', (e) => {
-    if (e.pointerId === activeTouches.throttle) {
-        activeTouches.throttle = null;
-        currentThrottle = 0;
-    }
+const resetJoystick = (e) => {
     if (e.pointerId === activeTouches.control) {
+        controlArea.releasePointerCapture(e.pointerId);
         activeTouches.control = null;
         touchJoystick.active = false;
         touchJoystick.moveX = 0;
         touchJoystick.moveY = 0;
     }
-});
+};
+controlArea.addEventListener('pointerup', resetJoystick);
+controlArea.addEventListener('pointercancel', resetJoystick);
+
+// Защита от системного скролла и перетаскивания картинок
+window.addEventListener('dragstart', (e) => e.preventDefault());
 
     import * as THREE from 'three';
 
