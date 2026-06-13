@@ -10,16 +10,16 @@ html, body {
     margin: 0; 
     padding: 0;
     width: 100dvw;
-    height: 100dvh; /* Гарантирует адаптивную высоту без белых зазоров */
+    height: 100dvh; 
     overflow: hidden; 
     touch-action: none; 
     user-select: none;
     -webkit-user-select: none;
-    background-color: #0a0a12; /* Родной цвет фона вашей сцены */
+    background-color: #0a0a12; 
 }
 canvas { 
     display: block; 
-    position: absolute; /* Фиксирует холст, не давая ему смещаться под шторки */
+    position: absolute; 
     top: 0;
     left: 0;
     width: 100%;
@@ -28,7 +28,7 @@ canvas {
 #controls {
     position: fixed;
     bottom: 50px;
-    left: 20px;                          /* Сдвинули влево */
+    left: 20px;                          
     display: flex;
     justify-content: flex-start;
     pointer-events: none;
@@ -45,24 +45,22 @@ canvas {
     pointer-events: auto;
 }
 
-
 #throttleArea {
     position: fixed;
     top: 0;
     left: 0;
-    width: 50dvw; /* Ровно левая половина */
+    width: 50dvw; 
     height: 100dvh;
     z-index: 2000;
     pointer-events: auto;
     touch-action: none;
 }
 
-/* Добавьте зону для управления камерой */
 #controlArea {
     position: fixed;
     top: 0;
     right: 0;
-    width: 50dvw; /* Ровно правая половина */
+    width: 50dvw; 
     height: 100dvh;
     z-index: 2000;
     pointer-events: auto;
@@ -74,8 +72,6 @@ canvas {
         pointer-events: none;
     }
 }
-
-
 </style>
 </head>
 <body>
@@ -88,13 +84,21 @@ canvas {
   { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
 </script>
 <script type="module">
-// --- БЛОК 1: Управление тягой ---
+import * as THREE from 'three';
+
+// --- БЛОК СОСТОЯНИЙ И СЕНСОРНОГО УПРАВЛЕНИЯ ---
+const activeTouches = {
+    throttle: null,
+    control: null
+};
+
 let currentThrottle = 0;
 const throttleArea = document.getElementById('throttleArea');
+const controlArea = document.getElementById('controlArea');
 
 throttleArea.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse') return;
-    activeTouches.throttle = e.pointerId; // Запоминаем ID пальца
+    activeTouches.throttle = e.pointerId; 
     updateThrottle(e);
 }, { passive: false });
 
@@ -104,7 +108,6 @@ function updateThrottle(e) {
     currentThrottle = Math.max(0, Math.min(1, val));
 }
 
-// Слушаем pointermove на window, чтобы не терять контакт
 window.addEventListener('pointermove', (e) => {
     if (e.pointerId === activeTouches.throttle) {
         updateThrottle(e);
@@ -118,8 +121,6 @@ window.addEventListener('pointerup', (e) => {
     }
 });
 
-    import * as THREE from 'three';
-
     // ==========================================
     // 1. НАСТРОЙКИ СКОРОСТИ, ИНЕРЦИИ И КРЕНА
     // ==========================================
@@ -129,7 +130,7 @@ window.addEventListener('pointerup', (e) => {
     const TURN_SPEED = 0.0005;      
     const TOUCH_SENSITIVITY = 0.001; 
     
-    const GRAVITY = 0.013; // Чем выше значение, тем тяжелее объект
+    const GRAVITY = 0.013; 
     
     const DAMPING_LOOK = 0.96; 
     const DAMPING_TURN = 0.96;
@@ -144,7 +145,6 @@ window.addEventListener('pointerup', (e) => {
     const touch = { forward: false, up: false };
     let previousTouchX = 0;
     let previousTouchY = 0;
-    let swipeTouchId = null; 
 
     let cameraVelocityY = 0; 
     let cameraVelocityX = 0; 
@@ -153,17 +153,9 @@ window.addEventListener('pointerup', (e) => {
         screen.orientation.lock('landscape').catch(() => {});
     }
     
-const activeTouches = {
-    throttle: null,
-    control: null
-};
     // ==========================================
     // 3. ОБРАБОТЧИКИ СОБЫТИЙ И ИНТЕРФЕЙС
     // ==========================================
-// --- ИНИЦИАЛИЗАЦИЯ ЗОН УПРАВЛЕНИЯ ---
-const controlArea = document.getElementById('controlArea');
-
-// 1. Поворот камеры (ПРАВАЯ СТОРОНА)
 controlArea.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse') return;
     activeTouches.control = e.pointerId;
@@ -189,6 +181,7 @@ window.addEventListener('pointerup', (e) => {
         activeTouches.control = null;
     }
 });
+
     // ==========================================
     // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
     // ==========================================
@@ -207,6 +200,12 @@ window.addEventListener('pointerup', (e) => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
     const light = new THREE.DirectionalLight(0xffffff, 2.5);
     light.position.set(50, 200, 50);
     scene.add(light);
@@ -216,7 +215,6 @@ window.addEventListener('pointerup', (e) => {
     backLight.position.set(-50, 100, -50); 
     scene.add(backLight);
 
-    // Вектор коллизий и зона генерации объектов мира
     const collidableObjects = [];
     const WORLD_SIZE = 800; 
 
@@ -357,14 +355,14 @@ window.addEventListener('pointerup', (e) => {
         scene.add(bridgeGroup);
     }
 
-const keys = {};
+    const keys = {};
     let lastSpaceTime = 0;
     let superThrust = false;
 
     window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && !keys['Space']) { // Срабатывает строго в момент ОДНОКРАТНОГО нажатия
+        if (e.code === 'Space' && !keys['Space']) { 
             const currentTime = performance.now();
-            if (currentTime - lastSpaceTime < 250) { // Интервал двойного клика — 250мс
+            if (currentTime - lastSpaceTime < 250) { 
                 superThrust = true;
             }
             lastSpaceTime = currentTime;
@@ -375,11 +373,10 @@ const keys = {};
     window.addEventListener('keyup', (e) => {
         keys[e.code] = false;
         if (e.code === 'Space') {
-            superThrust = false; // Сбрасываем множитель, когда Space отпущен
+            superThrust = false; 
         }
     });
     
-
     let velocity = new THREE.Vector3(0, 0, 0);
     let angularVelocity = 0;
 
@@ -409,8 +406,6 @@ const keys = {};
         
         cameraVelocityY *= DAMPING_LOOK;
         cameraVelocityX *= DAMPING_LOOK;
-        
-//      camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
 
         if (keys['ArrowLeft']) angularVelocity += TURN_SPEED;
         if (keys['ArrowRight']) angularVelocity -= TURN_SPEED;
@@ -421,8 +416,7 @@ const keys = {};
         const forward = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(0, totalRotationY, 0));
         
         const isMovingForward = keys['KeyW'] || touch.forward;
-
-const isFlyingUp = keys['Space'] || currentThrottle > 0.05; // 0.05 — это "мертвая зона", чтобы тяга не дрожала        
+        const isFlyingUp = keys['Space'] || currentThrottle > 0.05;        
         const totalTurnSpeed = angularVelocity + cameraVelocityY;
 
         let targetRoll = 0;
@@ -454,21 +448,16 @@ const isFlyingUp = keys['Space'] || currentThrottle > 0.05; // 0.05 — это "
             velocity.add(forward.clone().multiplyScalar(-MOVE_SPEED)); 
         }
 
-// ЕДИНСТВЕННЫЙ БЛОК РАСЧЕТА ВЕРТИКАЛЬНОЙ СКОРОСТИ
         if (keys['Space']) {
-            // Если зафиксирован двойной клик, умножаем FLY_SPEED на 2.5 (или любой нужный вам коэффициент)
             const spaceMultiplier = superThrust ? 2.5 : 1.0; 
             velocity.y += currentFlySpeed * spaceMultiplier; 
         } else {
-            // currentThrottle плавно добавляет скорость. При значении ~0.65 он уравновесит GRAVITY
             velocity.y += currentFlySpeed * (currentThrottle * 2.0); 
         }
 
-        // Гравитация работает ВСЕГДА, утягивая объект вниз каждый кадр
         velocity.y -= GRAVITY;
 
         player.position.add(velocity);
-        
         velocity.multiplyScalar(DAMPING_MOVE);
 
         if (player.position.y < 2) {
