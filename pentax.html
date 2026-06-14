@@ -117,6 +117,9 @@ document.addEventListener('touchmove', (e) => {
     const activeTouches = { throttle: null, control: null };
 
     let lastSpaceTime = 0;
+    let spaceClickCount = 0;
+    let spaceSpeedMultiplier = 1.0;
+    
     let isDoubleSpace = false;
 
     // --- ТАЧ-ИНТЕРФЕЙС УПРАВЛЕНИЯ ---
@@ -172,23 +175,35 @@ document.addEventListener('touchmove', (e) => {
         if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
     });
 
-    window.addEventListener('keydown', (e) => { 
+window.addEventListener('keydown', (e) => { 
         if (e.code === 'Space') {
             if (!e.repeat) { 
                 const currentTime = performance.now();
                 if (currentTime - lastSpaceTime < 250) {
-                    isDoubleSpace = true;
+                    spaceClickCount++;
                 } else {
-                    isDoubleSpace = false;
+                    spaceClickCount = 1;
                 }
+                
+                if (spaceClickCount === 2) {
+                    spaceSpeedMultiplier = 2.0;
+                } else if (spaceClickCount >= 3) {
+                    spaceSpeedMultiplier = 3.0;
+                } else {
+                    spaceSpeedMultiplier = 1.0;
+                }
+                
                 lastSpaceTime = currentTime;
             }
         }
         keysPressed[e.code] = true; 
     });
+
     window.addEventListener('keyup', (e) => { 
         keysPressed[e.code] = false; 
-        if (e.code === 'Space') isDoubleSpace = false;
+        if (e.code === 'Space') {
+            spaceSpeedMultiplier = 1.0;
+        }
     });
 
     // --- НАСТРОЙКА СЦЕНЫ И СУБЪЕКТА ---
@@ -516,10 +531,10 @@ function grow(mesh) {
 
         let thrustForce = 0; 
         if (keysPressed['Space']) {
-            thrustForce = isDoubleSpace ? (FLY_SPEED * 2.0) : FLY_SPEED; 
+            thrustForce = FLY_SPEED * spaceSpeedMultiplier; 
         } else if (currentThrottle > 0.05) {
             thrustForce = FLY_SPEED * (currentThrottle * 2.0); 
-        } 
+        }
         
         if (thrustForce > 0) {
             camera.getWorldDirection(lookDirection); 
