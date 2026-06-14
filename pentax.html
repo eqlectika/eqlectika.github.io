@@ -57,10 +57,10 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
 <a href="index.html" id="logoLink">
     <img src="logo.png" alt="Logo" draggable="false" style="margin-bottom: 20px; width: 42px; height: 42px; opacity: 0.2;">
 </a>
-    <div class="interface-top">
-        <button id="deleteMode" class="mode-toggle">Build Mode</button>
-        <button id="polarityBtn" class="mode-toggle">Grow Inward</button>
-    </div>
+<div class="interface-top">
+    <button id="deleteMode" class="mode-toggle">Build Mode</button>
+    <button id="mirrorBtn" class="mode-toggle">Normal</button> <button id="polarityBtn" class="mode-toggle">Grow Inward</button>
+</div>
     
     <div id="throttleArea"></div> 
     <div id="controlArea"></div>  
@@ -107,6 +107,7 @@ document.addEventListener('touchmove', (e) => {
     const PLAYER_HEIGHT = 40; 
 
     let isDeleteMode = false;
+    let isMirror = false; // Добавлено
     let polarity = -1; 
     
     const collidableObjects = [];
@@ -153,6 +154,11 @@ document.addEventListener('touchmove', (e) => {
         isDeleteMode = !isDeleteMode;
         e.target.innerText = isDeleteMode ? 'Delete Mode' : 'Build Mode';
         e.target.style.color = isDeleteMode ? '#ff0055' : '#00ffaa';
+    });
+    document.getElementById('mirrorBtn').addEventListener('click', (e) => {
+    isMirror = !isMirror;
+    e.target.innerText = isMirror ? 'Mirror' : 'Normal';
+    e.target.style.color = isMirror ? '#ffa500' : '#00ffaa';
     });
     document.getElementById('polarityBtn').addEventListener('click', (e) => {
         polarity *= -1;
@@ -273,6 +279,7 @@ scene.add(new THREE.AmbientLight(0x253530));
     
     const lineMaterialNormal = new THREE.LineBasicMaterial({ color: 0x00ffaa });
     const lineMaterialHighlighted = new THREE.LineBasicMaterial({ color: 0x00ffaa });
+    
 
     const planetGeometry = new THREE.IcosahedronGeometry(PLANET_RADIUS, 0);
     const planetMaterial = new THREE.MeshBasicMaterial({
@@ -353,43 +360,62 @@ function loadSavedState() {
         collidableObjects.push(mesh);
     }
 
-    function grow(mesh) {
-        const c = mesh.userData.corners;
-        const d = mesh.userData.depth;
-        const normalSteps = mesh.userData.normalSteps;
-        if (normalSteps >= 14) return;
+function grow(mesh) {
+    const c = mesh.userData.corners;
+    const d = mesh.userData.depth;
+    const normalSteps = mesh.userData.normalSteps;
+    
+    // Ограничение на максимальную глубину (адаптировано под Pentax)
+    if (normalSteps >= 14) return;
 
-        if (mesh.userData.geoFaceIndex !== -1) {
-            activeTriangleIds.delete(mesh.userData.geoFaceIndex);
-            saveCurrentState(); 
-        }
-
-        const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
-        const v2 = new THREE.Vector3().subVectors(c[2], c[0]);
-        let normal = new THREE.Vector3().crossVectors(v1, v2).normalize();
-        
-        const center = new THREE.Vector3();
-        c.forEach(p => center.add(p));
-        center.divideScalar(c.length);
-
-        if (normal.dot(center) > 0) {
-            normal.negate();
-        }
-        
-        const offset = normal.clone().multiplyScalar(v1.length() * 0.3 * polarity);
-        const inner = c.map(p => p.clone().lerp(center, 0.2).add(offset));
-        
-        const idx = collidableObjects.indexOf(mesh);
-        if (idx > -1) collidableObjects.splice(idx, 1);
-        bismuthGroup.remove(mesh);
-        if (mesh.geometry) mesh.geometry.dispose();
-
-        for (let i = 0; i < c.length; i++) {
-            const nextIdx = (i + 1) % c.length;
-            createPolygonPanel([c[i], c[nextIdx], inner[nextIdx], inner[i]], d + 1, normalSteps + 1, -1, true);
-        }
-        createPolygonPanel(inner, d + 1, normalSteps + 1, -1, true);
+    if (mesh.userData.geoFaceIndex !== -1) {
+        activeTriangleIds.delete(mesh.userData.geoFaceIndex);
+        saveCurrentState(); 
     }
+
+    // Расчет базовых векторов и нормали
+    const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
+    const v2 = new THREE.Vector3().subVectors(c[2], c[0]);
+    let normal = new THREE.Vector3().crossVectors(v1, v2).normalize();
+    
+    const center = new THREE.Vector3();
+    c.forEach(p => center.add(p));
+    center.divideScalar(c.length);
+
+    // Удерживаем базовую ориентацию нормали относительно центра сферы
+    if (normal.dot(center) > 0) {
+        normal.negate();
+    }
+    
+// --- ИНТЕГРАЦИЯ ЭФФЕКТА MIRROR ИЗ SYNTAX ---
+    // Направление движения по нормали сферы зависит ТОЛЬКО от polarity
+    const offset = normal.clone().multiplyScalar(v1.length() * 0.3 * polarity);
+    
+    // Коэффициент масштабирования: 0.2 для сужения, -0.2 для расширения (зеркала)
+    const scaleFactor = isMirror ? -0.2 : 0.2;
+    
+    // Строим внутренний контур, правильно меняя знак смещения ОТ центра
+    const inner = c.map(p => {
+        // Вычисляем вектор от центра к вершине
+        const dirFromCenter = new THREE.Vector3().subVectors(p, center);
+        // Сдвигаем вершину по этому вектору в зависимости от знака scaleFactor и добавляем offset
+        return p.clone().addScaledVector(dirFromCenter, -scaleFactor).add(offset);
+    });
+    // --------------------------------------------
+    
+    // Удаление старого меша из физического и визуального пространства
+    const idx = collidableObjects.indexOf(mesh);
+    if (idx > -1) collidableObjects.splice(idx, 1);
+    bismuthGroup.remove(mesh);
+    if (mesh.geometry) mesh.geometry.dispose();
+
+    // Генерация новых боковых панелей и дна фрактального колодца
+    for (let i = 0; i < c.length; i++) {
+        const nextIdx = (i + 1) % c.length;
+        createPolygonPanel([c[i], c[nextIdx], inner[nextIdx], inner[i]], d + 1, normalSteps + 1, -1, true);
+    }
+    createPolygonPanel(inner, d + 1, normalSteps + 1, -1, true);
+}
 
     function spawnTriangleBase(intersect) {
         const faceIndex = intersect.faceIndex;
