@@ -1,169 +1,245 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Swift-Style Cross Editor</title>
-    <link rel="manifest" href="manifest-cross.json">
-        <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <style>
-        body, html { margin: 0; padding: 0; height: 100dvh; width: 100vw; overflow: hidden; background: #000; touch-action: none; -webkit-tap-highlight-color: transparent; }
-        
-        /* Архитектурная сетка, управляемая через CSS-переменные */
-        .container { 
-            display: grid; 
-            grid-template-columns: var(--x, 50%) 1fr; 
-            grid-template-rows: var(--y, 50%) 1fr; 
-            height: 100%; 
-            width: 100%; 
-        }
-        .editor-wrapper { position: relative; width: 100%; height: 100%; overflow: hidden; }
-        
-        /* Лингвистический дизайн полей ввода */
-        .editor { 
-            width: 100%; 
-            height: 100%; 
-            border: 0.5px solid #222; 
-            background: var(--bg, #111); 
-            color: var(--color, #eee); 
-            box-sizing: border-box; 
-            padding: 15px; 
-            font-size: 20px; 
-            outline: none; 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="manifest" href="manifest-cross.json">
+<title>Cross Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.cdnfonts.com/css/luckiest-guy" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Ceviche+One&display=swap" rel="stylesheet">
+<style>
+body, html {
+margin: 0;
+padding: 0;
+height: 100dvh;
+width: 100vw;
+overflow: hidden;
+background: #000;
+touch-action: none;
+-webkit-tap-highlight-color: transparent;
+}
+.container {
+display: grid;
+grid-template-columns: var(--x) 1fr;
+grid-template-rows: var(--y) 1fr;
+height: 100%;
+width: 100%;
+}
+.editor-wrapper {
+position: relative;
+width: 100%;
+height: 100%;
+overflow: hidden;
+}
 
+textarea {
+width: 100%;
+height: 100%;
+border: 0.5px solid #333;
+background: var(--bg, #111);
+color: var(--color, #eee);
+resize: none;
+box-sizing: border-box;
+padding: 15px;
+font-size: 18px;
+outline: none;
+touch-action: auto;
+font-family: var(--font, sans-serif);
+-webkit-user-select: text;
+user-select: text;
+-webkit-touch-callout: default;
+-webkit-user-modify: read-write;
+}
 
-            overflow-y: auto;
-            transition: background 0.5s ease, transform 0.2s ease;
-        }
+.img-preview {
+position: absolute;
+bottom: 10px;
+right: 10px;
+max-width: 30%;
+max-height: 30%;
+border-radius: 4px;
+pointer-events: none;
+display: none;
+opacity: 0.7;
+}
+.handle {
+position: absolute;
+top: var(--y);
+left: var(--x);
+width: 34px;
+height: 34px;
+transform: translate(-50%, -50%);
+z-index: 100;
+filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5));
+touch-action: none;
+cursor: pointer;
+-webkit-user-select: none;
+user-select: none;
+-webkit-touch-callout: none;
+}
 
-        
-        /* Эффектный фокус в стиле декларативных интерфейсов */
-        .editor:focus { 
-            box-shadow: inset 0 0 25px rgba(255, 255, 255, 0.15); 
-        }
+.handle img {
+width: 100%;
+height: 100%;
+object-fit: contain;
+pointer-events: none;
+-webkit-user-drag: none;
+}
 
-        .handle { 
-            position: absolute; 
-            top: var(--y, 50%); 
-            left: var(--x, 50%); 
-            width: 28px; 
-            height: 28px; 
-            transform: translate(-50%, -50%); 
-            z-index: 100; 
-            cursor: pointer; 
-            touch-action: none;
-            filter: drop-shadow(2px 2px 18px rgba(0,0,0,0.8));
-            transition: transform 0.1s ease;
-        }
-        .handle:active { transform: translate(-50%, -50%) scale(1.2); }
-        .handle img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
-    </style>
+</style>
 </head>
 <body>
+<div class="container" id="app" style="--x: 50%; --y: 50%;">
+<div class="editor-wrapper"><textarea id="t0" placeholder="Type or paste text and long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></textarea><img id="i0" class="img-preview"></div>
+<div class="editor-wrapper"><textarea id="t1" placeholder="Type or paste text and long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></textarea><img id="i0" class="img-preview"></div>
+<div class="editor-wrapper"><textarea id="t2" placeholder="Type or paste text and long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></textarea><img id="i0" class="img-preview"></div>
+<div class="editor-wrapper"><textarea id="t3" placeholder="Type or paste text and long hold to change font, size, background, or color. Move the butterfly to resize the fields, short tap to donate or hold to visit my home site."></textarea><img id="i0" class="img-preview"></div>
+<a href="index.html" class="handle" id="handle" draggable="false" onclick="return false;"><img src="logo.png" alt="Logo" draggable="false"></a>
 
-    <div class="container" id="app" style="--x: 50%; --y: 50%;">
-        <div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" style="--bg: #000080; --color: #FFD54F; font-size: 20px;"></div></div>
-        <div class="editor-wrapper"><div class="editor" id="t1" contenteditable="true" style="--bg: #005f00; --color: #ffffff; font-size: 20px;"></div></div>
-        <div class="editor-wrapper"><div class="editor" id="t2" contenteditable="true" style="--bg: #870000; --color: #ffffff; font-size: 20px;"></div></div>
-        <div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" style="--bg: #ff8700; --color: #000000; font-size: 20px; font-weight: bold;"></div></div>
-
-        <div class="handle" id="handle"><img src="handle.png" alt="Logo"></div>
-    </div>
-
+</div>
 <script>
+const container = document.getElementById('app');
+const handle = document.getElementById('handle');
+const textareas = document.querySelectorAll('textarea');
+const images = document.querySelectorAll('.img-preview');
+let isDragging = false;
+let dragStartTime = 0;
+let holdTimer;
+let isLongPress = false;
+let db;
+const dbRequest = indexedDB.open("QuadEditorDB", 3);
+dbRequest.onupgradeneeded = e => {
+db = e.target.result;
+if(!db.objectStoreNames.contains("texts")) db.createObjectStore("texts", { keyPath: "id" });
+};
+dbRequest.onsuccess = e => { db = e.target.result; loadData(); };
+async function saveToDB(id, content, img = null) {
+const tx = db.transaction("texts", "readwrite");
+const store = tx.objectStore("texts");
+const req = store.get(id);
+req.onsuccess = () => {
+const data = req.result || { id };
+data.content = content;
+if (img) data.img = img;
+store.put(data);
+};
+}
+function loadData() {
+container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
+container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
+const defFonts = ['Copperplate', 'Ceviche One', 'DIN Alternate', 'Luckiest Guy'];
+const defBgs = ['#000080', '#005f00', '#870000', '#ff8700']; 
+const defColors = ['#FFD54F', '#E1BEE7', '#81C784', '#000000']; 
+textareas.forEach((ta, i) => {
+const tx = db.transaction("texts", "readonly");
+const req = tx.objectStore("texts").get(i);
+req.onsuccess = () => {
+if (req.result) {
+ta.value = req.result.content || '';
+if (req.result.img) { images[i].src = req.result.img; images[i].style.display = 'block'; }
+}
+};
+ta.style.setProperty('--font', localStorage.getItem(`q_f_${i}`) || defFonts[i]);
+ta.style.fontSize = localStorage.getItem(`q_s_${i}`) || '16px';
+ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`) || defBgs[i]);
+ta.style.setProperty('--color', localStorage.getItem(`q_c_${i}`) || defColors[i]);
+});
+}
+handle.addEventListener('pointerdown', (e) => {
+isDragging = true;
+isLongPress = false;
+dragStartTime = Date.now();
+holdTimer = setTimeout(() => {
+if (isDragging) {
+isLongPress = true;
+window.location.href = 'index.html';
+}
+}, 2100);
+});
+window.addEventListener('pointermove', (e) => {
+if (!isDragging) return;
+const touch = e.touches ? e.touches[0] : e;
+const padding = 10;
+const rawX = (touch.clientX / window.innerWidth) * 100;
+const rawY = (touch.clientY / window.innerHeight) * 100;
+const clampedX = Math.max(padding, Math.min(100 - padding, rawX));
+const clampedY = Math.max(padding, Math.min(100 - padding, rawY));
+const x = `${clampedX}%`;
+const y = `${clampedY}%`;
+container.style.setProperty('--x', x);
+container.style.setProperty('--y', y);
+localStorage.setItem('q_x', x);
+localStorage.setItem('q_y', y);
+clearTimeout(holdTimer);
+});
 
-// Изолированное состояние системы
-const State = {
-    x: parseFloat(localStorage.getItem('q_x')) || 50,
-    y: parseFloat(localStorage.getItem('q_y')) || 50,
-    isDragging: false,
-    hasMoved: false, // Флаг для определения перемещения
-    
-    render() {
-        document.getElementById('app').style.setProperty('--x', `${this.x}%`);
-        document.getElementById('app').style.setProperty('--y', `${this.y}%`);
-    },
-    
-    save() {
-        localStorage.setItem('q_x', this.x);
-        localStorage.setItem('q_y', this.y);
-    },
+window.addEventListener('pointerup', (e) => {
+clearTimeout(holdTimer);
+if (!isDragging) return;
+const duration = Date.now() - dragStartTime;
+if (duration < 250 && !isLongPress) {
+navigator.clipboard.writeText('0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8').then(() => {
+alert('Address ETH (ERC20) is copied to donate. Thank you.');
+});
+}
+isDragging = false;
+});
+handle.addEventListener('touchstart', (e) => {
+if (e.cancelable) e.preventDefault();
+}, { passive: false });
+handle.addEventListener('click', (e) => e.preventDefault());
+handle.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // Метод для загрузки текста заметок
-    loadNotes() {
-        const editors = document.querySelectorAll('.editor');
-        editors.forEach(editor => {
-            const savedText = localStorage.getItem(`note_${editor.id}`);
-            if (savedText !== null) {
-                editor.innerHTML = savedText;
-            }
-        });
-    }
+textareas.forEach((ta, i) => {
+ta.addEventListener('input', () => saveToDB(i, ta.value));
+ta.addEventListener('paste', (e) => {
+const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
+if (item) {
+const reader = new FileReader();
+reader.onload = (ev) => {
+images[i].src = ev.target.result;
+images[i].style.display = 'block';
+saveToDB(i, ta.value, ev.target.result);
+};
+reader.readAsDataURL(item.getAsFile());
+}
+});
+ta.addEventListener('contextmenu', (e) => e.preventDefault());
+
+let timer;
+const startLongPress = (e) => {
+timer = setTimeout(() => {
+ta.style.userSelect = 'none';
+ta.style.webkitUserSelect = 'none';
+const f = prompt("Font:", ta.style.getPropertyValue('--font'));
+if (f) { ta.style.setProperty('--font', f); localStorage.setItem(`q_f_${i}`, f); }
+const s = prompt("Size:", ta.style.fontSize);
+if (s) { ta.style.fontSize = s; localStorage.setItem(`q_s_${i}`, s); }
+const b = prompt("Background:", ta.style.getPropertyValue('--bg'));
+if (b) { ta.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
+const c = prompt("Color:", ta.style.getPropertyValue('--color'));
+if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
+ta.style.userSelect = 'text';
+ta.style.webkitUserSelect = 'text';
+}, 2000);
 };
 
-const handle = document.getElementById('handle');
+const stopLongPress = () => {
+clearTimeout(timer);
+ta.style.userSelect = 'text';
+ta.style.webkitUserSelect = 'text';
+};
 
-// Инициализация геометрии и загрузка сохраненного контента
-State.render();
-State.loadNotes();
-
-// Управление поведением текстовых редакторов
-document.querySelectorAll('.editor').forEach(editor => {
-    // Автосохранение текста в localStorage при вводе
-    editor.addEventListener('input', (e) => {
-        localStorage.setItem(`note_${e.target.id}`, e.target.innerHTML);
-    });
-
-    // Перехват вставки для очистки форматирования (удаление чужих шрифтов, фонов и CSS-стилей)
-    editor.addEventListener('paste', (e) => {
-        e.preventDefault();
-        const text = (e.originalEvent || e).clipboardData.getData('text/plain');
-        document.execCommand('insertText', false, text);
-        editor.dispatchEvent(new Event('input', { bubbles: true }));
-    });
+ta.addEventListener('touchstart', startLongPress);
+ta.addEventListener('touchend', stopLongPress);
+ta.addEventListener('mousedown', startLongPress);
+ta.addEventListener('mouseup', stopLongPress);
+ta.addEventListener('mouseleave', stopLongPress);
 });
-
-// Обработка начала взаимодействия
-handle.addEventListener('pointerdown', (e) => {
-    State.isDragging = true;
-    State.hasMoved = false; // Сбрасываем при каждом новом нажатии
-});
-
-// Движение (изменение геометрии среды)
-window.addEventListener('pointermove', (e) => {
-    if (!State.isDragging) return;
-
-    State.hasMoved = true; // Если было движение, это не простой клик
-
-    const rawX = (e.clientX / window.innerWidth) * 100;
-    const rawY = (e.clientY / window.innerHeight) * 100;
-
-    State.x = Math.max(10, Math.min(90, rawX));
-    State.y = Math.max(10, Math.min(90, rawY));
-
-    State.render();
-});
-
-// Завершение взаимодействия
-window.addEventListener('pointerup', () => {
-    if (State.isDragging) {
-        State.isDragging = false;
-        State.save();
-    }
-});
-
-// Переход по обычному клику, если не было перетаскивания
-handle.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (!State.hasMoved) {
-        window.location.href = 'index.html';
-    }
-});
-
-window.addEventListener('dragstart', (e) => e.preventDefault());
 
 </script>
-
 </body>
 </html>
