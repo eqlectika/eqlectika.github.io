@@ -84,6 +84,14 @@ text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 opacity: 0.5;
 }
 
+nav.support-active .menu-item {
+    opacity: 0.5;
+}
+nav.support-active .donate-container .menu-item,
+nav.support-active .donate-container span {
+    opacity: 1 !important;
+}
+
 .logo {
 max-width: 48px;
 height: auto;
@@ -568,12 +576,31 @@ const uiLayer = document.getElementById('ui-layer');
 
 function toggleDonate() { 
   const info = document.getElementById("cryptoInfo"); 
+  const nav = document.querySelector("nav");
   const isOpening = info.style.display !== "flex";
+  
   info.style.display = isOpening ? "flex" : "none"; 
+  
+  // Переключаем класс для прозрачности остальных кнопок
   if (isOpening) {
+    nav.classList.add("support-active");
     setTimeout(() => info.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  } else {
+    nav.classList.remove("support-active");
   }
 }
+
+// Скрываем блок адреса при наведении на Sketches
+document.querySelector(".menu-item-container").addEventListener("mouseenter", () => {
+  const info = document.getElementById("cryptoInfo");
+  const nav = document.querySelector("nav");
+  
+  if (info.style.display === "flex") {
+    info.style.display = "none";
+    nav.classList.remove("support-active");
+  }
+});
+
 
 function copyToClipboard() {
   const addr = document.getElementById("cryptoAddr");
