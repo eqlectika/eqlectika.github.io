@@ -7,9 +7,6 @@
 <title>Cross Editor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
-<link href="https://fonts.cdnfonts.com/css/luckiest-guy" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Ceviche+One&display=swap" rel="stylesheet">
 <style>
 body, html {
 margin: 0;
@@ -46,11 +43,15 @@ padding: 15px;
 font-size: 18px;
 outline: none;
 touch-action: auto;
-font-family: var(--font, sans-serif);
 -webkit-user-select: text;
 user-select: text;
 -webkit-touch-callout: default;
 overflow-y: auto;
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+#t3 {
+font-weight: bold;
 }
 
 /* Эмуляция placeholder для contenteditable */
@@ -100,10 +101,10 @@ pointer-events: none;
 </head>
 <body>
 <div class="container" id="app" style="--x: 50%; --y: 50%;">
-<div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" data-placeholder="Tap logo to help"></div><img class="img-preview"></div>
-<div class="editor-wrapper"><div class="editor" id="t1" contenteditable="true" data-placeholder="Tap logo to help"></div><img class="img-preview"></div>
-<div class="editor-wrapper"><div class="editor" id="t2" contenteditable="true" data-placeholder="Tap logo to help"></div><img class="img-preview"></div>
-<div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" data-placeholder="Tap logo to help"></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" data-placeholder="Type or paste text and image here."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t1" contenteditable="true" data-placeholder="Type or paste text and image here."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t2" contenteditable="true" data-placeholder="Type or paste text and image here."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" data-placeholder="Type or paste text and image here."></div><img class="img-preview"></div>
 <a href="index.html" class="handle" id="handle" draggable="false" onclick="return false;"><img src="logo.png" alt="Logo" draggable="false"></a>
 
 </div>
@@ -114,8 +115,6 @@ const textareas = document.querySelectorAll('.editor');
 const images = document.querySelectorAll('.img-preview');
 let isDragging = false;
 let dragStartTime = 0;
-let holdTimer;
-let isLongPress = false;
 let db;
 const dbRequest = indexedDB.open("QuadEditorDB", 3);
 dbRequest.onupgradeneeded = e => {
@@ -123,7 +122,9 @@ db = e.target.result;
 if(!db.objectStoreNames.contains("texts")) db.createObjectStore("texts", { keyPath: "id" });
 };
 dbRequest.onsuccess = e => { db = e.target.result; loadData(); };
+
 async function saveToDB(id, content, img = null, clearImg = false) {
+return new Promise((resolve) => {
 const tx = db.transaction("texts", "readwrite");
 const store = tx.objectStore("texts");
 const req = store.get(id);
@@ -136,12 +137,14 @@ delete data.img;
 data.img = img;
 }
 store.put(data);
+tx.oncomplete = () => resolve();
 };
+});
 }
+
 function loadData() {
 container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
 container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
-const defFonts = ['Copperplate', 'Ceviche One', 'DIN Alternate', 'Luckiest Guy'];
 const defBgs = ['#000080', '#005f00', '#870000', '#ff8700']; 
 const defColors = ['#FFD54F', '#E1BEE7', '#81C784', '#000000']; 
 textareas.forEach((ta, i) => {
@@ -151,25 +154,58 @@ req.onsuccess = () => {
 if (req.result) {
 ta.innerHTML = req.result.content || '';
 if (req.result.img) { images[i].src = req.result.img; images[i].style.display = 'block'; }
+else { images[i].removeAttribute('src'); images[i].style.display = 'none'; }
+} else {
+ta.innerHTML = '';
+images[i].removeAttribute('src');
+images[i].style.display = 'none';
 }
 };
-ta.style.setProperty('--font', localStorage.getItem(`q_f_${i}`) || defFonts[i]);
 ta.style.fontSize = localStorage.getItem(`q_s_${i}`) || '18px';
 ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`) || defBgs[i]);
 ta.style.setProperty('--color', localStorage.getItem(`q_c_${i}`) || defColors[i]);
 });
 }
+
+// Функция сохранения всего коллажа в список
+function saveCollage(name) {
+const tx = db.transaction("texts", "readonly");
+const store = tx.objectStore("texts");
+const items = [];
+let count = 0;
+for(let i=0; i<4; i++) {
+const req = store.get(i);
+req.onsuccess = () => {
+items[i] = req.result || { id: i, content: '' };
+count++;
+if(count === 4) {
+const collages = JSON.parse(localStorage.getItem('q_collages') || '{}');
+collages[name] = items;
+localStorage.setItem('q_collages', JSON.stringify(collages));
+alert(`Collage "${name}" saved!`);
+}
+};
+}
+}
+
+// Функция загрузки коллажа из списка
+function loadCollage(name) {
+const collages = JSON.parse(localStorage.getItem('q_collages') || '{}');
+const collage = collages[name];
+if (!collage) return;
+const tx = db.transaction("texts", "readwrite");
+const store = tx.objectStore("texts");
+store.clear().onsuccess = () => {
+collage.forEach(item => store.put(item));
+tx.oncomplete = () => loadData();
+};
+}
+
 handle.addEventListener('pointerdown', (e) => {
 isDragging = true;
-isLongPress = false;
 dragStartTime = Date.now();
-holdTimer = setTimeout(() => {
-if (isDragging) {
-isLongPress = true;
-window.location.href = 'index.html';
-}
-}, 1000);
 });
+
 window.addEventListener('pointermove', (e) => {
 if (!isDragging) return;
 const touch = e.touches ? e.touches[0] : e;
@@ -184,57 +220,94 @@ container.style.setProperty('--x', x);
 container.style.setProperty('--y', y);
 localStorage.setItem('q_x', x);
 localStorage.setItem('q_y', y);
-clearTimeout(holdTimer);
 });
 
 window.addEventListener('pointerup', (e) => {
-clearTimeout(holdTimer);
 if (!isDragging) return;
 const duration = Date.now() - dragStartTime;
-if (duration < 250 && !isLongPress) {
-navigator.clipboard.writeText('Hold to ').then(() => {
-alert(`
-Fields:
-• Type or paste text (image)
-• Hold to change format (delete image)
-
-Crosshair:
-• Move to resize the fields
-• Hold to level up
-• Short tap to this help
-`);
-});
-}
 isDragging = false;
+
+// Обработка короткого тапа по перекрестию
+if (duration < 250) {
+const collages = JSON.parse(localStorage.getItem('q_collages') || '{}');
+const list = Object.keys(collages).join('\n');
+const msg = list ? `Enter name to SAVE current collage.\nOr leave empty to LOAD from list:\n\n${list}` : `Enter name to SAVE current collage:`;
+const res = prompt(msg);
+
+if (res === null) return; 
+
+const name = res.trim();
+if (name !== '') {
+saveCollage(name);
+} else if (list) {
+const loadName = prompt(`Enter name to LOAD:\n\n${list}`);
+if (loadName && collages[loadName.trim()]) {
+loadCollage(loadName.trim());
+} else if (loadName) {
+alert('Collage not found!');
+}
+}
+}
 });
+
 handle.addEventListener('touchstart', (e) => {
 if (e.cancelable) e.preventDefault();
 }, { passive: false });
 handle.addEventListener('click', (e) => e.preventDefault());
 handle.addEventListener('contextmenu', (e) => e.preventDefault());
 
-textareas.forEach((ta, i) => {
-ta.addEventListener('input', () => saveToDB(i, ta.innerHTML));
-ta.addEventListener('paste', (e) => {
-const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
-if (item) {
-e.preventDefault();
+function handleImageFile(file, index, ta) {
 const reader = new FileReader();
 reader.onload = (ev) => {
-images[i].src = ev.target.result;
-images[i].style.display = 'block';
-saveToDB(i, ta.innerHTML, ev.target.result);
+images[index].src = ev.target.result;
+images[index].style.display = 'block';
+saveToDB(index, ta.innerHTML, ev.target.result);
 };
-reader.readAsDataURL(item.getAsFile());
+reader.readAsDataURL(file);
+}
+
+textareas.forEach((ta, i) => {
+ta.addEventListener('input', () => {
+if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
+ta.innerHTML = '';
+}
+saveToDB(i, ta.innerHTML);
+});
+
+ta.addEventListener('paste', (e) => {
+e.preventDefault();
+const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
+if (item) {
+handleImageFile(item.getAsFile(), i, ta);
+} else {
+const text = e.clipboardData.getData('text/plain');
+document.execCommand('insertText', false, text);
 }
 });
-ta.addEventListener('contextmenu', (e) => e.preventDefault());
+
+ta.addEventListener('dragover', (e) => {
+e.preventDefault();
+});
+
+ta.addEventListener('drop', (e) => {
+e.preventDefault();
+if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+const file = Array.from(e.dataTransfer.files).find(x => x.type.indexOf('image') !== -1);
+if (file) {
+handleImageFile(file, i, ta);
+}
+} else {
+const item = Array.from(e.dataTransfer.items).find(x => x.type.indexOf('image') !== -1);
+if (item) {
+handleImageFile(item.getAsFile(), i, ta);
+}
+}
+});
+
 let timer;
 const startLongPress = (e) => {
 timer = setTimeout(() => {
 ta.blur();
-const f = prompt("Font:", ta.style.getPropertyValue('--font'));
-if (f) { ta.style.setProperty('--font', f); localStorage.setItem(`q_f_${i}`, f); }
 const s = prompt("Size:", ta.style.fontSize);
 if (s) { ta.style.fontSize = s; localStorage.setItem(`q_s_${i}`, s); }
 const b = prompt("Background:", ta.style.getPropertyValue('--bg'));
@@ -242,8 +315,6 @@ if (b) { ta.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
 const c = prompt("Color:", ta.style.getPropertyValue('--color'));
 if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
 
-
-// Проверка на удаление картинки, если она отображается
 if (images[i].style.display === 'block') {
 const delImg = prompt("Delete image? (yes/no):", "no");
 if (delImg && delImg.toLowerCase() === 'yes') {
@@ -261,7 +332,6 @@ ta.addEventListener('mousedown', startLongPress);
 ta.addEventListener('mouseup', stopLongPress);
 ta.addEventListener('mouseleave', stopLongPress);
 });
-
 </script>
 </body>
 </html>
