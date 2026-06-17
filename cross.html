@@ -198,9 +198,17 @@ tx.oncomplete = () => loadData();
 };
 }
 
+let timer;
+
 handle.addEventListener('pointerdown', (e) => {
 isDragging = true;
 dragStartTime = Date.now();
+timer = setTimeout(() => {
+if (isDragging) {
+isDragging = false;
+window.location.href = "index.html";
+}
+}, 1000);
 });
 
 window.addEventListener('pointermove', (e) => {
@@ -220,11 +228,11 @@ localStorage.setItem('q_y', y);
 });
 
 window.addEventListener('pointerup', (e) => {
+clearTimeout(timer);
 if (!isDragging) return;
 const duration = Date.now() - dragStartTime;
 isDragging = false;
 
-// Обработка короткого тапа по перекрестию
 if (duration < 250) {
 const collages = JSON.parse(localStorage.getItem('q_collages') || '{}');
 const list = Object.keys(collages).join('\n');
@@ -246,6 +254,7 @@ alert('Collage not found!');
 }
 }
 });
+
 
 handle.addEventListener('touchstart', (e) => {
 if (e.cancelable) e.preventDefault();
