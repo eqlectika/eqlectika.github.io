@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="manifest" href="manifest-cross.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
 <title>Cross Editor</title>
 
 <style>
@@ -19,8 +22,8 @@ touch-action: none;
 }
 .container {
 display: grid;
-grid-template-columns: var(--x) 1fr;
-grid-template-rows: var(--y) 1fr;
+grid-template-columns: var(--x, 50%) 1fr;
+grid-template-rows: var(--y, 50%) 1fr;
 height: 100%;
 width: 100%;
 }
@@ -31,11 +34,17 @@ height: 100%;
 overflow: hidden;
 }
 
+/* Исходные цвета из ваших массивов defBgs и defColors */
+#t0 { --default-bg: #000080; --default-color: #FFD54F; }
+#t1 { --default-bg: #005f00; --default-color: #E1BEE7; }
+#t2 { --default-bg: #870000; --default-color: #81C784; }
+#t3 { --default-bg: #ff8700; --default-color: #000000; font-weight: bold; }
+
 .editor {
 width: 100%;
 height: 100%;
-background: var(--bg, #111);
-color: var(--color, #eee);
+background: var(--bg, var(--default-bg));
+color: var(--color, var(--default-color));
 box-sizing: border-box;
 padding: 15px;
 font-size: 18px;
@@ -45,17 +54,11 @@ touch-action: auto;
 user-select: text;
 -webkit-touch-callout: default;
 overflow-y: auto;
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Copperplate, Roboto, Helvetica, Arial, sans-serif;
+font-family: var(--fn, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
 }
 
-#t3 {
-font-weight: bold;
-}
-
-/* Эмуляция placeholder для contenteditable */
 .editor:empty::before {
 content: attr(data-placeholder);
-
 pointer-events: none;
 display: block;
 }
@@ -71,19 +74,28 @@ pointer-events: none;
 display: none;
 opacity: 0.7;
 }
+
 .handle {
 position: absolute;
-top: var(--y);
-left: var(--x);
+top: var(--y, 50%);
+left: var(--x, 50%);
 width: 32px;
 height: 32px;
-transform: translate(-50%, -50%);
+transform: translate(-50%, -50%) scale(1);
 z-index: 100;
 touch-action: none;
 cursor: pointer;
 -webkit-user-select: none;
 user-select: none;
 -webkit-touch-callout: none;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: transform 0.1s ease, filter 0.3s ease;
+}
+
+.handle:active {
+transform: translate(-50%, -50%) scale(0.85);
 }
 
 .handle img {
@@ -92,19 +104,19 @@ height: 100%;
 object-fit: contain;
 pointer-events: none;
 -webkit-user-drag: none;
+transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-
 </style>
 </head>
 <body>
-<div class="container" id="app" style="--x: 50%; --y: 50%;">
+<div class="container" id="app">
 <div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" data-placeholder="Type or paste text and image here. Move handle (crosshair) to resize fields. Long tap field to format and delete image. Tap handle to save and load collage. Long tap handle to level up."></div><img class="img-preview"></div>
 <div class="editor-wrapper"><div class="editor" id="t1" contenteditable="true" data-placeholder="Type or paste text and image here. Move handle (crosshair) to resize fields. Long tap field to format and delete image. Tap handle to save and load collage. Long tap handle to level up."></div><img class="img-preview"></div>
 <div class="editor-wrapper"><div class="editor" id="t2" contenteditable="true" data-placeholder="Type or paste text and image here. Move handle (crosshair) to resize fields. Long tap field to format and delete image. Tap handle to save and load collage. Long tap handle to level up."></div><img class="img-preview"></div>
 <div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" data-placeholder="Type or paste text and image here. Move handle (crosshair) to resize fields. Long tap field to format and delete image. Tap handle to save and load collage. Long tap handle to level up."></div><img class="img-preview"></div>
-<a href="index.html" class="handle" id="handle" draggable="false" onclick="return false;"><img src="handle.png" alt="Logo" draggable="false"></a>
-
+<a href="index.html" class="handle" id="handle" draggable="false"><img src="handle.png" alt="Logo" draggable="false"></a>
 </div>
+
 <script>
 const container = document.getElementById('app');
 const handle = document.getElementById('handle');
@@ -113,6 +125,29 @@ const images = document.querySelectorAll('.img-preview');
 let isDragging = false;
 let dragStartTime = 0;
 let db;
+
+const designs = ['handle.png', 'handle-black.png', 'handle-cross-transparent.png', 'logo.png'];
+let currentDesign = parseInt(localStorage.getItem('q_handle_design') || '0');
+
+const fontsPool = [
+  '"Luckiest Guy", cursive',
+  'Copperplate, "Copperplate Gothic Bold", sans-serif',
+  '"American Typewriter", Courier, monospace',
+  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+];
+
+const defBgs = ['#000080', '#005f00', '#870000', '#ff8700']; 
+const defColors = ['#FFD54F', '#E1BEE7', '#81C784', '#000000']; 
+
+const magicPalettes = [
+  { bg: ['#2b2d42', '#8d99ae', '#edf2f4', '#ef233c'], co: ['#fff', '#000', '#000', '#fff'] },
+  { bg: ['#1a5b8c', '#143d59', '#f4b41a', '#fbcbc9'], co: ['#fff', '#fff', '#000', '#000'] },
+  { bg: ['#0f172a', '#1e293b', '#334155', '#475569'], co: ['#38bdf8', '#818cf8', '#fb7185', '#34d399'] },
+  { bg: ['#111111', '#222222', '#333333', '#444444'], co: ['#eee', '#eee', '#eee', '#eee'] },
+  { bg: ['#ffccd5', '#ffb3c1', '#ff8fa3', '#ff758f'], co: ['#590d22', '#590d22', '#fff', '#fff'] },
+  { bg: ['#e2efe0', '#bccbaf', '#96a788', '#708264'], co: ['#283618', '#283618', '#fefae0', '#fefae0'] }
+];
+
 const dbRequest = indexedDB.open("QuadEditorDB", 3);
 dbRequest.onupgradeneeded = e => {
 db = e.target.result;
@@ -139,12 +174,31 @@ tx.oncomplete = () => resolve();
 });
 }
 
+function updateHandleImage(index) {
+  const imgEl = handle.querySelector('img');
+  imgEl.src = designs[index];
+  
+  // Если дизайн logo.png (индекс 3), принудительно сбрасываем поворот в 0
+  if (index === 3) {
+    imgEl.style.transform = 'rotate(0deg)';
+  }
+}
+
 function loadData() {
 container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
 container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
-const defBgs = ['#000080', '#005f00', '#870000', '#ff8700']; 
-const defColors = ['#FFD54F', '#E1BEE7', '#81C784', '#000000']; 
+updateHandleImage(currentDesign);
+
 textareas.forEach((ta, i) => {
+if (localStorage.getItem(`q_b_${i}`)) {
+  ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`));
+  ta.style.setProperty('--color', localStorage.getItem(`q_c_${i}`));
+}
+if (localStorage.getItem(`q_f_${i}`)) {
+  ta.style.setProperty('--fn', localStorage.getItem(`q_f_${i}`));
+}
+ta.style.fontSize = localStorage.getItem(`q_s_${i}`) || '18px';
+
 const tx = db.transaction("texts", "readonly");
 const req = tx.objectStore("texts").get(i);
 req.onsuccess = () => {
@@ -158,57 +212,21 @@ images[i].removeAttribute('src');
 images[i].style.display = 'none';
 }
 };
-ta.style.fontSize = localStorage.getItem(`q_s_${i}`) || '18px';
-ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`) || defBgs[i]);
-ta.style.setProperty('--color', localStorage.getItem(`q_c_${i}`) || defColors[i]);
 });
 }
 
-// Функция сохранения всего коллажа в список
-function saveCollage(name) {
-const tx = db.transaction("texts", "readonly");
-const store = tx.objectStore("texts");
-const items = [];
-let count = 0;
-for(let i=0; i<4; i++) {
-const req = store.get(i);
-req.onsuccess = () => {
-items[i] = req.result || { id: i, content: '' };
-count++;
-if(count === 4) {
-const collages = JSON.parse(localStorage.getItem('q_collages') || '{}');
-collages[name] = items;
-localStorage.setItem('q_collages', JSON.stringify(collages));
-alert(`Collage "${name}" saved!`);
-}
-};
-}
-}
-
-// Функция загрузки коллажа из списка
-function loadCollage(name) {
-const collages = JSON.parse(localStorage.getItem('q_collages') || '{}');
-const collage = collages[name];
-if (!collage) return;
-const tx = db.transaction("texts", "readwrite");
-const store = tx.objectStore("texts");
-store.clear().onsuccess = () => {
-collage.forEach(item => store.put(item));
-tx.oncomplete = () => loadData();
-};
-}
-
-let timer;
+let handleLongPressTimer; 
 
 handle.addEventListener('pointerdown', (e) => {
 isDragging = true;
 dragStartTime = Date.now();
-timer = setTimeout(() => {
+handleLongPressTimer = setTimeout(() => {
 if (isDragging) {
 isDragging = false;
-window.location.href = "index.html";
+handle.style.transform = 'translate(-50%, -50%) scale(0)';
+setTimeout(() => { window.location.href = "index.html"; }, 150);
 }
-}, 5000);
+}, 1000);
 });
 
 window.addEventListener('pointermove', (e) => {
@@ -228,37 +246,45 @@ localStorage.setItem('q_y', y);
 });
 
 window.addEventListener('pointerup', (e) => {
-clearTimeout(timer);
+clearTimeout(handleLongPressTimer);
 if (!isDragging) return;
 const duration = Date.now() - dragStartTime;
 isDragging = false;
 
 if (duration < 250) {
-const collages = JSON.parse(localStorage.getItem('q_collages') || '{}');
-const list = Object.keys(collages).join('\n');
-const msg = list ? `Enter name to SAVE current collage.\nOr leave empty to LOAD from list:\n\n${list}` : `Enter name to SAVE current collage:`;
-const res = prompt(msg);
+  currentDesign = (currentDesign + 1) % designs.length;
+  localStorage.setItem('q_handle_design', currentDesign);
+  updateHandleImage(currentDesign);
 
-if (res === null) return; 
+  // Для logo.png вращение игнорируем, для остальных — крутим
+  if (currentDesign !== 3) {
+    const randomDegrees = Math.floor(Math.random() * 4) * 90;
+    handle.querySelector('img').style.transform = `rotate(${randomDegrees}deg)`;
+  }
+  
+  const randomHue = Math.floor(Math.random() * 360);
+  handle.style.filter = `hue-rotate(${randomHue}deg) drop-shadow(0 0 6px rgba(255,255,255,0.4))`;
 
-const name = res.trim();
-if (name !== '') {
-saveCollage(name);
-} else if (list) {
-const loadName = prompt(`Enter name to LOAD:\n\n${list}`);
-if (loadName && collages[loadName.trim()]) {
-loadCollage(loadName.trim());
-} else if (loadName) {
-alert('Collage not found!');
-}
-}
+  const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
+  
+  textareas.forEach((ta, i) => {
+    const randomFont = fontsPool[Math.floor(Math.random() * fontsPool.length)];
+    
+    ta.style.setProperty('--bg', palette.bg[i]);
+    ta.style.setProperty('--color', palette.co[i]);
+    ta.style.setProperty('--fn', randomFont);
+    
+    localStorage.setItem(`q_b_${i}`, palette.bg[i]);
+    localStorage.setItem(`q_c_${i}`, palette.co[i]);
+    localStorage.setItem(`q_f_${i}`, randomFont);
+  });
 }
 });
-
 
 handle.addEventListener('touchstart', (e) => {
 if (e.cancelable) e.preventDefault();
 }, { passive: false });
+
 handle.addEventListener('click', (e) => e.preventDefault());
 handle.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -291,28 +317,22 @@ document.execCommand('insertText', false, text);
 }
 });
 
-ta.addEventListener('dragover', (e) => {
-e.preventDefault();
-});
+ta.addEventListener('dragover', (e) => { e.preventDefault(); });
 
 ta.addEventListener('drop', (e) => {
 e.preventDefault();
 if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
 const file = Array.from(e.dataTransfer.files).find(x => x.type.indexOf('image') !== -1);
-if (file) {
-handleImageFile(file, i, ta);
-}
+if (file) { handleImageFile(file, i, ta); }
 } else {
 const item = Array.from(e.dataTransfer.items).find(x => x.type.indexOf('image') !== -1);
-if (item) {
-handleImageFile(item.getAsFile(), i, ta);
-}
+if (item) { handleImageFile(item.getAsFile(), i, ta); }
 }
 });
 
-let timer;
+let textareaLongPressTimer;
 const startLongPress = (e) => {
-timer = setTimeout(() => {
+textareaLongPressTimer = setTimeout(() => {
 ta.blur();
 const s = prompt("Size:", ta.style.fontSize);
 if (s) { ta.style.fontSize = s; localStorage.setItem(`q_s_${i}`, s); }
@@ -331,7 +351,7 @@ saveToDB(i, ta.innerHTML, null, true);
 }
 }, 5000);
 };
-const stopLongPress = () => clearTimeout(timer);
+const stopLongPress = () => clearTimeout(textareaLongPressTimer);
 ta.addEventListener('touchstart', startLongPress);
 ta.addEventListener('touchend', stopLongPress);
 ta.addEventListener('mousedown', startLongPress);
