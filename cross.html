@@ -22,8 +22,8 @@ touch-action: none;
 }
 .container {
 display: grid;
-grid-template-columns: var(--x, 50%) 1fr;
-grid-template-rows: var(--y, 50%) 1fr;
+grid-template-columns: var(--x) 1fr;
+grid-template-rows: var(--y) 1fr;
 height: 100%;
 width: 100%;
 }
@@ -34,17 +34,11 @@ height: 100%;
 overflow: hidden;
 }
 
-/* Исходные цвета из ваших массивов defBgs и defColors */
-#t0 { --default-bg: #000080; --default-color: #FFD54F; }
-#t1 { --default-bg: #005f00; --default-color: #E1BEE7; }
-#t2 { --default-bg: #870000; --default-color: #81C784; }
-#t3 { --default-bg: #ff8700; --default-color: #000000; font-weight: bold; }
-
 .editor {
 width: 100%;
 height: 100%;
-background: var(--bg, var(--default-bg));
-color: var(--color, var(--default-color));
+background: var(--bg, #111);
+color: var(--color, #eee);
 box-sizing: border-box;
 padding: 15px;
 font-size: 18px;
@@ -54,13 +48,19 @@ touch-action: auto;
 user-select: text;
 -webkit-touch-callout: default;
 overflow-y: auto;
-font-family: var(--fn, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Copperplate, Roboto, Helvetica, Arial, sans-serif;
+white-space: pre-wrap;
+}
+
+#t3 {
+font-weight: bold;
 }
 
 .editor:empty::before {
 content: attr(data-placeholder);
 pointer-events: none;
 display: block;
+white-space: pre-wrap;
 }
 
 .img-preview {
@@ -74,28 +74,19 @@ pointer-events: none;
 display: none;
 opacity: 0.7;
 }
-
 .handle {
 position: absolute;
-top: var(--y, 50%);
-left: var(--x, 50%);
+top: var(--y);
+left: var(--x);
 width: 32px;
 height: 32px;
-transform: translate(-50%, -50%) scale(1);
+transform: translate(-50%, -50%);
 z-index: 100;
 touch-action: none;
 cursor: pointer;
 -webkit-user-select: none;
 user-select: none;
 -webkit-touch-callout: none;
-display: flex;
-align-items: center;
-justify-content: center;
-transition: transform 0.1s ease, filter 0.3s ease;
-}
-
-.handle:active {
-transform: translate(-50%, -50%) scale(0.85);
 }
 
 .handle img {
@@ -104,49 +95,80 @@ height: 100%;
 object-fit: contain;
 pointer-events: none;
 -webkit-user-drag: none;
-transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Оформление модального окна Help */
+dialog {
+border: none;
+border-radius: 8px;
+padding: 20px;
+background: #1e1e24;
+color: #fff;
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+font-size: 16px;
+line-height: 1.5;
+max-width: 85vw;
+box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+outline: none;
+}
+dialog::backdrop {
+background: rgba(0, 0, 0, 0.7);
+-webkit-backdrop-filter: blur(3px);
+backdrop-filter: blur(3px);
+}
+dialog p {
+margin: 0 0 12px 0;
+white-space: pre-wrap;
+}
+dialog a {
+color: #38bdf8;
+text-decoration: underline;
+}
+dialog button {
+background: #334155;
+color: #fff;
+border: none;
+padding: 8px 16px;
+border-radius: 4px;
+cursor: pointer;
+font-size: 14px;
+float: right;
+margin-top: 5px;
+}
+dialog button:active {
+background: #475569;
 }
 </style>
 </head>
 <body>
-<div class="container" id="app">
-<div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" data-placeholder="Type or paste text and image here. Move handle (crosshair) to resize fields. Tap handle to change design. Long tap handle to level up. Long-long tap field to format and delete image."></div><img class="img-preview"></div>
-<div class="editor-wrapper"><div class="editor" id="t1" contenteditable="true" data-placeholder="Type or paste text and image here. Move handle (crosshair) to resize fields. Tap handle to change design. Long tap handle to level up. Long-long tap field to format and delete image."></div><img class="img-preview"></div>
-<div class="editor-wrapper"><div class="editor" id="t2" contenteditable="true" data-placeholder="Type or paste text and image here. Move handle (crosshair) to resize fields. Tap handle to change design. Long tap handle to level up. Long-long tap field to format and delete image."></div><img class="img-preview"></div>
-<div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" data-placeholder="Type or paste text and image here. Move handle (crosshair) to resize fields. Tap handle to change design. Long tap handle to level up. Long-long tap field to format and delete image."></div><img class="img-preview"></div>
-<a href="index.html" class="handle" id="handle" draggable="false"><img src="handle.png" alt="Logo" draggable="false"></a>
+<div class="container" id="app" style="--x: 50%; --y: 50%;">
+<div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" data-placeholder="Type or paste text and image here. &#10;Move Handle (crosshair) to resize fields. &#10;Tap Handle to change design. &#10;Long tap Handle to level up. &#10;Long-long tap Field to format and delete image."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t1" contenteditable="true" data-placeholder="Type or paste text and image here. &#10;Move Handle (crosshair) to resize fields. &#10;Tap Handle to change design. &#10;Long tap Handle to level up. &#10;Long-long tap Field to format and delete image."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t2" contenteditable="true" data-placeholder="Type or paste text and image here. &#10;Move Handle (crosshair) to resize fields. &#10;Tap Handle to change design. &#10;Long tap Handle to level up. &#10;Long-long tap Field to format and delete image."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" data-placeholder="AI improvisation will appear here based on the other fields..."></div><img class="img-preview"></div>
+<a href="#" class="handle" id="handle" draggable="false" onclick="return false;"><img src="handle.png" alt="Logo" draggable="false"></a>
 </div>
+
+<dialog id="helpDialog">
+<p>Type or paste text and image here.
+Move Handle (crosshair) to resize fields.
+Tap Handle to change design.
+Long tap Handle to level up.
+Long-long tap Field to format and delete image.
+
+Explore more at <a href="https://eqlectika.github.io" target="_blank" rel="noopener">eqlectika.github.io</a></p>
+<button onclick="document.getElementById('helpDialog').close()">Close</button>
+</dialog>
 
 <script>
 const container = document.getElementById('app');
 const handle = document.getElementById('handle');
 const textareas = document.querySelectorAll('.editor');
 const images = document.querySelectorAll('.img-preview');
+const helpDialog = document.getElementById('helpDialog');
 let isDragging = false;
 let dragStartTime = 0;
 let db;
-
-const designs = ['handle.png', 'handle-black.png', 'handle-cross-transparent.png', 'logo.png'];
-let currentDesign = parseInt(localStorage.getItem('q_handle_design') || '0');
-
-const fontsPool = [
-  '"Luckiest Guy", cursive',
-  'Copperplate, "Copperplate Gothic Bold", sans-serif',
-  '"American Typewriter", Courier, monospace',
-  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-];
-
-const defBgs = ['#000080', '#005f00', '#870000', '#ff8700']; 
-const defColors = ['#FFD54F', '#E1BEE7', '#81C784', '#000000']; 
-
-const magicPalettes = [
-  { bg: ['#2b2d42', '#8d99ae', '#edf2f4', '#ef233c'], co: ['#fff', '#000', '#000', '#fff'] },
-  { bg: ['#1a5b8c', '#143d59', '#f4b41a', '#fbcbc9'], co: ['#fff', '#fff', '#000', '#000'] },
-  { bg: ['#0f172a', '#1e293b', '#334155', '#475569'], co: ['#38bdf8', '#818cf8', '#fb7185', '#34d399'] },
-  { bg: ['#111111', '#222222', '#333333', '#444444'], co: ['#eee', '#eee', '#eee', '#eee'] },
-  { bg: ['#ffccd5', '#ffb3c1', '#ff8fa3', '#ff758f'], co: ['#590d22', '#590d22', '#fff', '#fff'] },
-  { bg: ['#e2efe0', '#bccbaf', '#96a788', '#708264'], co: ['#283618', '#283618', '#fefae0', '#fefae0'] }
-];
 
 const dbRequest = indexedDB.open("QuadEditorDB", 3);
 dbRequest.onupgradeneeded = e => {
@@ -174,31 +196,12 @@ tx.oncomplete = () => resolve();
 });
 }
 
-function updateHandleImage(index) {
-  const imgEl = handle.querySelector('img');
-  imgEl.src = designs[index];
-  
-  // Если дизайн logo.png (индекс 3), принудительно сбрасываем поворот в 0
-  if (index === 3) {
-    imgEl.style.transform = 'rotate(0deg)';
-  }
-}
-
 function loadData() {
 container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
 container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
-updateHandleImage(currentDesign);
-
+const defBgs = ['#000080', '#005f00', '#870000', '#ff8700']; 
+const defColors = ['#FFD54F', '#E1BEE7', '#81C784', '#000000']; 
 textareas.forEach((ta, i) => {
-if (localStorage.getItem(`q_b_${i}`)) {
-  ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`));
-  ta.style.setProperty('--color', localStorage.getItem(`q_c_${i}`));
-}
-if (localStorage.getItem(`q_f_${i}`)) {
-  ta.style.setProperty('--fn', localStorage.getItem(`q_f_${i}`));
-}
-ta.style.fontSize = localStorage.getItem(`q_s_${i}`) || '18px';
-
 const tx = db.transaction("texts", "readonly");
 const req = tx.objectStore("texts").get(i);
 req.onsuccess = () => {
@@ -212,10 +215,98 @@ images[i].removeAttribute('src');
 images[i].style.display = 'none';
 }
 };
+ta.style.fontSize = localStorage.getItem(`q_s_${i}`) || '18px';
+ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`) || defBgs[i]);
+ta.style.setProperty('--color', localStorage.getItem(`q_c_${i}`) || defColors[i]);
 });
 }
 
-let handleLongPressTimer; 
+function saveCollage(name) {
+const tx = db.transaction("texts", "readonly");
+const store = tx.objectStore("texts");
+const items = [];
+let count = 0;
+for(let i=0; i<4; i++) {
+const req = store.get(i);
+req.onsuccess = () => {
+items[i] = req.result || { id: i, content: '' };
+count++;
+if(count === 4) {
+const collages = JSON.parse(localStorage.getItem('q_collages') || '{}');
+collages[name] = items;
+localStorage.setItem('q_collages', JSON.stringify(collages));
+alert(`Collage "${name}" saved!`);
+}
+};
+}
+}
+
+function loadCollage(name) {
+const collages = JSON.parse(localStorage.getItem('q_collages') || '{}');
+const collage = collages[name];
+if (!collage) return;
+const tx = db.transaction("texts", "readwrite");
+const store = tx.objectStore("texts");
+store.clear().onsuccess = () => {
+collage.forEach(item => store.put(item));
+tx.oncomplete = () => loadData();
+};
+}
+
+// Запрос ключа из локального хранилища или через prompt
+function getGeminiApiKey() {
+  let key = localStorage.getItem('q_gemini_key');
+  if (!key) {
+    key = prompt("Enter your Gemini API Key:");
+    if (key) {
+      localStorage.setItem('q_gemini_key', key.trim());
+    }
+  }
+  return key;
+}
+
+async function runGeminiImprovisation() {
+  const apiKey = getGeminiApiKey();
+  if (!apiKey) return;
+
+  const t0 = document.getElementById('t0').innerText.trim();
+  const t1 = document.getElementById('t1').innerText.trim();
+  const t2 = document.getElementById('t2').innerText.trim();
+  const t3 = document.getElementById('t3');
+
+  if (!t0 && !t1 && !t2) return;
+
+  t3.innerHTML = "🤖 AI is thinking...";
+
+  const promptText = `You are an AI build inside a 4-quadrant text editor. Analyze the contents of these 3 fields and write a witty, creative, or philosophical improvisation, synthesis, or conclusion in field 4. Keep it concise (1-3 sentences max). Speak strictly in English.
+Field 1: "${t0 || '(empty)'}"
+Field 2: "${t1 || '(empty)'}"
+Field 3: "${t2 || '(empty)'}"
+Output only the improvisation text directly, without any intro or markdown code blocks.`;
+
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: promptText }] }]
+      })
+    });
+    const data = await response.json();
+    if (data.candidates && data.candidates[0].content.parts[0].text) {
+      const aiText = data.candidates[0].content.parts[0].text.trim();
+      t3.innerHTML = `🤖 ${aiText}`;
+      saveToDB(3, t3.innerHTML);
+    } else {
+      t3.innerHTML = "🤖 Empty response from AI.";
+    }
+  } catch (err) {
+    t3.innerHTML = "🤖 AI failed to improvisate. Long-press field to clear key.";
+    console.error(err);
+  }
+}
+
+let handleLongPressTimer;
 
 handle.addEventListener('pointerdown', (e) => {
 isDragging = true;
@@ -223,10 +314,9 @@ dragStartTime = Date.now();
 handleLongPressTimer = setTimeout(() => {
 if (isDragging) {
 isDragging = false;
-handle.style.transform = 'translate(-50%, -50%) scale(0)';
-setTimeout(() => { window.location.href = "index.html"; }, 150);
+helpDialog.showModal();
 }
-}, 1000);
+}, 5000);
 });
 
 window.addEventListener('pointermove', (e) => {
@@ -252,39 +342,31 @@ const duration = Date.now() - dragStartTime;
 isDragging = false;
 
 if (duration < 250) {
-  currentDesign = (currentDesign + 1) % designs.length;
-  localStorage.setItem('q_handle_design', currentDesign);
-  updateHandleImage(currentDesign);
+const collages = JSON.parse(localStorage.getItem('q_collages') || '{}');
+const list = Object.keys(collages).join('\n');
+const msg = list ? `Enter name to SAVE current collage.\nOr leave empty to LOAD from list:\n\n${list}` : `Enter name to SAVE current collage:`;
+const res = prompt(msg);
 
-  // Для logo.png вращение игнорируем, для остальных — крутим
-  if (currentDesign !== 3) {
-    const randomDegrees = Math.floor(Math.random() * 4) * 90;
-    handle.querySelector('img').style.transform = `rotate(${randomDegrees}deg)`;
-  }
-  
-  const randomHue = Math.floor(Math.random() * 360);
-  handle.style.filter = `hue-rotate(${randomHue}deg) drop-shadow(0 0 6px rgba(255,255,255,0.4))`;
+if (res === null) return; 
 
-  const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
-  
-  textareas.forEach((ta, i) => {
-    const randomFont = fontsPool[Math.floor(Math.random() * fontsPool.length)];
-    
-    ta.style.setProperty('--bg', palette.bg[i]);
-    ta.style.setProperty('--color', palette.co[i]);
-    ta.style.setProperty('--fn', randomFont);
-    
-    localStorage.setItem(`q_b_${i}`, palette.bg[i]);
-    localStorage.setItem(`q_c_${i}`, palette.co[i]);
-    localStorage.setItem(`q_f_${i}`, randomFont);
-  });
+const name = res.trim();
+if (name !== '') {
+saveCollage(name);
+} else if (list) {
+const loadName = prompt(`Enter name to LOAD:\n\n${list}`);
+if (loadName && collages[loadName.trim()]) {
+loadCollage(loadName.trim());
+} else if (loadName) {
+alert('Collage not found!');
+}
+}
+runGeminiImprovisation();
 }
 });
 
 handle.addEventListener('touchstart', (e) => {
 if (e.cancelable) e.preventDefault();
 }, { passive: false });
-
 handle.addEventListener('click', (e) => e.preventDefault());
 handle.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -334,6 +416,11 @@ let textareaLongPressTimer;
 const startLongPress = (e) => {
 textareaLongPressTimer = setTimeout(() => {
 ta.blur();
+if (i === 3) {
+  const updateKey = prompt("Update or clear Gemini API Key:", localStorage.getItem('q_gemini_key') || '');
+  if (updateKey !== null) localStorage.setItem('q_gemini_key', updateKey.trim());
+}
+
 const s = prompt("Size:", ta.style.fontSize);
 if (s) { ta.style.fontSize = s; localStorage.setItem(`q_s_${i}`, s); }
 const b = prompt("Background:", ta.style.getPropertyValue('--bg'));
@@ -349,7 +436,7 @@ images[i].style.display = 'none';
 saveToDB(i, ta.innerHTML, null, true);
 }
 }
-}, 3000);
+}, 5000);
 };
 const stopLongPress = () => clearTimeout(textareaLongPressTimer);
 ta.addEventListener('touchstart', startLongPress);
