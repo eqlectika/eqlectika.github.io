@@ -298,33 +298,51 @@ function runLocalImprovisation() {
 }
 
 let handleLongPressTimer; 
+let startX = 0, startY = 0; // Фиксируем стартовую точку
 
 handle.addEventListener('pointerdown', (e) => {
-isDragging = true;
-dragStartTime = Date.now();
-handleLongPressTimer = setTimeout(() => {
-if (isDragging) {
-isDragging = false;
-helpDialog.showModal();
-}
-}, 1000);
+  isDragging = true;
+  dragStartTime = Date.now();
+  
+  // Запоминаем начальные координаты нажатия
+  const touch = e.touches ? e.touches[0] : e;
+  startX = touch.clientX;
+  startY = touch.clientY;
+
+  handleLongPressTimer = setTimeout(() => {
+    if (isDragging) {
+      isDragging = false;
+      helpDialog.showModal();
+    }
+  }, 1000);
 });
 
 window.addEventListener('pointermove', (e) => {
-if (!isDragging) return;
-const touch = e.touches ? e.touches[0] : e;
-const padding = 10;
-const rawX = (touch.clientX / window.innerWidth) * 100;
-const rawY = (touch.clientY / window.innerHeight) * 100;
-const clampedX = Math.max(padding, Math.min(100 - padding, rawX));
-const clampedY = Math.max(padding, Math.min(100 - padding, rawY));
-const x = `${clampedX}%`;
-const y = `${clampedY}%`;
-container.style.setProperty('--x', x);
-container.style.setProperty('--y', y);
-localStorage.setItem('q_x', x);
-localStorage.setItem('q_y', y);
+  if (!isDragging) return;
+  const touch = e.touches ? e.touches[0] : e;
+  
+  // Вычисляем сдвиг от начальной точки
+  const moveX = Math.abs(touch.clientX - startX);
+  const moveY = Math.abs(touch.clientY - startY);
+  
+  // Если сдвиг больше 5 пикселей — это осознанное движение, отменяем лонг-тап
+  if (moveX > 5 || moveY > 5) {
+    clearTimeout(handleLongPressTimer);
+  }
+
+  const padding = 10;
+  const rawX = (touch.clientX / window.innerWidth) * 100;
+  const rawY = (touch.clientY / window.innerHeight) * 100;
+  const clampedX = Math.max(padding, Math.min(100 - padding, rawX));
+  const clampedY = Math.max(padding, Math.min(100 - padding, rawY));
+  const x = `${clampedX}%`;
+  const y = `${clampedY}%`;
+  container.style.setProperty('--x', x);
+  container.style.setProperty('--y', y);
+  localStorage.setItem('q_x', x);
+  localStorage.setItem('q_y', y);
 });
+
 
 window.addEventListener('pointerup', (e) => {
 clearTimeout(handleLongPressTimer);
