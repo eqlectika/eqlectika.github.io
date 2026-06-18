@@ -34,10 +34,11 @@ height: 100%;
 overflow: hidden;
 }
 
-#t0 { --default-bg: #000080; --default-color: #FFD54F; }
+/* Дефолтные стили: теперь t0 жирный (синтез), а t3 обычный */
+#t0 { --default-bg: #ff8700; --default-color: #000000; font-weight: bold; }
 #t1 { --default-bg: #005f00; --default-color: #E1BEE7; }
 #t2 { --default-bg: #870000; --default-color: #81C784; }
-#t3 { --default-bg: #ff8700; --default-color: #000000; font-weight: bold; }
+#t3 { --default-bg: #000080; --default-color: #FFD54F; }
 
 .editor {
 width: 100%;
@@ -108,7 +109,6 @@ pointer-events: none;
 transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Стили для кастомного диалогового окна Help */
 dialog {
 border: none;
 border-radius: 8px;
@@ -153,10 +153,10 @@ background: #475569;
 </head>
 <body>
 <div class="container" id="app">
-<div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" data-placeholder="Type or paste text and image here. &#10;Move Handle (crosshair) to resize Fields. &#10;Tap Handle to change design. &#10;Long tap Handle to level up. &#10;Long-long tap Field to format and delete image."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" data-placeholder="Local synthesis will appear here based on the other fields..."></div><img class="img-preview"></div>
 <div class="editor-wrapper"><div class="editor" id="t1" contenteditable="true" data-placeholder="Type or paste text and image here. &#10;Move Handle (crosshair) to resize Fields. &#10;Tap Handle to change design. &#10;Long tap Handle to level up. &#10;Long-long tap Field to format and delete image."></div><img class="img-preview"></div>
 <div class="editor-wrapper"><div class="editor" id="t2" contenteditable="true" data-placeholder="Type or paste text and image here. &#10;Move Handle (crosshair) to resize Fields. &#10;Tap Handle to change design. &#10;Long tap Handle to level up. &#10;Long-long tap Field to format and delete image."></div><img class="img-preview"></div>
-<div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" data-placeholder="Local synthesis will appear here based on the other fields..."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" data-placeholder="Type or paste text and image here. &#10;Move Handle (crosshair) to resize Fields. &#10;Tap Handle to change design. &#10;Long tap Handle to level up. &#10;Long-long tap Field to format and delete image."></div><img class="img-preview"></div>
 <a href="#" class="handle" id="handle" draggable="false"><img src="handle.png" alt="Logo" draggable="false"></a>
 </div>
 
@@ -167,7 +167,7 @@ Tap handle to change design.
 Long tap handle to level up.
 Long-long tap field to format and delete image.
 
-Explore more at <a href="https://eqlectika.github.io" target="_blank" rel="noopener">eqlectika.github.io</a></p>
+<a href="https://eqlectika.github.io" target="_blank" rel="noopener">Eqlectika</a></p>
 <button onclick="document.getElementById('helpDialog').close()">Close</button>
 </dialog>
 
@@ -191,11 +191,11 @@ const fontsPool = [
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
 ];
 
-const defBgs = ['#000080', '#005f00', '#870000', '#ff8700']; 
-const defColors = ['#FFD54F', '#E1BEE7', '#81C784', '#000000']; 
+const defBgs = ['#ff8700', '#005f00', '#870000', '#000080']; 
+const defColors = ['#000000', '#E1BEE7', '#81C784', '#FFD54F']; 
 
 const magicPalettes = [
-  { bg: defBgs, co: defColors }, // Добавлен дефолтный набор в общую ротацию
+  { bg: defBgs, co: defColors },
   { bg: ['#2b2d42', '#8d99ae', '#edf2f4', '#ef233c'], co: ['#fff', '#000', '#000', '#fff'] },
   { bg: ['#1a5b8c', '#143d59', '#f4b41a', '#fbcbc9'], co: ['#fff', '#fff', '#000', '#000'] },
   { bg: ['#0f172a', '#1e293b', '#334155', '#475569'], co: ['#38bdf8', '#818cf8', '#fb7185', '#34d399'] },
@@ -269,16 +269,17 @@ images[i].style.display = 'none';
 });
 }
 
+// Изменено: собирает слова из t1, t2, t3 и выводит результат в t0
 function runLocalImprovisation() {
-  const t0 = document.getElementById('t0').innerText.trim();
+  const t0 = document.getElementById('t0');
   const t1 = document.getElementById('t1').innerText.trim();
   const t2 = document.getElementById('t2').innerText.trim();
-  const t3 = document.getElementById('t3');
+  const t3 = document.getElementById('t3').innerText.trim();
 
-  const words = [t0, t1, t2].join(' ').split(/[\s,.\n\t!?]+/).filter(w => w.length > 3);
+  const words = [t1, t2, t3].join(' ').split(/[\s,.\n\t!?]+/).filter(w => w.length > 3);
   
   if (words.length === 0) {
-    t3.innerHTML = "🤖 Standby. Awaiting textual input from adjacent fields...";
+    t0.innerHTML = "🤖 Standby. Awaiting textual input from adjacent fields...";
     return;
   }
 
@@ -293,18 +294,16 @@ function runLocalImprovisation() {
   ];
 
   const generatedText = templates[Math.floor(Math.random() * templates.length)]();
-  t3.innerHTML = generatedText;
-  saveToDB(3, t3.innerHTML);
+  t0.innerHTML = generatedText;
+  saveToDB(0, t0.innerHTML);
 }
 
 let handleLongPressTimer; 
-let startX = 0, startY = 0; // Фиксируем стартовую точку
+let startX = 0, startY = 0;
 
 handle.addEventListener('pointerdown', (e) => {
   isDragging = true;
   dragStartTime = Date.now();
-  
-  // Запоминаем начальные координаты нажатия
   const touch = e.touches ? e.touches[0] : e;
   startX = touch.clientX;
   startY = touch.clientY;
@@ -321,11 +320,9 @@ window.addEventListener('pointermove', (e) => {
   if (!isDragging) return;
   const touch = e.touches ? e.touches[0] : e;
   
-  // Вычисляем сдвиг от начальной точки
   const moveX = Math.abs(touch.clientX - startX);
   const moveY = Math.abs(touch.clientY - startY);
   
-  // Если сдвиг больше 5 пикселей — это осознанное движение, отменяем лонг-тап
   if (moveX > 5 || moveY > 5) {
     clearTimeout(handleLongPressTimer);
   }
@@ -343,7 +340,6 @@ window.addEventListener('pointermove', (e) => {
   localStorage.setItem('q_y', y);
 });
 
-
 window.addEventListener('pointerup', (e) => {
 clearTimeout(handleLongPressTimer);
 if (!isDragging) return;
@@ -358,10 +354,8 @@ if (duration < 250) {
   const randomHue = Math.floor(Math.random() * 360);
   
   if (currentDesign === 3) {
-    // Специфическая глубокая тень для логотипа (без hue-rotate, чтобы не искажать цвета лого)
     handle.style.filter = `drop-shadow(0 2px 8px rgba(0,0,0,0.8)) drop-shadow(0 0 4px rgba(255,255,255,0.3))`;
   } else {
-    // Стандартный поворот и светящаяся тень для остальных хэндлов
     const randomDegrees = Math.floor(Math.random() * 4) * 90;
     handle.querySelector('img').style.transform = `rotate(${randomDegrees}deg)`;
     handle.style.filter = `hue-rotate(${randomHue}deg) drop-shadow(0 0 6px rgba(255,255,255,0.4))`;
@@ -370,7 +364,8 @@ if (duration < 250) {
   const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
   
   textareas.forEach((ta, i) => {
-    if (i !== 3) {
+    // Изменено: шрифт НЕ меняется у t0 (теперь это синтез)
+    if (i !== 0) {
       const randomFont = fontsPool[Math.floor(Math.random() * fontsPool.length)];
       ta.style.setProperty('--fn', randomFont);
       localStorage.setItem(`q_f_${i}`, randomFont);
@@ -401,6 +396,7 @@ reader.onload = (ev) => {
 images[index].src = ev.target.result;
 images[index].style.display = 'block';
 saveToDB(index, ta.innerHTML, ev.target.result);
+if (index !== 0) runLocalImprovisation(); // Изменено: пересчет, если картинка НЕ в t0
 };
 reader.readAsDataURL(file);
 }
@@ -411,6 +407,11 @@ if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
 ta.innerHTML = '';
 }
 saveToDB(i, ta.innerHTML);
+
+// Изменено: если ввод идет в t1, t2 или t3 — обновляем t0 на лету
+if (i !== 0) {
+  runLocalImprovisation();
+}
 });
 
 ta.addEventListener('paste', (e) => {
@@ -421,6 +422,7 @@ handleImageFile(item.getAsFile(), i, ta);
 } else {
 const text = e.clipboardData.getData('text/plain');
 document.execCommand('insertText', false, text);
+if (i !== 0) runLocalImprovisation(); // Изменено: пересчет при вставке текста НЕ в t0
 }
 });
 
@@ -454,6 +456,7 @@ if (delImg && delImg.toLowerCase() === 'yes') {
 images[i].removeAttribute('src');
 images[i].style.display = 'none';
 saveToDB(i, ta.innerHTML, null, true);
+if (i !== 0) runLocalImprovisation(); // Изменено: пересчет после удаления картинки НЕ из t0
 }
 }
 }, 5000);
@@ -466,7 +469,6 @@ ta.addEventListener('mouseup', stopLongPress);
 ta.addEventListener('mouseleave', stopLongPress);
 });
 
-// Принудительное удаление старых Service Worker и их кэша
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(registrations => {
     for (let registration of registrations) {
