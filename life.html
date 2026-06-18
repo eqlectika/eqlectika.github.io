@@ -115,7 +115,7 @@ if ('serviceWorker' in navigator) {
 
 let currentThrottle = 0;
 let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
-let isReverseThrust = true;
+let isReverseThrust = false;
 
 const throttleArea = document.getElementById('throttleArea');
 const controlArea = document.getElementById('controlArea');
@@ -627,7 +627,7 @@ function animate() {
         thrustForce = currentFlySpeed * (currentThrottle * 2.0); 
     }
     
-    let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+    let localUp = new THREE.Vector3(0, 0, 1).applyQuaternion(player.quaternion);
     if (isReverseThrust) { localUp.negate(); }
     if (thrustForce > 0) { velocity.add(localUp.clone().multiplyScalar(thrustForce)); }
 
