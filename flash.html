@@ -274,6 +274,7 @@ body.is-reading #logoContainer {
     <div id="settingsContainer">
         <div id="colorControl" class="setting-btn">Background Color</div>
         <div id="textColorControl" class="setting-btn">Text Color</div>
+        <div id="inversionControl" class="setting-btn">Inversion</div>
     </div>
 
   <div class="footer-block">
@@ -304,6 +305,7 @@ body.is-reading #logoContainer {
     const slowerBtn = document.getElementById('slowerBtn');
     const colorControl = document.getElementById('colorControl');
     const textColorControl = document.getElementById('textColorControl');
+    const inversionControl = document.getElementById('inversionControl');
 
     const accelBtn = document.getElementById('accelBtn');
 
@@ -312,6 +314,9 @@ body.is-reading #logoContainer {
     
     let colorIndex = parseInt(localStorage.getItem('reading_colorIndex')) || 0;
     let textColorIndex = parseInt(localStorage.getItem('reading_textColorIndex')) || 0;
+    let inversionActive = localStorage.getItem('reading_inversionActive') === 'true';
+    let transitionInterval = null;
+    let inversionLevel = inversionActive ? 100 : 0;
     let wakeLock = null;
     
     let words = [], index = 0, timer = null, isPaused = false, isReading = false;
@@ -320,6 +325,33 @@ body.is-reading #logoContainer {
 
     document.body.style.backgroundColor = colors[colorIndex];
     inputText.value = localStorage.getItem('reading_text') || "";
+
+    function applyInversionFilter() {
+        document.documentElement.style.filter = `invert(${inversionLevel}%)`;
+    }
+    applyInversionFilter();
+
+    function toggleInversion() {
+        if (transitionInterval) clearInterval(transitionInterval);
+        inversionActive = !inversionActive;
+        localStorage.setItem('reading_inversionActive', inversionActive);
+        
+        const target = inversionActive ? 100 : 0;
+        
+        transitionInterval = setInterval(() => {
+            if (inversionLevel === target) {
+                clearInterval(transitionInterval);
+                return;
+            }
+            inversionLevel += (inversionActive ? 5 : -5);
+            applyInversionFilter();
+        }, 15);
+    }
+
+    inversionControl.onclick = (e) => {
+        e.stopPropagation();
+        toggleInversion();
+    };
 
     function updateFontSize(text, el) {
         const maxWidth = window.innerWidth * 0.9;
