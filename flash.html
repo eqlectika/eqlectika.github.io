@@ -7,11 +7,14 @@
   <title>Fast Reading Converter</title>
   <style>
     html, body {
-      overscroll-behavior: none; min-height: 100dvh; margin: 0; padding: 0;
+      overscroll-behavior: none; margin: 0; padding: 0;
       background-color: #000000; color: #fff; font-family: Arial, sans-serif;
       overflow: hidden;
       -webkit-user-select: none; user-select: none;
-      width: 100%; height: 100%;
+      width: 100%;
+      /* Полностью уходим от vh/dvh во избежание багов сдвига футера */
+      height: 100px; 
+      position: fixed; top: 0; left: 0;
     }
 
     #container {
@@ -355,7 +358,6 @@ function showNext() {
 
         clearOldWord(isLongHold);
 
-        // Всегда создаем элемент, если это не пустая строка или разделитель
         if (displayTxt !== " " && !displayTxt.includes('|')) {
             const newEl = document.createElement('div');
             newEl.className = 'word-layer word-enter';
@@ -366,27 +368,23 @@ function showNext() {
             requestAnimationFrame(() => setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20));
         }
 
-// Логика пауз
 let pauses = 1;
 
 if (rawTxt.match(/\n{2,}/)) {
-    pauses = 5.0; // Пауза для нового абзаца
+    pauses = 5.0;
 } else if (rawTxt.includes('|')) {
-    pauses = 5.0; // Специальный разделитель
+    pauses = 5.0;
 } else if (rawTxt === " " || rawTxt.match(/\s+/)) {
-    pauses = 1.0; // Обычный пробел (без паузы)
+    pauses = 1.0;
 } else {
-    // Проверка знаков препинания
-    if (/[;,]/.test(rawTxt)) pauses = 3.0;         // Запятая, точка с запятой
-    else if (/:/.test(rawTxt)) pauses = 3.0;       // Двоеточие
-    else if (/[.!?—]/.test(rawTxt)) pauses = 4.5;  // Точка, воскл/вопр знаки, тире
+    if (/[;,]/.test(rawTxt)) pauses = 3.0;
+    else if (/:/.test(rawTxt)) pauses = 3.0;
+    else if (/[.!?—]/.test(rawTxt)) pauses = 4.5;
     
-    // Дополнительная задержка для длинных слов
     if (rawTxt.length > 8) pauses += 0.38;
     if (isLongHold) pauses += 2.0;
 }
 
-        // Ускорение
         let currentInterval = interval;
         if (isDynamicAccel && words.length > 1) {
             let progress = index / (words.length - 1);
@@ -416,7 +414,6 @@ if (rawTxt.match(/\n{2,}/)) {
         e.stopPropagation();
         isDynamicAccel = !isDynamicAccel;
         accelBtn.textContent = `Dynamic Accel: ${isDynamicAccel ? 'ON' : 'OFF'}`;
-
     };
 
     startBtn.onclick = (e) => {
@@ -426,8 +423,8 @@ if (rawTxt.match(/\n{2,}/)) {
             if (!text) return;
             localStorage.setItem('reading_text', text);
 words = text
-  .replace(/([,;:.!?])(?!\s|$)/g, '$1 ') // Гарантируем пробел после знака
-  .split(/(\n{2,}|\s+)/)                 // Делим по двойным переносам или пробелам
+  .replace(/([,;:.!?])(?!\s|$)/g, '$1 ')
+  .split(/(\n{2,}|\s+)/)
   .filter(w => w !== undefined && w !== "")
   .map(w => w.replace(/_/g, ' '));
           
@@ -467,9 +464,6 @@ words = text
 
 const editBtn = document.getElementById('editBtn');
 
-
-    function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = (info.style.display === "flex") ? "none" : "flex"; info.scrollIntoView({ behavior: 'smooth' }); }
-    function copyToClipboard() { const addr = document.getElementById("cryptoAddr"); const hint = document.getElementById("copyHint"); const text = addr.innerText; navigator.clipboard.writeText(text).then(() => { addr.innerText = "Copied!"; addr.style.color = "#00ff00"; setTimeout(() => { addr.innerText = text; addr.style.color = "#fff"; }, 1500); }); }
 document.getElementById('inputText').addEventListener('touchmove', (e) => {
     e.stopPropagation();
 }, { passive: true });
@@ -498,21 +492,26 @@ function releaseWakeLock() {
         stopReading();
     };
 
-// Универсальный фикс бага вьюпорта iOS Safari при смене ориентации экрана
-function resetViewport() {
+// Жесткая фиксация в пикселях: исключает баги рендеринга vh/dvh в Safari
+function forcePixelHeightFix() {
+    const computedHeight = window.innerHeight;
+    document.documentElement.style.height = computedHeight + 'px';
+    document.body.style.height = computedHeight + 'px';
     window.scrollTo(0, 0);
-    document.body.scrollTop = 0;
-    document.documentElement.scrollTop = 0;
 }
-window.addEventListener('resize', resetViewport);
+
+window.addEventListener('resize', forcePixelHeightFix);
 window.addEventListener('orientationchange', () => {
-    setTimeout(resetViewport, 50);
-    setTimeout(resetViewport, 250);
+    // Серия тайм-аутов полностью нивелирует задержку Safari на перерисовку панелей
+    setTimeout(forcePixelHeightFix, 30);
+    setTimeout(forcePixelHeightFix, 150);
+    setTimeout(forcePixelHeightFix, 400);
 });
+
+forcePixelHeightFix();
+
 document.addEventListener('scroll', (e) => {
-    if (window.scrollY !== 0) {
-        resetViewport();
-    }
+    if (window.scrollY !== 0) window.scrollTo(0, 0);
 }, { passive: true });
 </script> 
 </body>
