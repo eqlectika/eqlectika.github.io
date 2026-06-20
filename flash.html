@@ -6,11 +6,41 @@
   <link rel="manifest" href="manifest-flash.json">
   <title>Fast Reading Converter</title>
   <style>
-    html, body {
-      overscroll-behavior: none; min-height: 100dvh; margin: 0; padding: 0;
+html, body {
+      overscroll-behavior: none; 
+      height: 100vh; /* Стабильный фолбек */
+      height: var(--app-height, 100vh); /* Фиксированная высота через JS */
+      margin: 0; padding: 0;
       background-color: #000000; color: #fff; font-family: Arial, sans-serif;
-      overflow-y: auto;
+      overflow: hidden; /* Предотвращаем внутренний скролл всего экрана */
       -webkit-user-select: none; user-select: none;
+    }
+
+    #logoContainer {
+      position: absolute; 
+      top: calc(env(safe-area-inset-top, 0px) + 20px); /* Учитываем челку/панель */
+      left: 50%; 
+      transform: translateX(-50%); 
+      z-index: 120;
+    }
+
+    #inputContainer { 
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) + 80px); /* Динамический отступ сверху */
+      left: 0;
+      flex-shrink: 0; padding: 0px 5px 0px; 
+      z-index: 100; width: 100%; display: flex; flex-direction: column; 
+      align-items: center; box-sizing: border-box; transition: opacity 0.5s ease;
+    }
+
+    .footer-block { 
+      z-index: 100; width: 100%;
+      display: flex; flex-direction: column; align-items: center; 
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      padding-top: 20px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 20px);
     }
 
     #container {
@@ -22,24 +52,8 @@
       pointer-events: none;
     }
 
-.footer-block { 
-      z-index: 100; width: 100%;
-      display: flex; flex-direction: column; align-items: center; 
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      padding-top: 20px;
-      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 20px);
-    }
 
-#inputContainer { 
-      position: fixed;
-      top: 80px; /* Отступ сверху, чтобы не перекрывать логотип */
-      left: 0;
-      flex-shrink: 0; padding: 0px 5px 0px; 
-      z-index: 100; width: 100%; display: flex; flex-direction: column; 
-      align-items: center; box-sizing: border-box; transition: opacity 0.5s ease;
-    }
+
 
     #mainButtons, #backBtn {
       position: relative;
@@ -165,7 +179,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
   border-radius: 0px; font-size: 16px; outline: none; 
   box-sizing: border-box; display: block;
   font-family: Arial, sans-serif;
-  height: 220px;
+  height: 30vh;
   resize: none;
   overflow-y: auto;
   touch-action: pan-y !important;
@@ -418,7 +432,14 @@ function releaseWakeLock() {
         stopReading();
     };
 
-
+function resetHeight() {
+        document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+    }
+    window.addEventListener('resize', resetHeight);
+    window.addEventListener('orientationchange', () => {
+        setTimeout(resetHeight, 100); // Небольшой таймаут для iOS, чтобы браузер успел пересчитать геометрию
+    });
+    resetHeight();
 </script> 
 </body>
 </html>
