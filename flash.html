@@ -9,7 +9,7 @@
     html, body {
       overscroll-behavior: none; min-height: 100dvh; margin: 0; padding: 0;
       background-color: #000000; color: #fff; font-family: Arial, sans-serif;
-      overflow-y: auto;
+      overflow: hidden;
       -webkit-user-select: none; user-select: none;
     }
 
@@ -160,7 +160,7 @@
       transform: translate(-50%, -50%) scale(1);
       filter: blur(20px); 
       transition: transform 0.4s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 1.0s linear, filter 0.7s 0.8s ease-in;
-    }}
+    }
 
     body.is-reading .footer-block { 
       position: fixed;
@@ -497,7 +497,17 @@ function releaseWakeLock() {
         stopReading();
     };
 
-
+// Исправление бага сдвига интерфейса в iOS Safari при смене ориентации экрана
+window.addEventListener('resize', () => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+});
+window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+        window.scrollTo(0, 0);
+    }, 100);
+});
 </script> 
 </body>
 </html>
