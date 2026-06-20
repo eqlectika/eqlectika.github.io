@@ -244,7 +244,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
 }
 #logoContainer {
   position: fixed;
-  top: calc(10px + 30vh + 170px); 
+  top: calc(10px + 30vh + 120px); 
   left: 50%;
   transform: translateX(-50%);
   z-index: 120;
@@ -255,19 +255,6 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
 body.is-reading #logoContainer { 
   opacity: 0; 
   pointer-events: none; 
-}
-
-    @media screen and (orientation: landscape) {
-  html, body {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vh !important;
-    height: 100vw !important;
-    transform: rotate(-90deg);
-    transform-origin: bottom left;
-    bottom: 0;
-    overflow: hidden;
-  }
 }
   </style>
 </head>
@@ -287,7 +274,6 @@ body.is-reading #logoContainer {
     <div id="settingsContainer">
         <div id="colorControl" class="setting-btn">Background Color</div>
         <div id="textColorControl" class="setting-btn">Text Color</div>
-        <div id="inversionControl" class="setting-btn">Inversion</div>
     </div>
 
   <div class="footer-block">
@@ -318,7 +304,6 @@ body.is-reading #logoContainer {
     const slowerBtn = document.getElementById('slowerBtn');
     const colorControl = document.getElementById('colorControl');
     const textColorControl = document.getElementById('textColorControl');
-    const inversionControl = document.getElementById('inversionControl');
 
     const accelBtn = document.getElementById('accelBtn');
 
@@ -327,9 +312,6 @@ body.is-reading #logoContainer {
     
     let colorIndex = parseInt(localStorage.getItem('reading_colorIndex')) || 0;
     let textColorIndex = parseInt(localStorage.getItem('reading_textColorIndex')) || 0;
-    let inversionActive = localStorage.getItem('reading_inversionActive') === 'true';
-    let transitionInterval = null;
-    let inversionLevel = inversionActive ? 100 : 0;
     let wakeLock = null;
     
     let words = [], index = 0, timer = null, isPaused = false, isReading = false;
@@ -338,33 +320,6 @@ body.is-reading #logoContainer {
 
     document.body.style.backgroundColor = colors[colorIndex];
     inputText.value = localStorage.getItem('reading_text') || "";
-
-    function applyInversionFilter() {
-        document.documentElement.style.filter = `invert(${inversionLevel}%)`;
-    }
-    applyInversionFilter();
-
-    function toggleInversion() {
-        if (transitionInterval) clearInterval(transitionInterval);
-        inversionActive = !inversionActive;
-        localStorage.setItem('reading_inversionActive', inversionActive);
-        
-        const target = inversionActive ? 100 : 0;
-        
-        transitionInterval = setInterval(() => {
-            if (inversionLevel === target) {
-                clearInterval(transitionInterval);
-                return;
-            }
-            inversionLevel += (inversionActive ? 5 : -5);
-            applyInversionFilter();
-        }, 15);
-    }
-
-    inversionControl.onclick = (e) => {
-        e.stopPropagation();
-        toggleInversion();
-    };
 
     function updateFontSize(text, el) {
         const maxWidth = window.innerWidth * 0.9;
@@ -502,7 +457,7 @@ words = text
     fasterBtn.onclick = (e) => { e.stopPropagation(); interval = Math.max(50, interval - 50); localStorage.setItem('reading_interval', interval); };
     slowerBtn.onclick = (e) => { e.stopPropagation(); interval += 50; localStorage.setItem('reading_interval', interval); };
     colorControl.onclick = (e) => { e.stopPropagation(); colorIndex = (colorIndex + 1) % colors.length; document.body.style.backgroundColor = colors[colorIndex]; localStorage.setItem('reading_colorIndex', colorIndex); };
-    textColorControl.onclick = (e) => { e.stopPropagation(); textColorIndex = (textColorIndex + 1) % textColors.length; localStorage.setItem('reading_textColorIndex', textColorIndex); textColorControl.style.color = textColors[textColorIndex]; setTimeout(() => { textColorControl.style.color = 'rgba(255, 255, 255, 0.62)'; }, 300); };
+    textColorControl.onclick = (e) => { e.stopPropagation(); textColorIndex = (textColorIndex + 1) % textColors.length; localStorage.setItem('reading_textColorIndex', textColorIndex); textColorControl.style.color = textColors[textColorIndex]; setTimeout(() => { textColorControl.style.color = 'rgba(255, 255, 255, 0.38)'; }, 300); };
 
     const handleExit = (e) => {
         e.preventDefault();
