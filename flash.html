@@ -22,24 +22,23 @@
       pointer-events: none;
     }
 
-    .footer-block { 
+.footer-block { 
       z-index: 100; width: 100%;
       display: flex; flex-direction: column; align-items: center; 
-      position: relative;
-      padding-top: 100px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      padding-top: 20px;
       padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 20px);
     }
 
-    #inputContainer { 
-      position: relative; flex-shrink: 0; padding: 0px 5px 0px; 
+#inputContainer { 
+      position: fixed;
+      top: 80px; /* Отступ сверху, чтобы не перекрывать логотип */
+      left: 0;
+      flex-shrink: 0; padding: 0px 5px 0px; 
       z-index: 100; width: 100%; display: flex; flex-direction: column; 
       align-items: center; box-sizing: border-box; transition: opacity 0.5s ease;
-    }
-
-
-
-    .footer-block {
-      z-index: 100;
     }
 
     #mainButtons, #backBtn {
@@ -140,7 +139,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
 
     body.is-paused #backBtn { display: block; }
     #startBtn { background: #fff; color: #000; font-weight: bold; border: none; min-width: 100px; }
-    body.is-reading #startBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn { 
+    body.is-reading #startBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn, body.is-reading #accelBtn { 
       opacity: 0.38; background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.38); 
     }
 
@@ -152,10 +151,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
       font-size: 11px; opacity: 1.0; color: #fff;
     }
     
-    body.is-reading #accelBtn { 
-      display: none; 
-    }
-    
+
     
     
 
@@ -169,7 +165,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
   border-radius: 0px; font-size: 16px; outline: none; 
   box-sizing: border-box; display: block;
   font-family: Arial, sans-serif;
-  height: 30vh;
+  height: 220px;
   resize: none;
   overflow-y: auto;
   touch-action: pan-y !important;
@@ -202,6 +198,8 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
 
 
     <div id="mainButtons">
+        <button id="editBtn" style="display: none; background: rgba(255,255,255,0.1); border: 2px solid rgba(255, 255, 255, 1.0); z-index: 210;">Edit</button>
+
     <button id="backBtn">One item back</button>
 
  <div class="button-row">
@@ -211,7 +209,6 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
   <button id="fasterBtn">Faster</button>
 </div>
 
-        <button id="editBtn" style="display: none; background: rgba(255,255,255,0.1); border: 2px solid rgba(255, 255, 255, 1.0); z-index: 210;">Edit</button>
 
       <button id="accelBtn" class="setting-btn">Dynamic Accel: OFF</button>
     </div>
@@ -381,7 +378,7 @@ words = text
     fasterBtn.onclick = (e) => { e.stopPropagation(); interval = Math.max(50, interval - 50); localStorage.setItem('reading_interval', interval); };
     slowerBtn.onclick = (e) => { e.stopPropagation(); interval += 50; localStorage.setItem('reading_interval', interval); };
     colorControl.onclick = (e) => { e.stopPropagation(); colorIndex = (colorIndex + 1) % colors.length; document.body.style.backgroundColor = colors[colorIndex]; localStorage.setItem('reading_colorIndex', colorIndex); };
-    textColorControl.onclick = (e) => { e.stopPropagation(); textColorIndex = (textColorIndex + 1) % textColors.length; localStorage.setItem('reading_textColorIndex', textColorIndex); textColorControl.style.color = textColors[textColorIndex]; setTimeout(() => { textColorControl.style.color = 'rgba(255, 255, 255, 0.38)'; }, 300); };
+    textColorControl.onclick = (e) => { e.stopPropagation(); textColorIndex = (textColorIndex + 1) % textColors.length; localStorage.setItem('reading_textColorIndex', textColorIndex); textColorControl.style.color = textColors[textColorIndex]; setTimeout(() => { textColorControl.style.color = 'rgba(255, 255, 255, 0.62)'; }, 300); };
 
     const handleExit = (e) => {
         e.preventDefault();
