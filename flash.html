@@ -7,14 +7,10 @@
   <title>Fast Reading Converter</title>
   <style>
     html, body {
-      overscroll-behavior: none; margin: 0; padding: 0;
+      overscroll-behavior: none; min-height: 100dvh; margin: 0; padding: 0;
       background-color: #000000; color: #fff; font-family: Arial, sans-serif;
-      overflow: hidden;
+      overflow-y: auto;
       -webkit-user-select: none; user-select: none;
-      width: 100%;
-      /* Полностью уходим от vh/dvh во избежание багов сдвига футера */
-      height: 100px; 
-      position: fixed; top: 0; left: 0;
     }
 
     #container {
@@ -26,6 +22,25 @@
       pointer-events: none;
     }
 
+    .footer-block { 
+      z-index: 100; width: 100%;
+      display: flex; flex-direction: column; align-items: center; 
+      position: relative;
+      padding-top: 100px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 20px);
+    }
+
+    #inputContainer { 
+      position: relative; flex-shrink: 0; padding: 0px 5px 0px; 
+      z-index: 100; width: 100%; display: flex; flex-direction: column; 
+      align-items: center; box-sizing: border-box; transition: opacity 0.5s ease;
+    }
+
+
+
+    .footer-block {
+      z-index: 100;
+    }
 
     #mainButtons, #backBtn {
       position: relative;
@@ -40,97 +55,11 @@
       z-index: 210 !important;
     }
 
-#inputContainer, 
-#settingsContainer, 
-.footer-block {
-  background: transparent !important; /* Никаких градиентов и заливок */
-}
 
-/* Инпут теперь всегда зафиксирован вверху под логотипом */
-    #inputContainer { 
-      position: fixed;
-      top: 10px; 
-      left: 0;
-      width: 100%;
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      box-sizing: border-box; 
-      padding: 0 10px;
-      z-index: 100; 
-      transition: opacity 0.5s ease;
-    }
-
-    /* Настройки зафиксированы по центру под текстовым полем */
-    #settingsContainer {
-      position: fixed;
-      top: calc(20px + 30vh + 20px);
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      gap: 5px; 
-      z-index: 110;
-      transition: opacity 0.5s ease;
-    }
-
-    /* Нижний блок с кнопками управления намертво прижат к низу */
-    .footer-block { 
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      z-index: 100; 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      padding-top: 40px;
-      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
-      background: linear-gradient(to top, #000000 85%, rgba(0,0,0,0));
-    }
     .footer-block > *, #mainButtons > button, #accelBtn { pointer-events: auto; }
 
-#mainButtons { 
-      position: relative;
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      gap: 5px; 
-      width: 100%;
-    }
-
-    /* Ряд із трьома головними кнопками тепер має фіксовану висоту і не стрибає */
-    .button-row { 
-      display: flex; 
-      align-items: center; 
-      justify-content: center;
-      gap: 8px; 
-      width: 90%;
-      max-width: 400px;
-      height: 45px; /* Жорстко фіксує вертикальний рівень для цих кнопок */
-    }
-
-    .button-row button {
-      flex: 1;
-      min-width: 90px;
-      white-space: nowrap;
-      text-align: center;
-    }
-
-    /* Кнопка Edit більше не виштовхує ряд вгору, бо вона позиціонується абсолютно */
-    body.is-paused #editBtn { 
-      display: block !important; 
-      opacity: 1 !important; 
-      visibility: visible !important;
-      position: absolute;
-      top: -50px; /* Стає строго над кнопками керування */
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 210 !important;
-      width: auto;
-      min-width: 100px;
-    }
+    #mainButtons { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .button-row { display: flex; align-items: center; gap: 5px; }
 
     .word-layer {
       position: fixed; top: 50%; left: 50%; 
@@ -164,7 +93,7 @@
       transform: translate(-50%, -50%) scale(1);
       filter: blur(20px); 
       transition: transform 0.4s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 1.0s linear, filter 0.7s 0.8s ease-in;
-    }
+    }}
 
     body.is-reading .footer-block { 
       position: fixed;
@@ -189,10 +118,14 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
       position: relative; z-index: 110;
     }
 
+    #settingsContainer {
+      display: flex; flex-direction: column; align-items: center; gap: 0px; margin: 20px 0; z-index: 110;
+    }
+
     .setting-btn {
       display: inline-flex; align-items: center; justify-content: center;
       width: auto; min-width: 150px; border: 0px solid rgba(255, 255, 255, 0.0);
-      border-radius: 4px; padding: 6px; font-size: 14px;
+      border-radius: 2px; padding: 12px 20px; font-size: 12px;
       cursor: pointer; color: rgba(255, 255, 255, 0.62); background: transparent;
     }
 
@@ -207,31 +140,31 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
 
     body.is-paused #backBtn { display: block; }
     #startBtn { background: #fff; color: #000; font-weight: bold; border: none; min-width: 100px; }
-    body.is-reading #startBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn, body.is-reading #accelBtn{ 
+    body.is-reading #startBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn { 
       opacity: 0.38; background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.38); 
     }
 
     body.is-paused #startBtn { background: #fff; color: #000; opacity: 1; }
 
     #accelBtn {
-      display: inline-flex; 
-      margin-top: 10px; 
-      border-radius: 4px; 
-      width: auto; 
-      padding: 10px;
-      min-width: 150px; 
-      border: 2px solid rgba(255, 255, 255, 0.38);
-      font-size: 12px; opacity: 1.0; color: #fff;
+      display: inline-flex; margin-top: 10px; border-radius: 4px; 
+      width: auto; min-width: 150px; border: 2px solid rgba(255, 255, 255, 0.38);
+      font-size: 11px; opacity: 1.0; color: #fff;
     }
     
-
+    body.is-reading #accelBtn { 
+      display: none; 
+    }
+    
+    
+    
 
 #inputText {
   -webkit-user-select: text !important;
   user-select: text !important;
   pointer-events: auto !important;
-  width: 100%; max-width: 650px; min-height: 190px;
-  padding: 14px 12px; background: rgba(255,255,255,0.05); 
+  width: 90%; max-width: 650px; min-height: 190px;
+  padding: 10px 14px; background: rgba(255,255,255,0.05); 
   color: #fff; border: 2px solid rgba(255,255,255,0.38); 
   border-radius: 0px; font-size: 16px; outline: none; 
   box-sizing: border-box; display: block;
@@ -242,35 +175,21 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
   touch-action: pan-y !important;
 }
 
-#inputText::placeholder {
-  color: rgba(255, 255, 255, 0.5); /* Белый цвет с прозрачностью 40% */
-  opacity: 1; /* Переопределяет дефолтную прозрачность в Firefox */
-}
-#logoContainer {
-  position: fixed;
-  top: calc(10px + 30vh + 120px); 
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 120;
-  transition: opacity 0.5s ease;
-}
 
-/* Скрываем логотип во время чтения, как и настройки */
-body.is-reading #logoContainer { 
-  opacity: 0; 
-  pointer-events: none; 
-}
   </style>
 </head>
 <body>
   <script src="pwa-init.js"></script>
-<div id="logoContainer">
-  <a href="index.html" style="text-decoration: none;">
-    <img src="logo.png" alt="Logo" style="max-width: 48px; opacity: 0.9;">
-  </a>
-</div>
+  <div id="logoContainer" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 120;">
+    <a href="index.html" style="text-decoration: none;">
+      <img src="logo.png" alt="Logo" style="max-width: 48px; opacity: 0.9;">
+    </a>
+  </div>
 
   <div id="container"></div>
+
+
+  <div class="footer-block">
     <div id="inputContainer">
       <textarea id="inputText" placeholder="Paste your text here and press Start..."></textarea>
     </div>
@@ -280,7 +199,8 @@ body.is-reading #logoContainer {
         <div id="textColorControl" class="setting-btn">Text Color</div>
     </div>
 
-  <div class="footer-block">
+
+
     <div id="mainButtons">
     <button id="backBtn">One item back</button>
 
@@ -358,6 +278,7 @@ function showNext() {
 
         clearOldWord(isLongHold);
 
+        // Всегда создаем элемент, если это не пустая строка или разделитель
         if (displayTxt !== " " && !displayTxt.includes('|')) {
             const newEl = document.createElement('div');
             newEl.className = 'word-layer word-enter';
@@ -368,23 +289,27 @@ function showNext() {
             requestAnimationFrame(() => setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20));
         }
 
+// Логика пауз
 let pauses = 1;
 
 if (rawTxt.match(/\n{2,}/)) {
-    pauses = 5.0;
+    pauses = 5.0; // Пауза для нового абзаца
 } else if (rawTxt.includes('|')) {
-    pauses = 5.0;
+    pauses = 5.0; // Специальный разделитель
 } else if (rawTxt === " " || rawTxt.match(/\s+/)) {
-    pauses = 1.0;
+    pauses = 1.0; // Обычный пробел (без паузы)
 } else {
-    if (/[;,]/.test(rawTxt)) pauses = 3.0;
-    else if (/:/.test(rawTxt)) pauses = 3.0;
-    else if (/[.!?—]/.test(rawTxt)) pauses = 4.5;
+    // Проверка знаков препинания
+    if (/[;,]/.test(rawTxt)) pauses = 3.0;         // Запятая, точка с запятой
+    else if (/:/.test(rawTxt)) pauses = 3.0;       // Двоеточие
+    else if (/[.!?—]/.test(rawTxt)) pauses = 4.5;  // Точка, воскл/вопр знаки, тире
     
+    // Дополнительная задержка для длинных слов
     if (rawTxt.length > 8) pauses += 0.38;
     if (isLongHold) pauses += 2.0;
 }
 
+        // Ускорение
         let currentInterval = interval;
         if (isDynamicAccel && words.length > 1) {
             let progress = index / (words.length - 1);
@@ -414,6 +339,7 @@ if (rawTxt.match(/\n{2,}/)) {
         e.stopPropagation();
         isDynamicAccel = !isDynamicAccel;
         accelBtn.textContent = `Dynamic Accel: ${isDynamicAccel ? 'ON' : 'OFF'}`;
+
     };
 
     startBtn.onclick = (e) => {
@@ -423,8 +349,8 @@ if (rawTxt.match(/\n{2,}/)) {
             if (!text) return;
             localStorage.setItem('reading_text', text);
 words = text
-  .replace(/([,;:.!?])(?!\s|$)/g, '$1 ')
-  .split(/(\n{2,}|\s+)/)
+  .replace(/([,;:.!?])(?!\s|$)/g, '$1 ') // Гарантируем пробел после знака
+  .split(/(\n{2,}|\s+)/)                 // Делим по двойным переносам или пробелам
   .filter(w => w !== undefined && w !== "")
   .map(w => w.replace(/_/g, ' '));
           
@@ -464,6 +390,9 @@ words = text
 
 const editBtn = document.getElementById('editBtn');
 
+
+    function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = (info.style.display === "flex") ? "none" : "flex"; info.scrollIntoView({ behavior: 'smooth' }); }
+    function copyToClipboard() { const addr = document.getElementById("cryptoAddr"); const hint = document.getElementById("copyHint"); const text = addr.innerText; navigator.clipboard.writeText(text).then(() => { addr.innerText = "Copied!"; addr.style.color = "#00ff00"; setTimeout(() => { addr.innerText = text; addr.style.color = "#fff"; }, 1500); }); }
 document.getElementById('inputText').addEventListener('touchmove', (e) => {
     e.stopPropagation();
 }, { passive: true });
@@ -492,27 +421,7 @@ function releaseWakeLock() {
         stopReading();
     };
 
-// Жесткая фиксация в пикселях: исключает баги рендеринга vh/dvh в Safari
-function forcePixelHeightFix() {
-    const computedHeight = window.innerHeight;
-    document.documentElement.style.height = computedHeight + 'px';
-    document.body.style.height = computedHeight + 'px';
-    window.scrollTo(0, 0);
-}
 
-window.addEventListener('resize', forcePixelHeightFix);
-window.addEventListener('orientationchange', () => {
-    // Серия тайм-аутов полностью нивелирует задержку Safari на перерисовку панелей
-    setTimeout(forcePixelHeightFix, 30);
-    setTimeout(forcePixelHeightFix, 150);
-    setTimeout(forcePixelHeightFix, 400);
-});
-
-forcePixelHeightFix();
-
-document.addEventListener('scroll', (e) => {
-    if (window.scrollY !== 0) window.scrollTo(0, 0);
-}, { passive: true });
 </script> 
 </body>
 </html>
