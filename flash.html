@@ -20,7 +20,7 @@ html, body {
 
     #logoContainer {
       position: absolute; 
-      top: calc(env(safe-area-inset-top, 0px) + 20px); /* Учитываем челку/панель */
+      bottom: calc(env(safe-area-inset-top, 0px) + 10px); /* Учитываем челку/панель */
       left: 50%; 
       transform: translateX(-50%); 
       z-index: 120;
@@ -28,7 +28,7 @@ html, body {
 
     #inputContainer { 
       position: fixed;
-      top: calc(env(safe-area-inset-top, 0px) + 60px); /* Динамический отступ сверху */
+      top: calc(env(safe-area-inset-top, 0px) + 10px); /* Динамический отступ сверху */
       left: 0;
       flex-shrink: 0; padding: 0px 5px 0px; 
       z-index: 100; width: 100%; display: flex; flex-direction: column; 
@@ -42,7 +42,7 @@ html, body {
       bottom: 0;
       left: 0;
       padding-top: 20px;
-      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 10px);
+      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 90px);
     }
 
     #container {
@@ -192,7 +192,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
 </head>
 <body>
   <script src="pwa-init.js"></script>
-  <div id="logoContainer" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 120;">
+  <div id="logoContainer" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 120;">
     <a href="index.html" style="text-decoration: none;">
       <img src="logo.png" alt="Logo" style="max-width: 48px; opacity: 0.9;">
     </a>
@@ -209,6 +209,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
     <div id="settingsContainer">
         <div id="colorControl" class="setting-btn">Background Color</div>
         <div id="textColorControl" class="setting-btn">Text Color</div>
+        <div id="inversionControl" class="setting-btn">Inversion</div>
     </div>
 
 
@@ -241,7 +242,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
     const slowerBtn = document.getElementById('slowerBtn');
     const colorControl = document.getElementById('colorControl');
     const textColorControl = document.getElementById('textColorControl');
-
+    const inversionControl = document.getElementById('inversionControl');
     const accelBtn = document.getElementById('accelBtn');
 
     const colors = ['#000000', '#2a0505', '#05052a', '#052a05', '#1a1a1a'];
@@ -254,7 +255,9 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
     let words = [], index = 0, timer = null, isPaused = false, isReading = false;
     let interval = parseInt(localStorage.getItem('reading_interval')) || 600;
     let isDynamicAccel = false;
-
+    let inversionActive = localStorage.getItem('reading_inversionActive') === 'true';
+    let transitionInterval = null;
+    let inversionLevel = inversionActive ? 100 : 0;
     document.body.style.backgroundColor = colors[colorIndex];
     inputText.value = localStorage.getItem('reading_text') || "";
 
@@ -268,6 +271,33 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
             el.style.fontSize = reducedSize + 'px';
         }
     }
+
+    function applyInversionFilter() {
+        document.documentElement.style.filter = `invert(${inversionLevel}%)`;
+    }
+    applyInversionFilter();
+
+    function toggleInversion() {
+        if (transitionInterval) clearInterval(transitionInterval);
+        inversionActive = !inversionActive;
+        localStorage.setItem('reading_inversionActive', inversionActive);
+        
+        const target = inversionActive ? 100 : 0;
+        
+        transitionInterval = setInterval(() => {
+            if (inversionLevel === target) {
+                clearInterval(transitionInterval);
+                return;
+            }
+            inversionLevel += (inversionActive ? 5 : -5);
+            applyInversionFilter();
+        }, 15);
+    }
+
+    inversionControl.onclick = (e) => {
+        e.stopPropagation();
+        toggleInversion();
+    };
 
     function clearOldWord(isLongExit = false) {
         const oldEl = container.querySelector('.word-active');
