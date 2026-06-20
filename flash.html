@@ -8,27 +8,33 @@
   <link rel="manifest" href="manifest-flash.json">
   <title>Fast Reading Converter</title>
   <style>
-html, body {
+    html, body {
       overscroll-behavior: none; 
-      height: 100vh; /* Стабильный фолбек */
-      height: var(--app-height, 100vh); /* Фиксированная высота через JS */
+      height: 100vh;
+      height: var(--app-height, 100vh);
       margin: 0; padding: 0;
       background-color: #000000; color: #fff; font-family: Arial, sans-serif;
-      overflow: hidden; /* Предотвращаем внутренний скролл всего экрана */
+      overflow: hidden;
       -webkit-user-select: none; user-select: none;
     }
 
     #logoContainer {
       position: absolute; 
-      top: calc(env(safe-area-inset-top, 0px) + 10px); /* Учитываем челку/панель */
+      top: calc(env(safe-area-inset-top, 0px) + 10px);
       left: 50%; 
       transform: translateX(-50%); 
       z-index: 120;
+      transition: opacity 0.5s ease;
+    }
+
+    body.is-reading #logoContainer {
+      opacity: 0 !important;
+      pointer-events: none !important;
     }
 
     #inputContainer { 
       position: fixed;
-      top: calc(env(safe-area-inset-top, 0px) + 70px); /* Динамический отступ сверху */
+      top: calc(env(safe-area-inset-top, 0px) + 70px);
       left: 0;
       flex-shrink: 0; padding: 0px 5px 0px; 
       z-index: 100; width: 100%; display: flex; flex-direction: column; 
@@ -43,6 +49,12 @@ html, body {
       left: 0;
       padding-top: 20px;
       padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 10px);
+      pointer-events: none; /* Контейнер пропускает клики */
+    }
+
+    /* Разрешаем клики только по интерактивным элементам */
+    #inputContainer, #settingsContainer, #mainButtons, button, .setting-btn {
+      pointer-events: auto !important;
     }
 
     #container {
@@ -54,13 +66,9 @@ html, body {
       pointer-events: none;
     }
 
-
-
-
     #mainButtons, #backBtn {
       position: relative;
       z-index: 110;
-      pointer-events: auto;
     }
 
     body.is-paused #editBtn { 
@@ -69,9 +77,6 @@ html, body {
       visibility: visible !important;
       z-index: 210 !important;
     }
-
-
-    .footer-block > *, #mainButtons > button, #accelBtn { pointer-events: auto; }
 
     #mainButtons { display: flex; flex-direction: column; align-items: center; gap: 5px; }
     .button-row { display: flex; align-items: center; gap: 5px; }
@@ -108,7 +113,7 @@ html, body {
       transform: translate(-50%, -50%) scale(1);
       filter: blur(20px); 
       transition: transform 0.4s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 1.0s linear, filter 0.7s 0.8s ease-in;
-    }}
+    }
 
     body.is-reading .footer-block { 
       position: fixed;
@@ -120,11 +125,10 @@ html, body {
       flex-direction: column; 
       justify-content: flex-end;
       z-index: 200; 
-      pointer-events: none;
       padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 15px);
     }
 
-body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
+    body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none !important; }
 
     button {
       font-size: 14px; background: transparent; color: white;
@@ -144,7 +148,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
       cursor: pointer; color: rgba(255, 255, 255, 0.62); background: transparent;
     }
 
-    body.is-reading #settingsContainer { opacity: 0; pointer-events: none; }
+    body.is-reading #settingsContainer { opacity: 0; pointer-events: none !important; }
 
     #backBtn { 
       display: none; 
@@ -154,7 +158,9 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
     }
 
     body.is-paused #backBtn { display: block; }
+
     #startBtn { background: #fff; color: #000; font-weight: bold; border: none; min-width: 100px; }
+
     body.is-reading #startBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn, body.is-reading #accelBtn { 
       opacity: 0.38; background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.38); 
     }
@@ -166,28 +172,22 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
       width: auto; min-width: 150px; border: 2px solid rgba(255, 255, 255, 0.38);
       font-size: 11px; opacity: 1.0; color: #fff;
     }
-    
 
-    
-    
-
-#inputText {
-  -webkit-user-select: text !important;
-  user-select: text !important;
-  pointer-events: auto !important;
-  width: 100%; max-width: 650px; min-height: 190px;
-  padding: 10px 14px; background: rgba(255,255,255,0.05); 
-  color: #fff; border: 2px solid rgba(255,255,255,0.38); 
-  border-radius: 0px; font-size: 16px; outline: none; 
-  box-sizing: border-box; display: block;
-  font-family: Arial, sans-serif;
-  height: 30vh;
-  resize: none;
-  overflow-y: auto;
-  touch-action: pan-y !important;
-}
-
-
+    #inputText {
+      -webkit-user-select: text !important;
+      user-select: text !important;
+      pointer-events: auto !important;
+      width: 100%; max-width: 650px; min-height: 190px;
+      padding: 10px 14px; background: rgba(255,255,255,0.05); 
+      color: #fff; border: 2px solid rgba(255,255,255,0.38); 
+      border-radius: 0px; font-size: 16px; outline: none; 
+      box-sizing: border-box; display: block;
+      font-family: Arial, sans-serif;
+      height: 30vh;
+      resize: none;
+      overflow-y: auto;
+      touch-action: pan-y !important;
+    }
   </style>
 </head>
 <body>
@@ -200,37 +200,25 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
 
   <div id="container"></div>
 
-
   <div class="footer-block">
     <div id="inputContainer">
       <textarea id="inputText" placeholder="Paste your text here and press Start..."></textarea>
     </div>
 
     <div id="settingsContainer">
-        <div id="colorControl" class="setting-btn">Background Color</div>
-        <div id="textColorControl" class="setting-btn">Text Color</div>
         <div id="inversionControl" class="setting-btn">Inversion</div>
     </div>
 
-
-
     <div id="mainButtons">
-        <button id="editBtn" style="display: none; background: rgba(255,255,255,0.1); border: 2px solid rgba(255, 255, 255, 1.0); z-index: 210;">Edit</button>
-
-    <button id="backBtn">One item back</button>
-
- <div class="button-row">
-  <button id="slowerBtn">Slower</button>
-
-  <button id="startBtn">Start</button>
-  <button id="fasterBtn">Faster</button>
-</div>
-
-
+      <button id="editBtn" style="display: none; background: rgba(255,255,255,0.1); border: 2px solid rgba(255, 255, 255, 1.0); z-index: 210;">Edit</button>
+      <button id="backBtn">One item back</button>
+      <div class="button-row">
+        <button id="slowerBtn">Slower</button>
+        <button id="startBtn">Start</button>
+        <button id="fasterBtn">Faster</button>
+      </div>
       <button id="accelBtn" class="setting-btn">Dynamic Accel: OFF</button>
     </div>
-
-    
   </div>
 
 <script>
@@ -240,10 +228,9 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
     const backBtn = document.getElementById('backBtn');
     const fasterBtn = document.getElementById('fasterBtn');
     const slowerBtn = document.getElementById('slowerBtn');
-    const colorControl = document.getElementById('colorControl');
-    const textColorControl = document.getElementById('textColorControl');
     const inversionControl = document.getElementById('inversionControl');
     const accelBtn = document.getElementById('accelBtn');
+    const editBtn = document.getElementById('editBtn');
 
     const colors = ['#000000', '#2a0505', '#05052a', '#052a05', '#1a1a1a'];
     const textColors = ['#ffffff', '#ffeb3b', '#00ff00', '#ff4444', '#80cbc4', '#ffa726'];
@@ -308,7 +295,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
         }
     }
 
-function showNext() {
+    function showNext() {
         if (index >= words.length || isPaused || !isReading) {
             if (index >= words.length) stopReading();
             return;
@@ -321,7 +308,6 @@ function showNext() {
 
         clearOldWord(isLongHold);
 
-        // Всегда создаем элемент, если это не пустая строка или разделитель
         if (displayTxt !== " " && !displayTxt.includes('|')) {
             const newEl = document.createElement('div');
             newEl.className = 'word-layer word-enter';
@@ -332,27 +318,23 @@ function showNext() {
             requestAnimationFrame(() => setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20));
         }
 
-// Логика пауз
-let pauses = 1;
+        let pauses = 1;
 
-if (rawTxt.match(/\n{2,}/)) {
-    pauses = 5.0; // Пауза для нового абзаца
-} else if (rawTxt.includes('|')) {
-    pauses = 5.0; // Специальный разделитель
-} else if (rawTxt === " " || rawTxt.match(/\s+/)) {
-    pauses = 1.0; // Обычный пробел (без паузы)
-} else {
-    // Проверка знаков препинания
-    if (/[;,]/.test(rawTxt)) pauses = 3.0;         // Запятая, точка с запятой
-    else if (/:/.test(rawTxt)) pauses = 3.0;       // Двоеточие
-    else if (/[.!?—]/.test(rawTxt)) pauses = 4.5;  // Точка, воскл/вопр знаки, тире
-    
-    // Дополнительная задержка для длинных слов
-    if (rawTxt.length > 8) pauses += 0.38;
-    if (isLongHold) pauses += 2.0;
-}
+        if (rawTxt.match(/\n{2,}/)) {
+            pauses = 5.0;
+        } else if (rawTxt.includes('|')) {
+            pauses = 5.0;
+        } else if (rawTxt === " " || rawTxt.match(/\s+/)) {
+            pauses = 1.0;
+        } else {
+            if (/[;,]/.test(rawTxt)) pauses = 3.0;
+            else if (/:/.test(rawTxt)) pauses = 3.0;
+            else if (/[.!?—]/.test(rawTxt)) pauses = 4.5;
+            
+            if (rawTxt.length > 8) pauses += 0.38;
+            if (isLongHold) pauses += 2.0;
+        }
 
-        // Ускорение
         let currentInterval = interval;
         if (isDynamicAccel && words.length > 1) {
             let progress = index / (words.length - 1);
@@ -368,7 +350,7 @@ if (rawTxt.match(/\n{2,}/)) {
         timer = setTimeout(showNext, currentInterval * pauses);
     }
 
-        function stopReading() {
+    function stopReading() {
         releaseWakeLock();
         clearTimeout(timer);
         isReading = false; isPaused = false;
@@ -376,13 +358,11 @@ if (rawTxt.match(/\n{2,}/)) {
         startBtn.textContent = 'Start';
         container.innerHTML = '';
     }
-    
 
     accelBtn.onclick = (e) => {
         e.stopPropagation();
         isDynamicAccel = !isDynamicAccel;
         accelBtn.textContent = `Dynamic Accel: ${isDynamicAccel ? 'ON' : 'OFF'}`;
-
     };
 
     startBtn.onclick = (e) => {
@@ -391,18 +371,17 @@ if (rawTxt.match(/\n{2,}/)) {
             const text = inputText.value.trim();
             if (!text) return;
             localStorage.setItem('reading_text', text);
-words = text
-  .replace(/([,;:.!?])(?!\s|$)/g, '$1 ') // Гарантируем пробел после знака
-  .split(/(\n{2,}|\s+)/)                 // Делим по двойным переносам или пробелам
-  .filter(w => w !== undefined && w !== "")
-  .map(w => w.replace(/_/g, ' '));
-          
+            words = text
+              .replace(/([,;:.!?])(?!\s|$)/g, '$1 ')
+              .split(/(\n{2,}|\s+)/)
+              .filter(w => w !== undefined && w !== "")
+              .map(w => w.replace(/_/g, ' '));
+              
             index = 0; isReading = true; isPaused = false;
             document.body.classList.add('is-reading');
             startBtn.textContent = 'Pause';
             requestWakeLock();
             showNext();
-            
         } else {
             isPaused = !isPaused;
             document.body.classList.toggle('is-paused', isPaused);
@@ -423,53 +402,40 @@ words = text
 
     fasterBtn.onclick = (e) => { e.stopPropagation(); interval = Math.max(50, interval - 50); localStorage.setItem('reading_interval', interval); };
     slowerBtn.onclick = (e) => { e.stopPropagation(); interval += 50; localStorage.setItem('reading_interval', interval); };
-    colorControl.onclick = (e) => { e.stopPropagation(); colorIndex = (colorIndex + 1) % colors.length; document.body.style.backgroundColor = colors[colorIndex]; localStorage.setItem('reading_colorIndex', colorIndex); };
-    textColorControl.onclick = (e) => { e.stopPropagation(); textColorIndex = (textColorIndex + 1) % textColors.length; localStorage.setItem('reading_textColorIndex', textColorIndex); textColorControl.style.color = textColors[textColorIndex]; setTimeout(() => { textColorControl.style.color = 'rgba(255, 255, 255, 0.62)'; }, 300); };
 
-    const handleExit = (e) => {
-        e.preventDefault();
-        stopReading();
-    };
-
-const editBtn = document.getElementById('editBtn');
-
-
-    function toggleDonate() { const info = document.getElementById("cryptoInfo"); info.style.display = (info.style.display === "flex") ? "none" : "flex"; info.scrollIntoView({ behavior: 'smooth' }); }
-    function copyToClipboard() { const addr = document.getElementById("cryptoAddr"); const hint = document.getElementById("copyHint"); const text = addr.innerText; navigator.clipboard.writeText(text).then(() => { addr.innerText = "Copied!"; addr.style.color = "#00ff00"; setTimeout(() => { addr.innerText = text; addr.style.color = "#fff"; }, 1500); }); }
-document.getElementById('inputText').addEventListener('touchmove', (e) => {
-    e.stopPropagation();
-}, { passive: true });
-
-
-async function requestWakeLock() {
-    try {
-        if ('wakeLock' in navigator) {
-            wakeLock = await navigator.wakeLock.request('screen');
-        }
-    } catch (err) {
-        console.error(err);
-    }
-}
-
-function releaseWakeLock() {
-    if (wakeLock !== null) {
-        wakeLock.release();
-        wakeLock = null;
-    }
-}
-    
     editBtn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
         stopReading();
     };
 
-function resetHeight() {
+    document.getElementById('inputText').addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+    }, { passive: true });
+
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    function releaseWakeLock() {
+        if (wakeLock !== null) {
+            wakeLock.release();
+            wakeLock = null;
+        }
+    }
+
+    function resetHeight() {
         document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
     }
     window.addEventListener('resize', resetHeight);
     window.addEventListener('orientationchange', () => {
-        setTimeout(resetHeight, 100); // Небольшой таймаут для iOS, чтобы браузер успел пересчитать геометрию
+        setTimeout(resetHeight, 100);
     });
     resetHeight();
 </script> 
