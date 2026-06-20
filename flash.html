@@ -22,25 +22,6 @@
       pointer-events: none;
     }
 
-    .footer-block { 
-      z-index: 100; width: 100%;
-      display: flex; flex-direction: column; align-items: center; 
-      position: relative;
-      padding-top: 100px;
-      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 20px);
-    }
-
-    #inputContainer { 
-      position: relative; flex-shrink: 0; padding: 0px 5px 0px; 
-      z-index: 100; width: 100%; display: flex; flex-direction: column; 
-      align-items: center; box-sizing: border-box; transition: opacity 0.5s ease;
-    }
-
-
-
-    .footer-block {
-      z-index: 100;
-    }
 
     #mainButtons, #backBtn {
       position: relative;
@@ -55,7 +36,55 @@
       z-index: 210 !important;
     }
 
+#inputContainer, 
+#settingsContainer, 
+.footer-block {
+  background: transparent !important; /* Никаких градиентов и заливок */
+}
 
+/* Инпут теперь всегда зафиксирован вверху под логотипом */
+    #inputContainer { 
+      position: fixed;
+      top: 80px; 
+      left: 0;
+      width: 100%;
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      box-sizing: border-box; 
+      padding: 0 10px;
+      z-index: 100; 
+      transition: opacity 0.5s ease;
+    }
+
+    /* Настройки зафиксированы по центру под текстовым полем */
+    #settingsContainer {
+      position: fixed;
+      top: calc(80px + 30vh + 20px);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      gap: 5px; 
+      z-index: 110;
+      transition: opacity 0.5s ease;
+    }
+
+    /* Нижний блок с кнопками управления намертво прижат к низу */
+    .footer-block { 
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      z-index: 100; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      padding-top: 40px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 50px);
+      background: linear-gradient(to top, #000000 85%, rgba(0,0,0,0));
+    }
     .footer-block > *, #mainButtons > button, #accelBtn { pointer-events: auto; }
 
     #mainButtons { display: flex; flex-direction: column; align-items: center; gap: 5px; }
@@ -118,14 +147,10 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
       position: relative; z-index: 110;
     }
 
-    #settingsContainer {
-      display: flex; flex-direction: column; align-items: center; gap: 0px; margin: 20px 0; z-index: 110;
-    }
-
     .setting-btn {
       display: inline-flex; align-items: center; justify-content: center;
       width: auto; min-width: 150px; border: 0px solid rgba(255, 255, 255, 0.0);
-      border-radius: 2px; padding: 12px 20px; font-size: 12px;
+      border-radius: 4px; padding: 12px 20px; font-size: 14px;
       cursor: pointer; color: rgba(255, 255, 255, 0.62); background: transparent;
     }
 
@@ -147,24 +172,25 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
     body.is-paused #startBtn { background: #fff; color: #000; opacity: 1; }
 
     #accelBtn {
-      display: inline-flex; margin-top: 10px; border-radius: 4px; 
-      width: auto; min-width: 150px; border: 2px solid rgba(255, 255, 255, 0.38);
-      font-size: 11px; opacity: 1.0; color: #fff;
+      display: inline-flex; 
+      margin-top: 20px; 
+      border-radius: 4px; 
+      width: auto; 
+      min-width: 150px; 
+      border: 2px solid rgba(255, 255, 255, 0.38);
+      font-size: 12px; opacity: 1.0; color: #fff;
     }
     
     body.is-reading #accelBtn { 
       display: none; 
     }
-    
-    
-    
 
 #inputText {
   -webkit-user-select: text !important;
   user-select: text !important;
   pointer-events: auto !important;
   width: 90%; max-width: 650px; min-height: 190px;
-  padding: 10px 14px; background: rgba(255,255,255,0.05); 
+  padding: 14px 12px; background: rgba(255,255,255,0.05); 
   color: #fff; border: 2px solid rgba(255,255,255,0.38); 
   border-radius: 0px; font-size: 16px; outline: none; 
   box-sizing: border-box; display: block;
@@ -175,6 +201,10 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
   touch-action: pan-y !important;
 }
 
+#inputText::placeholder {
+  color: rgba(255, 255, 255, 0.5); /* Белый цвет с прозрачностью 40% */
+  opacity: 1; /* Переопределяет дефолтную прозрачность в Firefox */
+}
 
   </style>
 </head>
@@ -187,9 +217,6 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
   </div>
 
   <div id="container"></div>
-
-
-  <div class="footer-block">
     <div id="inputContainer">
       <textarea id="inputText" placeholder="Paste your text here and press Start..."></textarea>
     </div>
@@ -199,8 +226,7 @@ body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none; }
         <div id="textColorControl" class="setting-btn">Text Color</div>
     </div>
 
-
-
+  <div class="footer-block">
     <div id="mainButtons">
     <button id="backBtn">One item back</button>
 
