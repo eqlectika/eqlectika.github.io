@@ -234,30 +234,37 @@ document.querySelectorAll('select, .ui-btn').forEach(el => {
     return Math.min(avg / 5, 1).toFixed(2);
   }
 
-  function updateRiskIndicator() {
-    const score = calculateRiskQuine();
-    const bar = document.getElementById('risk-bar');
-    const advice = document.getElementById('risk-advice');
-    
-    document.getElementById('risk-value').innerText = score;
-    bar.style.width = (score * 100) + '%';
-    
-    document.getElementById('unreal-indicator').style.color = (score > 0 && score < 0.45) ? '#ff1493' : '';
-    document.getElementById('real-indicator').style.color = (score >= 0.75) ? '#00ff00' : '';
+function updateRiskIndicator() {
+  const score = calculateRiskQuine();
+  const bar = document.getElementById('risk-bar');
+  const advice = document.getElementById('risk-advice');
+  const riskValue = document.getElementById('risk-value');
+  
+  riskValue.innerText = score;
+  bar.style.width = (score * 100) + '%';
+  
+  document.getElementById('unreal-indicator').style.color = (score > 0 && score < 0.45) ? '#ff1493' : '';
+  document.getElementById('real-indicator').style.color = (score >= 0.75) ? '#00ff00' : '';
 
-    if (score < 0.45) { 
-      bar.style.background = '#ff1493'; 
-      advice.innerText = "Systemic noise - High. Maintain total distance or initiate a fresh calibration."; 
-    }
-    else if (score < 0.75) { 
-      bar.style.background = '#ff9800'; 
-      advice.innerText = "Surface calm - De-escalate your involvement and lower the stakes."; 
-    }
-    else { 
-      bar.style.background = '#00ff00'; 
-      advice.innerText = "Clarity - Absolute. Your focus is sharp; proceed with effortless intent."; 
-    }
+  if (score < 0.45) { 
+    const color = '#ff1493';
+    bar.style.background = color; 
+    riskValue.style.color = color;
+    advice.innerText = "Systemic noise - High. Maintain total distance or initiate a fresh calibration."; 
   }
+  else if (score < 0.75) { 
+    const color = '#ff9800';
+    bar.style.background = color; 
+    riskValue.style.color = color;
+    advice.innerText = "Surface calm - De-escalate your involvement and lower the stakes."; 
+  }
+  else { 
+    const color = '#00ff00';
+    bar.style.background = color; 
+    riskValue.style.color = color;
+    advice.innerText = "Clarity - Absolute. Your focus is sharp; proceed with effortless intent."; 
+  }
+}
 
   function toggleDonate() { 
     const info = document.getElementById("cryptoInfo"); 
