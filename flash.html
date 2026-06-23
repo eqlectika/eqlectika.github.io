@@ -27,6 +27,15 @@
       transition: opacity 0.5s ease;
     }
 
+    #mainButtons {
+      position: relative;
+      z-index: 110;
+      display: none; /* <--- Изначально прячем весь блок с кнопками */
+      flex-direction: column; 
+      align-items: center; 
+      gap: 5px; 
+    }
+
     body.is-reading #logoContainer {
       opacity: 0 !important;
       pointer-events: none !important;
@@ -396,6 +405,7 @@ function clearOldWord(isLongExit = false) {
         document.body.classList.remove('is-reading', 'is-paused');
         startBtn.textContent = 'Start';
         container.innerHTML = '';
+        checkTextVisibility(); 
     }
 
     accelBtn.onclick = (e) => {
@@ -497,6 +507,29 @@ function clearOldWord(isLongExit = false) {
     window.addEventListener('resize', resetHeight);
     window.addEventListener('orientationchange', () => { setTimeout(resetHeight, 100); });
     resetHeight();
+
+  const mainButtonsBlock = document.getElementById('mainButtons');
+
+    // Функция, которая проверяет, есть ли текст, и управляет видимостью кнопок
+    function checkTextVisibility() {
+        if (inputText.value.trim().length > 0) {
+            mainButtonsBlock.style.display = 'flex'; // Показываем кнопки
+        } else {
+            mainButtonsBlock.style.display = 'none';  // Прячем, если пусто
+        }
+    }
+
+    // 1. Проверяем текст сразу при загрузке страницы (если что-то восстановилось из localStorage)
+    checkTextVisibility();
+
+    // 2. Слушаем живой ввод пользователя в текстовое поле
+    inputText.addEventListener('input', checkTextVisibility);
+
+    // 3. Подвязываем проверку к событию загрузки файла через Upload
+    fileInput.addEventListener('change', () => {
+        // Небольшой таймаут, чтобы FileReader успел записать текст в поле
+        setTimeout(checkTextVisibility, 50);
+    });
 </script> 
 </body>
 </html>
