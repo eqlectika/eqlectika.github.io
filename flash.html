@@ -65,19 +65,15 @@
       pointer-events: none;
     }
 
-    #mainButtons, #backBtn {
+    #mainButtons {
       position: relative;
       z-index: 110;
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      gap: 5px; 
     }
-
-    body.is-paused #editBtn { 
-      display: block !important; 
-      opacity: 1 !important; 
-      visibility: visible !important;
-      z-index: 210 !important;
-    }
-
-    #mainButtons { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    
     .button-row { display: flex; align-items: center; gap: 5px; }
 
     .word-layer {
@@ -149,22 +145,24 @@
 
     body.is-reading #settingsContainer { opacity: 0; pointer-events: none !important; }
 
-    #backBtn { 
-      display: none; 
-      margin-bottom: 15px;
-      background: rgba(255,255,255,0.1); 
-      z-index: 210;
-    }
+    #startBtn { background: #fff; color: #000; font-weight: bold; border: none; min-width: 90px; }
 
-    body.is-paused #backBtn { display: block; }
-
-    #startBtn { background: #fff; color: #000; font-weight: bold; border: none; min-width: 100px; }
-
-    body.is-reading #startBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn, body.is-reading #accelBtn { 
+    body.is-reading #startBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn, body.is-reading #accelBtn, body.is-reading #prevBtn, body.is-reading #nextBtn { 
       opacity: 0.38; background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.38); 
     }
 
     body.is-paused #startBtn { background: #fff; color: #000; opacity: 1; }
+    
+    /* Кнопки шага на паузе становятся ярче */
+    #prevBtn, #nextBtn { display: none; background: rgba(255,255,255,0.1); }
+    body.is-paused #prevBtn, body.is-paused #nextBtn { display: block; opacity: 1; border-color: #fff; }
+
+    body.is-paused #editBtn { 
+      display: block !important; 
+      opacity: 1 !important; 
+      visibility: visible !important;
+      z-index: 210 !important;
+    }
 
     #accelBtn {
       display: inline-flex; margin-top: 10px; border-radius: 4px; 
@@ -188,25 +186,13 @@
       touch-action: pan-y !important;
     }
 
-    /* Стили для панели инструментов загрузки */
     .toolbar {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-      width: 100%;
-      max-width: 650px;
-      justify-content: space-between;
+      display: flex; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 650px; justify-content: space-between;
     }
     .toolbar-btn {
-      font-size: 12px;
-      padding: 6px 14px;
-      border-radius: 4px;
-      border: 1px solid rgba(255,255,255,0.5);
-      background: rgba(255,255,255,0.1);
+      font-size: 12px; padding: 6px 14px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.1);
     }
-    #fileInput {
-      display: none;
-    }
+    #fileInput { display: none; }
   </style>
 </head>
 <body>
@@ -223,22 +209,21 @@
     <div id="inputContainer">
       <div class="toolbar">
         <button class="toolbar-btn" id="loadAliceBtn">📖 Load "Alice in Wonderland"</button>
-        <button class="toolbar-btn" onclick="document.getElementById('fileInput').click()">📂 Upload .txt</button>
+
+<button class="toolbar-btn" onclick="if(isReading) return; document.getElementById('fileInput').click()">📂 Upload .txt</button>
+
         <input type="file" id="fileInput" accept=".txt">
       </div>
-      <textarea id="inputText" placeholder="Paste your text here or use options above and tap Start..."></textarea>
-    </div>
-
-    <div id="settingsContainer">
-        <div id="inversionControl" class="setting-btn">inversion</div>
+      <textarea id="inputText" placeholder="Paste your text here or use options above..."></textarea>
     </div>
 
     <div id="mainButtons">
-      <button id="editBtn" style="display: none; background: rgba(255,255,255,0.1); border: 2px solid rgba(255, 255, 255, 1.0); z-index: 210;">Edit</button>
-      <button id="backBtn">One item back</button>
+      <button id="editBtn" style="display: none; background: rgba(255,255,255,0.1); border: 2px solid rgba(255, 255, 255, 1.0); z-index: 210; margin-bottom: 5px;">Edit</button>
       <div class="button-row">
         <button id="slowerBtn">Slower</button>
+        <button id="prevBtn">PREV</button>
         <button id="startBtn">Start</button>
+        <button id="nextBtn">NEXT</button>
         <button id="fasterBtn">Faster</button>
       </div>
       <button id="accelBtn" class="setting-btn">Dynamic Accel: OFF</button>
@@ -249,10 +234,11 @@
     const container = document.getElementById('container');
     const inputText = document.getElementById('inputText');
     const startBtn = document.getElementById('startBtn');
-    const backBtn = document.getElementById('backBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
     const fasterBtn = document.getElementById('fasterBtn');
     const slowerBtn = document.getElementById('slowerBtn');
-    const inversionControl = document.getElementById('inversionControl');
+
     const accelBtn = document.getElementById('accelBtn');
     const editBtn = document.getElementById('editBtn');
     const fileInput = document.getElementById('fileInput');
@@ -275,11 +261,10 @@
     document.body.style.backgroundColor = colors[colorIndex];
     inputText.value = localStorage.getItem('reading_text') || "";
 
-    // 1. Логика загрузки локального файла .txt
+    // Загрузка файла
     fileInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
-      
       const reader = new FileReader();
       reader.onload = function(evt) {
         inputText.value = evt.target.result;
@@ -288,25 +273,14 @@
       reader.readAsText(file);
     });
 
-    // 2. Встроенный текст "Алисы в стране чудес" (Глава 1 для примера)
-    const aliceText = `CHAPTER I. Down the Rabbit-Hole
-
-Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”
-
-So she was considering in her own mind (as well as she could, for the hot day made her feel very sleepy and stupid), whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a White Rabbit with pink eyes ran close by her.
-
-There was nothing so VERY remarkable in that; nor did Alice think it so VERY much out of the way to hear the Rabbit say to itself, “Oh dear! Oh dear! I shall be late!” (when she thought it over afterwards, it occurred to her that she ought to have wondered at this, but at the time it all seemed quite natural); but when the Rabbit actually TOOK A WATCH OUT OF ITS WAISTCOAT-POCKET, and looked at it, and then hurried on, Alice started to her feet, for it flashed across her mind that she had never before seen a rabbit with either a waistcoat-pocket, or a watch to take out of it, and burning with curiosity, she ran across the field after it, and fortunately was just in time to see it pop down a large rabbit-hole under the hedge.`;
+    const aliceText = `CHAPTER I. Down the Rabbit-Hole\n\nAlice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”`;
 
     loadAliceBtn.addEventListener('click', function() {
       inputText.value = aliceText;
       localStorage.setItem('reading_text', aliceText);
     });
 
-    // Безопасный клик по логотипу (сброс вместо перехода на index.html)
-    logoLink.onclick = (e) => {
-      e.preventDefault();
-      stopReading();
-    };
+    logoLink.onclick = (e) => { e.preventDefault(); stopReading(); };
 
     function updateFontSize(text, el) {
         const maxWidth = window.innerWidth * 0.9;
@@ -328,23 +302,28 @@ There was nothing so VERY remarkable in that; nor did Alice think it so VERY muc
         if (transitionInterval) clearInterval(transitionInterval);
         inversionActive = !inversionActive;
         localStorage.setItem('reading_inversionActive', inversionActive);
-        
         const target = inversionActive ? 100 : 0;
-        
         transitionInterval = setInterval(() => {
-            if (inversionLevel === target) {
-                clearInterval(transitionInterval);
-                return;
-            }
+            if (inversionLevel === target) { clearInterval(transitionInterval); return; }
             inversionLevel += (inversionActive ? 5 : -5);
             applyInversionFilter();
         }, 15);
     }
 
-    inversionControl.onclick = (e) => {
-        e.stopPropagation();
-        toggleInversion();
-    };
+document.body.addEventListener('click', (e) => {
+
+    if (
+        e.target.tagName === 'BUTTON' || 
+        e.target.tagName === 'TEXTAREA' || 
+        e.target.closest('.toolbar') || 
+        e.target.closest('#logoContainer')
+    ) {
+        return; 
+    }
+
+    toggleInversion();
+});
+
 
     function clearOldWord(isLongExit = false) {
         const oldEl = container.querySelector('.word-active');
@@ -378,22 +357,14 @@ There was nothing so VERY remarkable in that; nor did Alice think it so VERY muc
             requestAnimationFrame(() => setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20));
         }
 
+        // Логика пауз (расширенная под знаки препинания)
         let pauses = 1;
-
-        if (rawTxt.match(/\n{2,}/)) {
-            pauses = 5.0;
-        } else if (rawTxt.includes('|')) {
-            pauses = 5.0;
-        } else if (rawTxt === " " || rawTxt.match(/\s+/)) {
-            pauses = 1.0;
-        } else {
-            if (/[;,]/.test(rawTxt)) pauses = 3.0;
-            else if (/:/.test(rawTxt)) pauses = 3.0;
-            else if (/[.!?—]/.test(rawTxt)) pauses = 4.5;
-            
-            if (rawTxt.length > 8) pauses += 1.0;
-            if (isLongHold) pauses += 2.0;
-        }
+        if (/[;,]/.test(rawTxt)) pauses = 3.0;
+        else if (/:/.test(rawTxt)) pauses = 3.0;
+        else if (/[.!?—]/.test(rawTxt)) pauses = 4.5;
+        
+        if (rawTxt.length > 8) pauses += 1.0;
+        if (isLongHold) pauses += 2.0;
 
         let currentInterval = interval;
         if (isDynamicAccel && words.length > 1) {
@@ -431,10 +402,12 @@ There was nothing so VERY remarkable in that; nor did Alice think it so VERY muc
             const text = inputText.value.trim();
             if (!text) return;
             localStorage.setItem('reading_text', text);
+            
+            // НОВАЯ ЛОГИКА ИЗ MATRIX: парсим только реальные слова, сжигая пробелы
             words = text
               .replace(/([,;:.!?])(?!\s|$)/g, '$1 ')
-              .split(/(\n{2,}|\s+)/)
-              .filter(w => w !== undefined && w !== "")
+              .split(/\s+/)
+              .filter(w => w !== "")
               .map(w => w.replace(/_/g, ' '));
               
             index = 0; isReading = true; isPaused = false;
@@ -450,53 +423,52 @@ There was nothing so VERY remarkable in that; nor did Alice think it so VERY muc
         }
     };
 
-    backBtn.onclick = (e) => {
+    // Листание НАЗАД (только слова)
+    prevBtn.onclick = (e) => {
         e.stopPropagation();
-        index = Math.max(0, index - 2);
+        if (words.length === 0) return;
+        
+        index = Math.max(0, index - 2); 
         clearOldWord();
+        
         if (isPaused) {
             const wasPaused = isPaused; isPaused = false;
             showNext(); clearTimeout(timer); isPaused = wasPaused;
+        } else {
+            showNext();
+        }
+    };
+
+    // Листание ВПЕРЕД (только слова)
+    nextBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (words.length === 0 || index >= words.length) return;
+        
+        clearOldWord();
+        
+        if (isPaused) {
+            const wasPaused = isPaused; isPaused = false;
+            showNext(); clearTimeout(timer); isPaused = wasPaused;
+        } else {
+            showNext();
         }
     };
 
     fasterBtn.onclick = (e) => { e.stopPropagation(); interval = Math.max(50, interval - 50); localStorage.setItem('reading_interval', interval); };
     slowerBtn.onclick = (e) => { e.stopPropagation(); interval += 50; localStorage.setItem('reading_interval', interval); };
 
-    editBtn.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        stopReading();
-    };
+    editBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); stopReading(); };
 
-    document.getElementById('inputText').addEventListener('touchmove', (e) => {
-        e.stopPropagation();
-    }, { passive: true });
+    document.getElementById('inputText').addEventListener('touchmove', (e) => { e.stopPropagation(); }, { passive: true });
 
     async function requestWakeLock() {
-        try {
-            if ('wakeLock' in navigator) {
-                wakeLock = await navigator.wakeLock.request('screen');
-            }
-        } catch (err) {
-            console.error(err);
-        }
+        try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch (err) { console.error(err); }
     }
+    function releaseWakeLock() { if (wakeLock !== null) { wakeLock.release(); wakeLock = null; } }
 
-    function releaseWakeLock() {
-        if (wakeLock !== null) {
-            wakeLock.release();
-            wakeLock = null;
-        }
-    }
-
-    function resetHeight() {
-        document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
-    }
+    function resetHeight() { document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`); }
     window.addEventListener('resize', resetHeight);
-    window.addEventListener('orientationchange', () => {
-        setTimeout(resetHeight, 100);
-    });
+    window.addEventListener('orientationchange', () => { setTimeout(resetHeight, 100); });
     resetHeight();
 </script> 
 </body>
