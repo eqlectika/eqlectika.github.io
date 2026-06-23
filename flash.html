@@ -34,9 +34,9 @@
 
     #inputContainer { 
       position: fixed;
-      top: calc(env(safe-area-inset-top, 0px) + 70px);
+      top: calc(env(safe-area-inset-top, 0px) + 40px);
       left: 0;
-      flex-shrink: 0; padding: 0px 5px 0px; 
+      flex-shrink: 0; padding: 0px 15px; 
       z-index: 100; width: 100%; display: flex; flex-direction: column; 
       align-items: center; box-sizing: border-box; transition: opacity 0.5s ease;
     }
@@ -49,11 +49,10 @@
       left: 0;
       padding-top: 20px;
       padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 10px);
-      pointer-events: none; /* Контейнер пропускает клики */
+      pointer-events: none;
     }
 
-    /* Разрешаем клики только по интерактивным элементам */
-    #inputContainer, #settingsContainer, #mainButtons, button, .setting-btn {
+    #inputContainer, #settingsContainer, #mainButtons, button, .setting-btn, .toolbar {
       pointer-events: auto !important;
     }
 
@@ -138,13 +137,13 @@
     }
 
     #settingsContainer {
-      display: flex; flex-direction: column; align-items: center; gap: 0px; margin: 20px 0; z-index: 110;
+      display: flex; flex-direction: column; align-items: center; gap: 0px; margin: 10px 0; z-index: 110;
     }
 
     .setting-btn {
       display: inline-flex; align-items: center; justify-content: center;
       width: auto; min-width: 150px; border: 0px solid rgba(255, 255, 255, 0.0);
-      border-radius: 2px; padding: 12px 20px; font-size: 12px;
+      border-radius: 2px; padding: 8px 20px; font-size: 12px;
       cursor: pointer; color: rgba(255, 255, 255, 0.62); background: transparent;
     }
 
@@ -177,23 +176,43 @@
       -webkit-user-select: text !important;
       user-select: text !important;
       pointer-events: auto !important;
-      width: 100%; max-width: 650px; min-height: 190px;
+      width: 100%; max-width: 650px; min-height: 180px;
       padding: 10px 14px; background: rgba(255,255,255,0.05); 
       color: #fff; border: 2px solid rgba(255,255,255,0.38); 
       border-radius: 0px; font-size: 16px; outline: none; 
       box-sizing: border-box; display: block;
       font-family: Arial, sans-serif;
-      height: 30vh;
+      height: 25vh;
       resize: none;
       overflow-y: auto;
       touch-action: pan-y !important;
+    }
+
+    /* Стили для панели инструментов загрузки */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      width: 100%;
+      max-width: 650px;
+      justify-content: space-between;
+    }
+    .toolbar-btn {
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.1);
+    }
+    #fileInput {
+      display: none;
     }
   </style>
 </head>
 <body>
   <script src="pwa-init.js"></script>
-  <div id="logoContainer" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 120;">
-    <a href="index.html" style="text-decoration: none;">
+  <div id="logoContainer">
+    <a href="#" id="logoLink" style="text-decoration: none;">
       <img src="logo.png" alt="Logo" style="max-width: 48px; opacity: 0.9;">
     </a>
   </div>
@@ -202,7 +221,12 @@
 
   <div class="footer-block">
     <div id="inputContainer">
-      <textarea id="inputText" placeholder="Paste your text here and press Start..."></textarea>
+      <div class="toolbar">
+        <button class="toolbar-btn" id="loadAliceBtn">📖 Load "Alice in Wonderland"</button>
+        <button class="toolbar-btn" onclick="document.getElementById('fileInput').click()">📂 Upload .txt</button>
+        <input type="file" id="fileInput" accept=".txt">
+      </div>
+      <textarea id="inputText" placeholder="Paste your text here or use options above and tap Start..."></textarea>
     </div>
 
     <div id="settingsContainer">
@@ -231,6 +255,9 @@
     const inversionControl = document.getElementById('inversionControl');
     const accelBtn = document.getElementById('accelBtn');
     const editBtn = document.getElementById('editBtn');
+    const fileInput = document.getElementById('fileInput');
+    const loadAliceBtn = document.getElementById('loadAliceBtn');
+    const logoLink = document.getElementById('logoLink');
 
     const colors = ['#000000', '#2a0505', '#05052a', '#052a05', '#1a1a1a'];
     const textColors = ['#ffffff', '#ffeb3b', '#00ff00', '#ff4444', '#80cbc4', '#ffa726'];
@@ -247,6 +274,39 @@
     let inversionLevel = inversionActive ? 100 : 0;
     document.body.style.backgroundColor = colors[colorIndex];
     inputText.value = localStorage.getItem('reading_text') || "";
+
+    // 1. Логика загрузки локального файла .txt
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        inputText.value = evt.target.result;
+        localStorage.setItem('reading_text', evt.target.result);
+      };
+      reader.readAsText(file);
+    });
+
+    // 2. Встроенный текст "Алисы в стране чудес" (Глава 1 для примера)
+    const aliceText = `CHAPTER I. Down the Rabbit-Hole
+
+Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”
+
+So she was considering in her own mind (as well as she could, for the hot day made her feel very sleepy and stupid), whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a White Rabbit with pink eyes ran close by her.
+
+There was nothing so VERY remarkable in that; nor did Alice think it so VERY much out of the way to hear the Rabbit say to itself, “Oh dear! Oh dear! I shall be late!” (when she thought it over afterwards, it occurred to her that she ought to have wondered at this, but at the time it all seemed quite natural); but when the Rabbit actually TOOK A WATCH OUT OF ITS WAISTCOAT-POCKET, and looked at it, and then hurried on, Alice started to her feet, for it flashed across her mind that she had never before seen a rabbit with either a waistcoat-pocket, or a watch to take out of it, and burning with curiosity, she ran across the field after it, and fortunately was just in time to see it pop down a large rabbit-hole under the hedge.`;
+
+    loadAliceBtn.addEventListener('click', function() {
+      inputText.value = aliceText;
+      localStorage.setItem('reading_text', aliceText);
+    });
+
+    // Безопасный клик по логотипу (сброс вместо перехода на index.html)
+    logoLink.onclick = (e) => {
+      e.preventDefault();
+      stopReading();
+    };
 
     function updateFontSize(text, el) {
         const maxWidth = window.innerWidth * 0.9;
