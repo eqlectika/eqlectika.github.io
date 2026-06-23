@@ -92,7 +92,8 @@
     .word-active { 
       opacity: 1; 
       transform: translate(-50%, -50%); 
-      transition: all 0.1s cubic-bezier(0.23, 1, 0.32, 1);
+      /* Плавность появления теперь занимает 15% от текущего интервала */
+      transition: all calc(var(--speed, 600ms) * 0.15) cubic-bezier(0.23, 1, 0.32, 1);
       filter: blur(0); 
     }
 
@@ -100,14 +101,20 @@
       opacity: 0; 
       transform: translate(-50%, -50%) scale(0);
       filter: blur(10px); 
-      transition: transform 0.2s ease-in, opacity 0.5s linear, filter 0.4s 0.2s ease-in;
+      /* Время затухания подстраивается: 30% от интервала на уход, 50% на прозрачность */
+      transition: transform calc(var(--speed, 600ms) * 0.3) ease-in, 
+                  opacity calc(var(--speed, 600ms) * 0.5) linear, 
+                  filter calc(var(--speed, 600ms) * 0.4) calc(var(--speed, 600ms) * 0.2) ease-in;
     }
 
     .word-exit-long { 
       opacity: 0; 
       transform: translate(-50%, -50%) scale(1);
       filter: blur(20px); 
-      transition: transform 0.4s cubic-bezier(0.1, 0.8, 0.2, 1), opacity 1.0s linear, filter 0.7s 0.8s ease-in;
+      /* Для длинных слов — пропорционально увеличенное время */
+      transition: transform calc(var(--speed, 600ms) * 0.6) cubic-bezier(0.1, 0.8, 0.2, 1), 
+                  opacity calc(var(--speed, 600ms) * 1.0) linear, 
+                  filter calc(var(--speed, 600ms) * 0.7) calc(var(--speed, 600ms) * 0.8) ease-in;
     }
 
     body.is-reading .footer-block { 
@@ -152,7 +159,7 @@
     }
 
     body.is-paused #startBtn { background: #fff; color: #000; opacity: 1; }
-    
+        body.is-paused #slowerBtn, body.is-paused #fasterBtn { display: none !important; }
     #prevBtn, #nextBtn { display: none; background: rgba(255,255,255,0.1); }
     body.is-paused #prevBtn, body.is-paused #nextBtn { display: block; opacity: 1; border-color: #fff; }
 
@@ -318,12 +325,15 @@ document.body.addEventListener('click', (e) => {
 });
 
 
-    function clearOldWord(isLongExit = false) {
+function clearOldWord(isLongExit = false) {
         const oldEl = container.querySelector('.word-active');
         if (oldEl) {
             const exitClass = isLongExit ? 'word-exit-long' : 'word-exit';
             oldEl.classList.replace('word-active', exitClass);
-            setTimeout(() => oldEl.remove(), isLongExit ? 400 : 200);
+            
+            // Удаляем элемент строго по окончании его анимации затухания (30% или 60% от интервала)
+            const deleteTimeout = isLongExit ? (interval * 0.6) : (interval * 0.3);
+            setTimeout(() => oldEl.remove(), deleteTimeout);
         }
     }
 
@@ -350,14 +360,14 @@ document.body.addEventListener('click', (e) => {
             requestAnimationFrame(() => setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20));
         }
 
-        // Логика пауз (расширенная под знаки препинания)
-        let pauses = 1;
-        if (/[;,]/.test(rawTxt)) pauses = 3.0;
-        else if (/:/.test(rawTxt)) pauses = 3.0;
-        else if (/[.!?—]/.test(rawTxt)) pauses = 4.5;
+// Изменяем логику: вместо умножения добавляем фиксированные миллисекунды
+        let extraPause = 0; 
+        if (/[;,]/.test(rawTxt)) extraPause = 150;        // Запятая всегда добавляет ровно 150мс
+        else if (/:/.test(rawTxt)) extraPause = 150;
+        else if (/[.!?—]/.test(rawTxt)) extraPause = 300; // Точка всегда добавляет ровно 300мс
         
-        if (rawTxt.length > 8) pauses += 1.0;
-        if (isLongHold) pauses += 2.0;
+        if (rawTxt.length > 8) extraPause += 50;          // Длинное слово дает +50мс
+        if (isLongHold) extraPause += 200;
 
         let currentInterval = interval;
         if (isDynamicAccel && words.length > 1) {
@@ -370,8 +380,13 @@ document.body.addEventListener('click', (e) => {
             currentInterval = interval * factor;
         }
 
+        // Передаем текущую скорость шага в CSS перед отрисовкой слова, 
+        // чтобы даже при Dynamic Accel анимация подстраивалась на лету
+        document.documentElement.style.setProperty('--speed', currentInterval + 'ms');
+
         index++;
-        timer = setTimeout(showNext, currentInterval * pauses);
+        // Итоговый таймер теперь складывается, а не умножается
+        timer = setTimeout(showNext, currentInterval + extraPause);
     }
 
     function stopReading() {
@@ -447,8 +462,27 @@ document.body.addEventListener('click', (e) => {
         }
     };
 
-    fasterBtn.onclick = (e) => { e.stopPropagation(); interval = Math.max(50, interval - 50); localStorage.setItem('reading_interval', interval); };
-    slowerBtn.onclick = (e) => { e.stopPropagation(); interval += 50; localStorage.setItem('reading_interval', interval); };
+// Функция для синхронизации CSS-переменной со скоростью JS
+    function syncCssSpeed() {
+        document.documentElement.style.setProperty('--speed', interval + 'ms');
+    }
+
+    fasterBtn.onclick = (e) => { 
+        e.stopPropagation(); 
+        interval = Math.max(50, interval - 50); 
+        localStorage.setItem('reading_interval', interval); 
+        syncCssSpeed(); // <--- Передаем новую скорость в CSS
+    };
+    
+    slowerBtn.onclick = (e) => { 
+        e.stopPropagation(); 
+        interval += 50; 
+        localStorage.setItem('reading_interval', interval); 
+        syncCssSpeed(); // <--- Передаем новую скорость в CSS
+    };
+
+    // Вызываем один раз при старте страницы, чтобы инициализировать значение
+    syncCssSpeed();
 
     editBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); stopReading(); };
 
