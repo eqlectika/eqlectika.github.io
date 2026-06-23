@@ -34,7 +34,7 @@
 
     #inputContainer { 
       position: fixed;
-      top: calc(env(safe-area-inset-top, 0px) + 40px);
+      top: calc(env(safe-area-inset-top, 0px) + 70px);
       left: 0;
       flex-shrink: 0; padding: 0px 15px; 
       z-index: 100; width: 100%; display: flex; flex-direction: column; 
@@ -143,17 +143,16 @@
       cursor: pointer; color: rgba(255, 255, 255, 0.62); background: transparent;
     }
 
-    body.is-reading #settingsContainer { opacity: 0; pointer-events: none !important; }
+    body.is-reading #settingsContainer, body.is-reading #accelBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn { opacity: 0; pointer-events: none !important; }
 
     #startBtn { background: #fff; color: #000; font-weight: bold; border: none; min-width: 90px; }
 
-    body.is-reading #startBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn, body.is-reading #accelBtn, body.is-reading #prevBtn, body.is-reading #nextBtn { 
+    body.is-reading #startBtn, body.is-reading #prevBtn, body.is-reading #nextBtn { 
       opacity: 0.38; background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.38); 
     }
 
     body.is-paused #startBtn { background: #fff; color: #000; opacity: 1; }
     
-    /* Кнопки шага на паузе становятся ярче */
     #prevBtn, #nextBtn { display: none; background: rgba(255,255,255,0.1); }
     body.is-paused #prevBtn, body.is-paused #nextBtn { display: block; opacity: 1; border-color: #fff; }
 
@@ -165,7 +164,7 @@
     }
 
     #accelBtn {
-      display: inline-flex; margin-top: 10px; border-radius: 4px; 
+      display: inline-flex; margin-top: 10px; border-radius: 0px; 
       width: auto; min-width: 150px; border: 2px solid rgba(255, 255, 255, 0.38);
       font-size: 11px; opacity: 1.0; color: #fff;
     }
@@ -186,12 +185,14 @@
       touch-action: pan-y !important;
     }
 
-    .toolbar {
-      display: flex; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 650px; justify-content: space-between;
-    }
-    .toolbar-btn {
-      font-size: 12px; padding: 6px 14px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.1);
-    }
+.toolbar {
+  display: flex; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 650px; justify-content: center;
+}
+.toolbar-btn {
+  width: 100%; /* <--- Кнопка теперь займет 100% ширины тулбара */
+  text-align: center;
+  font-size: 14px; padding: 10px 14px; border-radius: 0px; border: 1px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.1);
+}
     #fileInput { display: none; }
   </style>
 </head>
@@ -208,22 +209,22 @@
   <div class="footer-block">
     <div id="inputContainer">
       <div class="toolbar">
-        <button class="toolbar-btn" id="loadAliceBtn">📖 Load "Alice in Wonderland"</button>
 
-<button class="toolbar-btn" onclick="if(isReading) return; document.getElementById('fileInput').click()">📂 Upload .txt</button>
+<button class="toolbar-btn" onclick="if(isReading) return; document.getElementById('fileInput').click()">Upload .txt</button>
 
         <input type="file" id="fileInput" accept=".txt">
       </div>
-      <textarea id="inputText" placeholder="Paste your text here or use options above..."></textarea>
+      <textarea id="inputText" placeholder="Paste your text here or use button above and tap Start..."></textarea>
     </div>
+    
 
     <div id="mainButtons">
       <button id="editBtn" style="display: none; background: rgba(255,255,255,0.1); border: 2px solid rgba(255, 255, 255, 1.0); z-index: 210; margin-bottom: 5px;">Edit</button>
       <div class="button-row">
         <button id="slowerBtn">Slower</button>
-        <button id="prevBtn">PREV</button>
+        <button id="prevBtn">Back</button>
         <button id="startBtn">Start</button>
-        <button id="nextBtn">NEXT</button>
+        <button id="nextBtn">Fore</button>
         <button id="fasterBtn">Faster</button>
       </div>
       <button id="accelBtn" class="setting-btn">Dynamic Accel: OFF</button>
@@ -242,7 +243,6 @@
     const accelBtn = document.getElementById('accelBtn');
     const editBtn = document.getElementById('editBtn');
     const fileInput = document.getElementById('fileInput');
-    const loadAliceBtn = document.getElementById('loadAliceBtn');
     const logoLink = document.getElementById('logoLink');
 
     const colors = ['#000000', '#2a0505', '#05052a', '#052a05', '#1a1a1a'];
@@ -271,13 +271,6 @@
         localStorage.setItem('reading_text', evt.target.result);
       };
       reader.readAsText(file);
-    });
-
-    const aliceText = `CHAPTER I. Down the Rabbit-Hole\n\nAlice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, “and what is the use of a book,” thought Alice “without pictures or conversations?”`;
-
-    loadAliceBtn.addEventListener('click', function() {
-      inputText.value = aliceText;
-      localStorage.setItem('reading_text', aliceText);
     });
 
     logoLink.onclick = (e) => { e.preventDefault(); stopReading(); };
