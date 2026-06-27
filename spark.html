@@ -15,6 +15,9 @@
       --tension-color: #cccccc; --light-gray: #aaaaaa;
     }
     
+.invert-element {
+  transition: filter 0.1s;
+}
     body { background: var(--bg-color); color: #fff; font-family: var(--main-font); padding:20px 0 0 10px; margin: 0; display: flex; flex-direction: column; min-height: 100vh; user-select: none; }
     .header-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
     .logo-image { max-width: 48px; opacity: 1; }
@@ -149,45 +152,30 @@ The State Index will show how effective your intentions are at the current momen
   let transitionInterval = null;
   let inversionLevel = 0; 
 
-  function toggleMetamorphosis() {
-    if (transitionInterval) clearInterval(transitionInterval);
-    inversionActive = !inversionActive;
+function toggleMetamorphosis() {
+  if (transitionInterval) clearInterval(transitionInterval);
+  inversionActive = !inversionActive;
+  
+  const target = inversionActive ? 100 : 0;
+  
+  transitionInterval = setInterval(() => {
+    if (inversionLevel === target) {
+      clearInterval(transitionInterval);
+      return;
+    }
     
-    const target = inversionActive ? 100 : 0;
-    const trigger = document.getElementById('spark-trigger');
+    inversionLevel += (inversionActive ? 1 : -1);
     
-    trigger.style.opacity = '0.5';
-    setTimeout(() => trigger.style.opacity = '1', 200);
+    // Инверсия фона
+    const bgVal = Math.floor((inversionLevel / 100) * 255);
+    document.documentElement.style.setProperty('--bg-color', `rgb(${bgVal}, ${bgVal}, ${bgVal})`);
+    
+    // Применяем инверсию к телу и элементам через filter (сохраняет цвета)
+    document.body.style.filter = `invert(${inversionLevel / 100})`;
+    
 
-    transitionInterval = setInterval(() => {
-        if (inversionLevel === target) {
-            clearInterval(transitionInterval);
-            return;
-        }
-        
-        inversionLevel += (inversionActive ? 1 : -1);
-        
-        const bgVal = Math.floor((inversionLevel / 100) * 255);
-        const textVal = 255 - bgVal;
-        const grayVal = Math.floor(170 - (inversionLevel / 100) * 100);
-
-        document.documentElement.style.setProperty('--bg-color', `rgb(${bgVal}, ${bgVal}, ${bgVal})`);
-        document.body.style.color = `rgb(${textVal}, ${textVal}, ${textVal})`;
-        document.documentElement.style.setProperty('--light-gray', `rgb(${grayVal}, ${grayVal}, ${grayVal})`);
-        
-
-document.querySelectorAll('select, .ui-btn').forEach(el => {
-
-            el.style.backgroundColor = `rgb(${bgVal}, ${bgVal}, ${bgVal})`;
-            el.style.color = `rgb(${textVal}, ${textVal}, ${textVal})`;
-            el.style.borderColor = `rgb(${grayVal}, ${grayVal}, ${grayVal})`;
-        });
-
-        const chartCanvas = document.getElementById('chart');
-        if (chartCanvas) chartCanvas.style.filter = `invert(${inversionLevel}%)`;
-        
-    }, 15);
-  }
+  }, 15);
+}
 
 
 
@@ -345,7 +333,37 @@ function toggleData() {
         return `<span class="clickable-word" style="transition: color 0.3s; cursor: pointer;">${part}</span>`;
       }).join('');
       textNode.parentNode.replaceChild(span, textNode);
-    });
+    });transitionInterval = setInterval(() => {
+        if (inversionLevel === target) {
+            clearInterval(transitionInterval);
+            return;
+        }
+        
+        inversionLevel += (inversionActive ? 1 : -1);
+        
+        const bgVal = Math.floor((inversionLevel / 100) * 255);
+        const grayVal = Math.floor(170 - (inversionLevel / 100) * 100);
+
+        // Меняем фон и серый цвет
+        document.documentElement.style.setProperty('--bg-color', `rgb(${bgVal}, ${bgVal}, ${bgVal})`);
+        document.documentElement.style.setProperty('--light-gray', `rgb(${grayVal}, ${grayVal}, ${grayVal})`);
+        
+        // Меняем цвет всего основного текста (body)
+        const textVal = 255 - bgVal;
+        document.body.style.color = `rgb(${textVal}, ${textVal}, ${textVal})`;
+
+        // Оставляем селекторам и кнопкам их фоновый цвет, 
+        // но НЕ переназначаем el.style.color для label, чтобы они сохранили свои цвета из :root
+        document.querySelectorAll('select, .ui-btn').forEach(el => {
+            el.style.backgroundColor = `rgb(${bgVal}, ${bgVal}, ${bgVal})`;
+            el.style.borderColor = `rgb(${grayVal}, ${grayVal}, ${grayVal})`;
+        });
+
+        // Инвертируем график через фильтр (это оставит цвета линий, но инвертирует их яркость)
+        const chartCanvas = document.getElementById('chart');
+        if (chartCanvas) chartCanvas.style.filter = `invert(${inversionLevel}%)`;
+        
+    }, 15);
   }
 
 document.addEventListener('click', function(e) {
