@@ -81,26 +81,32 @@
     padding-left: 20px; color: #00ff00; 
 }
 
-#word-stream { 
-    font-size: 2.8rem; 
-    font-weight: bold; 
-    text-align: center; 
-    cursor: pointer; 
-    width: 95%; 
-    color: var(--text);
-    transition: color 0.1s;
+#word-stream {
+    transition: none; /* Убираем плавность, чтобы замена была мгновенной */
+    opacity: 1;
 }
 
+/* Оставляем только легкое «подмигивание» для акцента, если нужно */
 .word-flash {
-    animation: flash-cycle 0.3s ease-out;
+    animation: none; 
 }
+
+
+
 
 @keyframes flash-cycle {
-    0% { opacity: 1; filter: blur(0); transform: scale(1); }
-    40% { opacity: 0; filter: blur(4px); transform: scale(0.95); } 
-    60% { opacity: 0; } 
-    100% { opacity: 1; filter: blur(0); transform: scale(1); }
+    0% { opacity: 0; transform: scale(0.9); }
+    10% { opacity: 1; transform: scale(1); }
+    90% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.1); }
 }
+
+#word-stream.word-flash {
+    animation: flash-cycle linear forwards;
+    /* Уменьшаем время анимации для мгновенного отклика */
+    animation-duration: calc(var(--speed, 300ms) * 0.8);
+}
+
 
 
 
@@ -315,24 +321,6 @@ function toggleSystem() {
 }
 
 
-
-
-function update() {
-    const el = document.getElementById('word-stream');
-    if (!words[currentIdx]) return;
-
-    el.classList.remove('word-flash');
-    void el.offsetWidth; 
-    el.classList.add('word-flash');
-
-    setTimeout(() => {
-        el.innerText = words[currentIdx];
-    }, 120); 
-
-    document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
-}
-
-
 function toggleRun() {
 if (!isRunning) return;
 if (isPaused && currentIdx >= words.length - 1) {
@@ -347,19 +335,53 @@ timer = setTimeout(loop, 60000 / (speed * (rq/100)));
 }
 }
 
+// Используем один постоянный контейнер
+const el = document.getElementById('word-stream');
+
+function update() {
+    const el = document.getElementById('word-stream');
+    if (!words[currentIdx]) return;
+
+    // Прямая перезапись без очистки innerText
+    el.innerText = words[currentIdx];
+
+    // Масштабирование
+    const text = words[currentIdx];
+    const scale = Math.min(1, 8 / Math.max(8, text.length));
+    el.style.fontSize = (2.8 * scale) + 'rem';
+    
+    // Обновление RQ
+    document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
+}
+
+
 function loop() {
-if (isRunning && !isPaused) {
-if (currentIdx < words.length - 1) {
-currentIdx++;
-update();
-timer = setTimeout(loop, 60000 / (speed * (rq/100)));
-} else {
-isPaused = true;
-document.getElementById('run-btn').innerText = 'RUN';
-document.getElementById('run-btn').style.color = '';
+    if (isRunning && !isPaused) {
+        if (currentIdx < words.length - 1) {
+            currentIdx++;
+            update();
+
+            // Логика пауз на знаках препинания сохраняется, 
+            // но теперь слово не исчезает, а «замирает» на экране
+            let rawTxt = words[currentIdx];
+            let extraPause = 0;
+            
+            if (/[;,]/.test(rawTxt)) extraPause = 150;
+            else if (/:/.test(rawTxt)) extraPause = 150;
+            else if (/[.!?—]/.test(rawTxt)) extraPause = 300;
+            
+            if (rawTxt.length > 8) extraPause += 50; 
+            
+            let baseInterval = 60000 / (speed * (rq / 100));
+            timer = setTimeout(loop, baseInterval + extraPause);
+        } else {
+            isPaused = true;
+            document.getElementById('run-btn').innerText = 'RUN';
+        }
+    }
 }
-}
-}
+
+
 
         function adjSpd(d) { speed = Math.max(50, speed + d); update(); }
         function move(d) { currentIdx = Math.max(0, Math.min(words.length-1, currentIdx + d)); update(); }
