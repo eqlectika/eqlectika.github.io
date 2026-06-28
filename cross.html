@@ -461,25 +461,32 @@ if (item) { handleImageFile(item.getAsFile(), i, ta); }
 let textareaLongPressTimer;
 const startLongPress = (e) => {
   textareaLongPressTimer = setTimeout(() => {
+
     ta.blur();
 
-const currentFont = ta.style.getPropertyValue('--fn') || getComputedStyle(ta).fontFamily;
-const newFont = prompt("Font family:", currentFont);
+    // Получаем текущие значения через getComputedStyle
+    const computed = getComputedStyle(ta);
+    const currentFont = computed.getPropertyValue('--fn').replace(/"/g, '') || localStorage.getItem(`q_f_${i}`);
+    const currentBg = computed.getPropertyValue('--bg').trim() || localStorage.getItem(`q_b_${i}`);
+    const currentColor = computed.getPropertyValue('--color').trim() || localStorage.getItem(`q_c_${i}`);
 
-if (newFont !== null) {
-    ta.style.setProperty('--fn', newFont);
-    localStorage.setItem(`q_f_${i}`, newFont);
-}
+    const newFont = prompt("Font family:", currentFont);
+    if (newFont !== null) {
+        ta.style.setProperty('--fn', newFont);
+        localStorage.setItem(`q_f_${i}`, newFont);
+    }
 
     const s = prompt("Size:", ta.style.fontSize);
     if (s) { ta.style.fontSize = s; localStorage.setItem(`q_s_${i}`, s); }
     
-    const b = prompt("Background:", localStorage.getItem(`q_b_${i}`) || ta.style.getPropertyValue('--bg'));
+    const b = prompt("Background:", currentBg);
     if (b) { ta.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
     
-    const c = prompt("Color:", localStorage.getItem(`q_c_${i}`) || ta.style.getPropertyValue('--color'));
+    const c = prompt("Color:", currentColor);
     if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
 
+
+    
     if (images[i].style.display === 'block') {
       const currentPos = localStorage.getItem(`q_pos_${i}`) || "bottom right";
       const pos = prompt("Position:", currentPos);
