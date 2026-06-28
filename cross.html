@@ -466,6 +466,15 @@ let textareaLongPressTimer;
 const startLongPress = (e) => {
   textareaLongPressTimer = setTimeout(() => {
     ta.blur();
+
+const currentFont = ta.style.getPropertyValue('--fn') || getComputedStyle(ta).fontFamily;
+const newFont = prompt("Font family:", currentFont);
+
+if (newFont !== null) {
+    ta.style.setProperty('--fn', newFont);
+    localStorage.setItem(`q_f_${i}`, newFont);
+}
+
     const s = prompt("Size:", ta.style.fontSize);
     if (s) { ta.style.fontSize = s; localStorage.setItem(`q_s_${i}`, s); }
     
@@ -487,7 +496,7 @@ const startLongPress = (e) => {
         images[i].style.right = h === 'right' ? '10px' : 'auto';
       }
       
-      const delImg = prompt("Delete image?:", "no");
+      const delImg = prompt("Delete image?", "no");
       if (delImg && delImg.toLowerCase() === 'yes') {
         images[i].removeAttribute('src');
         images[i].style.display = 'none';
