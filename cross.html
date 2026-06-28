@@ -70,16 +70,15 @@ white-space: pre-wrap;
 }
 
 .img-preview {
-position: absolute;
-bottom: 10px;
-right: 10px;
-max-width: 30%;
-max-height: 30%;
-border-radius: 4px;
-pointer-events: none;
-display: none;
-opacity: 0.7;
+  position: absolute;
+  max-width: 30%;
+  max-height: 30%;
+  border-radius: 4px;
+  pointer-events: none;
+  display: none;
+  opacity: 0.7;
 }
+
 
 .handle {
 position: absolute;
@@ -242,37 +241,56 @@ function updateHandleImage(index) {
     imgEl.style.transform = 'rotate(0deg)';
   }
 }
+const imgPositions = {
+  0: { bottom: '10px', right: '10px' }, // cell_1
+  1: { bottom: '10px', left: '10px' },  // cell_2
+  2: { top: '10px', right: '10px' },    // cell_3
+  3: { top: '10px', left: '10px' }      // cell_4
+};
 
 function loadData() {
-container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
-container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
-updateHandleImage(currentDesign);
+  container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
+  container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
+  updateHandleImage(currentDesign);
 
-textareas.forEach((ta, i) => {
-if (localStorage.getItem(`q_b_${i}`)) {
-  ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`));
-  ta.style.setProperty('--color', localStorage.getItem(`q_c_${i}`));
-}
-if (localStorage.getItem(`q_f_${i}`)) {
-  ta.style.setProperty('--fn', localStorage.getItem(`q_f_${i}`));
-}
-ta.style.fontSize = localStorage.getItem(`q_s_${i}`) || '18px';
+  // Настройка координат для каждого t0-t3
+  const imgPositions = [
+    { bottom: '10px', right: '10px' }, // t0
+    { bottom: '10px', left: '10px' },  // t1
+    { top: '10px', right: '10px' },    // t2
+    { top: '10px', left: '10px' }      // t3
+  ];
 
-const tx = db.transaction("texts", "readonly");
-const req = tx.objectStore("texts").get(i);
-req.onsuccess = () => {
-if (req.result) {
-ta.innerHTML = req.result.content || '';
-if (req.result.img) { images[i].src = req.result.img; images[i].style.display = 'block'; }
-else { images[i].removeAttribute('src'); images[i].style.display = 'none'; }
-} else {
-ta.innerHTML = '';
-images[i].removeAttribute('src');
-images[i].style.display = 'none';
+  textareas.forEach((ta, i) => {
+    // Применяем координаты
+    const pos = imgPositions[i];
+    images[i].style.top = pos.top || 'auto';
+    images[i].style.bottom = pos.bottom || 'auto';
+    images[i].style.left = pos.left || 'auto';
+    images[i].style.right = pos.right || 'auto';
+
+    // Дальше ваш код загрузки стилей
+    if (localStorage.getItem(`q_b_${i}`)) {
+      ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`));
+      ta.style.setProperty('--color', localStorage.getItem(`q_c_${i}`));
+    }
+    if (localStorage.getItem(`q_f_${i}`)) {
+      ta.style.setProperty('--fn', localStorage.getItem(`q_f_${i}`));
+    }
+    ta.style.fontSize = localStorage.getItem(`q_s_${i}`) || '18px';
+
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(i);
+    req.onsuccess = () => {
+      if (req.result) {
+        ta.innerHTML = req.result.content || '';
+        if (req.result.img) { images[i].src = req.result.img; images[i].style.display = 'block'; }
+        else { images[i].removeAttribute('src'); images[i].style.display = 'none'; }
+      }
+    };
+  });
 }
-};
-});
-}
+
 
 // Изменено: собирает слова из t1, t2, t3 и выводит результат в t0
 function runLocalImprovisation() {
@@ -446,26 +464,42 @@ if (item) { handleImageFile(item.getAsFile(), i, ta); }
 
 let textareaLongPressTimer;
 const startLongPress = (e) => {
-textareaLongPressTimer = setTimeout(() => {
-ta.blur();
-const s = prompt("Size:", ta.style.fontSize);
-if (s) { ta.style.fontSize = s; localStorage.setItem(`q_s_${i}`, s); }
-const b = prompt("Background:", ta.style.getPropertyValue('--bg'));
-if (b) { ta.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
-const c = prompt("Color:", ta.style.getPropertyValue('--color'));
-if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
+  textareaLongPressTimer = setTimeout(() => {
+    ta.blur();
+    const s = prompt("Size:", ta.style.fontSize);
+    if (s) { ta.style.fontSize = s; localStorage.setItem(`q_s_${i}`, s); }
+    
+    const b = prompt("Background:", localStorage.getItem(`q_b_${i}`) || ta.style.getPropertyValue('--bg'));
+    if (b) { ta.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
+    
+    const c = prompt("Color:", localStorage.getItem(`q_c_${i}`) || ta.style.getPropertyValue('--color'));
+    if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
 
-if (images[i].style.display === 'block') {
-const delImg = prompt("Delete image? (yes/no):", "no");
-if (delImg && delImg.toLowerCase() === 'yes') {
-images[i].removeAttribute('src');
-images[i].style.display = 'none';
-saveToDB(i, ta.innerHTML, null, true);
-if (i !== 0) runLocalImprovisation(); // Изменено: пересчет после удаления картинки НЕ из t0
-}
-}
-}, 5000);
+    if (images[i].style.display === 'block') {
+      const currentPos = localStorage.getItem(`q_pos_${i}`) || "bottom right";
+      const pos = prompt("Position:", currentPos);
+      if (pos) {
+        localStorage.setItem(`q_pos_${i}`, pos);
+        const [v, h] = pos.split(' ');
+        images[i].style.top = v === 'top' ? '10px' : 'auto';
+        images[i].style.bottom = v === 'bottom' ? '10px' : 'auto';
+        images[i].style.left = h === 'left' ? '10px' : 'auto';
+        images[i].style.right = h === 'right' ? '10px' : 'auto';
+      }
+      
+      const delImg = prompt("Delete image?:", "no");
+      if (delImg && delImg.toLowerCase() === 'yes') {
+        images[i].removeAttribute('src');
+        images[i].style.display = 'none';
+        localStorage.removeItem(`q_pos_${i}`);
+        saveToDB(i, ta.innerHTML, null, true);
+        if (i !== 0) runLocalImprovisation();
+      }
+    }
+  }, 5000);
 };
+
+
 const stopLongPress = () => clearTimeout(textareaLongPressTimer);
 ta.addEventListener('touchstart', startLongPress);
 ta.addEventListener('touchend', stopLongPress);
