@@ -248,20 +248,22 @@ function loadData() {
   updateHandleImage(currentDesign);
 
   // Настройка координат для каждого t0-t3
-  const imgPositions = [
-    { bottom: '10px', right: '10px' }, // t0
-    { bottom: '10px', left: '10px' },  // t1
-    { top: '10px', right: '10px' },    // t2
-    { top: '10px', left: '10px' }      // t3
-  ];
+// ... внутри loadData()
+const imgPositions = [
+  { top: 'auto', bottom: '10px', left: 'auto', right: '10px' }, // t0
+  { top: 'auto', bottom: '10px', left: '10px', right: 'auto' }, // t1
+  { top: '10px', bottom: 'auto', left: 'auto', right: '10px' }, // t2
+  { top: '10px', bottom: 'auto', left: '10px', right: 'auto' }  // t3
+];
 
-  textareas.forEach((ta, i) => {
-    // Применяем координаты
-    const pos = imgPositions[i];
-    images[i].style.top = pos.top || 'auto';
-    images[i].style.bottom = pos.bottom || 'auto';
-    images[i].style.left = pos.left || 'auto';
-    images[i].style.right = pos.right || 'auto';
+textareas.forEach((ta, i) => {
+  const pos = imgPositions[i];
+  const img = images[i];
+  
+  img.style.top = pos.top;
+  img.style.bottom = pos.bottom;
+  img.style.left = pos.left;
+  img.style.right = pos.right;
 
     // Дальше ваш код загрузки стилей
     if (localStorage.getItem(`q_b_${i}`)) {
@@ -499,7 +501,7 @@ if (newFont !== null) {
         if (i !== 0) runLocalImprovisation();
       }
     }
-  }, 5000);
+  }, 2000);
 };
 
 
