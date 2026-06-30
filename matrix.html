@@ -42,7 +42,8 @@
             <textarea id="digText" class="pane" placeholder="DIGEST" oninput="checkDigest()"></textarea>
             <div id="save-btn" onclick="exportDB()">SAVE</div>
         </div>
-        <div id="gate-btn" onclick="toggleSystem()"><span>GATE</span></div>
+<div id="gate-btn" onclick="handleGateClick()"><span>GATE</span></div>
+
     </div>
     <div id="flash-zone">
         <div id="word-stream" onclick="captureWord()">READY</div>
@@ -84,21 +85,26 @@
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false, max: 100, min: 0 }, x: { display: false } }, plugins: { legend: { display: false } } }
         });
 
-        function toggleSystem() {
-            const flash = document.getElementById('flash-zone');
-            const btn = document.getElementById('gate-btn');
-            const hub = document.getElementById('control-hub');
-            if (!isRunning) {
-                words = document.getElementById('srcText').value.split(/\s+/).filter(w => w.length > 0);
-                if (words.length === 0) return alert("Введите текст в SOURCE");
-                navigator.mediaDevices.getUserMedia({video: true}).then(s => { document.getElementById('video').srcObject = s; }).catch(() => {});
-                flash.classList.add('visible'); hub.style.display = 'flex'; btn.classList.add('active');
-                isRunning = true; currentIdx = 0; isPaused = true; update();
-            } else {
-                isRunning = false; isPaused = true; clearTimeout(timer);
-                flash.classList.remove('visible'); hub.style.display = 'none'; btn.classList.remove('active');
-            }
-        }
+function handleGateClick() {
+    const flash = document.getElementById('flash-zone');
+    const btn = document.getElementById('gate-btn');
+    const hub = document.getElementById('control-hub');
+    const span = btn.querySelector('span');
+
+    if (!isRunning) {
+        words = document.getElementById('srcText').value.split(/\s+/).filter(w => w.length > 0);
+        if (words.length === 0) return alert("Введите текст в SOURCE");
+        navigator.mediaDevices.getUserMedia({video: true}).then(s => { document.getElementById('video').srcObject = s; }).catch(() => {});
+        flash.classList.add('visible'); hub.style.display = 'flex'; btn.classList.add('active');
+        span.innerText = 'SAVE';
+        isRunning = true; currentIdx = 0; isPaused = true; update();
+    } else {
+        exportDB();
+        span.innerText = 'CACHED';
+        setTimeout(() => { span.innerText = 'SAVE'; }, 1000);
+    }
+}
+
 
         function toggleRun() {
             if (!isRunning) return;
