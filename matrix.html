@@ -3,219 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                 <link rel="manifest" href="manifest-matrix.json">
-<title>Neural Matrix</title>
-
-        <link href="https://fonts.googleapis.com/css2?family=Ubuntu&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest-matrix.json">
+    <title>Neural Matrix</title>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #000; --text: #fff; --accent: #00ff00; --tension: #ff1493; --dim: #111; }
         * { box-sizing: border-box; font-family: 'Ubuntu', monospace; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: var(--text); overflow: auto; display: flex; flex-direction: column; }
-
         .pane-wrap { position: relative; height: 100%; width: 100%; overflow: hidden; }
         .pane { border: none; padding: 10px; font-size: 0.85rem; background: var(--bg); color: var(--text); outline: none; resize: none; width: 100%; height: 100%; }
         .pane-l { color: #fff; border-right: 1px solid var(--dim); }
-
-        #save-btn { 
-            position: absolute; bottom: 5px; right: 5px; background: var(--accent); color: #000; 
-            padding: 4px 10px; font-size: 0.6rem; font-weight: bold; cursor: pointer; display: none; z-index: 150;
-        }
-
-#gateway { 
-    display: grid; 
-    grid-template-columns: 50% 50%; 
-    height: 45vh; 
-    width: 100%; 
-    position: relative; 
-    border-bottom: 1px solid var(--dim); 
-    flex-shrink: 0; 
-}
-
-#flash-zone { 
-    height: 20vh; 
-    display: flex; 
-    visibility: hidden; 
-    flex-direction: column; 
-    justify-content: center; 
-    align-items: center;
-    background: #050505; 
-    position: relative; 
-    border-bottom: 1px solid var(--dim);
-    flex-shrink: 0;
-}
-
-#basement { 
-    flex-grow: 1; 
-    width: 100%; 
-    background: #000; 
-    display: flex; 
-    flex-direction: column; 
-    border-top: 1px solid var(--dim); 
-    overflow-y: auto; 
-    min-height: 0; 
-}
-
-
-#flash-zone.visible { visibility: visible; }
-
-
-
-
-#gate-btn {
-    position: absolute; 
-    left: 50%; 
-    top: 0; 
-    bottom: 0; 
-    width: 22px; 
-    transform: translateX(-50%); 
-    z-index: 200; 
-    cursor: pointer;
-    background: var(--accent); 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-}
-
-#digText {
-    padding-left: 20px; color: #00ff00; 
-}
-
-#word-stream {
-    transition: none; /* Убираем плавность, чтобы замена была мгновенной */
-    opacity: 1;
-}
-
-/* Оставляем только легкое «подмигивание» для акцента, если нужно */
-.word-flash {
-    animation: none; 
-}
-
-
-
-
-@keyframes flash-cycle {
-    0% { opacity: 0; transform: scale(0.9); }
-    10% { opacity: 1; transform: scale(1); }
-    90% { opacity: 1; transform: scale(1); }
-    100% { opacity: 0; transform: scale(1.1); }
-}
-
-#word-stream.word-flash {
-    animation: flash-cycle linear forwards;
-    /* Уменьшаем время анимации для мгновенного отклика */
-    animation-duration: calc(var(--speed, 300ms) * 0.8);
-}
-
-
-
-
+        #save-btn { position: absolute; bottom: 5px; right: 5px; background: var(--accent); color: #000; padding: 4px 10px; font-size: 0.6rem; font-weight: bold; cursor: pointer; display: none; z-index: 150; }
+        #gateway { display: grid; grid-template-columns: 50% 50%; height: 45vh; width: 100%; position: relative; border-bottom: 1px solid var(--dim); flex-shrink: 0; }
+        #flash-zone { height: 20vh; display: flex; visibility: hidden; flex-direction: column; justify-content: center; align-items: center; background: #050505; position: relative; border-bottom: 1px solid var(--dim); flex-shrink: 0; }
+        #basement { flex-grow: 1; width: 100%; background: #000; display: flex; flex-direction: column; border-top: 1px solid var(--dim); overflow-y: auto; min-height: 0; }
+        #flash-zone.visible { visibility: visible; }
+        #gate-btn { position: absolute; left: 50%; top: 0; bottom: 0; width: 22px; transform: translateX(-50%); z-index: 200; cursor: pointer; background: var(--accent); display: flex; align-items: center; justify-content: center; }
+        #digText { padding-left: 20px; color: #00ff00; }
+        #word-stream { transition: none; opacity: 1; font-size: 2.8rem; font-weight: bold; text-align: center; cursor: pointer; width: 95%; color: var(--text); }
         #gate-btn span { writing-mode: vertical-rl; text-orientation: upright; color: #000; font-weight: 900; font-size: 0.8rem; letter-spacing: 3px; }
         #gate-btn.active { background: var(--tension); }
-
-
-
-        #word-stream { font-size: 2.8rem; font-weight: bold; text-align: center; cursor: pointer; width: 95%; color: var(--text); }
-
-#control-hub {
-    height: 40px; 
-    width: 100%; 
-    display: none; 
-    justify-content: space-around; 
-    align-items: center;
-    background: #000; 
-    flex-shrink: 0;
-}
-
+        #control-hub { height: 40px; width: 100%; display: none; justify-content: space-around; align-items: center; background: #000; flex-shrink: 0; }
         .u-btn { color: var(--accent); font-size: 0.8rem; cursor: pointer; font-weight: bold; }
-
-     /*   #basement { height: 140px; width: 100%; background: #000; display: flex; flex-direction: column; flex-shrink: 0; border-top: 1px solid var(--dim); overflow-y: auto; } */
-#index-row {
-    width: 100%; 
-    min-height: 25px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    color: var(--accent); 
-    font-size: 0.8rem; 
-    letter-spacing: 12px; 
-padding-left: 12px;
-    font-weight: bold; 
-    background: #000;
-}
-
+        #index-row { width: 100%; min-height: 25px; display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 0.8rem; letter-spacing: 12px; padding-left: 12px; font-weight: bold; background: #000; }
         #monitor { min-height: 60px; width: 100%; position: relative; }
-
-
-#db-tools { 
-    min-height: 45px; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    gap: 20px; 
-    padding: 5px; 
-}
-
-.db-btn { 
-    font-size: 0.7rem; 
-    color: var(--accent); 
-    cursor: pointer; 
-    border: 1px solid var(--accent); 
-    padding: 5px 10px; 
-    text-transform: uppercase; 
-    font-weight: bold;
-    transition: 0.3s; 
-}
-
-.centered-logo {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    padding: 10px 0;
-    text-decoration: none;
-}
-
+        #db-tools { min-height: 45px; display: flex; justify-content: center; align-items: center; gap: 20px; padding: 5px; }
+        .db-btn { font-size: 0.7rem; color: var(--accent); cursor: pointer; border: 1px solid var(--accent); padding: 5px 10px; text-transform: uppercase; font-weight: bold; transition: 0.3s; }
         video { position: fixed; width: 1px; height: 1px; opacity: 0; }
- 
-
-footer { padding: 10px 0; flex-shrink: 0; }
-
-.donate-btn { 
-    color: #888; 
-border: 1px solid #444; 
-padding: 5px 15px; 
-    background: transparent; 
-cursor: pointer; 
-font-size: 0.6rem; 
-text-transform: uppercase; 
-width: fit-content;
-    margin: 0 auto; 
-}
-
-
-.donate-box { 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    gap: 8px; 
-    padding: 0 15px; 
-    text-align: center; 
-}
-
-
-.crypto-info { display: none; flex-direction: column; gap: 5px; margin-top: 10px; }
-.crypto-address-display { 
-    font-size: 10px; color: var(--accent); background: #0a0a0a; 
-    padding: 8px; border: 1px dashed #333; cursor: copy; word-break: break-all; 
-}
-
-   </style>
+    </style>
 </head>
 <body>
-<script src="pwa-init.js"></script>
+    <script src="pwa-init.js"></script>
     <video id="video" autoplay playsinline muted></video>
-
     <div id="gateway">
         <div class="pane-wrap"><textarea id="srcText" class="pane pane-l" placeholder="SOURCE"></textarea></div>
         <div class="pane-wrap">
@@ -224,11 +44,9 @@ width: fit-content;
         </div>
         <div id="gate-btn" onclick="toggleSystem()"><span>GATE</span></div>
     </div>
-
     <div id="flash-zone">
         <div id="word-stream" onclick="captureWord()">READY</div>
     </div>
-
     <div id="control-hub">
         <div class="u-btn" onclick="move(-1)">PREV</div>
         <div class="u-btn" onclick="adjSpd(-50)">SLOWER</div>
@@ -236,322 +54,144 @@ width: fit-content;
         <div class="u-btn" onclick="adjSpd(50)">FASTER</div>
         <div class="u-btn" onclick="move(1)">NEXT</div>
     </div>
-
-<div id="basement">
-    <div id="index-row">RQ:85</div>
-    <div id="monitor"><canvas id="sparkChart"></canvas></div>
-    
-<div id="db-tools" style="flex-direction: column; gap: 10px;">
-    <div style="display: flex; gap: 20px;">
-        <div class="db-btn" onclick="downloadDB()">EXPORT DB</div>
-        <div class="db-btn" onclick="document.getElementById('importInput').click()">IMPORT DB</div>
+    <div id="basement">
+        <div id="index-row">RQ:85</div>
+        <div id="monitor"><canvas id="sparkChart"></canvas></div>
+        <div id="db-tools" style="flex-direction: column; gap: 10px;">
+            <div style="display: flex; gap: 20px;">
+                <div class="db-btn" onclick="downloadDB()">EXPORT DB</div>
+                <div class="db-btn" onclick="document.getElementById('importInput').click()">IMPORT DB</div>
+            </div>
+            <input type="file" id="importInput" style="display:none" onchange="importDB(event)">
+        </div>
+        <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; margin-bottom: 20px;">
+            <div class="db-btn" onclick="toggleInfo()" style="border: none; width: fit-content;">INFO</div>
+            <div id="info-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.98); z-index:2000; padding:25px; overflow-y:auto; font-size:0.75rem; color:var(--text); line-height:1.6;">
+                <h2 style="color:var(--accent); border-bottom:1px solid var(--accent); letter-spacing: 2px;">NEURAL MATRIX PROTOCOL</h2>
+                <button onclick="toggleInfo()" style="background:var(--accent); border:none; padding:12px; width:100%; margin-top:30px; font-weight:900; color:#000; cursor:pointer; font-family:inherit; text-transform:uppercase;">Return to Matrix</button>
+            </div>
+        </div>
     </div>
-
-    <input type="file" id="importInput" style="display:none" onchange="importDB(event)">
-</div>
-
-<div style="margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; margin-bottom: 20px;">
-    
-    <div class="db-btn" onclick="toggleInfo()" style="border: none; width: fit-content;">INFO</div>
-
-    <div id="info-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.98); z-index:2000; padding:25px; overflow-y:auto; font-size:0.75rem; color:var(--text); line-height:1.6;">
-        <h2 style="color:var(--accent); border-bottom:1px solid var(--accent); letter-spacing: 2px;">NEURAL MATRIX PROTOCOL</h2>
-        <p><strong style="color:var(--tension);">BIO-SYNC:</strong> The camera stream serves as a biometric anchor, preventing device sleep mode and ensuring operator cognitive synchronization with the data flow.</p>
-        <p><strong style="color:var(--accent);">GATE:</strong> Activates the processing buffer. Loads data from SOURCE into the active stream.</p>
-        <p><strong style="color:var(--accent);">FLASH CAPTURE:</strong> Clicking a word in the Flash Zone archives it to DIGEST. The system employs a deduplication filter to prevent redundant entries.</p>
-        <p><strong style="color:var(--accent);">RECURSIVE CACHE:</strong> The SAVE command links current data to localStorage. Recognized words will automatically pull their definitions from the cache upon capture.</p>
-        <p><strong style="color:var(--accent);">RQ MONITOR:</strong> Tracks system stability. Adjust SPEED (Faster/Slower) to maintain optimal processing frequency.</p>
-        <p><strong style="color:var(--accent);">IO OPS:</strong> Use EXPORT to generate a physical backup (.json) and IMPORT to restore a database from local storage.</p>
-        <p><strong style="color:var(--accent);">RQ FLOW CHART:</strong> Visualizes the real-time dynamics of the RQ (Readiness Quotient). A green trajectory indicates optimal cognitive alignment, while a magenta shift signifies a drop in concentration or a loss of synchronization with the data stream.</p>
-
-    <h3 style="color:var(--accent); margin-top: 20px; font-size: 0.9rem;">PROTOCOL ARCHITECTURE IN BRIEF:</h3>
-    <ul style="padding-left: 20px; margin: 0; list-style-type: square;">
-        <li><strong style="color:var(--tension);">BIO-SYNC</strong> — Foundation (peripheral activation).</li>
-        <li><strong style="color:var(--accent);">GATE</strong> — Intake (raw data loading).</li>
-        <li><strong style="color:var(--accent);">FLASH ZONE</strong> — Active Memory (perception).</li>
-        <li><strong style="color:var(--accent);">DIGEST / CACHE</strong> — Long-term Memory (structuring).</li>
-        <li><strong style="color:var(--accent);">RQ CHART</strong> — Feedback Loop (load optimization).</li>
-    </ul>
-
-        <button onclick="toggleInfo()" style="background:var(--accent); border:none; padding:12px; width:100%; margin-top:30px; font-weight:900; color:#000; cursor:pointer; font-family:inherit; text-transform:uppercase;">Return to Matrix</button>
-    </div>
-
-    <a href="index.html" style="display: flex; justify-content: center; text-decoration: none; opacity: 1;">
-        <img src="logo.png" alt="Feedback" style="height: 44px; width: auto;">
-    </a>
-</div>
-
-
-
-
-</div>
-
-
-
     <script>
         let isRunning = false, isPaused = true, words = [], currentIdx = 0, speed = 300, rq = 85, timer = null;
-
         const chart = new Chart(document.getElementById('sparkChart').getContext('2d'), {
             type: 'line',
             data: { labels: Array(40).fill(''), datasets: [{ borderColor: '#00ff00', borderWidth: 1, data: Array(40).fill(85), pointRadius: 0, fill: false, tension: 0.4 }] },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false, max: 100, min: 0 }, x: { display: false } }, plugins: { legend: { display: false } } }
         });
 
-function toggleSystem() {
-    const flash = document.getElementById('flash-zone');
-    const btn = document.getElementById('gate-btn');
-    const hub = document.getElementById('control-hub');
-
-    if (!isRunning) {
-        words = document.getElementById('srcText').value.split(/\s+/).filter(w => w.length > 0);
-        if (words.length === 0) return alert("Введите текст в SOURCE");
-
-        navigator.mediaDevices.getUserMedia({video: true}).then(s => { document.getElementById('video').srcObject = s; }).catch(() => {});
-
-        flash.classList.add('visible'); 
-        hub.style.display = 'flex'; 
-        btn.classList.add('active');
-        isRunning = true; currentIdx = 0; isPaused = true; update();
-    } else {
-        isRunning = false; isPaused = true; clearTimeout(timer);
-        flash.classList.remove('visible'); 
-        hub.style.display = 'none'; 
-        btn.classList.remove('active');
-    }
-}
-
-
-function toggleRun() {
-if (!isRunning) return;
-if (isPaused && currentIdx >= words.length - 1) {
-currentIdx = 0;
-}
-isPaused = !isPaused;
-document.getElementById('run-btn').innerText = isPaused ? 'RUN' : 'STOP';
-document.getElementById('run-btn').style.color = isPaused ? '' : 'var(--tension)';
-if (!isPaused) {
-update();
-timer = setTimeout(loop, 60000 / (speed * (rq/100)));
-}
-}
-
-// Используем один постоянный контейнер
-const el = document.getElementById('word-stream');
-
-function update() {
-    const el = document.getElementById('word-stream');
-    if (!words[currentIdx]) return;
-
-    // Прямая перезапись без очистки innerText
-    el.innerText = words[currentIdx];
-
-    // Масштабирование
-    const text = words[currentIdx];
-    const scale = Math.min(1, 8 / Math.max(8, text.length));
-    el.style.fontSize = (2.8 * scale) + 'rem';
-    
-    // Обновление RQ
-    document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
-}
-
-
-function loop() {
-    if (isRunning && !isPaused) {
-        if (currentIdx < words.length - 1) {
-            currentIdx++;
-            update();
-
-            // Логика пауз на знаках препинания сохраняется, 
-            // но теперь слово не исчезает, а «замирает» на экране
-            let rawTxt = words[currentIdx];
-            let extraPause = 0;
-            
-            if (/[;,]/.test(rawTxt)) extraPause = 150;
-            else if (/:/.test(rawTxt)) extraPause = 150;
-            else if (/[.!?—]/.test(rawTxt)) extraPause = 300;
-            
-            if (rawTxt.length > 13) extraPause += 500; 
-            
-            let baseInterval = 60000 / (speed * (rq / 100));
-            timer = setTimeout(loop, baseInterval + extraPause);
-        } else {
-            isPaused = true;
-            document.getElementById('run-btn').innerText = 'RUN';
+        function toggleSystem() {
+            const flash = document.getElementById('flash-zone');
+            const btn = document.getElementById('gate-btn');
+            const hub = document.getElementById('control-hub');
+            if (!isRunning) {
+                words = document.getElementById('srcText').value.split(/\s+/).filter(w => w.length > 0);
+                if (words.length === 0) return alert("Введите текст в SOURCE");
+                navigator.mediaDevices.getUserMedia({video: true}).then(s => { document.getElementById('video').srcObject = s; }).catch(() => {});
+                flash.classList.add('visible'); hub.style.display = 'flex'; btn.classList.add('active');
+                isRunning = true; currentIdx = 0; isPaused = true; update();
+            } else {
+                isRunning = false; isPaused = true; clearTimeout(timer);
+                flash.classList.remove('visible'); hub.style.display = 'none'; btn.classList.remove('active');
+            }
         }
-    }
-}
 
+        function toggleRun() {
+            if (!isRunning) return;
+            if (isPaused && currentIdx >= words.length - 1) currentIdx = 0;
+            isPaused = !isPaused;
+            document.getElementById('run-btn').innerText = isPaused ? 'RUN' : 'STOP';
+            document.getElementById('run-btn').style.color = isPaused ? '' : 'var(--tension)';
+            if (!isPaused) { update(); timer = setTimeout(loop, 60000 / (speed * (rq/100))); }
+        }
 
+        function update() {
+            const el = document.getElementById('word-stream');
+            if (!words[currentIdx]) return;
+            el.innerText = words[currentIdx];
+            const scale = Math.min(1, 8 / Math.max(8, words[currentIdx].length));
+            el.style.fontSize = (2.8 * scale) + 'rem';
+            document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
+        }
+
+        function loop() {
+            if (isRunning && !isPaused) {
+                if (currentIdx < words.length - 1) {
+                    currentIdx++;
+                    update();
+                    let rawTxt = words[currentIdx];
+                    let extraPause = /[.!?—]/.test(rawTxt) ? 300 : (/[;,:]/.test(rawTxt) ? 150 : 0);
+                    if (rawTxt.length > 13) extraPause += 500;
+                    timer = setTimeout(loop, 60000 / (speed * (rq / 100)) + extraPause);
+                } else { isPaused = true; document.getElementById('run-btn').innerText = 'RUN'; }
+            }
+        }
 
         function adjSpd(d) { speed = Math.max(50, speed + d); update(); }
         function move(d) { currentIdx = Math.max(0, Math.min(words.length-1, currentIdx + d)); update(); }
 
-function captureWord() {
-    if (!words[currentIdx]) return;
-    
-    let raw = words[currentIdx].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
-    if (!raw) return;
-    
-    const w = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
-    const dig = document.getElementById('digText');
-    
-    const lines = dig.value.split('\n').map(l => l.split(':')[0].trim());
-    if (lines.some(line => line.toLowerCase() === w.toLowerCase())) {
-        document.getElementById('word-stream').style.color = '#555';
-        setTimeout(() => document.getElementById('word-stream').style.color = '', 100);
-        return;
-    }
-
-    let definition = "";
-    const cached = localStorage.getItem('matrix_cache');
-    if (cached) {
-        try {
-            const data = JSON.parse(cached);
-            if (data.dig) {
-                const dbLines = data.dig.split('\n');
-                const foundLine = dbLines.find(line => {
-                    const parts = line.split(':');
-                    return parts[0].trim().toLowerCase() === w.toLowerCase();
-                });
-                if (foundLine && foundLine.includes(':')) {
-                    definition = foundLine.split(':').slice(1).join(':').trim();
-                }
-            }
-        } catch (e) { console.error("Neural Matrix: DB access error"); }
-    }
-
-    const prefix = dig.value.trim().length > 0 ? '\n' : '';
-    dig.value += prefix + w + ': ' + (definition ? definition : '');
-    dig.scrollTop = dig.scrollHeight; 
-
-    checkDigest();
-    
-    document.getElementById('word-stream').style.color = 'var(--tension)';
-    setTimeout(() => document.getElementById('word-stream').style.color = '', 100);
-}
-
-        function checkDigest() {
-            document.getElementById('save-btn').style.display = document.getElementById('digText').value.trim().length > 0 ? 'block' : 'none';
+        function captureWord() {
+            if (!words[currentIdx]) return;
+            let raw = words[currentIdx].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+            if (!raw) return;
+            const w = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+            const dig = document.getElementById('digText');
+            if (dig.value.toLowerCase().includes(w.toLowerCase() + ':')) return;
+            dig.value += (dig.value.trim().length > 0 ? '\n' : '') + w + ': ';
+            checkDigest();
         }
 
-function exportDB() {
-    const data = {
-        src: document.getElementById('srcText').value,
-        dig: document.getElementById('digText').value
-    };
-    localStorage.setItem('matrix_cache', JSON.stringify(data));
-    
-    // Визуальный отклик
-    const btn = document.getElementById('save-btn');
-    const originalText = btn.innerText;
-    btn.innerText = 'CACHED';
-    btn.style.background = 'var(--tension)';
-    setTimeout(() => { 
-        btn.innerText = originalText; 
-        btn.style.background = 'var(--accent)';
-    }, 1000);
-}
+        function checkDigest() { document.getElementById('save-btn').style.display = document.getElementById('digText').value.trim().length > 0 ? 'block' : 'none'; }
 
+        function exportDB() {
+            const data = { src: document.getElementById('srcText').value, dig: document.getElementById('digText').value };
+            localStorage.setItem('matrix_cache', JSON.stringify(data));
+        }
 
         function downloadDB() {
-    const data = JSON.stringify({
-        src: document.getElementById('srcText').value,
-        dig: document.getElementById('digText').value
-    });
-    const blob = new Blob([data], {type: 'application/json'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'matrix_backup.json';
-    a.click();
-}
-
-function importDB(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const data = JSON.parse(e.target.result);
-            if (data.src !== undefined) document.getElementById('srcText').value = data.src;
-            if (data.dig !== undefined) document.getElementById('digText').value = data.dig;
-            
-            // Синхронизируем с кэшем, чтобы данные не пропали после обновления
-            localStorage.setItem('matrix_cache', JSON.stringify(data));
-            checkDigest();
-        } catch (err) {
-            console.error("Neural Matrix: Import failed. Invalid JSON.");
+            const data = JSON.stringify({ src: document.getElementById('srcText').value, dig: document.getElementById('digText').value });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([data], {type: 'application/json'}));
+            a.download = 'matrix_backup.json';
+            a.click();
         }
-    };
-    reader.readAsText(file);
-}
 
+        function importDB(event) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    document.getElementById('srcText').value = data.src || '';
+                    document.getElementById('digText').value = data.dig || '';
+                    localStorage.setItem('matrix_cache', JSON.stringify(data));
+                    checkDigest();
+                } catch (err) { console.error("Import failed."); }
+            };
+            reader.readAsText(event.target.files[0]);
+        }
 
-function toggleInfo() {
-    const modal = document.getElementById('info-modal');
-    modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
-}
-
+        function toggleInfo() { const modal = document.getElementById('info-modal'); modal.style.display = modal.style.display === 'none' ? 'block' : 'none'; }
 
         setInterval(() => {
-    rq = Math.max(10, Math.min(100, rq + (Math.random() - 0.5) * 6));
-    
-    chart.data.datasets[0].data.push(rq); 
-    chart.data.datasets[0].data.shift();
-    chart.update('none');
-    
-    document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
-    
-    const c = rq > 50 ? '#00ff00' : '#ff1493';
-    document.getElementById('index-row').style.color = c;
-    chart.data.datasets[0].borderColor = c;
-}, 1000);
+            rq = Math.max(10, Math.min(100, rq + (Math.random() - 0.5) * 6));
+            chart.data.datasets[0].data.push(rq); chart.data.datasets[0].data.shift();
+            chart.update('none');
+            const c = rq > 50 ? '#00ff00' : '#ff1493';
+            document.getElementById('index-row').style.color = c;
+            chart.data.datasets[0].borderColor = c;
+        }, 1000);
 
-        
-function toggleDonate() { 
-    const info = document.getElementById("cryptoInfo"); 
-    const basement = document.getElementById("basement");
-    const isOpening = info.style.display !== "flex";
-    
-    info.style.display = isOpening ? "flex" : "none"; 
-    
-    if (isOpening) {
-        setTimeout(() => {
-            info.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
-    }
-}
-
-
-
-
-
-function copyToClipboard() {
-    const addr = document.getElementById("cryptoAddr");
-    const hint = document.getElementById("copyHint");
-    const text = addr.innerText;
-    navigator.clipboard.writeText(text).then(() => {
-        addr.innerText = "Copied!";
-        addr.style.color = "#00ff00";
-        if (hint) hint.innerText = "Address saved to clipboard";
-        
-        setTimeout(() => {
-            addr.innerText = text;
-            addr.style.color = "#fff";
-            if (hint) hint.innerText = "Click address to copy";
-        }, 1500);
-    });
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-    const cached = localStorage.getItem('matrix_cache');
-    if (cached) {
-        const data = JSON.parse(cached);
-        document.getElementById('srcText').value = data.src || '';
-        document.getElementById('digText').value = data.dig || '';
-        checkDigest();
-    }
-});
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                const cached = localStorage.getItem('matrix_cache');
+                if (cached) {
+                    const data = JSON.parse(cached);
+                    document.getElementById('srcText').value = data.src || '';
+                    document.getElementById('digText').value = data.dig || '';
+                    checkDigest();
+                }
+            } catch (e) { localStorage.removeItem('matrix_cache'); }
+        });
     </script>
 </body>
 </html>
