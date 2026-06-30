@@ -39,10 +39,11 @@
     <div id="gateway">
         <div class="pane-wrap"><textarea id="srcText" class="pane pane-l" placeholder="SOURCE"></textarea></div>
         <div class="pane-wrap">
-            <textarea id="digText" class="pane" placeholder="DIGEST" oninput="checkDigest()"></textarea>
-            <div id="save-btn" onclick="exportDB()">SAVE</div>
+            <textarea id="digText" class="pane" placeholder="DIGEST" oninput="exportDB()"></textarea>
+
         </div>
-<div id="gate-btn" onclick="handleGateClick()"><span>GATE</span></div>
+<div id="gate-btn" onclick="toggleSystem()"><span>GATE</span></div>
+
 
     </div>
     <div id="flash-zone">
@@ -85,7 +86,7 @@
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false, max: 100, min: 0 }, x: { display: false } }, plugins: { legend: { display: false } } }
         });
 
-function handleGateClick() {
+function toggleSystem() {
     const flash = document.getElementById('flash-zone');
     const btn = document.getElementById('gate-btn');
     const hub = document.getElementById('control-hub');
@@ -94,16 +95,19 @@ function handleGateClick() {
     if (!isRunning) {
         words = document.getElementById('srcText').value.split(/\s+/).filter(w => w.length > 0);
         if (words.length === 0) return alert("Введите текст в SOURCE");
+        
         navigator.mediaDevices.getUserMedia({video: true}).then(s => { document.getElementById('video').srcObject = s; }).catch(() => {});
         flash.classList.add('visible'); hub.style.display = 'flex'; btn.classList.add('active');
-        span.innerText = 'SAVE';
+        span.innerText = 'STOP'; // Теперь кнопка сигнализирует, что можно остановить
         isRunning = true; currentIdx = 0; isPaused = true; update();
     } else {
-        exportDB();
-        span.innerText = 'CACHED';
-        setTimeout(() => { span.innerText = 'SAVE'; }, 1000);
+        isRunning = false; isPaused = true; clearTimeout(timer);
+        flash.classList.remove('visible'); hub.style.display = 'none'; btn.classList.remove('active');
+        span.innerText = 'GATE'; // Возвращаем исходное состояние
+        exportDB(); // Сохраняем при остановке
     }
 }
+
 
 
         function toggleRun() {
