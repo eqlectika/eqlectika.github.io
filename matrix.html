@@ -370,7 +370,11 @@ function loop() {
             else if (/:/.test(rawTxt)) extraPause = 150;
             else if (/[.!?—]/.test(rawTxt)) extraPause = 300;
             
-            if (rawTxt.length > 8) extraPause += 50; 
+if (rawTxt.length > 8) {
+    // Пауза растет пропорционально количеству символов свыше 8
+    extraPause = baseInterval * ((rawTxt.length - 8) * 0.1); 
+}
+
             
             let baseInterval = 60000 / (speed * (rq / 100));
             timer = setTimeout(loop, baseInterval + extraPause);
