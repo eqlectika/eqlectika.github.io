@@ -230,7 +230,10 @@ setInterval(() => {
             
             // Нормализуем активность в показатель RQ (0-100)
             // Коэффициент 50000 подобран эмпирически для движения перед камерой
-            let motionActivity = Math.min(100, (diff / 50000) * 100);
+
+let motionActivity = Math.max(0, 100 - (diff / 50000) * 100);
+rq = (rq * 0.7) + (motionActivity * 0.3);
+
             
             // Плавное изменение RQ на основе активности
             rq = (rq * 0.7) + (motionActivity * 0.3);
