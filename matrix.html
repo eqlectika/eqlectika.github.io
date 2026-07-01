@@ -8,6 +8,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+    .inverted {
+    filter: invert(1) hue-rotate(180deg);
+    transition: filter 0.5s ease;
+}
+body {
+    transition: filter 0.5s ease;
+}
+
         :root { --bg: #000; --text: #fff; --accent: #00ff00; --tension: #ffffff; --dim: #111; }
         * { box-sizing: border-box; font-family: 'Ubuntu', monospace; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: var(--text); overflow: auto; display: flex; flex-direction: column; }
@@ -25,7 +33,7 @@
         #gate-btn span { writing-mode: vertical-rl; text-orientation: upright; color: #000; font-weight: 900; font-size: 0.8rem; letter-spacing: 3px; }
         #gate-btn.active { background: var(--tension); }
         #control-hub { height: 40px; width: 100%; display: none; justify-content: space-around; align-items: center; background: #000; flex-shrink: 0; }
-        .u-btn { color: var(--accent); font-size: 0.8rem; cursor: pointer; font-weight: bold; }
+        .u-btn { color: var(--accent); font-size: 0.7rem; cursor: pointer; font-weight: bold; }
         #index-row { width: 100%; min-height: 25px; display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 0.8rem; letter-spacing: 12px; padding-left: 12px; font-weight: bold; background: #000; }
         #monitor { min-height: 60px; width: 100%; position: relative; }
         #db-tools { min-height: 45px; display: flex; justify-content: center; align-items: center; gap: 20px; padding: 5px; }
@@ -60,8 +68,10 @@
         <div id="index-row">RQ:85</div>
         <div id="monitor"><canvas id="sparkChart"></canvas></div>
         <div id="db-tools" style="flex-direction: column; gap: 10px;">
-            <div style="display: flex; gap: 20px;">
+
+                        <div style="display: flex; gap: 20px;">
                 <div class="db-btn" onclick="downloadDB()">EXPORT DB</div>
+                <div class="db-btn" style="border: none; width: fit-content;" onclick="document.body.classList.toggle('inverted')">INVERT</div>
                 <div class="db-btn" onclick="document.getElementById('importInput').click()">IMPORT DB</div>
             </div>
             <input type="file" id="importInput" style="display:none" onchange="importDB(event)">
