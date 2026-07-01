@@ -118,7 +118,25 @@ function toggleSystem() {
         words = document.getElementById('srcText').value.split(/\s+/).filter(w => w.length > 0);
         if (words.length === 0) return alert("Введите текст в SOURCE");
         
-        navigator.mediaDevices.getUserMedia({video: true}).then(s => { document.getElementById('video').srcObject = s; }).catch(() => {});
+navigator.mediaDevices.getUserMedia({ 
+    video: { 
+        width: 640, 
+        height: 480,
+        // Попытка принудительного увеличения чувствительности:
+        exposureMode: 'manual',
+        exposureCompensation: 2.0, // Увеличение экспозиции (яркости)
+        frameRate: { ideal: 30 } 
+    } 
+}).then(s => { 
+    document.getElementById('video').srcObject = s; 
+    // Если камера поддерживает ручные настройки, применяем их:
+    const track = s.getVideoTracks()[0];
+    const capabilities = track.getCapabilities();
+    if (capabilities.exposureCompensation) {
+        track.applyConstraints({ advanced: [{ exposureCompensation: 2.0 }] });
+    }
+}).catch(e => console.error("Ошибка доступа к настройкам камеры:", e));
+
         flash.classList.add('visible'); hub.style.display = 'flex'; btn.classList.add('active');
         span.innerText = 'GATE'; // Теперь кнопка сигнализирует, что можно остановить
         isRunning = true; currentIdx = 0; isPaused = true; update();
@@ -213,27 +231,32 @@ const analyzerCanvas = document.createElement('canvas');
 analyzerCanvas.width = 50; 
 analyzerCanvas.height = 50;
 const analyzerCtx = analyzerCanvas.getContext('2d', { willReadFrequently: true });
+// --- ЛОГАРИФМИЧЕСКИЙ АНАЛИЗАТОР (Тонкая настройка) ---
+// --- АДАПТИВНЫЙ АНАЛИЗАТОР ---
+// --- АДАПТИВНЫЙ АНАЛИЗАТОР (Версия 3) ---
 let lastImageData = null;
 
-// Анализ центральной зоны 20x20
 setInterval(() => {
     const video = document.getElementById('video');
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
         analyzerCtx.drawImage(video, 0, 0, 50, 50);
-        
-        // Берем область 20x20 из центра (координаты 15,15)
         const imgData = analyzerCtx.getImageData(15, 15, 20, 20);
         const currentData = imgData.data;
         
         if (lastImageData) {
-            let diff = 0;
+            let maxDiff = 0; // Ищем не среднее, а МАКСИМАЛЬНОЕ изменение
             for (let i = 0; i < currentData.length; i += 4) {
-                diff += Math.abs(currentData[i] - lastImageData[i]);
+                let d = Math.abs(currentData[i] - lastImageData[i]);
+                if (d > maxDiff) maxDiff = d;
             }
             
-            // Коэффициент чувствительности для узкой зоны (подобран для 20x20)
-            let motionActivity = Math.max(0, 100 - (diff / 1500) * 100);
-            rq = (rq * 0.8) + (motionActivity * 0.2); 
+            // Теперь реакция зависит от того, есть ли хоть одна зона движения
+            // 25 - порог срабатывания. Если RQ не падает, уменьшите до 15.
+            // 2 - коэффициент резкости падения RQ.
+            let motionActivity = Math.max(0, 100 - (maxDiff * 2)); 
+            
+            // Быстрая реакция (0.5) вместо инерционной (0.9)
+            rq = (rq * 0.5) + (motionActivity * 0.5); 
         }
         lastImageData = currentData;
     }
@@ -242,11 +265,11 @@ setInterval(() => {
     chart.data.datasets[0].data.shift();
     chart.update('none');
     
-    const c = rq > 30 ? '#00ff00' : '#ffffff';
-    document.getElementById('index-row').style.color = c;
+    chart.data.datasets[0].borderColor = '#ffffff'; 
+    chart.data.datasets[0].borderWidth = 3;
     document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
-    chart.data.datasets[0].borderColor = c;
-}, 100); 
+}, 100);
+
 
 
 
