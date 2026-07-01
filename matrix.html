@@ -69,23 +69,29 @@
         <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; margin-bottom: 20px;">
             <div class="db-btn" onclick="toggleInfo()" style="border: none; width: fit-content;">INFO</div>
     <div id="info-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.98); z-index:2000; padding:25px; overflow-y:auto; font-size:0.75rem; color:var(--text); line-height:1.6;">
-        <h2 style="color:var(--accent); border-bottom:1px solid var(--accent); letter-spacing: 2px;">NEURAL MATRIX PROTOCOL</h2>
-        <p><strong style="color:var(--tension);">BIO-SYNC:</strong> The camera stream serves as a biometric anchor, preventing device sleep mode and ensuring operator cognitive synchronization with the data flow.</p>
-        <p><strong style="color:var(--accent);">GATE:</strong> Activates the processing buffer. Loads data from SOURCE into the active stream.</p>
-        <p><strong style="color:var(--accent);">FLASH CAPTURE:</strong> Clicking a word in the Flash Zone archives it to DIGEST. The system employs a deduplication filter to prevent redundant entries.</p>
-        <p><strong style="color:var(--accent);">RECURSIVE CACHE:</strong> The SAVE command links current data to localStorage. Recognized words will automatically pull their definitions from the cache upon capture.</p>
-        <p><strong style="color:var(--accent);">RQ MONITOR:</strong> Tracks system stability. Adjust SPEED (Faster/Slower) to maintain optimal processing frequency.</p>
-        <p><strong style="color:var(--accent);">IO OPS:</strong> Use EXPORT to generate a physical backup (.json) and IMPORT to restore a database from local storage.</p>
-        <p><strong style="color:var(--accent);">RQ FLOW CHART:</strong> Visualizes the real-time dynamics of the RQ (Readiness Quotient). A green trajectory indicates optimal cognitive alignment, while a magenta shift signifies a drop in concentration or a loss of synchronization with the data stream.</p>
+<h2 style="color:var(--accent); border-bottom:1px solid var(--accent); letter-spacing: 2px;">NEURAL MATRIX PROTOCOL</h2>
 
-    <h3 style="color:var(--accent); margin-top: 20px; font-size: 0.9rem;">PROTOCOL ARCHITECTURE IN BRIEF:</h3>
-    <ul style="padding-left: 20px; margin: 0; list-style-type: square;">
-        <li><strong style="color:var(--tension);">BIO-SYNC</strong> — Foundation (peripheral activation).</li>
-        <li><strong style="color:var(--accent);">GATE</strong> — Intake (raw data loading).</li>
-        <li><strong style="color:var(--accent);">FLASH ZONE</strong> — Active Memory (perception).</li>
-        <li><strong style="color:var(--accent);">DIGEST / CACHE</strong> — Long-term Memory (structuring).</li>
-        <li><strong style="color:var(--accent);">RQ CHART</strong> — Feedback Loop (load optimization).</li>
-    </ul>
+<p><strong style="color:var(--tension);">BIO-SYNC (Biometric Anchor):</strong> The system initiates a persistent camera stream to serve as a biometric anchor. It performs real-time optical motion analysis via a 50x50px sampling grid, mapping the operator’s physical kinetic state to the system’s readiness.</p>
+
+<p><strong style="color:var(--accent);">GATE (Buffer Initialization):</strong> Activates the processing environment. Loads source data into the active buffer and establishes the link between the BIO-SYNC channel and the system’s performance metrics.</p>
+
+<p><strong style="color:var(--accent);">FLASH CAPTURE (Perception):</strong> The stream displays rapid-fire text units. Clicking a word archives it to the DIGEST. A deduplication filter ensures data purity.</p>
+
+<p><strong style="color:var(--accent);">RQ MONITOR (Kinetic Feedback Loop):</strong> The Readiness Quotient (RQ) is dynamically calculated based on the motion intensity detected by the camera. The system continuously adjusts the refresh rate of the stream: high activity maintains optimal flow, while inactivity triggers a system-wide deceleration.</p>
+
+<p><strong style="color:var(--accent);">RQ FLOW CHART (System State):</strong> A visual feedback mechanism. 
+    <br>— <span style="color:var(--accent);">Green Trajectory:</span> Optimal kinetic synchronization and high cognitive engagement. 
+    <br>— <span style="color:var(--tension);">Magenta Shift:</span> Static state detected. System readiness is dropping due to a loss of kinetic synchronization.</p>
+
+<h3 style="color:var(--accent); margin-top: 20px; font-size: 0.9rem;">PROTOCOL ARCHITECTURE:</h3>
+<ul style="padding-left: 20px; margin: 0; list-style-type: square;">
+    <li><strong style="color:var(--tension);">BIO-SYNC</strong> — Foundation: Constant kinetic monitoring.</li>
+    <li><strong style="color:var(--accent);">GATE</strong> — Intake: Data stream loading.</li>
+    <li><strong style="color:var(--accent);">FLASH ZONE</strong> — Perception: Active cognitive buffer.</li>
+    <li><strong style="color:var(--accent);">DIGEST / CACHE</strong> — Structuring: Long-term memory storage.</li>
+    <li><strong style="color:var(--accent);">RQ FLOW</strong> — Optimization: Real-time load adjustment based on movement.</li>
+</ul>
+
                 <button onclick="toggleInfo()" style="background:var(--accent); border:none; padding:12px; width:100%; margin-top:30px; font-weight:900; color:#000; cursor:pointer; font-family:inherit; text-transform:uppercase;">Return to Matrix</button>
             </div>
         </div>
@@ -202,14 +208,47 @@ function toggleSystem() {
 
         function toggleInfo() { const modal = document.getElementById('info-modal'); modal.style.display = modal.style.display === 'none' ? 'block' : 'none'; }
 
-        setInterval(() => {
-            rq = Math.max(10, Math.min(100, rq + (Math.random() - 0.5) * 6));
-            chart.data.datasets[0].data.push(rq); chart.data.datasets[0].data.shift();
-            chart.update('none');
-            const c = rq > 50 ? '#00ff00' : '#ff1493';
-            document.getElementById('index-row').style.color = c;
-            chart.data.datasets[0].borderColor = c;
-        }, 1000);
+const analyzerCanvas = document.createElement('canvas');
+analyzerCanvas.width = 50;  // Низкое разрешение для экономии ресурсов
+analyzerCanvas.height = 50;
+const analyzerCtx = analyzerCanvas.getContext('2d', { willReadFrequently: true });
+let lastImageData = null;
+
+setInterval(() => {
+    const video = document.getElementById('video');
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        // Рисуем текущий кадр на вспомогательный холст
+        analyzerCtx.drawImage(video, 0, 0, 50, 50);
+        const currentData = analyzerCtx.getImageData(0, 0, 50, 50).data;
+        
+        if (lastImageData) {
+            let diff = 0;
+            // Сравниваем яркость пикселей
+            for (let i = 0; i < currentData.length; i += 4) {
+                diff += Math.abs(currentData[i] - lastImageData[i]);
+            }
+            
+            // Нормализуем активность в показатель RQ (0-100)
+            // Коэффициент 50000 подобран эмпирически для движения перед камерой
+            let motionActivity = Math.min(100, (diff / 50000) * 100);
+            
+            // Плавное изменение RQ на основе активности
+            rq = (rq * 0.7) + (motionActivity * 0.3);
+        }
+        lastImageData = currentData;
+    }
+
+    // Обновление графика и интерфейса
+    chart.data.datasets[0].data.push(rq); 
+    chart.data.datasets[0].data.shift();
+    chart.update('none');
+    
+    const c = rq > 30 ? '#00ff00' : '#ff1493'; // Порог чувствительности
+    document.getElementById('index-row').style.color = c;
+    document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
+    chart.data.datasets[0].borderColor = c;
+}, 1000); // Интервал опроса камеры — 1 секунда
+
 
         window.addEventListener('DOMContentLoaded', () => {
             try {
