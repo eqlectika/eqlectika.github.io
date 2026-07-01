@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #000; --text: #fff; --accent: #00ff00; --tension: #ff1493; --dim: #111; }
+        :root { --bg: #000; --text: #fff; --accent: #00ff00; --tension: #ffffff; --dim: #111; }
         * { box-sizing: border-box; font-family: 'Ubuntu', monospace; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: var(--text); overflow: auto; display: flex; flex-direction: column; }
         .pane-wrap { position: relative; height: 100%; width: 100%; overflow: hidden; }
@@ -104,7 +104,7 @@
         let isRunning = false, isPaused = true, words = [], currentIdx = 0, speed = 300, rq = 85, timer = null;
         const chart = new Chart(document.getElementById('sparkChart').getContext('2d'), {
             type: 'line',
-            data: { labels: Array(40).fill(''), datasets: [{ borderColor: '#00ff00', borderWidth: 1, data: Array(40).fill(85), pointRadius: 0, fill: false, tension: 0.4 }] },
+            data: { labels: Array(40).fill(''), datasets: [{ borderColor: '#ffffff', borderWidth: 3, data: Array(40).fill(85), pointRadius: 0, fill: false, tension: 0.4 }] },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false, max: 100, min: 0 }, x: { display: false } }, plugins: { legend: { display: false } } }
         });
 
@@ -232,7 +232,7 @@ setInterval(() => {
             }
             
             // Коэффициент чувствительности для узкой зоны (подобран для 20x20)
-            let motionActivity = Math.max(0, 100 - (diff / 5000) * 100);
+            let motionActivity = Math.max(0, 100 - (diff / 1500) * 100);
             rq = (rq * 0.8) + (motionActivity * 0.2); 
         }
         lastImageData = currentData;
@@ -242,7 +242,7 @@ setInterval(() => {
     chart.data.datasets[0].data.shift();
     chart.update('none');
     
-    const c = rq > 30 ? '#00ff00' : '#ff1493';
+    const c = rq > 30 ? '#00ff00' : '#ffffff';
     document.getElementById('index-row').style.color = c;
     document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
     chart.data.datasets[0].borderColor = c;
