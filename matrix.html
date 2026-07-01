@@ -208,49 +208,47 @@ function toggleSystem() {
 
         function toggleInfo() { const modal = document.getElementById('info-modal'); modal.style.display = modal.style.display === 'none' ? 'block' : 'none'; }
 
+// --- УЗКОФОКУСНЫЙ АНАЛИЗАТОР (Фокус на глаз) ---
 const analyzerCanvas = document.createElement('canvas');
-analyzerCanvas.width = 50;  // Низкое разрешение для экономии ресурсов
+analyzerCanvas.width = 50; 
 analyzerCanvas.height = 50;
 const analyzerCtx = analyzerCanvas.getContext('2d', { willReadFrequently: true });
 let lastImageData = null;
 
+// Анализ центральной зоны 20x20
 setInterval(() => {
     const video = document.getElementById('video');
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        // Рисуем текущий кадр на вспомогательный холст
         analyzerCtx.drawImage(video, 0, 0, 50, 50);
-        const currentData = analyzerCtx.getImageData(0, 0, 50, 50).data;
+        
+        // Берем область 20x20 из центра (координаты 15,15)
+        const imgData = analyzerCtx.getImageData(15, 15, 20, 20);
+        const currentData = imgData.data;
         
         if (lastImageData) {
             let diff = 0;
-            // Сравниваем яркость пикселей
             for (let i = 0; i < currentData.length; i += 4) {
                 diff += Math.abs(currentData[i] - lastImageData[i]);
             }
             
-            // Нормализуем активность в показатель RQ (0-100)
-            // Коэффициент 50000 подобран эмпирически для движения перед камерой
-
-let motionActivity = Math.max(0, 100 - (diff / 50000) * 100);
-rq = (rq * 0.7) + (motionActivity * 0.3);
-
-            
-            // Плавное изменение RQ на основе активности
-            rq = (rq * 0.7) + (motionActivity * 0.3);
+            // Коэффициент чувствительности для узкой зоны (подобран для 20x20)
+            let motionActivity = Math.max(0, 100 - (diff / 5000) * 100);
+            rq = (rq * 0.8) + (motionActivity * 0.2); 
         }
         lastImageData = currentData;
     }
 
-    // Обновление графика и интерфейса
     chart.data.datasets[0].data.push(rq); 
     chart.data.datasets[0].data.shift();
     chart.update('none');
     
-    const c = rq > 30 ? '#00ff00' : '#ff1493'; // Порог чувствительности
+    const c = rq > 30 ? '#00ff00' : '#ff1493';
     document.getElementById('index-row').style.color = c;
     document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
     chart.data.datasets[0].borderColor = c;
-}, 1000); // Интервал опроса камеры — 1 секунда
+}, 100); 
+
+
 
 
         window.addEventListener('DOMContentLoaded', () => {
