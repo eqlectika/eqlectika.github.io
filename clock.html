@@ -172,48 +172,6 @@ margin: 15px;
   display: flex; 
   justify-content: center; 
 }
-
-.donate-box { 
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; /* Центрування вмісту */
-  gap: 10px; 
-}
-
-.donate-btn { 
-  color: #fff; 
-  border: 1px solid #fff; 
-  padding: 5px 15px; 
-  background: transparent; 
-  cursor: pointer; 
-  font-family: monospace; 
-  width: fit-content; 
-  transition: 0.3s; 
-}
-
-.donate-btn:hover { 
-  background: #aaa; 
-  color: #000; 
-}
-
-.crypto-info { 
-  display: none; 
-  flex-direction: column; 
-  align-items: center; /* Центрування тексту та адреси */
-  gap: 5px; 
-  margin-top: 10px; 
-}
-
-.crypto-address-display { 
-  font-size: 10px; 
-  color: #fff; 
-  background: #111; 
-  padding: 8px 12px; 
-  border: 1px dashed #fff; 
-  cursor: copy; 
-  word-break: break-all; 
-  max-width: 280px; 
-  text-align: center;
 }
   </style>
 </head>
@@ -267,6 +225,7 @@ margin: 15px;
     });
     
     const planets = [
+      {name: 'Moon', distance: 0.00257, period: 27.3, color: '#cccccc', eccentricity: 0.0549, inclination: 5.145, parent: 'Earth'},
       {name: 'Mercury', distance: 0.387, period: 88, color: '#1e90ff', eccentricity: 0.2056, inclination: 0.1222},
       {name: 'Venus', distance: 0.723, period: 225, color: '#8F00FF', eccentricity: 0.0068, inclination: 0.0593},
       {name: 'Earth', distance: 1.000, period: 365.25, color: '#008000', eccentricity: 0.0167, inclination: 0},
@@ -481,125 +440,121 @@ datePicker.addEventListener('change', (e) => {
       
       ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 1. Вычисляем Землю
+      const earthData = planets[earthIndex];
+      const earthM = (2 * Math.PI * t) / earthData.period;
+      const earthE = solveKepler(earthM, earthData.eccentricity);
+      const earthTheta = getTrueAnomaly(earthE, earthData.eccentricity);
+      const earthR = (orbitRadius(earthData.distance) * (1 - earthData.eccentricity ** 2)) / (1 + earthData.eccentricity * Math.cos(earthTheta));
       
+      const earthX = earthR * Math.cos(earthTheta);
+      const earthY = earthR * Math.sin(earthTheta) * Math.cos(earthData.inclination);
+
+
+      // 2. Вычисляем все объекты
       const positions = planets.map(planet => {
-        const a = orbitRadius(planet.distance);
-        const e = planet.eccentricity;
-        const M = (2 * Math.PI * t) / planet.period;
-        const E = solveKepler(M, e);
-        const theta = getTrueAnomaly(E, e);
-        const r = a * (1 - e * e) / (1 + e * Math.cos(theta));
-        let x = r * Math.cos(theta);
-        let y = r * Math.sin(theta);
-        const inclination = planet.inclination;
-        y *= Math.cos(inclination);
-        return {
-          x: centerX + x * scale,
-          y: centerY + y * scale,
-          color: planet.color,
-          name: planet.name
-        };
-      });
-      
-      const earthPos = positions[earthIndex];
-      
-      ctx.strokeStyle = '#333';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      
-      planets.forEach((planet, i) => {
-        if (!planetVisibility[i]) return;
-        const a = orbitRadius(planet.distance) * scale;
-        const e = planet.eccentricity;
-        const b = a * Math.sqrt(1 - e * e);
-        const inclination = planet.inclination;
-        const scaledB = b * Math.cos(inclination);
-        ctx.beginPath();
-        if (frame === 'sun') {
-          const focusOffset = a * e;
-          ctx.ellipse(centerX + focusOffset, centerY, a, scaledB, 0, 0, Math.PI * 2);
-        } else {
-          ctx.ellipse(earthPos.x, earthPos.y, a, scaledB, 0, 0, Math.PI * 2);
+        let x, y;
+
+        if (planet.name === 'Moon') {
+          const moonM = (2 * Math.PI * t) / planet.period;
+          const moonE = solveKepler(moonM, planet.eccentricity);
+          const moonTheta = getTrueAnomaly(moonE, planet.eccentricity);
+          
+          const moonR = orbitRadius(0.05) * 3; // Увеличил радиус для видимости
+          const localX = moonR * Math.cos(moonTheta);
+          const localY = moonR * Math.sin(moonTheta) * Math.cos(planet.inclination);
+          
+          x = earthX + localX;
+          y = earthY + localY;
+        } 
+        else {
+          const a = orbitRadius(planet.distance);
+          const e = planet.eccentricity;
+          const M = (2 * Math.PI * t) / planet.period;
+          const E = solveKepler(M, e);
+          const theta = getTrueAnomaly(E, e);
+          const r = a * (1 - e * e) / (1 + e * Math.cos(theta));
+          
+          x = r * Math.cos(theta);
+          y = r * Math.sin(theta) * Math.cos(planet.inclination);
         }
-        ctx.stroke();
+
+        return { x: centerX + x * scale, y: centerY + y * scale, color: planet.color, name: planet.name };
       });
+
       
-      ctx.setLineDash([]);
+      // Отрисовка
+      const currentEarthPos = positions[earthIndex];
       
+      // Рисуем Солнце
       if (frame === 'sun') {
         drawPoint(centerX, centerY, '#ffff00', 6);
       } else {
-        drawPoint(centerX, centerY, '#008000', 6);
-        const sunX = centerX - (earthPos.x - centerX);
-        const sunY = centerY - (earthPos.y - centerY);
+        const sunX = centerX - (currentEarthPos.x - centerX);
+        const sunY = centerY - (currentEarthPos.y - centerY);
         drawPoint(sunX, sunY, '#ffff00', 6);
       }
-      
+
       positions.forEach((pos, i) => {
         if (!planetVisibility[i]) return;
+        
         let drawX = pos.x;
         let drawY = pos.y;
         if (frame === 'earth') {
-          drawX = centerX + (pos.x - earthPos.x);
-          drawY = centerY + (pos.y - earthPos.y);
+          drawX = centerX + (pos.x - currentEarthPos.x);
+          drawY = centerY + (pos.y - currentEarthPos.y);
         }
-        trajectories[i].push({x: drawX, y: drawY});
-        if (trajectories[i].length > 300) {
-          trajectories[i].shift();
-        }
-        if (trajectories[i].length > 1) {
+        
+        if (planets[i].name === 'Moon') {
+          const earthDrawX = frame === 'earth' ? centerX : currentEarthPos.x;
+          const earthDrawY = frame === 'earth' ? centerY : currentEarthPos.y;
+
+          // 1. Линия Земля-Луна
           ctx.beginPath();
-          ctx.strokeStyle = pos.color;
-          ctx.lineWidth = 1.5;
-          for (let j = 0; j < trajectories[i].length; j++) {
-            const p = trajectories[i][j];
-            if (j === 0) ctx.moveTo(p.x, p.y);
-            else ctx.lineTo(p.x, p.y);
-          }
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+          ctx.moveTo(earthDrawX, earthDrawY);
+          ctx.lineTo(drawX, drawY);
           ctx.stroke();
+
+          // 2. Линия ПРОДЛЕНИЯ (вставить этот кусок кода)
+          ctx.beginPath();
+          ctx.setLineDash([5, 5]); 
+          ctx.strokeStyle = '#ffff00';
+          ctx.moveTo(drawX, drawY);
+          // Удлиняем вектор: берем разницу координат и умножаем на 2
+          ctx.lineTo(drawX + (drawX - earthDrawX), drawY + (drawY - earthDrawY));
+          ctx.stroke();
+          ctx.setLineDash([]);
         }
-        drawPoint(drawX, drawY, pos.color, 3);
+
+        trajectories[i].push({x: drawX, y: drawY});
+        if (trajectories[i].length > 300) trajectories[i].shift();
+        
+        ctx.beginPath();
+        ctx.strokeStyle = planets[i].color;
+        for (let j = 0; j < trajectories[i].length; j++) {
+            const p = trajectories[i][j];
+            j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+        }
+        ctx.stroke();
+        drawPoint(drawX, drawY, planets[i].color, 3);
       });
-      
-      ctx.fillStyle = '#fff';
-      ctx.font = '14px monospace';
-      ctx.textAlign = 'center';
-      const infoText = `Scale: ${scale.toFixed(2)}x | Speed: ${dt.toFixed(1)}dpf`;
-      ctx.fillText(infoText, canvas.width / 2, 12);
+
+
       
       if (!isPaused) {
         t += dt;
         datePicker.value = getCurrentDate();
-        if (t > 100000) t = 0;
         requestAnimationFrame(animate);
       }
     }
-    
-    animate();
-    function toggleDonate() { 
-  const info = document.getElementById("cryptoInfo"); 
-  const isOpening = info.style.display !== "flex";
-  info.style.display = isOpening ? "flex" : "none"; 
-  if (isOpening) {
-    setTimeout(() => info.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
-  }
-}
 
-function copyToClipboard() {
-  const addr = document.getElementById("cryptoAddr");
-  const hint = document.getElementById("copyHint");
-  const text = addr.innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    addr.innerText = "Copied!";
-    addr.style.color = "#00ff00";
-    if (hint) hint.innerText = "Address saved to clipboard";
-    setTimeout(() => {
-      addr.innerText = text;
-      addr.style.color = "#fff";
-      if (hint) hint.innerText = "Click address to copy";
-    }, 1500);
-  });
-}
+    animate();
+
+    
+    
+
   </script>
 
 </body>
