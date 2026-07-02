@@ -461,21 +461,19 @@ if (item) { handleImageFile(item.getAsFile(), i, ta); }
   let textareaLongPressTimer;
   
   const startLongPress = (e) => {
-    // Используем event.currentTarget, чтобы гарантированно получить текущий элемент
     const targetTa = e.currentTarget;
     textareaLongPressTimer = setTimeout(() => {
       targetTa.blur();
 
-      const style = getComputedStyle(targetTa);
-      const curFont = style.getPropertyValue('--fn').trim().replace(/['"]/g, '') || "sans-serif";
-      const curBg = style.getPropertyValue('--bg').trim() || "#000000";
-      const curColor = style.getPropertyValue('--color').trim() || "#ffffff";
-      const curSize = style.fontSize || "18px";
+      const curFont = localStorage.getItem(`q_f_${i}`) || "sans-serif";
+      const curBg = localStorage.getItem(`q_b_${i}`) || getComputedStyle(targetTa).getPropertyValue('--default-bg').trim();
+      const curColor = localStorage.getItem(`q_c_${i}`) || getComputedStyle(targetTa).getPropertyValue('--default-color').trim();
+      const curSize = localStorage.getItem(`q_s_${i}`) || "18px";
 
       const newFont = prompt("Font family:", curFont);
       if (newFont !== null) {
-          targetTa.style.setProperty('--fn', newFont);
-          localStorage.setItem(`q_f_${i}`, newFont);
+        targetTa.style.setProperty('--fn', newFont);
+        localStorage.setItem(`q_f_${i}`, newFont);
       }
 
       const s = prompt("Size:", curSize);
@@ -484,19 +482,16 @@ if (item) { handleImageFile(item.getAsFile(), i, ta); }
       const b = prompt("Background:", curBg);
       if (b) { targetTa.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
       
-      // ИСПРАВЛЕНО: переменная curColor вместо несуществующей currentColor
       const c = prompt("Color:", curColor); 
       if (c) { targetTa.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
       
-      // Логика работы с изображениями
+      // ИСПРАВЛЕНО: параметры картинки показываются только если она существует
       if (images[i].style.display === 'block') {
         const currentPos = localStorage.getItem(`q_pos_${i}`) || "bottom right";
         const pos = prompt("Position (e.g., top left, bottom right):", currentPos);
         if (pos) {
           localStorage.setItem(`q_pos_${i}`, pos);
-          const parts = pos.split(' ');
-          const v = parts[0];
-          const h = parts[1];
+          const [v, h] = pos.split(' ');
           images[i].style.top = v === 'top' ? '10px' : 'auto';
           images[i].style.bottom = v === 'bottom' ? '10px' : 'auto';
           images[i].style.left = h === 'left' ? '10px' : 'auto';
@@ -514,6 +509,8 @@ if (item) { handleImageFile(item.getAsFile(), i, ta); }
       }
     }, 3000);
   };
+
+
 
   const stopLongPress = () => clearTimeout(textareaLongPressTimer);
 
