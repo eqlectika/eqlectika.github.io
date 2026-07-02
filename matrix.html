@@ -209,10 +209,20 @@ navigator.mediaDevices.getUserMedia({
 
         function checkDigest() { document.getElementById('save-btn').style.display = document.getElementById('digText').value.trim().length > 0 ? 'block' : 'none'; }
 
-        function exportDB() {
-            const data = { src: document.getElementById('srcText').value, dig: document.getElementById('digText').value };
-            localStorage.setItem('matrix_cache', JSON.stringify(data));
-        }
+// 1. Измененная функция сохранения
+function exportDB() {
+    const src = document.getElementById('srcText').value;
+    const dig = document.getElementById('digText').value;
+
+    // Если оба поля пустые, не сохраняем ничего, чтобы не стирать старые данные
+    if (!src.trim() && !dig.trim()) return;
+
+    const data = { src: src, dig: dig };
+    localStorage.setItem('matrix_cache', JSON.stringify(data));
+}
+
+
+
 
         function downloadDB() {
             const data = JSON.stringify({ src: document.getElementById('srcText').value, dig: document.getElementById('digText').value });
@@ -286,17 +296,23 @@ setInterval(() => {
 window.addEventListener('beforeunload', exportDB);
 
 
-        window.addEventListener('DOMContentLoaded', () => {
-            try {
-                const cached = localStorage.getItem('matrix_cache');
-                if (cached) {
-                    const data = JSON.parse(cached);
-                    document.getElementById('srcText').value = data.src || '';
-                    document.getElementById('digText').value = data.dig || '';
-                    checkDigest();
-                }
-            } catch (e) { localStorage.removeItem('matrix_cache'); }
-        });
+// 2. Измененный блок инициализации
+window.addEventListener('DOMContentLoaded', () => {
+    const cached = localStorage.getItem('matrix_cache');
+    if (cached) {
+        try {
+            const data = JSON.parse(cached);
+            // requestAnimationFrame дает браузеру время полностью отрисовать поля
+            requestAnimationFrame(() => {
+                document.getElementById('srcText').value = data.src || '';
+                document.getElementById('digText').value = data.dig || '';
+                checkDigest();
+            });
+        } catch (e) { 
+            console.error("Ошибка чтения кэша"); 
+        }
+    }
+});
     </script>
 </body>
 </html>
