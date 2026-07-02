@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="manifest" href="manifest-cross.json">
@@ -458,67 +458,72 @@ if (item) { handleImageFile(item.getAsFile(), i, ta); }
 }
 });
 
-let textareaLongPressTimer;
-const startLongPress = (e) => {
-  textareaLongPressTimer = setTimeout(() => {
+  let textareaLongPressTimer;
+  
+  const startLongPress = (e) => {
+    // Используем event.currentTarget, чтобы гарантированно получить текущий элемент
+    const targetTa = e.currentTarget;
+    textareaLongPressTimer = setTimeout(() => {
+      targetTa.blur();
 
-    ta.blur();
+      const style = getComputedStyle(targetTa);
+      const curFont = style.getPropertyValue('--fn').trim().replace(/['"]/g, '') || "sans-serif";
+      const curBg = style.getPropertyValue('--bg').trim() || "#000000";
+      const curColor = style.getPropertyValue('--color').trim() || "#ffffff";
+      const curSize = style.fontSize || "18px";
 
-    // Получаем текущие значения через getComputedStyle
-    const computed = getComputedStyle(ta);
-    const currentFont = computed.getPropertyValue('--fn').replace(/"/g, '') || localStorage.getItem(`q_f_${i}`);
-    const currentBg = computed.getPropertyValue('--bg').trim() || localStorage.getItem(`q_b_${i}`);
-    const currentColor = computed.getPropertyValue('--color').trim() || localStorage.getItem(`q_c_${i}`);
-
-    const newFont = prompt("Font family:", currentFont);
-    if (newFont !== null) {
-        ta.style.setProperty('--fn', newFont);
-        localStorage.setItem(`q_f_${i}`, newFont);
-    }
-
-    const s = prompt("Size:", ta.style.fontSize);
-    if (s) { ta.style.fontSize = s; localStorage.setItem(`q_s_${i}`, s); }
-    
-    const b = prompt("Background:", currentBg);
-    if (b) { ta.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
-    
-    const c = prompt("Color:", currentColor);
-    if (c) { ta.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
-
-
-    
-    if (images[i].style.display === 'block') {
-      const currentPos = localStorage.getItem(`q_pos_${i}`) || "bottom right";
-      const pos = prompt("Position:", currentPos);
-      if (pos) {
-        localStorage.setItem(`q_pos_${i}`, pos);
-        const [v, h] = pos.split(' ');
-        images[i].style.top = v === 'top' ? '10px' : 'auto';
-        images[i].style.bottom = v === 'bottom' ? '10px' : 'auto';
-        images[i].style.left = h === 'left' ? '10px' : 'auto';
-        images[i].style.right = h === 'right' ? '10px' : 'auto';
+      const newFont = prompt("Font family:", curFont);
+      if (newFont !== null) {
+          targetTa.style.setProperty('--fn', newFont);
+          localStorage.setItem(`q_f_${i}`, newFont);
       }
+
+      const s = prompt("Size:", curSize);
+      if (s) { targetTa.style.fontSize = s; localStorage.setItem(`q_s_${i}`, s); }
       
-      const delImg = prompt("Delete image?", "no");
-      if (delImg && delImg.toLowerCase() === 'yes') {
-        images[i].removeAttribute('src');
-        images[i].style.display = 'none';
-        localStorage.removeItem(`q_pos_${i}`);
-        saveToDB(i, ta.innerHTML, null, true);
-        if (i !== 0) runLocalImprovisation();
+      const b = prompt("Background:", curBg);
+      if (b) { targetTa.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
+      
+      // ИСПРАВЛЕНО: переменная curColor вместо несуществующей currentColor
+      const c = prompt("Color:", curColor); 
+      if (c) { targetTa.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
+      
+      // Логика работы с изображениями
+      if (images[i].style.display === 'block') {
+        const currentPos = localStorage.getItem(`q_pos_${i}`) || "bottom right";
+        const pos = prompt("Position (e.g., top left, bottom right):", currentPos);
+        if (pos) {
+          localStorage.setItem(`q_pos_${i}`, pos);
+          const parts = pos.split(' ');
+          const v = parts[0];
+          const h = parts[1];
+          images[i].style.top = v === 'top' ? '10px' : 'auto';
+          images[i].style.bottom = v === 'bottom' ? '10px' : 'auto';
+          images[i].style.left = h === 'left' ? '10px' : 'auto';
+          images[i].style.right = h === 'right' ? '10px' : 'auto';
+        }
+        
+        const delImg = prompt("Delete image? (yes/no)", "no");
+        if (delImg && delImg.toLowerCase() === 'yes') {
+          images[i].removeAttribute('src');
+          images[i].style.display = 'none';
+          localStorage.removeItem(`q_pos_${i}`);
+          saveToDB(i, targetTa.innerHTML, null, true);
+          if (i !== 0) runLocalImprovisation();
+        }
       }
-    }
-  }, 3000);
-};
+    }, 3000);
+  };
 
+  const stopLongPress = () => clearTimeout(textareaLongPressTimer);
 
-const stopLongPress = () => clearTimeout(textareaLongPressTimer);
-ta.addEventListener('touchstart', startLongPress);
-ta.addEventListener('touchend', stopLongPress);
-ta.addEventListener('mousedown', startLongPress);
-ta.addEventListener('mouseup', stopLongPress);
-ta.addEventListener('mouseleave', stopLongPress);
+  ta.addEventListener('touchstart', startLongPress);
+  ta.addEventListener('touchend', stopLongPress);
+  ta.addEventListener('mousedown', startLongPress);
+  ta.addEventListener('mouseup', stopLongPress);
+  ta.addEventListener('mouseleave', stopLongPress);
 });
+
 
 </script>
 </body>
