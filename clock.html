@@ -209,14 +209,14 @@ margin: 15px;
     const ctx = canvas.getContext('2d');
     const legendDiv = document.getElementById('legend');
     
- function initCanvas() {
-  const wrapper = document.getElementById('canvas-wrapper');
-  const size = Math.min(window.innerWidth, window.innerHeight * 0.6); 
-  canvas.width = size;
-  canvas.height = size;
+function initCanvas() {
+  const size = window.innerWidth; // Берем всю ширину экрана
+  canvas.width = size;            // Ширина холста в пикселях
+  canvas.height = size;           // Высота холста такая же (делает его квадратным)
   canvas.style.width = `${size}px`;
   canvas.style.height = `${size}px`;
 }
+
 
     
     window.addEventListener('resize', () => {
@@ -461,7 +461,7 @@ datePicker.addEventListener('change', (e) => {
           const moonE = solveKepler(moonM, planet.eccentricity);
           const moonTheta = getTrueAnomaly(moonE, planet.eccentricity);
           
-          const moonR = orbitRadius(0.05) * 3; // Увеличил радиус для видимости
+          const moonR = orbitRadius(0.05) * 2; // Увеличил радиус для видимости
           const localX = moonR * Math.cos(moonTheta);
           const localY = moonR * Math.sin(moonTheta) * Math.cos(planet.inclination);
           
