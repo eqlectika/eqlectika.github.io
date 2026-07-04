@@ -50,7 +50,7 @@ body {
             <textarea id="srcText" class="pane pane-l" placeholder="SOURCE" oninput="exportDB()"></textarea>
         </div>
         <div class="pane-wrap">
-            <textarea id="digText" style="text-align: right;" class="pane" placeholder="DIGEST" oninput="exportDB()"></textarea>
+            <textarea id="digText" style="text-align: left;" class="pane" placeholder="DIGEST" oninput="exportDB()"></textarea>
         </div>
 <div id="gate-btn" onclick="toggleSystem()"><span>ENTRY</span></div>
 
@@ -204,22 +204,22 @@ navigator.mediaDevices.getUserMedia({
             const dig = document.getElementById('digText');
             if (dig.value.toLowerCase().includes(w.toLowerCase() + ':')) return;
             dig.value += (dig.value.trim().length > 0 ? '\n' : '') + w + ': ';
+            exportDB();
             checkDigest();
         }
 
         function checkDigest() { document.getElementById('save-btn').style.display = document.getElementById('digText').value.trim().length > 0 ? 'block' : 'none'; }
 
-// 1. Измененная функция сохранения
+
 function exportDB() {
     const src = document.getElementById('srcText').value;
     const dig = document.getElementById('digText').value;
 
-    // Если оба поля пустые, не сохраняем ничего, чтобы не стирать старые данные
-    if (!src.trim() && !dig.trim()) return;
-
+    // Убираем жесткий возврат при пустых полях
     const data = { src: src, dig: dig };
     localStorage.setItem('matrix_cache', JSON.stringify(data));
 }
+
 
 
 
