@@ -38,8 +38,7 @@ overflow: hidden;
 #t0 { 
   --default-bg: #ff8700; 
   --default-color: #000000; 
-  font-weight: bold; 
-  font-family: Menlo, Monaco, Consolas, "Courier New", monospace; }
+}
 #t1 { --default-bg: #005f00; --default-color: #E1BEE7; }
 #t2 { --default-bg: #870000; --default-color: #81C784; }
 #t3 { --default-bg: #000080; --default-color: #FFD54F; }
@@ -118,7 +117,7 @@ border-radius: 8px;
 padding: 20px;
 background: #1e1e24;
 color: #fff;
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+font-family: sans-serif;
 font-size: 16px;
 line-height: 1.5;
 max-width: 85vw;
@@ -153,21 +152,11 @@ dialog button:active {
 background: #475569;
 }
 
-.editor {
-  line-height: 1.2;
-}
-
-.editor > div, 
-.editor > p, 
-.editor > br {
-  margin-bottom: 0.5em;
-}
-
 </style>
 </head>
 <body>
 <div class="container" id="app">
-<div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" data-placeholder="Local synthesis will appear here based on the other fields..."></div><img class="img-preview"></div>
+<div class="editor-wrapper"><div class="editor" id="t0" contenteditable="true" data-placeholder="Type or paste text and image here. &#10;Move Handle (crosshair) to resize Fields. &#10;Tap Handle to change design. &#10;Long tap Handle to help and level up. &#10;Long-long tap Field to format and delete image."></div><img class="img-preview"></div>
 <div class="editor-wrapper"><div class="editor" id="t1" contenteditable="true" data-placeholder="Type or paste text and image here. &#10;Move Handle (crosshair) to resize Fields. &#10;Tap Handle to change design. &#10;Long tap Handle to help and level up. &#10;Long-long tap Field to format and delete image."></div><img class="img-preview"></div>
 <div class="editor-wrapper"><div class="editor" id="t2" contenteditable="true" data-placeholder="Type or paste text and image here. &#10;Move Handle (crosshair) to resize Fields. &#10;Tap Handle to change design. &#10;Long tap Handle to help and level up. &#10;Long-long tap Field to format and delete image."></div><img class="img-preview"></div>
 <div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" data-placeholder="Type or paste text and image here. &#10;Move Handle (crosshair) to resize Fields. &#10;Tap Handle to change design. &#10;Long tap Handle to help and level up. &#10;Long-long tap Field to format and delete image."></div><img class="img-preview"></div>
@@ -298,36 +287,6 @@ textareas.forEach((ta, i) => {
   });
 }
 
-
-// Изменено: собирает слова из t1, t2, t3 и выводит результат в t0
-function runLocalImprovisation() {
-  const t0 = document.getElementById('t0');
-  const t1 = document.getElementById('t1').innerText.trim();
-  const t2 = document.getElementById('t2').innerText.trim();
-  const t3 = document.getElementById('t3').innerText.trim();
-
-  const words = [t1, t2, t3].join(' ').split(/[\s,.\n\t!?]+/).filter(w => w.length > 3);
-  
-  if (words.length === 0) {
-    t0.innerHTML = "🤖 Standby. Awaiting textual input from adjacent fields...";
-    return;
-  }
-
-  const pick = () => words[Math.floor(Math.random() * words.length)];
-
-  const templates = [
-    () => `🤖 Synthesis: When "${pick()}" intersects with "${pick()}", clarity emerges from the chaos of "${pick()}".`,
-    () => `🤖 Observation: Reality shifts between "${pick()}" and "${pick()}". The ultimate anchor remains "${pick()}".`,
-    () => `🤖 Dictum: In the framework of "${pick()}", one must reject "${pick()}" to purely balance "${pick()}".`,
-    () => `🤖 Insight: The structure of "${pick()}" mirrors the internal rhythm of "${pick()}". Keep focus on "${pick()}".`,
-    () => `🤖 Paradigm: Crossing "${pick()}" with "${pick()}" triggers an immediate manifestation of "${pick()}".`
-  ];
-
-  const generatedText = templates[Math.floor(Math.random() * templates.length)]();
-  t0.innerHTML = generatedText;
-  saveToDB(0, t0.innerHTML);
-}
-
 let handleLongPressTimer; 
 let startX = 0, startY = 0;
 
@@ -395,12 +354,9 @@ if (duration < 250) {
   const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
   
   textareas.forEach((ta, i) => {
-    // Изменено: шрифт НЕ меняется у t0 (теперь это синтез)
-    if (i !== 0) {
-      const randomFont = fontsPool[Math.floor(Math.random() * fontsPool.length)];
-      ta.style.setProperty('--fn', randomFont);
-      localStorage.setItem(`q_f_${i}`, randomFont);
-    }
+    const randomFont = fontsPool[Math.floor(Math.random() * fontsPool.length)];
+    ta.style.setProperty('--fn', randomFont);
+    localStorage.setItem(`q_f_${i}`, randomFont);
     
     ta.style.setProperty('--bg', palette.bg[i]);
     ta.style.setProperty('--color', palette.co[i]);
@@ -408,9 +364,6 @@ if (duration < 250) {
     localStorage.setItem(`q_c_${i}`, palette.co[i]);
   });
 
-  runLocalImprovisation();
-} else {
-  runLocalImprovisation();
 }
 });
 
@@ -427,7 +380,7 @@ reader.onload = (ev) => {
 images[index].src = ev.target.result;
 images[index].style.display = 'block';
 saveToDB(index, ta.innerHTML, ev.target.result);
-if (index !== 0) runLocalImprovisation(); // Изменено: пересчет, если картинка НЕ в t0
+
 };
 reader.readAsDataURL(file);
 }
@@ -439,10 +392,7 @@ ta.innerHTML = '';
 }
 saveToDB(i, ta.innerHTML);
 
-// Изменено: если ввод идет в t1, t2 или t3 — обновляем t0 на лету
-if (i !== 0) {
-  runLocalImprovisation();
-}
+
 });
 
 ta.addEventListener('paste', (e) => {
@@ -453,7 +403,7 @@ handleImageFile(item.getAsFile(), i, ta);
 } else {
 const text = e.clipboardData.getData('text/plain');
 document.execCommand('insertText', false, text);
-if (i !== 0) runLocalImprovisation(); // Изменено: пересчет при вставке текста НЕ в t0
+
 }
 });
 
@@ -516,7 +466,7 @@ if (item) { handleImageFile(item.getAsFile(), i, ta); }
           images[i].style.display = 'none';
           localStorage.removeItem(`q_pos_${i}`);
           saveToDB(i, targetTa.innerHTML, null, true);
-          if (i !== 0) runLocalImprovisation();
+
         }
       }
     }, 3000);
