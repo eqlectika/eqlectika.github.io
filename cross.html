@@ -111,47 +111,6 @@ pointer-events: none;
 transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-dialog {
-border: none;
-border-radius: 8px;
-padding: 20px;
-background: #1e1e24;
-color: #fff;
-font-family: sans-serif;
-font-size: 16px;
-line-height: 1.5;
-max-width: 85vw;
-box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-outline: none;
-}
-dialog::backdrop {
-background: rgba(0, 0, 0, 0.7);
--webkit-backdrop-filter: blur(3px);
-backdrop-filter: blur(3px);
-}
-dialog p {
-margin: 0 0 12px 0;
-white-space: pre-wrap;
-}
-dialog a {
-color: #38bdf8;
-text-decoration: underline;
-}
-dialog button {
-background: #334155;
-color: #fff;
-border: none;
-padding: 8px 16px;
-border-radius: 4px;
-cursor: pointer;
-font-size: 14px;
-float: left;
-margin-top: 5px;
-}
-dialog button:active {
-background: #475569;
-}
-
 </style>
 </head>
 <body>
@@ -163,24 +122,12 @@ background: #475569;
 <a href="#" class="handle" id="handle" draggable="false"><img src="handle.png" alt="Logo" draggable="false"></a>
 </div>
 
-<dialog id="helpDialog">
-<p>
-Type or paste text and image into the Fields.
-Move Handle (crosshair) to resize Fields.
-Top-left field displays Local Synthesis generated from the other fields content.
-Tap Handle to change design.
-Long-long tap Field to format and delete image.
-<a href="https://eqlectika.github.io">Made in Space</a>.
-</p>
-<button onclick="document.getElementById('helpDialog').close()">Close</button>
-</dialog>
-
 <script>
 const container = document.getElementById('app');
 const handle = document.getElementById('handle');
 const textareas = document.querySelectorAll('.editor');
 const images = document.querySelectorAll('.img-preview');
-const helpDialog = document.getElementById('helpDialog');
+
 let isDragging = false;
 let dragStartTime = 0;
 let db;
@@ -344,11 +291,11 @@ if (duration < 250) {
   const randomHue = Math.floor(Math.random() * 360);
   
   if (currentDesign === 3) {
-    handle.style.filter = `drop-shadow(0 2px 4px rgba(0,0,0,0.5)) drop-shadow(0 0 4px rgba(255,255,255,0.3))`;
+    handle.style.filter = `drop-shadow(0 4px 4px rgba(0,0,0,0.5)) drop-shadow(0 4px 4px rgba(255,255,255,0.3))`;
   } else {
     const randomDegrees = Math.floor(Math.random() * 4) * 90;
     handle.querySelector('img').style.transform = `rotate(${randomDegrees}deg)`;
-    handle.style.filter = `hue-rotate(${randomHue}deg) drop-shadow(0 0 6px rgba(255,255,255,0.4))`;
+    handle.style.filter = `hue-rotate(${randomHue}deg) drop-shadow(0 6px 6px rgba(255,255,255,0.4))`;
   }
 
   const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
