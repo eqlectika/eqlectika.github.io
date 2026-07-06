@@ -123,8 +123,8 @@ z-index: 20;
 background: transparent;
 font-family: 'Roboto Condensed', sans-serif;
 }
-.menu-item-container:hover .submenu {
-display: flex;
+.menu-item-container.open .submenu {
+    display: flex;
 }
 .menu-item-container:hover > .menu-item {
 }
@@ -336,10 +336,12 @@ window.addEventListener("pointerdown", e => {
     isHolding = true;
     holdStart = performance.now();
 
-    mouse.set(
-        (e.clientX / innerWidth) * 2 - 1,
-        -(e.clientY / innerHeight) * 2 + 1
-    );
+const rect = renderer.domElement.getBoundingClientRect();
+
+mouse.set(
+    ((e.clientX - rect.left) / rect.width) * 2 - 1,
+    -((e.clientY - rect.top) / rect.height) * 2 + 1
+);
 
     const dir = new THREE.Vector3(mouse.x, mouse.y, 0.5)
         .unproject(camera)
@@ -562,7 +564,20 @@ function copyToClipboard() {
     }, 1500);
   });
 }
+const sketches = document.querySelector('.menu-item-container');
+const sketchesButton = sketches.querySelector('.menu-item');
 
+sketchesButton.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    sketches.classList.toggle('open');
+});
+
+document.addEventListener('pointerdown', (e) => {
+    if (!sketches.contains(e.target)) {
+        sketches.classList.remove('open');
+    }
+});
 </script>
 
 </body>
