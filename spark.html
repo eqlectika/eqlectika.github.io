@@ -276,33 +276,6 @@ const recovery = (
   let transitionInterval = null;
   let inversionLevel = 0; 
 
-function toggleMetamorphosis() {
-  if (transitionInterval) clearInterval(transitionInterval);
-  inversionActive = !inversionActive;
-  
-  const target = inversionActive ? 100 : 0;
-  
-  transitionInterval = setInterval(() => {
-    if (inversionLevel === target) {
-      clearInterval(transitionInterval);
-      return;
-    }
-    
-    inversionLevel += (inversionActive ? 1 : -1);
-    
-    // Инверсия фона
-    const bgVal = Math.floor((inversionLevel / 100) * 255);
-    document.documentElement.style.setProperty('--bg-color', `rgb(${bgVal}, ${bgVal}, ${bgVal})`);
-    
-    // Применяем инверсию к телу и элементам через filter (сохраняет цвета)
-    document.body.style.filter = `invert(${inversionLevel / 100})`;
-    
-
-  }, 15);
-}
-
-
-
   function updateButterflyShadow() {
     const now = new Date();
     const h = now.getHours() % 12;
@@ -382,30 +355,9 @@ function updateRiskIndicator() {
   }
 }
 
-  function toggleDonate() { 
-    const info = document.getElementById("cryptoInfo"); 
-    const isOpening = info.style.display !== "flex";
-    info.style.display = isOpening ? "flex" : "none"; 
-    if (isOpening) {
-      setTimeout(() => info.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
-    }
-  }
 
-  function copyToClipboard() {
-    const addr = document.getElementById("cryptoAddr");
-    const hint = document.getElementById("copyHint");
-    const text = addr.innerText;
-    navigator.clipboard.writeText(text).then(() => {
-      addr.innerText = "Copied!";
-      addr.style.color = "var(--creativity-color)";
-      if (hint) hint.innerText = "Address saved to clipboard";
-      setTimeout(() => {
-        addr.innerText = text;
-        addr.style.color = "#fff";
-        if (hint) hint.innerText = "Click address to copy";
-      }, 1500);
-    });
-  }
+
+
 
   function saveToStorage() {
   const score = calculateRiskQuine();
@@ -445,7 +397,7 @@ function toggleData() {
 }
 
 
-  function makeWordsClickable() {
+function makeWordsClickable() {
     const container = document.querySelector('.protocol-content');
     const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
     let node;
@@ -458,36 +410,31 @@ function toggleData() {
         return `<span class="clickable-word" style="transition: color 0.3s; cursor: pointer;">${part}</span>`;
       }).join('');
       textNode.parentNode.replaceChild(span, textNode);
-    });transitionInterval = setInterval(() => {
+    });
+  }
+
+  function toggleMetamorphosis() {
+    if (transitionInterval) clearInterval(transitionInterval);
+    inversionActive = !inversionActive;
+    const target = inversionActive ? 100 : 0;
+    transitionInterval = setInterval(() => {
         if (inversionLevel === target) {
             clearInterval(transitionInterval);
             return;
         }
-        
         inversionLevel += (inversionActive ? 1 : -1);
-        
         const bgVal = Math.floor((inversionLevel / 100) * 255);
         const grayVal = Math.floor(170 - (inversionLevel / 100) * 100);
-
-        // Меняем фон и серый цвет
         document.documentElement.style.setProperty('--bg-color', `rgb(${bgVal}, ${bgVal}, ${bgVal})`);
         document.documentElement.style.setProperty('--light-gray', `rgb(${grayVal}, ${grayVal}, ${grayVal})`);
-        
-        // Меняем цвет всего основного текста (body)
         const textVal = 255 - bgVal;
         document.body.style.color = `rgb(${textVal}, ${textVal}, ${textVal})`;
-
-        // Оставляем селекторам и кнопкам их фоновый цвет, 
-        // но НЕ переназначаем el.style.color для label, чтобы они сохранили свои цвета из :root
         document.querySelectorAll('select, .ui-btn').forEach(el => {
             el.style.backgroundColor = `rgb(${bgVal}, ${bgVal}, ${bgVal})`;
             el.style.borderColor = `rgb(${grayVal}, ${grayVal}, ${grayVal})`;
         });
-
-        // Инвертируем график через фильтр (это оставит цвета линий, но инвертирует их яркость)
         const chartCanvas = document.getElementById('chart');
         if (chartCanvas) chartCanvas.style.filter = `invert(${inversionLevel}%)`;
-        
     }, 15);
   }
 
