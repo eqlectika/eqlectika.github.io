@@ -52,7 +52,24 @@
   clip-path: polygon(50% 50%, 0% 0%, 30% 50%, 0% 100%, 50% 50%, 100% 100%, 70% 50%, 100% 0%);
   transition: transform 0.1s linear;
 }
+#priority-container{
+    margin-top:20px;
+    border:1px solid currentColor;
+    padding:15px;
+}
 
+.priority-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin:12px 0;
+    font-size:12px;
+}
+
+.priority-row span:last-child{
+    letter-spacing:2px;
+    white-space:pre;
+}
  </style>
 </head>
 <body>
@@ -116,6 +133,32 @@ The State Index will show how effective your intentions are at the current momen
   <p id="risk-advice" style="font-size: 10px; margin-top: 8px;">Calibrate metrics...</p>
 </div>
 
+<div id="priority-container">
+  <div style="margin-bottom:12px;font-size:12px;">
+    <strong>Priority Vector</strong>
+  </div>
+
+  <div class="priority-row">
+    <span>Recovery</span>
+    <span id="pv-recovery">█████ ▲</span>
+  </div>
+
+  <div class="priority-row">
+    <span>Hydration</span>
+    <span id="pv-hydration">███░░ ▲</span>
+  </div>
+
+  <div class="priority-row">
+    <span>Energy</span>
+    <span id="pv-energy">████░ ●●</span>
+  </div>
+
+  <div class="priority-row">
+    <span>Activation</span>
+    <span id="pv-activation">██░░░ ▼</span>
+  </div>
+</div>
+
 <div class="chart-container"><canvas id="chart"></canvas></div>
 
 <div class="buttons">
@@ -139,6 +182,87 @@ The State Index will show how effective your intentions are at the current momen
     load: 'Load', tension: 'Tension', energy: 'Energy', focus: 'Focus', creativity: 'Creativity',
     vision: 'Vision', hearing: 'Hearing', smell: 'Smell', boomerang: 'Boomerang'
   };
+  
+  function getCurrentValues() {
+  const state = {};
+
+  rows.forEach(key => {
+    const ds = chart.data.datasets[rows.indexOf(key)];
+    const last = ds.data[chart.data.labels.length - 1];
+    state[key] = last || 3;
+  });
+
+  return state;
+}
+
+function renderVector(score){
+
+  score=Math.max(-5,Math.min(5,Math.round(score)));
+
+  if(score>0){
+      return "█".repeat(score)+"░".repeat(5-score)+" ▲";
+  }
+
+  if(score<0){
+      return "█".repeat(-score)+"░".repeat(5+score)+" ▼";
+  }
+
+  return "█████ ●●";
+}
+
+const RecoveryWeights = {
+    energy: 1.4,
+    focus: 0.8,
+    creativity: 0.6,
+    load: 1.2,
+    tension: 1.1,
+    pulse: 0.4
+};
+
+function updatePriorityVector(){
+
+    const s=getCurrentValues();
+
+const recovery = (
+    (3-s.energy) * RecoveryWeights.energy +
+    (3-s.focus) * RecoveryWeights.focus +
+    (3-s.creativity) * RecoveryWeights.creativity +
+    (s.load-3) * RecoveryWeights.load +
+    (s.tension-3) * RecoveryWeights.tension +
+    (s.pulse-3) * RecoveryWeights.pulse
+) / 2;
+
+    const hydration =
+        (3-s.energy)+
+        (3-s.vision)+
+        (3-s.focus)+
+        (s.pulse-3);
+
+    const energy =
+        (3-s.energy)+
+        (3-s.creativity)+
+        (3-s.focus)-
+        (s.pulse-3);
+
+    const activation =
+        (3-s.focus)+
+        (3-s.energy)-
+        (s.pulse-3)-
+        (s.emotion-3);
+
+    document.getElementById("pv-recovery").textContent =
+        renderVector(recovery);
+
+    document.getElementById("pv-hydration").textContent =
+        renderVector(hydration);
+
+    document.getElementById("pv-energy").textContent =
+        renderVector(energy);
+
+    document.getElementById("pv-activation").textContent =
+        renderVector(activation);
+
+}
 
   const STORAGE_KEY = "vital_spark_bio_v1";
   const ctx = document.getElementById('chart').getContext('2d');
@@ -212,6 +336,7 @@ function toggleMetamorphosis() {
   chart.update();
   saveToStorage(); 
   updateRiskIndicator();
+  updatePriorityVector();
 }
 
 
@@ -376,8 +501,9 @@ window.addEventListener("DOMContentLoaded", () => {
   loadFromStorage();
   makeWordsClickable();
   setTimeout(updateRiskIndicator, 100);
+  setTimeout(updatePriorityVector, 100);
   updateButterflyShadow();
-  setInterval(updateButterflyShadow, 1000); 
+  setInterval(updateButterflyShadow, 1000);
 });
 
 
