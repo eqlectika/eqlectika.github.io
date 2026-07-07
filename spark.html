@@ -290,7 +290,28 @@ const recovery = (
   const ctx = document.getElementById('chart').getContext('2d');
   const chart = new Chart(ctx, {
     type: 'line',
-    data: { labels: [], datasets: rows.map(key => ({ label: categoryNames[key], data: [], borderColor: colors[key], borderWidth: 2, pointRadius: 2, fill: false, tension: 0.3 })) },
+data: { 
+    labels: [], 
+    datasets: rows.map(key => {
+        // Базовые настройки
+        let settings = { 
+            label: categoryNames[key], 
+            data: [], 
+            borderColor: colors[key], 
+            borderWidth: 2, 
+            pointRadius: 2, 
+            fill: false, 
+            tension: 0.3 
+        };
+
+        // ЕСЛИ ЭТО BOOMERANG — ДОБАВЛЯЕМ ПУНКТИР
+        if (key === 'boomerang') {
+            settings.borderDash = [5, 5]; // [длина штриха, расстояние между ними]
+        }
+
+        return settings;
+    }) 
+},    
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0.8, max: 5.2, display: false }, x: { display: false } } }
   });
 
