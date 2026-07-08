@@ -161,6 +161,15 @@ a {
   background: #2962ff;
   transition: width 0.1s linear, background-color 0.1s linear;
 }
+
+yRSI: {
+    display: true,
+    position: 'right',
+    min: 0,
+    max: 100,
+    grid: { color: '#1f2638' },
+    ticks: { color: '#d1d4dc' }
+}
   </style>
 </head>
 <body>
@@ -564,7 +573,16 @@ const currentPriceIndicator = {
           order: 0,
           yAxisID: 'yParrots',
           hidden: true
-        }
+        },
+{
+    label: 'RSI',
+    data: [],
+    borderColor: '#ffeb3b',
+    borderWidth: 1,
+    pointRadius: 0,
+    yAxisID: 'yRSI',
+    order: 0
+}
       ];
 
       for (let i = 0; i < 34; i++) {
@@ -624,6 +642,7 @@ datasets.push({
                 callback: function(value) { return Math.round(value / 1) * 1; }
               }
             },
+            
             yParrots: { display: false, min: 0, max: 100 },
             yVolume: {
               display: false,
@@ -718,6 +737,15 @@ function updateChart(candlesArray) {
   
   const closes = candlesArray.map(c => c.close);
   const volumes = candlesArray.map(c => c.volume || 0); 
+
+  // --- БЛОК RSI ---
+  // Генерируем массив RSI для всего графика
+  const rsiData = closes.map((_, i) => {
+    const slice = closes.slice(0, i + 1);
+    return calculateSingleRSI(slice, 14);
+  });
+  const rsiDataset = moireChart.data.datasets.find(d => d.label === 'RSI');
+  if (rsiDataset) rsiDataset.data = rsiData;
 
   while (parrotsHistory.length < closes.length) {
     parrotsHistory.push(lastParrotsScore);
@@ -927,6 +955,8 @@ function updateChart(candlesArray) {
         setTimeout(() => hint.innerText = "Click address to copy", 2000);
       });
     }
+
+
   </script>
 </body>
 </html>
