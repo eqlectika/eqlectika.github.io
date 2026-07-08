@@ -149,17 +149,17 @@ function detectDivCon(closes, currentForce) {
 
     // Дивергенция
     if (priceNow > prev.price && rsiNow < prev.rsi)
-        return "DS";
+        return "DC";
 
     if (priceNow < prev.price && rsiNow > prev.rsi)
-        return "DB";
+        return "DC";
 
     // Конвергенция
     if (priceNow > prev.price && rsiNow > prev.rsi)
-        return "CB";
+        return "CD";
 
     if (priceNow < prev.price && rsiNow < prev.rsi)
-        return "CS";
+        return "CD";
 
     return null;
 }
