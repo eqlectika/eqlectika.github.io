@@ -65,7 +65,21 @@ self.addEventListener("message", (event) => {
   const aether = getAether(candles);
   const currentAetherSignal = aether.vector > aether.anchor ? "BUY" : "SELL";
 
-  const signalDiv = detectDivCon(closes, force);
+  let divSignalHistory = [];
+
+const signalDiv = detectDivCon(closes, force);
+
+if (signalDiv) {
+    divSignalHistory.push({
+        signal: signalDiv,
+        price: currentPrice,
+        index: closes.length - 1
+    });
+
+    if (divSignalHistory.length > 100) {
+        divSignalHistory.shift();
+    }
+}
   
 lastAetherSignal = currentAetherSignal; // Это можно оставить для статистики
     self.postMessage({ 
@@ -77,7 +91,8 @@ lastAetherSignal = currentAetherSignal; // Это можно оставить д
         anchor: aether.anchor,
         signal: currentAetherSignal
       },
-      divSignal: signalDiv
+      divSignal: signalDiv,
+      divHistory: divSignalHistory
     });
 });
 function calculateFORCE(c, p) {
@@ -149,3 +164,4 @@ function detectDivCon(closes, currentRSI) {
 
     return null;
 }
+
