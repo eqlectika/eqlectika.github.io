@@ -162,15 +162,7 @@ a {
   transition: width 0.1s linear, background-color 0.1s linear;
 }
 
-yRSI: {
-    display: true,
-    position: 'right',
-    min: 0,
-    max: 100,
-    grid: { color: '#1f2638' },
-    ticks: { color: '#d1d4dc' }
-}
-  </style>
+</style>
 </head>
 <body>
 
@@ -578,8 +570,10 @@ const currentPriceIndicator = {
     label: 'RSI',
     data: [],
     borderColor: '#ffeb3b',
-    borderWidth: 1,
+    borderWidth: 2,
+    borderDash: [1, 2],
     pointRadius: 0,
+    stepped: 'after',
     yAxisID: 'yRSI',
     order: 0
 }
@@ -644,6 +638,19 @@ datasets.push({
             },
             
             yParrots: { display: false, min: 0, max: 100 },
+            yRSI: {
+  display: true,
+  position: 'right',
+  min: 0,
+  max: 100,
+  grid: {
+    drawOnChartArea: false
+  },
+  ticks: {
+    color: '#ffeb3b',
+    callback: value => value 
+  }
+},
             yVolume: {
               display: false,
               position: 'right',
@@ -771,8 +778,8 @@ function updateChart(candlesArray) {
   for (let i = 0; i < 34; i++) {
     const periodBB = (i + 1) * 10;
     const bb = calculateBB(closes, periodBB);
-    moireChart.data.datasets[i * 2 + 2].data = bb.uppers;
-    moireChart.data.datasets[i * 2 + 3].data = bb.lowers;
+    moireChart.data.datasets[i * 2 + 3].data = bb.uppers;
+    moireChart.data.datasets[i * 2 + 4].data = bb.lowers;
   }
 
   if (isInitialLoad && closes.length > 0) {
