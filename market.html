@@ -208,8 +208,7 @@ a {
   <option value="1M">1 Month</option>
 </select>
 
-<div id="div-indicator" style="display:inline-block; font-weight:bold; margin-left:10px;">--</div>
-<div id="div-history" style="font-family:monospace;font-size:12px;margin-top:5px;">
+<div id="div-history" style="display:inline-block; font-weight:bold; margin-left:10px;">
 </div>    
     <div id="status">Status: Disconnected</div>
     
@@ -358,21 +357,16 @@ worker.onmessage = (event) => {
   }
   const { signal, force, price, aether, divSignal, divHistory } = event.data;
 
-if (divSignal) {
-   const indicator = document.getElementById("div-indicator");
-   const tf = document.getElementById("tf").value;
-   const color = divSignal.includes("B") ? "#00e676" : "#ff5252";
-
-   indicator.innerHTML = `<span style="color:${color}">${divSignal}</span>`;
-}
-
 if (divHistory && divHistory.length) {
     const historyDiv = document.getElementById("div-history");
 
     historyDiv.innerHTML = divHistory
       .slice(-20)
-      .map(d => `${d.signal}@${d.price.toFixed(2)}`)
-      .join(" | ");
+      .map(d => {
+        const color = d.signal.endsWith("B") ? "#00e676" : "#ff5252";
+        return `<span style="color:${color}">${d.signal}</span>`;
+      })
+      .join(" ");
 }
 
   const fill = document.getElementById("akai-fill");
