@@ -131,7 +131,7 @@ function getAether(candles) {
 }
 
 // Хранение истории для сравнения (внутри worker.js)
-let rsiHistory = []; 
+let forceHistory = []; 
 let divSignalHistory = [];
 
 function detectDivCon(closes, currentForce) {
@@ -140,29 +140,29 @@ function detectDivCon(closes, currentForce) {
         return null;
     }
 
-    rsiHistory.push({
+    forceHistory.push({
         price: closes[closes.length - 1],
         force: currentForce
     });
 
-    if (rsiHistory.length > 50) rsiHistory.shift();
+    if (forceHistory.length > 50) forceHistory.shift();
 
-    const prev = rsiHistory[rsiHistory.length - 20];
+    const prev = forceHistory[forceHistory.length - 20];
     if (!prev) return null;
 
     const priceNow = closes[closes.length - 1];
-    const rsiNow = currentForce;
+    const forceNow = currentForce;
 
-    if (priceNow > prev.price && rsiNow < prev.rsi)
+    if (priceNow > prev.price && forceNow < prev.force)
         return "DS";
 
-    if (priceNow < prev.price && rsiNow > prev.rsi)
+    if (priceNow < prev.price && forceNow > prev.force)
         return "DB";
 
-    if (priceNow > prev.price && rsiNow > prev.rsi)
+    if (priceNow > prev.price && forceNow > prev.force)
         return "CB";
 
-    if (priceNow < prev.price && rsiNow < prev.rsi)
+    if (priceNow < prev.price && forceNow < prev.force)
         return "CS";
 
     return null;
