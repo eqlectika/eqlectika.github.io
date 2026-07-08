@@ -76,7 +76,7 @@ lastAetherSignal = currentAetherSignal; // Это можно оставить д
         vector: aether.vector,
         anchor: aether.anchor,
         signal: currentAetherSignal
-      }
+      },
       divSignal: signalDiv
     });
 });
