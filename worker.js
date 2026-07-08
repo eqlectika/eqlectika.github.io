@@ -65,15 +65,14 @@ self.addEventListener("message", (event) => {
   const aether = getAether(candles);
   const currentAetherSignal = aether.vector > aether.anchor ? "BUY" : "SELL";
 
-  let divSignalHistory = [];
-
 const signalDiv = detectDivCon(closes, force);
 
 if (signalDiv) {
     divSignalHistory.push({
-        signal: signalDiv,
-        price: currentPrice,
-        index: closes.length - 1
+    signal: signalDiv,
+    price: currentPrice,
+    index: closes.length - 1,
+    time: Date.now()
     });
 
     if (divSignalHistory.length > 100) {
@@ -133,11 +132,12 @@ function getAether(candles) {
 
 // Хранение истории для сравнения (внутри worker.js)
 let rsiHistory = []; 
+let divSignalHistory = [];
 
-function detectDivCon(closes, currentRSI) {
+function detectDivCon(closes, currentForce) {
     rsiHistory.push({
         price: closes[closes.length - 1],
-        rsi: currentRSI
+        rsi: currentForce
     });
 
     if (rsiHistory.length > 50) rsiHistory.shift();
@@ -146,7 +146,7 @@ function detectDivCon(closes, currentRSI) {
     if (!prev) return null;
 
     const priceNow = closes[closes.length - 1];
-    const rsiNow = currentRSI;
+    const rsiNow = currentForce;
 
     // Дивергенция
     if (priceNow > prev.price && rsiNow < prev.rsi)
