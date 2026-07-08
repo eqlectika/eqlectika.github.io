@@ -135,27 +135,30 @@ let rsiHistory = [];
 let divSignalHistory = [];
 
 function detectDivCon(closes, currentForce) {
+
+    if (currentForce === null || currentForce === undefined) {
+        return null;
+    }
+
     rsiHistory.push({
         price: closes[closes.length - 1],
-        rsi: currentForce
+        force: currentForce
     });
 
     if (rsiHistory.length > 50) rsiHistory.shift();
 
-    const prev = rsiHistory[rsiHistory.length - 10];
+    const prev = rsiHistory[rsiHistory.length - 20];
     if (!prev) return null;
 
     const priceNow = closes[closes.length - 1];
     const rsiNow = currentForce;
 
-    // Дивергенция
     if (priceNow > prev.price && rsiNow < prev.rsi)
         return "DS";
 
     if (priceNow < prev.price && rsiNow > prev.rsi)
         return "DB";
 
-    // Конвергенция
     if (priceNow > prev.price && rsiNow > prev.rsi)
         return "CB";
 
