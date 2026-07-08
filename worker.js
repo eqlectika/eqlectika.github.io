@@ -64,6 +64,8 @@ self.addEventListener("message", (event) => {
   // 3. Фильтрация сигналов AETHER
   const aether = getAether(candles);
   const currentAetherSignal = aether.vector > aether.anchor ? "BUY" : "SELL";
+
+  const signalDiv = detectDivCon(closes, force);
   
 lastAetherSignal = currentAetherSignal; // Это можно оставить для статистики
     self.postMessage({ 
@@ -75,6 +77,7 @@ lastAetherSignal = currentAetherSignal; // Это можно оставить д
         anchor: aether.anchor,
         signal: currentAetherSignal
       }
+      divSignal: signalDiv
     });
 });
 function calculateFORCE(c, p) {
@@ -111,4 +114,26 @@ function getAether(candles) {
   if (v === 0 || a === 0) return { vector: 0, anchor: 0 };
   
   return { vector: v, anchor: a };
+}
+
+// Хранение истории для сравнения (внутри worker.js)
+let rsiHistory = []; 
+
+function detectDivCon(closes, currentRSI) {
+    // 1. Сохраняем историю RSI
+    rsiHistory.push({ rsi: currentRSI, price: closes[closes.length - 1] });
+    if (rsiHistory.length > 50) rsiHistory.shift();
+    
+    // 2. Упрощенная логика: сравниваем текущую точку с "пиком" 5-10 свечей назад
+    const prev = rsiHistory[rsiHistory.length - 10]; 
+    if (!prev) return null;
+
+    const priceUp = closes[closes.length - 1] > prev.price;
+    const rsiDown = currentRSI < prev.rsi;
+    const priceDown = closes[closes.length - 1] < prev.price;
+    const rsiUp = currentRSI > prev.rsi;
+
+    if (priceUp && rsiDown) return "B"; // Дивергенция (Buy signal)
+    if (priceDown && rsiUp) return "S"; // Конвергенция (Sell signal)
+    return null;
 }
