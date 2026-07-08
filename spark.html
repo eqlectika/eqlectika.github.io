@@ -242,50 +242,30 @@ const RecoveryWeights = {
     pulse: 0.4
 };
 
-function updatePriorityVector(){
+function updatePriorityVector() {
+    const s = getCurrentValues();
 
-    const s=getCurrentValues();
+    // Теперь 5 — это лучший показатель. 
+    // Дефицит считается как (5 - s.value).
+    const recovery = (
+        (5 - s.energy) * RecoveryWeights.energy +
+        (5 - s.focus) * RecoveryWeights.focus +
+        (5 - s.creativity) * RecoveryWeights.creativity +
+        (s.load - 1) * RecoveryWeights.load + // нагрузку нужно снижать (1 — минимум)
+        (5 - s.tension) * RecoveryWeights.tension +
+        (5 - s.pulse) * RecoveryWeights.pulse // pulse 5 — это < 60
+    ) / 2;
 
-const recovery = (
-    (3-s.energy) * RecoveryWeights.energy +
-    (3-s.focus) * RecoveryWeights.focus +
-    (3-s.creativity) * RecoveryWeights.creativity +
-    (s.load-3) * RecoveryWeights.load +
-    (s.tension-3) * RecoveryWeights.tension +
-    (s.pulse-3) * RecoveryWeights.pulse
-) / 2;
+    const hydration = (5 - s.energy) + (5 - s.vision) + (5 - s.focus) + (s.pulse - 1);
+    const energy = (s.energy - 1) + (s.creativity - 1) + (s.focus - 1) + (s.pulse - 1);
+    const activation = (s.focus - 1) + (s.energy - 1) + (s.pulse - 1) + (s.emotion - 1);
 
-    const hydration =
-        (3-s.energy)+
-        (3-s.vision)+
-        (3-s.focus)+
-        (s.pulse-3);
-
-    const energy =
-        (3-s.energy)+
-        (3-s.creativity)+
-        (3-s.focus)-
-        (s.pulse-3);
-
-    const activation =
-        (3-s.focus)+
-        (3-s.energy)-
-        (s.pulse-3)-
-        (s.emotion-3);
-
-    document.getElementById("pv-recovery").textContent =
-        renderVector(recovery);
-
-    document.getElementById("pv-hydration").textContent =
-        renderVector(hydration);
-
-    document.getElementById("pv-energy").textContent =
-        renderVector(energy);
-
-    document.getElementById("pv-activation").textContent =
-        renderVector(activation);
-
+    document.getElementById("pv-recovery").textContent = renderVector(recovery);
+    document.getElementById("pv-hydration").textContent = renderVector(hydration);
+    document.getElementById("pv-energy").textContent = renderVector(energy);
+    document.getElementById("pv-activation").textContent = renderVector(activation);
 }
+
 
   const STORAGE_KEY = "vital_spark_bio_v1";
   const ctx = document.getElementById('chart').getContext('2d');
