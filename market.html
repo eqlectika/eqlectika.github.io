@@ -879,8 +879,11 @@ function updateChart(candlesArray) {
           statusDiv.innerText = "Status: Connecting Combined Streams...";
           
           updateChart(candles);
-          worker.postMessage({ candles, period });
-
+worker.postMessage({
+    candles,
+    period,
+    candleClosed: true
+});
           // Шаг 3: Формируем строку комбинированного стрима для ВСЕХ ТФ
           const streams = timeframesList.map(tf => `${pair.toLowerCase()}@kline_${tf}`).join('/');
           ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
@@ -928,7 +931,11 @@ function updateChart(candlesArray) {
                   last.volume = volume; 
                 }
               }
-              worker.postMessage({ candles, period });
+worker.postMessage({
+    candles,
+    period,
+    candleClosed: k.x
+});
             }
           };
 
