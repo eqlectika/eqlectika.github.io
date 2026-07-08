@@ -10,7 +10,7 @@ self.addEventListener("message", (event) => {
     return;
   }
 
-  const { candles } = event.data;
+  const { candles, candleClosed } = event.data;
   if (!candles || candles.length < 15) return;
 
   const closes = candles.map(c => typeof c === 'object' ? c.close : c);
@@ -68,18 +68,22 @@ self.addEventListener("message", (event) => {
   const aether = getAether(candles);
   const currentAetherSignal = aether.vector > aether.anchor ? "BUY" : "SELL";
 
-const signalDiv = detectDivCon(closes, force);
+let signalDiv = null;
 
-if (signalDiv) {
-    divSignalHistory.push({
-    signal: signalDiv,
-    price: currentPrice,
-    index: closes.length - 1,
-    time: Date.now()
-    });
+if (candleClosed) {
+    signalDiv = detectDivCon(closes, force);
 
-    if (divSignalHistory.length > 100) {
-        divSignalHistory.shift();
+    if (signalDiv) {
+        divSignalHistory.push({
+            signal: signalDiv,
+            price: currentPrice,
+            index: closes.length - 1,
+            time: Date.now()
+        });
+
+        if (divSignalHistory.length > 100) {
+            divSignalHistory.shift();
+        }
     }
 }
   
