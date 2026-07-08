@@ -205,9 +205,10 @@ a {
   <option value="1d">1 Day</option>
   <option value="1w">1 Week</option>
   <option value="1M">1 Month</option>
-
 </select>
 
+    <div id="div-indicator" style="display:inline-block; font-weight:bold; margin-left:10px;">--</div>
+    
     <div id="status">Status: Disconnected</div>
     
 
@@ -352,6 +353,14 @@ a {
 worker.onmessage = (event) => {
   if (!event.data || event.data.force === undefined) {
     return;
+  const { signal, force, price, aether, divSignal } = event.data; // добавили divSignal
+
+  if (divSignal) {
+     const indicator = document.getElementById("div-indicator");
+     const tf = document.getElementById("tf").value;
+     const color = divSignal === "B" ? "#00e676" : "#ff5252";
+     const text = divSignal === "B" ? "Buy" : "Sell";
+     indicator.innerHTML = `<span style="color:${color}">${tf.toUpperCase()}${divSignal} (${text})</span>`;
   }
 
   const { signal, force, price, aether } = event.data;
