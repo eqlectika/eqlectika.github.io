@@ -120,20 +120,32 @@ function getAether(candles) {
 let rsiHistory = []; 
 
 function detectDivCon(closes, currentRSI) {
-    // 1. Сохраняем историю RSI
-    rsiHistory.push({ rsi: currentRSI, price: closes[closes.length - 1] });
+    rsiHistory.push({
+        price: closes[closes.length - 1],
+        rsi: currentRSI
+    });
+
     if (rsiHistory.length > 50) rsiHistory.shift();
-    
-    // 2. Упрощенная логика: сравниваем текущую точку с "пиком" 5-10 свечей назад
-    const prev = rsiHistory[rsiHistory.length - 10]; 
+
+    const prev = rsiHistory[rsiHistory.length - 10];
     if (!prev) return null;
 
-    const priceUp = closes[closes.length - 1] > prev.price;
-    const rsiDown = currentRSI < prev.rsi;
-    const priceDown = closes[closes.length - 1] < prev.price;
-    const rsiUp = currentRSI > prev.rsi;
+    const priceNow = closes[closes.length - 1];
+    const rsiNow = currentRSI;
 
-    if (priceUp && rsiDown) return "B"; // Дивергенция (Buy signal)
-    if (priceDown && rsiUp) return "S"; // Конвергенция (Sell signal)
+    // Дивергенция
+    if (priceNow > prev.price && rsiNow < prev.rsi)
+        return "DIV_SELL";
+
+    if (priceNow < prev.price && rsiNow > prev.rsi)
+        return "DIV_BUY";
+
+    // Конвергенция
+    if (priceNow > prev.price && rsiNow > prev.rsi)
+        return "CONV_BUY";
+
+    if (priceNow < prev.price && rsiNow < prev.rsi)
+        return "CONV_SELL";
+
     return null;
 }
