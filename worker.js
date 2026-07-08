@@ -1,5 +1,8 @@
 let parrotsPort = null;
-let lastAetherSignal = null; // Для фильтрации "дребезга"
+let lastAetherSignal = null;
+
+let rsiHistory = [];
+let divSignalHistory = [];
 
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === 'INIT_PARROTS_PORT') {
@@ -129,10 +132,6 @@ function getAether(candles) {
   
   return { vector: v, anchor: a };
 }
-
-// Хранение истории для сравнения (внутри worker.js)
-let rsiHistory = []; 
-let divSignalHistory = [];
 
 function detectDivCon(closes, currentForce) {
     rsiHistory.push({
