@@ -135,17 +135,17 @@ function detectDivCon(closes, currentRSI) {
 
     // Дивергенция
     if (priceNow > prev.price && rsiNow < prev.rsi)
-        return "DIV_SELL";
+        return "D_S";
 
     if (priceNow < prev.price && rsiNow > prev.rsi)
-        return "DIV_BUY";
+        return "D_B";
 
     // Конвергенция
     if (priceNow > prev.price && rsiNow > prev.rsi)
-        return "CONV_BUY";
+        return "C_B";
 
     if (priceNow < prev.price && rsiNow < prev.rsi)
-        return "CONV_SELL";
+        return "C_S";
 
     return null;
 }
