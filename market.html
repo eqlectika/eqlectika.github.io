@@ -68,7 +68,7 @@ a {
     }
     select, button { background: #2962ff; color: white; border: none; padding: 10px 20px; margin: 0 5px 10px 0;; border-radius: 4px; font-size: 16px; cursor: pointer; }
     button:hover { background: #1e4bd8; }
-    #status { margin: 15px 0; font-weight: bold; font-family: monospace; }
+    #status { margin: 15px 0; font-weight: bold; }
     canvas#moireChart { 
     image-rendering: crisp-edges; 
     image-rendering: pixelated; 
@@ -161,33 +161,7 @@ a {
   background: #2962ff;
   transition: width 0.1s linear, background-color 0.1s linear;
 }
-.fng-bar-bg {
-    position: relative;
-}
 
-.fng-center {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    transform: translateX(-50%);
-    width: 2px;
-    height: 100%;
-    background: #ffffff;
-    opacity: 0.8;
-    pointer-events: none;
-}
-
-    .akai-center {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    transform: translateX(-50%);
-    width: 2px;
-    height: 100%;
-    background: #ffffff;
-    opacity: 0.8;
-    pointer-events: none;
-}
 </style>
 </head>
 <body>
@@ -199,7 +173,6 @@ a {
   </div>
   <div class="fng-bar-bg">
     <div id="global-fng-fill"></div>
-    <div class="fng-center"></div>
   </div>
 </div>
 
@@ -210,7 +183,7 @@ a {
   </a>
   
   <div style="display: flex; flex-direction: column;">
-    <h2 style="font-family: Copperplate, sans-serif; font-weight: 700; letter-spacing: -2px; margin: 0; line-height: 0.74; margin-left: -8px;">Capital&Eqlectika</h2>
+    <h2 style="font-family: Copperplate, sans-serif; font-weight: 700; letter-spacing: 0.5px; margin: 0; line-height: 0.74; margin-left: -8px;">Capital&Eqlectika</h2>
     <span style="font-size: 14px; color: #b2b5be; margin-top: 5px; margin-left: -8px;">
       Trade phenomena
     </span>
@@ -245,10 +218,9 @@ a {
       <div class="chart-container">
         <canvas id="moireChart"></canvas>
       </div>
-  <div id="akai-indicator" style="position: relative; width: 100%; height: 8px; background: #2c3145; margin-bottom: 20px;">
-    <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
-    <div class="akai-center"></div>
-  </div>
+      <div id="akai-indicator" style="position: relative; width: 100%; height: 8px; background: #2c3145; margin-bottom: 20px;">
+        <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
+      </div>
     </div>
     
     <div class="column-right">
@@ -907,11 +879,8 @@ function updateChart(candlesArray) {
           statusDiv.innerText = "Status: Connecting Combined Streams...";
           
           updateChart(candles);
-worker.postMessage({
-    candles,
-    period,
-    candleClosed: true
-});
+          worker.postMessage({ candles, period });
+
           // Шаг 3: Формируем строку комбинированного стрима для ВСЕХ ТФ
           const streams = timeframesList.map(tf => `${pair.toLowerCase()}@kline_${tf}`).join('/');
           ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
@@ -959,11 +928,7 @@ worker.postMessage({
                   last.volume = volume; 
                 }
               }
-worker.postMessage({
-    candles,
-    period,
-    candleClosed: k.x
-});
+              worker.postMessage({ candles, period });
             }
           };
 
