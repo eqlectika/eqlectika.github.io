@@ -791,7 +791,11 @@ function updateChart(candlesArray) {
   });
   const rsiDataset = moireChart.data.datasets.find(d => d.label === 'RSI');
   if (rsiDataset) rsiDataset.data = rsiData;
-
+if (rsiDataset && rsiData.length) {
+    const lastRSI = rsiData[rsiData.length - 1];
+    rsiDataset.borderColor =
+        `hsl(${120 - (lastRSI / 100) * 120}, 100%, 50%)`;
+}
   while (parrotsHistory.length < closes.length) {
     parrotsHistory.push(lastParrotsScore);
   }
