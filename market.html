@@ -499,10 +499,10 @@ afterDraw(chart) {
     ctx.moveTo(xPos, y.top); ctx.lineTo(xPos, y.bottom);
     ctx.stroke();
 
-    const pRectW = 40; 
+const pRectW = chart.scales.y.width - 10;
     const pRectH = 18;
     
-    const rectX = x.right + 8; 
+const rectX = chart.chartArea.right + 8;
     const rectY = yPos - (pRectH / 2);
     
     ctx.fillStyle = '#2962ff';
@@ -518,8 +518,11 @@ afterDraw(chart) {
     ctx.textBaseline = 'middle';   
     
 
-ctx.fillText(priceText, rectX + 20, rectY + 10);
-
+ctx.fillText(
+    priceText,
+    rectX + pRectW / 2,
+    rectY + pRectH / 2
+);
     
     const timeVal = Math.round(x.getValueForPixel(xPos));
     const tRectW = 36;
@@ -549,13 +552,12 @@ const currentPriceIndicator = {
     
 
 
-    const rectW = 40;
-    const rectH = 20;
+const rectW = chart.scales.y.width - 10;    const rectH = 20;
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(right + 8, yPos - rectH / 2, rectW, rectH);
 
-    ctx.fillStyle = '#AD00AD';
-    ctx.font = 'bold 12px sans-serif';
+    ctx.fillStyle = '#000000';
+    ctx.font = '12px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
