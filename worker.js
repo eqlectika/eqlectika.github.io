@@ -139,27 +139,29 @@ function detectDivCon(closes, currentForce) {
         rsi: currentForce
     });
 
-    if (rsiHistory.length > 50) rsiHistory.shift();
+    if (rsiHistory.length > 100) rsiHistory.shift();
 
-    const prev = rsiHistory[rsiHistory.length - 10];
-    if (!prev) return null;
+    const prevDC = rsiHistory[rsiHistory.length - 20]; // длинный период
+    const prevCD = rsiHistory[rsiHistory.length - 5];  // короткий период
+
+    if (!prevDC || !prevCD) return null;
 
     const priceNow = closes[closes.length - 1];
     const rsiNow = currentForce;
 
-    // Дивергенция
-    if (priceNow > prev.price && rsiNow < prev.rsi)
-        return "DC";
+    // Дивергенция (длинный период)
+    if (priceNow > prevDC.price && rsiNow < prevDC.rsi)
+        return "20";
 
-    if (priceNow < prev.price && rsiNow > prev.rsi)
-        return "DC";
+    if (priceNow < prevDC.price && rsiNow > prevDC.rsi)
+        return "20";
 
-    // Конвергенция
-    if (priceNow > prev.price && rsiNow > prev.rsi)
-        return "CD";
+    // Конвергенция (короткий период)
+    if (priceNow > prevCD.price && rsiNow > prevCD.rsi)
+        return "10";
 
-    if (priceNow < prev.price && rsiNow < prev.rsi)
-        return "CD";
+    if (priceNow < prevCD.price && rsiNow < prevCD.rsi)
+        return "10";
 
     return null;
 }
