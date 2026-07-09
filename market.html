@@ -783,8 +783,12 @@ function updateChart(candlesArray) {
   if (rsiDataset) rsiDataset.data = rsiData;
 if (rsiDataset && rsiData.length) {
     const lastRSI = rsiData[rsiData.length - 1];
-    rsiDataset.borderColor =
+
+    const rsiColor =
         `hsl(${120 - (lastRSI / 100) * 120}, 100%, 50%)`;
+
+    rsiDataset.borderColor = rsiColor;
+    moireChart.options.scales.yRSI.ticks.color = rsiColor;
 }
   while (parrotsHistory.length < closes.length) {
     parrotsHistory.push(lastParrotsScore);
