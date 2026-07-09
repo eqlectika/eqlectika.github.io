@@ -151,17 +151,17 @@ function detectDivCon(closes, currentForce) {
 
     // Дивергенция (длинный период)
     if (priceNow > prevDC.price && rsiNow < prevDC.rsi)
-        return "20";
+        return "LONG";
 
     if (priceNow < prevDC.price && rsiNow > prevDC.rsi)
-        return "20";
+        return "LONG";
 
     // Конвергенция (короткий период)
     if (priceNow > prevCD.price && rsiNow > prevCD.rsi)
-        return "10";
+        return "SHORT";
 
     if (priceNow < prevCD.price && rsiNow < prevCD.rsi)
-        return "10";
+        return "SHORT";
 
     return null;
 }
