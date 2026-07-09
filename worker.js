@@ -141,8 +141,8 @@ function detectDivCon(closes, currentForce) {
 
     if (rsiHistory.length > 100) rsiHistory.shift();
 
-    const prevDC = rsiHistory[rsiHistory.length - 20]; // длинный период
-    const prevCD = rsiHistory[rsiHistory.length - 5];  // короткий период
+    const prevDC = rsiHistory[rsiHistory.length - 50]; // длинный период
+    const prevCD = rsiHistory[rsiHistory.length - 20];  // короткий период
 
     if (!prevDC || !prevCD) return null;
 
@@ -151,17 +151,17 @@ function detectDivCon(closes, currentForce) {
 
     // Дивергенция (длинный период)
     if (priceNow > prevDC.price && rsiNow < prevDC.rsi)
-        return "LONG";
+        return "LS";
 
     if (priceNow < prevDC.price && rsiNow > prevDC.rsi)
-        return "LONG";
+        return "LB";
 
     // Конвергенция (короткий период)
     if (priceNow > prevCD.price && rsiNow > prevCD.rsi)
-        return "SHORT";
+        return "SS";
 
     if (priceNow < prevCD.price && rsiNow < prevCD.rsi)
-        return "SHORT";
+        return "SB";
 
     return null;
 }
