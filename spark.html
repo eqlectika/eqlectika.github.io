@@ -126,7 +126,7 @@ In the tempest — follow only the protocol.</p>
 <div class="select-container">
   <div class="select-group"><label for="boomerang" style="color: var(--boomerang-color);">Boomerang Logic</label><select id="boomerang" onchange="log('boomerang')"><option selected disabled>—</option><option value="1">Impact</option><option value="2">Magnetism</option><option value="3">Gravity</option><option value="4">Cooling</option><option value="5">Ejection</option></select></div>
   <div class="select-group"><label for="time" style="color: var(--time-color);">Timeframe</label><select id="time" onchange="log('time')"><option selected disabled>—</option><option value="1">Minute</option><option value="2">Hour</option><option value="3">Day</option><option value="4">Week</option><option value="5">Month</option></select></div>
-  <div class="select-group"><label for="breath" style="color: var(--breath-color);">Breathing</label><select id="breath" onchange="log('breath')"><option selected disabled>—</option><option value="1">Mouth in/out</option><option value="2">Mouth in, nose out</option><option value="3">Sensing...</option><option value="4">Nose in, mouth out</option><option value="5">Nose in/out</option></select></div>
+  <div class="select-group"><label for="breath" style="color: var(--breath-color);">Breathing</label><select id="breath" onchange="log('breath')"><option selected disabled>—</option><option value="1">Mouth in/out</option><option value="2">Mouth in, nose out</option><option value="3">Sensing...</option><option value="4">Nose in/out</option><option value="5">Nose in, mouth out</option></select></div>
   <div class="select-group"><label for="pulse" style="color: var(--pulse-color);">Pulse</label><select id="pulse" onchange="log('pulse')"><option selected disabled>—</option><option value="1">&gt; 120</option><option value="2">100-120</option><option value="3">80-100</option><option value="4">60-80</option><option value="5">&lt; 60</option></select></div>
   <div class="select-group"><label for="emotion" style="color: var(--emotion-color);">Emotions</label><select id="emotion" onchange="log('emotion')"><option selected disabled>—</option><option value="1">Anxiety</option><option value="2">Neutral</option><option value="3">Calmness</option><option value="4">Harmony</option><option value="5">Serenity</option></select></div>
   <div class="select-group"><label for="dopamine" style="color: var(--dopamine-color);">Anticipation</label><select id="dopamine" onchange="log('dopamine')"><option selected disabled>—</option><option value="1">Urgency</option><option value="2">Excited</option><option value="3">Neutral</option><option value="4">Patient</option><option value="5">Stoic</option></select></div>
@@ -245,19 +245,25 @@ const RecoveryWeights = {
 function updatePriorityVector() {
     const s = getCurrentValues();
 
-    // Теперь 5 — это лучший показатель. 
-    // Дефицит считается как (5 - s.value).
+    // Логика: (5 - s.value) — дефицит (чем больше, тем хуже).
+    // (s.value - 1) — ресурс (чем больше, тем лучше).
+
     const recovery = (
         (5 - s.energy) * RecoveryWeights.energy +
         (5 - s.focus) * RecoveryWeights.focus +
         (5 - s.creativity) * RecoveryWeights.creativity +
-        (s.load - 1) * RecoveryWeights.load + // нагрузку нужно снижать (1 — минимум)
+        (s.load - 1) * RecoveryWeights.load + 
         (5 - s.tension) * RecoveryWeights.tension +
-        (5 - s.pulse) * RecoveryWeights.pulse // pulse 5 — это < 60
+        (5 - s.pulse) * RecoveryWeights.pulse 
     ) / 2;
 
-    const hydration = (5 - s.energy) + (5 - s.vision) + (5 - s.focus) + (s.pulse - 1);
+    // В Hydration: сближение с 5 (покой/ясность) — хорошо
+    const hydration = (s.energy - 1) + (s.vision - 1) + (s.focus - 1) + (s.pulse - 1);
+    
+    // В Energy: накопление ресурсов
     const energy = (s.energy - 1) + (s.creativity - 1) + (s.focus - 1) + (s.pulse - 1);
+    
+    // В Activation: готовность (пульс и эмоции 5 — это покой и безмятежность)
     const activation = (s.focus - 1) + (s.energy - 1) + (s.pulse - 1) + (s.emotion - 1);
 
     document.getElementById("pv-recovery").textContent = renderVector(recovery);
@@ -265,6 +271,7 @@ function updatePriorityVector() {
     document.getElementById("pv-energy").textContent = renderVector(energy);
     document.getElementById("pv-activation").textContent = renderVector(activation);
 }
+
 
 
   const STORAGE_KEY = "vital_spark_bio_v1";
