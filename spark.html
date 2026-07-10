@@ -245,32 +245,34 @@ const RecoveryWeights = {
 function updatePriorityVector() {
     const s = getCurrentValues();
 
-    // Логика: (5 - s.value) — дефицит (чем больше, тем хуже).
-    // (s.value - 1) — ресурс (чем больше, тем лучше).
-
+    // ПРИНЦИП: (5 - s.value) = Дефицит.
+    // Чем выше значение, тем острее потребность в коррекции.
+    
+    // Recovery: Нужен отдых, если энергия, фокус, креативность на минимуме, а нагрузка/напряжение на максимуме.
     const recovery = (
         (5 - s.energy) * RecoveryWeights.energy +
         (5 - s.focus) * RecoveryWeights.focus +
         (5 - s.creativity) * RecoveryWeights.creativity +
         (s.load - 1) * RecoveryWeights.load + 
         (5 - s.tension) * RecoveryWeights.tension +
-        (5 - s.pulse) * RecoveryWeights.pulse 
+        (5 - s.pulse) * RecoveryWeights.pulse
     ) / 2;
 
-    // В Hydration: сближение с 5 (покой/ясность) — хорошо
-    const hydration = (s.energy - 1) + (s.vision - 1) + (s.focus - 1) + (s.pulse - 1);
+    // Hydration: Нужно пить, если энергия и ясность (vision/focus) падают.
+    const hydration = (5 - s.energy) + (5 - s.vision) + (5 - s.focus) + (5 - s.pulse);
     
-    // В Energy: накопление ресурсов
-    const energy = (s.energy - 1) + (s.creativity - 1) + (s.focus - 1) + (s.pulse - 1);
+    // Energy: Нужно "топливо" (белки), если энергия и фокус на минимуме.
+    const energy = (5 - s.energy) + (5 - s.creativity) + (5 - s.focus) + (5 - s.pulse);
     
-    // В Activation: готовность (пульс и эмоции 5 — это покой и безмятежность)
-    const activation = (s.focus - 1) + (s.energy - 1) + (s.pulse - 1) + (s.emotion - 1);
+    // Activation: Нужны "витамины"/стимул, если фокус и вовлеченность (emotion) на минимуме.
+    const activation = (5 - s.focus) + (5 - s.energy) + (5 - s.pulse) + (5 - s.emotion);
 
     document.getElementById("pv-recovery").textContent = renderVector(recovery);
     document.getElementById("pv-hydration").textContent = renderVector(hydration);
     document.getElementById("pv-energy").textContent = renderVector(energy);
     document.getElementById("pv-activation").textContent = renderVector(activation);
 }
+
 
 
 
