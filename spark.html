@@ -204,8 +204,11 @@ function getCurrentValues() {
 
   rows.forEach(key => {
     const ds = chart.data.datasets[rows.indexOf(key)];
-    // Ищем значение в массиве данных, двигаясь с конца к началу
-    let lastValidValue = 3; // Значение по умолчанию
+    // Если данных нет, возвращаем 5 (нейтрально, нет дефицита) 
+    // или 0, чтобы Priority не "кричал" о нехватке до начала работы.
+    let lastValidValue = 5; 
+    
+    // Ищем последнее введенное пользователем значение
     for (let i = ds.data.length - 1; i >= 0; i--) {
       if (ds.data[i] != null) {
         lastValidValue = ds.data[i];
@@ -217,6 +220,7 @@ function getCurrentValues() {
 
   return state;
 }
+
 
 function renderVector(score){
 
@@ -244,11 +248,16 @@ const RecoveryWeights = {
 
 function updatePriorityVector() {
     const s = getCurrentValues();
-
-    // ПРИНЦИП: (5 - s.value) = Дефицит.
-    // Чем выше значение, тем острее потребность в коррекции.
     
-    // Recovery: Нужен отдых, если энергия, фокус, креативность на минимуме, а нагрузка/напряжение на максимуме.
+    // Если еще не было ни одного лога, Priority Vector не должен отображать нужду
+    const hasData = chart.data.labels.length > 0;
+    if (!hasData) {
+        ['pv-recovery', 'pv-hydration', 'pv-energy', 'pv-activation'].forEach(id => {
+            document.getElementById(id).textContent = "█████ ●●";
+        });
+        return;
+    }
+
     const recovery = (
         (5 - s.energy) * RecoveryWeights.energy +
         (5 - s.focus) * RecoveryWeights.focus +
@@ -258,13 +267,8 @@ function updatePriorityVector() {
         (5 - s.pulse) * RecoveryWeights.pulse
     ) / 2;
 
-    // Hydration: Нужно пить, если энергия и ясность (vision/focus) падают.
     const hydration = (5 - s.energy) + (5 - s.vision) + (5 - s.focus) + (5 - s.pulse);
-    
-    // Energy: Нужно "топливо" (белки), если энергия и фокус на минимуме.
     const energy = (5 - s.energy) + (5 - s.creativity) + (5 - s.focus) + (5 - s.pulse);
-    
-    // Activation: Нужны "витамины"/стимул, если фокус и вовлеченность (emotion) на минимуме.
     const activation = (5 - s.focus) + (5 - s.energy) + (5 - s.pulse) + (5 - s.emotion);
 
     document.getElementById("pv-recovery").textContent = renderVector(recovery);
@@ -272,8 +276,6 @@ function updatePriorityVector() {
     document.getElementById("pv-energy").textContent = renderVector(energy);
     document.getElementById("pv-activation").textContent = renderVector(activation);
 }
-
-
 
 
   const STORAGE_KEY = "vital_spark_bio_v1";
