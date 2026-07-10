@@ -237,11 +237,11 @@ a {
 </div>    
     <div id="status">Status: Disconnected</div>
     
-    <div id="market-stats" style="font-family: monospace; margin: 10px 0; color: #b2b5be;">
-    Mark Price: <span id="mark-price" style="color: #fff;">--</span> | 
-    Funding Rate: <span id="funding-rate" style="color: #fff;">--</span> | 
-    Next Funding: <span id="next-funding" style="color: #fff;">--</span>
-    </div>
+<div id="futures-stats" style="font-family: monospace; margin: 10px 0; color: #b2b5be; ">
+    Mark: <span id="f-mark" style="color:#fff;">--</span> | 
+    Funding: <span id="f-rate" style="color:#ffa726;">--</span>
+| Diff: <span id="f-diff" style="color:#fff;">--</span>
+</div>
 
   <div class="main-layout">
     <div class="column-left">
@@ -990,31 +990,47 @@ worker.postMessage({
     pairSelect.onchange = connect;
     tfSelect.onchange = connect;
 
-    function toggleInfo() {
-      const content = document.getElementById("info-content");
-      const topBtn = document.getElementById("toggleHeaderTop");
-      const isOpening = content.style.display === "none";
-      
-      content.style.display = isOpening ? "block" : "none";
-      topBtn.style.display = isOpening ? "none" : "block";
-      
-      if (isOpening) {
-        setTimeout(() => { content.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
-      } else {
-        topBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
+
+
+// Фьючерсные данные
+async function getFutures() {
+    const symbol = pairSelect.value.toUpperCase();
+    try {
+        const res = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${symbol}`);
+        const data = await res.json();
         
-    function copyToClipboard() {
-      const addr = document.getElementById("cryptoAddr").innerText;
-      navigator.clipboard.writeText(addr).then(() => {
-        const hint = document.getElementById("copyHint");
-        hint.innerText = "Copied!";
-        setTimeout(() => hint.innerText = "Click address to copy", 2000);
-      });
+        const markRes = await fetch(`https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${symbol}`);
+        const markData = await markRes.json();
+        
+        const markPrice = parseFloat(markData.markPrice);
+        const lastPrice = parseFloat(data.price);
+        const fundingRate = parseFloat(markData.lastFundingRate) * 100;
+        
+        // Отображаем с знаком
+        document.getElementById('f-mark').textContent = markPrice.toFixed(2);
+        document.getElementById('f-rate').textContent = (fundingRate > 0 ? '+' : '') + fundingRate.toFixed(4) + '%';
+        document.getElementById('f-rate').style.color = fundingRate > 0 ? '#00e676' : fundingRate < 0 ? '#ff5252' : '#fff';
+        
+        const diffPercent = ((markPrice - lastPrice) / lastPrice) * 100;
+        document.getElementById('f-diff').textContent = (diffPercent > 0 ? '+' : '') + diffPercent.toFixed(2) + '%';
+        document.getElementById('f-diff').style.color = diffPercent > 0 ? '#00e676' : diffPercent < 0 ? '#ff5252' : '#fff';
+        
+    } catch(e) {
+        document.getElementById('f-mark').textContent = '--';
+        document.getElementById('f-rate').textContent = '--';
+        document.getElementById('f-diff').textContent = '--';
     }
+}
+// Вызываем при загрузке
+setTimeout(getFutures, 500);
 
+// Обновляем при смене пары
+pairSelect.onchange = function() {
+    setTimeout(getFutures, 500);
+};
 
+// Обновляем каждую минуту
+setInterval(getFutures, 60000);
   </script>
 </body>
 </html>
