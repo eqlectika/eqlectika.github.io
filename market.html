@@ -272,7 +272,7 @@ a {
 </style>
 </head>
 <body>
-  <div style="display: flex; align-items: flex-start; justify-content: left; padding-left: 5px; gap: 15px; margin-bottom: 5px;">
+<div style="display: flex; align-items: flex-start; justify-content: left; padding-left: 5px; gap: 15px; margin-bottom: 5px;">
 
   <a href="market.html" style="text-decoration: none;">
     <img src="market-v8.png" alt="Logo" style="height: 38px; width: auto;">
@@ -285,7 +285,6 @@ a {
     </span>
   </div>
 </div>
-  
 <div id="global-market-container" style="width: calc(100% - 10px); max-width: 100%; padding-left: 5px; margin-bottom: 15px; font-family: monospace;">
   <div style="display: flex; justify-content: flex-start; gap: 8px;">
     <span>🌍 MARKET GLOBAL FORCE INDEX:</span>
@@ -691,8 +690,20 @@ const rectX = chart.chartArea.right + 8;
     ctx.fillRect(rectX, rectY, pRectW, pRectH);
     
     const price = y.getValueForPixel(yPos);
-    const priceText = Math.floor(price).toString();
-    
+function getDecimals(value) {
+  const absValue = Math.abs(value);
+  if (absValue === 0) return 0;
+  else if (absValue < 0.001) return 6;
+  else if (absValue < 0.01) return 5;
+  else if (absValue < 0.1) return 4;
+  else if (absValue < 1) return 3;
+  else if (absValue < 10) return 2;
+  else if (absValue < 100) return 1;
+  else return 0;
+}
+
+const decimals = getDecimals(price);
+const priceText = price.toFixed(decimals);    
     ctx.fillStyle = '#ffffff';
     ctx.font = '12px sans-serif';
     
@@ -743,8 +754,22 @@ const rectW = chart.scales.y.width - 10;    const rectH = 20;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-ctx.fillText(currentPrice.toFixed(0), right + 8 + rectW / 2, yPos);
+// Определяем количество знаков после запятой
+function getDecimals(value) {
+  const absValue = Math.abs(value);
+  if (absValue === 0) return 0;
+  else if (absValue < 0.001) return 6;
+  else if (absValue < 0.01) return 5;
+  else if (absValue < 0.1) return 4;
+  else if (absValue < 1) return 3;
+  else if (absValue < 10) return 2;
+  else if (absValue < 100) return 1;
+  else return 0;
+}
 
+// И используйте:
+const decimals = getDecimals(currentPrice);
+ctx.fillText(currentPrice.toFixed(decimals), right + 8 + rectW / 2, yPos);
     
     ctx.restore();
   }
