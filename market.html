@@ -826,51 +826,64 @@ datasets.push({
               right: 1 
             }
           },
-          scales: { 
-            x: { 
-              position: 'top',
-              display: true, 
-              offset: false,
-              grid: { display: false }, 
-              ticks: { 
-                display: true,
-                color: '#d1d4dc',
-                callback: function(val) { return Math.round(val / 20) * 20; }
-              }
-            }, 
-            y: { 
-              display: true, 
-              position: 'right',
-              grid: { display: false }, 
-              bounds: 'data',
-              ticks: {
-                color: '#d1d4dc',
-                callback: function(value) { return Math.round(value / 1) * 1; }
-              }
-            },
-            
-            yParrots: { display: false, min: 0, max: 100 },
-            yRSI: {
-  display: true,
-  position: 'left',
-  min: 0,
-  max: 100,
-  grid: {
-    drawOnChartArea: false
+ scales: { 
+  x: { 
+    position: 'top',
+    display: true, 
+    offset: false,
+    grid: { display: false }, 
+    ticks: { 
+      display: true,
+      color: '#d1d4dc',
+      callback: function(val) { return Math.round(val / 20) * 20; }
+    }
+  }, 
+  y: { 
+    display: true, 
+    position: 'right',
+    grid: { display: false }, 
+    bounds: 'data',
+    ticks: {
+      color: '#d1d4dc',
+      callback: function(value) {
+        const absValue = Math.abs(value);
+        let decimals = 0;
+        
+        if (absValue === 0) return '0';
+        else if (absValue < 0.001) decimals = 6;
+        else if (absValue < 0.01) decimals = 5;
+        else if (absValue < 0.1) decimals = 4;
+        else if (absValue < 1) decimals = 3;
+        else if (absValue < 10) decimals = 2;
+        else if (absValue < 100) decimals = 1;
+        else decimals = 0;
+        
+        return value.toFixed(decimals);
+      }
+    }
   },
-  ticks: {
-    color: '#ffeb3b',
-    crossAlign: 'far',
-    callback: value => value 
+  yParrots: { display: false, min: 0, max: 100 },
+  yRSI: {
+    display: true,
+    position: 'left',
+    min: 0,
+    max: 100,
+    grid: {
+      drawOnChartArea: false
+    },
+    ticks: {
+      color: '#ffeb3b',
+      crossAlign: 'far',
+      callback: value => value 
+    }
+  },
+  yVolume: {
+    display: false,
+    position: 'right',
+    bounds: 'data',
+    min: 0
   }
 },
-            yVolume: {
-              display: false,
-              position: 'right',
-              bounds: 'data',
-              min: 0
-            }
-          },
           plugins: { 
             priceCrosshair: {},          
             currentPriceIndicator: {},   
