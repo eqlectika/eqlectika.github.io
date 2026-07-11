@@ -18,7 +18,17 @@
 .invert-element {
   transition: filter 0.1s;
 }
-    body { background: var(--bg-color); color: #fff; font-family: var(--main-font); padding:20px 0 0 10px; margin: 0; display: flex; flex-direction: column; min-height: 100vh; user-select: none; }
+    body { 
+background: var(--bg-color); 
+color: #fff; 
+font-family: var(--main-font); 
+padding:20px 0 0 10px; 
+margin: 0; 
+display: flex; flex-direction: 
+column; 
+min-height: 100vh; 
+user-select: none; 
+}
     .header-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
     .logo-image { max-width: 48px; opacity: 1; }
     .protocol-details { cursor: pointer; margin-bottom: 25px; font-size: 13px; color: #fff; }
@@ -33,11 +43,20 @@
     button.ui-btn { background: #111; color: var(--white); border: 1px solid #fff; padding: 8px 12px; font-family: var(--main-font); cursor: pointer; font-size: 11px; }
     
     #savedDataView { 
-      background: #0a0a0a; color: var(--creativity-color); padding: 15px; font-size: 11px; 
-      border: 1px solid #222; margin-top: 10px; max-height: 300px; overflow-y: auto; 
+      position: relative; /* Это выведет его из влияния margin других элементов */
+      background: #0a0a0a; color: var(--creativity-color); font-size: 11px; 
+      margin-top: 10px; max-height: 300px; overflow-y: auto; 
       white-space: pre-wrap; font-family: var(--main-font); display: none;
     }
-
+.buttons { 
+  margin-top: 20px; 
+  padding-bottom: 50px; /* Пустое пространство ВНУТРИ блока кнопок */
+  display: flex; 
+  gap: 10px; 
+}
+#savedDataView { 
+  margin-top: -30px; /* Компенсирует лишнее расстояние, если нужно */
+}
     footer { margin-top: auto; padding: 40px 0 20px; }
 
 .butterfly-shadow {
@@ -448,30 +467,45 @@ function makeWordsClickable() {
     });
   }
 
-  function toggleMetamorphosis() {
-    if (transitionInterval) clearInterval(transitionInterval);
-    inversionActive = !inversionActive;
-    const target = inversionActive ? 100 : 0;
-    transitionInterval = setInterval(() => {
-        if (inversionLevel === target) {
-            clearInterval(transitionInterval);
-            return;
-        }
-        inversionLevel += (inversionActive ? 1 : -1);
-        const bgVal = Math.floor((inversionLevel / 100) * 255);
-        const grayVal = Math.floor(170 - (inversionLevel / 100) * 100);
-        document.documentElement.style.setProperty('--bg-color', `rgb(${bgVal}, ${bgVal}, ${bgVal})`);
-        document.documentElement.style.setProperty('--light-gray', `rgb(${grayVal}, ${grayVal}, ${grayVal})`);
-        const textVal = 255 - bgVal;
-        document.body.style.color = `rgb(${textVal}, ${textVal}, ${textVal})`;
-        document.querySelectorAll('select, .ui-btn').forEach(el => {
-            el.style.backgroundColor = `rgb(${bgVal}, ${bgVal}, ${bgVal})`;
-            el.style.borderColor = `rgb(${grayVal}, ${grayVal}, ${grayVal})`;
-        });
-        const chartCanvas = document.getElementById('chart');
-        if (chartCanvas) chartCanvas.style.filter = `invert(${inversionLevel}%)`;
-    }, 15);
+function toggleMetamorphosis() {
+  inversionActive = !inversionActive;
+  
+  // Устанавливаем цвета в зависимости от состояния
+  const bg = inversionActive ? '#ffffff' : '#000000';
+  const txt = inversionActive ? '#000000' : '#ffffff';
+  const border = inversionActive ? '#555555' : '#aaaaaa';
+
+  document.documentElement.style.setProperty('--bg-color', bg);
+  document.body.style.color = txt;
+  
+  // Принудительное обновление стилей для элементов, которые "не слушаются"
+  document.querySelectorAll('select, .ui-btn, .protocol-content').forEach(el => {
+    el.style.backgroundColor = bg;
+    el.style.color = txt;
+    el.style.borderColor = border;
+  });
+
+  // Инверсия для заголовков (сохраняет их исходные CSS-цвета, но инвертирует яркость)
+  document.querySelectorAll('label').forEach(el => {
+    el.style.filter = inversionActive ? 'invert(1)' : 'none';
+  });
+
+  // Инверсия для savedDataView
+  const sdv = document.getElementById('savedDataView');
+  if (sdv) {
+    sdv.style.filter = inversionActive ? 'invert(1)' : 'none';
+    sdv.style.borderColor = border;
   }
+
+  // ВОЗВРАЩАЕМ ИНВЕРСИЮ ДЛЯ ЛИНИЙ ГРАФИКА
+  const canvas = document.getElementById('chart');
+  if (canvas) {
+    canvas.style.filter = inversionActive ? 'invert(1)' : 'none';
+  }
+  
+  // Убираем фильтр с body, чтобы избежать проблем с рендерингом самой страницы
+  document.body.style.filter = 'none';
+}
 
 document.addEventListener('click', function(e) {
   if (e.target.classList.contains('clickable-word')) {
