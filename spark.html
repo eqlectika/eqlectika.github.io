@@ -227,10 +227,12 @@ function getCurrentValues() {
 
 
 function renderVector(score){
+  // Временно выводим число в консоль, чтобы увидеть, что именно считает программа
+  console.log("Vector Score:", score);
+  
   score = Math.max(-5, Math.min(5, Math.round(score)));
 
   if (score > 0) {
-      // Добавляем пробелы вместо ●● для выравнивания
       return "█".repeat(score) + "░".repeat(5 - score) + " ▲ ";
   }
   if (score < 0) {
@@ -238,6 +240,7 @@ function renderVector(score){
   }
   return "█████ ●●";
 }
+
 
 
 const RecoveryWeights = {
@@ -254,25 +257,29 @@ function updatePriorityVector() {
     const hasData = chart.data.labels.length > 0;
     if (!hasData) return;
 
-    // Восстанавливаем логику отклонения от 3
+    // Единая логика: (3 - x). 
+    // Если x=1 (дефицит), результат = 2 (положительный) -> Стрелка ▲ (Добавить)
+    // Если x=5 (избыток), результат = -2 (отрицательный) -> Стрелка ▼ (Убавить)
+
     const recovery = (
         (3 - s.energy) * RecoveryWeights.energy +
         (3 - s.focus) * RecoveryWeights.focus +
         (3 - s.creativity) * RecoveryWeights.creativity +
-        (s.load - 3) * RecoveryWeights.load +
-        (s.tension - 3) * RecoveryWeights.tension +
-        (s.pulse - 3) * RecoveryWeights.pulse
+        (3 - s.load) * RecoveryWeights.load +
+        (3 - s.tension) * RecoveryWeights.tension +
+        (3 - s.pulse) * RecoveryWeights.pulse
     ) / 2;
 
-    const hydration = (3 - s.energy) + (3 - s.vision) + (3 - s.focus) + (s.pulse - 3);
-    const energy = (3 - s.energy) + (3 - s.creativity) + (3 - s.focus) - (s.pulse - 3);
-    const activation = (3 - s.focus) + (3 - s.energy) - (s.pulse - 3) - (s.emotion - 3);
+    const hydration = (3 - s.energy) + (3 - s.vision) + (3 - s.focus) + (3 - s.pulse);
+    const energy = (3 - s.energy) + (3 - s.creativity) + (3 - s.focus) + (3 - s.pulse);
+    const activation = (3 - s.focus) + (3 - s.energy) + (3 - s.pulse) + (3 - s.emotion);
 
     document.getElementById("pv-recovery").textContent = renderVector(recovery);
     document.getElementById("pv-hydration").textContent = renderVector(hydration);
     document.getElementById("pv-energy").textContent = renderVector(energy);
     document.getElementById("pv-activation").textContent = renderVector(activation);
 }
+
 
 
 
