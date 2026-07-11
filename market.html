@@ -186,6 +186,89 @@ a {
     opacity: 0.8;
     pointer-events: none;
 }
+
+/* Стили для индикатора funding rate */
+#funding-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: monospace;
+  margin: 5px 0;
+  padding: 8px 0px;
+}
+
+#funding-blocks {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
+.funding-block {
+  width: 16px;
+  height: 24px;
+  background: #2c3145;
+  transition: all 0.3s ease;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.funding-block .fill-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  transition: height 0.3s ease;
+}
+
+/* Полупрозрачные блоки (дробные числа) */
+.funding-block.partial {
+  background: rgba(255, 167, 38, 0.5);
+}
+
+.funding-block.partial .fill-bar {
+  background: rgba(255, 167, 38);
+}
+
+/* Непрозрачные блоки (целые числа) */
+.funding-block.filled {
+  background: #ffa726;
+}
+
+/* Цвета в зависимости от знака */
+.funding-block.positive {
+  background: rgba(0, 230, 118, 0.5);
+}
+
+.funding-block.positive .fill-bar {
+  background: rgba(0, 230, 118);
+}
+
+.funding-block.positive.filled {
+  background: #00e676;
+}
+
+.funding-block.negative {
+  background: rgba(255, 82, 82, 0.5);
+}
+
+.funding-block.negative .fill-bar {
+  background: rgba(255, 82, 82);
+}
+
+.funding-block.negative.filled {
+  background: #ff5252;
+}
+
+#funding-value {
+  color: #ffa726;
+  font-weight: bold;
+  min-width: 70px;
+  font-size: 13px;
+}
 </style>
 </head>
 <body>
@@ -237,10 +320,12 @@ a {
 </div>    
     <div id="status">Status: Disconnected</div>
     
-<div id="futures-stats" style="font-family: monospace; margin: 10px 0; color: #b2b5be; ">
-    M: <span id="f-mark" style="color:#ffff00;">--</span> 
-    F: <span id="f-rate" style="color:#ffa726;">--</span> 
-    D: <span id="f-diff" style="color:#fff;">--</span>
+<div id="funding-indicator">
+  <span style="color: #b2b5be; font-size: 12px;">Funding:</span>
+  <div id="funding-blocks"></div>
+  <span id="f-rate" style="font-weight: bold; min-width: 70px; font-size: 13px;">--</span>    
+    Mark: <span id="f-mark" style="color:#ffff00;">--</span> 
+
 </div>
 
   <div class="main-layout">
@@ -990,9 +1075,45 @@ worker.postMessage({
     pairSelect.onchange = connect;
     tfSelect.onchange = connect;
 
+// Исправленная функция renderFundingRate - теперь не обновляет текст, только блоки
+function renderFundingRate(fundingRate) {
+  const container = document.getElementById('funding-blocks');
+  
+  if (!container) return;
+  
+  const absRate = Math.abs(fundingRate);
+  const isPositive = fundingRate >= 0;
+  const colorClass = isPositive ? 'positive' : 'negative';
+  
+  const percentValue = absRate * 100;
+  const wholePart = Math.floor(percentValue);
+  const fractionalPart = percentValue - wholePart;
+  const filledBlocks = Math.min(wholePart, 5);
+  
+  container.innerHTML = '';
+  
+  for (let i = 0; i < 5; i++) {
+    const block = document.createElement('div');
+    block.className = 'funding-block';
+    block.classList.add(colorClass);
+    
+    if (i < filledBlocks) {
+      block.classList.add('filled');
+    } else if (i === filledBlocks && fractionalPart > 0 && filledBlocks < 5) {
+      block.classList.add('partial');
+      const fillBar = document.createElement('div');
+      fillBar.className = 'fill-bar';
+      fillBar.style.height = (fractionalPart * 100) + '%';
+      block.appendChild(fillBar);
+    } else {
+      block.style.background = '#2c3145';
+    }
+    
+    container.appendChild(block);
+  }
+}
 
-
-// Фьючерсные данные
+// Упрощенная функция getFutures
 async function getFutures() {
     const symbol = pairSelect.value.toUpperCase();
     try {
@@ -1004,21 +1125,27 @@ async function getFutures() {
         
         const markPrice = parseFloat(markData.markPrice);
         const lastPrice = parseFloat(data.price);
-        const fundingRate = parseFloat(markData.lastFundingRate) * 100;
+        const fundingRate = parseFloat(markData.lastFundingRate);
         
-        // Отображаем с знаком
+        const fundingPercent = fundingRate * 100;
+        
         document.getElementById('f-mark').textContent = markPrice.toFixed(2);
-        document.getElementById('f-rate').textContent = (fundingRate > 0 ? '+' : '') + fundingRate.toFixed(4) + '%';
-        document.getElementById('f-rate').style.color = fundingRate > 0 ? '#00e676' : fundingRate < 0 ? '#ff5252' : '#fff';
         
-        const diffPercent = ((markPrice - lastPrice) / lastPrice) * 100;
-        document.getElementById('f-diff').textContent = (diffPercent > 0 ? '+' : '') + diffPercent.toFixed(2) + '%';
-        document.getElementById('f-diff').style.color = diffPercent > 0 ? '#00e676' : diffPercent < 0 ? '#ff5252' : '#fff';
+        // Обновляем f-rate один раз
+        const displayValue = (fundingRate > 0 ? '+' : '') + fundingPercent.toFixed(4) + '%';
+        const fRateElement = document.getElementById('f-rate');
+        fRateElement.textContent = displayValue;
+        fRateElement.style.color = fundingRate > 0 ? '#00e676' : fundingRate < 0 ? '#ff5252' : '#fff';
+        
+        // Только визуализация блоков
+        renderFundingRate(fundingRate);
         
     } catch(e) {
         document.getElementById('f-mark').textContent = '--';
         document.getElementById('f-rate').textContent = '--';
         document.getElementById('f-diff').textContent = '--';
+        const container = document.getElementById('funding-blocks');
+        if (container) container.innerHTML = '';
     }
 }
 // Вызываем при загрузке
