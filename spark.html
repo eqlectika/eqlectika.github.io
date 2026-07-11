@@ -210,14 +210,9 @@ In the tempest — follow only the protocol.</p>
   
 function getCurrentValues() {
   const state = {};
-
   rows.forEach(key => {
     const ds = chart.data.datasets[rows.indexOf(key)];
-    // Если данных нет, возвращаем 5 (нейтрально, нет дефицита) 
-    // или 0, чтобы Priority не "кричал" о нехватке до начала работы.
-    let lastValidValue = 5; 
-    
-    // Ищем последнее введенное пользователем значение
+    let lastValidValue = 3; // Возвращаем 3 как точку покоя
     for (let i = ds.data.length - 1; i >= 0; i--) {
       if (ds.data[i] != null) {
         lastValidValue = ds.data[i];
@@ -226,9 +221,9 @@ function getCurrentValues() {
     }
     state[key] = lastValidValue;
   });
-
   return state;
 }
+
 
 
 function renderVector(score){
@@ -256,35 +251,29 @@ const RecoveryWeights = {
 
 function updatePriorityVector() {
     const s = getCurrentValues();
-    
-    // Если еще не было ни одного лога, Priority Vector не должен отображать нужду
     const hasData = chart.data.labels.length > 0;
-    if (!hasData) {
-        ['pv-recovery', 'pv-hydration', 'pv-energy', 'pv-activation'].forEach(id => {
-            document.getElementById(id).textContent = "█████ ●●";
-        });
-        return;
-    }
+    if (!hasData) return;
 
+    // Восстанавливаем логику отклонения от 3
     const recovery = (
-        (5 - s.energy) * RecoveryWeights.energy +
-        (5 - s.focus) * RecoveryWeights.focus +
-        (5 - s.creativity) * RecoveryWeights.creativity +
-        (5 - s.load) * RecoveryWeights.load + // Было (s.load - 1), стало (5 - s.load)
-        (5 - s.tension) * RecoveryWeights.tension +
-        (5 - s.pulse) * RecoveryWeights.pulse
+        (3 - s.energy) * RecoveryWeights.energy +
+        (3 - s.focus) * RecoveryWeights.focus +
+        (3 - s.creativity) * RecoveryWeights.creativity +
+        (s.load - 3) * RecoveryWeights.load +
+        (s.tension - 3) * RecoveryWeights.tension +
+        (s.pulse - 3) * RecoveryWeights.pulse
     ) / 2;
 
-
-    const hydration = (5 - s.energy) + (5 - s.vision) + (5 - s.focus) + (5 - s.pulse);
-    const energy = (5 - s.energy) + (5 - s.creativity) + (5 - s.focus) + (5 - s.pulse);
-    const activation = (5 - s.focus) + (5 - s.energy) + (5 - s.pulse) + (5 - s.emotion);
+    const hydration = (3 - s.energy) + (3 - s.vision) + (3 - s.focus) + (s.pulse - 3);
+    const energy = (3 - s.energy) + (3 - s.creativity) + (3 - s.focus) - (s.pulse - 3);
+    const activation = (3 - s.focus) + (3 - s.energy) - (s.pulse - 3) - (s.emotion - 3);
 
     document.getElementById("pv-recovery").textContent = renderVector(recovery);
     document.getElementById("pv-hydration").textContent = renderVector(hydration);
     document.getElementById("pv-energy").textContent = renderVector(energy);
     document.getElementById("pv-activation").textContent = renderVector(activation);
 }
+
 
 
   const STORAGE_KEY = "vital_spark_bio_v1";
