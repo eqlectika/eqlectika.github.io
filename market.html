@@ -1165,191 +1165,69 @@ worker.postMessage({
     connect();
 
     pairSelect.onchange = connect;
-    tfSelect.onchange = connect;
+tfSelect.onchange = connect;
 
 function renderFundingRate(fundingRate) {
   const container = document.getElementById('funding-blocks');
   if (!container) return;
   
-  const absRate = Math.abs(fundingRate) * 100; // переводим в проценты
+  const absRate = Math.abs(fundingRate) * 100;
   const isPositive = fundingRate >= 0;
   
-  let filledBlocks = 0; // непрозрачные блоки (1.0)
-  let partialBlocks = 0; // полупрозрачные блоки (0.5)
+  let filledBlocks = 0;
+  let partialBlocks = 0;
   
-  if (absRate < 0.0005) {
-    // 0.0001-0.0004% → 1 полупрозрачный
-    partialBlocks = 1;
-  } else if (absRate < 0.0050) {
-    // 0.0005-0.0049% → 2 полупрозрачных
-    partialBlocks = 2;
-  } else if (absRate < 0.0500) {
-    // 0.0050-0.0499% → 3 полупрозрачных
-    partialBlocks = 3;
-  } else if (absRate < 0.5000) {
-    // 0.0500-0.4999% → 4 полупрозрачных
-    partialBlocks = 4;
-  } else if (absRate < 1.0000) {
-    // 0.5000-0.9999% → 5 полупрозрачных
-    partialBlocks = 5;
-  } else if (absRate < 1.5000) {
-    // 1.0000-1.4999% → 1 непрозрачный + 4 полупрозрачных
-    filledBlocks = 1;
-    partialBlocks = 4;
-  } else if (absRate < 2.5000) {
-    // 1.5000-2.4999% → 2 непрозрачных + 3 полупрозрачных
-    filledBlocks = 2;
-    partialBlocks = 3;
-  } else if (absRate < 3.5000) {
-    // 2.5000-3.4999% → 3 непрозрачных + 2 полупрозрачных
-    filledBlocks = 3;
-    partialBlocks = 2;
-  } else if (absRate < 4.5000) {
-    // 3.5000-4.4999% → 4 непрозрачных + 1 полупрозрачный
-    filledBlocks = 4;
-    partialBlocks = 1;
-  } else {
-    // 4.5000% > → 5 непрозрачных
-    filledBlocks = 5;
-    partialBlocks = 0;
-  }
+  if (absRate < 0.0005) partialBlocks = 1;
+  else if (absRate < 0.0050) partialBlocks = 2;
+  else if (absRate < 0.0500) partialBlocks = 3;
+  else if (absRate < 0.5000) partialBlocks = 4;
+  else if (absRate < 1.0000) partialBlocks = 5;
+  else if (absRate < 1.5000) { filledBlocks = 1; partialBlocks = 4; }
+  else if (absRate < 2.5000) { filledBlocks = 2; partialBlocks = 3; }
+  else if (absRate < 3.5000) { filledBlocks = 3; partialBlocks = 2; }
+  else if (absRate < 4.5000) { filledBlocks = 4; partialBlocks = 1; }
+  else { filledBlocks = 5; partialBlocks = 0; }
   
   container.innerHTML = '';
   
-  // Рисуем 5 блоков
   for (let i = 0; i < 5; i++) {
     const block = document.createElement('div');
     block.className = 'funding-block';
     
     if (i < filledBlocks) {
-      // Непрозрачный блок
       block.style.background = isPositive ? '#00e676' : '#ff5252';
     } else if (i < filledBlocks + partialBlocks) {
-      // Полупрозрачный блок
       block.style.background = isPositive ? 'rgba(0, 230, 118, 0.4)' : 'rgba(255, 82, 82, 0.4)';
     } else {
-      // Пустой блок
       block.style.background = '#2c3145';
     }
-    
     container.appendChild(block);
   }
 }
 
-// Упрощенная функция getFutures
 async function getFutures() {
     const symbol = pairSelect.value.toUpperCase();
     try {
         const res = await fetch(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${symbol}`);
         const data = await res.json();
-        
         const markRes = await fetch(`https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${symbol}`);
         const markData = await markRes.json();
-        
         const markPrice = parseFloat(markData.markPrice);
-        const lastPrice = parseFloat(data.price);
         const fundingRate = parseFloat(markData.lastFundingRate);
-        
         const fundingPercent = fundingRate * 100;
         
         document.getElementById('f-mark').textContent = markPrice.toFixed(2);
-        
-        // Обновляем f-rate один раз
         const displayValue = (fundingRate > 0 ? '+' : '') + fundingPercent.toFixed(4) + '%';
         const fRateElement = document.getElementById('f-rate');
         fRateElement.textContent = displayValue;
         fRateElement.style.color = fundingRate > 0 ? '#00e676' : fundingRate < 0 ? '#ff5252' : '#fff';
-        
-        // Только визуализация блоков
         renderFundingRate(fundingRate);
-        
     } catch(e) {
         document.getElementById('f-mark').textContent = '--';
         document.getElementById('f-rate').textContent = '--';
-        document.getElementById('f-diff').textContent = '--';
         const container = document.getElementById('funding-blocks');
         if (container) container.innerHTML = '';
     }
-}
-// Вызываем при загрузке
-setTimeout(getFutures, 500);
-
-// Обновляем при смене пары
-pairSelect.onchange = function() {
-    setTimeout(getFutures, 500);
-    renderMarketIndicator();  // <-- ДОБАВИТЬ
-};
-
-// Обновляем каждую минуту
-setInterval(getFutures, 60000);
-
-// ===== ЗАГРУЗКА ВСЕХ ПАР ДЛЯ ГЛОБАЛЬНОГО ИНДИКАТОРА =====
-async function loadAllPairs() {
-  console.log('Loading all pairs for global indicator...');
-  
-  for (const pair of ALL_PAIRS) {
-    try {
-      const promises = timeframesList.map(tf => {
-        return fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${tf}&limit=30`)
-          .then(res => res.json())
-          .then(data => {
-            const closes = data.map(d => parseFloat(d[4]));
-            let sumTf = 0;
-            let countTf = 0;
-            
-            timeframesList.forEach(tfKey => {
-              const closesForTf = data.map(d => parseFloat(d[4]));
-              const rsi = calculateSingleRSI(closesForTf, period);
-              sumTf += rsi;
-              countTf++;
-            });
-            
-            const avgForPair = sumTf / countTf;
-            globalPairAverages[pair] = avgForPair;
-            console.log(`✅ ${pair}: ${avgForPair.toFixed(2)}%`);
-          })
-          .catch(err => {
-            console.error(`❌ Error loading ${pair}:`, err);
-            globalPairAverages[pair] = 50;
-          });
-      });
-      
-      await Promise.all(promises);
-      
-    } catch(e) {
-      console.error(`❌ Error with pair ${pair}:`, e);
-      globalPairAverages[pair] = 50;
-    }
-  }
-  
-  console.log('✅ All pairs loaded!');
-  renderMarketIndicator();
-}
-
-// ===== ВТОРОЙ ИНДИКАТОР: ВСЕ ПАРЫ =====
-function renderMarketIndicator() {
-  const keys = Object.keys(globalPairAverages);
-  
-  if (keys.length === 0) {
-    const fill = document.getElementById("global-market-fill");
-    const text = document.getElementById("global-market-value");
-    if (fill) fill.style.width = "50%";
-    if (text) text.innerHTML = `Loading ${ALL_PAIRS.length} pairs...`;
-    return;
-  }
-
-  const sum = keys.reduce((acc, k) => acc + globalPairAverages[k], 0);
-  const average = sum / keys.length;
-  
-  const fill = document.getElementById("global-market-fill");
-  const text = document.getElementById("global-market-value");
-  
-  if (fill && text) {
-    fill.style.width = average + "%";
-    fill.style.backgroundColor = `hsl(${120 - (average / 100) * 120}, 100%, 50%)`;
-    const colorStyle = `hsl(${120 - (average / 100) * 120}, 100%, 50%)`;
-    text.innerHTML = `<span style="color: ${colorStyle}; font-weight: bold;">${average.toFixed(2)}%</span> (${keys.length}/${ALL_PAIRS.length} pairs)`;
-  }
 }
 
 // ===== ВТОРОЙ ИНДИКАТОР: ВСЕ ПАРЫ =====
@@ -1421,8 +1299,17 @@ async function loadAllPairs() {
   renderMarketIndicator();
 }
 
+// ===== ОБЪЕДИНЕННЫЙ ОБРАБОТЧИК СМЕНЫ ПАРЫ =====
+pairSelect.onchange = function() {
+  connect();
+  setTimeout(getFutures, 500);
+  renderMarketIndicator();
+};
+
 // ===== ЗАПУСК =====
+setTimeout(getFutures, 500);
 setTimeout(loadAllPairs, 2000);
+setInterval(getFutures, 60000);
   </script>
 </body>
 </html>
