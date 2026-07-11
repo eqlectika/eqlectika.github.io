@@ -272,6 +272,16 @@ a {
 </style>
 </head>
 <body>
+<div id="global-market-container" style="width: calc(100% - 10px); max-width: 100%; padding-left: 5px; margin-bottom: 15px; font-family: monospace;">
+  <div style="display: flex; justify-content: flex-start; gap: 8px;">
+    <span>🌍 MARKET GLOBAL FORCE INDEX:</span>
+    <span id="global-market-value" style="color: #b2b5be;">Loading...</span>
+  </div>
+  <div style="width: 100%; height: 6px; background: #2c3145; border-radius: 3px; overflow: hidden; position: relative;">
+    <div id="global-market-fill" style="height: 100%; width: 50%; background: #ffa726; transition: width 0.1s linear;"></div>
+    <div style="position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 2px; height: 100%; background: #ffffff; opacity: 0.8;"></div>
+  </div>
+</div>
 
 <div id="global-fng-container">
   <div class="fng-text-wrapper">
@@ -401,6 +411,7 @@ a {
   </div>
 </div>
 
+
 <div class="disclaimer-box">
     <p>
         <strong>Legal Disclaimer:</strong> The content, software tools, algorithms, and trading signals provided on the Capital&Eqlectika website are a unique original development for research and educational purposes only. This information <strong>does not</strong> constitute financial, investment, tax, or legal advice.
@@ -450,6 +461,33 @@ a {
     const globalTfCloses = {};
     const tfForces = {};
 
+const globalPairAverages = {};  // Для хранения средних по каждой паре
+const ALL_PAIRS = [
+    // Core
+    'btcusdt', 'ethusdt',
+    
+    // Fresh Binance Listings (May 2026)
+    'geniususdt', 'opgusdt',
+    
+    // AI, DePIN, Infrastructure
+    'hashusdt', 'arkmusdt', 'fetusdt', 'oceanusdt', 'iotxusdt', 'renderusdt',
+    
+    // Meme Coins
+    '1000pepeusdt', '1000shibusdt', 'bobusdt', 'tstusdt', 'wufusdt', 'flokiusdt', 'bonkusdt',
+    
+    // Experimental / High Risk
+    'usducusdt',
+    
+    // Layer-1 & Layer-2
+    'suiusdt', 'seiusdt', 'aptusdt', 'arbusdt', 'opuusdt', 'zkusdt',
+    
+    // DeFi
+    'aaveusdt', 'uniusdt', 'ldousdt',
+    
+    // Altcoins (established)
+    'solusdt', 'xrpusdt', 'adausdt', 'dotusdt', 'avaxusdt', 'maticusdt',
+    'linkusdt', 'atomusdt', 'ltcusdt', 'bchusdt', 'nearusdt', 'zecusdt'
+];
     // Математический расчет RSI-14 в реальном времени для одной точки
     function calculateSingleRSI(closes, period = 14) {
       if (closes.length <= period) return 50;
@@ -1239,10 +1277,152 @@ setTimeout(getFutures, 500);
 // Обновляем при смене пары
 pairSelect.onchange = function() {
     setTimeout(getFutures, 500);
+    renderMarketIndicator();  // <-- ДОБАВИТЬ
 };
 
 // Обновляем каждую минуту
 setInterval(getFutures, 60000);
+
+// ===== ЗАГРУЗКА ВСЕХ ПАР ДЛЯ ГЛОБАЛЬНОГО ИНДИКАТОРА =====
+async function loadAllPairs() {
+  console.log('Loading all pairs for global indicator...');
+  
+  for (const pair of ALL_PAIRS) {
+    try {
+      const promises = timeframesList.map(tf => {
+        return fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${tf}&limit=30`)
+          .then(res => res.json())
+          .then(data => {
+            const closes = data.map(d => parseFloat(d[4]));
+            let sumTf = 0;
+            let countTf = 0;
+            
+            timeframesList.forEach(tfKey => {
+              const closesForTf = data.map(d => parseFloat(d[4]));
+              const rsi = calculateSingleRSI(closesForTf, period);
+              sumTf += rsi;
+              countTf++;
+            });
+            
+            const avgForPair = sumTf / countTf;
+            globalPairAverages[pair] = avgForPair;
+            console.log(`✅ ${pair}: ${avgForPair.toFixed(2)}%`);
+          })
+          .catch(err => {
+            console.error(`❌ Error loading ${pair}:`, err);
+            globalPairAverages[pair] = 50;
+          });
+      });
+      
+      await Promise.all(promises);
+      
+    } catch(e) {
+      console.error(`❌ Error with pair ${pair}:`, e);
+      globalPairAverages[pair] = 50;
+    }
+  }
+  
+  console.log('✅ All pairs loaded!');
+  renderMarketIndicator();
+}
+
+// ===== ВТОРОЙ ИНДИКАТОР: ВСЕ ПАРЫ =====
+function renderMarketIndicator() {
+  const keys = Object.keys(globalPairAverages);
+  
+  if (keys.length === 0) {
+    const fill = document.getElementById("global-market-fill");
+    const text = document.getElementById("global-market-value");
+    if (fill) fill.style.width = "50%";
+    if (text) text.innerHTML = `Loading ${ALL_PAIRS.length} pairs...`;
+    return;
+  }
+
+  const sum = keys.reduce((acc, k) => acc + globalPairAverages[k], 0);
+  const average = sum / keys.length;
+  
+  const fill = document.getElementById("global-market-fill");
+  const text = document.getElementById("global-market-value");
+  
+  if (fill && text) {
+    fill.style.width = average + "%";
+    fill.style.backgroundColor = `hsl(${120 - (average / 100) * 120}, 100%, 50%)`;
+    const colorStyle = `hsl(${120 - (average / 100) * 120}, 100%, 50%)`;
+    text.innerHTML = `<span style="color: ${colorStyle}; font-weight: bold;">${average.toFixed(2)}%</span> (${keys.length}/${ALL_PAIRS.length} pairs)`;
+  }
+}
+
+// ===== ВТОРОЙ ИНДИКАТОР: ВСЕ ПАРЫ =====
+function renderMarketIndicator() {
+  const keys = Object.keys(globalPairAverages);
+  
+  if (keys.length === 0) {
+    const fill = document.getElementById("global-market-fill");
+    const text = document.getElementById("global-market-value");
+    if (fill) fill.style.width = "50%";
+    if (text) text.innerHTML = `Loading ${ALL_PAIRS.length} pairs...`;
+    return;
+  }
+
+  const sum = keys.reduce((acc, k) => acc + globalPairAverages[k], 0);
+  const average = sum / keys.length;
+  
+  const fill = document.getElementById("global-market-fill");
+  const text = document.getElementById("global-market-value");
+  
+  if (fill && text) {
+    fill.style.width = average + "%";
+    fill.style.backgroundColor = `hsl(${120 - (average / 100) * 120}, 100%, 50%)`;
+    const colorStyle = `hsl(${120 - (average / 100) * 120}, 100%, 50%)`;
+    text.innerHTML = `<span style="color: ${colorStyle}; font-weight: bold;">${average.toFixed(2)}%</span> (${keys.length}/${ALL_PAIRS.length} pairs)`;
+  }
+}
+
+// ===== ЗАГРУЗКА ВСЕХ ПАР =====
+async function loadAllPairs() {
+  console.log('🔄 Loading all pairs for global indicator...');
+  
+  for (const pair of ALL_PAIRS) {
+    try {
+      const promises = timeframesList.map(tf => {
+        return fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${tf}&limit=30`)
+          .then(res => res.json())
+          .then(data => {
+            const closes = data.map(d => parseFloat(d[4]));
+            let sumTf = 0;
+            let countTf = 0;
+            
+            timeframesList.forEach(tfKey => {
+              const closesForTf = data.map(d => parseFloat(d[4]));
+              const rsi = calculateSingleRSI(closesForTf, period);
+              sumTf += rsi;
+              countTf++;
+            });
+            
+            const avgForPair = sumTf / countTf;
+            globalPairAverages[pair] = avgForPair;
+            console.log(`✅ ${pair}: ${avgForPair.toFixed(2)}%`);
+          })
+          .catch(err => {
+            console.error(`❌ Error loading ${pair}:`, err);
+            globalPairAverages[pair] = 50;
+          });
+      });
+      
+      await Promise.all(promises);
+      
+    } catch(e) {
+      console.error(`❌ Error with pair ${pair}:`, e);
+      globalPairAverages[pair] = 50;
+    }
+  }
+  
+  console.log('✅ All pairs loaded!');
+  renderMarketIndicator();
+}
+
+// ===== ЗАПУСК =====
+setTimeout(loadAllPairs, 2000);
   </script>
 </body>
 </html>
