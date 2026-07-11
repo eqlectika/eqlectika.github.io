@@ -321,7 +321,7 @@ a {
     <div id="status">Status: Disconnected</div>
     
 <div id="funding-indicator">
-  <span style="color: #b2b5be; font-size: 12px;">Funding:</span>
+  <span style="color: #b2b5be; font-size: 12px;">Rate:</span>
   <div id="funding-blocks"></div>
   <span id="f-rate" style="font-weight: bold; min-width: 70px; font-size: 13px;">--</span>    
     Mark: <span id="f-mark" style="color:#ffff00;">--</span> 
@@ -1075,37 +1075,68 @@ worker.postMessage({
     pairSelect.onchange = connect;
     tfSelect.onchange = connect;
 
-// Исправленная функция renderFundingRate - теперь не обновляет текст, только блоки
 function renderFundingRate(fundingRate) {
   const container = document.getElementById('funding-blocks');
-  
   if (!container) return;
   
-  const absRate = Math.abs(fundingRate);
+  const absRate = Math.abs(fundingRate) * 100; // переводим в проценты
   const isPositive = fundingRate >= 0;
-  const colorClass = isPositive ? 'positive' : 'negative';
   
-  const percentValue = absRate * 100;
-  const wholePart = Math.floor(percentValue);
-  const fractionalPart = percentValue - wholePart;
-  const filledBlocks = Math.min(wholePart, 5);
+  let filledBlocks = 0; // непрозрачные блоки (1.0)
+  let partialBlocks = 0; // полупрозрачные блоки (0.5)
+  
+  if (absRate < 0.0005) {
+    // 0.0001-0.0004% → 1 полупрозрачный
+    partialBlocks = 1;
+  } else if (absRate < 0.0050) {
+    // 0.0005-0.0049% → 2 полупрозрачных
+    partialBlocks = 2;
+  } else if (absRate < 0.0500) {
+    // 0.0050-0.0499% → 3 полупрозрачных
+    partialBlocks = 3;
+  } else if (absRate < 0.5000) {
+    // 0.0500-0.4999% → 4 полупрозрачных
+    partialBlocks = 4;
+  } else if (absRate < 1.0000) {
+    // 0.5000-0.9999% → 5 полупрозрачных
+    partialBlocks = 5;
+  } else if (absRate < 1.5000) {
+    // 1.0000-1.4999% → 1 непрозрачный + 4 полупрозрачных
+    filledBlocks = 1;
+    partialBlocks = 4;
+  } else if (absRate < 2.5000) {
+    // 1.5000-2.4999% → 2 непрозрачных + 3 полупрозрачных
+    filledBlocks = 2;
+    partialBlocks = 3;
+  } else if (absRate < 3.5000) {
+    // 2.5000-3.4999% → 3 непрозрачных + 2 полупрозрачных
+    filledBlocks = 3;
+    partialBlocks = 2;
+  } else if (absRate < 4.5000) {
+    // 3.5000-4.4999% → 4 непрозрачных + 1 полупрозрачный
+    filledBlocks = 4;
+    partialBlocks = 1;
+  } else {
+    // 4.5000% > → 5 непрозрачных
+    filledBlocks = 5;
+    partialBlocks = 0;
+  }
   
   container.innerHTML = '';
   
+  // Рисуем 5 блоков
   for (let i = 0; i < 5; i++) {
     const block = document.createElement('div');
     block.className = 'funding-block';
-    block.classList.add(colorClass);
     
     if (i < filledBlocks) {
-      block.classList.add('filled');
-    } else if (i === filledBlocks && fractionalPart > 0 && filledBlocks < 5) {
-      block.classList.add('partial');
-      const fillBar = document.createElement('div');
-      fillBar.className = 'fill-bar';
-      fillBar.style.height = (fractionalPart * 100) + '%';
-      block.appendChild(fillBar);
+      // Непрозрачный блок
+      block.style.background = isPositive ? '#00e676' : '#ff5252';
+    } else if (i < filledBlocks + partialBlocks) {
+      // Полупрозрачный блок
+      block.style.background = isPositive ? 'rgba(0, 230, 118, 0.4)' : 'rgba(255, 82, 82, 0.4)';
     } else {
+      // Пустой блок
       block.style.background = '#2c3145';
     }
     
