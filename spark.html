@@ -330,13 +330,18 @@ data: {
   let transitionInterval = null;
   let inversionLevel = 0; 
 
-  function updateButterflyShadow() {
+function updateButterflyShadow() {
     const now = new Date();
     const h = now.getHours() % 12;
     const m = now.getMinutes();
     const s = now.getSeconds();
-    const totalMinutes = h * 60 + m + (s / 60);
-    const angle = (totalMinutes / 720) * 2 * Math.PI + (Math.PI / 2);
+    
+    // Вычисляем общее количество секунд в 12-часовом цикле
+    const totalSeconds = h * 3600 + m * 60 + s;
+    
+    // Полный круг 2*PI, делим на 43200 секунд (12 часов)
+    // - Math.PI / 2 обеспечивает старт с верхней точки (12:00)
+    const angle = (totalSeconds / 43200) * 2 * Math.PI - (Math.PI / 2);
     
     const dist = 7;  
     const blur = 4;  
@@ -347,7 +352,8 @@ data: {
     if (logo) {
         logo.style.filter = `drop-shadow(${x}px ${y}px ${blur}px rgba(0,0,0,0.9))`;
     }
-  }
+}
+
 
 
 
