@@ -16,7 +16,9 @@
       background: #000000; 
       color: #d1d4dc; 
       font-family: Copperplate, sans-serif; 
+      height: 100%;
       margin: 0; 
+      padding: 0;
       padding-top: 20px; 
       padding-left: 4px;
       padding-right: 4px;
@@ -26,14 +28,7 @@
       box-sizing: border-box;
       min-height: 100vh;
     }
-    #akai-indicator {
-  position: relative;
-  width: 100%;
-  height: 8px;
-  background: #2c3145; 
-  margin-top: 10px;
-  z-index: 1;
-}
+
     #terminal { 
       width: 100%; 
       max-width: 100%; 
@@ -79,9 +74,9 @@ a {
     touch-action: none;
     }
     canvas#moireChart:active { cursor: grabbing; }
-    #log { height: 100px; overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif;  font-size: 14px; margin-top: 4px; }
-    #log-parrots { height: 100px; overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; margin-top: 40px; }
-    #log-cloud { height: 100px; overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; margin-top: 40px; }
+    #log { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif;  font-size: 14px; margin-top: 4px; }
+    #log-parrots { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; margin-top: 40px; }
+    #log-cloud { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; margin-top: 40px; }
 
 #log-parrots,
 #log-parrots div {
@@ -90,16 +85,131 @@ a {
   box-sizing: border-box !important;
 }
 
-/* Также для других логов, чтобы было единообразно */
+/* Основной контейнер с двумя колонками */
+.main-layout {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    width: 100%;
+    align-items: stretch;
+    min-height: 50vh;
+    max-height: 80vh;
+    height: auto;
+    overflow: hidden; /* Важно! Не даем содержимому выходить за пределы */
+}
+
+/* Левая колонка - теперь flex-контейнер */
+.column-left {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Отступ между элементами */
+    min-height: 0;
+}
+
+/* Контейнер для графика */
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 50vh; /* Основная высота */
+    flex-shrink: 0; /* Не сжимается */
+}
+
+/* Индикатор Akai */
+#akai-indicator {
+    position: relative;
+    width: 100%;
+    height: 8px;
+    background: #2c3145;
+    flex-shrink: 0; /* Не сжимается */
+    margin: 0; /* Убираем старые отступы */
+}
+
+/* Правая колонка */
+.column-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 50vh; /* Равна высоте графика */
+    max-height: 50vh;
+    overflow: hidden;
+}
+
+/* Обертка для логов */
+.logs-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 40px; /* Расстояние между логами 40px */
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Стили для каждого лога */
+#log,
+#log-parrots,
+#log-cloud {
+    flex: 1;
+    overflow-y: auto;
+    background: #000000;
+    padding: 4px 0;
+    font-family: sans-serif;
+    font-size: 14px;
+    margin: 0 !important;
+    min-height: 0;
+    max-height: 100%;
+    border: none;
+    outline: none;
+}
+
+
+/* Убираем все лишние стили, которые дублируются */
+#log-parrots,
+#log-parrots div {
+    text-align: left !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
 #log,
 #log div,
 #log-cloud,
 #log-cloud div {
-  text-align: left !important;
+    text-align: left !important;
 }
+
+/* Адаптив для мобильных устройств */
+@media (max-width: 768px) {
+    .main-layout {
+        flex-direction: column;
+    }
+    
+    .column-left {
+        gap: 10px;
+    }
+    
+    .chart-container {
+        height: 40vh;
+    }
+    
+    .column-right {
+        height: 400px;
+        max-height: 400px;
+        min-height: 300px;
+    }
+    
+    .logs-wrapper {
+        gap: 20px; /* Меньше отступ на мобилках */
+    }
+}
+    
+
     .BUY { color: #00e676; }
     .SELL { color: #ff5252; }
     .HOLD { color: #b2b5be; }
+    
 #toggleHeaderTop, #toggleHeaderBottom {
   width: 300px; 
   margin: 10px auto;
@@ -109,7 +219,6 @@ a {
 
     .disclaimer-box {
     margin-top: 10px;
-    padding: 6px;
     background-color: #000000;
     color: #fff;
     opacity: 0.8;
@@ -118,20 +227,6 @@ a {
     max-width: 100%;
     margin-bottom: 20px;
     font-family: sans-serif;
-}
-
-.main-layout {
-  display: flex;
-  flex-direction: row; 
-  gap: 20px;
-  width: 100%;
-}
-
-.column-left { flex: 2; }  
-.column-right { flex: 1; } 
-
-@media (max-width: 768px) {
-  .main-layout { flex-direction: column; }
 }
 
 #header-link {
@@ -375,23 +470,30 @@ a {
 
 
 
-  <div class="main-layout">
+<div class="main-layout">
     <div class="column-left">
-      <div class="chart-container">
-        <canvas id="moireChart"></canvas>
-      </div>
-  <div id="akai-indicator" style="position: relative; width: 100%; height: 8px; background: #2c3145; margin-bottom: 20px;">
-    <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
-    <div class="akai-center"></div>
-  </div>
+        <!-- График -->
+        <div class="chart-container">
+            <canvas id="moireChart"></canvas>
+        </div>
+        
+        <!-- Индикатор теперь внутри колонки -->
+        <div id="akai-indicator">
+            <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
+            <div class="akai-center"></div>
+        </div>
+        
+        <!-- Добавляем дополнительное пространство -->
+        <div style="height: 40px;"></div>
     </div>
     
     <div class="column-right">
-      <div id="log"></div>
-      <div id="log-parrots"></div>
-      <div id="log-cloud"></div>
+        <div class="logs-wrapper">
+            <div id="log"></div>
+            <div id="log-parrots"></div>
+            <div id="log-cloud"></div>
+        </div>
     </div>
-  </div>
 </div>
 
 
