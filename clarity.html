@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        html,body{height:100vh;background:#fff;overflow:hidden}
+    </style>
+</head>
+<body>
+<script>
+    const body = document.body;
+    let speed = 5;
+    const startTime = performance.now();
+
+    function animate() {
+        const now = performance.now();
+        const elapsed = (now - startTime) / 1000;
+        const phase = (elapsed / speed) % 1;
+        const brightness = 0.5 - 0.5 * Math.cos(phase * 2 * Math.PI);
+        const gray = Math.round(brightness * 255);
+        const hex = gray.toString(16).padStart(2, '0');
+        body.style.backgroundColor = `#${hex}${hex}${hex}`;
+        requestAnimationFrame(animate);
+    }
+
+    function handleMove(e) {
+        const y = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+        const h = window.innerHeight;
+        const ratio = Math.max(0, Math.min(1, y / h));
+        speed = 50 - ratio * 49; // 10 сек (верх) → 1 сек (низ)
+    }
+
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('touchmove', handleMove);
+    document.addEventListener('touchstart', (e) => {
+        const y = e.touches[0].clientY;
+        const h = window.innerHeight;
+        const ratio = Math.max(0, Math.min(1, y / h));
+        speed = 50 - ratio * 49;
+    });
+
+    animate();
+</script>
+</body>
+</html>
