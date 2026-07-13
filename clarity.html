@@ -6,14 +6,49 @@
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         html,body{height:100vh;background:#fff;overflow:hidden}
+        
+        .logo-wrapper {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+        
+        .logo-link {
+            display: block;
+            width: 40px;
+            height: 40px;
+        }
+        
+        .logo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+* {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
     </style>
 </head>
 <body>
+    <div class="logo-wrapper">
+        <a href="index.html" class="logo-link">
+            <img src="logo.png" alt="Логотип" class="logo" id="logo" />
+        </a>
+    </div>
+
 <script>
     const body = document.body;
+    const logo = document.getElementById('logo');
 
     let speed = 5;
-    const startTime = performance.now();
+    const startTime = performance.now(); 
+    let isWhiteLogo = true; // Если логотип белый, ставим true
 
     function animate() {
         const now = performance.now();
@@ -23,6 +58,19 @@
         const gray = Math.round(brightness * 255);
         const hex = gray.toString(16).padStart(2, '0');
         body.style.backgroundColor = `#${hex}${hex}${hex}`;
+        
+        // Если логотип белый - инвертируем его сразу, чтобы он стал чёрным на белом фоне
+        if (isWhiteLogo) {
+            // На белом фоне (brightness=1) логотип должен быть чёрным: invert(1)
+            // На чёрном фоне (brightness=0) логотип должен быть белым: invert(0)
+            const invertValue = brightness; // Прямая зависимость
+            logo.style.filter = `invert(${invertValue})`;
+        } else {
+            // Если логотип чёрный - стандартная инверсия
+            const invertValue = 1 - brightness;
+            logo.style.filter = `invert(${invertValue})`;
+        }
+        
         requestAnimationFrame(animate);
     }
 
@@ -42,9 +90,7 @@
         speed = 50 - ratio * 49;
     });
 
-    document.addEventListener('dblclick', () => {
-        window.location.href = 'index.html';
-    });
+
 
     animate();
 </script>
