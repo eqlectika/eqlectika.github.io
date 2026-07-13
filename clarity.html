@@ -11,6 +11,24 @@
 <body>
 <script>
     const body = document.body;
+    // Блокировка спящего режима
+let wakeLock = null;
+
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+        }
+    } catch (err) {}
+}
+
+requestWakeLock();
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        requestWakeLock();
+    }
+});
     let speed = 5;
     const startTime = performance.now();
 
