@@ -12,24 +12,6 @@
 <script>
     const body = document.body;
 
-    let wakeLock = null;
-
-    async function requestWakeLock() {
-        try {
-            if ('wakeLock' in navigator) {
-                wakeLock = await navigator.wakeLock.request('screen');
-            }
-        } catch (err) {}
-    }
-
-    requestWakeLock();
-
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            requestWakeLock();
-        }
-    });
-
     let speed = 5;
     const startTime = performance.now();
 
@@ -60,7 +42,6 @@
         speed = 50 - ratio * 49;
     });
 
-    // Двойной клик для перехода на index.html
     document.addEventListener('dblclick', () => {
         window.location.href = 'index.html';
     });
