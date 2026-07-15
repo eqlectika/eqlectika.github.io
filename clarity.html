@@ -6,7 +6,7 @@
     <link rel="manifest" href="manifest-clarity.json">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        html,body{height:100vh;background:#fff;overflow:hidden}
+        html,body{height:100vh;background:#fff;overflow:hidden;cursor:none} /* Скрываем курсор по умолчанию */
         
         .logo-wrapper {
             position: fixed;
@@ -50,6 +50,7 @@
     let speed = 5;
     const startTime = performance.now(); 
     let isWhiteLogo = true; // Если логотип белый, ставим true
+    let cursorTimeout; // Таймер для скрытия курсора
 
     function animate() {
         const now = performance.now();
@@ -75,11 +76,21 @@
         requestAnimationFrame(animate);
     }
 
+    // Функция, которая показывает курсор при движении и скрывает его через 1 секунду бездействия
+    function resetCursorTimer() {
+        body.style.cursor = 'default';
+        clearTimeout(cursorTimeout);
+        cursorTimeout = setTimeout(() => {
+            body.style.cursor = 'none';
+        }, 1000); // Время в мс до исчезновения курсора
+    }
+
     function handleMove(e) {
         const y = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
         const h = window.innerHeight;
         const ratio = Math.max(0, Math.min(1, y / h));
         speed = 50 - ratio * 49;
+        resetCursorTimer();
     }
 
     document.addEventListener('mousemove', handleMove);
@@ -89,9 +100,8 @@
         const h = window.innerHeight;
         const ratio = Math.max(0, Math.min(1, y / h));
         speed = 50 - ratio * 49;
+        resetCursorTimer();
     });
-
-
 
     animate();
 </script>
