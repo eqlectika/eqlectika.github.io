@@ -1,4 +1,4 @@
-// worker.js
+// worker_2.js
 let parrotsPort = null;
 let lastAetherSignal = null;
 
@@ -85,15 +85,16 @@ self.addEventListener("message", (event) => {
 
 function detectDivConStateless(closes, currentForce) {
   const len = closes.length;
-  if (len < 55) return null;
+  if (len < 55) return null; // Минимальная история для безопасного смещения на 50 свечей
 
   const idxNow = len - 1;
-  const idxL = len - 51; 
-  const idxS = len - 21; 
+  const idxL = len - 51; // Точка L (50 свечей назад относительно текущей)
+  const idxS = len - 21; // Точка S (20 свечей назад относительно текущей)
 
   const priceNow = closes[idxNow];
   const rsiNow = currentForce;
 
+  // Рассчитываем FORCE на исторических срезах БЕЗ заглядывания в будущее
   const rsiL = calculateFORCE(closes.slice(0, idxL + 1), 14);
   const rsiS = calculateFORCE(closes.slice(0, idxS + 1), 14);
 
@@ -105,6 +106,7 @@ function detectDivConStateless(closes, currentForce) {
   let signal = null;
   let lines = [];
 
+  // Дивергенция L (Long-period: 50 свечей)
   if (priceNow > priceL && rsiNow < rsiL) {
     signal = "LS";
     lines.push({ fromIndex: idxL, toIndex: idxNow, type: "LS" });
@@ -113,6 +115,7 @@ function detectDivConStateless(closes, currentForce) {
     lines.push({ fromIndex: idxL, toIndex: idxNow, type: "LB" });
   }
 
+  // Конвергенция S (Short-period: 20 свечей)
   if (priceNow > priceS && rsiNow > rsiS) {
     signal = "SS";
     lines.push({ fromIndex: idxS, toIndex: idxNow, type: "SS" });
@@ -156,16 +159,15 @@ function calculateBBForLast(closes, period) {
 
 function getAether(candles) {
   const closes = candles.map(c => typeof c === 'object' ? c.close : c);
-  const ema = (data, period) => {
-    let k = 2 / (period + 1);
-    let emaVal = data[0];
-    for (let i = 1; i < data.length; i++) {
-      emaVal = data[i] * k + emaVal * (1 - k);
-    }
-    return emaVal;
-  };
-  const currentPrice = closes[closes.length - 1];
-  const vector = closes.length >= 12 ? ema(closes, 12) : currentPrice;
-  const anchor = closes.length >= 26 ? ema(closes, 26) : currentPrice;
-  return { vector, anchor };
+  const getHigh = (x) => (x && x.high > 0) ? x.high : (x.close || 0);
+  const getLow = (x) => (x && x.low > 0) ? x.low : (x.close || 0);
+
+  const slice9 = candles.slice(-9);
+  const slice26 = candles.slice(-26);
+
+  const v = (Math.max(...slice9.map(getHigh)) + Math.min(...slice9.map(getLow))) / 2;
+  const a = (Math.max(...slice26.map(getHigh)) + Math.min(...slice26.map(getLow))) / 2;
+  
+  if (v === 0 || a === 0) return { vector: 0, anchor: 0 };
+  return { vector: v, anchor: a };
 }
