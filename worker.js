@@ -1,8 +1,7 @@
+// Полностью удаляем rsiHistory и divSignalHistory из глобальной области видимости воркера.
+// Оставляем только:
 let parrotsPort = null;
 let lastAetherSignal = null;
-
-let rsiHistory = [];
-let divSignalHistory = [];
 
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === 'INIT_PARROTS_PORT') {
@@ -16,7 +15,7 @@ self.addEventListener("message", (event) => {
   const closes = candles.map(c => typeof c === 'object' ? c.close : c);
   const currentPrice = closes[closes.length - 1];
 
-  // 1. Исправленный расчет FORCE с проверкой на null
+  // 1. Расчет FORCE для текущей точки
   const force = calculateFORCE(closes, 14);
   let signal = "HOLD";
   if (force !== null) {
@@ -24,7 +23,7 @@ self.addEventListener("message", (event) => {
     if (force > 70) signal = "SELL";
   }
 
-  // 2. Расчет состояния рынка на основе волатильности цены
+  // 2. Расчет состояния рынка (38 Parrots)
   let totalLines = 0, brokenUpper = 0, brokenLower = 0;
   for (let i = 0; i < 27; i++) {
     const period = (i + 1) * 20;
@@ -51,7 +50,6 @@ self.addEventListener("message", (event) => {
     }
   }
 
-  // Расчет рыночной фазы через изменение цены (stdDev)
   const priceChange = closes.slice(-10).map((val, i, arr) => i > 0 ? val - arr[i-1] : 0);
   const meanChange = priceChange.reduce((a, b) => a + b, 0) / priceChange.length;
   const variance = priceChange.reduce((sum, d) => sum + Math.pow(d - meanChange, 2), 0) / priceChange.length;
@@ -68,100 +66,67 @@ self.addEventListener("message", (event) => {
   const aether = getAether(candles);
   const currentAetherSignal = aether.vector > aether.anchor ? "BUY" : "SELL";
 
-const signalDiv = detectDivCon(closes, force);
+  // 4. Динамический stateless расчет дивергенций/конвергенций
+  const divData = detectDivConStateless(closes, force);
 
-if (signalDiv) {
-    divSignalHistory.push({
-    signal: signalDiv,
-    price: currentPrice,
-    index: closes.length - 1,
-    time: Date.now()
-    });
-
-    if (divSignalHistory.length > 100) {
-        divSignalHistory.shift();
-    }
-}
-  
-lastAetherSignal = currentAetherSignal; // Это можно оставить для статистики
-    self.postMessage({ 
-      price: currentPrice, 
-      force: force, 
-      signal: signal,
-      aether: { 
-        vector: aether.vector,
-        anchor: aether.anchor,
-        signal: currentAetherSignal
-      },
-      divSignal: signalDiv,
-      divHistory: divSignalHistory
-    });
+  lastAetherSignal = currentAetherSignal;
+  self.postMessage({ 
+    price: currentPrice, 
+    force: force, 
+    signal: signal,
+    aether: { 
+      vector: aether.vector,
+      anchor: aether.anchor,
+      signal: currentAetherSignal
+    },
+    divSignal: divData ? divData.signal : null,
+    divLines: divData ? divData.lines : null
+  });
 });
-function calculateFORCE(c, p) {
-  if (c.length < p + 1) return null;
-  let g = 0, l = 0;
-  for (let i = c.length - p; i < c.length; i++) {
-    let d = c[i] - c[i - 1];
-    if (d > 0) g += d; else l -= d;
+
+function detectDivConStateless(closes, currentForce) {
+  const len = closes.length;
+  if (len < 55) return null; // Минимальная история для безопасного смещения на 50 свечей
+
+  const idxNow = len - 1;
+  const idxL = len - 51; // Точка L (50 свечей назад относительно текущей)
+  const idxS = len - 21; // Точка S (20 свечей назад относительно текущей)
+
+  const priceNow = closes[idxNow];
+  const rsiNow = currentForce;
+
+  // Рассчитываем FORCE на исторических срезах БЕЗ заглядывания в будущее
+  const rsiL = calculateFORCE(closes.slice(0, idxL + 1), 14);
+  const rsiS = calculateFORCE(closes.slice(0, idxS + 1), 14);
+
+  const priceL = closes[idxL];
+  const priceS = closes[idxS];
+
+  if (rsiL === null || rsiS === null) return null;
+
+  let signal = null;
+  let lines = [];
+
+  // Дивергенция L (Long-period: 50 свечей)
+  if (priceNow > priceL && rsiNow < rsiL) {
+    signal = "LS";
+    lines.push({ fromIndex: idxL, toIndex: idxNow, type: "LS" });
+  } else if (priceNow < priceL && rsiNow > rsiL) {
+    signal = "LB";
+    lines.push({ fromIndex: idxL, toIndex: idxNow, type: "LB" });
   }
-  return l === 0 ? 100 : 100 - (100 / (1 + (g / p) / (l / p)));
-}
 
-function calculateBBForLast(c, p) {
-  const s = c.slice(c.length - p);
-  const sma = s.reduce((a, b) => a + b, 0) / p;
-  const std = Math.sqrt(s.reduce((a, b) => a + Math.pow(b - sma, 2), 0) / p);
-  return { upper: sma + (2 * std), lower: sma - (2 * std) };
-}
+  // Конвергенция S (Short-period: 20 свечей)
+  if (priceNow > priceS && rsiNow > rsiS) {
+    signal = "SS";
+    lines.push({ fromIndex: idxS, toIndex: idxNow, type: "SS" });
+  } else if (priceNow < priceS && rsiNow < rsiS) {
+    signal = "SB";
+    lines.push({ fromIndex: idxS, toIndex: idxNow, type: "SB" });
+  }
 
-function getAether(candles) {
-  if (!candles || candles.length < 26) return { vector: 0, anchor: 0 };
-
-  // Используем цену закрытия как fallback, если high/low не определены
-  const getHigh = (x) => (x && x.high > 0) ? x.high : (x.close || 0);
-  const getLow = (x) => (x && x.low > 0) ? x.low : (x.close || 0);
-
-  const slice9 = candles.slice(-9);
-  const slice26 = candles.slice(-26);
-
-  const v = (Math.max(...slice9.map(getHigh)) + Math.min(...slice9.map(getLow))) / 2;
-  const a = (Math.max(...slice26.map(getHigh)) + Math.min(...slice26.map(getLow))) / 2;
-  
-  // Добавим проверку, чтобы исключить нулевые значения при расчете
-  if (v === 0 || a === 0) return { vector: 0, anchor: 0 };
-  
-  return { vector: v, anchor: a };
-}
-
-function detectDivCon(closes, currentForce) {
-    rsiHistory.push({
-        price: closes[closes.length - 1],
-        rsi: currentForce
-    });
-
-    if (rsiHistory.length > 100) rsiHistory.shift();
-
-    const prevDC = rsiHistory[rsiHistory.length - 50]; // длинный период
-    const prevCD = rsiHistory[rsiHistory.length - 20];  // короткий период
-
-    if (!prevDC || !prevCD) return null;
-
-    const priceNow = closes[closes.length - 1];
-    const rsiNow = currentForce;
-
-    // Дивергенция (длинный период)
-    if (priceNow > prevDC.price && rsiNow < prevDC.rsi)
-        return "LS";
-
-    if (priceNow < prevDC.price && rsiNow > prevDC.rsi)
-        return "LB";
-
-    // Конвергенция (короткий период)
-    if (priceNow > prevCD.price && rsiNow > prevCD.rsi)
-        return "SS";
-
-    if (priceNow < prevCD.price && rsiNow < prevCD.rsi)
-        return "SB";
-
-    return null;
+  if (signal) {
+    return { signal, lines };
+  }
+  return null;
 }
