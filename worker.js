@@ -85,16 +85,16 @@ self.addEventListener("message", (event) => {
 
 function detectDivConStateless(closes, currentForce) {
   const len = closes.length;
-  if (len < 55) return null; // Минимальная история для безопасного смещения на 50 свечей
+  if (len < 55) return null; // Безопасный минимум для смещения 50
 
   const idxNow = len - 1;
-  const idxL = len - 51; // Точка L (50 свечей назад относительно текущей)
-  const idxS = len - 21; // Точка S (20 свечей назад относительно текущей)
+  const idxL = len - 51; // Точка L (50 свечей назад)
+  const idxS = len - 21; // Точка S (20 свечей назад)
 
   const priceNow = closes[idxNow];
   const rsiNow = currentForce;
 
-  // Рассчитываем FORCE на исторических срезах БЕЗ заглядывания в будущее
+  // Расчет исторических значений FORCE строго на их срезах (без взгляда в будущее)
   const rsiL = calculateFORCE(closes.slice(0, idxL + 1), 14);
   const rsiS = calculateFORCE(closes.slice(0, idxS + 1), 14);
 
@@ -106,25 +106,57 @@ function detectDivConStateless(closes, currentForce) {
   let signal = null;
   let lines = [];
 
-  // Дивергенция L (Long-period: 50 свечей)
-  if (priceNow > priceL && rsiNow < rsiL) {
-    signal = "LS";
-    lines.push({ fromIndex: idxL, toIndex: idxNow, type: "LS" });
-  } else if (priceNow < priceL && rsiNow > rsiL) {
-    signal = "LB";
-    lines.push({ fromIndex: idxL, toIndex: idxNow, type: "LB" });
+  // ==========================================
+  // 1. АНАЛИЗ ПЕРИОДА L (50 свечей назад)
+  // ==========================================
+  if (priceNow > priceL) {
+    if (rsiNow < rsiL) {
+      // Цена выше, FORCE ниже — Дивергенция на продажу (Long Divergence Sell)
+      signal = "LDS";
+      lines.push({ fromIndex: idxL, toIndex: idxNow, type: "LDS" });
+    } else if (rsiNow > rsiL) {
+      // Цена выше, FORCE выше — Конвергенция на продажу (Long Convergence Sell)
+      signal = "LCS";
+      lines.push({ fromIndex: idxL, toIndex: idxNow, type: "LCS" });
+    }
+  } else if (priceNow < priceL) {
+    if (rsiNow > rsiL) {
+      // Цена ниже, FORCE выше — Дивергенция на покупку (Long Divergence Buy)
+      signal = "LDB";
+      lines.push({ fromIndex: idxL, toIndex: idxNow, type: "LDB" });
+    } else if (rsiNow < rsiL) {
+      // Цена ниже, FORCE ниже — Конвергенция на покупку (Long Convergence Buy)
+      signal = "LCB";
+      lines.push({ fromIndex: idxL, toIndex: idxNow, type: "LCB" });
+    }
   }
 
-  // Конвергенция S (Short-period: 20 свечей)
-  if (priceNow > priceS && rsiNow > rsiS) {
-    signal = "SS";
-    lines.push({ fromIndex: idxS, toIndex: idxNow, type: "SS" });
-  } else if (priceNow < priceS && rsiNow < rsiS) {
-    signal = "SB";
-    lines.push({ fromIndex: idxS, toIndex: idxNow, type: "SB" });
+  // ==========================================
+  // 2. АНАЛИЗ ПЕРИОДА S (20 свечей назад)
+  // ==========================================
+  if (priceNow > priceS) {
+    if (rsiNow < rsiS) {
+      // Цена выше, FORCE ниже — Дивергенция на продажу (Short Divergence Sell)
+      signal = "SDS";
+      lines.push({ fromIndex: idxS, toIndex: idxNow, type: "SDS" });
+    } else if (rsiNow > rsiS) {
+      // Цена выше, FORCE выше — Конвергенция на продажу (Short Convergence Sell)
+      signal = "SCS";
+      lines.push({ fromIndex: idxS, toIndex: idxNow, type: "SCS" });
+    }
+  } else if (priceNow < priceS) {
+    if (rsiNow > rsiS) {
+      // Цена ниже, FORCE выше — Дивергенция на покупку (Short Divergence Buy)
+      signal = "SDB";
+      lines.push({ fromIndex: idxS, toIndex: idxNow, type: "SDB" });
+    } else if (rsiNow < rsiS) {
+      // Цена ниже, FORCE ниже — Конвергенция на покупку (Short Convergence Buy)
+      signal = "SCB";
+      lines.push({ fromIndex: idxS, toIndex: idxNow, type: "SCB" });
+    }
   }
 
-  if (signal) {
+  if (signal && lines.length > 0) {
     return { signal, lines };
   }
   return null;
