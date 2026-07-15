@@ -565,7 +565,8 @@ a {
     const tfSelect = document.getElementById("tf");
     const statusDiv = document.getElementById("status");
     const logDiv = document.getElementById("log");
-    
+
+    let activeDivLines = []; // Хранит массив [{fromIndex, toIndex, type}] для текущего тика
     let ws = null;
     let candles = [];
     const period = 14;
@@ -670,22 +671,34 @@ worker.onmessage = (event) => {
   if (!event.data || event.data.force === undefined) {
     return;
   }
-  const { signal, force, price, aether, divSignal, divHistory } = event.data;
+  const { signal, force, price, aether, divSignal, divLines, divHistory } = event.data;
 
-if (divHistory && divHistory.length) {
+  // Обновление массива линий для плагина отрисовки
+  if (divLines) {
+    activeDivLines = divLines;
+  } else {
+    activeDivLines = [];
+  }
+
+  // Обновление истории дивергенций на основе динамических сигналов воркера
+  if (divSignal) {
     const historyDiv = document.getElementById("div-history");
+    const color = divSignal.endsWith("B") ? "#00e676" : "#ff5252";
+    
+    // Ограничиваем накопление истории на фронтенде напрямую
+    let currentHistory = Array.from(historyDiv.querySelectorAll('span')).map(el => ({
+      signal: el.innerText,
+      color: el.style.color
+    }));
+    currentHistory.push({ signal: divSignal, color });
+    if (currentHistory.length > 2) currentHistory.shift();
 
-    historyDiv.innerHTML = divHistory
-      .slice(-2)
-      .map(d => {
-        const color = d.signal.endsWith("B") ? "#00e676" : "#ff5252";
-        return `<span style="color:${color}">${d.signal}</span>`;
-      })
+    historyDiv.innerHTML = currentHistory
+      .map(d => `<span style="color:${d.color}">${d.signal}</span>`)
       .join(" ");
-}
+  }
 
   const fill = document.getElementById("akai-fill");
-  
   if (fill) {
     const value = Math.min(Math.max(force, 0), 100);
     fill.style.width = value + "%";
@@ -836,6 +849,70 @@ ctx.fillText(
   }
 };
 
+const divConLinesPlugin = {
+  id: 'divConLines',
+  afterDatasetsDraw(chart) {
+    if (!activeDivLines || activeDivLines.length === 0) return;
+
+    const { ctx, scales: { x, y, yRSI, yVolume } } = chart;
+    const priceDataset = chart.data.datasets[0].data;
+    const rsiDataset = chart.data.datasets.find(d => d.label === 'RSI')?.data;
+    const volumeDataset = chart.data.datasets.find(d => d.label === 'Volume')?.data;
+
+    if (!priceDataset || !rsiDataset || !volumeDataset) return;
+
+    ctx.save();
+    ctx.lineWidth = 2;
+
+    activeDivLines.forEach(line => {
+      const fromIdx = line.fromIndex;
+      const toIdx = line.toIndex;
+      
+      // Определяем цвет линии: зеленый для BUY-сигналов, красный для SELL
+      const isBuy = line.type.endsWith("B");
+      ctx.strokeStyle = isBuy ? "#00e676" : "#ff5252";
+      ctx.fillStyle = isBuy ? "#00e676" : "#ff5252";
+
+      const xFrom = x.getPixelForValue(fromIdx);
+      const xTo = x.getPixelForValue(toIdx);
+
+      // Рисуем только если точки попадают в видимый диапазон x-оси
+      if (xFrom >= x.left && xTo <= x.right) {
+        
+        // 1. Линия на графике цен (Y-ось 'y')
+        const yPriceFrom = y.getPixelForValue(priceDataset[fromIdx]);
+        const yPriceTo = y.getPixelForValue(priceDataset[toIdx]);
+        drawLineWithNodes(ctx, xFrom, yPriceFrom, xTo, yPriceTo);
+
+        // 2. Линия на графике RSI/FORCE (Y-ось 'yRSI')
+        const yRSIFrom = yRSI.getPixelForValue(rsiDataset[fromIdx]);
+        const yRSITo = yRSI.getPixelForValue(rsiDataset[toIdx]);
+        drawLineWithNodes(ctx, xFrom, yRSIFrom, xTo, yRSITo);
+
+        // 3. Линия на графике объемов (Y-ось 'yVolume')
+        const yVolFrom = yVolume.getPixelForValue(volumeDataset[fromIdx]);
+        const yVolTo = yVolume.getPixelForValue(volumeDataset[toIdx]);
+        drawLineWithNodes(ctx, xFrom, yVolFrom, xTo, yVolTo);
+      }
+    });
+
+    ctx.restore();
+  }
+};
+
+// Хелпер для отрисовки линии с круглыми засечками на концах
+function drawLineWithNodes(ctx, x1, y1, x2, y2) {
+  ctx.beginPath();
+  ctx.arc(x1, y1, 4, 0, 2 * Math.PI);
+  ctx.arc(x2, y2, 4, 0, 2 * Math.PI);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+}
+  
 const currentPriceIndicator = {
   id: 'currentPriceIndicator',
   afterDatasetsDraw(chart) { 
@@ -949,7 +1026,7 @@ datasets.push({
       moireChart = new Chart(ctx, {
         type: 'line',
         data: { labels: [], datasets: datasets },
-        plugins: [priceCrosshairPlugin, currentPriceIndicator],
+        plugins: [priceCrosshairPlugin, currentPriceIndicator, divConLinesPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
