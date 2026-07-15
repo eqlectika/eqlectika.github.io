@@ -1,4 +1,3 @@
-// worker_2.js
 let parrotsPort = null;
 let lastAetherSignal = null;
 
@@ -85,11 +84,11 @@ self.addEventListener("message", (event) => {
 
 function detectDivConStateless(closes, currentForce) {
   const len = closes.length;
-  if (len < 55) return null; // Безопасный минимум для смещения 50
+  if (len < 205) return null; // Безопасный минимум для смещения 200 (200 + 5)
 
   const idxNow = len - 1;
-  const idxL = len - 51; // Точка L (50 свечей назад)
-  const idxS = len - 21; // Точка S (20 свечей назад)
+  const idxL = len - 201; // Точка L (200 свечей назад от текущей idxNow)
+  const idxS = len - 51;  // Точка S (50 свечей назад от текущей idxNow)
 
   const priceNow = closes[idxNow];
   const rsiNow = currentForce;
@@ -107,7 +106,7 @@ function detectDivConStateless(closes, currentForce) {
   let lines = [];
 
   // ==========================================
-  // 1. АНАЛИЗ ПЕРИОДА L (50 свечей назад)
+  // 1. АНАЛИЗ ПЕРИОДА L (200 свечей назад)
   // ==========================================
   if (priceNow > priceL) {
     if (rsiNow < rsiL) {
@@ -132,7 +131,7 @@ function detectDivConStateless(closes, currentForce) {
   }
 
   // ==========================================
-  // 2. АНАЛИЗ ПЕРИОДА S (20 свечей назад)
+  // 2. АНАЛИЗ ПЕРИОДА S (50 свечей назад)
   // ==========================================
   if (priceNow > priceS) {
     if (rsiNow < rsiS) {
