@@ -1,5 +1,4 @@
-// Полностью удаляем rsiHistory и divSignalHistory из глобальной области видимости воркера.
-// Оставляем только:
+// worker.js
 let parrotsPort = null;
 let lastAetherSignal = null;
 
@@ -86,16 +85,15 @@ self.addEventListener("message", (event) => {
 
 function detectDivConStateless(closes, currentForce) {
   const len = closes.length;
-  if (len < 55) return null; // Минимальная история для безопасного смещения на 50 свечей
+  if (len < 55) return null;
 
   const idxNow = len - 1;
-  const idxL = len - 51; // Точка L (50 свечей назад относительно текущей)
-  const idxS = len - 21; // Точка S (20 свечей назад относительно текущей)
+  const idxL = len - 51; 
+  const idxS = len - 21; 
 
   const priceNow = closes[idxNow];
   const rsiNow = currentForce;
 
-  // Рассчитываем FORCE на исторических срезах БЕЗ заглядывания в будущее
   const rsiL = calculateFORCE(closes.slice(0, idxL + 1), 14);
   const rsiS = calculateFORCE(closes.slice(0, idxS + 1), 14);
 
@@ -107,7 +105,6 @@ function detectDivConStateless(closes, currentForce) {
   let signal = null;
   let lines = [];
 
-  // Дивергенция L (Long-period: 50 свечей)
   if (priceNow > priceL && rsiNow < rsiL) {
     signal = "LS";
     lines.push({ fromIndex: idxL, toIndex: idxNow, type: "LS" });
@@ -116,7 +113,6 @@ function detectDivConStateless(closes, currentForce) {
     lines.push({ fromIndex: idxL, toIndex: idxNow, type: "LB" });
   }
 
-  // Конвергенция S (Short-period: 20 свечей)
   if (priceNow > priceS && rsiNow > rsiS) {
     signal = "SS";
     lines.push({ fromIndex: idxS, toIndex: idxNow, type: "SS" });
@@ -129,4 +125,47 @@ function detectDivConStateless(closes, currentForce) {
     return { signal, lines };
   }
   return null;
+}
+
+// Вспомогательные математические функции
+
+function calculateFORCE(closes, period = 14) {
+  if (closes.length <= period) return 50;
+  let gains = 0;
+  let losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const diff = closes[closes.length - i] - closes[closes.length - i - 1];
+    if (diff > 0) gains += diff;
+    else losses -= diff;
+  }
+  if (gains + losses === 0) return 50;
+  return (gains / (gains + losses)) * 100;
+}
+
+function calculateBBForLast(closes, period) {
+  if (closes.length < period) return null;
+  const slice = closes.slice(-period);
+  const sma = slice.reduce((a, b) => a + b, 0) / period;
+  const variance = slice.reduce((a, b) => a + Math.pow(b - sma, 2), 0) / period;
+  const stdDev = Math.sqrt(variance);
+  return {
+    upper: sma + (2 * stdDev),
+    lower: sma - (2 * stdDev)
+  };
+}
+
+function getAether(candles) {
+  const closes = candles.map(c => typeof c === 'object' ? c.close : c);
+  const ema = (data, period) => {
+    let k = 2 / (period + 1);
+    let emaVal = data[0];
+    for (let i = 1; i < data.length; i++) {
+      emaVal = data[i] * k + emaVal * (1 - k);
+    }
+    return emaVal;
+  };
+  const currentPrice = closes[closes.length - 1];
+  const vector = closes.length >= 12 ? ema(closes, 12) : currentPrice;
+  const anchor = closes.length >= 26 ? ema(closes, 26) : currentPrice;
+  return { vector, anchor };
 }
