@@ -84,10 +84,10 @@ self.addEventListener("message", (event) => {
 
 function detectDivConStateless(closes, currentForce) {
   const len = closes.length;
-  if (len < 205) return null; // Безопасный минимум для смещения 200 (200 + 5)
+  if (len < 1555) return null; // Безопасный минимум для смещения 200 (200 + 5)
 
   const idxNow = len - 1;
-  const idxL = len - 201; // Точка L (200 свечей назад от текущей idxNow)
+  const idxL = len - 151; // Точка L (200 свечей назад от текущей idxNow)
   const idxS = len - 51;  // Точка S (50 свечей назад от текущей idxNow)
 
   const priceNow = closes[idxNow];
