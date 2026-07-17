@@ -87,52 +87,78 @@ function calculatePriceExtremeForce(highs, lows, currentPrice) {
   return max === min ? 50 : ((currentPrice - min) / (max - min)) * 100;
 }
 
-// Инициализация матричных данных
 async function bootstrapSystem() {
-  statusDiv.innerText = "Building Time/Market Matrices...";
+  statusDiv.innerText = "Building TRUE Historical Time/Market Matrices...";
   
-  // Загрузка истории для всех ТФ выбранной пары
-  const tfPromises = timeframesList.map(tf => {
-    return fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${tf}&limit=30`)
-      .then(res => res.json())
-      .then(data => {
-        globalTfHighs[tf] = data.map(d => parseFloat(d[2]));
-        globalTfLows[tf] = data.map(d => parseFloat(d[3]));
-        const closes = data.map(d => parseFloat(d[4]));
-        tfForces[tf] = calculatePriceExtremeForce(globalTfHighs[tf].slice(-30), globalTfLows[tf].slice(-30), closes[closes.length - 1]);
-      }).catch(() => { tfForces[tf] = 50; });
+  // 1. Загружаем глубокую историю основного таймфрейма для оси X (например, 150 свечей)
+  const mainData = await fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${currentTf}&limit=150`).then(r => r.json());
+  candles = mainData.map(d => ({ 
+    time: d[0], 
+    high: parseFloat(d[2]), 
+    low: parseFloat(d[3]), 
+    close: parseFloat(d[4]) 
+  }));
+  chartLabels = candles.map((_, i) => i);
+
+  // 2. Для каждого таймфрейма строим честную историческую кривую силы
+  const tfPromises = timeframesList.map(async (tf) => {
+    // Запрашиваем больше данных (например, 180 свечей), чтобы иметь запас в 30 свечей для расчета скользящего MinMax
+    const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${tf}&limit=180`);
+    const data = await res.json();
+    
+    const tfHighs = data.map(d => parseFloat(d[2]));
+    const tfLows = data.map(d => parseFloat(d[3]));
+    const tfCloses = data.map(d => parseFloat(d[4]));
+
+    // Сохраняем текущие экстремумы для реалтайм-обновлений
+    globalTfHighs[tf] = tfHighs.slice(-30);
+    globalTfLows[tf] = tfLows.slice(-30);
+    tfForces[tf] = calculatePriceExtremeForce(globalTfHighs[tf], globalTfLows[tf], tfCloses[tfCloses.length - 1]);
+
+    // Заполняем историю: для каждой из 150 точек вычисляем ее историческое положение
+    const tempHistory = [];
+    for (let i = 30; i < data.length; i++) {
+      const sliceHighs = tfHighs.slice(i - 30, i);
+      const sliceLows = tfLows.slice(i - 30, i);
+      const priceAtTime = tfCloses[i - 1];
+      tempHistory.push(calculatePriceExtremeForce(sliceHighs, sliceLows, priceAtTime));
+    }
+    
+    // Выравниваем длину истории под основной график
+    timeForceHistory[tf] = tempHistory.slice(-candles.length);
   });
 
-  // Параллельный расчет индекса рынка по списку ALL_PAIRS
-  const marketPromises = ALL_PAIRS.map(p => {
-    return fetch(`https://api.binance.com/api/v3/klines?symbol=${p.toUpperCase()}&interval=1m&limit=30`)
-      .then(res => res.json())
-      .then(data => {
-        const highs = data.map(d => parseFloat(d[2]));
-        const lows = data.map(d => parseFloat(d[3]));
-        const close = parseFloat(data[data.length - 1][4]);
-        globalPairAverages[p] = calculatePriceExtremeForce(highs, lows, close);
-      }).catch(() => { globalPairAverages[p] = 50; });
+  // 3. Расчет честной истории индекса рынка
+  const marketPromises = ALL_PAIRS.map(async (p) => {
+    const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${p.toUpperCase()}&interval=${currentTf}&limit=180`);
+    const data = await res.json();
+    const pHighs = data.map(d => parseFloat(d[2]));
+    const pLows = data.map(d => parseFloat(d[3]));
+    const pCloses = data.map(d => parseFloat(d[4]));
+
+    const pHistory = [];
+    for (let i = 30; i < data.length; i++) {
+      const sliceH = pHighs.slice(i - 30, i);
+      const sliceL = pLows.slice(i - 30, i);
+      pHistory.push(calculatePriceExtremeForce(sliceH, sliceL, pCloses[i - 1]));
+    }
+    return pHistory.slice(-candles.length);
   });
 
-  await Promise.all([...tfPromises, ...marketPromises]);
+  const allMarketHistories = await Promise.all(marketPromises);
   
-  // Первичная подгрузка основного чарта
-  const mainData = await fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${currentTf}&limit=100`).then(r => r.json());
-  candles = mainData.map(d => ({ high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4]) }));
-  
-  // Предустановка исторических линеек
-  chartLabels = Array.from({length: candles.length}, (_, i) => i);
-  timeframesList.forEach(tf => {
-    timeForceHistory[tf] = new Array(candles.length).fill(tfForces[tf]);
+  // Усредняем истории всех пар в один глобальный индекс рынка для каждой точки времени
+  marketForceHistory = Array.from({ length: candles.length }, (_, tIndex) => {
+    const sumAtT = allMarketHistories.reduce((sum, pHist) => sum + (pHist[tIndex] || 50), 0);
+    return sumAtT / ALL_PAIRS.length;
   });
-  
-  const marketSum = Object.values(globalPairAverages).reduce((a, b) => a + b, 0);
-  marketForceHistory = new Array(candles.length).fill(marketSum / ALL_PAIRS.length);
+
+  await Promise.all(tfPromises);
 
   initAllCharts();
   connectStreams();
 }
+
 
 let priceChart, timeForceChart, marketForceChart;
 
