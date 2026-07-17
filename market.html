@@ -63,6 +63,7 @@ a {
       height: 40vh;
       margin-top: 15px;
       margin-bottom: 15px;
+
     }
 
     select {
@@ -1209,75 +1210,37 @@ datasets.push({
 const percentChartLabelsPlugin = {
   id: 'percentChartLabels',
   afterDatasetsDraw(chart) {
-    const { ctx, scales: { x, y } } = chart;
+    const { ctx, chartArea: { right }, scales: { y } } = chart;
     const labelsToDraw = [];
 
-    // Шаг 1: Собираем данные о подписях для всех видимых графиков
     chart.data.datasets.forEach((dataset, index) => {
-      if (!dataset.data || dataset.data.length === 0 || chart.isDatasetVisible(index) === false) {
-        return;
-      }
-
-      const lastVisibleIdx = Math.min(
-        Math.floor(x.max !== undefined ? x.max : dataset.data.length - 1),
-        dataset.data.length - 1
-      );
-
-      if (lastVisibleIdx < 0) return;
-
-      const val = dataset.data[lastVisibleIdx];
-      const xPos = x.getPixelForValue(lastVisibleIdx);
-      const yPos = y.getPixelForValue(val);
-
+      if (!chart.isDatasetVisible(index)) return;
+      
+      const val = dataset.data[dataset.data.length - 1];
       labelsToDraw.push({
         label: dataset.label,
-        x: xPos + 5,
-        y: yPos, // идеальная позиция по высоте
+        y: y.getPixelForValue(val),
         color: dataset.borderColor
       });
     });
 
-    if (labelsToDraw.length === 0) return;
-
-    // Шаг 2: Сортируем подписи сверху вниз (по возрастанию координаты Y на экране)
+    // Сортируем строго по Y
     labelsToDraw.sort((a, b) => a.y - b.y);
 
-    // Шаг 3: Раздвигаем подписи, чтобы между ними было минимум 14px расстояния
-    const minSpacing = 14; 
-    
-    // Сдвиг сверху вниз
-    for (let i = 1; i < labelsToDraw.length; i++) {
-      if (labelsToDraw[i].y < labelsToDraw[i - 1].y + minSpacing) {
-        labelsToDraw[i].y = labelsToDraw[i - 1].y + minSpacing;
-      }
-    }
-
-    // Корректировка снизу вверх (чтобы подписи не улетали за нижнюю границу графика)
-    const bottomLimit = y.bottom - 6;
-    if (labelsToDraw[labelsToDraw.length - 1].y > bottomLimit) {
-      labelsToDraw[labelsToDraw.length - 1].y = bottomLimit;
-      for (let i = labelsToDraw.length - 2; i >= 0; i--) {
-        if (labelsToDraw[i].y > labelsToDraw[i + 1].y - minSpacing) {
-          labelsToDraw[i].y = labelsToDraw[i + 1].y - minSpacing;
-        }
-      }
-    }
-
-    // Шаг 4: Отрисовываем подписи на скорректированных позициях
     ctx.save();
     ctx.font = 'bold 11px sans-serif';
-    ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
 
+    // Рисуем всё с фиксированным X (правая граница + отступ)
     labelsToDraw.forEach(item => {
-      if (item.y >= y.top && item.y <= y.bottom) {
-        ctx.fillStyle = item.color;
-        ctx.fillText(item.label, item.x, item.y);
-      }
+      ctx.fillStyle = item.color;
+      // right + 10 — это фиксированная позиция шкалы
+      ctx.fillText(item.label, right + 10, item.y);
     });
     ctx.restore();
   }
 };
+
 
 // Инициализация второго графика (сравнение в процентах)
     function initPercentChart() {
@@ -1310,7 +1273,7 @@ const percentChartLabelsPlugin = {
               grid: { display: false }
             },
 y: {
-  display: false,
+  display: true,
   position: 'right',
   grid: { color: 'rgba(255, 255, 255, 0.05)' },
   ticks: {
