@@ -1,0 +1,205 @@
+<!-- market_pivot.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Capital & Eqlectika Matrix [Pivot Edition]</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #0b0e11; color: #eaecef; font-family: sans-serif; margin: 0; padding: 20px; }
+        .matrix-container { display: block; max-width: 1200px; margin: 0 auto; }
+        .indicator-box { background: #181a20; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #2b2f36; }
+        .progress-bar-bg { background: #2b2f36; width: 100%; height: 25px; border-radius: 4px; overflow: hidden; position: relative; margin-top: 10px; }
+        .progress-bar-fill { height: 100%; width: 50%; transition: width 0.1s ease, background-color 0.1s ease; }
+        .value-text { position: absolute; width: 100%; text-align: center; top: 3px; font-weight: bold; font-size: 14px; text-shadow: 1px 1px 2px #000; }
+        .chart-container { position: relative; height: 500px; width: 100%; background: #181a20; border-radius: 8px; padding: 10px; box-sizing: border-box; border: 1px solid #2b2f36; }
+        h2 { margin-top: 0; font-size: 16px; color: #848e9c; text-transform: uppercase; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+<div class="matrix-container">
+    <div class="indicator-box">
+        <h2>PAIR GLOBAL TIME FORCE (Взвешенная ценовая матрица экстремумов)</h2>
+        <div id="status">Status: Initialization...</div>
+        <div class="progress-bar-bg">
+            <div id="global-fng-fill" class="progress-bar-fill"></div>
+            <div id="global-fng-value" class="value-text">50.00%</div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="moireChartCanvas"></canvas>
+    </div>
+</div>
+
+<script>
+// Настройки весов таймфреймов: сумма строго равна 1.0 для исключения искажений
+const tfWeights = {
+  "1m": 0.02, "5m": 0.03, "15m": 0.05, "1h": 0.15, "4h": 0.20, "1d": 0.25, "1w": 0.30
+};
+const timeframesList = Object.keys(tfWeights);
+
+let currentTf = "1m";
+let pair = "btcusdt";
+let candles = [];
+let tfForces = {};
+let globalTfHighs = {};
+let globalTfLows = {};
+let moireChart = null;
+
+const statusDiv = document.getElementById("status");
+const worker = new Worker('worker_pivot.js');
+
+// Математика нормализации положения цены [0..100]
+function calculatePriceExtremeForce(highs, lows, currentPrice) {
+  if (!highs || highs.length === 0) return 50;
+  const max = Math.max(...highs);
+  const min = Math.min(...lows);
+  if (max === min) return 50;
+  return ((currentPrice - min) / (max - min)) * 100;
+}
+
+function renderGlobalIndicator() {
+  let totalWeightedForce = 0;
+  let activeWeightsSum = 0;
+
+  timeframesList.forEach(tf => {
+    if (tfForces[tf] !== undefined) {
+      const weight = tfWeights[tf];
+      totalWeightedForce += tfForces[tf] * weight;
+      activeWeightsSum += weight;
+    }
+  });
+
+  const average = activeWeightsSum > 0 ? (totalWeightedForce / activeWeightsSum) : 50;
+  
+  const globalFill = document.getElementById("global-fng-fill");
+  const globalValueText = document.getElementById("global-fng-value");
+  
+  globalFill.style.width = average + "%";
+  // Динамический цвет: Зеленый на низах диапазона (разворот вверх), Красный на пиках (разворот вниз)
+  globalFill.style.backgroundColor = `hsl(${120 - (average / 100) * 120}, 100%, 45%)`;
+  globalValueText.style.color = "#ffffff";
+  globalValueText.innerText = average.toFixed(2) + "%";
+}
+
+async function bootstrapMatrix() {
+  statusDiv.innerText = "Status: Building multi-timeframe extreme matrix...";
+  
+  const promises = timeframesList.map(tf => {
+    return fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${tf}&limit=30`)
+      .then(res => res.json())
+      .then(data => {
+        globalTfHighs[tf] = data.map(d => parseFloat(d[2]));
+        globalTfLows[tf] = data.map(d => parseFloat(d[3]));
+        const closes = data.map(d => parseFloat(d[4]));
+        const currentPrice = closes[closes.length - 1];
+        
+        tfForces[tf] = calculatePriceExtremeForce(globalTfHighs[tf].slice(-30), globalTfLows[tf].slice(-30), currentPrice);
+      })
+      .catch(() => { tfForces[tf] = 50; });
+  });
+
+  await Promise.all(promises);
+  renderGlobalIndicator();
+  connectWebSocket();
+}
+
+function connectWebSocket() {
+  const ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${pair.toLowerCase()}@kline_1m/${pair.toLowerCase()}@kline_5m/${pair.toLowerCase()}@kline_15m/${pair.toLowerCase()}@kline_1h/${pair.toLowerCase()}@kline_4h/${pair.toLowerCase()}@kline_1d/${pair.toLowerCase()}@kline_1w`);
+
+  ws.onmessage = (msg) => {
+    const response = JSON.parse(msg.data);
+    const k = response.data.k;
+    const msgTf = k.i;
+    
+    const high = parseFloat(k.h);
+    const low = parseFloat(k.l);
+    const close = parseFloat(k.c);
+    
+    if (globalTfHighs[msgTf] && globalTfLows[msgTf]) {
+      const hRef = globalTfHighs[msgTf];
+      const lRef = globalTfLows[msgTf];
+      
+      if (k.x) {
+        hRef.push(high); lRef.push(low);
+        if (hRef.length > 30) hRef.shift();
+        if (lRef.length > 30) lRef.shift();
+      } else {
+        hRef[hRef.length - 1] = Math.max(hRef[hRef.length - 1], high);
+        lRef[lRef.length - 1] = Math.min(lRef[lRef.length - 1], low);
+      }
+      
+      tfForces[msgTf] = calculatePriceExtremeForce(hRef.slice(-30), lRef.slice(-30), close);
+      renderGlobalIndicator();
+    }
+
+    if (msgTf === currentTf) {
+      statusDiv.innerText = `Live: Matrix Streaming [${pair.toUpperCase()}] Price: ${close}`;
+      if (k.x) {
+        candles.push({ high, low, close });
+        if (candles.length > 500) candles.shift();
+      } else {
+        if (candles.length > 0) {
+          candles[candles.length - 1] = {
+            high: Math.max(candles[candles.length - 1].high, high),
+            low: Math.min(candles[candles.length - 1].low, low),
+            close: close
+          };
+        }
+      }
+      worker.postMessage({ candles });
+    }
+  };
+}
+
+// Первичная подгрузка истории активного ТФ для построения графика
+fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${currentTf}&limit=150`)
+  .then(res => res.json())
+  .then(data => {
+    candles = data.map(d => ({ high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4]) }));
+    initChart();
+    bootstrapMatrix();
+  });
+
+function initChart() {
+  const ctx = document.getElementById('moireChartCanvas').getContext('2d');
+  moireChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Array.from({length: candles.length}, (_, i) => i),
+      datasets: [
+        { label: 'Цена', data: candles.map(c => c.close), borderColor: '#f0b90b', yAxisID: 'yPrice', borderWidth: 2, pointRadius: 0 },
+        { label: 'Pivot Force (Вместо RSI)', data: [], borderColor: '#00ff00', yAxisID: 'yPivot', borderWidth: 1.5, pointRadius: 0 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        yPrice: { type: 'linear', position: 'left', grid: { color: '#2b2f36' } },
+        yPivot: { type: 'linear', position: 'right', min: 0, max: 100, grid: { display: false } }
+      }
+    }
+  });
+}
+
+worker.onmessage = (e) => {
+  const { force, price } = e.data;
+  if (!moireChart) return;
+  
+  moireChart.data.datasets[0].data = candles.map(c => c.close);
+  
+  // Рассчитываем скользящий коэффициент для линии графика
+  const chartPivotData = candles.map((c, i) => {
+    const slice = candles.slice(0, i + 1).slice(-30);
+    return calculatePriceExtremeForce(slice.map(s=>s.high), slice.map(s=>s.low), c.close);
+  });
+  
+  moireChart.data.datasets[1].data = chartPivotData;
+  moireChart.data.datasets[1].borderColor = `hsl(${120 - (force / 100) * 120}, 100%, 50%)`;
+  moireChart.update('none');
+};
+</script>
+</body>
+</html>
