@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Capital & Eqlectika - Multi-Chart Matrix</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #0b0e11; color: #eaecef; font-family: sans-serif; margin: 0; padding: 15px; }
+        .dashboard { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
+        
+        .header-panel { background: #181a20; padding: 15px; border-radius: 8px; border: 1px solid #2b2f36; display: flex; justify-content: space-between; align-items: center; }
+        .status-badge { font-weight: bold; padding: 5px 10px; border-radius: 4px; background: #2b2f36; color: #f0b90b; }
+        
+        .grid-charts { display: flex; flex-direction: column; gap: 10px; }
+        .chart-box { background: #181a20; border-radius: 8px; padding: 12px; border: 1px solid #2b2f36; position: relative; }
+        
+        .main-chart { height: 350px; }
+        .sub-chart { height: 220px; }
+        
+        h2 { margin: 0 0 8px 0; font-size: 13px; color: #848e9c; text-transform: uppercase; letter-spacing: 0.5px; }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="header-panel">
+        <div>
+            <span style="font-size: 18px; font-weight: bold; color: #fff;">Capital & Eqlectika</span>
+            <span style="color: #848e9c; margin-left: 10px;">[Pivot Action Engine]</span>
+        </div>
+        <div id="status" class="status-badge">Status: Initialization...</div>
+    </div>
+
+    <div class="grid-charts">
+        <!-- 1. График цены -->
+        <div class="chart-box main-chart">
+            <h2>1. PRICE FLOW (Текущий таймфрейм)</h2>
+            <canvas id="priceChartCanvas"></canvas>
+        </div>
+
+        <!-- 2. График PAIR GLOBAL TIME FORCE -->
+        <div class="chart-box sub-chart">
+            <h2>2. PAIR GLOBAL TIME FORCE (Распределение Силы по всем Таймфреймам)</h2>
+            <canvas id="timeForceChartCanvas"></canvas>
+        </div>
+
+        <!-- 3. График MARKET GLOBAL FORCE -->
+        <div class="chart-box sub-chart">
+            <h2>3. MARKET GLOBAL FORCE (Совокупный Индекс Всех Пар)</h2>
+            <canvas id="marketForceChartCanvas"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+const tfWeights = { "1m": 0.02, "5m": 0.03, "15m": 0.05, "1h": 0.15, "4h": 0.20, "1d": 0.25, "1w": 0.30 };
+const timeframesList = Object.keys(tfWeights);
+const ALL_PAIRS = ["btcusdt", "ethusdt", "solusdt", "bnbusdt"]; // Список пар для индекса рынка
+
+let pair = "btcusdt";
+let currentTf = "1m";
+
+let candles = [];
+let tfForces = {};
+let globalTfHighs = {};
+let globalTfLows = {};
+let globalPairAverages = {};
+
+// Исторические логи для отрисовки суб-графиков во времени
+let timeForceHistory = { "1m":[], "5m":[], "15m":[], "1h":[], "4h":[], "1d":[], "1w":[] };
+let marketForceHistory = [];
+let chartLabels = [];
+
+// Цветовая карта для таймфреймов (чтобы графики не сливались)
+const tfColors = {
+  "1m": "#ff4d4d", "5m": "#ff944d", "15m": "#ffd14d", 
+  "1h": "#4dff88", "4h": "#4dffff", "1d": "#4d88ff", "1w": "#944dff"
+};
+
+const statusDiv = document.getElementById("status");
+const worker = new Worker('worker_pivot.js');
+
+function calculatePriceExtremeForce(highs, lows, currentPrice) {
+  if (!highs || highs.length === 0) return 50;
+  const max = Math.max(...highs);
+  const min = Math.min(...lows);
+  return max === min ? 50 : ((currentPrice - min) / (max - min)) * 100;
+}
+
+// Инициализация матричных данных
+async function bootstrapSystem() {
+  statusDiv.innerText = "Building Time/Market Matrices...";
+  
+  // Загрузка истории для всех ТФ выбранной пары
+  const tfPromises = timeframesList.map(tf => {
+    return fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${tf}&limit=30`)
+      .then(res => res.json())
+      .then(data => {
+        globalTfHighs[tf] = data.map(d => parseFloat(d[2]));
+        globalTfLows[tf] = data.map(d => parseFloat(d[3]));
+        const closes = data.map(d => parseFloat(d[4]));
+        tfForces[tf] = calculatePriceExtremeForce(globalTfHighs[tf].slice(-30), globalTfLows[tf].slice(-30), closes[closes.length - 1]);
+      }).catch(() => { tfForces[tf] = 50; });
+  });
+
+  // Параллельный расчет индекса рынка по списку ALL_PAIRS
+  const marketPromises = ALL_PAIRS.map(p => {
+    return fetch(`https://api.binance.com/api/v3/klines?symbol=${p.toUpperCase()}&interval=1m&limit=30`)
+      .then(res => res.json())
+      .then(data => {
+        const highs = data.map(d => parseFloat(d[2]));
+        const lows = data.map(d => parseFloat(d[3]));
+        const close = parseFloat(data[data.length - 1][4]);
+        globalPairAverages[p] = calculatePriceExtremeForce(highs, lows, close);
+      }).catch(() => { globalPairAverages[p] = 50; });
+  });
+
+  await Promise.all([...tfPromises, ...marketPromises]);
+  
+  // Первичная подгрузка основного чарта
+  const mainData = await fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${currentTf}&limit=100`).then(r => r.json());
+  candles = mainData.map(d => ({ high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4]) }));
+  
+  // Предустановка исторических линеек
+  chartLabels = Array.from({length: candles.length}, (_, i) => i);
+  timeframesList.forEach(tf => {
+    timeForceHistory[tf] = new Array(candles.length).fill(tfForces[tf]);
+  });
+  
+  const marketSum = Object.values(globalPairAverages).reduce((a, b) => a + b, 0);
+  marketForceHistory = new Array(candles.length).fill(marketSum / ALL_PAIRS.length);
+
+  initAllCharts();
+  connectStreams();
+}
+
+let priceChart, timeForceChart, marketForceChart;
+
+function initAllCharts() {
+  const commonOptions = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: true, labels: { color: '#848e9c', font: { size: 10 } } } },
+    scales: {
+      x: { grid: { color: '#2b2f36' }, ticks: { color: '#848e9c' } },
+      y: { grid: { color: '#2b2f36' }, ticks: { color: '#848e9c' } }
+    }
+  };
+
+  // 1. Инициализация ценового графика
+  priceChart = new Chart(document.getElementById('priceChartCanvas').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [{ label: pair.toUpperCase(), data: candles.map(c => c.close), borderColor: '#f0b90b', borderWidth: 2, pointRadius: 0 }]
+    },
+    options: commonOptions
+  });
+
+  // 2. Инициализация мульти-таймфреймового графика сил
+  const tfDatasets = timeframesList.map(tf => ({
+    label: tf, data: timeForceHistory[tf], borderColor: tfColors[tf], borderWidth: 1.5, pointRadius: 0, fill: false
+  }));
+  
+  timeForceChart = new Chart(document.getElementById('timeForceChartCanvas').getContext('2d'), {
+    type: 'line',
+    data: { labels: chartLabels, datasets: tfDatasets },
+    options: { ...commonOptions, scales: { x: commonOptions.scales.x, y: { min: 0, max: 100, grid: { color: '#2b2f36' } } } }
+  });
+
+  // 3. Инициализация графика силы рынка
+  marketForceChart = new Chart(document.getElementById('marketForceChartCanvas').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [{ label: 'MARKET GLOBAL FORCE INDEX', data: marketForceHistory, borderColor: '#00ffcc', borderWidth: 2, pointRadius: 0 }]
+    },
+    options: { ...commonOptions, scales: { x: commonOptions.scales.x, y: { min: 0, max: 100, grid: { color: '#2b2f36' } } } }
+  });
+}
+
+function connectStreams() {
+  const streams = timeframesList.map(tf => `${pair.toLowerCase()}@kline_${tf}`).join('/');
+  const ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
+
+  ws.onmessage = (msg) => {
+    const response = JSON.parse(msg.data);
+    const k = response.data.k;
+    const msgTf = k.i;
+    
+    const high = parseFloat(k.h);
+    const low = parseFloat(k.l);
+    const close = parseFloat(k.c);
+    
+    if (globalTfHighs[msgTf] && globalTfLows[msgTf]) {
+      const hRef = globalTfHighs[msgTf];
+      const lRef = globalTfLows[msgTf];
+      
+      if (k.x) {
+        hRef.push(high); lRef.push(low);
+        if (hRef.length > 30) hRef.shift();
+        if (lRef.length > 30) lRef.shift();
+      } else {
+        hRef[hRef.length - 1] = Math.max(hRef[hRef.length - 1], high);
+        lRef[lRef.length - 1] = Math.min(lRef[lRef.length - 1], low);
+      }
+      tfForces[msgTf] = calculatePriceExtremeForce(hRef.slice(-30), lRef.slice(-30), close);
+    }
+
+    if (msgTf === currentTf) {
+      statusDiv.innerText = `Live Streaming: ${close.toFixed(2)}`;
+      
+      if (k.x) {
+        candles.push({ high, low, close });
+        if (candles.length > 150) candles.shift();
+        
+        // Сдвигаем историю на закрытии свечи
+        timeframesList.forEach(tf => {
+          timeForceHistory[tf].push(tfForces[tf]);
+          if (timeForceHistory[tf].length > candles.length) timeForceHistory[tf].shift();
+        });
+        
+        const marketSum = Object.values(globalPairAverages).reduce((a, b) => a + b, 0);
+        marketForceHistory.push(marketSum / ALL_PAIRS.length);
+        if (marketForceHistory.length > candles.length) marketForceHistory.shift();
+        
+        chartLabels = Array.from({length: candles.length}, (_, i) => i);
+      } else {
+        if (candles.length > 0) {
+          candles[candles.length - 1] = { high: Math.max(candles[candles.length - 1].high, high), low: Math.min(candles[candles.length - 1].low, low), close };
+          
+          // Обновляем текущие хвосты на реалтайм тике
+          timeframesList.forEach(tf => {
+            timeForceHistory[tf][timeForceHistory[tf].length - 1] = tfForces[tf];
+          });
+          const marketSum = Object.values(globalPairAverages).reduce((a, b) => a + b, 0);
+          marketForceHistory[marketForceHistory.length - 1] = marketSum / ALL_PAIRS.length;
+        }
+      }
+      
+      // Синхронное обновление всех трех графиков в одной сетке
+      priceChart.data.labels = chartLabels;
+      priceChart.data.datasets[0].data = candles.map(c => c.close);
+      priceChart.update('none');
+
+      timeForceChart.data.labels = chartLabels;
+      timeForceChart.data.datasets.forEach((dataset) => {
+        dataset.data = timeForceHistory[dataset.label];
+      });
+      timeForceChart.update('none');
+
+      marketForceChart.data.labels = chartLabels;
+      marketForceChart.data.datasets[0].data = marketForceHistory;
+      marketForceChart.update('none');
+      
+      worker.postMessage({ candles });
+    }
+  };
+}
+
+bootstrapSystem();
+</script>
+</body>
+</html>
