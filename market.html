@@ -55,6 +55,16 @@ a {
       height: 50vh; 
       margin-bottom: 15px; 
     }
+    
+    /* Специфический контейнер для процентного графика */
+    .percent-chart-container {
+      position: relative;
+      width: 100%;
+      height: 40vh;
+      margin-top: 15px;
+      margin-bottom: 15px;
+    }
+
     select {
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -63,7 +73,8 @@ a {
     select, button { background: #2962ff; color: white; border: none; padding: 6px 10px; margin: 0 5px 10px 0;; border-radius: 4px; font-size: 14px; cursor: pointer; }
     button:hover { background: #1e4bd8; }
     #status { margin: 5px 0; font-size: 14px; font-family: sans-serif; }
-    canvas#moireChart { 
+    
+    canvas#moireChart, canvas#percentChart { 
     image-rendering: crisp-edges; 
     image-rendering: pixelated; 
     width: 100% !important; 
@@ -72,10 +83,11 @@ a {
     pointer-events: auto;
     touch-action: none;
     }
-    canvas#moireChart:active { cursor: grabbing; }
+    canvas#moireChart:active, canvas#percentChart:active { cursor: grabbing; }
+    
     #log { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif;  font-size: 14px; margin-top: 4px; }
-    #log-parrots { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; margin-top: 40px; }
-    #log-cloud { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; margin-top: 40px; }
+    #log-parrots { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; }
+    #log-cloud { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; }
 
 #log-parrots,
 #log-parrots div {
@@ -92,7 +104,7 @@ a {
     width: 100%;
     align-items: stretch;
     min-height: 50vh;
-    max-height: 80vh;
+    max-height: 120vh;
     height: auto;
     overflow: hidden; /* Важно! Не даем содержимому выходить за пределы */
 }
@@ -130,8 +142,7 @@ a {
     display: flex;
     flex-direction: column;
     min-height: 0;
-    height: 50vh; /* Равна высоте графика */
-    max-height: 50vh;
+    height: auto; 
     overflow: hidden;
 }
 
@@ -140,7 +151,9 @@ a {
     display: flex;
     flex-direction: column;
     flex: 1;
-    gap: 40px; /* Расстояние между логами 40px */
+
+    gap: 30px; /* Расстояние между логами 40px */
+
     min-height: 0;
     height: 100%;
     overflow: hidden;
@@ -192,7 +205,7 @@ a {
     
     .column-left {
         width: 100%;
-        height: 50vh;
+        height: auto;
         min-height: 300px;
         flex-shrink: 0;
         gap: 10px;
@@ -200,10 +213,14 @@ a {
     }
     
     .chart-container {
-        flex: 1;
-        height: auto;
-        min-height: 0;
+        flex-shrink: 0;
+        height: 50vh;
         margin-bottom: 0;
+    }
+    
+    .percent-chart-container {
+        flex-shrink: 0;
+        height: 40vh;
     }
     
     #akai-indicator {
@@ -214,7 +231,7 @@ a {
     
     .column-left-spacer {
         flex-shrink: 0;
-        height: 20px;
+
     }
     
     .column-right {
@@ -227,7 +244,7 @@ a {
     }
     
     .logs-wrapper {
-        gap: 40px;
+
         height: 100%;
     }
     
@@ -503,20 +520,23 @@ a {
 
 <div class="main-layout">
     <div class="column-left">
-        <!-- График -->
+        <!-- График 1 (Основной) -->
         <div class="chart-container">
             <canvas id="moireChart"></canvas>
         </div>
-        
-        <!-- Индикатор теперь внутри колонки -->
+                <!-- Индикатор теперь внутри колонки -->
         <div id="akai-indicator">
             <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
             <div class="akai-center"></div>
         </div>
+
+        <!-- График 2 (Сравнение всех пар в процентах) -->
+        <div class="percent-chart-container">
+            <canvas id="percentChart"></canvas>
+        </div>
         
-        <!-- Добавляем дополнительное пространство -->
-<div class="column-left-spacer"></div>
-    </div>
+        
+
     
     <div class="column-right">
         <div class="logs-wrapper">
@@ -571,6 +591,7 @@ a {
     let candles = [];
     const period = 14;
     let moireChart = null;
+    let percentChart = null; // Экземпляр второго (процентного) графика
     let isInitialLoad = true;
 
     // Структура для поддержания истории закрытий фоновых ТФ (нужна для пересчета RSI на лету)
@@ -596,6 +617,24 @@ const ALL_PAIRS = [
     'solusdt',
     'linkusdt', 'ltcusdt', 'bchusdt', 'zecusdt'
 ];
+
+// Хранилище свечей для второго графика (по всем парам)
+const allPairsCandles = {};
+
+// Цвета для прорисовки пар на процентном графике
+const pairColors = {
+    'btcusdt': '#ffffff',
+    'ethusdt': '#2962ff',
+    'oceanusdt': '#00e676',
+    'suiusdt': '#ff5252',
+    'aaveusdt': '#ffa726',
+    'solusdt': '#ea80fc',
+    'linkusdt': '#80d8ff',
+    'ltcusdt': '#b2b5be',
+    'bchusdt': '#ffd700',
+    'zecusdt': '#a7ffeb'
+};
+
     // Математический расчет RSI-14 в реальном времени для одной точки
     function calculateSingleRSI(closes, period = 14) {
       if (closes.length <= period) return 50;
@@ -613,8 +652,6 @@ const ALL_PAIRS = [
       if (gains + losses === 0) return 50;
       return (gains / (gains + losses)) * 100;
     }
-
-    // Обновление глобального индикатора
 
     // Обновление глобального индикатора
     function renderGlobalIndicator() {
@@ -1104,13 +1141,19 @@ datasets.push({
                 wheel: { enabled: true }, 
                 pinch: { enabled: true }, 
                 mode: 'x',
-                onZoom: function() { resetAutoReturnTimer(); }
+                onZoom: function() { 
+                  syncChartsScale();
+                  resetAutoReturnTimer(); 
+                }
               },
               pan: { 
                 enabled: true, 
                 mode: 'x', 
                 threshold: 5,
-                onPan: function() { resetAutoReturnTimer(); }
+                onPan: function() { 
+                  syncChartsScale();
+                  resetAutoReturnTimer(); 
+                }
               }
             }
           }
@@ -1153,11 +1196,157 @@ datasets.push({
           moireChart.options.scales.x.min = newMin;
           moireChart.options.scales.x.max = newMax;
           moireChart.update('none');
+          syncChartsScale();
           previousX = e.clientX;
         }
       });
 
       window.addEventListener('mouseup', () => { isDragging = false; });
+      
+      initPercentChart();
+    }
+
+const percentChartLabelsPlugin = {
+  id: 'percentChartLabels',
+  afterDatasetsDraw(chart) {
+    const { ctx, scales: { x, y }, chartArea: { right } } = chart;
+    
+    chart.data.datasets.forEach((dataset, index) => {
+      // Проверяем, есть ли данные и не скрыт ли датасет
+      if (!dataset.data || dataset.data.length === 0 || chart.isDatasetVisible(index) === false) {
+        return;
+      }
+
+      // Находим индекс последней видимой точки в рамках текущего масштаба (x.max)
+      const lastVisibleIdx = Math.min(
+        Math.floor(x.max !== undefined ? x.max : dataset.data.length - 1),
+        dataset.data.length - 1
+      );
+
+      if (lastVisibleIdx < 0) return;
+
+      const val = dataset.data[lastVisibleIdx];
+      
+      // Получаем координаты последней точки
+      const xPos = x.getPixelForValue(lastVisibleIdx);
+      const yPos = y.getPixelForValue(val);
+
+      // Рисуем только если точка находится в пределах видимой области по вертикали
+      if (yPos >= y.top && yPos <= y.bottom && xPos >= x.left) {
+        ctx.save();
+        ctx.fillStyle = dataset.borderColor; // Аналогичный цвет, как у линии
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+
+        // Отрисовываем текст чуть правее последней видимой точки (смещение на 5 пикселей)
+        ctx.fillText(dataset.label, xPos + 5, yPos);
+        ctx.restore();
+      }
+    });
+  }
+};
+
+    // Инициализация второго графика (сравнение в процентах)
+    function initPercentChart() {
+      if (percentChart) percentChart.destroy();
+      
+      const datasets = ALL_PAIRS.map(pair => ({
+        label: pair.toUpperCase(),
+        data: [],
+        borderColor: pairColors[pair] || '#d1d4dc',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+        stepped: true,
+        clip: true
+      }));
+
+      const ctx = document.getElementById('percentChart').getContext('2d');
+      percentChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: datasets },
+        // ДОБАВЛЯЕМ ПЛАГИН СЮДА:
+        plugins: [percentChartLabelsPlugin], 
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: {
+            x: {
+              display: false,
+              grid: { display: false }
+            },
+            y: {
+              display: true,
+              position: 'right',
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: {
+                color: '#d1d4dc',
+                callback: function(value) {
+                  return (value >= 0 ? '+' : '') + value.toFixed(2) + '%';
+                }
+              }
+            }
+          },
+          plugins: {
+            tooltip: { enabled: true },
+            legend: { 
+              display: false,
+              position: 'top',
+              labels: {
+                color: '#d1d4dc',
+                boxWidth: 10,
+                font: { size: 10 }
+              }
+            }
+          }
+        }
+      });
+    }
+
+
+    // Синхронизация масштабирования/скролла между графиками
+    function syncChartsScale() {
+      if (!moireChart || !percentChart) return;
+      const xMin = moireChart.options.scales.x.min;
+      const xMax = moireChart.options.scales.x.max;
+      
+      percentChart.options.scales.x.min = xMin;
+      percentChart.options.scales.x.max = xMax;
+      
+      // Пересчет процентного базиса при сдвиге экрана
+      updatePercentChartData();
+    }
+
+    // Расчет изменения в процентах от начала видимого диапазона
+    function updatePercentChartData() {
+      if (!moireChart || !percentChart) return;
+      
+      const totalPoints = moireChart.data.labels.length;
+      if (totalPoints === 0) return;
+      
+      const xAxis = moireChart.scales.x;
+      const xMin = Math.max(0, Math.floor(xAxis.min !== undefined ? xAxis.min : 0));
+      
+      percentChart.data.labels = moireChart.data.labels;
+      
+      ALL_PAIRS.forEach((pair, idx) => {
+        const pairCandles = allPairsCandles[pair];
+        if (!pairCandles || pairCandles.length === 0) return;
+        
+        // Базовая цена — это цена первой видимой точки в левой границе экрана
+        const baseIndex = Math.min(xMin, pairCandles.length - 1);
+        const basePrice = pairCandles[baseIndex] ? pairCandles[baseIndex].close : null;
+        
+        if (basePrice) {
+          percentChart.data.datasets[idx].data = pairCandles.map(candle => {
+            return ((candle.close - basePrice) / basePrice) * 100;
+          });
+        }
+      });
+      
+      percentChart.update('none');
     }
 
     function calculateBB(closes, period) {
@@ -1243,6 +1432,7 @@ if (rsiDataset && rsiData.length) {
     }
 
     moireChart.update('none');
+    syncChartsScale();
   }
 }
 
@@ -1269,6 +1459,7 @@ if (rsiDataset && rsiData.length) {
       moireChart.options.scales.x.min = minIndex;
       moireChart.options.scales.x.max = maxIndex;
       moireChart.update('none');
+      syncChartsScale();
     }
 
     function jumpToCurrent() {
@@ -1285,6 +1476,31 @@ if (rsiDataset && rsiData.length) {
       moireChart.options.scales.x.min = min;
       moireChart.options.scales.x.max = max;
       moireChart.update('none');
+      syncChartsScale();
+    }
+
+    // Параллельная подгрузка всей глубины исторических данных для всех пар
+    async function bootstrapAllPairsHistory(currentTf) {
+      statusDiv.innerText = "Status: Bootstrapping All Pairs Matrix...";
+      const limit = 600;
+      
+      const promises = ALL_PAIRS.map(pair => {
+        return fetch(`https://api.binance.com/api/v3/klines?symbol=${pair.toUpperCase()}&interval=${currentTf}&limit=${limit}`)
+          .then(res => res.json())
+          .then(data => {
+            allPairsCandles[pair] = data.map(d => ({
+              high: parseFloat(d[2]),
+              low: parseFloat(d[3]),
+              close: parseFloat(d[4]),
+              volume: parseFloat(d[5])
+            }));
+          })
+          .catch(err => {
+            console.error(`Error loading historical data for ${pair}:`, err);
+          });
+      });
+      
+      await Promise.all(promises);
     }
 
     async function connect() {
@@ -1301,6 +1517,9 @@ if (rsiDataset && rsiData.length) {
       
       // Шаг 1: Асинхронно выкачиваем матрицу закрытий по всем ТФ для глобального трекера
       await bootstrapAllTimeframes(pair);
+
+      // Шаг 1.5: Подгружаем глубокую историю для процентного графика сравнения всех валют
+      await bootstrapAllPairsHistory(currentTf);
 
       statusDiv.innerText = "Status: Loading main chart history...";
 
@@ -1324,8 +1543,17 @@ worker.postMessage({
     period,
     candleClosed: true
 });
-          // Шаг 3: Формируем строку комбинированного стрима для ВСЕХ ТФ
-          const streams = timeframesList.map(tf => `${pair.toLowerCase()}@kline_${tf}`).join('/');
+          // Шаг 3: Формируем строку комбинированного стрима для ВСЕХ ТФ и ВСЕХ пар на текущем ТФ
+          const streamList = [];
+          timeframesList.forEach(tf => {
+            streamList.push(`${pair.toLowerCase()}@kline_${tf}`);
+          });
+          ALL_PAIRS.forEach(p => {
+            streamList.push(`${p.toLowerCase()}@kline_${currentTf}`);
+          });
+
+          const uniqueStreams = [...new Set(streamList)];
+          const streams = uniqueStreams.join('/');
           ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
           
           ws.onmessage = (msg) => {
@@ -1335,6 +1563,7 @@ worker.postMessage({
             const e = response.data;
             const k = e.k;
             const msgTf = k.i; // Определяем, от какого ТФ прилетел тик
+            const msgSymbol = e.s.toLowerCase(); // Символ пары
             
             const high = parseFloat(k.h);
             const low = parseFloat(k.l);
@@ -1342,7 +1571,7 @@ worker.postMessage({
             const volume = parseFloat(k.v); 
 
             // Локальный пересчет RSI для глобального верхнего индикатора на лету
-            if (globalTfCloses[msgTf]) {
+            if (msgSymbol === pair.toLowerCase() && globalTfCloses[msgTf]) {
               const closesRef = globalTfCloses[msgTf];
               if (k.x) {
                 // Если свеча закрылась, пушим её в массив истории данного ТФ
@@ -1357,8 +1586,26 @@ worker.postMessage({
               renderGlobalIndicator();
             }
 
+            // Обновляем котировки в массиве всех пар для процентного графика
+            if (msgTf === currentTf && allPairsCandles[msgSymbol]) {
+              const pairCandles = allPairsCandles[msgSymbol];
+              if (k.x) {
+                pairCandles.push({ high, low, close, volume });
+                if (pairCandles.length > 600) pairCandles.shift();
+              } else {
+                const last = pairCandles[pairCandles.length - 1];
+                if (last) {
+                  last.high = Math.max(last.high || high, high);
+                  last.low = Math.min(last.low || low, low);
+                  last.close = close;
+                  last.volume = volume;
+                }
+              }
+              updatePercentChartData();
+            }
+
             // Традиционное обновление основного ТФ, выбранного пользователем на экране
-            if (msgTf === currentTf) {
+            if (msgSymbol === pair.toLowerCase() && msgTf === currentTf) {
               if (k.x) { 
                 candles.push({ high, low, close, volume }); 
                 if (candles.length > 600) candles.shift();
