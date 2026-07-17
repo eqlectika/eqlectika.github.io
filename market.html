@@ -1206,7 +1206,81 @@ datasets.push({
       initPercentChart();
     }
 
-    // Инициализация второго графика (сравнение в процентах)
+// 1. ОБНОВЛЕННЫЙ ПЛАГИН ДЛЯ ОТРИСОВКИ ПОДПИСЕЙ БЕЗ НАПЛЫВОВ
+const percentChartLabelsPlugin = {
+  id: 'percentChartLabels',
+  afterDatasetsDraw(chart) {
+    const { ctx, scales: { x, y } } = chart;
+    const labelsToDraw = [];
+
+    // Шаг 1: Собираем данные о подписях для всех видимых графиков
+    chart.data.datasets.forEach((dataset, index) => {
+      if (!dataset.data || dataset.data.length === 0 || chart.isDatasetVisible(index) === false) {
+        return;
+      }
+
+      const lastVisibleIdx = Math.min(
+        Math.floor(x.max !== undefined ? x.max : dataset.data.length - 1),
+        dataset.data.length - 1
+      );
+
+      if (lastVisibleIdx < 0) return;
+
+      const val = dataset.data[lastVisibleIdx];
+      const xPos = x.getPixelForValue(lastVisibleIdx);
+      const yPos = y.getPixelForValue(val);
+
+      labelsToDraw.push({
+        label: dataset.label,
+        x: xPos + 5,
+        y: yPos, // идеальная позиция по высоте
+        color: dataset.borderColor
+      });
+    });
+
+    if (labelsToDraw.length === 0) return;
+
+    // Шаг 2: Сортируем подписи сверху вниз (по возрастанию координаты Y на экране)
+    labelsToDraw.sort((a, b) => a.y - b.y);
+
+    // Шаг 3: Раздвигаем подписи, чтобы между ними было минимум 14px расстояния
+    const minSpacing = 14; 
+    
+    // Сдвиг сверху вниз
+    for (let i = 1; i < labelsToDraw.length; i++) {
+      if (labelsToDraw[i].y < labelsToDraw[i - 1].y + minSpacing) {
+        labelsToDraw[i].y = labelsToDraw[i - 1].y + minSpacing;
+      }
+    }
+
+    // Корректировка снизу вверх (чтобы подписи не улетали за нижнюю границу графика)
+    const bottomLimit = y.bottom - 6;
+    if (labelsToDraw[labelsToDraw.length - 1].y > bottomLimit) {
+      labelsToDraw[labelsToDraw.length - 1].y = bottomLimit;
+      for (let i = labelsToDraw.length - 2; i >= 0; i--) {
+        if (labelsToDraw[i].y > labelsToDraw[i + 1].y - minSpacing) {
+          labelsToDraw[i].y = labelsToDraw[i + 1].y - minSpacing;
+        }
+      }
+    }
+
+    // Шаг 4: Отрисовываем подписи на скорректированных позициях
+    ctx.save();
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    labelsToDraw.forEach(item => {
+      if (item.y >= y.top && item.y <= y.bottom) {
+        ctx.fillStyle = item.color;
+        ctx.fillText(item.label, item.x, item.y);
+      }
+    });
+    ctx.restore();
+  }
+};
+
+// Инициализация второго графика (сравнение в процентах)
     function initPercentChart() {
       if (percentChart) percentChart.destroy();
       
@@ -1225,13 +1299,15 @@ datasets.push({
       percentChart = new Chart(ctx, {
         type: 'line',
         data: { labels: [], datasets: datasets },
+        // ДОБАВЛЯЕМ ПЛАГИН СЮДА:
+        plugins: [percentChartLabelsPlugin], 
         options: {
           responsive: true,
           maintainAspectRatio: false,
           animation: false,
           scales: {
             x: {
-              display: false, // Отключаем временную шкалу снизу, так как ориентируемся по верхнему графику
+              display: false,
               grid: { display: false }
             },
             y: {
@@ -1247,9 +1323,9 @@ datasets.push({
             }
           },
           plugins: {
-            tooltip: { enabled: true }, // Включаем тултип на наведение, чтобы видеть точные процентные отклонения
+            tooltip: { enabled: true },
             legend: { 
-              display: true,
+              display: false,
               position: 'top',
               labels: {
                 color: '#d1d4dc',
@@ -1261,7 +1337,6 @@ datasets.push({
         }
       });
     }
-
     // Синхронизация масштабирования/скролла между графиками
     function syncChartsScale() {
       if (!moireChart || !percentChart) return;
