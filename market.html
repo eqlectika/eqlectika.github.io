@@ -86,8 +86,8 @@ a {
     canvas#moireChart:active, canvas#percentChart:active { cursor: grabbing; }
     
     #log { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif;  font-size: 14px; margin-top: 4px; }
-    #log-parrots { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; }
-    #log-cloud { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; }
+    #log-parrots { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; margin-top: 40px; }
+    #log-cloud { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; margin-top: 40px; }
 
 #log-parrots,
 #log-parrots div {
@@ -151,9 +151,7 @@ a {
     display: flex;
     flex-direction: column;
     flex: 1;
-
-    gap: 30px; /* Расстояние между логами 40px */
-
+    gap: 40px; /* Расстояние между логами 40px */
     min-height: 0;
     height: 100%;
     overflow: hidden;
@@ -231,7 +229,7 @@ a {
     
     .column-left-spacer {
         flex-shrink: 0;
-
+        height: 20px;
     }
     
     .column-right {
@@ -244,7 +242,7 @@ a {
     }
     
     .logs-wrapper {
-
+        gap: 40px;
         height: 100%;
     }
     
@@ -524,19 +522,21 @@ a {
         <div class="chart-container">
             <canvas id="moireChart"></canvas>
         </div>
-                <!-- Индикатор теперь внутри колонки -->
-        <div id="akai-indicator">
-            <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
-            <div class="akai-center"></div>
-        </div>
-
+        
         <!-- График 2 (Сравнение всех пар в процентах) -->
         <div class="percent-chart-container">
             <canvas id="percentChart"></canvas>
         </div>
         
+        <!-- Индикатор теперь внутри колонки -->
+        <div id="akai-indicator">
+            <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
+            <div class="akai-center"></div>
+        </div>
         
-
+        <!-- Добавляем дополнительное пространство -->
+<div class="column-left-spacer"></div>
+    </div>
     
     <div class="column-right">
         <div class="logs-wrapper">
@@ -1206,47 +1206,6 @@ datasets.push({
       initPercentChart();
     }
 
-const percentChartLabelsPlugin = {
-  id: 'percentChartLabels',
-  afterDatasetsDraw(chart) {
-    const { ctx, scales: { x, y }, chartArea: { right } } = chart;
-    
-    chart.data.datasets.forEach((dataset, index) => {
-      // Проверяем, есть ли данные и не скрыт ли датасет
-      if (!dataset.data || dataset.data.length === 0 || chart.isDatasetVisible(index) === false) {
-        return;
-      }
-
-      // Находим индекс последней видимой точки в рамках текущего масштаба (x.max)
-      const lastVisibleIdx = Math.min(
-        Math.floor(x.max !== undefined ? x.max : dataset.data.length - 1),
-        dataset.data.length - 1
-      );
-
-      if (lastVisibleIdx < 0) return;
-
-      const val = dataset.data[lastVisibleIdx];
-      
-      // Получаем координаты последней точки
-      const xPos = x.getPixelForValue(lastVisibleIdx);
-      const yPos = y.getPixelForValue(val);
-
-      // Рисуем только если точка находится в пределах видимой области по вертикали
-      if (yPos >= y.top && yPos <= y.bottom && xPos >= x.left) {
-        ctx.save();
-        ctx.fillStyle = dataset.borderColor; // Аналогичный цвет, как у линии
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-
-        // Отрисовываем текст чуть правее последней видимой точки (смещение на 5 пикселей)
-        ctx.fillText(dataset.label, xPos + 5, yPos);
-        ctx.restore();
-      }
-    });
-  }
-};
-
     // Инициализация второго графика (сравнение в процентах)
     function initPercentChart() {
       if (percentChart) percentChart.destroy();
@@ -1266,15 +1225,13 @@ const percentChartLabelsPlugin = {
       percentChart = new Chart(ctx, {
         type: 'line',
         data: { labels: [], datasets: datasets },
-        // ДОБАВЛЯЕМ ПЛАГИН СЮДА:
-        plugins: [percentChartLabelsPlugin], 
         options: {
           responsive: true,
           maintainAspectRatio: false,
           animation: false,
           scales: {
             x: {
-              display: false,
+              display: false, // Отключаем временную шкалу снизу, так как ориентируемся по верхнему графику
               grid: { display: false }
             },
             y: {
@@ -1290,9 +1247,9 @@ const percentChartLabelsPlugin = {
             }
           },
           plugins: {
-            tooltip: { enabled: true },
+            tooltip: { enabled: true }, // Включаем тултип на наведение, чтобы видеть точные процентные отклонения
             legend: { 
-              display: false,
+              display: true,
               position: 'top',
               labels: {
                 color: '#d1d4dc',
@@ -1304,7 +1261,6 @@ const percentChartLabelsPlugin = {
         }
       });
     }
-
 
     // Синхронизация масштабирования/скролла между графиками
     function syncChartsScale() {
