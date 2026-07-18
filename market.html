@@ -1206,7 +1206,6 @@ datasets.push({
       initPercentChart();
     }
 
-// 1. ОБНОВЛЕННЫЙ ПЛАГИН ДЛЯ ОТРИСОВКИ ПОДПИСЕЙ БЕЗ НАПЛЫВОВ
 const percentChartLabelsPlugin = {
   id: 'percentChartLabels',
   afterDatasetsDraw(chart) {
@@ -1215,7 +1214,6 @@ const percentChartLabelsPlugin = {
 
     chart.data.datasets.forEach((dataset, index) => {
       if (!chart.isDatasetVisible(index)) return;
-      
       const val = dataset.data[dataset.data.length - 1];
       labelsToDraw.push({
         label: dataset.label,
@@ -1224,22 +1222,43 @@ const percentChartLabelsPlugin = {
       });
     });
 
-    // Сортируем строго по Y
+    // 1. Сортируем по высоте (Y)
     labelsToDraw.sort((a, b) => a.y - b.y);
 
     ctx.save();
     ctx.font = 'bold 11px sans-serif';
     ctx.textBaseline = 'middle';
 
-    // Рисуем всё с фиксированным X (правая граница + отступ)
+    // 2. Алгоритм предотвращения наплыва
+    const MIN_DISTANCE = 16; // Минимальное расстояние между строками (в пикселях)
+    let lastY = -MIN_DISTANCE;
+
     labelsToDraw.forEach(item => {
+      // Вычисляем позицию: не ближе чем MIN_DISTANCE к предыдущей
+      let drawY = Math.max(item.y, lastY + MIN_DISTANCE);
+      
+      // Ограничиваем, чтобы не улетело за пределы графика
+      drawY = Math.min(drawY, chart.chartArea.bottom);
+
       ctx.fillStyle = item.color;
-      // right + 10 — это фиксированная позиция шкалы
-      ctx.fillText(item.label, right + 4, item.y);
+      ctx.fillText(item.label, right + 4, drawY);
+      
+      // Рисуем линию-выноску, если текст сильно сдвинулся
+      if (Math.abs(drawY - item.y) > 2) {
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(right, item.y);
+        ctx.lineTo(right + 2, drawY);
+        ctx.stroke();
+      }
+
+      lastY = drawY;
     });
     ctx.restore();
   }
 };
+
 
 
 // Инициализация второго графика (сравнение в процентах)
