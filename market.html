@@ -1209,7 +1209,7 @@ datasets.push({
 const percentChartLabelsPlugin = {
   id: 'percentChartLabels',
   afterDatasetsDraw(chart) {
-    const { ctx, chartArea: { right }, scales: { y } } = chart;
+    const { ctx, chartArea: { right, top, bottom }, scales: { y } } = chart;
     const labelsToDraw = [];
 
     chart.data.datasets.forEach((dataset, index) => {
@@ -1222,42 +1222,37 @@ const percentChartLabelsPlugin = {
       });
     });
 
-    // 1. Сортируем по высоте (Y)
+    // 1. Сортируем по Y
     labelsToDraw.sort((a, b) => a.y - b.y);
 
     ctx.save();
     ctx.font = 'bold 11px sans-serif';
     ctx.textBaseline = 'middle';
 
-    // 2. Алгоритм предотвращения наплыва
-    const MIN_DISTANCE = 16; // Минимальное расстояние между строками (в пикселях)
-    let lastY = -MIN_DISTANCE;
+    // 2. Распределяем: используем всю высоту доступного пространства
+    const range = bottom - top;
+    const step = range / (labelsToDraw.length + 1);
 
-    labelsToDraw.forEach(item => {
-      // Вычисляем позицию: не ближе чем MIN_DISTANCE к предыдущей
-      let drawY = Math.max(item.y, lastY + MIN_DISTANCE);
+    labelsToDraw.forEach((item, index) => {
+      // Идеальная Y для равномерного распределения
+      const targetY = top + (index + 1) * step;
       
-      // Ограничиваем, чтобы не улетело за пределы графика
-      drawY = Math.min(drawY, chart.chartArea.bottom);
-
+      // Рисуем текст в равномерно распределенных позициях
       ctx.fillStyle = item.color;
-      ctx.fillText(item.label, right + 4, drawY);
+      ctx.fillText(item.label, right + 10, targetY);
       
-      // Рисуем линию-выноску, если текст сильно сдвинулся
-      if (Math.abs(drawY - item.y) > 2) {
-        ctx.strokeStyle = item.color;
-        ctx.lineWidth = 0.5;
-        ctx.beginPath();
-        ctx.moveTo(right, item.y);
-        ctx.lineTo(right + 2, drawY);
-        ctx.stroke();
-      }
-
-      lastY = drawY;
+      // Рисуем выноску от реальной точки цены к тексту
+      ctx.strokeStyle = item.color;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(right, item.y); // Точка на графике
+      ctx.lineTo(right + 8, targetY); // Точка у текста
+      ctx.stroke();
     });
     ctx.restore();
   }
 };
+
 
 
 
