@@ -18,7 +18,7 @@
       font-family: Copperplate, sans-serif; 
       height: 100%;
       margin: 0; 
-      padding: 0;
+      padding-LEFT: 4px;
       padding-top: 20px; 
       padding-right: 4px;
       display: flex; 
@@ -86,9 +86,9 @@ a {
     }
     canvas#moireChart:active, canvas#percentChart:active { cursor: grabbing; }
     
-    #log { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif;  font-size: 14px; margin-top: 4px; }
-    #log-parrots { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; margin-top: 40px; }
-    #log-cloud { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; margin-top: 40px; }
+    #log { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif;  font-size: 14px; }
+    #log-parrots { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; }
+    #log-cloud { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; }
 
 #log-parrots,
 #log-parrots div {
@@ -139,42 +139,42 @@ a {
 
 /* Правая колонка */
 .column-right {
-    flex: 1;
+    flex: 0.7; /* Вместо 1 — теперь колонка с логами будет в два раза уже основной рабочей области */
     display: flex;
     flex-direction: column;
     min-height: 0;
-    height: auto; 
-    overflow: hidden;
 }
 
-/* Обертка для логов */
+/* Обертка логов */
 .logs-wrapper {
     display: flex;
     flex-direction: column;
-    flex: 1;
-    gap: 40px; /* Расстояние между логами 40px */
-    min-height: 0;
-    height: 100%;
-    overflow: hidden;
+    /* Убираем flex: 1, чтобы обертка не растягивала дочерние элементы */
+    flex: 0 0 auto; 
+    gap: 40px; /* Уменьшил gap, чтобы логи были ближе */
+    height: auto;
+    overflow: visible;
 }
 
 /* Стили для каждого лога */
 #log,
 #log-parrots,
 #log-cloud {
-    flex: 1;
+    /* ЗАПРЕЩАЕМ ЛЮБОЙ flex-рост и сжатие */
+    flex: none; 
+    
+    /* ФИКСИРУЕМ ВЫСОТУ */
+    height: 390px; 
+    
     overflow-y: auto;
     background: #000000;
-    padding: 4px 0;
+    padding: 4px;
     font-family: sans-serif;
     font-size: 14px;
     margin: 0 !important;
-    min-height: 0;
-    max-height: 100%;
-    border: none;
     outline: none;
+    box-sizing: border-box; /* Важно для корректного расчета padding */
 }
-
 
 /* Убираем все лишние стили, которые дублируются */
 #log-parrots,
@@ -433,137 +433,104 @@ a {
 </style>
 </head>
 <body>
-<div style="display: flex; align-items: flex-start; justify-content: left; padding-left: 5px; gap: 15px; margin-bottom: 5px;">
+<div id="page-content">
+    <div style="display: flex; align-items: flex-start; justify-content: left; padding-left: 5px; gap: 15px; margin-bottom: 5px;">
+      <a href="market.html" style="text-decoration: none;">
+        <img src="market-v8.png" alt="Logo" style="height: 38px; width: auto;">
+      </a>
+      
+      <div style="display: flex; flex-direction: column;">
+        <h2 style="font-family: Copperplate, sans-serif; font-weight: 700; letter-spacing: -2px; margin: 0; line-height: 0.74; margin-left: -8px;">Capital&Eqlectika</h2>
+        <span style="font-family: sans-serif; font-size: 14px; color: #b2b5be; margin-top: 3px; margin-left: -6px;">
+          Trade phenomena
+        </span>
+      </div>
+    </div>
 
-  <a href="market.html" style="text-decoration: none;">
-    <img src="market-v8.png" alt="Logo" style="height: 38px; width: auto;">
-  </a>
-  
-  <div style="display: flex; flex-direction: column;">
-    <h2 style="font-family: Copperplate, sans-serif; font-weight: 700; letter-spacing: -2px; margin: 0; line-height: 0.74; margin-left: -8px;">Capital&Eqlectika</h2>
-    <span style="font-family: sans-serif; font-size: 14px; color: #b2b5be; margin-top: 3px; margin-left: -6px;">
-      Trade phenomena
-    </span>
-  </div>
-</div>
-<div id="global-market-container" style="width: calc(100% - 10px); max-width: 100%; padding-left: 5px; margin-bottom: 15px; font-size: 12px; font-family: sans-serif;">
-  <div style="display: flex; justify-content: flex-start; gap: 8px;">
-    <span>MARKET GLOBAL FORCE:</span>
-    <span id="global-market-value" style="color: #b2b5be;">Loading...</span>
-  </div>
-  <div style="width: 100%; height: 6px; background: #2c3145; overflow: hidden; position: relative;">
-    <div id="global-market-fill" style="height: 100%; width: 50%; background: #ffa726; transition: width 0.1s linear;"></div>
-    <div style="position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 2px; height: 100%; background: #ffffff; opacity: 0.8;"></div>
-  </div>
-</div>
+    <div id="global-market-container" style="width: calc(100% - 10px); max-width: 100%; padding-left: 5px; margin-bottom: 15px; font-size: 12px; font-family: sans-serif;">
+      <div style="display: flex; justify-content: flex-start; gap: 8px;">
+        <span>MARKET GLOBAL FORCE:</span>
+        <span id="global-market-value" style="color: #b2b5be;">Loading...</span>
+      </div>
+      <div style="width: 100%; height: 6px; background: #2c3145; overflow: hidden; position: relative;">
+        <div id="global-market-fill" style="height: 100%; width: 50%; background: #ffa726; transition: width 0.1s linear;"></div>
+        <div style="position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 2px; height: 100%; background: #ffffff; opacity: 0.8;"></div>
+      </div>
+    </div>
 
-<div id="global-fng-container">
-  <div class="fng-text-wrapper">
-    <span>PAIR GLOBAL TIME FORCE:</span>
-    <span id="global-fng-value">Loading...</span>
-  </div>
-  <div class="fng-bar-bg">
-    <div id="global-fng-fill"></div>
-    <div class="fng-center"></div>
-  </div>
-</div>
+    <div id="global-fng-container">
+      <div class="fng-text-wrapper">
+        <span>PAIR GLOBAL TIME FORCE:</span>
+        <span id="global-fng-value">Loading...</span>
+      </div>
+      <div class="fng-bar-bg">
+        <div id="global-fng-fill"></div>
+        <div class="fng-center"></div>
+      </div>
+    </div>
 
-  <div id="terminal">
-<select id="pair">
-  <!-- Core (stable, kept for reference) -->
-  <option value="btcusdt">BTCUSDT</option>
-  <option value="ethusdt">ETHUSDT</option>
-  
-  <!-- PROMISING: AI, DePIN, Infrastructure -->
-  <option value="oceanusdt">OCEANUSDT</option>
-  
-  <!-- NEW LAYER-1 & LAYER-2 -->
-  <option value="suiusdt">SUIUSDT</option>
-
-  <!-- DeFi -->
-  <option value="aaveusdt">AAVEUSDT</option>
-
-  <!-- Altcoins (established) -->
-  <option value="solusdt">SOLUSDT</option>
-  <option value="linkusdt">LINKUSDT</option>
-  <option value="ltcusdt">LTCUSDT</option>
-  <option value="bchusdt">BCHUSDT</option>
-  <option value="zecusdt">ZECUSDT</option>
-</select>
-<select id="tf">
-  <option value="1m">1 Minute</option>
-  <option value="5m">5 Minutes</option>
-  <option value="15m">15 Minutes</option>
-  <option value="1h">1 Hour</option>
-  <option value="4h">4 Hours</option>
-  <option value="1d">1 Day</option>
-  <option value="1w">1 Week</option>
-  <option value="1M">1 Month</option>
-</select>
-
-<div id="div-history" style="display:inline-block; font-family:monospace; font-weight:bold; margin-left:10px;">
-</div>    
-    <div id="status">Status: Disconnected</div>
-    
-
-<div id="funding-indicator" style="display: flex; flex-direction: column; align-items: flex-start;">
-  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-    <div id="funding-blocks"></div>
-    <span id="f-rate" style="font-weight: bold; min-width: 70px; font-size: 13px;">--</span>
-    <span id="f-mark" style="color: #ffff00; font-weight: bold; font-size: 13px;">--</span>
-  </div>
-</div>
-
-
-
-<div class="main-layout">
-    <div class="column-left">
-        <!-- График 1 (Основной) -->
-        <div class="chart-container">
-            <canvas id="moireChart"></canvas>
+    <div id="terminal">
+        <select id="pair">
+          <option value="btcusdt">BTCUSDT</option>
+          <option value="ethusdt">ETHUSDT</option>
+          <option value="oceanusdt">OCEANUSDT</option>
+          <option value="suiusdt">SUIUSDT</option>
+          <option value="aaveusdt">AAVEUSDT</option>
+          <option value="solusdt">SOLUSDT</option>
+          <option value="linkusdt">LINKUSDT</option>
+          <option value="ltcusdt">LTCUSDT</option>
+          <option value="bchusdt">BCHUSDT</option>
+          <option value="zecusdt">ZECUSDT</option>
+        </select>
+        <select id="tf">
+          <option value="1m">1 Minute</option>
+          <option value="5m">5 Minutes</option>
+          <option value="15m">15 Minutes</option>
+          <option value="1h">1 Hour</option>
+          <option value="4h">4 Hours</option>
+          <option value="1d">1 Day</option>
+          <option value="1w">1 Week</option>
+          <option value="1M">1 Month</option>
+        </select>
+        <div id="div-history" style="display:inline-block; font-family:monospace; font-weight:bold; margin-left:10px;"></div>
+        <div id="status">Status: Disconnected</div>
+        <div id="funding-indicator" style="display: flex; flex-direction: column; align-items: flex-start;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <div id="funding-blocks"></div>
+            <span id="f-rate" style="font-weight: bold; min-width: 70px; font-size: 13px;">--</span>
+            <span id="f-mark" style="color: #ffff00; font-weight: bold; font-size: 13px;">--</span>
+          </div>
         </div>
+    </div>
 
-              <!-- Индикатор теперь внутри колонки -->
-        <div id="akai-indicator">
-            <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
-            <div class="akai-center"></div>
-        </div>
-        <!-- График 2 (Сравнение всех пар в процентах) -->
-        <div class="percent-chart-container">
-            <canvas id="percentChart"></canvas>
+    <div class="main-layout">
+        <div class="column-left">
+            <div class="chart-container"><canvas id="moireChart"></canvas></div>
+            <div id="akai-indicator">
+                <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
+                <div class="akai-center"></div>
+            </div>
+            <div class="percent-chart-container"><canvas id="percentChart"></canvas></div>
         </div>
         
-        <!-- Добавляем дополнительное пространство -->
-<!-- <div class="column-left-spacer"></div>
-    </div> -->
-    
-    <div class="column-right">
-        <div class="logs-wrapper">
-            <div id="log"></div>
-            <div id="log-parrots"></div>
-            <div id="log-cloud"></div>
+        <div class="column-right">
+            <div class="logs-wrapper">
+                <div id="log"></div>
+                <div id="log-parrots"></div>
+                <div id="log-cloud"></div>
+            </div>
         </div>
     </div>
 </div>
 
-
 <div class="disclaimer-box">
-    <p>
-        <strong>Legal Disclaimer:</strong> The content, software tools, algorithms, and trading signals provided on the Capital&Eqlectika website are a unique original development for research and educational purposes only. This information <strong>does not</strong> constitute financial, investment, tax, or legal advice.
-    </p>
-    <p>
-        <strong>No Advisory Status:</strong> Capital&Eqlectika is not a registered financial advisor, broker, or investment institution. The use of any tools or strategies described on this resource is entirely at the user's own risk.
-    </p>
-    <p>
-        <strong>Trading Risks:</strong> Trading in cryptocurrencies and other financial assets involves a high level of risk and can result in the total loss of your capital. Historical data and mathematical models <strong>do not guarantee</strong> future results. Past performance is not indicative of future profits.
-    </p>
-    <p>
-        <strong>User Responsibility:</strong> By using this resource, you acknowledge that you understand the risks associated with cryptocurrency market volatility, assume full personal responsibility for all trading decisions made, and agree that the administration of Capital&Eqlectika shall not be held liable for any losses or damages arising from the use of this functional.
-    </p>
-    <p>
-        <strong>Contact:</strong> Feel free for any questions <a href="https://t.me/eugenebox" target="_blank" style="color: #66ccff;">@eugenebox</a> Telegram.
-    </p>
+    <p><strong>Legal Disclaimer:</strong> The content, software tools, algorithms, and trading signals provided on the Capital&Eqlectika website are a unique original development for research and educational purposes only. This information <strong>does not</strong> constitute financial, investment, tax, or legal advice.</p>
+    <p><strong>No Advisory Status:</strong> Capital&Eqlectika is not a registered financial advisor, broker, or investment institution. The use of any tools or strategies described on this resource is entirely at the user's own risk.</p>
+    <p><strong>Trading Risks:</strong> Trading in cryptocurrencies and other financial assets involves a high level of risk and can result in the total loss of your capital. Historical data and mathematical models <strong>do not guarantee</strong> future results. Past performance is not indicative of future profits.</p>
+    <p><strong>User Responsibility:</strong> By using this resource, you acknowledge that you understand the risks associated with cryptocurrency market volatility, assume full personal responsibility for all trading decisions made, and agree that the administration of Capital&Eqlectika shall not be held liable for any losses or damages arising from the use of this functional.</p>
+    <p><strong>Contact:</strong> Feel free for any questions <a href="https://t.me/eugenebox" target="_blank" style="color: #66ccff;">@eugenebox</a> Telegram.</p>
 </div>
+
 <a href="index.html" id="header-link">
     <img src="logo.png" alt="Logo" id="header-logo">
 </a>
