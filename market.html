@@ -1304,29 +1304,34 @@ y: {
     }
 
     // Расчет изменения в процентах от начала видимого диапазона
-function updatePercentChartData() {
-  if (!moireChart || !percentChart) return;
-  
-  // Устанавливаем метки времени напрямую из основного графика
-  percentChart.data.labels = moireChart.data.labels;
-  
-  ALL_PAIRS.forEach((pair, idx) => {
-    const pairCandles = allPairsCandles[pair];
-    if (!pairCandles || pairCandles.length === 0) return;
-    
-    // БЕРЕМ ЦЕНУ ПОСЛЕДНЕЙ СВЕЧИ (она всегда справа, в «сейчас»)
-    const lastIndex = pairCandles.length - 1;
-    const basePrice = pairCandles[lastIndex].close;
-    
-    // ПРИМЕНЯЕМ РАСЧЕТ КО ВСЕМ ТОЧКАМ МАССИВА
-    // Данные сохраняют свои индексы (позиции на шкале времени)
-    percentChart.data.datasets[idx].data = pairCandles.map(candle => {
-      return ((candle.close - basePrice) / basePrice) * 100;
-    });
-  });
-  
-  percentChart.update('none');
-}
+    function updatePercentChartData() {
+      if (!moireChart || !percentChart) return;
+      
+      const totalPoints = moireChart.data.labels.length;
+      if (totalPoints === 0) return;
+      
+      const xAxis = moireChart.scales.x;
+      const xMin = Math.max(0, Math.floor(xAxis.min !== undefined ? xAxis.min : 0));
+      
+      percentChart.data.labels = moireChart.data.labels;
+      
+      ALL_PAIRS.forEach((pair, idx) => {
+        const pairCandles = allPairsCandles[pair];
+        if (!pairCandles || pairCandles.length === 0) return;
+        
+        // Базовая цена — это цена первой видимой точки в левой границе экрана
+        const baseIndex = Math.min(xMin, pairCandles.length - 1);
+        const basePrice = pairCandles[baseIndex] ? pairCandles[baseIndex].close : null;
+        
+        if (basePrice) {
+          percentChart.data.datasets[idx].data = pairCandles.map(candle => {
+            return ((candle.close - basePrice) / basePrice) * 100;
+          });
+        }
+      });
+      
+      percentChart.update('none');
+    }
 
     function calculateBB(closes, period) {
       const uppers = []; const lowers = [];
