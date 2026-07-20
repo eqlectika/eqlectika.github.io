@@ -1191,19 +1191,18 @@ datasets.push({
     }
 }
 
-  async function updateAllFundingRates() {
-    for (const pair of ALL_PAIRS) {
+async function updateAllFundingRates() {
+    await Promise.all(ALL_PAIRS.map(async (pair) => {
         try {
             const res = await fetch(`https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${pair.toUpperCase()}`);
             const data = await res.json();
             allPairsFunding[pair.toLowerCase()] = parseFloat(data.lastFundingRate);
         } catch (e) {
-            console.error(`Ошибка обновления funding для ${pair}:`, e);
             allPairsFunding[pair.toLowerCase()] = 0;
         }
-    }
-    // Перерисовываем график после получения данных
-    if (percentChart) percentChart.update('none');
+    }));
+    // Принудительная перерисовка графика для корректного отображения текущих значений
+    if (percentChart) percentChart.update('none'); 
 }
   
 const percentChartLabelsPlugin = {
@@ -1215,7 +1214,6 @@ const percentChartLabelsPlugin = {
       if (!chart.isDatasetVisible(index)) return;
       
       const pairName = dataset.label.toLowerCase();
-      // Предполагаем, что allPairsFunding уже заполнен значениями (как обсуждали ранее)
       const fundingRate = allPairsFunding[pairName] || 0; 
       const absRate = Math.abs(fundingRate) * 100;
       const isPositive = fundingRate >= 0;
@@ -1228,15 +1226,13 @@ const percentChartLabelsPlugin = {
       ctx.font = '10px sans-serif';
       ctx.textBaseline = 'middle';
 
-      // 1. Название пары
+      // 1. Отрисовка текста пары и значения Funding[cite: 1]
       ctx.fillStyle = dataset.borderColor;
       ctx.fillText(dataset.label, right + 5, yPos);
-      
-      // 2. Текстовое значение (в процентах)
       ctx.fillStyle = fundingColor;
       ctx.fillText((fundingRate * 100).toFixed(4) + '%', right + 75, yPos);
       
-      // 3. Расчет заполнения блоков
+      // 2. Расчет и отрисовка блоков[cite: 1]
       let filled = 0, partial = 0;
       if (absRate < 0.0005) partial = 1;
       else if (absRate < 0.0050) partial = 2;
@@ -1249,12 +1245,10 @@ const percentChartLabelsPlugin = {
       else if (absRate < 4.5000) { filled = 4; partial = 1; }
       else { filled = 5; }
 
-      // Отрисовка блоков
       const blockBaseX = right + 125;
       for (let i = 0; i < 5; i++) {
         ctx.fillStyle = '#2c3145';
         ctx.fillRect(blockBaseX + (i * 6), yPos - 4, 5, 8);
-        
         if (i < filled) {
           ctx.fillStyle = fundingColor;
           ctx.fillRect(blockBaseX + (i * 6), yPos - 4, 5, 8);
@@ -1808,6 +1802,10 @@ pairSelect.onchange = function() {
 setTimeout(getFutures, 500);
 setTimeout(loadAllPairs, 2000);
 setInterval(getFutures, 60000);
+
+updateAllFundingRates();
+
+setInterval(updateAllFundingRates, 60000);
   </script>
 </body>
 </html>
