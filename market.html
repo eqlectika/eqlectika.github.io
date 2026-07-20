@@ -498,9 +498,7 @@ a {
           <option value="1w">1 Week</option>
           <option value="1M">1 Month</option>
         </select>
-<div id="div-history-long" style="display:inline-block; font-family:monospace; font-weight:bold; margin-left:10px; color:#00e676;"></div>
-<div id="div-history-short" style="display:inline-block; font-family:monospace; font-weight:bold; margin-left:10px; color:#ff5252;"></div>
-
+        <div id="div-history" style="display:inline-block; font-family:monospace; font-weight:bold; margin-left:10px;"></div>
         <div id="status">Status: Disconnected</div>
         <div id="funding-indicator" style="display: flex; flex-direction: column; align-items: flex-start;">
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
@@ -694,29 +692,22 @@ worker.onmessage = (event) => {
   }
 
   // Обновление истории дивергенций на основе динамических сигналов воркера
-  // Обновление истории дивергенций
   if (divSignal) {
-    const longDiv = document.getElementById("div-history-long");
-    const shortDiv = document.getElementById("div-history-short");
+    const historyDiv = document.getElementById("div-history");
+    const color = divSignal.endsWith("B") ? "#93ff00" : "#ff4800";
     
-    // Определяем тип сигнала
-    const isBuy = divSignal.endsWith("B"); // Предполагается, что BUY заканчивается на B
-    const targetDiv = isBuy ? longDiv : shortDiv;
+    // Ограничиваем накопление истории на фронтенде напрямую
+    let currentHistory = Array.from(historyDiv.querySelectorAll('span')).map(el => ({
+      signal: el.innerText,
+      color: el.style.color
+    }));
+    currentHistory.push({ signal: divSignal, color });
+    if (currentHistory.length > 2) currentHistory.shift();
 
-    // Создаем элемент сигнала
-    const signalSpan = document.createElement("span");
-    signalSpan.innerText = divSignal;
-    signalSpan.style.marginRight = "5px";
-
-    // Добавляем новый сигнал в соответствующий контейнер
-    targetDiv.insertBefore(signalSpan, targetDiv.firstChild);
-
-    // Ограничиваем количество сигналов в каждом контейнере до 1
-    if (targetDiv.childNodes.length > 1) {
-        targetDiv.removeChild(targetDiv.lastChild);
-    }
+    historyDiv.innerHTML = currentHistory
+      .map(d => `<span style="color:${d.color}">${d.signal}</span>`)
+      .join(" ");
   }
-
 
   const fill = document.getElementById("akai-fill");
   if (fill) {
