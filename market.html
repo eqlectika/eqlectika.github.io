@@ -558,6 +558,8 @@ a {
     const statusDiv = document.getElementById("status");
     const logDiv = document.getElementById("log");
 
+    const fundingRates = {};
+  
     let activeDivLines = []; // Хранит массив [{fromIndex, toIndex, type}] для текущего тика
     let ws = null;
     let candles = [];
@@ -570,7 +572,7 @@ a {
     const timeframesList = ["1m", "5m", "15m", "1h", "4h", "1d", "1w", "1M"];
     const globalTfCloses = {};
     const tfForces = {};
-
+const allPairsFunding = {};
 const globalPairAverages = {};  // Для хранения средних по каждой паре
 const ALL_PAIRS = [
     // Core
@@ -1178,50 +1180,91 @@ datasets.push({
       initPercentChart();
     }
 
+  async function getFutures(symbol) {
+    try {
+        const markRes = await fetch(`https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${symbol.toUpperCase()}`);
+        const markData = await markRes.json();
+        fundingRates[symbol.toLowerCase()] = parseFloat(markData.lastFundingRate);
+        // ... остальная логика
+    } catch(e) {
+        console.error("Error updating funding:", e);
+    }
+}
+
+  async function updateAllFundingRates() {
+    for (const pair of ALL_PAIRS) {
+        try {
+            const res = await fetch(`https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${pair.toUpperCase()}`);
+            const data = await res.json();
+            allPairsFunding[pair.toLowerCase()] = parseFloat(data.lastFundingRate);
+        } catch (e) {
+            console.error(`Ошибка обновления funding для ${pair}:`, e);
+            allPairsFunding[pair.toLowerCase()] = 0;
+        }
+    }
+    // Перерисовываем график после получения данных
+    if (percentChart) percentChart.update('none');
+}
+  
 const percentChartLabelsPlugin = {
   id: 'percentChartLabels',
   afterDatasetsDraw(chart) {
-    const { ctx, chartArea: { right, top, bottom }, scales: { y } } = chart;
-    const labelsToDraw = [];
-
+    const { ctx, chartArea: { right }, scales: { y } } = chart;
+    
     chart.data.datasets.forEach((dataset, index) => {
       if (!chart.isDatasetVisible(index)) return;
+      
+      const pairName = dataset.label.toLowerCase();
+      // Предполагаем, что allPairsFunding уже заполнен значениями (как обсуждали ранее)
+      const fundingRate = allPairsFunding[pairName] || 0; 
+      const absRate = Math.abs(fundingRate) * 100;
+      const isPositive = fundingRate >= 0;
+      const fundingColor = fundingRate > 0 ? '#00e676' : fundingRate < 0 ? '#ff5252' : '#ffffff';
+      
       const val = dataset.data[dataset.data.length - 1];
-      labelsToDraw.push({
-        label: dataset.label,
-        y: y.getPixelForValue(val),
-        color: dataset.borderColor
-      });
-    });
+      const yPos = y.getPixelForValue(val);
 
-    // 1. Сортируем по Y
-    labelsToDraw.sort((a, b) => a.y - b.y);
+      ctx.save();
+      ctx.font = '10px sans-serif';
+      ctx.textBaseline = 'middle';
 
-    ctx.save();
-    ctx.font = 'bold 11px sans-serif';
-    ctx.textBaseline = 'middle';
-
-    // 2. Распределяем: используем всю высоту доступного пространства
-    const range = bottom - top;
-    const step = range / (labelsToDraw.length + 1);
-
-    labelsToDraw.forEach((item, index) => {
-      // Идеальная Y для равномерного распределения
-      const targetY = top + (index + 1) * step;
+      // 1. Название пары
+      ctx.fillStyle = dataset.borderColor;
+      ctx.fillText(dataset.label, right + 5, yPos);
       
-      // Рисуем текст в равномерно распределенных позициях
-      ctx.fillStyle = item.color;
-      ctx.fillText(item.label, right + 10, targetY);
+      // 2. Текстовое значение (в процентах)
+      ctx.fillStyle = fundingColor;
+      ctx.fillText((fundingRate * 100).toFixed(4) + '%', right + 75, yPos);
       
-      // Рисуем выноску от реальной точки цены к тексту
-      ctx.strokeStyle = item.color;
-      ctx.lineWidth = 0.5;
-      ctx.beginPath();
-      ctx.moveTo(right, item.y); // Точка на графике
-      ctx.lineTo(right + 8, targetY); // Точка у текста
-      ctx.stroke();
+      // 3. Расчет заполнения блоков
+      let filled = 0, partial = 0;
+      if (absRate < 0.0005) partial = 1;
+      else if (absRate < 0.0050) partial = 2;
+      else if (absRate < 0.0500) partial = 3;
+      else if (absRate < 0.5000) partial = 4;
+      else if (absRate < 1.0000) partial = 5;
+      else if (absRate < 1.5000) { filled = 1; partial = 4; }
+      else if (absRate < 2.5000) { filled = 2; partial = 3; }
+      else if (absRate < 3.5000) { filled = 3; partial = 2; }
+      else if (absRate < 4.5000) { filled = 4; partial = 1; }
+      else { filled = 5; }
+
+      // Отрисовка блоков
+      const blockBaseX = right + 125;
+      for (let i = 0; i < 5; i++) {
+        ctx.fillStyle = '#2c3145';
+        ctx.fillRect(blockBaseX + (i * 6), yPos - 4, 5, 8);
+        
+        if (i < filled) {
+          ctx.fillStyle = fundingColor;
+          ctx.fillRect(blockBaseX + (i * 6), yPos - 4, 5, 8);
+        } else if (i === filled && partial > 0) {
+          ctx.fillStyle = isPositive ? 'rgba(0, 230, 118, 0.4)' : 'rgba(255, 82, 82, 0.4)';
+          ctx.fillRect(blockBaseX + (i * 6), yPos - 4, 5, 8);
+        }
+      }
+      ctx.restore();
     });
-    ctx.restore();
   }
 };
 
@@ -1252,7 +1295,7 @@ const percentChartLabelsPlugin = {
         options: {
             layout: {
     padding: {
-      right: 66 // Резервируем место под подписи (50px достаточно)
+      right: 145 // Резервируем место под подписи (50px достаточно)
     }
   },
           responsive: true,
