@@ -28,6 +28,27 @@
       min-height: 100vh;
     }
 
+    #log, #log-parrots, #log-cloud {
+    /* Скрыть для Webkit (Chrome, Safari, Edge) */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+#log::-webkit-scrollbar,
+#log-parrots::-webkit-scrollbar,
+#log-cloud::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+    /* Оставить возможность прокрутки, но сделать полосу невидимой */
+.scroll-container {
+    overflow-y: scroll;
+    scrollbar-width: none; /* Firefox */
+}
+
+.scroll-container::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
     #terminal { 
       width: 100%; 
       max-width: 100%; 
@@ -79,17 +100,6 @@ a {
     touch-action: none;
     }
     canvas#moireChart:active, canvas#percentChart:active { cursor: grabbing; }
-    
-    #log { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif;  font-size: 14px; }
-    #log-parrots { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; }
-    #log-cloud { overflow-y: auto; background: #000000; padding: 0px; font-family: sans-serif; font-size: 14px; }
-
-#log-parrots,
-#log-parrots div {
-  text-align: left !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-}
 
 /* Основной контейнер с двумя колонками */
 .main-layout {
@@ -139,27 +149,11 @@ a {
     min-height: 0;
 }
 
-/* Обертка логов */
-.logs-wrapper {
-    display: flex;
-    flex-direction: column;
-    /* Убираем flex: 1, чтобы обертка не растягивала дочерние элементы */
-    flex: 0 0 auto; 
-    gap: 40px; /* Уменьшил gap, чтобы логи были ближе */
-    height: auto;
-    overflow: visible;
-}
-
-/* Стили для каждого лога */
 #log,
 #log-parrots,
 #log-cloud {
-    /* ЗАПРЕЩАЕМ ЛЮБОЙ flex-рост и сжатие */
     flex: none; 
-    
-    /* ФИКСИРУЕМ ВЫСОТУ */
     height: 390px; 
-    
     overflow-y: auto;
     background: #000000;
     padding: 4px 0px 4px 0px;
@@ -170,19 +164,27 @@ a {
     box-sizing: border-box; /* Важно для корректного расчета padding */
 }
 
-/* Убираем все лишние стили, которые дублируются */
+/* Исправленные стили для выравнивания по правому краю */
+#log,
+#log div,
 #log-parrots,
-#log-parrots div {
-    text-align: left !important;
+#log-parrots div,
+#log-cloud,
+#log-cloud div {
+    text-align: right !important;
     width: 100% !important;
     box-sizing: border-box !important;
 }
 
-#log,
-#log div,
-#log-cloud,
-#log-cloud div {
-    text-align: left !important;
+/* Если нужно, чтобы контент внутри контейнеров вел себя корректно: */
+.logs-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto; 
+    gap: 40px;
+    height: auto;
+    overflow: visible;
+    align-items: flex-end; /* Это гарантирует, что содержимое будет прижато вправо */
 }
 
 /* Адаптив для мобильных устройств */
