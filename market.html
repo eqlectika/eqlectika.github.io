@@ -816,7 +816,7 @@ afterDraw(chart) {
 
   
 
-const pRectW = chart.scales.y.width - 10;
+const pRectW = chart.scales.y.width - 8;
     const pRectH = 18;
     
 const rectX = chart.chartArea.right + 8;
@@ -854,7 +854,7 @@ ctx.fillText(
 );
     
 // Получаем индекс свечи по пиксельной позиции X
-    const index = Math.round(x.getValueForPixel(xPos));
+const index = Math.round(x.getValueForPixel(xPos));
     const timestamp = candleTimes[index];
     
     let timeText = '';
@@ -862,20 +862,19 @@ ctx.fillText(
       const date = new Date(timestamp);
       const tf = tfSelect.value;
       
-      // Форматируем дату/время в зависимости от таймфрейма (как на оси X)
       if (tf === '1d' || tf === '1w' || tf === '1M') {
-        timeText = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+        timeText = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear().toString().slice(-2)}`;
       } else {
         timeText = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
       }
     }
 
     // Увеличиваем ширину плашки под текст, так как время/дата шире простых чисел
-    const tRectW = 52; 
+    const tRectW = 56; 
     ctx.fillStyle = '#2962ff';
-    ctx.fillRect(xPos - tRectW / 2, y.top - 33, tRectW, 18);
+    ctx.fillRect(xPos - tRectW / 2, y.top - 28, tRectW, 18);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(timeText, xPos, y.top - 23);
+    ctx.fillText(timeText, xPos, y.top - 18);
     
     ctx.restore();
   }
@@ -1086,9 +1085,9 @@ x: {
         const date = new Date(timestamp);
         const tf = tfSelect.value;
         
-        // Форматирование в зависимости от выбранного таймфрейма
+        // Добавляем год (.getFullYear()) для старших таймфреймов
         if (tf === '1d' || tf === '1w' || tf === '1M') {
-          return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+          return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear().toString().slice(-2)}`;
         } else {
           return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         }
