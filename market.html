@@ -564,6 +564,7 @@ a {
     let activeDivLines = []; // Хранит массив [{fromIndex, toIndex, type}] для текущего тика
     let ws = null;
     let candles = [];
+    let candleTimes = [];
     const period = 14;
     let moireChart = null;
     let percentChart = null; // Экземпляр второго (процентного) графика
@@ -813,6 +814,8 @@ afterDraw(chart) {
     ctx.moveTo(xPos, y.top); ctx.lineTo(xPos, y.bottom);
     ctx.stroke();
 
+  
+
 const pRectW = chart.scales.y.width - 10;
     const pRectH = 18;
     
@@ -850,12 +853,29 @@ ctx.fillText(
     rectY + pRectH / 2
 );
     
-    const timeVal = Math.round(x.getValueForPixel(xPos));
-    const tRectW = 36;
+// Получаем индекс свечи по пиксельной позиции X
+    const index = Math.round(x.getValueForPixel(xPos));
+    const timestamp = candleTimes[index];
+    
+    let timeText = '';
+    if (timestamp) {
+      const date = new Date(timestamp);
+      const tf = tfSelect.value;
+      
+      // Форматируем дату/время в зависимости от таймфрейма (как на оси X)
+      if (tf === '1d' || tf === '1w' || tf === '1M') {
+        timeText = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+      } else {
+        timeText = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+      }
+    }
+
+    // Увеличиваем ширину плашки под текст, так как время/дата шире простых чисел
+    const tRectW = 52; 
     ctx.fillStyle = '#2962ff';
     ctx.fillRect(xPos - tRectW / 2, y.top - 33, tRectW, 18);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(timeVal.toString(), xPos, y.top - 23);
+    ctx.fillText(timeText, xPos, y.top - 23);
     
     ctx.restore();
   }
@@ -1049,7 +1069,7 @@ datasets.push({
             }
           },
  scales: { 
-  x: { 
+x: { 
     position: 'top',
     display: true, 
     offset: false,
@@ -1057,9 +1077,24 @@ datasets.push({
     ticks: { 
       display: true,
       color: '#d1d4dc',
-      callback: function(val) { return Math.round(val / 20) * 20; }
+      maxTicksLimit: 8,
+      callback: function(val) {
+        const index = Math.round(val);
+        const timestamp = candleTimes[index];
+        if (!timestamp) return '';
+
+        const date = new Date(timestamp);
+        const tf = tfSelect.value;
+        
+        // Форматирование в зависимости от выбранного таймфрейма
+        if (tf === '1d' || tf === '1w' || tf === '1M') {
+          return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+        } else {
+          return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        }
+      }
     }
-  }, 
+  },
   y: { 
     display: true, 
     position: 'right',
@@ -1560,6 +1595,8 @@ if (rsiDataset && rsiData.length) {
         .then(res => res.json())
         .then(data => {
 
+          candleTimes = data.map(d => d[0]);
+
           candles = data.map(d => ({ 
             high: parseFloat(d[2]), 
             low: parseFloat(d[3]), 
@@ -1640,6 +1677,7 @@ worker.postMessage({
             if (msgSymbol === pair.toLowerCase() && msgTf === currentTf) {
               if (k.x) { 
                 candles.push({ high, low, close, volume }); 
+                candleTimes.push(k.t);
                 if (candles.length > 600) candles.shift();
               } else {
                 const last = candles[candles.length - 1];
