@@ -9,14 +9,13 @@
 <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
 <style>
 body { 
-    background-color: #121212; /* Чуть мягче для широких экранов */
+    background-color: #121212; 
     color: #fff; 
     font-family: sans-serif; 
     margin: 0; 
     padding: 0; 
 }
 
-/* Ограничиваем ширину для ПК и центрируем */
 .app-container {
     max-width: 768px;
     margin: 0 auto;
@@ -122,7 +121,7 @@ a {
 <div class="app-container">
 
 <div class="network-status" id="netStatus">
-    🌐 Статус P2P: Подключение к сети... (<span id="nodeId">...</span>)
+    🌐 P2P Status: Connecting to the network... (<span id="nodeId">...</span>)
 </div>
 
 <div id="versus">
@@ -145,7 +144,7 @@ a {
 </div>
 
 <div class="admin-panel">
-    <h3>Добавить объявление в общую сеть</h3>
+    <h3>Add an ad to the general network</h3>
     <input type="text" id="new-title" class="admin-input" placeholder="Title">
     <textarea id="new-desc" class="admin-input" placeholder="Description"></textarea>
     <input type="url" id="new-url" class="admin-input" placeholder="External URL (optional)">
@@ -163,11 +162,9 @@ a {
 const myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
 document.getElementById('nodeId').innerText = myId;
 
-// Хранилище элементов (в памяти + дублирование в localStorage)
 let items = JSON.parse(localStorage.getItem('gossip_versus_items')) || [];
 let currentPair = [];
 
-// Подключаемся к общему P2P-транспорту (MQTT Websocket брокер)
 const client = mqtt.connect('wss://test.mosquitto.org:8081/mqtt', {
     clientId: 'paramount_gossip_' + Math.random().toString(16).substr(2, 8)
 });
@@ -175,7 +172,7 @@ const TOPIC = 'paramount/p2p/network/v1';
 
 client.on('connect', () => {
     document.getElementById('netStatus').style.color = '#0f0';
-    document.getElementById('netStatus').innerHTML = `🌐 Статус P2P: Подключено к сети (${myId})`;
+    document.getElementById('netStatus').innerHTML = `🌐 Status P2P: Connected to the network (${myId})`;
     log("Подключено к транспортному слою. Ожидание пиров...");
     client.subscribe(TOPIC);
 });
@@ -183,38 +180,35 @@ client.on('connect', () => {
 client.on('error', (err) => {
     document.getElementById('netStatus').style.color = '#f00';
     document.getElementById('netStatus').innerHTML = `🌐 Статус P2P: Ошибка сети`;
-    log("Ошибка MQTT: " + JSON.stringify(err));
+    log("Error MQTT: " + JSON.stringify(err));
 });
 
-// Получение Gossip-пакетов из сети
 client.on('message', (topic, payload) => {
     try {
         let packet = JSON.parse(payload.toString());
         
         if (packet.type === 'ADD_ITEM') {
-            // Проверяем, есть ли уже такой элемент по ID
             if (!items.some(i => i.id === packet.item.id)) {
                 items.push(packet.item);
                 saveLocal();
-                log(`[Gossip] Получен новый элемент от ${packet.sender}: "${packet.item.title}"`);
+                log(`[Gossip] Received new item from ${packet.sender}: "${packet.item.title}"`);
                 updateRankingList();
                 if (items.length >= 2 && currentPair.length === 0) nextPair();
             }
         } 
         else if (packet.type === 'VOTE') {
-            // Применяем синхронизированное изменение рейтинга (Elo)
             let winItem = items.find(i => i.id === packet.winId);
             let loseItem = items.find(i => i.id === packet.loseId);
             if (winItem && loseItem) {
                 winItem.rating = packet.newWinRating;
                 loseItem.rating = packet.newLoseRating;
                 saveLocal();
-                log(`[Gossip] Синхронизирован голос от ${packet.sender}`);
+                log(`[Gossip] Voice synchronized from ${packet.sender}`);
                 updateRankingList();
             }
         }
     } catch(e) {
-        log("Ошибка обработки пакета: " + e.message);
+        log("Error processing packet: " + e.message);
     }
 });
 
@@ -236,7 +230,7 @@ async function compressImage(file) {
             img.src = e.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const maxWidth = 400; // сжимаем для легкой передачи по сети
+                const maxWidth = 400; 
                 let width = img.width, height = img.height;
                 if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
                 canvas.width = width; canvas.height = height;
@@ -253,7 +247,7 @@ async function addItem() {
     const desc = $('#new-desc').val().trim();
     const url = $('#new-url').val().trim();
     const file = $('#new-img-file')[0].files[0];
-    if (!title || !file) return alert('Введите название и выберите картинку!');
+    if (!title || !file) return alert('Enter a title and select an image!');
 
     const imgData = await compressImage(file);
     const newItem = { 
@@ -268,14 +262,13 @@ async function addItem() {
     items.push(newItem);
     saveLocal();
 
-    // Рассылаем Gossip-пакет создания элемента всем пирам
     client.publish(TOPIC, JSON.stringify({
         type: 'ADD_ITEM',
         sender: myId,
         item: newItem
     }));
 
-    log(`Вы создали и разослали: "${title}"`);
+    log(`You created and sent: "${title}"`);
     $('#new-title, #new-desc, #new-url, #new-img-file').val('');
     $('#file-label-text').text("Choose image file");
     
@@ -331,7 +324,6 @@ function vote(side) {
     loseItem.rating -= change;
     saveLocal();
 
-    // Рассылаем информацию о голосе в сеть, чтобы другие узлы тоже обновили рейтинг
     client.publish(TOPIC, JSON.stringify({
         type: 'VOTE',
         sender: myId,
@@ -348,7 +340,6 @@ function vote(side) {
     });
 }
 
-// Инициализация при старте
 updateRankingList();
 if (items.length >= 2) nextPair();
 
