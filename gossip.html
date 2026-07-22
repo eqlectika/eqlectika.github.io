@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gossip P2P Visualizer</title>
+<style>
+body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
+.box { border: 1px solid #0f0; padding: 15px; margin-bottom: 15px; }
+button, input { background: #000; color: #0f0; border: 1px solid #0f0; padding: 10px; margin: 5px 0; }
+button { cursor: pointer; }
+#log { height: 200px; overflow-y: scroll; border: 1px dashed #0f0; padding: 10px; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="box">
+    <h3>1. Сигнализация (Peer Connection Setup)</h3>
+    <p>Создайте оффер на первом устройстве, скопируйте SDP, вставьте на втором и ответьте.</p>
+    <button onclick="createOffer()">Создать Offer</button>
+    <button onclick="createAnswer()">Создать Answer</button>
+    <br>
+    <textarea id="sdp" style="width:100%; height:80px; background:#111; color:#0f0;" placeholder="SDP обмен..."></textarea>
+    <button onclick="setRemote()">Принять SDP</button>
+</div>
+
+<div class="box">
+    <h3>2. Gossip Объявления (Message Propagation)</h3>
+    <input type="text" id="msgInput" placeholder="Текст объявления..." style="width:80%;">
+    <button onclick="sendGossip()">Разослать (Gossip)</button>
+    <div id="messages"></div>
+</div>
+
+<div class="box">
+    <h3>3. Сетевой Лог (Events)</h3>
+    <div id="log"></div>
+</div>
+
+<script>
+let pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+let dc;
+
+// Создаем канал для инициатора
+dc = pc.createDataChannel("gossip");
+setupChannel();
+
+// Ловим канал от удаленного пира
+pc.ondatachannel = (e) => {
+    dc = e.channel;
+    setupChannel();
+    log("Входящее P2P соединение установлено!");
+};
+
+function setupChannel() {
+    dc.onopen = () => log("DataChannel OPEN");
+    dc.onclose = () => log("DataChannel CLOSED");
+    dc.onmessage = (e) => {
+        let data = JSON.parse(e.data);
+        log(`Получен Gossip пакет: ${data.text} (ID: ${data.id})`);
+        displayMessage(data);
+    };
+}
+
+pc.onicecandidate = (e) => {
+    if (e.candidate === null) {
+        document.getElementById('sdp').value = JSON.stringify(pc.localDescription);
+        log("SDP полностью сформирован. Скопируйте его.");
+    }
+};
+
+async function createOffer() {
+    let offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+}
+
+async function createAnswer() {
+    let sdpText = document.getElementById('sdp').value;
+    if (!sdpText) return alert("Сначала вставьте Offer!");
+    await pc.setRemoteDescription(JSON.parse(sdpText));
+    let answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+}
+
+async function setRemote() {
+    let sdpText = document.getElementById('sdp').value;
+    if (!sdpText) return;
+    let desc = JSON.parse(sdpText);
+    await pc.setRemoteDescription(desc);
+    if (desc.type === 'offer') {
+        log("Оффер принят. Нажмите 'Создать Answer'.");
+    } else {
+        log("Ответ принят. Соединение устанавливается...");
+    }
+}
+
+function sendGossip() {
+    let text = document.getElementById('msgInput').value;
+    if (!text || !dc || dc.readyState !== 'open') return alert("Канал не открыт или текст пуст!");
+    
+    let packet = {
+        id: Math.random().toString(36.substring(2, 9)),
+        text: text,
+        timestamp: Date.now()
+    };
+    
+    dc.send(JSON.stringify(packet));
+    log(`Отправлен Gossip пакет: ${text}`);
+    displayMessage(packet);
+    document.getElementById('msgInput').value = '';
+}
+
+function displayMessage(msg) {
+    let div = document.createElement('div');
+    div.innerHTML = `<b>[Объявление]:</b> ${msg.text} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
+    document.getElementById('messages').prepend(div);
+}
+
+function log(txt) {
+    let l = document.getElementById('log');
+    l.innerHTML += `<div>> ${txt}</div>`;
+    l.scrollTop = l.scrollHeight;
+}
+</script>
+
+</body>
+</html>
