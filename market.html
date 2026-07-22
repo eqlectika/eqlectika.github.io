@@ -799,11 +799,10 @@ const priceCrosshairPlugin = {
     window.addEventListener('touchend', clearCrosshair);
   },
   
-
-afterDraw(chart) {
+  afterDraw(chart) {
     if (!chart.crosshair || !chart.crosshair.active) return;
     
-    const { ctx, scales: { x, y } } = chart;
+    const { ctx, scales: { x, y: yPrice, yRSI } } = chart;
     const { x: xPos, y: yPos } = chart.crosshair;
 
     ctx.save();
@@ -811,50 +810,63 @@ afterDraw(chart) {
     ctx.strokeStyle = 'rgba(41, 98, 255, 0.8)';
     ctx.lineWidth = 1;
     ctx.moveTo(x.left, yPos); ctx.lineTo(x.right, yPos);
-    ctx.moveTo(xPos, y.top); ctx.lineTo(xPos, y.bottom);
+    ctx.moveTo(xPos, yPrice.top); ctx.lineTo(xPos, yPrice.bottom);
     ctx.stroke();
 
-  
+    if (yRSI) {
+      const pRectW = yRSI.width - 2;
+      const pRectH = 18;
+      const rectX = yRSI.left;
+      const rectY = yPos - (pRectH / 2);
+      
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(rectX, rectY, pRectW, pRectH);
+      
+      const rsiValue = yRSI.getValueForPixel(yPos);
+      const rsiText = Math.round(rsiValue).toString();
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'right';      
+      ctx.textBaseline = 'middle';   
+      ctx.fillText(rsiText, rectX + pRectW / 2, rectY + pRectH / 2);
+    }
 
-const pRectW = chart.scales.y.width - 8;
-    const pRectH = 18;
-    
-const rectX = chart.chartArea.right + 8;
-    const rectY = yPos - (pRectH / 2);
+    const priceRectW = yPrice.width - 8;
+    const priceRectH = 18;
+    const priceRectX = chart.chartArea.right + 8;
+    const priceRectY = yPos - (priceRectH / 2);
     
     ctx.fillStyle = '#2962ff';
-    ctx.fillRect(rectX, rectY, pRectW, pRectH);
+    ctx.fillRect(priceRectX, priceRectY, priceRectW, priceRectH);
     
-    const price = y.getValueForPixel(yPos);
-function getDecimals(value) {
-  const absValue = Math.abs(value);
-  if (absValue === 0) return 0;
-  else if (absValue < 0.001) return 6;
-  else if (absValue < 0.01) return 5;
-  else if (absValue < 0.1) return 4;
-  else if (absValue < 1) return 3;
-  else if (absValue < 10) return 2;
-  else if (absValue < 100) return 1;
-  else return 0;
-}
+    const price = yPrice.getValueForPixel(yPos);
+    function getDecimals(value) {
+      const absValue = Math.abs(value);
+      if (absValue === 0) return 0;
+      else if (absValue < 0.001) return 6;
+      else if (absValue < 0.01) return 5;
+      else if (absValue < 0.1) return 4;
+      else if (absValue < 1) return 3;
+      else if (absValue < 10) return 2;
+      else if (absValue < 100) return 1;
+      else return 0;
+    }
 
-const decimals = getDecimals(price);
-const priceText = price.toFixed(decimals);    
+    const decimals = getDecimals(price);
+    const priceText = price.toFixed(decimals);   
     ctx.fillStyle = '#ffffff';
     ctx.font = '12px sans-serif';
-    
     ctx.textAlign = 'center';      
     ctx.textBaseline = 'middle';   
-    
 
-ctx.fillText(
-    priceText,
-    rectX + pRectW / 2,
-    rectY + pRectH / 2
-);
+    ctx.fillText(
+      priceText,
+      priceRectX + priceRectW / 2,
+      priceRectY + priceRectH / 2
+    );
     
-// Получаем индекс свечи по пиксельной позиции X
-const index = Math.round(x.getValueForPixel(xPos));
+    const index = Math.round(x.getValueForPixel(xPos));
     const timestamp = candleTimes[index];
     
     let timeText = '';
@@ -869,12 +881,11 @@ const index = Math.round(x.getValueForPixel(xPos));
       }
     }
 
-    // Увеличиваем ширину плашки под текст, так как время/дата шире простых чисел
     const tRectW = 56; 
     ctx.fillStyle = '#2962ff';
-    ctx.fillRect(xPos - tRectW / 2, y.top - 28, tRectW, 18);
+    ctx.fillRect(xPos - tRectW / 2, yPrice.top - 28, tRectW, 18);
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(timeText, xPos, y.top - 18);
+    ctx.fillText(timeText, xPos, yPrice.top - 18);
     
     ctx.restore();
   }
