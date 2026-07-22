@@ -7,7 +7,25 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
 <style>
-body { background-color: #000; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; box-sizing: border-box; }
+body { 
+    background-color: #121212; /* Чуть мягче для широких экранов */
+    color: #fff; 
+    font-family: sans-serif; 
+    margin: 0; 
+    padding: 0; 
+}
+
+/* Ограничиваем ширину для ПК и центрируем */
+.app-container {
+    max-width: 768px;
+    margin: 0 auto;
+    background-color: #000;
+    min-height: 100vh;
+    padding: 15px;
+    box-sizing: border-box;
+    box-shadow: 0 0 20px rgba(0,0,0,0.8);
+}
+
 .network-status { background: #111; border: 1px solid #333; padding: 10px; margin-bottom: 20px; font-size: 13px; font-family: monospace; color: #0f0; }
 #versus { width: 100%; margin: 2em 0; }
 .versus-wrapper { display: flex; gap: 10px; justify-content: center; }
@@ -56,6 +74,7 @@ textarea.admin-input { height: 100px; resize: vertical; }
     cursor: pointer;
     margin-bottom: 20px;
     border: 2px solid #fff;
+    width: 100%;
 }
 .admin-btn { 
     width: 100%; 
@@ -69,10 +88,35 @@ textarea.admin-input { height: 100px; resize: vertical; }
     font-size: 16px;
 }
 #log { background: #050505; border: 1px dashed #333; padding: 10px; font-size: 11px; height: 100px; overflow-y: scroll; color: #888; margin-top: 20px; }
+
+#header-link {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+}
+#header-logo {
+    max-height: 40px;
+    display: block;
+}.footer-credit {
+    text-align: right;
+    font-size: 14px;
+    color: #666;
+    margin: 20px 0 10px 0;
+}
+.footer-credit a {
+    color: #448aff;
+    text-decoration: none;
+}
+.footer-credit a:hover {
+    text-decoration: underline;
+}
 </style>
 </head>
 <body>
-
+<div class="app-container">
+<div class="footer-credit">
+    Made by <a href="https://t.me/eugenebox" target="_blank" id="author-link">@eugenebox</a>
+</div>
 <div class="network-status" id="netStatus">
     🌐 Статус P2P: Подключение к сети... (<span id="nodeId">...</span>)
 </div>
@@ -107,7 +151,7 @@ textarea.admin-input { height: 100px; resize: vertical; }
 </div>
 
 <div id="log"></div>
-
+</div>
 <script>
 const myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
 document.getElementById('nodeId').innerText = myId;
