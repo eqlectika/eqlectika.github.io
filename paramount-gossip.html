@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="manifest" href="manifest-paramount.json">
-<title>Paramount | Gossip Consensus</title>
+<title>Paramount | Gossip P2P Edition</title>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
 <style>
@@ -26,7 +26,7 @@ body {
     box-shadow: 0 0 20px rgba(0,0,0,0.8);
 }
 
-.network-status { background: #111; border: 1px solid #333; padding: 10px; margin-bottom: 20px; font-size: 13px; font-family: monospace; color: #0f0; }
+.network-status { background: #111; font-size: 14px; font-family: monospace; color: #0f0; margin-bottom: 10px; }
 #versus { width: 100%; margin: 2em 0; }
 .versus-wrapper { display: flex; gap: 10px; justify-content: center; }
 .versus_column { flex: 1; min-width: 0; cursor: pointer; }
@@ -87,7 +87,7 @@ textarea.admin-input { height: 100px; resize: vertical; }
     text-transform: uppercase; 
     font-size: 16px;
 }
-#log { background: #050505; border: 1px dashed #333; padding: 10px; font-size: 14px; height: 100px; overflow-y: scroll; color: #888; margin-top: 20px; }
+#log { background: #050505; font-size: 14px; height: 100px; color: #888; }
 
 #header-link {
     display: flex;
@@ -116,18 +116,27 @@ a {
 <body>
 <div class="app-container">
 
-<a href="index.html" id="logoLink" style="display: flex; justify-content: center; text-decoration: none; width: 100%; margin: 20px 0;">
-    <img src="logo.png" alt="Logo" style="max-width: 48px; opacity: 0.9; display: block;">
-</a>
-<div class="app-container">
+<div style="display: flex; align-items: flex-start; justify-content: left; gap: 15px; margin-bottom: 5px;">
+
+  <a href="index.html" style="text-decoration: none;">
+    <img src="paramount-v2.png" alt="Logo" style="height: 48px; width: auto; margin-top: 20px;">
+  </a>
+  
+  <div style="display: flex; flex-direction: column;">
+    <h2 style="margin: 0; line-height: 0.74; margin-top: 20px;">Paramount</h2>
+    <span style="font-size: 14px; color: #b2b5be; margin-top: 5px;">
+      Gossip consensus
+    </span>
+  </div>
+</div>
 
 <div class="network-status" id="netStatus">
-    You are connecting to the network... (<span id="nodeId">...</span>)
+    You are Connecting to the network... (<span id="nodeId">...</span>)
 </div>
 <div style="color: #0f0;" id="log"></div>
 
 <div id="versus">
-    <div class="ranking-title">Pick Important (Gossip Consensus)</div>
+    <div class="ranking-title">Pick Important</div>
     <div class="versus-wrapper">
         <div class="versus_column" id="item-left" onclick="vote('left')">
             <div class="versus_thumbwrapper"><img src="" alt=""></div>
@@ -182,7 +191,7 @@ client.on('connect', () => {
 
 client.on('error', (err) => {
     document.getElementById('netStatus').style.color = '#f00';
-    document.getElementById('netStatus').innerHTML = `🌐 Статус P2P: Ошибка сети`;
+    document.getElementById('netStatus').innerHTML = `Error network`;
     log("Error MQTT: " + JSON.stringify(err));
 });
 
