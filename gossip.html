@@ -90,7 +90,7 @@ function log(txt) {
     l.scrollTop = l.scrollHeight;
 }
 
-log("Инициализация сетевого слоя...");
+log("Initializing the network layer...");
 
 let client;
 try {
@@ -98,7 +98,7 @@ try {
         clientId: 'gossip_node_' + Math.random().toString(16).substr(2, 8)
     });
 } catch(e) {
-    log("Ошибка инициализации MQTT: " + e.message);
+    log("Broker initialization error: " + e.message);
 }
 
 const TOPIC = 'p2p/public/messenger/announcements/v2';
@@ -117,8 +117,8 @@ if (client) {
     });
 
     client.on('error', (err) => {
-        document.getElementById('connectionStatus').innerHTML = '<span class="status-err">● Ошибка подключения к сети</span>';
-        log("Ошибка сети: " + JSON.stringify(err));
+        document.getElementById('connectionStatus').innerHTML = '<span class="status-err">● Network connection error</span>';
+        log("Network error: " + JSON.stringify(err));
     });
 
     client.on('message', (topic, payload) => {
@@ -126,7 +126,7 @@ if (client) {
             let packet = JSON.parse(payload.toString());
             if (packet.sender === myId) return;
 
-            log(`Получен пакет от [${packet.sender}]: "${packet.text}"`);
+            log(`Received package from [${packet.sender}]: "${packet.text}"`);
 
             if (!messages[packet.id]) {
                 messages[packet.id] = packet;
