@@ -353,7 +353,7 @@ client.on('message', (topic, payload) => {
                 if (items.length >= 2 && currentPair.length === 0) nextPair();
             }
         } 
-        else if (packet.type === 'VOTE') {
+else if (packet.type === 'VOTE') {
             let winItem = items.find(i => i.id === packet.winId);
             let loseItem = items.find(i => i.id === packet.loseId);
             if (winItem && loseItem) {
@@ -362,6 +362,7 @@ client.on('message', (topic, payload) => {
                 saveLocal();
                 log(`[Gossip] Voice synchronized from ${packet.sender}`);
                 updateRankingList();
+                nextPair();
             }
         }
     } catch(e) {
