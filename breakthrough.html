@@ -612,15 +612,21 @@ function vote(side) {
     }
     
     playerState.votesLeft--;
-    playerState.impacts += 2;
-    playerState.level = Math.floor(playerState.impacts / 20) + 1;
-    updatePlayerStatsUI();
 
     const winIdx = currentPair[side === 'left' ? 0 : 1];
     const loseIdx = currentPair[side === 'left' ? 1 : 0];
     
     const winItem = items[winIdx];
     const loseItem = items[loseIdx];
+
+    if (loseItem.sender === myId) {
+        playerState.impacts += 1;
+        loseItem.myVotesAgainstCount = (loseItem.myVotesAgainstCount || 0) + 1;
+        log(`[Impacts] +1 impact earned for voting against your meme "${loseItem.title}".`);
+    }
+
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
 
     const rW = winItem.rating, rL = loseItem.rating;
     const expW = 1 / (1 + Math.pow(10, (rL - rW) / 400));
