@@ -338,10 +338,10 @@ document.getElementById('nodeId').innerText = myId;
 let playerState = JSON.parse(localStorage.getItem('paramount_player_state'));
 if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playerState.postsLeft === 'undefined') {
     playerState = { 
-        impacts: 3, 
+        impacts: 8,     
         level: 1, 
-        votesLeft: 8, 
-        postsLeft: 5 
+        votesLeft: 5,   
+        postsLeft: 3    
     };
     localStorage.setItem('paramount_player_state', JSON.stringify(playerState));
 }
@@ -516,19 +516,19 @@ async function addItem() {
     if (!title || !file) return alert('Enter title and select visual vector!');
 
     playerState.postsLeft--;
-    playerState.impacts += 5;
     playerState.level = Math.floor(playerState.impacts / 20) + 1;
     updatePlayerStatsUI();
 
     const imgData = await compressImage(file);
     const newItem = { 
         id: 'vector-' + Date.now() + '-' + Math.floor(Math.random()*1000), 
-        sender: myId,
+        sender: myId, 
         title, 
         description: desc, 
         externalUrl: url, 
         img: imgData, 
-        rating: 1500 
+        rating: 1500,
+        earnedImpacts: 0 
     };
 
     items.push(newItem);
@@ -557,6 +557,16 @@ function deleteItemLocal(id) {
     
     let index = items.findIndex(i => i.id === id);
     if (index !== -1) {
+        let item = items[index];
+        
+        if (item.sender === myId && item.earnedImpacts > 0) {
+            let toDeduct = item.earnedImpacts;
+            playerState.impacts = Math.max(0, playerState.impacts - toDeduct);
+            playerState.level = Math.floor(playerState.impacts / 20) + 1;
+            log(`[Impacts] Removed vector "${item.title}". Deducted ${toDeduct} linked impact(s).`);
+            updatePlayerStatsUI();
+        }
+
         items.splice(index, 1);
         saveLocal();
 
@@ -570,7 +580,6 @@ function deleteItemLocal(id) {
         }
     }
 }
-
 function updateRankingList() {
     const sorted = [...items].sort((a, b) => b.rating - a.rating);
     let html = '';
@@ -619,9 +628,15 @@ function vote(side) {
     const winItem = items[winIdx];
     const loseItem = items[loseIdx];
 
+    if (winItem.sender === myId) {
+        playerState.impacts += 1;
+        winItem.earnedImpacts = (winItem.earnedImpacts || 0) + 1;
+        log(`[Impacts] +1 impact earned: your meme "${winItem.title}" won a battle!`);
+    }
+
     if (loseItem.sender === myId) {
         playerState.impacts += 1;
-        loseItem.myVotesAgainstCount = (loseItem.myVotesAgainstCount || 0) + 1;
+        loseItem.earnedImpacts = (loseItem.earnedImpacts || 0) + 1;
         log(`[Impacts] +1 impact earned for voting against your meme "${loseItem.title}".`);
     }
 
