@@ -402,7 +402,7 @@ client.on('message', (topic, payload) => {
                 playerState.impacts += packet.amount;
                 updatePlayerStatsUI();
                 log(`[Received] Got ${packet.amount} impacts from ${packet.sender}!`);
-                alert(`Внимание! Получено ${packet.amount} импактов от ${packet.sender}`);
+                alert(`Attention! Received ${packet.amount} impacts from ${packet.sender}`);
             }
         }
     } catch(e) {
@@ -439,25 +439,25 @@ async function compressImage(file) {
 function convertImpacts(type) {
     const cost = 3;
     if (playerState.impacts < cost) {
-        return alert('Недостаточно импактов! Требуется минимум 3 импакта для конвертации.');
+        return alert('Not enough impacts! A minimum of 3 impacts is required for conversion.');
     }
 
     playerState.impacts -= cost;
     if (type === 'votes') {
         playerState.votesLeft += 3;
         log(`Converted ${cost} impacts into +3 votes.`);
-        alert('Успешно! Добавлено 3 голоса.');
+        alert('Success! 3 votes added.');
     } else if (type === 'posts') {
         playerState.postsLeft += 1;
         log(`Converted ${cost} impacts into +1 post slot.`);
-        alert('Успешно! Добавлен 1 слот публикации.');
+        alert('Success! 1 publication slot added.');
     }
     updatePlayerStatsUI();
 }
 
 async function addItem() {
     if (playerState.postsLeft <= 0) {
-        alert('Лимит публикаций исчерпан! Обменяйте импакты на слоты публикаций выше.');
+        alert('Publication limit reached! Exchange impacts for higher publication slots.');
         return;
     }
 
@@ -533,7 +533,7 @@ function nextPair() {
 function vote(side) {
     if (items.length < 2) return;
     if (playerState.votesLeft <= 0) {
-        alert('Лимит голосов исчерпан! Обменяйте импакты на голоса с помощью панели конвертации выше.');
+        alert('Votes limit reached! Exchange impacts for votes using the conversion panel above.');
         return;
     }
     
@@ -577,10 +577,10 @@ function transferImpact() {
     const amount = parseInt($('#transfer-amount').val());
 
     if (!target || !amount || amount <= 0) {
-        return alert('Введите корректный ID участника и количество импактов!');
+        return alert('Please enter the correct participant ID and number of impacts!');
     }
     if (playerState.impacts < amount) {
-        return alert('Импакты закончились! У вас недостаточно импактов для перевода.');
+        return alert('Impacts are out! You do not have enough impacts to translate.');
     }
 
     playerState.impacts -= amount;
@@ -595,7 +595,7 @@ function transferImpact() {
     }));
 
     log(`Transferred ${amount} impacts to ${target}`);
-    alert(`Успешно отправлено ${amount} импактов пользователю ${target}`);
+    alert(`Successfully sent ${amount} impacts to user ${target}`);
     $('#target-peer, #transfer-amount').val('');
 }
 
