@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/paramount-v3.png">
+<meta property="og:image" content="/Verge.jpeg">
+<meta property="og:image:width" content="1748">
+<meta property="og:image:height" content="1748">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest-paramount.json">
+<title>Paramount | Resonance Engine</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+<style>
+body { 
+    background-color: #121212; 
+    color: #fff; 
+    font-family: sans-serif; 
+    margin: 0; 
+    padding: 0; 
+}
+
+.app-container {
+    max-width: 768px;
+    margin: 0 auto;
+    background-color: #000;
+    min-height: 100vh;
+    padding: 4px;
+    box-sizing: border-box;
+    box-shadow: 0 0 20px rgba(0,0,0,0.8);
+}
+
+#logContainer.collapsed { display: none; }
+#disclaimerText.collapsed { display: none; }
+#helpText.collapsed { display: none; }
+#loreText.collapsed { display: none; }
+    
+#statusToggle, #disclaimerToggle, #helpToggle, #loreToggle {
+    cursor: pointer;
+}
+
+.network-status::before,
+#disclaimerToggle::before,
+#helpToggle::before,
+#loreToggle::before {
+    content: "▶ ";
+}
+
+.network-status.open::before,
+#disclaimerToggle.open::before,
+#helpToggle.open::before,
+#loreToggle.open::before {
+    content: "▼ ";
+}
+.network-status { 
+    background: #111; 
+    font-size: 14px; 
+    font-family: monospace; 
+    color: #0f0; 
+    margin-bottom: 10px; 
+}
+
+/* Игровая панель статуса резонанса */
+.player-stats {
+    background: #161616;
+    border: 1px solid #333;
+    padding: 12px;
+    margin-bottom: 10px;
+    font-family: monospace;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.stat-box span {
+    color: #ff00ff;
+    font-weight: bold;
+}
+
+#versus { width: 100%; margin: 2em 0; }
+.versus-wrapper { display: flex; gap: 10px; justify-content: center; }
+.versus_column { flex: 1; min-width: 0; cursor: pointer; transition: transform 0.1s; }
+.versus_column:active { transform: scale(0.98); }
+.versus_thumbwrapper { 
+    position: relative; 
+    border: 3px solid #ff00ff; 
+    background-color: #333; 
+    aspect-ratio: 1/1; 
+    box-sizing: border-box;
+    box-shadow: 0 0 15px rgba(255,0,255,0.2);
+}
+.versus_thumbwrapper img { 
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+}
+.ranking-container { margin-top: 10px;}
+.ranking-title { font-family: sans-serif; font-size: 20px; text-transform: uppercase; text-align: center; border-bottom: 1px solid #222; padding-bottom: 10px; margin-bottom: 20px; color: #ff00ff; }
+.ranking-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #222; cursor: pointer; }
+.ranking-img { width: 40px; height: 40px; object-fit: cover; margin-right: 12px; border: 1px solid #444; }
+.ranking-info { flex-grow: 1; display: flex; justify-content: space-between; align-items: center; }
+.item-details { display: none; padding: 15px; background: #050505; border-bottom: 1px solid #222; font-size: 14px; color: #ccc; }
+.external-link { color: #448aff; text-decoration: none; display: block; margin-top: 10px; font-weight: bold; }
+.admin-panel { margin-top: 40px; padding: 10px; background: #1a1a1a; border: 1px solid #ff00ff; }
+.admin-input { 
+    width: 100%; 
+    padding: 12px; 
+    margin-bottom: 15px; 
+    background: #000; 
+    border: 1px solid #555; 
+    font-size: 16px;
+    color: #fff; 
+    box-sizing: border-box; 
+}
+textarea.admin-input { height: 100px; resize: vertical; }
+#new-img-file { display: none; }
+.file-label {
+    display: inline-block;
+    padding: 12px;
+    background: #000;
+    color: #fff;
+    text-align: left;
+    box-sizing: border-box;
+    cursor: pointer;
+    margin-bottom: 20px;
+    border: 2px solid #ff00ff;
+    width: 100%;
+}
+.admin-btn { 
+    width: 100%; 
+    padding: 18px; 
+    background: #ff00ff; 
+    color: #000; 
+    border: none; 
+    font-weight: bold; 
+    cursor: pointer; 
+    text-transform: uppercase; 
+    font-size: 16px;
+    box-shadow: 0 0 15px rgba(255,0,255,0.4);
+}
+#logContainer { 
+    background: #111; 
+    font-size: 14px; 
+    font-family: monospace; 
+    color: #0f0; 
+    margin-bottom: 10px; 
+    height: 120px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #333 #111;
+}
+
+#logContainer::-webkit-scrollbar { width: 5px; }
+#logContainer::-webkit-scrollbar-track { background: #111; }
+#logContainer::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+
+#disclaimerToggle, #helpToggle, #loreToggle { 
+    background: #111; 
+    font-size: 14px; 
+    font-family: monospace; 
+    color: #ff00ff; 
+    margin-bottom: 10px;  
+}
+
+#disclaimerText, #helpText, #loreText {    
+    background: #111;    
+    font-size: 14px;    
+    font-family: monospace;    
+    color: #ccc;    
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+    
+.footer-credit {
+    text-align: center;
+    font-size: 14px;
+    color: #999;
+    margin: 40px 0 70px 0;
+}
+h2 { font-size: 18px; margin-bottom: -10px; }
+a { color: #448aff; text-decoration: none; }
+.footer-credit a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="app-container">
+
+<div style="display: flex; align-items: flex-start; justify-content: left; gap: 15px; margin-bottom: 5px;">
+  <a href="index.html" style="text-decoration: none;">
+    <img src="paramount-v3.png" alt="Logo" style="height: 48px; width: auto; margin-top: 20px;">
+  </a>
+  <div style="display: flex; flex-direction: column;">
+    <h2 style="margin: -4px; line-height: 0.6; margin-top: 32px;">Paramount</h2>
+    <span style="margin: -4px; font-size: 14px; color: #ff00ff; margin-top: 5px;">
+      Resonance Engine
+    </span>
+  </div>
+</div>
+
+<div id="loreToggle">Game Doctrine</div>
+<div id="loreText" class="collapsed">
+<p>How effective are you? How much more interesting can you become? Your intentions are creative. And your capabilities are far greater than anyone ever led you to believe. We've stripped away the veneer and are delving into the deep architecture: transforming a distributed node from a content evaluation tool into a resonant circuit for personal breakthrough.</p>
+
+<p>The network no longer broadcasts "noise"—it synchronizes vectors of creative will. Every anonymous vote here is not a click, but a calibration of shared potential, where the system amplifies the intentions of each participant to the scale of the network.</p>
+
+<p>Synchronize breakthrough points, amplify the resonance of the network.</p>
+</div>
+
+<!-- Игровая панель статуса игрока -->
+<div class="player-stats">
+    <div class="stat-box">Energy: <span id="playerEnergy">100</span></div>
+    <div class="stat-box">Resonance Level: <span id="playerLevel">1</span></div>
+    <div class="stat-box">Impact: <span id="playerImpact">0</span></div>
+</div>
+
+<div id="disclaimerToggle">Disclaimer</div>
+<div id="disclaimerText" class="collapsed">All data transmitted in this session is for experimental and consensus simulation purposes. Use at your own risk.</div>
+
+<div class="network-status open" id="statusToggle">
+    <span id="netStatus">Connecting to node network... (<span id="nodeId">...</span>)</span>
+</div>
+
+<div id="logContainer"></div>
+
+<div id="versus">
+    <div class="ranking-title">Resonance Match</div>
+    <div class="versus-wrapper">
+        <div class="versus_column" id="item-left" onclick="vote('left')">
+            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+            <h3 class="title" style="text-align:center; font-size: 14px;"></h3>
+        </div>
+        <div class="versus_column" id="item-right" onclick="vote('right')">
+            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+            <h3 class="title" style="text-align:center; font-size: 14px;"></h3>
+        </div>
+    </div>
+</div>
+
+<div class="ranking-container">
+    <div class="ranking-title">Global Matrix Rank</div>
+    <div id="ranking-list"></div>
+</div>
+
+<div class="admin-panel">
+    <h3>Broadcast Breakthrough Vector</h3>
+    <input type="text" id="new-title" class="admin-input" placeholder="Vector Title">
+    <textarea id="new-desc" class="admin-input" placeholder="Manifestation Details"></textarea>
+    <input type="url" id="new-url" class="admin-input" placeholder="External Reference (optional)">
+    <label for="new-img-file" class="file-label" id="file-label-text">Select Visual Vector</label>
+    <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)">
+    <button class="admin-btn" onclick="addItem()">Inject Vector to Network</button>
+</div>
+
+<div id="helpToggle" style="margin-top: 30px">Game Rules</div>
+<div id="helpText" class="collapsed">
+<p>1. Vote for the vector that displays higher constructive efficiency to align network consensus.</p>
+<p>2. Each vote expends 10 Energy, which recovers over time.</p>
+<p>3. Broadcast your breakthrough vectors to scale your personal Impact score globally.</p>
+</div>
+    
+<div class="footer-credit">
+        <h2>Trust Fibonacci</h2>
+        <p>Made by <a href="https://t.me/eugenebox" target="_blank" id="author-link">@eugenebox</a></p>
+</div>
+</div>
+
+<script>
+const statusToggle = document.getElementById('statusToggle');
+const logContainer = document.getElementById('logContainer');
+if (statusToggle && logContainer) {
+    statusToggle.addEventListener('click', () => {
+        logContainer.classList.toggle('collapsed');
+        statusToggle.classList.toggle('open');
+    });
+}
+
+const disclaimerToggle = document.getElementById('disclaimerToggle');
+const disclaimerText = document.getElementById('disclaimerText');
+if (disclaimerToggle && disclaimerText) {
+    disclaimerToggle.addEventListener('click', () => {
+        disclaimerText.classList.toggle('collapsed');
+        disclaimerToggle.classList.toggle('open');
+    });
+}
+
+const helpToggle = document.getElementById('helpToggle');
+const helpText = document.getElementById('helpText');
+if (helpToggle && helpText) {
+    helpToggle.addEventListener('click', () => {
+        helpText.classList.toggle('collapsed');
+        helpToggle.classList.toggle('open');
+    });
+}
+
+const loreToggle = document.getElementById('loreToggle');
+const loreText = document.getElementById('loreText');
+if (loreToggle && loreText) {
+    loreToggle.addEventListener('click', () => {
+        loreText.classList.toggle('collapsed');
+        loreToggle.classList.toggle('open');
+    });
+}
+
+const myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
+document.getElementById('nodeId').innerText = myId;
+
+// Игровая механика персонажа
+let playerState = JSON.parse(localStorage.getItem('gossip_player_state')) || { energy: 100, level: 1, impact: 0 };
+function updatePlayerStatsUI() {
+    document.getElementById('playerEnergy').innerText = playerState.energy;
+    document.getElementById('playerLevel').innerText = playerState.level;
+    document.getElementById('playerImpact').innerText = playerState.impact;
+    localStorage.setItem('gossip_player_state', JSON.stringify(playerState));
+}
+updatePlayerStatsUI();
+
+// Восстановление энергии со временем
+setInterval(() => {
+    if (playerState.energy < 100) {
+        playerState.energy = Math.min(100, playerState.energy + 2);
+        updatePlayerStatsUI();
+    }
+}, 5000);
+
+let items = JSON.parse(localStorage.getItem('gossip_versus_items')) || [];
+let currentPair = [];
+
+const client = mqtt.connect('wss://test.mosquitto.org:8081/mqtt', {
+    clientId: 'paramount_resonance_' + Math.random().toString(16).substr(2, 8)
+});
+const TOPIC = 'paramount/p2p/network/v1';
+
+client.on('connect', () => {
+    document.getElementById('netStatus').innerHTML = `Connected as ${myId}`;
+    log("Resonance channel established. Nodes synchronized.");
+    client.subscribe(TOPIC);
+});
+
+client.on('error', (err) => {
+    document.getElementById('netStatus').style.color = '#f00';
+    document.getElementById('netStatus').innerHTML = `Network Error`;
+    log("MQTT Error: " + JSON.stringify(err));
+});
+
+client.on('message', (topic, payload) => {
+    try {
+        let packet = JSON.parse(payload.toString());
+        
+        if (packet.type === 'ADD_ITEM') {
+            if (!items.some(i => i.id === packet.item.id)) {
+                items.push(packet.item);
+                saveLocal();
+                log(`[Resonance] Vector captured from ${packet.sender}: "${packet.item.title}"`);
+                updateRankingList();
+                if (items.length >= 2 && currentPair.length === 0) nextPair();
+            }
+        } 
+        else if (packet.type === 'VOTE') {
+            let winItem = items.find(i => i.id === packet.winId);
+            let loseItem = items.find(i => i.id === packet.loseId);
+            if (winItem && loseItem) {
+                winItem.rating = packet.newWinRating;
+                loseItem.rating = packet.newLoseRating;
+                saveLocal();
+                log(`[Resonance] Global sync adjusted by ${packet.sender}`);
+                updateRankingList();
+            }
+        }
+    } catch(e) {
+        log("Packet processing error: " + e.message);
+    }
+});
+
+function updateLabel(input) {
+    const fileName = input.files[0] ? input.files[0].name : "Select Visual Vector";
+    document.getElementById('file-label-text').innerText = fileName;
+}
+
+function saveLocal() {
+    localStorage.setItem('gossip_versus_items', JSON.stringify(items));
+}
+
+async function compressImage(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxWidth = 400; 
+                let width = img.width, height = img.height;
+                if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
+            };
+        };
+    });
+}
+
+async function addItem() {
+    const title = $('#new-title').val().trim();
+    const desc = $('#new-desc').val().trim();
+    const url = $('#new-url').val().trim();
+    const file = $('#new-img-file')[0].files[0];
+    if (!title || !file) return alert('Enter title and select visual vector!');
+
+    if (playerState.energy < 25) return alert('Insufficient Energy! Wait for regeneration.');
+    playerState.energy -= 25;
+    playerState.impact += 50;
+    playerState.level = Math.floor(playerState.impact / 200) + 1;
+    updatePlayerStatsUI();
+
+    const imgData = await compressImage(file);
+    const newItem = { 
+        id: 'vector-' + Date.now() + '-' + Math.floor(Math.random()*1000), 
+        title, 
+        description: desc, 
+        externalUrl: url, 
+        img: imgData, 
+        rating: 1500 
+    };
+
+    items.push(newItem);
+    saveLocal();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'ADD_ITEM',
+        sender: myId,
+        item: newItem
+    }));
+
+    log(`You injected vector: "${title}" (+50 Impact)`);
+    $('#new-title, #new-desc, #new-url, #new-img-file').val('');
+    $('#file-label-text').text("Select Visual Vector");
+    
+    updateRankingList();
+    if (items.length >= 2 && currentPair.length === 0) nextPair();
+}
+
+function toggleDetails(id) { 
+    $(`#details-${id}`).slideToggle(200); 
+}
+
+function updateRankingList() {
+    const sorted = [...items].sort((a, b) => b.rating - a.rating);
+    let html = '';
+    sorted.forEach((item, index) => {
+        html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
+            <img src="${item.img}" class="ranking-img">
+            <div class="ranking-info"><span>${index + 1}. ${item.title}</span><strong>${Math.round(item.rating)}</strong></div>
+        </div>
+        <div id="details-${item.id}" class="item-details">
+            <p>${item.description || 'No description.'}</p>
+            ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" class="external-link">External Vector →</a>` : ''}
+        </div>`;
+    });
+    $('#ranking-list').html(html || '<div style="padding:10px; color:#777;">Matrix is empty. Inject first vectors below!</div>');
+}
+
+function nextPair() {
+    if (items.length < 2) return;
+    let i1 = Math.floor(Math.random() * items.length), i2;
+    do { i2 = Math.floor(Math.random() * items.length); } while (i1 === i2);
+    currentPair = [i1, i2];
+    $('#item-left img').attr('src', items[i1].img);
+    $('#item-left .title').text(items[i1].title);
+    $('#item-right img').attr('src', items[i2].img);
+    $('#item-right .title').text(items[i2].title);
+}
+
+function vote(side) {
+    if (items.length < 2) return;
+    if (playerState.energy < 10) return alert('Low Energy! Take a moment to recover.');
+    
+    playerState.energy -= 10;
+    playerState.impact += 5;
+    playerState.level = Math.floor(playerState.impact / 200) + 1;
+    updatePlayerStatsUI();
+
+    const winIdx = currentPair[side === 'left' ? 0 : 1];
+    const loseIdx = currentPair[side === 'left' ? 1 : 0];
+    
+    const winItem = items[winIdx];
+    const loseItem = items[loseIdx];
+
+    const rW = winItem.rating, rL = loseItem.rating;
+    const expW = 1 / (1 + Math.pow(10, (rL - rW) / 400));
+    const change = 32 * (1 - expW);
+    
+    winItem.rating += change; 
+    loseItem.rating -= change;
+    saveLocal();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'VOTE',
+        sender: myId,
+        winId: winItem.id,
+        loseId: loseItem.id,
+        newWinRating: winItem.rating,
+        newLoseRating: loseItem.rating
+    }));
+
+    updateRankingList();
+    $('#versus').animate({ opacity: 0 }, 50, function() { 
+        nextPair(); 
+        $(this).animate({ opacity: 1 }, 50); 
+    });
+}
+
+updateRankingList();
+if (items.length >= 2) nextPair();
+
+function log(txt) {
+    let l = document.getElementById('logContainer');
+    l.innerHTML += `<div>> ${txt}</div>`;
+    l.scrollTop = l.scrollHeight;
+}
+</script>
+
+</body>
+</html>
