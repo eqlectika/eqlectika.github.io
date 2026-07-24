@@ -263,7 +263,7 @@ a { color: #448aff; text-decoration: none; }
 
 <div class="transfer-panel">
     <h3>Transfer Impact</h3>
-    <input type="text" id="target-peer" class="admin-input" placeholder="Target Peer (e.g., Peer-5851)">
+    <input type="text" id="target-peer" class="admin-input" placeholder="Target Peer (e.g., Peer-5851 or Custom ID)">
     <input type="number" id="transfer-amount" class="admin-input" placeholder="Amount (e.g., 7)" min="1">
     <button class="admin-btn" onclick="transferImpact()">Send Impacts</button>
 </div>
@@ -327,7 +327,12 @@ if (loreToggle && loreText) {
     });
 }
 
-const myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
+// Фиксированный Peer ID из localStorage или детерминированный статический ID (можно задать вручную под конкретный IP/устройство)
+let myId = localStorage.getItem('paramount_custom_my_id');
+if (!myId) {
+    myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
+    localStorage.setItem('paramount_custom_my_id', myId);
+}
 document.getElementById('nodeId').innerText = myId;
 
 let playerState = JSON.parse(localStorage.getItem('paramount_player_state'));
@@ -406,6 +411,7 @@ client.on('message', (topic, payload) => {
         else if (packet.type === 'TRANSFER_IMPACT') {
             if (packet.target === myId) {
                 playerState.impacts += packet.amount;
+                playerState.level = Math.floor(playerState.impacts / 20) + 1;
                 updatePlayerStatsUI();
                 saveLocal();
                 log(`[Received] Got ${packet.amount} impacts from ${packet.sender}! Sending ACK.`);
@@ -484,6 +490,7 @@ function convertImpacts(type) {
     }
 
     playerState.impacts -= cost;
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
     if (type === 'votes') {
         playerState.votesLeft += 3;
         log(`Converted ${cost} impacts into +3 votes.`);
@@ -643,7 +650,7 @@ function transferImpact() {
     const target = $('#target-peer').val().trim();
     const amount = parseInt($('#transfer-amount').val());
 
-    if (!target || !amount || amount <= 0) {
+    if (!target || !amount || amount <= 1) {
         return alert('Please enter the correct participant ID and number of impacts!');
     }
     if (playerState.impacts < amount) {
