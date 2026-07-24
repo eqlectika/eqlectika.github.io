@@ -357,27 +357,20 @@ function saveLocal() {
 }
 
 const client = mqtt.connect('wss://test.mosquitto.org:8081/mqtt', {
-    clientId: 'paramount_gossip_' + Math.random().toString(16).substr(2, 8),
-    keepalive: 30,
-    reconnectPeriod: 1000
+    clientId: 'paramount_resonance_' + Math.random().toString(16).substr(2, 8)
 });
 const TOPIC = 'breakthrough/p2p/network/v1';
 
 client.on('connect', () => {
-    document.getElementById('netStatus').innerHTML = `You are connected as ${myId}`;
-    document.getElementById('netStatus').style.color = '#0f0';
-    log("Connected to the transport layer. Waiting for peers...");
-    client.subscribe(TOPIC, { qos: 1 });
+    document.getElementById('netStatus').innerHTML = `Connected as ${myId}`;
+    log("Connected to the transport layer. Waiting for peer(s)...");
+client.subscribe(TOPIC, { qos: 1 });
 });
 
-client.on('reconnect', () => {
-    log("Reconnecting to transport layer...");
-});
-
-client.on('offline', () => {
+client.on('error', (err) => {
     document.getElementById('netStatus').style.color = '#f00';
-    document.getElementById('netStatus').innerHTML = `Disconnected from network`;
-    log("Network connection lost.");
+    document.getElementById('netStatus').innerHTML = `Network Error`;
+    log("MQTT Error: " + JSON.stringify(err));
 });
 
 client.on('message', (topic, payload) => {
