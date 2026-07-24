@@ -7,7 +7,7 @@
 <meta property="og:image:width" content="1748">
 <meta property="og:image:height" content="1748">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link rel="manifest" href="manifest-breakthrough.json">
+<link rel="manifest" href="manifest-paramount.json">
 <title>Paramount | Resonance Engine</title>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
@@ -103,7 +103,7 @@ body {
 .item-details { display: none; padding: 15px; background: #050505; border-bottom: 1px solid #222; font-size: 14px; color: #ccc; }
 .external-link { color: #448aff; text-decoration: none; display: block; margin-top: 10px; font-weight: bold; }
 
-.admin-panel, .transfer-panel, .exchange-panel { margin-top: 20px; padding: 10px; background: #1a1a1a; border: 1px solid #ff00ff; }
+.admin-panel, .transfer-panel, .exchange-panel { margin-top: 20px; padding: 10px; background: #2a2a2a; border: 1px solid #ff00ff; }
 .admin-input { 
     width: 100%; 
     padding: 12px; 
@@ -114,7 +114,7 @@ body {
     color: #fff; 
     box-sizing: border-box; 
 }
-textarea.admin-input { height: 100px; resize: vertical; }
+textarea.admin-input { height: 100px; resize: vertical; font-family: sans-serif; }
 #new-img-file { display: none; }
 .file-label {
     display: inline-block;
@@ -187,26 +187,31 @@ a { color: #448aff; text-decoration: none; }
 <body>
 <div class="app-container">
 
-<div style="display: flex; align-items: flex-start; justify-content: left; gap: 15px; margin-bottom: 5px;">
+<div style="display: flex; align-items: flex-start; justify-content: left; gap: 15px; margin-bottom: 20px;">
   <a href="index.html" style="text-decoration: none;">
     <img src="paramount-v3.png" alt="Logo" style="height: 48px; width: auto; margin-top: 20px;">
   </a>
   <div style="display: flex; flex-direction: column;">
-    <h2 style="margin: -4px; line-height: 0.6; margin-top: 32px;">Paramount</h2>
+    <h2 style="margin: -4px; line-height: 0.6; margin-top: 32px;">Mem Battle</h2>
     <span style="margin: -4px; font-size: 14px; color: #ff00ff; margin-top: 5px;">
-      Meme Engine
+      Resonance Engine
     </span>
   </div>
 </div>
 
 <div id="loreToggle">Game Doctrine</div>
-<div id="loreText" class="collapsed">Насколько вы эффективны? Насколько интереснее вы можете стать? Ваши намерения созидательны. А ваши способности намного больше, чем кто-либо когда-либо позволял вам поверить. Синхронизируй точки прорыва, усиливай резонанс сети.</div>
+<div id="loreText" class="collapsed">
+   <p>How effective are you? How much more interesting can you become? Your intentions are creative. And your capabilities are far greater than anyone ever led you to believe.</p>
+       
+   <p>We've stripped away the veneer and are delving into the deep architecture: transforming a distributed node from a content evaluation tool into a resonant circuit for personal breakthrough.</p>
 
+   <p>The network no longer broadcasts "noise"—it synchronizes vectors of creative will. Every anonymous vote here is not a click, but a calibration of shared potential, where the system amplifies the intentions of each participant to the scale of the network.</p>
+</div>
 <div class="player-stats">
-    <div class="stat-box">Level: <span id="playerLevel">1</span></div>
+    <div class="stat-box">Lvl: <span id="playerLevel">1</span></div>
     <div class="stat-box">Impacts: <span id="playerImpact">3</span></div>
-    <div class="stat-box">Votes: <span id="votesLeft">5</span></div>
-    <div class="stat-box">Posts: <span id="postsLeft">3</span></div>
+    <div class="stat-box">Votes: <span id="votesLeft">8</span></div>
+    <div class="stat-box">Posts: <span id="postsLeft">5</span></div>
 </div>
 
 <div id="disclaimerToggle">Disclaimer</div>
@@ -265,7 +270,7 @@ a { color: #448aff; text-decoration: none; }
 
 <div id="helpToggle" style="margin-top: 30px">Game Rules</div>
 <div id="helpText" class="collapsed">
-<p>1. Every participant gets 5 free votes and 3 free publication slots.</p>
+<p>1. Every participant gets 8 free votes and 5 free publication slots.</p>
 <p>2. Use 'Convert Impacts to Action Limits' to spend your accumulated impacts on extra votes and posts.</p>
 <p>3. Increasing your Authority (Level) scales your available limits automatically.</p>
 <p>4. Use 'Transfer Impact' to send impacts to other network members.</p>
@@ -317,7 +322,7 @@ if (loreToggle && loreText) {
 const myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
 document.getElementById('nodeId').innerText = myId;
 
-let playerState = JSON.parse(localStorage.getItem('gossip_player_state'));
+let playerState = JSON.parse(localStorage.getItem('paramount_player_state'));
 if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playerState.postsLeft === 'undefined') {
     playerState = { 
         impacts: 3, 
@@ -325,7 +330,7 @@ if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playe
         votesLeft: 8, 
         postsLeft: 5 
     };
-    localStorage.setItem('gossip_player_state', JSON.stringify(playerState));
+    localStorage.setItem('paramount_player_state', JSON.stringify(playerState));
 }
 
 function updatePlayerStatsUI() {
@@ -333,12 +338,15 @@ function updatePlayerStatsUI() {
     document.getElementById('playerLevel').innerText = playerState.level;
     document.getElementById('votesLeft').innerText = playerState.votesLeft;
     document.getElementById('postsLeft').innerText = playerState.postsLeft;
-    localStorage.setItem('gossip_player_state', JSON.stringify(playerState));
+    localStorage.setItem('paramount_player_state', JSON.stringify(playerState));
 }
 updatePlayerStatsUI();
 
-let items = JSON.parse(localStorage.getItem('gossip_versus_items')) || [];
+let items = JSON.parse(localStorage.getItem('paramount_versus_items')) || [];
 let currentPair = [];
+function saveLocal() {
+    localStorage.setItem('paramount_versus_items', JSON.stringify(items));
+}
 
 const client = mqtt.connect('wss://test.mosquitto.org:8081/mqtt', {
     clientId: 'paramount_resonance_' + Math.random().toString(16).substr(2, 8)
@@ -397,10 +405,6 @@ client.on('message', (topic, payload) => {
 function updateLabel(input) {
     const fileName = input.files[0] ? input.files[0].name : "Select Visual Vector";
     document.getElementById('file-label-text').innerText = fileName;
-}
-
-function saveLocal() {
-    localStorage.setItem('gossip_versus_items', JSON.stringify(items));
 }
 
 async function compressImage(file) {
@@ -504,7 +508,7 @@ function updateRankingList() {
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" class="external-link">External Vector →</a>` : ''}
         </div>`;
     });
-    $('#ranking-list').html(html || '<div style="padding:10px; color:#777;">Matrix is empty. Inject first vectors below!</div>');
+    $('#ranking-list').html(html || '<div style="text-align: center; padding:10px; color:#777;">Matrix is empty. Inject first vectors below!</div>');
 }
 
 function nextPair() {
