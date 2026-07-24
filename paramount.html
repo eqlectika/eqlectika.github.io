@@ -324,20 +324,27 @@ let items = JSON.parse(localStorage.getItem('gossip_versus_items')) || [];
 let currentPair = [];
 
 const client = mqtt.connect('wss://test.mosquitto.org:8081/mqtt', {
-    clientId: 'paramount_gossip_' + Math.random().toString(16).substr(2, 8)
+    clientId: 'paramount_gossip_' + Math.random().toString(16).substr(2, 8),
+    keepalive: 30,
+    reconnectPeriod: 1000
 });
 const TOPIC = 'paramount/p2p/network/v1';
 
 client.on('connect', () => {
     document.getElementById('netStatus').innerHTML = `You are connected as ${myId}`;
+    document.getElementById('netStatus').style.color = '#0f0';
     log("Connected to the transport layer. Waiting for peers...");
-    client.subscribe(TOPIC);
+    client.subscribe(TOPIC, { qos: 1 });
 });
 
-client.on('error', (err) => {
+client.on('reconnect', () => {
+    log("Reconnecting to transport layer...");
+});
+
+client.on('offline', () => {
     document.getElementById('netStatus').style.color = '#f00';
-    document.getElementById('netStatus').innerHTML = `Error network`;
-    log("Error MQTT: " + JSON.stringify(err));
+    document.getElementById('netStatus').innerHTML = `Disconnected from network`;
+    log("Network connection lost.");
 });
 
 client.on('message', (topic, payload) => {
@@ -420,12 +427,12 @@ async function addItem() {
     items.push(newItem);
     saveLocal();
 
-    client.publish(TOPIC, JSON.stringify({
+client.publish(TOPIC, JSON.stringify({
         type: 'ADD_ITEM',
         sender: myId,
         item: newItem
-    }));
-
+    }), { qos: 1 });
+    
     log(`You created and sent: "${title}"`);
     $('#new-title, #new-desc, #new-url, #new-img-file').val('');
     $('#file-label-text').text("Choose image file");
@@ -481,14 +488,14 @@ function vote(side) {
     loseItem.rating -= change;
     saveLocal();
 
-    client.publish(TOPIC, JSON.stringify({
+client.publish(TOPIC, JSON.stringify({
         type: 'VOTE',
         sender: myId,
         winId: winItem.id,
         loseId: loseItem.id,
         newWinRating: winItem.rating,
         newLoseRating: loseItem.rating
-    }));
+    }), { qos: 1 });
 
     updateRankingList();
     $('#versus').animate({ opacity: 0 }, 100, function() { 
