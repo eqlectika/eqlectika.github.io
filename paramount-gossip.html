@@ -26,8 +26,35 @@ body {
     box-shadow: 0 0 20px rgba(0,0,0,0.8);
 }
 
-.network-status { background: #111; font-size: 14px; font-family: monospace; color: #0f0; margin-bottom: 10px; }
-#versus { width: 100%; margin: 2em 0; }
+
+/* Стили для сворачивания/разворачивания лога и дисклеймера */
+#logContainer.collapsed {
+    display: none;
+}
+#disclaimerText.collapsed {
+    display: none;
+}
+#statusToggle, #disclaimerToggle {
+    cursor: pointer;
+}
+
+
+.network-status::before,
+#disclaimerToggle::before {
+    content: "▶ ";
+}
+
+.network-status.open::before,
+#disclaimerToggle.open::before {
+    content: "▼ ";
+}
+.network-status { 
+    background: #111; 
+    font-size: 14px; 
+    font-family: monospace; 
+    color: #0f0; 
+    margin-bottom: 10px; 
+}#versus { width: 100%; margin: 2em 0; }
 .versus-wrapper { display: flex; gap: 10px; justify-content: center; }
 .versus_column { flex: 1; min-width: 0; cursor: pointer; }
 .versus_thumbwrapper { 
@@ -87,8 +114,28 @@ textarea.admin-input { height: 100px; resize: vertical; }
     text-transform: uppercase; 
     font-size: 16px;
 }
-#log { background: #050505; font-size: 14px; height: 100px; color: #888; }
+#logContainer { 
+    background: #111; 
+    font-size: 14px; 
+    font-family: monospace; 
+    color: #0f0; 
+    margin-bottom: 10px; 
+}
+#disclaimerToggle { 
+    background: #111; 
+    font-size: 14px; 
+    font-family: monospace; 
+    color: #0f0; 
+    margin-bottom: 10px;  
+}
 
+#disclaimerText { 
+    background: #111; 
+    font-size: 14px; 
+    font-family: monospace; 
+    color: #0f0; 
+    margin-bottom: 10px;  
+}
 #header-link {
     display: flex;
     justify-content: center;
@@ -130,10 +177,14 @@ a {
   </div>
 </div>
 
-<div class="network-status" id="netStatus">
-    You are Connecting to the network... (<span id="nodeId">...</span>)
+<div class="network-status" id="statusToggle">
+    <span id="netStatus">You are connecting to the network... (<span id="nodeId">...</span>)</span> — click here to open log
 </div>
-<div style="color: #0f0;" id="log"></div>
+
+<div id="logContainer" class="collapsed"></div>
+
+<div id="disclaimerToggle">Disclaimer (click to toggle)</div>
+<div id="disclaimerText" class="collapsed">All messages and data transmitted in this session are for informational and demonstration purposes only. The app uses public/experimental broker channels that do not guarantee absolute privacy, encryption, or data persistence. Use at your own risk. Do not transmit sensitive personal data.</div>
 
 <div id="versus">
     <div class="ranking-title">Pick Important</div>
@@ -171,6 +222,27 @@ a {
 </div>
 </div>
 <script>
+// 1. Клик по статусу — сворачивает/разворачивает лог
+const statusToggle = document.getElementById('statusToggle');
+const logContainer = document.getElementById('logContainer');
+
+if (statusToggle && logContainer) {
+    statusToggle.addEventListener('click', () => {
+        logContainer.classList.toggle('collapsed');
+        statusToggle.classList.toggle('open');
+    });
+}
+
+const disclaimerToggle = document.getElementById('disclaimerToggle');
+const disclaimerText = document.getElementById('disclaimerText');
+
+if (disclaimerToggle && disclaimerText) {
+    disclaimerToggle.addEventListener('click', () => {
+        disclaimerText.classList.toggle('collapsed');
+        disclaimerToggle.classList.toggle('open');
+    });
+}
+
 const myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
 document.getElementById('nodeId').innerText = myId;
 
@@ -183,8 +255,7 @@ const client = mqtt.connect('wss://test.mosquitto.org:8081/mqtt', {
 const TOPIC = 'paramount/p2p/network/v1';
 
 client.on('connect', () => {
-    document.getElementById('netStatus').style.color = '#0f0';
-    document.getElementById('netStatus').innerHTML = `You are connected to the network as ${myId}`;
+    document.getElementById('netStatus').innerHTML = `You are connected as ${myId}`;
     log("Connected to the transport layer. Waiting for peers...");
     client.subscribe(TOPIC);
 });
@@ -327,7 +398,6 @@ function vote(side) {
     const winItem = items[winIdx];
     const loseItem = items[loseIdx];
 
-    // Расчет Elo
     const rW = winItem.rating, rL = loseItem.rating;
     const expW = 1 / (1 + Math.pow(10, (rL - rW) / 400));
     const change = 32 * (1 - expW);
@@ -356,7 +426,7 @@ updateRankingList();
 if (items.length >= 2) nextPair();
 
 function log(txt) {
-    let l = document.getElementById('log');
+    let l = document.getElementById('logContainer');
     l.innerHTML += `<div>> ${txt}</div>`;
     l.scrollTop = l.scrollHeight;
 }
