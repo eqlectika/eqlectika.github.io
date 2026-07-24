@@ -364,7 +364,7 @@ const TOPIC = 'breakthrough/p2p/network/v1';
 client.on('connect', () => {
     document.getElementById('netStatus').innerHTML = `Connected as ${myId}`;
     log("Connected to the transport layer. Waiting for peer(s)...");
-    client.subscribe(TOPIC);
+client.subscribe(TOPIC, { qos: 1 });
 });
 
 client.on('error', (err) => {
@@ -485,11 +485,11 @@ async function addItem() {
     items.push(newItem);
     saveLocal();
 
-    client.publish(TOPIC, JSON.stringify({
+client.publish(TOPIC, JSON.stringify({
         type: 'ADD_ITEM',
         sender: myId,
         item: newItem
-    }));
+    }), { qos: 1 });
 
     log(`You injected vector: "${title}"`);
     $('#new-title, #new-desc, #new-url, #new-img-file').val('');
@@ -556,14 +556,14 @@ function vote(side) {
     loseItem.rating -= change;
     saveLocal();
 
-    client.publish(TOPIC, JSON.stringify({
+client.publish(TOPIC, JSON.stringify({
         type: 'VOTE',
         sender: myId,
         winId: winItem.id,
         loseId: loseItem.id,
         newWinRating: winItem.rating,
         newLoseRating: loseItem.rating
-    }));
+    }), { qos: 1 });
 
     updateRankingList();
     $('#versus').animate({ opacity: 0 }, 50, function() { 
