@@ -30,8 +30,8 @@ a { color: #448aff; text-decoration: none; }
 <div class="app-container">
 <a href="index.html" id="logoLink" style="text-decoration: none;"><img src="logo.png" alt="Logo" style="max-width: 48px; opacity: 0.9; margin: 10px 0 10px 0;"></a> 
 <div class="box">
-    <h3>Сетевой статус (<span id="nodeId"></span>)</h3>
-    <div id="connectionStatus">Подключение к сети...</div>
+    <h3>Network status (<span id="nodeId"></span>)</h3>
+    <div id="connectionStatus">Connecting to the network...</div>
 </div>
 <div class="box">
     <div>
@@ -43,30 +43,30 @@ a { color: #448aff; text-decoration: none; }
     </div>
 </div>
 <div class="box">
-    <h3>Опубликовать объявление (Gossip)</h3>
+    <h3>Post an ad (Gossip)</h3>
     <input type="text" id="msgInput" placeholder="Текст объявления..." style="width:70%;">
-    <button onclick="publishMessage()">Разослать</button>
+    <button onclick="publishMessage()">Send Out</button>
 </div>
 
 <div class="box">
-    <h3>База данных объявлений</h3>
-    <div id="messages">Ожидание данных...</div>
+    <h3>Ads database</h3>
+    <div id="messages">Waiting for data...</div>
 </div>
 
 <div class="box">
-    <h3>Лог Gossip-протокола</h3>
+    <h3>Gossip protocol log</h3>
     <div id="log"></div>
 </div>
 <div style="display: flex; align-items: flex-start; justify-content: left; gap: 15px; margin-bottom: 5px;">
 
-  <a href="paramount-gossip.html" style="text-decoration: none;">
+  <a href="breakthrough.html" style="text-decoration: none;">
     <img src="paramount-v3.png" alt="Logo" style="height: 48px; width: auto; margin-top: 20px;">
   </a>
   
   <div style="display: flex; flex-direction: column;">
-    <h2 style="margin: -4px; line-height: 0.6; color: #fff; margin-top: 32px;">Paramount</h2>
+    <h2 style="margin: -4px; line-height: 0.6; color: #fff; margin-top: 32px;">Meme Battle</h2>
     <span style="margin: -4px; padding: 1px;font-size: 14px; color: #b2b5be; margin-top: 5px;">
-      Meme battle
+      Resonance Engine
     </span>
   </div>
 </div>
@@ -106,12 +106,12 @@ const TOPIC = 'p2p/public/messenger/announcements/v2';
 if (client) {
     client.on('connect', () => {
         document.getElementById('connectionStatus').innerHTML = '<span class="status-ok">● Подключено к P2P-облаку</span>';
-        log("Успешное подключение к транспортной сети.");
+        log("Successful connection to the transport network.");
         client.subscribe(TOPIC, (err) => {
             if (!err) {
-                log(`Подписка оформлена: ${TOPIC}`);
+                log(`Subscription issued: ${TOPIC}`);
             } else {
-                log(`Ошибка подписки: ${err}`);
+                log(`Subscription error: ${err}`);
             }
         });
     });
@@ -130,13 +130,13 @@ if (client) {
 
             if (!messages[packet.id]) {
                 messages[packet.id] = packet;
-                log(`✓ Новое объявление добавлено. ID: ${packet.id}`);
+                log(`✓ New ad added. ID: ${packet.id}`);
                 renderMessages();
             } else {
-                log(`⚡ Дубликат отброшен. ID: ${packet.id}`);
+                log(`⚡ Duplicate discarded. ID: ${packet.id}`);
             }
         } catch (e) {
-            log("Ошибка парсинга входящего пакета");
+            log("Error parsing incoming packet");
         }
     });
 }
@@ -146,7 +146,7 @@ function publishMessage() {
     let text = input.value.trim();
     if (!text) return;
     if (!client || !client.connected) {
-        alert("Нет подключения к сети!");
+        alert("No network connection!");
         return;
     }
 
@@ -162,9 +162,9 @@ function publishMessage() {
 
     client.publish(TOPIC, JSON.stringify(packet), { qos: 0 }, (err) => {
         if (!err) {
-            log(`↗ Объявление разослано: "${text}"`);
+            log(`↗ The announcement was sent to: "${text}"`);
         } else {
-            log(`✖ Ошибка отправки: ${err}`);
+            log(`✖ Sending error: ${err}`);
         }
     });
 
@@ -178,14 +178,14 @@ function renderMessages() {
     let sorted = Object.values(messages).sort((a, b) => b.timestamp - a.timestamp);
     
     if (sorted.length === 0) {
-        container.innerHTML = 'Нет объявлений.';
+        container.innerHTML = 'No ads.';
         return;
     }
 
     sorted.forEach(msg => {
         let div = document.createElement('div');
         div.className = 'msg-item';
-        div.innerHTML = `<b>[Автор: ${msg.sender}]</b>: ${msg.text} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
+        div.innerHTML = `<b>[Author: ${msg.sender}]</b>: ${msg.text} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
         container.appendChild(div);
     });
 }
