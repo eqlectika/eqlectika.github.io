@@ -341,6 +341,11 @@ if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playe
     localStorage.setItem('paramount_player_state', JSON.stringify(playerState));
 }
 
+let pendingTransfers = JSON.parse(localStorage.getItem('paramount_pending_transfers')) || {};
+function savePending() {
+    localStorage.setItem('paramount_pending_transfers', JSON.stringify(pendingTransfers));
+}
+
 function updatePlayerStatsUI() {
     document.getElementById('playerImpact').innerText = playerState.impacts;
     document.getElementById('playerLevel').innerText = playerState.level;
@@ -364,7 +369,7 @@ const TOPIC = 'breakthrough/p2p/network/v1';
 client.on('connect', () => {
     document.getElementById('netStatus').innerHTML = `Connected as ${myId}`;
     log("Connected to the transport layer. Waiting for peer(s)...");
-client.subscribe(TOPIC, { qos: 1 });
+    client.subscribe(TOPIC, { qos: 1 });
 });
 
 client.on('error', (err) => {
@@ -402,14 +407,49 @@ client.on('message', (topic, payload) => {
             if (packet.target === myId) {
                 playerState.impacts += packet.amount;
                 updatePlayerStatsUI();
-                log(`[Received] Got ${packet.amount} impacts from ${packet.sender}!`);
+                saveLocal();
+                log(`[Received] Got ${packet.amount} impacts from ${packet.sender}! Sending ACK.`);
+                
+                client.publish(TOPIC, JSON.stringify({
+                    type: 'TRANSFER_ACK',
+                    sender: myId,
+                    target: packet.sender,
+                    txId: packet.txId
+                }), { qos: 1 });
+
                 alert(`Attention! Received ${packet.amount} impacts from ${packet.sender}`);
+            }
+        }
+        else if (packet.type === 'TRANSFER_ACK') {
+            if (packet.target === myId && pendingTransfers[packet.txId]) {
+                log(`[Confirmed] Transfer ${packet.txId} acknowledged by ${packet.sender}`);
+                delete pendingTransfers[packet.txId];
+                savePending();
             }
         }
     } catch(e) {
         log("Packet processing error: " + e.message);
     }
 });
+
+setInterval(() => {
+    const now = Date.now();
+    let refundedCount = 0;
+    for (let txId in pendingTransfers) {
+        let tx = pendingTransfers[txId];
+        if (now - tx.time > 15000) {
+            playerState.impacts += tx.amount;
+            playerState.level = Math.floor(playerState.impacts / 20) + 1;
+            log(`[Timeout] Transfer ${txId} to ${tx.target} timed out. Refunded ${tx.amount} impacts.`);
+            delete pendingTransfers[txId];
+            refundedCount++;
+        }
+    }
+    if (refundedCount > 0) {
+        updatePlayerStatsUI();
+        savePending();
+    }
+}, 5000);
 
 function updateLabel(input) {
     const fileName = input.files[0] ? input.files[0].name : "Select Visual Vector";
@@ -487,7 +527,7 @@ async function addItem() {
     items.push(newItem);
     saveLocal();
 
-client.publish(TOPIC, JSON.stringify({
+    client.publish(TOPIC, JSON.stringify({
         type: 'ADD_ITEM',
         sender: myId,
         item: newItem
@@ -515,8 +555,10 @@ function deleteItemLocal(id) {
 
         log(`You removed vector locally: ${id}`);
         updateRankingList();
-        if (currentPair.includes(index) || items.length < 2) {
+        if (currentPair.length > 0 && (currentPair[0] === index || currentPair[1] === index || items.length < 2)) {
             currentPair = [];
+            nextPair();
+        } else {
             nextPair();
         }
     }
@@ -533,14 +575,19 @@ function updateRankingList() {
         <div id="details-${item.id}" class="item-details">
             <p>${item.description || 'No description.'}</p>
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" class="external-link">External Vector →</a>` : ''}
-            <button class="admin-btn" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}')">Remove Locally</button>
+            <button class="admin-btn" type="button" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
         </div>`;
     });
     $('#ranking-list').html(html || '<div style="text-align: center; padding:10px; color:#777;">Matrix is empty. Inject first vectors below!</div>');
 }
 
 function nextPair() {
-    if (items.length < 2) return;
+    if (items.length < 2) {
+        $('#item-left img, #item-right img').attr('src', '');
+        $('#item-left .title, #item-right .title').text('');
+        currentPair = [];
+        return;
+    }
     let i1 = Math.floor(Math.random() * items.length), i2;
     do { i2 = Math.floor(Math.random() * items.length); } while (i1 === i2);
     currentPair = [i1, i2];
@@ -576,7 +623,7 @@ function vote(side) {
     loseItem.rating -= change;
     saveLocal();
 
-client.publish(TOPIC, JSON.stringify({
+    client.publish(TOPIC, JSON.stringify({
         type: 'VOTE',
         sender: myId,
         winId: winItem.id,
@@ -607,14 +654,23 @@ function transferImpact() {
     playerState.level = Math.floor(playerState.impacts / 20) + 1;
     updatePlayerStatsUI();
 
+    const txId = 'tx-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+    pendingTransfers[txId] = {
+        target: target,
+        amount: amount,
+        time: Date.now()
+    };
+    savePending();
+
     client.publish(TOPIC, JSON.stringify({
         type: 'TRANSFER_IMPACT',
         sender: myId,
         target: target,
-        amount: amount
-    }));
+        amount: amount,
+        txId: txId
+    }), { qos: 1 });
 
-    log(`Transferred ${amount} impacts to ${target}`);
+    log(`Sent ${amount} impacts to ${target} (Waiting for ACK, ID: ${txId})`);
     alert(`Successfully sent ${amount} impacts to user ${target}`);
     $('#target-peer, #transfer-amount').val('');
 }
