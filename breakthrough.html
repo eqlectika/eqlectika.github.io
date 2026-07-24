@@ -103,7 +103,7 @@ body {
 .item-details { display: none; padding: 15px; background: #050505; border-bottom: 1px solid #222; font-size: 14px; color: #ccc; }
 .external-link { color: #448aff; text-decoration: none; display: block; margin-top: 10px; font-weight: bold; }
 
-.admin-panel, .transfer-panel, .exchange-panel { margin-top: 20px; padding: 10px; background: #2a2a2a; border: 1px solid #ff00ff; }
+.admin-panel, .transfer-panel, .exchange-panel, .claim-panel { margin-top: 20px; padding: 10px; background: #2a2a2a; border: 1px solid #ff00ff; }
 .admin-input { 
     width: 100%; 
     padding: 12px; 
@@ -202,16 +202,16 @@ a { color: #448aff; text-decoration: none; }
 <div id="loreToggle">Game Doctrine</div>
 <div id="loreText" class="collapsed">
    <p>How effective are you? How much more interesting can you become? Your intentions are creative. And your capabilities are far greater than anyone ever led you to believe.</p>
-       
+        
    <p>We've stripped away the veneer and are delving into the deep architecture: transforming a distributed node from a content evaluation tool into a resonant circuit for personal breakthrough.</p>
 
    <p>The network no longer broadcasts "noise"—it synchronizes vectors of creative will. Every anonymous vote here is not a click, but a calibration of shared potential, where the system amplifies the intentions of each participant to the scale of the network.</p>
 </div>
 <div class="player-stats">
     <div class="stat-box">Level: <span id="playerLevel">1</span></div>
-    <div class="stat-box">Impacts: <span id="playerImpact">3</span></div>
-    <div class="stat-box">Votes: <span id="votesLeft">8</span></div>
-    <div class="stat-box">Posts: <span id="postsLeft">5</span></div>
+    <div class="stat-box">Impacts: <span id="playerImpact">8</span></div>
+    <div class="stat-box">Votes: <span id="votesLeft">5</span></div>
+    <div class="stat-box">Posts: <span id="postsLeft">3</span></div>
 </div>
 
 <div id="disclaimerToggle">Disclaimer</div>
@@ -224,12 +224,19 @@ a { color: #448aff; text-decoration: none; }
 <div id="logContainer"></div>
 
 <div class="exchange-panel">
-    <h3>Convert Impacts to Action Limits</h3>
-    <p style="font-size: 13px; color: #aaa; margin-top: 0;">Spend 3 Impacts to get +3 Votes or +1 Post slot</p>
+    <h3 style="text-align: center;">Convert Impacts to Action Limits</h3>
+    <p style="text-align: center; font-size: 14px; color: #aaa; margin-top: 0;">Spend 1 Impact to get +3 Votes, or spend 3 Impacts to get +1 Post slot</p>
     <div style="display: flex; gap: 10px;">
-        <button class="admin-btn" style="flex: 1; padding: 12px; font-size: 14px;" onclick="convertImpacts('votes')">+3 Votes</button>
-        <button class="admin-btn" style="flex: 1; padding: 12px; font-size: 14px;" onclick="convertImpacts('posts')">+1 Post</button>
+        <button class="admin-btn" style="flex: 1; padding: 12px; font-size: 14px;" onclick="convertImpacts('votes')">–1 Impact +3 Votes</button>
+        <button class="admin-btn" style="flex: 1; padding: 12px; font-size: 14px;" onclick="convertImpacts('posts')">–3 Impacts +1 Post</button>
     </div>
+</div>
+
+<div class="claim-panel">
+    <h3 style="text-align: center;">Hourly Resonance Claim</h3>
+    <p style="text-align: center; font-size: 14px; color: #aaa; margin-top: 0;">Accumulates +1 Impact every hour, up to a maximum of +6 Impacts total. Claim whenever you want before it caps out.</p>
+    <button class="admin-btn" id="claimBtn" style="background: #00ffcc; color: #000;" onclick="claimHourly()">Claim Accumulated Impacts (<span id="claimableAmount">0</span>)</button>
+    <div id="claimTimer" style="font-family: monospace; font-size: 13px; text-align: center; color: #ff00ff; margin-top: 10px;"></div>
 </div>
 
 <div id="versus">
@@ -252,7 +259,7 @@ a { color: #448aff; text-decoration: none; }
 </div>
 
 <div class="admin-panel">
-    <h3>Broadcast Breakthrough Vector</h3>
+    <h3 style="text-align: center;">Broadcast Breakthrough Vector</h3>
     <input type="text" id="new-title" class="admin-input" placeholder="Vector Title">
     <textarea id="new-desc" class="admin-input" placeholder="Manifestation Details"></textarea>
     <input type="url" id="new-url" class="admin-input" placeholder="External Reference (optional)">
@@ -262,7 +269,7 @@ a { color: #448aff; text-decoration: none; }
 </div>
 
 <div class="transfer-panel">
-    <h3>Transfer Impact</h3>
+    <h3 style="text-align: center;">Transfer Impact</h3>
     <input type="text" id="target-peer" class="admin-input" placeholder="Target Peer (e.g., Peer-5851 or Custom ID)">
     <input type="number" id="transfer-amount" class="admin-input" placeholder="Amount (e.g., 7)" min="1">
     <button class="admin-btn" onclick="transferImpact()">Send Impacts</button>
@@ -270,10 +277,11 @@ a { color: #448aff; text-decoration: none; }
 
 <div id="helpToggle" style="margin-top: 30px">Game Rules & Tips</div>
 <div id="helpText" class="collapsed">
-<p>1. Every participant gets 8 free votes and 5 free publication slots.</p>
-<p>2. Use 'Convert Impacts to Action Limits' to spend your accumulated impacts on extra votes and posts.</p>
-<p>3. Increasing your Authority (Level) scales your available limits automatically.</p>
-<p>4. Use 'Transfer Impact' to send impacts to other network members.</p>
+<p>1. Every participant gets 8 free impacts, 5 free votes and 3 free publication slots.</p>
+<p>2. Use 'Convert Impacts to Action Limits' to spend 1 impact for +3 votes, or 3 impacts for +1 post slot.</p>
+<p>3. Hourly Resonance Claim lets you earn +1 Impact per hour (max +6 impacts per 24 hours).</p>
+<p>4. Deleting a vector locally incurs a penalty of -1 Impact.</p>
+<p>5. Use 'Transfer Impact' to send impacts to other network members.</p>
 <hr style="border: none; border-top: 1px solid #555; margin: 15px 0;"><p>Boost your or your client's meme by voting for it.</p>
 <p>Don't waste your impacts when no one is online. See the log above (under Disclaimer).</p>
 <p>Vote against competitors to push their memes down.</p>
@@ -327,7 +335,6 @@ if (loreToggle && loreText) {
     });
 }
 
-// Фиксированный Peer ID из localStorage или детерминированный статический ID (можно задать вручную под конкретный IP/устройство)
 let myId = localStorage.getItem('paramount_custom_my_id');
 if (!myId) {
     myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
@@ -359,6 +366,63 @@ function updatePlayerStatsUI() {
     localStorage.setItem('paramount_player_state', JSON.stringify(playerState));
 }
 updatePlayerStatsUI();
+
+// Hourly Accumulator (+1 per hour, max +6 in 24 hours)
+const HOUR_MS = 60 * 60 * 1000;
+const MAX_CLAIMABLE = 6;
+
+function getClaimableCount() {
+    let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || '0');
+    if (!lastClaimTime) {
+        lastClaimTime = Date.now();
+        localStorage.setItem('paramount_last_claim_time', lastClaimTime.toString());
+    }
+    const elapsed = Date.now() - lastClaimTime;
+    const hoursPassed = Math.floor(elapsed / HOUR_MS);
+    return Math.min(hoursPassed, MAX_CLAIMABLE);
+}
+
+function updateClaimUI() {
+    const claimable = getClaimableCount();
+    document.getElementById('claimableAmount').innerText = claimable;
+    
+    let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || Date.now());
+    const nextMilestone = lastClaimTime + (getClaimableCount() + 1) * HOUR_MS;
+    const timeLeft = nextMilestone - Date.now();
+
+    if (claimable >= MAX_CLAIMABLE) {
+        document.getElementById('claimTimer').innerText = 'Max accumulation reached (+6 limit)! Claim now.';
+    } else if (timeLeft > 0) {
+        const mins = Math.floor((timeLeft % HOUR_MS) / 60000);
+        const secs = Math.floor((timeLeft % 60000) / 1000);
+        const hours = Math.floor(timeLeft / HOUR_MS);
+        document.getElementById('claimTimer').innerText = `Next +1 impact in: ${hours > 0 ? hours + 'h ' : ''}${mins}m ${secs}s`;
+    } else {
+        document.getElementById('claimTimer').innerText = '';
+    }
+}
+
+function claimHourly() {
+    const claimable = getClaimableCount();
+    if (claimable <= 0) {
+        return alert('No accumulated impacts available yet. Please wait at least 1 hour.');
+    }
+
+    playerState.impacts += claimable;
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+
+    // Advance last claim time by the claimed hours to preserve fractional progress
+    let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || Date.now());
+    localStorage.setItem('paramount_last_claim_time', (lastClaimTime + claimable * HOUR_MS).toString());
+    
+    updateClaimUI();
+    log(`[Claim] Collected +${claimable} hourly impacts.`);
+    alert(`Success! Claimed +${claimable} impacts.`);
+}
+
+setInterval(updateClaimUI, 1000);
+updateClaimUI();
 
 let items = JSON.parse(localStorage.getItem('paramount_versus_items')) || [];
 let currentPair = [];
@@ -484,22 +548,26 @@ async function compressImage(file) {
 }
 
 function convertImpacts(type) {
-    const cost = 3;
-    if (playerState.impacts < cost) {
-        return alert('Not enough impacts! A minimum of 3 impacts is required for conversion.');
-    }
-
-    playerState.impacts -= cost;
-    playerState.level = Math.floor(playerState.impacts / 20) + 1;
     if (type === 'votes') {
+        const cost = 1;
+        if (playerState.impacts < cost) {
+            return alert('Not enough impacts! 1 impact is required for conversion.');
+        }
+        playerState.impacts -= cost;
         playerState.votesLeft += 3;
-        log(`Converted ${cost} impacts into +3 votes.`);
+        log(`Converted ${cost} impact into +3 votes.`);
         alert('Success! 3 votes added.');
     } else if (type === 'posts') {
+        const cost = 3;
+        if (playerState.impacts < cost) {
+            return alert('Not enough impacts! 3 impacts are required for conversion.');
+        }
+        playerState.impacts -= cost;
         playerState.postsLeft += 1;
         log(`Converted ${cost} impacts into +1 post slot.`);
         alert('Success! 1 publication slot added.');
     }
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
     updatePlayerStatsUI();
 }
 
@@ -527,8 +595,7 @@ async function addItem() {
         description: desc, 
         externalUrl: url, 
         img: imgData, 
-        rating: 1500,
-        earnedImpacts: 0 
+        rating: 1500 
     };
 
     items.push(newItem);
@@ -553,24 +620,18 @@ function toggleDetails(id) {
 }
 
 function deleteItemLocal(id) {
-    if (!confirm('Are you sure you want to delete this vector from your device?')) return;
+    if (!confirm('Are you sure you want to delete this vector from your device? Penalty: -1 Impact.')) return;
     
     let index = items.findIndex(i => i.id === id);
     if (index !== -1) {
-        let item = items[index];
-        
-        if (item.sender === myId && item.earnedImpacts > 0) {
-            let toDeduct = item.earnedImpacts;
-            playerState.impacts = Math.max(0, playerState.impacts - toDeduct);
-            playerState.level = Math.floor(playerState.impacts / 20) + 1;
-            log(`[Impacts] Removed vector "${item.title}". Deducted ${toDeduct} linked impact(s).`);
-            updatePlayerStatsUI();
-        }
-
         items.splice(index, 1);
         saveLocal();
 
-        log(`You removed vector locally: ${id}`);
+        playerState.impacts -= 1;
+        playerState.level = Math.floor(playerState.impacts / 20) + 1;
+        updatePlayerStatsUI();
+
+        log(`You removed vector locally: ${id}. Penalty applied: -1 Impact.`);
         updateRankingList();
         if (currentPair.length > 0 && (currentPair[0] === index || currentPair[1] === index || items.length < 2)) {
             currentPair = [];
@@ -580,6 +641,7 @@ function deleteItemLocal(id) {
         }
     }
 }
+
 function updateRankingList() {
     const sorted = [...items].sort((a, b) => b.rating - a.rating);
     let html = '';
@@ -591,7 +653,7 @@ function updateRankingList() {
         <div id="details-${item.id}" class="item-details">
             <p>${item.description || 'No description.'}</p>
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" class="external-link">External Vector →</a>` : ''}
-            <button class="admin-btn" type="button" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
+            <button class="admin-btn" type="button" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally (-1 Impact)</button>
         </div>`;
     });
     $('#ranking-list').html(html || '<div style="text-align: center; padding:10px; color:#777;">Matrix is empty. Inject first vectors below!</div>');
@@ -621,27 +683,14 @@ function vote(side) {
     }
     
     playerState.votesLeft--;
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
 
     const winIdx = currentPair[side === 'left' ? 0 : 1];
     const loseIdx = currentPair[side === 'left' ? 1 : 0];
     
     const winItem = items[winIdx];
     const loseItem = items[loseIdx];
-
-    if (winItem.sender === myId) {
-        playerState.impacts += 1;
-        winItem.earnedImpacts = (winItem.earnedImpacts || 0) + 1;
-        log(`[Impacts] +1 impact earned: your meme "${winItem.title}" won a battle!`);
-    }
-
-    if (loseItem.sender === myId) {
-        playerState.impacts += 1;
-        loseItem.earnedImpacts = (loseItem.earnedImpacts || 0) + 1;
-        log(`[Impacts] +1 impact earned for voting against your meme "${loseItem.title}".`);
-    }
-
-    playerState.level = Math.floor(playerState.impacts / 20) + 1;
-    updatePlayerStatsUI();
 
     const rW = winItem.rating, rL = loseItem.rating;
     const expW = 1 / (1 + Math.pow(10, (rL - rW) / 400));
