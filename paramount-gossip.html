@@ -34,18 +34,25 @@ body {
 #disclaimerText.collapsed {
     display: none;
 }
-#statusToggle, #disclaimerToggle {
+
+#helpText.collapsed {
+    display: none;
+}
+    
+#statusToggle, #disclaimerToggle, #helpToggle {
     cursor: pointer;
 }
 
 
 .network-status::before,
-#disclaimerToggle::before {
+#disclaimerToggle::before,
+#helpToggle::before {
     content: "▶ ";
 }
 
 .network-status.open::before,
-#disclaimerToggle.open::before {
+#disclaimerToggle.open::before,
+#helpToggle.open::before {
     content: "▼ ";
 }
 .network-status { 
@@ -157,6 +164,23 @@ textarea.admin-input { height: 100px; resize: vertical; }
     color: #0f0; 
     margin-bottom: 10px;  
 }
+
+#helpToggle { 
+    background: #111; 
+    font-size: 14px; 
+    font-family: monospace; 
+    color: #0f0; 
+    margin-bottom: 10px;  
+}
+
+#helpText { 
+    background: #111; 
+    font-size: 14px; 
+    font-family: monospace; 
+    color: #0f0; 
+    margin-bottom: 10px;  
+}
+    
 #header-link {
     display: flex;
     justify-content: center;
@@ -199,6 +223,8 @@ a {
 </div>
 <div id="disclaimerToggle">Disclaimer</div>
 <div id="disclaimerText" class="collapsed">All messages and data transmitted in this session are for informational and demonstration purposes only. The app uses public/experimental broker channels that do not guarantee absolute privacy, encryption, or data persistence. Use at your own risk. Do not transmit sensitive personal data.</div>
+<div id="helpToggle">Help mindset</div>
+<div id="helpText" class="collapsed">Boost your or your client's meme by voting for it. Vote against competitors to push their memes down. This keeps the system extremely dynamic.</div>
 
 <div class="network-status open" id="statusToggle">
     <span id="netStatus">You are connecting to the network... (<span id="nodeId">...</span>)</span>
@@ -262,6 +288,16 @@ if (disclaimerToggle && disclaimerText) {
     disclaimerToggle.addEventListener('click', () => {
         disclaimerText.classList.toggle('collapsed');
         disclaimerToggle.classList.toggle('open');
+    });
+}
+
+const helpToggle = document.getElementById('helpToggle');
+const helpText = document.getElementById('helpText');
+
+if (helpToggle && helpText) {
+    helpToggle.addEventListener('click', () => {
+        helpText.classList.toggle('collapsed');
+        helpToggle.classList.toggle('open');
     });
 }
 
