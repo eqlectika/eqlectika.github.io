@@ -60,7 +60,6 @@ body {
     margin-bottom: 10px; 
 }
 
-/* Игровая панель статуса резонанса */
 .player-stats {
     background: #161616;
     border: 1px solid #333;
@@ -103,7 +102,8 @@ body {
 .ranking-info { flex-grow: 1; display: flex; justify-content: space-between; align-items: center; }
 .item-details { display: none; padding: 15px; background: #050505; border-bottom: 1px solid #222; font-size: 14px; color: #ccc; }
 .external-link { color: #448aff; text-decoration: none; display: block; margin-top: 10px; font-weight: bold; }
-.admin-panel { margin-top: 40px; padding: 10px; background: #1a1a1a; border: 1px solid #ff00ff; }
+
+.admin-panel, .transfer-panel, .exchange-panel { margin-top: 20px; padding: 10px; background: #1a1a1a; border: 1px solid #ff00ff; }
 .admin-input { 
     width: 100%; 
     padding: 12px; 
@@ -200,19 +200,13 @@ a { color: #448aff; text-decoration: none; }
 </div>
 
 <div id="loreToggle">Game Doctrine</div>
-<div id="loreText" class="collapsed">
-<p>How effective are you? How much more interesting can you become? Your intentions are creative. And your capabilities are far greater than anyone ever led you to believe. We've stripped away the veneer and are delving into the deep architecture: transforming a distributed node from a content evaluation tool into a resonant circuit for personal breakthrough.</p>
+<div id="loreText" class="collapsed">Насколько вы эффективны? Насколько интереснее вы можете стать? Ваши намерения созидательны. А ваши способности намного больше, чем кто-либо когда-либо позволял вам поверить. Синхронизируй точки прорыва, усиливай резонанс сети.</div>
 
-<p>The network no longer broadcasts "noise"—it synchronizes vectors of creative will. Every anonymous vote here is not a click, but a calibration of shared potential, where the system amplifies the intentions of each participant to the scale of the network.</p>
-
-<p>Synchronize breakthrough points, amplify the resonance of the network.</p>
-</div>
-
-<!-- Игровая панель статуса игрока -->
 <div class="player-stats">
-    <div class="stat-box">Energy: <span id="playerEnergy">100</span></div>
-    <div class="stat-box">Resonance Level: <span id="playerLevel">1</span></div>
-    <div class="stat-box">Impact: <span id="playerImpact">0</span></div>
+    <div class="stat-box">Level: <span id="playerLevel">1</span></div>
+    <div class="stat-box">Impacts: <span id="playerImpact">3</span></div>
+    <div class="stat-box">Votes: <span id="votesLeft">5</span></div>
+    <div class="stat-box">Posts: <span id="postsLeft">3</span></div>
 </div>
 
 <div id="disclaimerToggle">Disclaimer</div>
@@ -223,6 +217,15 @@ a { color: #448aff; text-decoration: none; }
 </div>
 
 <div id="logContainer"></div>
+
+<div class="exchange-panel">
+    <h3>Convert Impacts to Action Limits</h3>
+    <p style="font-size: 13px; color: #aaa; margin-top: 0;">Spend 3 Impacts to get +3 Votes or +1 Post slot.</p>
+    <div style="display: flex; gap: 10px;">
+        <button class="admin-btn" style="flex: 1; padding: 12px; font-size: 14px;" onclick="convertImpacts('votes')">+3 Votes (Cost: 3)</button>
+        <button class="admin-btn" style="flex: 1; padding: 12px; font-size: 14px;" onclick="convertImpacts('posts')">+1 Post (Cost: 3)</button>
+    </div>
+</div>
 
 <div id="versus">
     <div class="ranking-title">Resonance Match</div>
@@ -253,11 +256,19 @@ a { color: #448aff; text-decoration: none; }
     <button class="admin-btn" onclick="addItem()">Inject Vector to Network</button>
 </div>
 
+<div class="transfer-panel">
+    <h3>Transfer Impact</h3>
+    <input type="text" id="target-peer" class="admin-input" placeholder="Target Peer (e.g., Peer-5851)">
+    <input type="number" id="transfer-amount" class="admin-input" placeholder="Amount (e.g., 7)" min="1">
+    <button class="admin-btn" onclick="transferImpact()">Send Impacts</button>
+</div>
+
 <div id="helpToggle" style="margin-top: 30px">Game Rules</div>
 <div id="helpText" class="collapsed">
-<p>1. Vote for the vector that displays higher constructive efficiency to align network consensus.</p>
-<p>2. Each vote expends 10 Energy, which recovers over time.</p>
-<p>3. Broadcast your breakthrough vectors to scale your personal Impact score globally.</p>
+<p>1. Every participant gets 5 free votes and 3 free publication slots.</p>
+<p>2. Use 'Convert Impacts to Action Limits' to spend your accumulated impacts on extra votes and posts.</p>
+<p>3. Increasing your Authority (Level) scales your available limits automatically.</p>
+<p>4. Use 'Transfer Impact' to send impacts to other network members.</p>
 </div>
     
 <div class="footer-credit">
@@ -306,23 +317,25 @@ if (loreToggle && loreText) {
 const myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
 document.getElementById('nodeId').innerText = myId;
 
-// Игровая механика персонажа
-let playerState = JSON.parse(localStorage.getItem('gossip_player_state')) || { energy: 100, level: 1, impact: 0 };
+let playerState = JSON.parse(localStorage.getItem('gossip_player_state'));
+if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playerState.postsLeft === 'undefined') {
+    playerState = { 
+        impacts: 3, 
+        level: 1, 
+        votesLeft: 8, 
+        postsLeft: 5 
+    };
+    localStorage.setItem('gossip_player_state', JSON.stringify(playerState));
+}
+
 function updatePlayerStatsUI() {
-    document.getElementById('playerEnergy').innerText = playerState.energy;
+    document.getElementById('playerImpact').innerText = playerState.impacts;
     document.getElementById('playerLevel').innerText = playerState.level;
-    document.getElementById('playerImpact').innerText = playerState.impact;
+    document.getElementById('votesLeft').innerText = playerState.votesLeft;
+    document.getElementById('postsLeft').innerText = playerState.postsLeft;
     localStorage.setItem('gossip_player_state', JSON.stringify(playerState));
 }
 updatePlayerStatsUI();
-
-// Восстановление энергии со временем
-setInterval(() => {
-    if (playerState.energy < 100) {
-        playerState.energy = Math.min(100, playerState.energy + 2);
-        updatePlayerStatsUI();
-    }
-}, 5000);
 
 let items = JSON.parse(localStorage.getItem('gossip_versus_items')) || [];
 let currentPair = [];
@@ -368,6 +381,14 @@ client.on('message', (topic, payload) => {
                 updateRankingList();
             }
         }
+        else if (packet.type === 'TRANSFER_IMPACT') {
+            if (packet.target === myId) {
+                playerState.impacts += packet.amount;
+                updatePlayerStatsUI();
+                log(`[Received] Got ${packet.amount} impacts from ${packet.sender}!`);
+                alert(`Внимание! Получено ${packet.amount} импактов от ${packet.sender}`);
+            }
+        }
     } catch(e) {
         log("Packet processing error: " + e.message);
     }
@@ -403,17 +424,40 @@ async function compressImage(file) {
     });
 }
 
+function convertImpacts(type) {
+    const cost = 3;
+    if (playerState.impacts < cost) {
+        return alert('Недостаточно импактов! Требуется минимум 3 импакта для конвертации.');
+    }
+
+    playerState.impacts -= cost;
+    if (type === 'votes') {
+        playerState.votesLeft += 3;
+        log(`Converted ${cost} impacts into +3 votes.`);
+        alert('Успешно! Добавлено 3 голоса.');
+    } else if (type === 'posts') {
+        playerState.postsLeft += 1;
+        log(`Converted ${cost} impacts into +1 post slot.`);
+        alert('Успешно! Добавлен 1 слот публикации.');
+    }
+    updatePlayerStatsUI();
+}
+
 async function addItem() {
+    if (playerState.postsLeft <= 0) {
+        alert('Лимит публикаций исчерпан! Обменяйте импакты на слоты публикаций выше.');
+        return;
+    }
+
     const title = $('#new-title').val().trim();
     const desc = $('#new-desc').val().trim();
     const url = $('#new-url').val().trim();
     const file = $('#new-img-file')[0].files[0];
     if (!title || !file) return alert('Enter title and select visual vector!');
 
-    if (playerState.energy < 25) return alert('Insufficient Energy! Wait for regeneration.');
-    playerState.energy -= 25;
-    playerState.impact += 50;
-    playerState.level = Math.floor(playerState.impact / 200) + 1;
+    playerState.postsLeft--;
+    playerState.impacts += 5;
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
     updatePlayerStatsUI();
 
     const imgData = await compressImage(file);
@@ -435,7 +479,7 @@ async function addItem() {
         item: newItem
     }));
 
-    log(`You injected vector: "${title}" (+50 Impact)`);
+    log(`You injected vector: "${title}"`);
     $('#new-title, #new-desc, #new-url, #new-img-file').val('');
     $('#file-label-text').text("Select Visual Vector");
     
@@ -476,11 +520,14 @@ function nextPair() {
 
 function vote(side) {
     if (items.length < 2) return;
-    if (playerState.energy < 10) return alert('Low Energy! Take a moment to recover.');
+    if (playerState.votesLeft <= 0) {
+        alert('Лимит голосов исчерпан! Обменяйте импакты на голоса с помощью панели конвертации выше.');
+        return;
+    }
     
-    playerState.energy -= 10;
-    playerState.impact += 5;
-    playerState.level = Math.floor(playerState.impact / 200) + 1;
+    playerState.votesLeft--;
+    playerState.impacts += 2;
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
     updatePlayerStatsUI();
 
     const winIdx = currentPair[side === 'left' ? 0 : 1];
@@ -511,6 +558,33 @@ function vote(side) {
         nextPair(); 
         $(this).animate({ opacity: 1 }, 50); 
     });
+}
+
+function transferImpact() {
+    const target = $('#target-peer').val().trim();
+    const amount = parseInt($('#transfer-amount').val());
+
+    if (!target || !amount || amount <= 0) {
+        return alert('Введите корректный ID участника и количество импактов!');
+    }
+    if (playerState.impacts < amount) {
+        return alert('Импакты закончились! У вас недостаточно импактов для перевода.');
+    }
+
+    playerState.impacts -= amount;
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'TRANSFER_IMPACT',
+        sender: myId,
+        target: target,
+        amount: amount
+    }));
+
+    log(`Transferred ${amount} impacts to ${target}`);
+    alert(`Успешно отправлено ${amount} импактов пользователю ${target}`);
+    $('#target-peer, #transfer-amount').val('');
 }
 
 updateRankingList();
