@@ -540,6 +540,45 @@ function log(txt) {
     l.innerHTML += `<div>> ${txt}</div>`;
     l.scrollTop = l.scrollHeight;
 }
+
+let touchStartY = 0;
+const pullIndicator = document.getElementById('pullToRefresh');
+
+window.addEventListener('touchstart', (e) => {
+    if (window.scrollY === 0) {
+        touchStartY = e.touches[0].clientY;
+    }
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (window.scrollY === 0 && touchStartY > 0) {
+        const touchY = e.touches[0].clientY;
+        const diff = touchY - touchStartY;
+        if (diff > 0 && diff < 150) {
+            pullIndicator.style.height = diff + 'px';
+            if (diff > 80) {
+                pullIndicator.innerText = 'Release to reload ↑';
+                pullIndicator.style.color = '#0f0';
+            } else {
+                pullIndicator.innerText = '↓ Pull down to reload';
+                pullIndicator.style.color = '#777';
+            }
+        }
+    }
+}, { passive: true });
+
+window.addEventListener('touchend', (e) => {
+    if (window.scrollY === 0 && touchStartY > 0) {
+        const touchY = e.changedTouches[0].clientY;
+        if (touchY - touchStartY > 80) {
+            pullIndicator.innerText = 'Reloading...';
+            location.reload();
+        } else {
+            pullIndicator.style.height = '0px';
+        }
+        touchStartY = 0;
+    }
+});
 </script>
 
 </body>
