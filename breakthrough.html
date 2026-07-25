@@ -212,7 +212,7 @@ a { color: #448aff; text-decoration: none; }
   </a>
   <div style="display: flex; flex-direction: column;">
     <h2 style="margin: -4px; line-height: 0.6; margin-top: 32px;">Meme Battle</h2>
-    <span style="margin: -4px; font-size: 14px; color: #ffdd00; margin-top: 5px;">
+    <span style="margin: -3px; font-size: 14px; color: #ffdd00; margin-top: 5px;">
       Breakthrough engine
     </span>
   </div>
@@ -779,7 +779,6 @@ async function buyWithMetaMask(amountOfImpacts, ethCost) {
         return alert('MetaMask is not installed!');
     }
 
-    // Если установлено несколько кошельков, ищем именно MetaMask
     if (provider.providers) {
         provider = provider.providers.find((p) => p.isMetaMask) || provider;
     }
@@ -860,6 +859,42 @@ function log(txt) {
     l.innerHTML += `<div>> ${txt}</div>`;
     l.scrollTop = l.scrollHeight;
 }
+
+let touchStartY = 0;
+let pullDistance = 0;
+const refreshThreshold = 90; 
+
+window.addEventListener('touchstart', (e) => {
+
+    if (window.scrollY === 0) {
+        touchStartY = e.touches[0].clientY;
+    } else {
+        touchStartY = 0;
+    }
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (!touchStartY) return;
+    const currentY = e.touches[0].clientY;
+    pullDistance = currentY - touchStartY;
+    
+    if (pullDistance > 0) {
+
+    }
+}, { passive: true });
+
+window.addEventListener('touchend', () => {
+    if (!touchStartY) return;
+    
+    if (pullDistance > refreshThreshold) {
+
+        location.reload();
+    }
+    
+    touchStartY = 0;
+    pullDistance = 0;
+});
+
 </script>
 
 </body>
