@@ -20,6 +20,12 @@ body {
     padding: 0; 
 }
 
+.desktop-only { display: block; }
+.mobile-no-mm-only { display: none; }
+
+@media (max-width: 768px) {
+}
+    
 .app-container {
     max-width: 768px;
     margin: 0 auto;
@@ -293,14 +299,22 @@ a { color: #448aff; text-decoration: none; }
     </div>
 </div>
 
-<div class="exchange-panel" style="margin-top: 20px; padding: 10px; background: #2a2a2a; border: 1px solid #777;">
+<div class="exchange-panel" id="metamaskBuyPanel" style="margin-top: 20px; padding: 10px; background: #2a2a2a; border: 1px solid #777;">
     <h3 style="text-align: center;">Buy Impacts via MetaMask</h3>
     <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #f6851b; color: #000;" onclick="buyWithMetaMask(20, '0.0004')">+50 Impacts (0.0004 ETH)</button>
+        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #f6851b; color: #000;" onclick="buyWithMetaMask(25, '0.0005')">+25 Impacts (0.0005 ETH)</button>
         <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #f6851b; color: #000;" onclick="buyWithMetaMask(50, '0.001')">+50 Impacts (0.001 ETH)</button>
         <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #f6851b; color: #000;" onclick="buyWithMetaMask(100, '0.002')">+100 Impacts (0.002 ETH)</button>
         <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #f6851b; color: #000;" onclick="buyWithMetaMask(500, '0.01')">+500 Impacts (0.01 ETH)</button>
     </div>
+</div>
+
+<div class="exchange-panel" id="mobileWarningPanel" style="display: none; background: #1a1a1a; border: 1px solid #f6851b; text-align: center; padding: 20px;">
+    <h3 style="color: #f6851b; margin-top: 0;">MetaMask Browser Required</h3>
+    <p style="font-size: 14px; color: #ccc; line-height: 1.5;">
+        To make purchases on your mobile device, open this site in the MetaMask app's built-in browser.
+    </p>
+    <button class="admin-btn" style="background: #f6851b; color: #000; margin-top: 10px;" onclick="openInMetaMaskBrowser()">Open in MetaMask</button>
 </div>
     
 <div class="transfer-panel">
@@ -895,6 +909,19 @@ window.addEventListener('touchend', () => {
     pullDistance = 0;
 });
 
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const hasEthereum = typeof window.ethereum !== 'undefined';
+
+if (isMobile && !hasEthereum) {
+    document.getElementById('metamaskBuyPanel').style.display = 'none';
+    document.getElementById('mobileWarningPanel').style.display = 'block';
+}
+
+function openInMetaMaskBrowser() {
+    const currentUrl = window.location.href.replace(/^https?:\/\//, '');
+    const metamaskAppUrl = `https://metamask.app.link/dapp/${currentUrl}`;
+    window.location.href = metamaskAppUrl;
+}
 </script>
 
 </body>
