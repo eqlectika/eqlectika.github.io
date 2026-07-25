@@ -752,24 +752,31 @@ function vote(side) {
 }
 
 async function buyWithMetaMask(amountOfImpacts, ethCost) {
-    if (typeof window.ethereum === 'undefined') {
-        return alert('MetaMask is not installed! Please use a Web3-enabled browser.');
+    let provider = window.ethereum;
+
+    if (!provider) {
+        return alert('MetaMask is not installed!');
+    }
+
+    // Если установлено несколько кошельков, ищем именно MetaMask
+    if (provider.providers) {
+        provider = provider.providers.find((p) => p.isMetaMask) || provider;
     }
 
     try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
         const userAccount = accounts[0];
 
         const recipientAddress = WORKER_CONFIG.destination;
-const valueWei = '0x' + BigInt(Math.floor(parseFloat(ethCost) * 1e18)).toString(16);
-        
+        const valueWei = '0x' + BigInt(Math.floor(parseFloat(ethCost) * 1e18)).toString(16);
+
         const transactionParameters = {
             from: userAccount,
             to: recipientAddress,
             value: valueWei,
         };
 
-        const txHash = await window.ethereum.request({
+        const txHash = await provider.request({
             method: 'eth_sendTransaction',
             params: [transactionParameters],
         });
