@@ -257,7 +257,6 @@ a { color: #448aff; text-decoration: none; }
 
 <div class="claim-panel">
     <h3 style="text-align: center;">Hourly Resonance Claim</h3>
-    <p style="text-align: center; font-size: 14px; color: #aaa; margin-top: 0;">Accumulates +1 Impact every hour, up to a maximum of +8 Impacts total. Claim whenever you want before it caps out.</p>
     <button class="admin-btn" id="claimBtn" style="background: #00ffcc; color: #000;" onclick="claimHourly()">Claim Accumulated Impacts (<span id="claimableAmount">0</span>)</button>
     <div id="claimTimer" style="font-family: monospace; font-size: 13px; text-align: center; color: #00ffcc; margin-top: 10px;"></div>
 </div>
@@ -285,7 +284,7 @@ a { color: #448aff; text-decoration: none; }
 Other participants can see your meme(s) and vote for them. You can also vote for other people's meme(s) that may appear on your screen. If no one is online, your meme(s) can not be visible by anyone (so share the link with someone to interact).</p>
     <li style="margin-bottom: 8px;">Every competitor gets 8 free impacts, 5 free votes and 3 free publication slots.</li>
     <li style="margin-bottom: 8px;">Use 'Convert Impacts to Action Limits' to spend 1 impact for +3 votes, or 3 impacts for +1 post slot.</li>
-    <li style="margin-bottom: 8px;">Hourly Resonance Claim lets you earn +1 Impact per hour (max +8 impacts per 24 hours).</li>
+    <li style="margin-bottom: 8px;">Hourly Resonance Claim lets you earn +2 Impact per hour (theoretically, would accumulate 48 impacts per 24 hours). If you return in a day (or later), the long-term absence limitation will kick in, and you will receive only 24 impact.</li>
     <li style="margin-bottom: 8px;">Deleting a vector locally incurs a penalty of -1 Impact.</li>
     <li style="margin-bottom: 8px;">Use 'Transfer Impact' to send impacts to other network members.</li>
 </ol>
@@ -387,9 +386,8 @@ function updatePlayerStatsUI() {
 }
 updatePlayerStatsUI();
 
-// Hourly Accumulator (+1 per hour, max +6 in 24 hours)
 const HOUR_MS = 60 * 60 * 1000;
-const MAX_CLAIMABLE = 8;
+const DAY_MS = 24 * HOUR_MS;
 
 function getClaimableCount() {
     let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || '0');
@@ -398,27 +396,34 @@ function getClaimableCount() {
         localStorage.setItem('paramount_last_claim_time', lastClaimTime.toString());
     }
     const elapsed = Date.now() - lastClaimTime;
-    const hoursPassed = Math.floor(elapsed / HOUR_MS);
-    return Math.min(hoursPassed, MAX_CLAIMABLE);
+    
+    if (elapsed < HOUR_MS) {
+        return 0;
+    }
+    if (elapsed >= DAY_MS) {
+        return 24;
+    }
+    return 4;
 }
 
 function updateClaimUI() {
+    let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || Date.now());
+    const elapsed = Date.now() - lastClaimTime;
     const claimable = getClaimableCount();
+    
     document.getElementById('claimableAmount').innerText = claimable;
     
-    let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || Date.now());
-    const nextMilestone = lastClaimTime + (getClaimableCount() + 1) * HOUR_MS;
-    const timeLeft = nextMilestone - Date.now();
-
-    if (claimable >= MAX_CLAIMABLE) {
-        document.getElementById('claimTimer').innerText = 'Max accumulation reached (+6 limit)! Claim now.';
-    } else if (timeLeft > 0) {
+    if (elapsed >= DAY_MS) {
+        document.getElementById('claimTimer').innerText = '24-hour cap reached! Claim now.';
+    } else if (elapsed < HOUR_MS) {
+        const nextMilestone = lastClaimTime + HOUR_MS;
+        const timeLeft = nextMilestone - Date.now();
         const mins = Math.floor((timeLeft % HOUR_MS) / 60000);
         const secs = Math.floor((timeLeft % 60000) / 1000);
         const hours = Math.floor(timeLeft / HOUR_MS);
-        document.getElementById('claimTimer').innerText = `Next +1 impact in: ${hours > 0 ? hours + 'h ' : ''}${mins}m ${secs}s`;
+        document.getElementById('claimTimer').innerText = `Next +4 impacts in: ${hours > 0 ? hours + 'h ' : ''}${mins}m ${secs}s`;
     } else {
-        document.getElementById('claimTimer').innerText = '';
+        document.getElementById('claimTimer').innerText = 'Claim impacts +4 every hour or wait up to 24h for accumulate +24 every day';
     }
 }
 
@@ -432,12 +437,10 @@ function claimHourly() {
     playerState.level = Math.floor(playerState.impacts / 20) + 1;
     updatePlayerStatsUI();
 
-    // Advance last claim time by the claimed hours to preserve fractional progress
-    let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || Date.now());
-    localStorage.setItem('paramount_last_claim_time', (lastClaimTime + claimable * HOUR_MS).toString());
+    localStorage.setItem('paramount_last_claim_time', Date.now().toString());
     
     updateClaimUI();
-    log(`[Claim] Collected +${claimable} hourly impacts.`);
+    log(`[Claim] Collected +${claimable} impacts.`);
     alert(`Success! Claimed +${claimable} impacts.`);
 }
 
