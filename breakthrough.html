@@ -324,6 +324,13 @@ a { color: #448aff; text-decoration: none; }
     </div>
 </div>
 
+<div class="exchange-panel" id="desktopWarningPanel" style="display: none; background: #1a1a1a; border: 1px solid #f6851b; text-align: center; padding: 20px;">
+    <h3 style="color: #f6851b; margin-top: 0;">MetaMask Extension Required</h3>
+    <p style="font-size: 14px; color: #ccc; line-height: 1.5;">
+        To make purchases on desktop, please install the MetaMask browser extension.
+    </p>
+<a href="https://metamask.io/" target="_blank" class="admin-btn" style="display: block; box-sizing: border-box; background: #f6851b; color: #000; margin-top: 10px; text-align: center; text-decoration: none;">Install MetaMask</a></div>
+
 <div class="exchange-panel" id="mobileWarningPanel" style="display: none; background: #1a1a1a; border: 1px solid #f6851b; text-align: center; padding: 20px;">
     <h3 style="color: #f6851b; margin-top: 0;">MetaMask Browser Required</h3>
     <p style="font-size: 14px; color: #ccc; line-height: 1.5;">
@@ -938,9 +945,13 @@ window.addEventListener('touchend', () => {
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 const hasEthereum = typeof window.ethereum !== 'undefined';
 
-if (isMobile && !hasEthereum) {
+if (!hasEthereum) {
     document.getElementById('metamaskBuyPanel').style.display = 'none';
-    document.getElementById('mobileWarningPanel').style.display = 'block';
+    if (isMobile) {
+        document.getElementById('mobileWarningPanel').style.display = 'block';
+    } else {
+        document.getElementById('desktopWarningPanel').style.display = 'block';
+    }
 }
 
 function openInMetaMaskBrowser() {
