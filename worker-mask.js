@@ -1,7 +1,7 @@
 const WORKER_CONFIG = {
     destination: '0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8'
 };
-
+ 
 addEventListener('fetch', event => {
     event.respondWith(handleRequest(event.request, event.env));
 });
