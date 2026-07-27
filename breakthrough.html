@@ -1001,14 +1001,14 @@ async function sendToAIGuide() {
     appendAIChat(`<span id="${loadingId}">AI is computing vector...</span>`);
 
     try {
-        const apiKey = ""; // Вставьте ваш рабочий API-ключ Gemini при необходимости или настройте подстановку
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        const response = await fetch('/api/ai-guide', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: `Context - Level: ${playerState.level}, Impacts: ${playerState.impacts}, Votes: ${playerState.votesLeft}. User query: ${text}` }]
-                }]
+                level: playerState.level,
+                impacts: playerState.impacts,
+                votesLeft: playerState.votesLeft,
+                text: text
             })
         });
 
@@ -1026,14 +1026,6 @@ async function sendToAIGuide() {
         const loadingElement = document.getElementById(loadingId);
         if (loadingElement) loadingElement.parentElement.remove();
         appendAIChat(`AI: Connection error with the neural node.`);
-    }
-}
-
-function appendAIChat(htmlText) {
-    const chatLog = document.getElementById('ai-chat-log');
-    if (chatLog) {
-        chatLog.innerHTML += `<div>> ${htmlText}</div>`;
-        chatLog.scrollTop = chatLog.scrollHeight;
     }
 }
 </script>
