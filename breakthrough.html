@@ -364,13 +364,13 @@ a { color: #448aff; text-decoration: none; }
 </div>
 
 <div class="exchange-panel" style="border-color: #00ffcc; background: #001a1a; margin-top: 20px;">
-    <h3 style="color: #00ffcc; text-align: center;">Breakthrough AI Guide</h3>
-    <div id="ai-chat-log" style="height: 100px; overflow-y: auto; font-family: monospace; font-size: 13px; color: #00ffcc; background: #000; padding: 8px; margin-bottom: 10px;">
-        > System: AI Guide initialized. Ask me about the doctrine or matrix mechanics.
+    <h3 style="color: #00ffcc; text-align: center;">Breakthrough Local Guide</h3>
+    <div id="guide-chat-log" style="height: 120px; overflow-y: auto; font-family: monospace; font-size: 13px; color: #00ffcc; background: #000; padding: 8px; margin-bottom: 10px; scrollbar-width: thin; scrollbar-color: #333 #000;">
+        > System: Local Guide initialized. Ask me about vectors, voting, impacts, or mechanics.
     </div>
     <div style="display: flex; gap: 5px;">
-        <input type="text" id="ai-input" class="admin-input" placeholder="Ask AI Guide..." style="margin-bottom: 0; padding: 8px;">
-        <button class="admin-btn" style="width: auto; padding: 8px 15px; background: #00ffcc; color: #000;" onclick="sendToAIGuide()">Send</button>
+        <input type="text" id="guide-input" class="admin-input" placeholder="Ask Guide (e.g., inject, vote, impact)..." style="margin-bottom: 0; padding: 8px;">
+        <button class="admin-btn" style="width: auto; padding: 8px 15px; background: #00ffcc; color: #000;" onclick="sendToGuide()">Send</button>
     </div>
 </div>
     
@@ -433,45 +433,6 @@ a { color: #448aff; text-decoration: none; }
 </div>
 </div>
 
-<script>
-function sendToAIGuide() {
-    const inputField = document.getElementById('ai-input');
-    const text = inputField.value.trim();
-    if (!text) return;
-    
-    appendAIChat(`You: ${text}`);
-    inputField.value = '';
-
-    setTimeout(() => {
-        const reply = generateAIResponse(text);
-        appendAIChat(`AI: ${reply}`);
-    }, 600);
-}
-
-function appendAIChat(msg) {
-    const log = document.getElementById('ai-chat-log');
-    log.innerHTML += `<div>${msg}</div>`;
-    log.scrollTop = log.scrollHeight;
-}
-
-function generateAIResponse(query) {
-    const q = query.toLowerCase();
-    if (q.includes('why') || q.includes('meaning') || q.includes('scroll') || q.includes('scrolling')) {
-        return 'Regular scrolling is passive. Here, your patterns collide through the ELO system, calibrating shared resonance. You are not a consumer; you are a network node.';
-    }
-    if (q.includes('nobody') || q.includes('no one') || q.includes('others') || q.includes('link') || q.includes('see')) {
-        return 'Data is stored locally in browser caches. A single node is blind. Distribute the link so other algorithms can encounter your vector.';
-    }
-    return 'Your intentions are creative. Inject your vector, vote for weak memes against strong ones, and trigger resonance.';
-}
-
-document.getElementById('ai-input').addEventListener('keydown', function(event) {
-    if (event.key === 'Enter') {
-        event.preventDefault();
-        sendToAIGuide();
-    }
-});
-</script>
 <script src="worker-mask.js"></script>
 <script>
 const statusToggle = document.getElementById('statusToggle');
@@ -1035,6 +996,64 @@ function openInMetaMaskBrowser() {
     const metamaskAppUrl = `https://metamask.app.link/dapp/${currentUrl}`;
     window.location.href = metamaskAppUrl;
 }
+
+function sendToGuide() {
+    const inputField = document.getElementById('guide-input');
+    const text = inputField.value.trim();
+    if (!text) return;
+    
+    appendGuideChat(`You: ${text}`);
+    inputField.value = '';
+
+    setTimeout(() => {
+        const reply = generateGuideResponse(text);
+        appendGuideChat(`Guide: ${reply}`);
+    }, 600);
+}
+
+function appendGuideChat(msg) {
+    const log = document.getElementById('guide-chat-log');
+    log.innerHTML += `<div>${msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+}
+
+function generateGuideResponse(query) {
+    const q = query.toLowerCase();
+    
+    if (q.includes('hi') || q.includes('hello') || q.includes('hey') || q.includes('how') || q.includes('what') || q.includes('greetings')) {
+        return 'Hi! This is not an AI agent, and the list of responses is limited. You can use keywords (from the content of this application) instead of detailed questions or refer to the description below for more detailed information. How can I help you navigate the matrix?';
+    }
+    
+    if (q.includes('inject') || q.includes('vector') || q.includes('manifestation') || q.includes('reference') || q.includes('description') || q.includes('details') || q.includes('external') || q.includes('post') || q.includes('publish') || q.includes('image') || q.includes('what') || q.includes('to do') || q.includes('upload') || q.includes('choose')) {
+        return '"Inject Vector to Network" is sending your publication (meme or creative work) into the general matrix: set a Vector Title, Manifestation Details (Description) and External Reference (Link), under "Select Visual Vector" choose your image.';
+    }
+    
+    if (q.includes('vote') || q.includes('match') || q.includes('rating') || q.includes('rank') || q.includes('elo') || q.includes('compare') || q.includes('versus')) {
+        return '"Resonance Match" is a pairwise meme comparison using the ELO system. You vote for one of two big memes to adjust their rankings, which directly affects their global position in the matrix.';
+    }
+    
+    if (q.includes('impact') || q.includes('score') || q.includes('level') || q.includes('claim') || q.includes('hour') || q.includes('day') || q.includes('convert')) {
+        return 'Impacts are your internal energy and influence points. You can claim them hourly via "Hourly Resonance Claim" or buy them, and then convert them into extra votes or publication slots.';
+    }
+    
+    if (q.includes('nobody') || q.includes('no one') || q.includes('friend') || q.includes('link') || q.includes('network') || q.includes('peer') || q.includes('see') || q.includes('scroll') || q.includes('scrolling')) {
+        return 'Because data is stored locally in users\' browser caches, a single node is isolated. To get memes circulating and visible, you must share the application link with friends.';
+    }
+    
+    return 'This is not an AI agent, and the list of responses is limited. You can use keywords instead of detailed questions or refer to the description below for more detailed information. Upload images via vector injection, distribute votes in matches, and calibrate the shared matrix.';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const guideInput = document.getElementById('guide-input');
+    if (guideInput) {
+        guideInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendToGuide();
+            }
+        });
+    }
+});
 </script>
 
 </body>
