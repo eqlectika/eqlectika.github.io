@@ -354,6 +354,17 @@ a { color: #448aff; text-decoration: none; }
     </p>
     <button class="admin-btn" style="background: #f6851b; color: #000; margin-top: 10px;" onclick="openInMetaMaskBrowser()">Open in MetaMask</button>
 </div>
+
+<div class="exchange-panel" style="border-color: #00ffcc; background: #001a1a; margin-top: 20px;">
+    <h3 style="color: #00ffcc; text-align: center;">Breakthrough AI Guide</h3>
+    <div id="ai-chat-log" style="height: 100px; overflow-y: auto; font-family: monospace; font-size: 13px; color: #00ffcc; background: #000; padding: 8px; margin-bottom: 10px;">
+        > System: AI Guide initialized. Ask me about the doctrine or matrix mechanics.
+    </div>
+    <div style="display: flex; gap: 5px;">
+        <input type="text" id="ai-input" class="admin-input" placeholder="Ask AI Guide..." style="margin-bottom: 0; padding: 8px;">
+        <button class="admin-btn" style="width: auto; padding: 8px 15px; background: #00ffcc; color: #000;" onclick="sendToAIGuide()">Send</button>
+    </div>
+</div>
     
 <div id="loreToggle" style="margin-top: 20px">Game Doctrine</div>
 <div id="loreText" class="collapsed">
@@ -414,6 +425,38 @@ a { color: #448aff; text-decoration: none; }
 </div>
 </div>
 
+<script>
+function sendToAIGuide() {
+    const inputField = document.getElementById('ai-input');
+    const text = inputField.value.trim();
+    if (!text) return;
+    
+    appendAIChat(`You: ${text}`);
+    inputField.value = '';
+
+    setTimeout(() => {
+        const reply = generateAIResponse(text);
+        appendAIChat(`AI: ${reply}`);
+    }, 600);
+}
+
+function appendAIChat(msg) {
+    const log = document.getElementById('ai-chat-log');
+    log.innerHTML += `<div>${msg}</div>`;
+    log.scrollTop = log.scrollHeight;
+}
+
+function generateAIResponse(query) {
+    const q = query.toLowerCase();
+    if (q.includes('why') || q.includes('meaning') || q.includes('scroll') || q.includes('scrolling')) {
+        return 'Regular scrolling is passive. Here, your patterns collide through the ELO system, calibrating shared resonance. You are not a consumer; you are a network node.';
+    }
+    if (q.includes('nobody') || q.includes('no one') || q.includes('others') || q.includes('link') || q.includes('see')) {
+        return 'Data is stored locally in browser caches. A single node is blind. Distribute the link so other algorithms can encounter your vector.';
+    }
+    return 'Your intentions are creative. Inject your vector, vote for weak memes against strong ones, and trigger resonance.';
+}
+</script>
 <script src="worker-mask.js"></script>
 <script>
 const statusToggle = document.getElementById('statusToggle');
