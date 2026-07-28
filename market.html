@@ -436,6 +436,14 @@ a {
   min-width: 70px;
   font-size: 13px;
 }
+
+.chart-container {
+    position: relative;
+    height: 80px; /* Делаем его компактным по высоте, как индикатор */
+    width: 100%;
+    margin-bottom: -5px; /* Сдвигаем вплотную к основному графику, если требуется */
+}
+
 </style>
 </head>
 <body>
@@ -515,6 +523,9 @@ a {
 
     <div class="main-layout">
         <div class="column-left">
+
+<div class="chart-container"><canvas id="fundingHistoryChart"></canvas></div>
+
             <div class="chart-container"><canvas id="moireChart"></canvas></div>
             <div id="akai-indicator">
                 <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
@@ -532,6 +543,7 @@ a {
         </div>
     </div>
 </div>
+
 
 <div class="disclaimer-box">
     <p><strong>Legal Disclaimer:</strong> The content, software tools, algorithms, and trading signals provided on the Capital&Eqlectika website are a unique original development for research and educational purposes only. This information <strong>does not</strong> constitute financial, investment, tax, or legal advice.</p>
@@ -1764,6 +1776,79 @@ function renderFundingRate(fundingRate) {
   }
 }
 
+async function fetchHistoricalFunding(symbol, limit = 100) {
+    try {
+        const response = await fetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${symbol.toUpperCase()}&limit=${limit}`);
+        const data = await response.json();
+        
+        // Каждая запись содержит:
+        // - symbol: торговая пара
+        // - fundingTime: время выплаты (timestamp)
+        // - fundingRate: значение ставки (например, "0.00010000")
+        // - markPrice: марковая цена на момент выплаты (в некоторых эндпоинтах)
+        
+        return data.map(item => ({
+            time: item.fundingTime,
+            rate: parseFloat(item.fundingRate) * 100 // перевод в проценты
+        }));
+    } catch (error) {
+        console.error("Ошибка загрузки истории funding rate:", error);
+        return [];
+    }
+}
+
+async function initFundingHistoryChart(symbol) {
+    const res = await fetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${symbol.toUpperCase()}&limit=100`);
+    const data = await res.json();
+    
+    const labels = data.map(item => new Date(item.fundingTime).toLocaleDateString());
+    const rates = data.map(item => parseFloat(item.fundingRate) * 100);
+
+    const ctx = document.getElementById('fundingHistoryChart').getContext('2d');
+    
+    // Уничтожаем старый график, если он уже был создан для другой пары
+    if (window.fundingChartInstance) {
+        window.fundingChartInstance.destroy();
+    }
+
+    window.fundingChartInstance = new Chart(ctx, {
+        type: 'bar', // или 'line'
+        data: {
+            labels: labels,
+            datasets: [{
+                data: rates,
+                backgroundColor: rates.map(r => r >= 0 ? '#00e676' : '#ff5252'),
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }, // отключаем легенду
+                tooltip: { enabled: true }
+            },
+            scales: {
+                x: {
+                    display: false // полностью скрываем ось X и шкалу времени
+                },
+                y: {
+                    position: 'right', // переносим шкалу Y направо
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)' // тонкая сетка
+                    },
+                    ticks: {
+                        color: '#d1d4dc',
+                        font: { size: 10 }
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+
 async function getFutures() {
     const symbol = pairSelect.value.toUpperCase();
     try {
@@ -1865,6 +1950,8 @@ pairSelect.onchange = function() {
   setTimeout(getFutures, 500);
   renderMarketIndicator();
 };
+
+initFundingHistoryChart(pairSelect.value);
 
 // ===== ЗАПУСК =====
 setTimeout(getFutures, 500);
