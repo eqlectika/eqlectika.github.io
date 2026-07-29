@@ -497,6 +497,9 @@ if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playe
     localStorage.setItem('paramount_player_state', JSON.stringify(playerState));
 }
 
+let peerBalances = JSON.parse(localStorage.getItem('paramount_peer_balances')) || {};
+let blacklistedPeers = JSON.parse(localStorage.getItem('paramount_blacklist')) || [];
+
 let pendingTransfers = JSON.parse(localStorage.getItem('paramount_pending_transfers')) || {};
 function savePending() {
     localStorage.setItem('paramount_pending_transfers', JSON.stringify(pendingTransfers));
@@ -654,31 +657,61 @@ client.on('message', (topic, payload) => {
                 nextPair();
             }
         }
-        else if (packet.type === 'TRANSFER_IMPACT') {
-            if (packet.target === myId) {
-                playerState.impacts += packet.amount;
-                playerState.level = Math.floor(playerState.impacts / 20) + 1;
-                updatePlayerStatsUI();
-                saveLocal();
-                log(`[Received] Got ${packet.amount} impacts from ${packet.sender}! Sending ACK.`);
-                
-                client.publish(TOPIC, JSON.stringify({
-                    type: 'TRANSFER_ACK',
-                    sender: myId,
-                    target: packet.sender,
-                    txId: packet.txId
-                }), { qos: 1 });
+else if (packet.type === 'TRANSFER_IMPACT') {
+    // 1. Проверяем, не в черном ли списке отправитель
+    if (blacklistedPeers.includes(packet.sender)) {
+        log(`[Security] Ignored transaction from blacklisted peer: ${packet.sender}`);
+        return;
+    }
 
-                alert(`Attention! Received ${packet.amount} impacts from ${packet.sender}`);
-            }
-        }
-        else if (packet.type === 'TRANSFER_ACK') {
-            if (packet.target === myId && pendingTransfers[packet.txId]) {
-                log(`[Confirmed] Transfer ${packet.txId} acknowledged by ${packet.sender}`);
-                delete pendingTransfers[packet.txId];
-                savePending();
-            }
-        }
+    // 2. Оптимистичная валидация баланса (сложное эхо)
+    let senderBalance = peerBalances[packet.sender] ?? 8; // У всех дефолт 8 по умолчанию
+    if (senderBalance < packet.amount) {
+        log(`[CONFLICT] Double-spend or fraud detected from ${packet.sender}! Balance: ${senderBalance}, requested: ${packet.amount}`);
+        
+        // Отправляем в сеть сигнал о мошенничестве
+        client.publish(TOPIC, JSON.stringify({
+            type: 'CONFLICT_DETECT',
+            sender: myId,
+            violator: packet.sender,
+            txId: packet.txId
+        }), { qos: 1 });
+        return;
+    }
+
+    // 3. Если баланс валиден, списываем у отправителя в локальном реестре и зачисляем получателю
+    peerBalances[packet.sender] = senderBalance - packet.amount;
+    
+    if (packet.target === myId) {
+        playerState.impacts += packet.amount;
+        playerState.level = Math.floor(playerState.impacts / 20) + 1;
+        updatePlayerStatsUI();
+        
+        client.publish(TOPIC, JSON.stringify({
+            type: 'TRANSFER_ACK',
+            sender: myId,
+            target: packet.sender,
+            txId: packet.txId
+        }), { qos: 1 });
+        
+        alert(`Attention! Received ${packet.amount} impacts from ${packet.sender}`);
+    } else {
+        let targetBalance = peerBalances[packet.target] ?? 8;
+        peerBalances[packet.target] = targetBalance + packet.amount;
+    }
+    
+    localStorage.setItem('paramount_peer_balances', JSON.stringify(peerBalances));
+    saveLocal();
+}
+
+// 4. Обработка сигнала конфликта от других участников
+else if (packet.type === 'CONFLICT_DETECT') {
+    if (!blacklistedPeers.includes(packet.violator)) {
+        blacklistedPeers.push(packet.violator);
+        localStorage.setItem('paramount_blacklist', JSON.stringify(blacklistedPeers));
+        log(`[SECURITY ALERT] Peer ${packet.violator} added to blacklist due to conflict reported by ${packet.sender}`);
+    }
+}
     } catch(e) {
         log("Packet processing error: " + e.message);
     }
@@ -945,6 +978,8 @@ function vote(side) {
 function transferImpact() {
     const target = $('#target-peer').val().trim();
     const amount = parseInt($('#transfer-amount').val());
+    peerBalances[myId] = playerState.impacts;
+    localStorage.setItem('paramount_peer_balances', JSON.stringify(peerBalances));
 
     if (!target || !amount || amount <= 1) {
         return alert('Please enter the correct participant ID and number of impacts!');
