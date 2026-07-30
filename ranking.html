@@ -12,7 +12,7 @@ body {
     color: #fff; 
     font-family: monospace, sans-serif; 
     max-width: 1200px;
-    margin: 0; 
+    margin: 0 auto; 
     padding: 10px; 
     box-sizing: border-box; 
 }
@@ -38,11 +38,11 @@ body {
 .ranking-container { margin-top: 10px;}
 .ranking-title { font-family: monospace, sans-serif; font-size: 24px; text-transform: uppercase; text-align: center; border-bottom: 1px solid #222; padding-bottom: 10px; margin-bottom: 20px; }
 .ranking-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #222; cursor: pointer; }
-.ranking-img { width: 40px; height: 40px; object-fit: cover; margin-right: 12px; border: 1px solid #444; }
+.ranking-img { width: 40px; height: 40px; object-fit: cover; margin-right: 12px; border: 1px solid #444; background: #222; }
 .ranking-info { flex-grow: 1; display: flex; justify-content: space-between; align-items: center; }
 .item-details { display: none; padding: 15px; background: #050505; border-bottom: 1px solid #222; font-size: 14px; color: #ccc; }
 .external-link { color: #448aff; text-decoration: none; display: block; margin-top: 10px; font-weight: bold; }
-.panel { margin-bottom: 40px; padding: 20px; font-family: monospace, sans-serif; background: #333; }
+.panel { margin-bottom: 40px; padding: 20px; font-family: monospace, sans-serif; background: #333; border-radius: 8px; }
 .admin-input { 
     width: 100%; 
     padding: 12px; 
@@ -67,9 +67,7 @@ body {
     font-size: 12px;
     font-weight: bold;
 }
-.edit-btn:hover {
-    background: #2979ff;
-}
+.edit-btn:hover { background: #2979ff; }
 
 .delete-btn {
     background: #ff4444;
@@ -82,9 +80,7 @@ body {
     font-size: 12px;
     font-weight: bold;
 }
-.delete-btn:hover {
-    background: #cc0000;
-}
+.delete-btn:hover { background: #cc0000; }
 
 textarea.admin-input {
     height: 150px;
@@ -114,19 +110,18 @@ textarea.admin-input {
     text-transform: uppercase; 
     font-size: 18px;
 }
-   #header-link {
-            z-index: 1000;
-            margin-top: 40px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        #header-logo {
-            margin-bottom: 40px;
-
-            max-height: 48px;
-            display: block;
-        }
+#header-link {
+    z-index: 1000;
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+#header-logo {
+    margin-bottom: 40px;
+    max-height: 48px;
+    display: block;
+}
 </style>
 </head>
 <body>
@@ -153,22 +148,21 @@ textarea.admin-input {
     <input type="url" id="new-url" class="admin-input" placeholder="External URL (optional)">
     <label for="new-img-file" class="file-label" id="file-label-text">Choose image file</label>
     <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)">
-<button class="button" onclick="saveOrAddItem()">Add Item</button>
-
+    <button class="button" onclick="saveOrAddItem()">Add Item</button>
 </div>
 <a href="index.html" id="header-link">
     <img src="logo.png" alt="Logo" id="header-logo">
 </a>
 
 <script>
-    if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => console.error('SW_REG_FAIL', err));
-  });
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.error('SW_REG_FAIL', err));
+    });
 }
+
 let items = JSON.parse(localStorage.getItem('versus_items')) || [];
 let currentPair = [];
-
 let editingId = null;
 
 function editItem(id) {
@@ -181,9 +175,7 @@ function editItem(id) {
     $('#file-label-text').text("Keep current image or choose new");
 
     editingId = id;
-
     $('.button').text('Save Changes');
-
     $('.panel')[0].scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -208,8 +200,7 @@ async function saveOrAddItem() {
         editingId = null;
         $('.button').text('Add Item');
     } else {
-        if (!file) return;
-        const imgData = await compressImage(file);
+        const imgData = file ? await compressImage(file) : "";
         items.push({ id: Date.now(), title, description: desc, externalUrl: url, img: imgData, rating: 1500 });
     }
 
@@ -225,10 +216,12 @@ function updateLabel(input) {
     const fileName = input.files[0] ? input.files[0].name : "Choose image file";
     document.getElementById('file-label-text').innerText = fileName;
 }
+
 function save() {
     localStorage.setItem('versus_items', JSON.stringify(items));
     updateRankingList();
 }
+
 async function compressImage(file) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -249,81 +242,16 @@ async function compressImage(file) {
         };
     });
 }
-async function addItem() {
-    const title = $('#new-title').val().trim();
-    const desc = $('#new-desc').val().trim();
-    const url = $('#new-url').val().trim();
-    const file = $('#new-img-file')[0].files[0];
-    if (!title || !file) return;
-    const imgData = await compressImage(file);
-    items.push({ id: Date.now(), title, description: desc, externalUrl: url, img: imgData, rating: 1500 });
-    save();
-    $('#new-title, #new-desc, #new-url, #new-img-file').val('');
-    $('#file-label-text').text("Choose image file");
-    if (items.length >= 2 && currentPair.length === 0) nextPair();
-}
+
 function toggleDetails(id) { $(`#details-${id}`).slideToggle(200); }
-function updateRankingList() {
-    const sorted = [...items].sort((a, b) => b.rating - a.rating);
-    let html = '';
-    sorted.forEach((item, index) => {
-        html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
-            <img src="${item.img}" class="ranking-img">
-            <div class="ranking-info"><span>${index + 1}. ${item.title}</span><strong>${Math.round(item.rating)}</strong></div>
-        </div>
-        <div id="details-${item.id}" class="item-details">
-            <p>${item.description || 'No description.'}</p>
-            ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" class="external-link">Visit Link →</a>` : ''}
-        </div>`;
-    });
-    $('#ranking-list').html(html);
-}
-function nextPair() {
-    if (items.length < 2) return;
-    let i1 = Math.floor(Math.random() * items.length), i2;
-    do { i2 = Math.floor(Math.random() * items.length); } while (i1 === i2);
-    currentPair = [i1, i2];
-    $('#item-left img').attr('src', items[i1].img);
-    $('#item-left .title').text(items[i1].title);
-    $('#item-right img').attr('src', items[i2].img);
-    $('#item-right .title').text(items[i2].title);
-}
-function vote(side) {
-    if (items.length < 2) return;
-    const winIdx = side === 'left' ? currentPair[0] : currentPair[1];
-    const loseIdx = side === 'left' ? currentPair[1] : currentPair[0];
-    const rW = items[winIdx].rating, rL = items[loseIdx].rating;
-    const expW = 1 / (1 + Math.pow(10, (rL - rW) / 400));
-    const change = 32 * (1 - expW);
-    items[winIdx].rating += change; items[loseIdx].rating -= change;
-    save();
-    $('#versus').animate({ opacity: 0 }, 100, function() { nextPair(); $(this).animate({ opacity: 1 }, 100); });
-}
-updateRankingList();
-nextPair();
-
-function deleteItem(id) {
-    if (confirm("Вы уверены, что хотите удалить этот элемент?")) {
-        items = items.filter(item => item.id !== id);
-        
-        save();
-        
-        if (items.length < 2) {
-            currentPair = [];
-            $('#item-left img, #item-right img').attr('src', '');
-            $('#item-left .title, #item-right .title').text('');
-        } else {
-            nextPair();
-        }
-    }
-}
 
 function updateRankingList() {
     const sorted = [...items].sort((a, b) => b.rating - a.rating);
     let html = '';
     sorted.forEach((item, index) => {
+        const imgTag = item.img ? `<img src="${item.img}" class="ranking-img">` : `<div class="ranking-img"></div>`;
         html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
-            <img src="${item.img}" class="ranking-img">
+            ${imgTag}
             <div class="ranking-info"><span>${index + 1}. ${item.title}</span><strong>${Math.round(item.rating)}</strong></div>
         </div>
         <div id="details-${item.id}" class="item-details">
@@ -336,7 +264,55 @@ function updateRankingList() {
     $('#ranking-list').html(html);
 }
 
+function nextPair() {
+    if (items.length < 2) return;
+    let i1 = Math.floor(Math.random() * items.length), i2;
+    do { i2 = Math.floor(Math.random() * items.length); } while (i1 === i2);
+    currentPair = [i1, i2];
+    
+    if (items[i1].img) {
+        $('#item-left img').attr('src', items[i1].img).show();
+    } else {
+        $('#item-left img').attr('src', '').hide();
+    }
+    $('#item-left .title').text(items[i1].title);
 
+    if (items[i2].img) {
+        $('#item-right img').attr('src', items[i2].img).show();
+    } else {
+        $('#item-right img').attr('src', '').hide();
+    }
+    $('#item-right .title').text(items[i2].title);
+}
+
+function vote(side) {
+    if (items.length < 2) return;
+    const winIdx = side === 'left' ? currentPair[0] : currentPair[1];
+    const loseIdx = side === 'left' ? currentPair[1] : currentPair[0];
+    const rW = items[winIdx].rating, rL = items[loseIdx].rating;
+    const expW = 1 / (1 + Math.pow(10, (rL - rW) / 400));
+    const change = 32 * (1 - expW);
+    items[winIdx].rating += change; items[loseIdx].rating -= change;
+    save();
+    $('#versus').animate({ opacity: 0 }, 100, function() { nextPair(); $(this).animate({ opacity: 1 }, 100); });
+}
+
+function deleteItem(id) {
+    if (confirm("Вы уверены, что хотите удалить этот элемент?")) {
+        items = items.filter(item => item.id !== id);
+        save();
+        if (items.length < 2) {
+            currentPair = [];
+            $('#item-left img, #item-right img').attr('src', '');
+            $('#item-left .title, #item-right .title').text('');
+        } else {
+            nextPair();
+        }
+    }
+}
+
+updateRankingList();
+nextPair();
 </script>
 </body>
 </html>
