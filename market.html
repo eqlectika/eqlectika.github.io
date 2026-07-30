@@ -853,9 +853,11 @@ const priceCrosshairPlugin = {
       ctx.fillText(rsiText, rectX + pRectW / 2, rectY + pRectH / 2);
     }
 
-    const priceRectW = yPrice.width - 8;
+const baseW = yPrice.width; 
+    const extraW = 12;          
+    const priceRectW = baseW + extraW; 
     const priceRectH = 18;
-    const priceRectX = chart.chartArea.right + 8;
+    const priceRectX = chart.chartArea.right; 
     const priceRectY = yPos - (priceRectH / 2);
     
     ctx.fillStyle = '#2962ff';
@@ -878,13 +880,14 @@ const priceCrosshairPlugin = {
     const priceText = price.toFixed(decimals);   
     ctx.fillStyle = '#ffffff';
     ctx.font = '12px sans-serif';
-    ctx.textAlign = 'right';      
     ctx.textBaseline = 'middle';   
 
+    // Меняем на выравнивание по центру и рисуем текст ровно посредине расширенной плашки
+    ctx.textAlign = 'center';
     ctx.fillText(
       priceText,
-      priceRectX + priceRectW,
-      priceRectY + priceRectH / 2
+      priceRectX + (priceRectW / 2),
+      yPos
     );
     
     const index = Math.round(x.getValueForPixel(xPos));
@@ -902,10 +905,13 @@ const priceCrosshairPlugin = {
       }
     }
 
-    const tRectW = 48; 
+    const tRectW = 54; 
     ctx.fillStyle = '#2962ff';
-    ctx.fillRect(xPos - tRectW, yPrice.top - 28, tRectW, 18);
+    ctx.fillRect(xPos - (tRectW / 2), yPrice.top - 28, tRectW, 18);
     ctx.fillStyle = '#ffffff';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center'; 
+    ctx.textBaseline = 'middle';
     ctx.fillText(timeText, xPos, yPrice.top - 18);
     
     ctx.restore();
@@ -1007,10 +1013,10 @@ const currentPriceIndicator = {
     const priceText = currentPrice.toFixed(decimals);
 
     // Ширина плашки строго равна ширине шкалы оси Y
-    const rectW = y.width; 
+const rectW = y.width + 2; 
     const rectH = 18;
+    // rectX уходил влево от графика
     const rectX = right;
-
     // Рисуем плашку
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(rectX, yPos - rectH / 2, rectW, rectH);
@@ -1020,7 +1026,7 @@ const currentPriceIndicator = {
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillText(priceText, rectX + rectW, yPos);
+    ctx.fillText(priceText, rectX + (rectW - 2), yPos);
     
     ctx.restore();
   }
