@@ -45,6 +45,21 @@ body { background-color: #000; color: #fff; font-family: sans-serif; margin: 0; 
     color: #fff; 
     box-sizing: border-box; 
 }
+
+.delete-btn {
+    background: #ff4444;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin-top: 30px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+}
+.delete-btn:hover {
+    background: #cc0000;
+}
+
 textarea.admin-input {
     height: 150px;
     resize: vertical;
@@ -206,30 +221,42 @@ function vote(side) {
 updateRankingList();
 nextPair();
 
-function toggleDonate() { 
-    const info = document.getElementById("cryptoInfo"); 
-    const isOpening = info.style.display !== "flex";
-    info.style.display = isOpening ? "flex" : "none"; 
-    if (isOpening) {
-        setTimeout(() => info.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+function deleteItem(id) {
+    if (confirm("Вы уверены, что хотите удалить этот элемент?")) {
+        // Фильтруем массив, удаляя элемент с указанным id
+        items = items.filter(item => item.id !== id);
+        
+        // Сохраняем обновленный список
+        save();
+        
+        // Если осталось меньше 2 элементов, очищаем текущую пару голосов
+        if (items.length < 2) {
+            currentPair = [];
+            $('#item-left img, #item-right img').attr('src', '');
+            $('#item-left .title, #item-right .title').text('');
+        } else {
+            nextPair();
+        }
     }
 }
 
-function copyToClipboard() {
-    const addr = document.getElementById("cryptoAddr");
-    const hint = document.getElementById("copyHint");
-    const text = addr.innerText;
-    navigator.clipboard.writeText(text).then(() => {
-        addr.innerText = "ETH ADDRESS COPIED";
-        addr.style.color = "#00ff00";
-        if (hint) hint.innerText = "Address saved to clipboard";
-        setTimeout(() => {
-            addr.innerText = text;
-            addr.style.color = "#fff";
-            if (hint) hint.innerText = "Click address to copy";
-        }, 1500);
+function updateRankingList() {
+    const sorted = [...items].sort((a, b) => b.rating - a.rating);
+    let html = '';
+    sorted.forEach((item, index) => {
+        html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
+            <img src="${item.img}" class="ranking-img">
+            <div class="ranking-info"><span>${index + 1}. ${item.title}</span><strong>${Math.round(item.rating)}</strong></div>
+        </div>
+        <div id="details-${item.id}" class="item-details">
+            <p>${item.description || 'No description.'}</p>
+            ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" class="external-link">Visit Link →</a>` : ''}
+            <button class="delete-btn" onclick="event.stopPropagation(); deleteItem(${item.id})">DELETE ITEM</button>
+        </div>`;
     });
+    $('#ranking-list').html(html);
 }
+
 </script>
 </body>
 </html>
