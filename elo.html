@@ -46,6 +46,22 @@ body { background-color: #000; color: #fff; font-family: sans-serif; margin: 0; 
     box-sizing: border-box; 
 }
 
+.edit-btn {
+    background: #448aff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin-top: 30px;
+    margin-right: 10px;
+    text-transform: uppercase; 
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+}
+.edit-btn:hover {
+    background: #2979ff;
+}
+
 .delete-btn {
     background: #ff4444;
     color: white;
@@ -53,6 +69,7 @@ body { background-color: #000; color: #fff; font-family: sans-serif; margin: 0; 
     padding: 10px 15px;
     margin-top: 30px;
     cursor: pointer;
+    text-transform: uppercase; 
     font-size: 12px;
     font-weight: bold;
 }
@@ -126,7 +143,8 @@ textarea.admin-input {
     <input type="url" id="new-url" class="admin-input" placeholder="External URL (optional)">
     <label for="new-img-file" class="file-label" id="file-label-text">Choose image file</label>
     <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)">
-    <button class="admin-btn" onclick="addItem()">Add Item</button>
+<button class="admin-btn" onclick="saveOrAddItem()">Add Item</button>
+
 </div>
 <a href="index.html" id="header-link">
     <img src="logo.png" alt="Logo" id="header-logo">
@@ -140,6 +158,71 @@ textarea.admin-input {
 }
 let items = JSON.parse(localStorage.getItem('versus_items')) || [];
 let currentPair = [];
+
+// Добавьте эту переменную в самое начало скрипта (где items и currentPair)
+let editingId = null;
+
+// Функция для заполнения полей формы данными элемента
+function editItem(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    // Заполняем поля админ-панели
+    $('#new-title').val(item.title);
+    $('#new-desc').val(item.description);
+    $('#new-url').val(item.externalUrl);
+    $('#file-label-text').text("Keep current image or choose new");
+
+    // Запоминаем ID редактируемого элемента
+    editingId = id;
+
+    // Меняем текст кнопки админ-панели
+    $('.admin-btn').text('Save Changes');
+
+    // Прокручиваем страницу к админ-панели
+    $('.admin-panel')[0].scrollIntoView({ behavior: 'smooth' });
+}
+
+// Универсальная функция добавления/сохранения
+async function saveOrAddItem() {
+    const title = $('#new-title').val().trim();
+    const desc = $('#new-desc').val().trim();
+    const url = $('#new-url').val().trim();
+    const file = $('#new-img-file')[0].files[0];
+
+    if (!title) return;
+
+    if (editingId !== null) {
+        // РЕЖИМ РЕДАКТИРОВАНИЯ
+        const item = items.find(i => i.id === editingId);
+        if (item) {
+            item.title = title;
+            item.description = desc;
+            item.externalUrl = url;
+            // Если загружено новое изображение — сжимаем и заменяем старое
+            if (file) {
+                item.img = await compressImage(file);
+            }
+        }
+        // Сбрасываем режим редактирования
+        editingId = null;
+        $('.admin-btn').text('Add Item');
+    } else {
+        // РЕЖИМ ДОБАВЛЕНИЯ (старый addItem)
+        if (!file) return;
+        const imgData = await compressImage(file);
+        items.push({ id: Date.now(), title, description: desc, externalUrl: url, img: imgData, rating: 1500 });
+    }
+
+    save();
+    
+    // Очистка формы
+    $('#new-title, #new-desc, #new-url, #new-img-file').val('');
+    $('#file-label-text').text("Choose image file");
+    
+    if (items.length >= 2 && currentPair.length === 0) nextPair();
+}
+
 function updateLabel(input) {
     const fileName = input.files[0] ? input.files[0].name : "Choose image file";
     document.getElementById('file-label-text').innerText = fileName;
@@ -251,11 +334,13 @@ function updateRankingList() {
         <div id="details-${item.id}" class="item-details">
             <p>${item.description || 'No description.'}</p>
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" class="external-link">Visit Link →</a>` : ''}
-            <button class="delete-btn" onclick="event.stopPropagation(); deleteItem(${item.id})">DELETE ITEM</button>
+            <button class="edit-btn" onclick="event.stopPropagation(); editItem(${item.id})">Edit Item</button>
+            <button class="delete-btn" onclick="event.stopPropagation(); deleteItem(${item.id})">Delete Item</button>
         </div>`;
     });
     $('#ranking-list').html(html);
 }
+
 
 </script>
 </body>
