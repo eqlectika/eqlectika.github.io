@@ -979,7 +979,7 @@ function drawLineWithNodes(ctx, x1, y1, x2, y2) {
 const currentPriceIndicator = {
   id: 'currentPriceIndicator',
   afterDatasetsDraw(chart) { 
-    const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+    const { ctx, chartArea: { right }, scales: { y } } = chart;
     if (!chart.data.datasets[0] || !chart.data.datasets[0].data) return;
     const data = chart.data.datasets[0].data;
     if (!data || data.length === 0) return;
@@ -991,39 +991,41 @@ const currentPriceIndicator = {
 
     ctx.save();
     
+    function getDecimals(value) {
+      const absValue = Math.abs(value);
+      if (absValue === 0) return 0;
+      else if (absValue < 0.001) return 6;
+      else if (absValue < 0.01) return 5;
+      else if (absValue < 0.1) return 4;
+      else if (absValue < 1) return 3;
+      else if (absValue < 10) return 2;
+      else if (absValue < 100) return 1;
+      else return 0;
+    }
 
+    const decimals = getDecimals(currentPrice);
+    const priceText = currentPrice.toFixed(decimals);
 
-    const rectW = 80;
-    const rectH = 20;
+    // Ширина плашки строго равна ширине шкалы оси Y
+    const rectW = y.width; 
+    const rectH = 18;
     const rectX = right;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(right, yPos - rectH / 2, rectW, rectH);
 
+    // Рисуем плашку
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(rectX, yPos - rectH / 2, rectW, rectH);
+
+    // Текст справа без отступов (ровно по правому краю плашки)
     ctx.fillStyle = '#000000';
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-
-// Определяем количество знаков после запятой
-function getDecimals(value) {
-  const absValue = Math.abs(value);
-  if (absValue === 0) return 0;
-  else if (absValue < 0.001) return 6;
-  else if (absValue < 0.01) return 5;
-  else if (absValue < 0.1) return 4;
-  else if (absValue < 1) return 3;
-  else if (absValue < 10) return 2;
-  else if (absValue < 100) return 1;
-  else return 0;
-}
-
-// И используйте:
-const decimals = getDecimals(currentPrice);
-ctx.fillText(currentPrice.toFixed(decimals), right + 8 + rectW / 2, yPos);
+    ctx.fillText(priceText, rectX + rectW, yPos);
     
     ctx.restore();
   }
 };
+
 
     function initChart() {
       if (moireChart) moireChart.destroy();
