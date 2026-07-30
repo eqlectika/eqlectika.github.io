@@ -7,7 +7,15 @@
 <link rel="manifest" href="manifest-ranking.json">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <style>
-body { background-color: #000; color: #fff; font-family: monospace, sans-serif; margin: 0; padding: 10px; box-sizing: border-box; }
+body { 
+    background-color: #000; 
+    color: #fff; 
+    font-family: monospace, sans-serif; 
+    max-width: 1200px;
+    margin: 0; 
+    padding: 10px; 
+    box-sizing: border-box; 
+}
 #versus { width: 100%; margin: 2em 0; }
 .versus-wrapper { display: flex; gap: 10px; justify-content: center; }
 .versus_column { flex: 1; min-width: 0; cursor: pointer; }
@@ -161,31 +169,24 @@ textarea.admin-input {
 let items = JSON.parse(localStorage.getItem('versus_items')) || [];
 let currentPair = [];
 
-// Добавьте эту переменную в самое начало скрипта (где items и currentPair)
 let editingId = null;
 
-// Функция для заполнения полей формы данными элемента
 function editItem(id) {
     const item = items.find(i => i.id === id);
     if (!item) return;
 
-    // Заполняем поля админ-панели
     $('#new-title').val(item.title);
     $('#new-desc').val(item.description);
     $('#new-url').val(item.externalUrl);
     $('#file-label-text').text("Keep current image or choose new");
 
-    // Запоминаем ID редактируемого элемента
     editingId = id;
 
-    // Меняем текст кнопки админ-панели
     $('.admin-btn').text('Save Changes');
 
-    // Прокручиваем страницу к админ-панели
     $('.admin-panel')[0].scrollIntoView({ behavior: 'smooth' });
 }
 
-// Универсальная функция добавления/сохранения
 async function saveOrAddItem() {
     const title = $('#new-title').val().trim();
     const desc = $('#new-desc').val().trim();
@@ -195,22 +196,18 @@ async function saveOrAddItem() {
     if (!title) return;
 
     if (editingId !== null) {
-        // РЕЖИМ РЕДАКТИРОВАНИЯ
         const item = items.find(i => i.id === editingId);
         if (item) {
             item.title = title;
             item.description = desc;
             item.externalUrl = url;
-            // Если загружено новое изображение — сжимаем и заменяем старое
             if (file) {
                 item.img = await compressImage(file);
             }
         }
-        // Сбрасываем режим редактирования
         editingId = null;
         $('.admin-btn').text('Add Item');
     } else {
-        // РЕЖИМ ДОБАВЛЕНИЯ (старый addItem)
         if (!file) return;
         const imgData = await compressImage(file);
         items.push({ id: Date.now(), title, description: desc, externalUrl: url, img: imgData, rating: 1500 });
@@ -218,7 +215,6 @@ async function saveOrAddItem() {
 
     save();
     
-    // Очистка формы
     $('#new-title, #new-desc, #new-url, #new-img-file').val('');
     $('#file-label-text').text("Choose image file");
     
@@ -308,13 +304,10 @@ nextPair();
 
 function deleteItem(id) {
     if (confirm("Вы уверены, что хотите удалить этот элемент?")) {
-        // Фильтруем массив, удаляя элемент с указанным id
         items = items.filter(item => item.id !== id);
         
-        // Сохраняем обновленный список
         save();
         
-        // Если осталось меньше 2 элементов, очищаем текущую пару голосов
         if (items.length < 2) {
             currentPair = [];
             $('#item-left img, #item-right img').attr('src', '');
