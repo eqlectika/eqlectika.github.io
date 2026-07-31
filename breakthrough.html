@@ -20,6 +20,19 @@ body {
     padding: 0; 
 }
 
+.edit-btn {
+    background: #448aff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin-right: 10px;
+    text-transform: uppercase; 
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+}
+.edit-btn:hover { background: #2979ff; }
+
 .external-link { 
     color: #448aff; 
     text-decoration: none; 
@@ -657,6 +670,27 @@ client.on('message', (topic, payload) => {
                 if (items.length >= 2 && currentPair.length === 0) nextPair();
             }
         } 
+        // --- НОВЫЙ БЛОК ДЛЯ ОБНОВЛЕНИЯ ЭЛЕМЕНТА ---
+        else if (packet.type === 'UPDATE_ITEM') {
+            let existingItem = items.find(i => i.id === packet.item.id);
+            if (existingItem) {
+                // Обновляем поля существующего элемента (кроме рейтинга, чтобы не сбивать игровой процесс голосований)
+                existingItem.title = packet.item.title;
+                existingItem.description = packet.item.description;
+                existingItem.externalUrl = packet.item.externalUrl;
+                if (packet.item.img) {
+                    existingItem.img = packet.item.img;
+                }
+                saveLocal();
+                log(`[Resonance] Vector updated by ${packet.sender}: "${packet.item.title}"`);
+                updateRankingList();
+            } else {
+                // Если по какой-то причине элемента у нас не было, просто добавляем его
+                items.push(packet.item);
+                saveLocal();
+                updateRankingList();
+            }
+        }
         else if (packet.type === 'VOTE') {
             let winItem = items.find(i => i.id === packet.winId);
             let loseItem = items.find(i => i.id === packet.loseId);
@@ -799,42 +833,73 @@ function convertImpacts(type) {
 }
 
 async function addItem() {
-    if (playerState.postsLeft <= 0) {
-        alert('Publication limit reached! Exchange impacts for higher publication slots.');
-        return;
-    }
-
     const title = $('#new-title').val().trim();
     const desc = $('#new-desc').val().trim();
     const url = $('#new-url').val().trim();
     const file = $('#new-img-file')[0].files[0];
-    if (!title || !file) return alert('Enter title and select visual vector!');
+    
+    if (!title) return alert('Enter title!');
 
-    playerState.postsLeft--;
-    playerState.level = Math.floor(playerState.impacts / 20) + 1;
-    updatePlayerStatsUI();
+    let imgData = "";
+    if (editingId !== null) {
+        // --- РЕЖИМ РЕДАКТИРОВАНИЯ ---
+        const item = items.find(i => i.id === editingId);
+        if (item) {
+            item.title = title;
+            item.description = desc;
+            item.externalUrl = url;
+            if (file) {
+                item.img = await compressImage(file);
+            }
+            
+            saveLocal();
 
-    const imgData = await compressImage(file);
-    const newItem = { 
-        id: 'vector-' + Date.now() + '-' + Math.floor(Math.random()*1000), 
-        sender: myId, 
-        title, 
-        description: desc, 
-        externalUrl: url, 
-        img: imgData, 
-        rating: 1500 
-    };
+            // Отправляем пакет обновления в сеть
+            client.publish(TOPIC, JSON.stringify({
+                type: 'UPDATE_ITEM',
+                sender: myId,
+                item: item
+            }), { qos: 1 });
 
-    items.push(newItem);
-    saveLocal();
+            log(`You updated and re-published vector: "${title}"`);
+        }
+        editingId = null;
+        $('.inject-btn-bg').text('Inject Vector to Network');
+    } else {
+        // --- РЕЖИМ СОЗДАНИЯ НОВОГО ЭЛЕМЕНТА ---
+        if (playerState.postsLeft <= 0) {
+            alert('Publication limit reached! Exchange impacts for higher publication slots.');
+            return;
+        }
+        playerState.postsLeft--;
+        playerState.level = Math.floor(playerState.impacts / 20) + 1;
+        updatePlayerStatsUI();
 
-    client.publish(TOPIC, JSON.stringify({
-        type: 'ADD_ITEM',
-        sender: myId,
-        item: newItem
-    }), { qos: 1 });
+        if (file) {
+            imgData = await compressImage(file);
+        }
+        const newItem = { 
+            id: 'vector-' + Date.now() + '-' + Math.floor(Math.random()*1000), 
+            sender: myId, 
+            title, 
+            description: desc, 
+            externalUrl: url, 
+            img: imgData, 
+            rating: 1500 
+        };
 
-    log(`You injected vector: "${title}"`);
+        items.push(newItem);
+        saveLocal();
+
+        client.publish(TOPIC, JSON.stringify({
+            type: 'ADD_ITEM',
+            sender: myId,
+            item: newItem
+        }), { qos: 1 });
+
+        log(`You injected vector: "${title}"`);
+    }
+    
     $('#new-title, #new-desc, #new-url, #new-img-file').val('');
     $('#file-label-text').text("Select Visual Vector");
     
@@ -844,6 +909,22 @@ async function addItem() {
 
 function toggleDetails(id) { 
     $(`#details-${id}`).slideToggle(200); 
+}
+
+let editingId = null;
+
+function editItem(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    $('#new-title').val(item.title);
+    $('#new-desc').val(item.description);
+    $('#new-url').val(item.externalUrl);
+    $('#file-label-text').text("Keep current image or choose new");
+
+    editingId = id;
+    $('.inject-btn-bg').text('Save Changes');
+    $('.main-panel')[0].scrollIntoView({ behavior: 'smooth' });
 }
 
 function deleteItemLocal(id) {
@@ -878,12 +959,13 @@ function updateRankingList() {
             <div class="ranking-info"><span>${index + 1}. ${item.title}</span><strong>${Math.round(item.rating)}</strong></div>
         </div>
         <div id="details-${item.id}" class="item-details">
+            <button class="edit-btn" onclick="event.stopPropagation(); editItem('${item.id}')">Edit and Reinject Item</button>
             <p>${item.description || 'No description.'}</p>
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Vector →</a>` : ''}
             <button class="admin-btn" type="button" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally (-1 Impact)</button>
         </div>`;
     });
-    $('#ranking-list').html(html || '<div style="text-align: center; padding:10px; text-align: center; color:#999;">Matrix is empty.<br>Inject first vectors below!</div>');
+    $('#ranking-list').html(html || '<div style="text-align: center; padding:10px; color:#999;">Matrix is empty.<br>Inject first vectors below!</div>');
 }
 
 function nextPair() {
