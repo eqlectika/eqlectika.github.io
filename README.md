@@ -63,7 +63,7 @@ Imagine a world where the landscape doesn’t sink below the horizon but rises a
 
 Since existing visual tools couldn’t capture this specific concave geometry properly, the project was built from scratch using JavaScript.
 
-![My fantasy first step preview](quaternion.PNG)
+<img src="quaternion.PNG" alt="My fantasy first step preview" width="300">
 
 ### Current Features
 
@@ -168,7 +168,7 @@ If you wish to integrate the **Breakthrough Engine** mechanics (P2P gossip netwo
 
 
 <div align="left">
-  <sub>Made with 👁 by <a href="https://t.me/eugenebox">@eugenebox</a>| Trust Fibonacci: Happiness loading… Please wait.</sub>
+  <sub>Made with 👁 by <a href="https://t.me/eugenebox">@eugenebox</a> | Trust Fibonacci - Happiness loading… Please wait.</sub>
 </div>
 
 ---
