@@ -165,16 +165,10 @@ If you wish to integrate the **Breakthrough Engine** mechanics (P2P gossip netwo
 
 * Contact email: `yevgeniykorobka@gmail.com`
 
-<div style="margin: 30px 0 50px 0; color: #888">
-        <h2 style="margin: 0 0 5px 0;">Trust Fibonacci</h2>
-  <div>
-    <p style="margin: 0 0 5px 0;">Happiness loading… Please wait.</p>
-    <div style="width: 233px; background: #555; overflow: hidden;">
-      <div style="width: 38%; height: 8px; background: #fff;">
-      </div>
-    </div>
-  </div>
-<div align="center">
+
+Happiness loading… Please wait.
+
+<div align="left">
   <sub>Made with 👁 by <a href="https://t.me/eugenebox">@eugenebox</a> | Trust Fibonacci</sub>
 </div>
 
