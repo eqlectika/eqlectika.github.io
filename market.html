@@ -853,9 +853,8 @@ const priceCrosshairPlugin = {
       ctx.fillText(rsiText, rectX + pRectW / 2, rectY + pRectH / 2);
     }
 
-const baseW = yPrice.width; 
-    const extraW = 12;          
-    const priceRectW = baseW + extraW; 
+    // Плашка ровно по ширине шкалы Y
+    const priceRectW = yPrice.width + 2; 
     const priceRectH = 18;
     const priceRectX = chart.chartArea.right; 
     const priceRectY = yPos - (priceRectH / 2);
@@ -882,13 +881,14 @@ const baseW = yPrice.width;
     ctx.font = '12px sans-serif';
     ctx.textBaseline = 'middle';   
 
-    // Меняем на выравнивание по центру и рисуем текст ровно посредине расширенной плашки
+    // Выравнивание по правому краю шкалы без произвольных смещений (+18)
     ctx.textAlign = 'right';
     ctx.fillText(
       priceText,
-      priceRectX + (priceRectW / 2) + 18,
+      priceRectX + priceRectW - 2,
       yPos
     );
+
     
     const index = Math.round(x.getValueForPixel(xPos));
     const timestamp = candleTimes[index];
