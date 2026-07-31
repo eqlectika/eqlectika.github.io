@@ -90,7 +90,7 @@ You can test the mechanics and explore the inverted world directly in your brows
 * Left half of the screen – Thrust.
 * Right half of the screen – Steering.
 
-Fast Reading Converter — RSVP Speed Reading Service
+### Fast Reading Converter — RSVP Speed Reading Service
 * **Tech Stack & Concept:** Client-side PWA (Progressive Web App) designed for speed reading using Rapid Serial Visual Presentation (RSVP).
 * **Key Features:**
   * **Smart Dynamic Text Parsing:** An automated engine that adapts frame delay (word display timing) based on punctuation marks (additional pauses for commas, periods, dashes) and word length.
@@ -100,7 +100,7 @@ Fast Reading Converter — RSVP Speed Reading Service
  
 [Fast Reading Converter (Flash)](https://eqlectika.github.io/flash.html)
 
-Capital&Eqlectika — Trade Phenomena (Cryptocurrency Analytical Terminal)
+### Capital&Eqlectika — Trade Phenomena (Cryptocurrency Analytical Terminal)
 * **Tech Stack & Concept:** High-performance crypto-trading dashboard processing binary and futures real-time market data utilizing Chart.js, Web Workers, WebSockets, and the Binance API.
 * **Key Features:**
   * **Multithreaded Data Processing (Web Workers):** Offloading heavy mathematical calculations, oscillator computations (RSI-14, 34-period Bollinger Bands), and custom *34/38 Parrots* indicators to background threads.
@@ -110,7 +110,7 @@ Capital&Eqlectika — Trade Phenomena (Cryptocurrency Analytical Terminal)
  
 [Capital&Eqlectika (Market Terminal)](https://eqlectika.github.io/market.html)
 
-Cross Editor — Four-Zone Layout Text & Media Editor
+### Cross Editor — Four-Zone Layout Text & Media Editor
 * **Tech Stack & Concept:** Interactive PWA featuring a 4-section (2x2) flexible grid layout designed for concurrent text and image editing.
 * **Key Features:**
   * **Interactive Crosshair Controller:** Smooth drag-and-drop central controller allowing dynamic, proportional resizing of all four editing quadrants simultaneously.
@@ -120,7 +120,7 @@ Cross Editor — Four-Zone Layout Text & Media Editor
  
 [Cross Notes](https://eqlectika.github.io/cross.html)
 
-Meme Battle | Breakthrough Engine
+### Meme Battle | Breakthrough Engine
 * **Tech Stack & Concept:** P2P decentralized meme ranking and evaluation platform built on a direct device-to-device network architecture via lightweight brokers, bypassing central servers entirely.
 * **Core Philosophy & Concept:**
   * **Privacy First by Default:** No central server stores user data. The system operates as both a personal catalog and a public leader-board. Content remains completely private until connected peers are online.
