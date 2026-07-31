@@ -135,6 +135,69 @@ You can test the mechanics and explore the inverted world directly in your brows
   * **Direct Vector Transfer & Safety:** Zero mandatory registrations, passwords, or personal data tracking. Users retain full control over their visual vectors and transmit impulses directly to connected participants.
   * **Zero Friction UX:** Instant setup allowing users to drop visual vectors, share direct links with targeted peers, and test content impact across the network.
 
+<div align="center">
+  <img src="breakthrough.png" width="80" alt="Breakthrough Engine Logo">
+  <h1>Breakthrough Engine</h1>
+  <p><b>Ephemeral P2P Meme Ranking & Decentralized Resonance Network</b></p>
+</div>
+
+---
+
+## 👁 The Concept
+
+> *"Your intentions are creative. And your capabilities are far greater than anyone ever led you to believe."*
+
+**Breakthrough Engine** is an experimental decentralized peer-to-peer (P2P) platform designed to synchronize creative intent and calculate the relative resonance of visual data (memes, media, vectors) using an ELO rating matrix. 
+
+There are no central databases, accounts, or persistent server storages. The state exists entirely in the ephemeral cache of online node browsers and communicates directly over public MQTT transport channels.
+
+---
+
+## ⚡ Key Features
+
+* **No Registration Required:** Nodes are assigned dynamic P2P identifiers (`Peer-XXXX`) locally.
+* **ELO Rating Matrix:** Pairwise comparative voting system (*Resonance Match*) adjusting global ranks in real time.
+* **Network Impact Economics:** Internal energy points (*Impacts*) for voting, vector injection, and node actions, including daily resonance claims.
+* **Local Data Sovereignty:** Data persists strictly in browser local storage and syncs across active peers over WebSockets.
+* **Built-in Local Guide & P2P Messenger:** Minimalist interface includes lightweight P2P public message broadcasting (`peerchat.html`).
+
+---
+
+## 🛠 Tech Stack
+
+* **Frontend:** Pure HTML5, CSS3, JavaScript (ES6+).
+* **Dependencies:** jQuery, `mqtt.js` (WebSocket P2P communication).
+* **Protocols:** WebSockets over Public MQTT Broker (`wss://test.mosquitto.org:8081/mqtt`).
+
+---
+
+## 🚀 Live Demo & Usage
+
+1. Clone or download the repository.
+2. Open `breakthrough.html` in any modern web browser.
+3. Inject your visual vector (image, title, external link).
+4. Share the app link with another peer to initiate real-time rank synchronization.
+
+---
+
+## 📜 Licensing & Commercial Use
+
+This repository is **dual-licensed**:
+
+### 1. Open Source (GNU AGPLv3)
+Free to use, inspect, and modify for personal or open-source projects. However, under the **GNU AGPLv3**, if you host, modify, or integrate this code/engine into a networked service, website, or app, **you must release your entire source code under the same AGPLv3 license**.
+
+### 2. Commercial License
+If you wish to integrate the **Breakthrough Engine** mechanics (P2P gossip networking, client-side ELO matrix, or game balance code) into a proprietary app, closed-source SaaS, or commercial platform without disclosing your source code:
+
+* **Commercial Purchase / Inquiries:** Contact via Telegram [@eugenebox](https://t.me/eugenebox)
+* **Payment Methods:** B2B Wire Transfer (IBAN/SWIFT), Wise, Payoneer, or direct card payment via custom invoice.
+
+---
+
+<div align="center">
+  <sub>Made with 👁 by <a href="https://t.me/eugenebox">@eugenebox</a> | Trust Fibonacci</sub>
+</div>
 #
 ### Joining the Development
 
