@@ -120,19 +120,6 @@ font-family: monospace;
     text-transform: uppercase; 
     font-size: 18px;
 }
-#header-link {
-    z-index: 1000;
-    margin-top: 40px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-#header-logo {
-    margin-bottom: 40px;
-    max-height: 48px;
-    display: block;
-}
-/* Стили для хедера из index.html */
 .main-header {
     text-align: left;
     padding: 20px 0 10px 0;
@@ -148,14 +135,26 @@ font-family: monospace;
     font-size: 14px;
     margin-top: 5px;
 }
+#header-logo {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0; /* Не дает флексу сжимать логотип */
+    object-fit: contain;
+}
 </style>
 </head>
 <body>
 
-<header class="main-header">
-    <h1>Made in Space</h1>
-    <p>Architecture & Navigation</p>
-</header>
+<div style="display: flex; align-items: center; justify-content: flex-start; gap: 10px; margin-bottom: 5px;" class="main-header">
+    <a href="index.html" id="header-link" style="display: flex; align-items: center;">
+        <img src="logo.png" alt="Logo" id="header-logo">
+    </a>
+    <div style="display: flex; flex-direction: column; margin-top: 6px;">
+        <h1 style="margin: 0; line-height: 1.2;">Made in Space</h1>
+        <p style="margin: 0; color: #888;">Ranking version menu</p>
+    </div>
+</div>
+
 
 <div id="versus">
     <div class="ranking-title">Pick Important</div>
@@ -182,9 +181,7 @@ font-family: monospace;
     <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)">
     <button class="admin-btn" onclick="saveOrAddItem()">Add Item</button>
 </div>
-<a href="index.html" id="header-link">
-    <img src="logo.png" alt="Logo" id="header-logo">
-</a>
+
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -194,48 +191,26 @@ if ('serviceWorker' in navigator) {
 }
 
 const defaultItems = [
-    { id: 1, title: "Clarity", description: "Plain sketch", externalUrl: "clarity.html", img: "", rating: 1500 },
     { id: 2, title: "Market", description: "Plain sketch", externalUrl: "market.html", img: "", rating: 1500 },
-    { id: 3, title: "Paramount", description: "Plain sketch", externalUrl: "paramount.html", img: "", rating: 1500 },
     { id: 4, title: "Flash", description: "Plain sketch", externalUrl: "flash.html", img: "", rating: 1500 },
     { id: 5, title: "Spark", description: "Plain sketch", externalUrl: "spark.html", img: "", rating: 1500 },
     { id: 6, title: "Cross", description: "Plain sketch", externalUrl: "cross.html", img: "", rating: 1500 },
-    { id: 7, title: "Blueprint", description: "Plain sketch", externalUrl: "blueprint.html", img: "", rating: 1500 },
-    { id: 8, title: "Code", description: "Plain sketch", externalUrl: "code.html", img: "", rating: 1500 },
     { id: 9, title: "Lexis", description: "Plain sketch", externalUrl: "lexis.html", img: "", rating: 1500 },
     { id: 10, title: "Matrix", description: "Plain sketch", externalUrl: "matrix.html", img: "", rating: 1500 },
     { id: 11, title: "Breakthrough", description: "Plain sketch", externalUrl: "breakthrough.html", img: "", rating: 1500 },
-    { id: 12, title: "Square", description: "Plain sketch", externalUrl: "square.html", img: "", rating: 1500 },
-    { id: 13, title: "Size", description: "Plain sketch", externalUrl: "size.html", img: "", rating: 1500 },
     { id: 14, title: "Beta", description: "Plain sketch", externalUrl: "beta.html", img: "", rating: 1500 },
     { id: 15, title: "Demo", description: "Plain sketch", externalUrl: "demo.html", img: "", rating: 1500 },
-    { id: 16, title: "Database", description: "Plain sketch", externalUrl: "database.html", img: "", rating: 1500 },
     { id: 17, title: "Book", description: "Plain sketch", externalUrl: "book.html", img: "", rating: 1500 },
-    { id: 18, title: "Gossip", description: "Plain sketch", externalUrl: "gossip.html", img: "", rating: 1500 },
     { id: 19, title: "Clock", description: "Plain sketch", externalUrl: "clock.html", img: "", rating: 1500 },
     { id: 20, title: "Planet", description: "Space sketch", externalUrl: "planet.html", img: "", rating: 1500 },
     { id: 21, title: "Life", description: "Space sketch", externalUrl: "life.html", img: "", rating: 1500 },
-    { id: 22, title: "Water", description: "Space sketch", externalUrl: "water.html", img: "", rating: 1500 },
-    { id: 23, title: "Jetpack", description: "Space sketch", externalUrl: "jetpack.html", img: "", rating: 1500 },
     { id: 24, title: "Loop", description: "Space sketch", externalUrl: "loop.html", img: "", rating: 1500 },
     { id: 25, title: "Pentax", description: "Space sketch", externalUrl: "pentax.html", img: "", rating: 1500 },
-    { id: 26, title: "Sublime", description: "Space sketch", externalUrl: "sublime.html", img: "", rating: 1500 },
     { id: 27, title: "Oculus", description: "Space sketch", externalUrl: "oculus.html", img: "", rating: 1500 },
-    { id: 28, title: "Record", description: "Space sketch", externalUrl: "record.html", img: "", rating: 1500 },
-    { id: 29, title: "Hybrid", description: "Space sketch", externalUrl: "hybrid.html", img: "", rating: 1500 },
-    { id: 30, title: "Bismuth", description: "Space sketch", externalUrl: "bismuth.html", img: "", rating: 1500 },
     { id: 31, title: "Syntax", description: "Space sketch", externalUrl: "syntax.html", img: "", rating: 1500 },
     { id: 32, title: "Cube", description: "Space sketch", externalUrl: "cube.html", img: "", rating: 1500 },
     { id: 33, title: "Peer", description: "Space sketch", externalUrl: "peer.html", img: "", rating: 1500 },
-    { id: 34, title: "Drop", description: "Space sketch", externalUrl: "drop.html", img: "", rating: 1500 },
-    { id: 35, title: "Etymon", description: "Space sketch", externalUrl: "etymon.html", img: "", rating: 1500 },
-    { id: 36, title: "Pearl", description: "Space sketch", externalUrl: "pearl.html", img: "", rating: 1500 },
     { id: 37, title: "Watch", description: "Space sketch", externalUrl: "watch.html", img: "", rating: 1500 },
-    { id: 38, title: "Concept", description: "Concept page", externalUrl: "concept.html", img: "", rating: 1500 },
-    { id: 39, title: "GitHub", description: "GitHub repository", externalUrl: "https://github.com/eqlectika", img: "", rating: 1500 },
-    { id: 40, title: "Resume", description: "Resume page", externalUrl: "resume.html", img: "", rating: 1500 },
-    { id: 41, title: "Wire", description: "Wire page", externalUrl: "wire.html", img: "", rating: 1500 },
-    { id: 42, title: "Telegram", description: "Telegram contact", externalUrl: "https://t.me/eugenebox", img: "", rating: 1500 }
 ];
 
 let items = defaultItems;
