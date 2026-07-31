@@ -56,6 +56,8 @@ Concentration occurs automatically as needed.
 
 # Selected Projects Overview
 
+# Selected Projects Overview
+
 ### Outside-in Planet
 [Life](https://eqlectika.github.io/life.html)
 
