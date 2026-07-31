@@ -98,7 +98,7 @@ You can test the mechanics and explore the inverted world directly in your brows
   * **Adaptive Interface:** Automatic font size adjustment tailored to the device's physical screen width, CSS animation synchronization (Z-axis, blur, fade) aligned with JS timers, and integration of the *Screen Wake Lock API* to keep the display active.
   * **File Import & Themes:** Support for loading local `.txt` files, instant custom click-to-invert color themes, and complete offline availability.
  
-**Read & Use:** [Source Code Gist](https://gist.github.com/eugenebox/9222c544d6dbbc38e9d99c381c1955c4) • [Fast Reading Converter (Flash)](https://eqlectika.github.io/flash.html)
+**Read & Use:** [Fast Reading Converter (Flash)](https://eqlectika.github.io/flash.html)
 
 ---
 
@@ -110,7 +110,7 @@ You can test the mechanics and explore the inverted world directly in your brows
   * **Divergence & Funding Rate Tracking:** Automatic detection and visual mapping of price, RSI, and volume divergences, accompanied by a module tracking real-time and historical futures funding rates.
   * **Custom UI & Cross-Chart Synchronization:** Unified zoom/scroll synchronization across price, pair percentage comparison, and funding rate charts, featuring interactive crosshairs and an adaptive live signal log.
  
-**Read & Use:** [Source Code Gist](https://gist.github.com/eugenebox/047f6368d407887e41bdaee6305a27bd) • [Capital&Eqlectika (Market Terminal)](https://eqlectika.github.io/market.html)
+**Read & Use:** [Capital&Eqlectika (Market Terminal)](https://eqlectika.github.io/market.html)
 
 ---
 
@@ -122,7 +122,7 @@ You can test the mechanics and explore the inverted world directly in your brows
   * **Rich Text & Media Blocks:** Instant insertion, preview, and formatting of text and media within each interactive `contenteditable` container.
   * **Mobile Optimization:** Full touch-event support (`touch-action: none/auto`), responsive layouts, and PWA manifest integration for seamless mobile installation.
  
-**Read & Use:** [Source Code Gist](https://gist.github.com/eugenebox/ed5511dc4bbf870f0fa4b1b3fb18bb93) • [Cross Editor](https://eqlectika.github.io/cross.html)
+**Read & Use:** [Cross Editor](https://eqlectika.github.io/cross.html)
  
 ### 4. Meme Battle | Breakthrough Engine
 * **Tech Stack & Concept:** P2P decentralized meme ranking and evaluation platform built on a direct device-to-device network architecture via lightweight brokers, bypassing central servers entirely.
