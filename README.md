@@ -88,6 +88,54 @@ You can test the mechanics and explore the inverted world directly in your brows
 * Left half of the screen – Thrust.
 * Right half of the screen – Steering.
 
+# Selected Projects Overview
+
+## 1. Fast Reading Converter — RSVP Speed Reading Service
+* **Tech Stack & Concept:** Client-side PWA (Progressive Web App) designed for speed reading using Rapid Serial Visual Presentation (RSVP).
+* **Key Features:**
+  * **Smart Dynamic Text Parsing:** An automated engine that adapts frame delay (word display timing) based on punctuation marks (additional pauses for commas, periods, dashes) and word length.
+  * **Dynamic Acceleration:** A custom algorithm that smoothly increases and adjusts reading speed following the golden ratio ($\phi \approx 0.618$) toward the end of the text.
+  * **Adaptive Interface:** Automatic font size adjustment tailored to the device's physical screen width, CSS animation synchronization (Z-axis, blur, fade) aligned with JS timers, and integration of the *Screen Wake Lock API* to keep the display active.
+  * **File Import & Themes:** Support for loading local `.txt` files, instant custom click-to-invert color themes, and complete offline availability.
+ 
+**Read & Use:** [Source Code Gist](https://gist.github.com/eugenebox/9222c544d6dbbc38e9d99c381c1955c4) • [Fast Reading Converter (Flash)](https://eqlectika.github.io/flash.html)
+
+---
+
+## 2. Capital&Eqlectika — Trade Phenomena (Cryptocurrency Analytical Terminal)
+* **Tech Stack & Concept:** High-performance crypto-trading dashboard processing binary and futures real-time market data utilizing Chart.js, Web Workers, WebSockets, and the Binance API.
+* **Key Features:**
+  * **Multithreaded Data Processing (Web Workers):** Offloading heavy mathematical calculations, oscillator computations (RSI-14, 34-period Bollinger Bands), and custom *34/38 Parrots* indicators to background threads.
+  * **Multi-Timeframe Integration:** Simultaneous connection to real-time streams across 8 timeframes (`1m` to `1M`) for multiple trading pairs to calculate overall market momentum (*Pair Global Time Force* and *Market Global Force*).
+  * **Divergence & Funding Rate Tracking:** Automatic detection and visual mapping of price, RSI, and volume divergences, accompanied by a module tracking real-time and historical futures funding rates.
+  * **Custom UI & Cross-Chart Synchronization:** Unified zoom/scroll synchronization across price, pair percentage comparison, and funding rate charts, featuring interactive crosshairs and an adaptive live signal log.
+ 
+**Read & Use:** [Source Code Gist](https://gist.github.com/eugenebox/047f6368d407887e41bdaee6305a27bd) • [Capital&Eqlectika (Market Terminal)](https://eqlectika.github.io/market.html)
+
+---
+
+## 3. Cross Editor — Four-Zone Layout Text & Media Editor
+* **Tech Stack & Concept:** Interactive PWA featuring a 4-section (2x2) flexible grid layout designed for concurrent text and image editing.
+* **Key Features:**
+  * **Interactive Crosshair Controller:** Smooth drag-and-drop central controller allowing dynamic, proportional resizing of all four editing quadrants simultaneously.
+  * **Dynamic Style Generation:** Support for custom color schemes, dynamic font switching, and customizable visual themes.
+  * **Rich Text & Media Blocks:** Instant insertion, preview, and formatting of text and media within each interactive `contenteditable` container.
+  * **Mobile Optimization:** Full touch-event support (`touch-action: none/auto`), responsive layouts, and PWA manifest integration for seamless mobile installation.
+ 
+**Read & Use:** [Source Code Gist](https://gist.github.com/eugenebox/ed5511dc4bbf870f0fa4b1b3fb18bb93) • [Cross Editor](https://eqlectika.github.io/cross.html)
+ 
+### 4. Meme Battle | Breakthrough Engine
+* **Tech Stack & Concept:** P2P decentralized meme ranking and evaluation platform built on a direct device-to-device network architecture via lightweight brokers, bypassing central servers entirely.
+* **Core Philosophy & Concept:**
+  * **Privacy First by Default:** No central server stores user data. The system operates as both a personal catalog and a public leader-board. Content remains completely private until connected peers are online.
+  * **Peer-Driven Network Activation:** Operating on a fully decentralized structure supported by real-time online participants, the local resonance matrix activates when sharing direct access links with peers.
+* **Key Features:**
+  * **Pairwise Elo Battle Engine:** Head-to-head meme comparisons powered by the Elo rating system to evaluate content resonance, promote top-tier posts, and convert accumulated *Impact* into app features.
+  * **Direct Vector Transfer & Safety:** Zero mandatory registrations, passwords, or personal data tracking. Users retain full control over their visual vectors and transmit impulses directly to connected participants.
+  * **Zero Friction UX:** Instant setup allowing users to drop visual vectors, share direct links with targeted peers, and test content impact across the network.
+
+**Read & Use:** [Meme Battle — Breakthrough Engine](https://eqlectika.github.io/breakthrough.html)
+
 ### Joining the Development
 
 The ultimate goal of Eqlectika goes beyond a single inverted planet. The vision is to build an ecosystem where different planets can exist, each running on its own custom logic and scenarios via GitHub.
