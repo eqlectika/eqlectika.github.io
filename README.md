@@ -99,3 +99,13 @@ How you can support the project:
 If you are fascinated by non-standard astrophysics and creative coding, feel free to dive in!
 To achieve smooth, independent movement inside a concave sphere without running into the infamous Gimbal Lock, we had to abandon standard Euler angles for player rotation. Instead, we use quaternions to calculate rotation deltas relative to the object’s current orientation.
 
+## Licensing
+
+This project is dual-licensed:
+
+1. **Open Source (GNU AGPLv3):** Free to use, modify, and distribute for open-source projects. If you host or integrate this engine/code into a networked service or web app, you must publish your source code under the AGPLv3 license.
+2. **Commercial License:** If you wish to use this code (including the P2P meme ranking / Elo engine mechanics) in a proprietary product, closed-source SaaS, or commercial platform without disclosing your code, a commercial license is required.
+
+For commercial licensing, custom integration, or contact:
+* Email: `yevgeniykorobka@gmail.com`
+* Telegram: `@eugenebox`
