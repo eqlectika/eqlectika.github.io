@@ -122,7 +122,7 @@ You can test the mechanics and explore the inverted world directly in your brows
   * **Rich Text & Media Blocks:** Instant insertion, preview, and formatting of text and media within each interactive `contenteditable` container.
   * **Mobile Optimization:** Full touch-event support (`touch-action: none/auto`), responsive layouts, and PWA manifest integration for seamless mobile installation.
  
-**Read & Use:** [Cross Editor](https://eqlectika.github.io/cross.html)
+**Read & Use:** [Cross Notes](https://eqlectika.github.io/cross.html)
  
 ### 4. Meme Battle | Breakthrough Engine
 * **Tech Stack & Concept:** P2P decentralized meme ranking and evaluation platform built on a direct device-to-device network architecture via lightweight brokers, bypassing central servers entirely.
