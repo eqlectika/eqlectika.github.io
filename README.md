@@ -89,8 +89,8 @@ You can test the mechanics and explore the inverted world directly in your brows
 * Left half of the screen – Thrust.
 * Right half of the screen – Steering.
 
-### Fast Reading Converter — RSVP Speed Reading Service
 #
+### Fast Reading Converter — RSVP Speed Reading Service
 [Fast Reading Converter (Flash)](https://eqlectika.github.io/flash.html)
 
 * **Tech Stack & Concept:** Client-side PWA (Progressive Web App) designed for speed reading using Rapid Serial Visual Presentation (RSVP).
@@ -100,8 +100,8 @@ You can test the mechanics and explore the inverted world directly in your brows
   * **Adaptive Interface:** Automatic font size adjustment tailored to the device's physical screen width, CSS animation synchronization (Z-axis, blur, fade) aligned with JS timers, and integration of the *Screen Wake Lock API* to keep the display active.
   * **File Import & Themes:** Support for loading local `.txt` files, instant custom click-to-invert color themes, and complete offline availability.
 
-### Capital&Eqlectika — Trade Phenomena (Cryptocurrency Analytical Terminal)
 #
+### Capital&Eqlectika — Trade Phenomena (Cryptocurrency Analytical Terminal)
 [Capital&Eqlectika (Market Terminal)](https://eqlectika.github.io/market.html)
 
 * **Tech Stack & Concept:** High-performance crypto-trading dashboard processing binary and futures real-time market data utilizing Chart.js, Web Workers, WebSockets, and the Binance API.
@@ -111,8 +111,8 @@ You can test the mechanics and explore the inverted world directly in your brows
   * **Divergence & Funding Rate Tracking:** Automatic detection and visual mapping of price, RSI, and volume divergences, accompanied by a module tracking real-time and historical futures funding rates.
   * **Custom UI & Cross-Chart Synchronization:** Unified zoom/scroll synchronization across price, pair percentage comparison, and funding rate charts, featuring interactive crosshairs and an adaptive live signal log.
 
-### Cross Editor — Four-Zone Layout Text & Media Editor
 #
+### Cross Editor — Four-Zone Layout Text & Media Editor
 [Cross Notes](https://eqlectika.github.io/cross.html)
 
 * **Tech Stack & Concept:** Interactive PWA featuring a 4-section (2x2) flexible grid layout designed for concurrent text and image editing.
@@ -122,8 +122,8 @@ You can test the mechanics and explore the inverted world directly in your brows
   * **Rich Text & Media Blocks:** Instant insertion, preview, and formatting of text and media within each interactive `contenteditable` container.
   * **Mobile Optimization:** Full touch-event support (`touch-action: none/auto`), responsive layouts, and PWA manifest integration for seamless mobile installation.
 
-### Meme Battle | Breakthrough Engine
 #
+### Meme Battle | Breakthrough Engine
 **Read & Use:** [Meme Battle — Breakthrough Engine](https://eqlectika.github.io/breakthrough.html)
 
 * **Tech Stack & Concept:** P2P decentralized meme ranking and evaluation platform built on a direct device-to-device network architecture via lightweight brokers, bypassing central servers entirely.
@@ -135,9 +135,8 @@ You can test the mechanics and explore the inverted world directly in your brows
   * **Direct Vector Transfer & Safety:** Zero mandatory registrations, passwords, or personal data tracking. Users retain full control over their visual vectors and transmit impulses directly to connected participants.
   * **Zero Friction UX:** Instant setup allowing users to drop visual vectors, share direct links with targeted peers, and test content impact across the network.
 
-
-### Joining the Development
 #
+### Joining the Development
 
 The ultimate goal of Eqlectika goes beyond a single inverted planet. The vision is to build an ecosystem where different planets can exist, each running on its own custom logic and scenarios via GitHub.
 
