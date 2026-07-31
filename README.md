@@ -82,12 +82,12 @@ The current focus is on developing the landscape mechanics and terrain generatio
 You can test the mechanics and explore the inverted world directly in your browser:
 
 **Desktop Controls:**
-* Arrow keys – Movement.
-* Single / Double tap Space – Thrust control.
+* Arrow keys – Movement
+* Single / Double tap Space – Thrust control
 
 **Mobile Controls:**
-* Left half of the screen – Thrust.
-* Right half of the screen – Steering.
+* Left half of the screen – Thrust
+* Right half of the screen – Steering
 
 #
 ### Fast Reading Converter — RSVP Speed Reading Service
