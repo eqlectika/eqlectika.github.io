@@ -54,6 +54,8 @@ This is a living process, where users themselves shape their illusion, recording
 
 Concentration occurs automatically as needed.
 
+# Selected Projects Overview
+
 ### Outside-in Planet
 
 Imagine a world where the landscape doesn’t sink below the horizon but rises above you, closing into a massive dome overhead: standing in London, you could look straight up and see Australia, other continents, oceans, and cities. Everything on the planet is visible through a telescope because you are inside a sphere, and gravity points outward.
@@ -88,9 +90,7 @@ You can test the mechanics and explore the inverted world directly in your brows
 * Left half of the screen – Thrust.
 * Right half of the screen – Steering.
 
-# Selected Projects Overview
-
-## 1. Fast Reading Converter — RSVP Speed Reading Service
+Fast Reading Converter — RSVP Speed Reading Service
 * **Tech Stack & Concept:** Client-side PWA (Progressive Web App) designed for speed reading using Rapid Serial Visual Presentation (RSVP).
 * **Key Features:**
   * **Smart Dynamic Text Parsing:** An automated engine that adapts frame delay (word display timing) based on punctuation marks (additional pauses for commas, periods, dashes) and word length.
@@ -100,9 +100,7 @@ You can test the mechanics and explore the inverted world directly in your brows
  
 [Fast Reading Converter (Flash)](https://eqlectika.github.io/flash.html)
 
----
-
-## 2. Capital&Eqlectika — Trade Phenomena (Cryptocurrency Analytical Terminal)
+Capital&Eqlectika — Trade Phenomena (Cryptocurrency Analytical Terminal)
 * **Tech Stack & Concept:** High-performance crypto-trading dashboard processing binary and futures real-time market data utilizing Chart.js, Web Workers, WebSockets, and the Binance API.
 * **Key Features:**
   * **Multithreaded Data Processing (Web Workers):** Offloading heavy mathematical calculations, oscillator computations (RSI-14, 34-period Bollinger Bands), and custom *34/38 Parrots* indicators to background threads.
@@ -112,9 +110,7 @@ You can test the mechanics and explore the inverted world directly in your brows
  
 [Capital&Eqlectika (Market Terminal)](https://eqlectika.github.io/market.html)
 
----
-
-## 3. Cross Editor — Four-Zone Layout Text & Media Editor
+Cross Editor — Four-Zone Layout Text & Media Editor
 * **Tech Stack & Concept:** Interactive PWA featuring a 4-section (2x2) flexible grid layout designed for concurrent text and image editing.
 * **Key Features:**
   * **Interactive Crosshair Controller:** Smooth drag-and-drop central controller allowing dynamic, proportional resizing of all four editing quadrants simultaneously.
@@ -124,9 +120,7 @@ You can test the mechanics and explore the inverted world directly in your brows
  
 [Cross Notes](https://eqlectika.github.io/cross.html)
 
----
- 
-### 4. Meme Battle | Breakthrough Engine
+Meme Battle | Breakthrough Engine
 * **Tech Stack & Concept:** P2P decentralized meme ranking and evaluation platform built on a direct device-to-device network architecture via lightweight brokers, bypassing central servers entirely.
 * **Core Philosophy & Concept:**
   * **Privacy First by Default:** No central server stores user data. The system operates as both a personal catalog and a public leader-board. Content remains completely private until connected peers are online.
