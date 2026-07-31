@@ -298,49 +298,49 @@
             updateControls();
         });
         
-        downloadBtn.addEventListener('click', function() {
-            if (!currentImageSrc && image.src.includes('placeholder.com')) {
-                alert('Please upload an image first');
-                return;
-            }
-            
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            const imgWidth = parseInt(image.style.width) || originalWidth;
-            const imgHeight = Math.round(imgWidth * (originalHeight / originalWidth));
-            
-            canvas.width = imgWidth;
-            canvas.height = imgHeight;
-            
-            // Для JPEG добавляем белый фон, так как у прозрачных PNG на JPEG будет черный фон
-            const selectedFormat = formatSelect.value;
-            if (selectedFormat === 'image/jpeg') {
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-            
-            ctx.drawImage(image, 0, 0, imgWidth, imgHeight);
-            
-            let mimeType = selectedFormat;
-            let extension = 'png';
-            
-            if (selectedFormat === 'image/jpeg') {
-                extension = 'jpg';
-            } else if (selectedFormat === 'image/tiff') {
-                // Браузеры не поддерживают нативный canvas.toDataURL('image/tiff'),
-                // поэтому экспортируем как PNG/склеиваем или отдаем с расширением tiff (базовый фоллбек)
-                mimeType = 'image/png'; 
-                extension = 'tiff';
-            } else {
-                extension = 'png';
-            }
-            
-            const link = document.createElement('a');
-            link.download = 'resized-image.' + extension;
-            link.href = canvas.toDataURL(mimeType, 0.9); // 0.9 качество для jpeg
-            link.click();
-        });
+ downloadBtn.addEventListener('click', function() {
+    if (!currentImageSrc && image.src.includes('placeholder.com')) {
+        alert('Please upload an image first');
+        return;
+    }
+    
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    const imgWidth = parseInt(image.style.width) || originalWidth;
+    const imgHeight = Math.round(imgWidth * (originalHeight / originalWidth));
+    
+    canvas.width = imgWidth;
+    canvas.height = imgHeight;
+    
+    const selectedFormat = formatSelect.value;
+    
+    // Белая подложка только для JPEG
+    if (selectedFormat === 'image/jpeg') {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    ctx.drawImage(image, 0, 0, imgWidth, imgHeight);
+    
+    // Карта соответствий MIME-типа и расширения файла
+    const extensions = {
+        'image/png': 'png',
+        'image/jpeg': 'jpg',
+        'image/webp': 'webp',
+        'image/tiff': 'tiff'
+    };
+    
+    // Берём расширение прямо из карты, без сложных и путающих else
+    const extension = extensions[selectedFormat] || 'png';
+    const mimeType = selectedFormat === 'image/tiff' ? 'image/png' : selectedFormat;
+    
+    const link = document.createElement('a');
+    link.download = 'resized-image.' + extension;
+    link.href = canvas.toDataURL(mimeType, 0.9);
+    link.click();
+});
+
         
         function ensureEven(value) {
             return Math.round(value / 2) * 2;
