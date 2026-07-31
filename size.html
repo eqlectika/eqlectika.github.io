@@ -299,7 +299,7 @@
             updateControls();
         });
         
- downloadBtn.addEventListener('click', function() {
+downloadBtn.addEventListener('click', async function() {
     if (!currentImageSrc && image.src.includes('placeholder.com')) {
         alert('Please upload an image first');
         return;
@@ -316,7 +316,6 @@
     
     const selectedFormat = formatSelect.value;
     
-    // Белая подложка только для JPEG
     if (selectedFormat === 'image/jpeg') {
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -324,7 +323,6 @@
     
     ctx.drawImage(image, 0, 0, imgWidth, imgHeight);
     
-    // Карта соответствий MIME-типа и расширения файла
     const extensions = {
         'image/png': 'png',
         'image/jpeg': 'jpg',
@@ -332,15 +330,47 @@
         'image/tiff': 'tiff'
     };
     
-    // Берём расширение прямо из карты, без сложных и путающих else
     const extension = extensions[selectedFormat] || 'png';
     const mimeType = selectedFormat === 'image/tiff' ? 'image/png' : selectedFormat;
-    
-    const link = document.createElement('a');
-    link.download = 'resized-image.' + extension;
-    link.href = canvas.toDataURL(mimeType, 0.9);
-    link.click();
+    const fileName = 'resized-image.' + extension;
+
+    // Конвертируем canvas в Blob (эффективнее чем base64/DataURL)
+    canvas.toBlob(async function(blob) {
+        if (!blob) return;
+
+        // 1. Попытка вызвать нативный диалог «Сохранить как...» через File System Access API
+        if ('showSaveFilePicker' in window) {
+            try {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: fileName,
+                    types: [{
+                        description: 'Image File',
+                        accept: { [mimeType]: ['.' + extension] }
+                    }]
+                });
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                return;
+            } catch (err) {
+                // Если пользователь отменил диалог — ничего не делаем
+                if (err.name === 'AbortError') return;
+            }
+        }
+
+        // 2. Фолбэк для браузеров/устройств без поддержки showSaveFilePicker (через Object URL)
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = fileName;
+        link.href = blobUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+    }, mimeType, 0.9);
 });
+
 
         
         function ensureEven(value) {
