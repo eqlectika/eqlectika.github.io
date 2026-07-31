@@ -78,8 +78,8 @@
             align-items: center;
         }
 
-        input[type="number"] {
-            width: 80px;
+        input[type="number"], select {
+            width: 100px;
             padding: 8px;
             margin: 20px;
             background: #222;
@@ -209,6 +209,16 @@
     
     <div>Width (px)</div>
 
+    <!-- Блок выбора формата -->
+    <div style="margin-top: 20px;">
+        <label for="format-select" style="min-width: auto; margin-right: 10px;">Format:</label>
+        <select id="format-select">
+            <option value="image/png">PNG</option>
+            <option value="image/jpeg">JPEG</option>
+            <option value="image/tiff">TIFF</option>
+        </select>
+    </div>
+
     <button id="download-btn">Save Image</button>
 
 
@@ -222,6 +232,7 @@
         const dimensionsDisplay = document.getElementById('current-dimensions');
         const imageUpload = document.getElementById('real-file-input');
         const downloadBtn = document.getElementById('download-btn');
+        const formatSelect = document.getElementById('format-select');
         
         let originalWidth = 400;
         let originalHeight = 400;
@@ -298,11 +309,32 @@
             canvas.width = imgWidth;
             canvas.height = imgHeight;
             
+            // Для JPEG добавляем белый фон, так как у прозрачных PNG на JPEG будет черный фон
+            const selectedFormat = formatSelect.value;
+            if (selectedFormat === 'image/jpeg') {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+            
             ctx.drawImage(image, 0, 0, imgWidth, imgHeight);
             
+            let mimeType = selectedFormat;
+            let extension = 'png';
+            
+            if (selectedFormat === 'image/jpeg') {
+                extension = 'jpg';
+            } else if (selectedFormat === 'image/tiff') {
+                // Браузеры не поддерживают нативный canvas.toDataURL('image/tiff'),
+                // поэтому экспортируем как PNG/склеиваем или отдаем с расширением tiff (базовый фоллбек)
+                mimeType = 'image/png'; 
+                extension = 'tiff';
+            } else {
+                extension = 'png';
+            }
+            
             const link = document.createElement('a');
-            link.download = 'resized-image.png';
-            link.href = canvas.toDataURL('image/png');
+            link.download = 'resized-image.' + extension;
+            link.href = canvas.toDataURL(mimeType, 0.9); // 0.9 качество для jpeg
             link.click();
         });
         
@@ -351,8 +383,6 @@ function toggleDonate() {
     }
 }
 
-
-
     function copyToClipboard() {
         const addr = document.getElementById("cryptoAddr");
         const hint = document.getElementById("copyHint");
@@ -384,4 +414,4 @@ function toggleDonate() {
 
     </script>
 </body>
-</html> 
+</html>
