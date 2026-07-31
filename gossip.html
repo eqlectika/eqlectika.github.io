@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="manifest-gossip.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Decentrilized Public Messenger</title>
+<style>
+body { background: #000; color: #0f0; font-family: monospace; padding: 0px; box-sizing: border-box; }
+.app-container {
+    max-width: 1024px;
+    margin: 0 auto;
+    background-color: #000;
+    min-height: 100vh;
+    box-sizing: border-box;
+    box-shadow: 0 0 20px rgba(0,0,0,0.8);
+}
+.box { border: 0px solid #0f0; padding: 2px; margin-bottom: 15px; }
+input, button { background: #000; color: #0f0; border: 1px solid #0f0; padding: 2px; margin: 5px 0; }
+button { cursor: pointer; }
+
+#messages {
+    color: #fff;
+}
+
+#log { 
+height: 180px; 
+overflow-y: auto;
+scrollbar-width: thin;
+scrollbar-color: #333 #111; 
+border: 0px 
+dashed #0f0; 
+padding: 0px; 
+font-size: 12px; 
+}
+.msg-item { border-bottom: 1px solid #113311; padding: 5px 0; }
+.status-ok { color: #00ff00; }
+.status-err { color: #ff0000; }
+a { color: #448aff; text-decoration: none; }
+
+</style>
+</head>
+<body>
+    
+<div class="app-container">
+    
+
+    
+<div class="box">
+    <h3>Network status (<span id="nodeId"></span>)</h3>
+    <div id="connectionStatus">Connecting to the network...</div>
+</div>
+    
+<div class="box">
+    <details>
+        <summary style="cursor: pointer; outline: none; display: list-item;">
+            <h3 style="margin: 0; display: inline;">Disclaimer</h3>
+        </summary>
+            <p>This is an experimental peer-to-peer communication public network.</p>
+            <p>Messages are transmitted through a experimental public broker transport layer.</p>
+            <p>Any data you enter is saved only in the browser cache on the devices of users who are currently on this page.</p>
+            <p>Do not transmit sensitive or private information.</p>
+    </details>
+</div>
+    
+<div class="box">
+    <h3>Post public message</h3>
+    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
+        <textarea id="msgInput" placeholder="Ad text..." rows="5" style="width: 100%; margin: 0; box-sizing: border-box; background: #000; color: #fff; border: 1px solid #0f0; padding: 4px; font-family: monospace; font-size: 14px; resize: vertical;"></textarea>
+        <button onclick="publishMessage()" style="width: 128px; height: 34px; margin: 0; font-size: 14px; box-sizing: border-box; font-weight: bold;">Send Out</button>
+    </div>
+</div>
+
+<div class="box">
+    <h3>Ads database</h3>
+    <div id="messages">Waiting for data...</div>
+</div>
+
+<div class="box">
+    <h3>Protocol log</h3>
+    <div id="log"></div>
+</div>
+
+<a href="index.html" id="logoLink" style="padding: 2px; text-decoration: none;"><img src="logo.png" alt="Logo" style="max-width: 48px; opacity: 0.9; margin: 10px 0 10px 0;"></a> 
+
+<div style="padding: 2px; display: flex; align-items: flex-start; justify-content: left; gap: 15px; margin-bottom: 5px;">
+
+  <a href="breakthrough.html" style="text-decoration: none;">
+    <img src="breakthrough.png" alt="Logo" style="height: 48px; width: auto; margin-top: 20px;">
+  </a>
+  
+  <div style="display: flex; flex-direction: column;">
+    <h2 style="margin: -4px; line-height: 0.7; color: #fff; margin-top: 30px;">Meme Battle</h2>
+    <span style="margin: -4px; padding: 1px; font-size: 14px; color: #b2b5be; margin-top: 5px;">
+      Resonance Engine
+    </span>
+  </div>
+</div>
+
+<div style="margin: 30px 0 50px 0; color: #888">
+        <h2 style="margin: 0 0 5px 0;">Trust Fibonacci</h2>
+  <div>
+    <p style="margin: 0 0 5px 0;">Happiness loading… Please wait.</p>
+    <div style="width: 233px; background: #555; overflow: hidden;">
+      <div style="width: 38%; height: 8px; background: #fff;">
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top: 50px;">Made by <a href="https://t.me" target="_blank" id="author-link">@</a></p>
+
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax5/libs/mqtt/4.3.7/mqtt.min.js"></script>
+<script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+
+<script>
+const myId = 'Device-' + Math.floor(Math.random() * 9000 + 1000);
+document.getElementById('nodeId').innerText = myId;
+
+let messages = {};
+
+function log(txt) {
+    let l = document.getElementById('log');
+    l.innerHTML += `<div>> ${txt}</div>`;
+    l.scrollTop = l.scrollHeight;
+}
+
+log("Initializing the network layer...");
+
+let client;
+try {
+    client = mqtt.connect('wss://test.mosquitto.org:8081/mqtt', {
+        clientId: 'gossip_node_' + Math.random().toString(16).substr(2, 8)
+    });
+} catch(e) {
+    log("Broker initialization error: " + e.message);
+}
+
+const TOPIC = 'p2p/public/messenger/announcements/v2';
+
+if (client) {
+    client.on('connect', () => {
+        document.getElementById('connectionStatus').innerHTML = '<span class="status-ok">● Connected to the broker cloud</span>';
+        log("Successful connection to the transport network.");
+        client.subscribe(TOPIC, (err) => {
+            if (!err) {
+                log(`Subscription issued: ${TOPIC}`);
+            } else {
+                log(`Subscription error: ${err}`);
+            }
+        });
+    });
+
+    client.on('error', (err) => {
+        document.getElementById('connectionStatus').innerHTML = '<span class="status-err">● Network connection error</span>';
+        log("Network error: " + JSON.stringify(err));
+    });
+
+    client.on('message', (topic, payload) => {
+        try {
+            let packet = JSON.parse(payload.toString());
+            if (packet.sender === myId) return;
+
+            log(`Received package from [${packet.sender}]: "${packet.text}"`);
+
+            if (!messages[packet.id]) {
+                messages[packet.id] = packet;
+                log(`✓ New ad added. ID: ${packet.id}`);
+                renderMessages();
+            } else {
+                log(`⚡ Duplicate discarded. ID: ${packet.id}`);
+            }
+        } catch (e) {
+            log("Error parsing incoming packet");
+        }
+    });
+}
+
+function publishMessage() {
+    let input = document.getElementById('msgInput');
+    let text = input.value.trim();
+    if (!text) return;
+    if (!client || !client.connected) {
+        alert("No network connection!");
+        return;
+    }
+
+    let packet = {
+        id: 'msg-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+        sender: myId,
+        text: text,
+        timestamp: Date.now()
+    };
+
+    messages[packet.id] = packet;
+    renderMessages();
+
+    client.publish(TOPIC, JSON.stringify(packet), { qos: 0 }, (err) => {
+        if (!err) {
+            log(`↗ The announcement was sent to: "${text}"`);
+        } else {
+            log(`✖ Sending error: ${err}`);
+        }
+    });
+
+    input.value = '';
+}
+
+function renderMessages() {
+    let container = document.getElementById('messages');
+    container.innerHTML = '';
+    
+    let sorted = Object.values(messages).sort((a, b) => b.timestamp - a.timestamp);
+    
+    if (sorted.length === 0) {
+        container.innerHTML = 'No ads.';
+        return;
+    }
+
+    sorted.forEach(msg => {
+        let div = document.createElement('div');
+        div.className = 'msg-item';
+        div.innerHTML = `<b>[Author: ${msg.sender}]</b>: ${msg.text} <small>(${new Date(msg.timestamp).toLocaleTimeString()})</small>`;
+        container.appendChild(div);
+    });
+}
+</script>
+
+</body>
+</html>
