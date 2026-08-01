@@ -11,6 +11,10 @@
 <title>Meme Battle | Breakthrough engine</title>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
 <style>
 body { 
     background-color: #121212; 
@@ -267,12 +271,28 @@ html {
 .footer-credit {
     text-align: center;
     font-size: 14px;
-    color: #999;
+    color: #fff;
     margin: 40px 0 30px 0;
 }
 h2 { font-size: 18px; margin-bottom: -10px; }
 a { color: #448aff; text-decoration: none; }
 .footer-credit a:hover { text-decoration: underline; }
+
+.progress-fill {
+  width: 21%;
+  height: 8px;
+  background: #de00b2;
+  transition: width 400ms cubic-bezier(0.25, 1, 0.5, 1); 
+}
+
+.progress-fill.boosted {
+  width: 34%; 
+}
+
+.footer-credit h2 a:hover {
+    text-decoration: underline;
+    color: #0097ff !important;
+}
 </style>
 </head>
 <body>
@@ -447,7 +467,7 @@ a { color: #448aff; text-decoration: none; }
 
 <div style="display: flex; margin-top: 30px; align-items: center; justify-content: center;">
   <a href="javascript:void(0)" onclick="window.scrollTo({top: 0, behavior: 'smooth'});" style="display: inline-flex; align-items: center; text-decoration: none;">
-    <img src="ladybug-icon-10.png" alt="ladybug" style="width: 34px; height: 34px; vertical-align: middle;">
+    <img src="ladybug-icon-10.png" alt="ladybug" style="width: 48px; height: 48px; vertical-align: middle;">
   </a>
 </div>
 
@@ -456,18 +476,20 @@ a { color: #448aff; text-decoration: none; }
 </div>
     
 <div class="footer-credit">
-    <h2>Trust Fibonacci</h2>
-    <p>Beauty and the best club</p>
+    <h2 style="font-family: 'Cinzel', sans-serif; font-weight: bold;">
+      <a href="match.html" style="color: inherit; letter-spacing: 1.5px; text-decoration: none;">Trust Fibonacci</a>
+    </h2>
+    <p style="color: #999; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 5px; ">Beauty and the best club</p>
 
-  <div style="margin-bottom: 50px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-    <p style="margin: 15px 0 3px 0; font-size: 12px;">Happiness loading… Please wait.</p>
-    <div style="width: 160px; background: #555; border-radius: 0; overflow: hidden;">
-      <div style="width: 38%; height: 8px; background: #fff;">
-      </div>
-    </div>
+  <p style="text-align: center; margin-top: 40px;">Made by <a href="https://t.me/eugenebox" target="_blank" id="author-link">@eugenebox</a></p>
+  <p style="color: #afff00">Let me know what time is best for you to play via private message on Telegram— I'll try to jump online and join the match!</p>
+
+<div style="margin-bottom: 70px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+  <p style="margin: 15px 0 3px 0; color: #de00b2; font-size: 12px;">Happiness loading… Please wait.</p>
+  <div style="width: 160px; background: #540040; overflow: hidden;">
+    <div id="happiness-bar" class="progress-fill"></div>
   </div>
-
-  <p>Made by <a href="https://t.me/eugenebox" target="_blank" id="author-link">@eugenebox</a></p>
+</div>
 
 </div>
 </div>
@@ -1303,6 +1325,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+const bar = document.getElementById('happiness-bar');
+
+if (bar) {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          bar.classList.add('boosted');
+        }, 2000);
+        
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 }); 
+
+  observer.observe(bar);
+}
 </script>
 
 </body>
