@@ -5,9 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="manifest" href="manifest-match.json">
 
-<title>Ranking | Local Edition</title>
+<title>Trust Fibonacci | Beauty and the best club</title>
 <link rel="manifest" href="manifest-ranking.json">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
 <style>
 body { background-color: #00002f; color: #fff; max-width: 768px; font-family: monospace; padding: 0; margin: 0 auto; box-sizing: border-box; }
 #versus { width: 100%; margin: 2em 0; }
@@ -143,25 +147,27 @@ font-family: monospace;
     flex-shrink: 0; /* Не дает флексу сжимать логотип */
     object-fit: contain;
 }
+
+.progress-fill {
+  width: 21%;
+  height: 8px;
+  background: #fff;
+  transition: width 400ms cubic-bezier(0.25, 1, 0.5, 1); 
+}
+
+.progress-fill.boosted {
+  width: 34%; 
+}
 </style>
 </head>
 <body>
 
-<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 5px;" class="main-header">
-    <h1 style="margin: 0; padding-bottom: 4px; line-height: 1.2; display: flex; align-items: center; gap: 8px;">
-        Made'
-        <a href="index.html" id="header-link" style="display: inline-flex; align-items: center;">
-            <img src="logo.png" alt="Logo" id="header-logo">
-        </a>
-        Space
-    </h1>
-    <p style="margin-top: -15px; color: #888;">Ranking menu version</p>
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 0px;" class="main-header">
+    <h2 style="font-family: 'Cinzel', sans-serif; font-weight: bold; margin: 0 0 4px 0; line-height: 1.1;">
+      <a href="breakthrough.html" style="color: inherit; letter-spacing: 1.5px; text-decoration: none;">Trust Fibonacci</a>
+    </h2>
+    <p style="color: #999; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 5px; margin: 0; line-height: 1;">Beauty and the best club</p>
 </div>
-
-
-
-
-
 
 <div id="versus">
     <div class="ranking-title">Pick Important</div>
@@ -189,7 +195,28 @@ font-family: monospace;
     <button class="admin-btn" onclick="saveOrAddItem()">Add Item</button>
 </div>
 
+<p style="text-align: center; margin: 0 auto 10px auto; max-width: 90%; word-wrap: break-word;">
+    Use this space for your private priorities—only you can rank, edit or delete items.
+</p>
 
+<p style="text-align: center; margin: 0 auto 40px auto; max-width: 90%; word-wrap: break-word;">
+    Note: Clearing browser cache will reset all data. To protect your notes, add this app to your Home Screen via the browser menu and use that shortcut to launch.
+</p>
+<a href="index.html" id="header-link" style="display: flex; justify-content: center; align-items: center; margin: 40px auto 70px auto;">
+    <img src="logo.png" alt="Logo" id="header-logo">
+</a>
+
+<p style="text-align: center; color: #999; margin-top: 40px;">
+  Made by <a href="https://t.me/eugenebox" target="_blank" id="author-link" style="text-decoration: none; color: #0066cc;">@eugenebox</a>
+</p>
+    
+<div style="margin-bottom: 120px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+  <p style="margin: 15px 0 3px 0; color: #999; font-size: 12px;">Happiness loading… Please wait.</p>
+  <div style="width: 160px; background: #555; overflow: hidden;">
+    <div id="happiness-bar" class="progress-fill"></div>
+  </div>
+</div>
+    
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -538,6 +565,24 @@ function deleteItem(id) {
 
 updateRankingList();
 nextPair();
+
+const bar = document.getElementById('happiness-bar');
+
+if (bar) {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          bar.classList.add('boosted');
+        }, 2000);
+        
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 }); 
+
+  observer.observe(bar);
+}
 </script>
 </body>
 </html>
