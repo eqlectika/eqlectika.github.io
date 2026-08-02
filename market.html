@@ -790,15 +790,27 @@ const priceCrosshairPlugin = {
     let pressTimer = null;
     const LONG_PRESS_DELAY = 500;
 
-    const updateCrosshair = (e) => {
-      const rect = chart.canvas.getBoundingClientRect();
-      const clientX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-      const clientY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-      chart.crosshair.x = clientX;
-      chart.crosshair.y = clientY;
-      chart.crosshair.active = true;
-      chart.update('none');
-    };
+const updateCrosshair = (e) => {
+  const rect = chart.canvas.getBoundingClientRect();
+  const clientX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const clientY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+
+  const { chartArea } = chart;
+
+  // Активируем crosshair только если курсор находится ВНУТРИ рабочей области графика
+  if (
+    clientX >= chartArea.left &&
+    clientX <= chartArea.right &&
+    clientY >= chartArea.top &&
+    clientY <= chartArea.bottom
+  ) {
+    chart.crosshair.x = clientX;
+    chart.crosshair.y = clientY;
+    chart.crosshair.active = true;
+    chart.update('none');
+  }
+};
+
 
     const clearCrosshair = () => {
       clearTimeout(pressTimer);
@@ -1193,25 +1205,46 @@ x: {
             tooltip: { enabled: false },
             legend: { display: false },
             zoom: {
-              zoom: { 
-                wheel: { enabled: true }, 
-                pinch: { enabled: true }, 
-                mode: 'x',
-                onZoom: function() { 
-                  syncChartsScale();
-                  resetAutoReturnTimer(); 
-                }
-              },
-              pan: { 
-                enabled: true, 
-                mode: 'x', 
-                threshold: 5,
-                onPan: function() { 
-                  syncChartsScale();
-                  resetAutoReturnTimer(); 
-                }
-              }
-            }
+  zoom: { 
+    wheel: { enabled: true }, 
+    pinch: { enabled: true }, 
+    mode: 'x',
+    onZoom: function() { 
+      syncChartsScale();
+      resetAutoReturnTimer(); 
+    }
+  },
+  pan: { 
+    enabled: true, 
+    mode: 'x', 
+    threshold: 5,
+    // --- ДОБАВЬТЕ ЭТУ ПРОВЕРКУ ---
+    onPanStart: function({ chart, event }) {
+      const { chartArea } = chart;
+      const rect = chart.canvas.getBoundingClientRect();
+      
+      // Получаем координаты первого касания или клика
+      const srcEvent = event.srcEvent;
+      const clientX = (srcEvent.touches ? srcEvent.touches[0].clientX : srcEvent.clientX) - rect.left;
+      const clientY = (srcEvent.touches ? srcEvent.touches[0].clientY : srcEvent.clientY) - rect.top;
+
+      // Разрешаем pan ТОЛЬКО если касание произошло ВНУТРИ области графика (chartArea)
+      const isInsideChart = 
+        clientX >= chartArea.left &&
+        clientX <= chartArea.right &&
+        clientY >= chartArea.top &&
+        clientY <= chartArea.bottom;
+
+      // Если вернуть false, панорамирование не начнется
+      return isInsideChart;
+    },
+    onPan: function() { 
+      syncChartsScale();
+      resetAutoReturnTimer(); 
+    }
+  }
+}
+
           }
         }
       });
