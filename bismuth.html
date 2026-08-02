@@ -115,34 +115,43 @@ window.innerWidth / window.innerHeight,
 );
 
 const renderer = new THREE.WebGLRenderer({
-antialias: true
+  antialias: true
 });
 
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
+// Включаем тональную компрессию для красивых и ярких бликов
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
 
 document.body.appendChild(renderer.domElement);
 
 const controls = new THREE.OrbitControls(
-camera,
-renderer.domElement
+  camera,
+  renderer.domElement
 );
 
 controls.enableDamping = true;
 
 const group = new THREE.Group();
-
 scene.add(group);
 
-const material = new THREE.MeshPhongMaterial({
-shininess: 30,
-specular: 0x444444,
-transparent: true,
-opacity: 0.85,
-side: THREE.DoubleSide,
-flatShading: true,
-depthWrite: true
+// Используем MeshPhysicalMaterial вместо MeshPhongMaterial для эффекта полировки и прозрачности
+const material = new THREE.MeshPhysicalMaterial({
+  color: 0xffffff,
+  roughness: 0.08,      // Очень низкая шероховатость = зеркальная полировка
+  metalness: 0.51,       // Легкий металлический отблеск
+  transmission: 0.1,   // Степень прозрачности (эффект стекла/кристалла)
+  ior: 2.4,             // Преломление света (похоже на настоящий висмут/драгоценные камни)
+  thickness: 1.2,       // Толщина объема для преломления
+  specularIntensity: 1, // Интенсивность бликов
+  transparent: true,
+  opacity: 0.7,
+  side: THREE.DoubleSide,
+  flatShading: true,    // Сохраняет грани кристаллической структуры
+  depthWrite: false     // Важно для корректного отображения полупрозрачных объектов друг за другом
 });
+
 
 const hemi = new THREE.HemisphereLight(
 0xffffff,
