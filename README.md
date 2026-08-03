@@ -124,7 +124,7 @@ You can test the mechanics and explore the inverted world directly in your brows
 
 #
 ### Meme Battle | Breakthrough Engine
-**[Meme Battle — Breakthrough Engine](https://eqlectika.github.io/breakthrough.html) (read & use)**
+**[Meme Battle — Breakthrough Engine](https://eqlectika.github.io/breakthrough.html)**
 
 * **Tech Stack & Concept:** P2P decentralized meme ranking and evaluation platform built on a direct device-to-device network architecture via lightweight brokers, bypassing central servers entirely.
 * **Core Philosophy & Concept:**
@@ -167,7 +167,7 @@ If you wish to integrate the **Breakthrough Engine** mechanics (P2P gossip netwo
 
 ## Trust Fibonacci
 
-Made with 👁 by [@eugenebox](https://t.me/eugenebox) 
+Made with 👁 by **[@eugenebox](https://t.me/eugenebox) 
  
 Happiness loading… Please wait.
 
