@@ -57,7 +57,7 @@ Concentration occurs automatically as needed.
 # Selected Projects Overview
 
 ### Outside-in Planet
-[Life](https://eqlectika.github.io/life.html)
+**[Life](https://eqlectika.github.io/life.html)**
 
 Imagine a world where the landscape doesn’t sink below the horizon but rises above you, closing into a massive dome overhead: standing in London, you could look straight up and see Australia, other continents, oceans, and cities. Everything on the planet is visible through a telescope because you are inside a sphere, and gravity points outward.
 
@@ -91,7 +91,7 @@ You can test the mechanics and explore the inverted world directly in your brows
 
 #
 ### Fast Reading Converter — RSVP Speed Reading Service
-[Fast Reading Converter (Flash)](https://eqlectika.github.io/flash.html)
+**[Fast Reading Converter (Flash)](https://eqlectika.github.io/flash.html)**
 
 * **Tech Stack & Concept:** Client-side PWA (Progressive Web App) designed for speed reading using Rapid Serial Visual Presentation (RSVP).
 * **Key Features:**
@@ -102,7 +102,7 @@ You can test the mechanics and explore the inverted world directly in your brows
 
 #
 ### Capital&Eqlectika — Trade Phenomena (Cryptocurrency Analytical Terminal)
-[Capital&Eqlectika (Market Terminal)](https://eqlectika.github.io/market.html)
+**[Capital&Eqlectika (Market Terminal)](https://eqlectika.github.io/market.html)**
 
 * **Tech Stack & Concept:** High-performance crypto-trading dashboard processing binary and futures real-time market data utilizing Chart.js, Web Workers, WebSockets, and the Binance API.
 * **Key Features:**
@@ -113,7 +113,7 @@ You can test the mechanics and explore the inverted world directly in your brows
 
 #
 ### Cross Editor — Four-Zone Layout Text & Media Editor
-[Cross Notes](https://eqlectika.github.io/cross.html)
+**[Cross Notes](https://eqlectika.github.io/cross.html)**
 
 * **Tech Stack & Concept:** Interactive PWA featuring a 4-section (2x2) flexible grid layout designed for concurrent text and image editing.
 * **Key Features:**
@@ -124,7 +124,7 @@ You can test the mechanics and explore the inverted world directly in your brows
 
 #
 ### Meme Battle | Breakthrough Engine
-[Meme Battle — Breakthrough Engine](https://eqlectika.github.io/breakthrough.html) (read & use)
+**[Meme Battle — Breakthrough Engine](https://eqlectika.github.io/breakthrough.html) (read & use)**
 
 * **Tech Stack & Concept:** P2P decentralized meme ranking and evaluation platform built on a direct device-to-device network architecture via lightweight brokers, bypassing central servers entirely.
 * **Core Philosophy & Concept:**
