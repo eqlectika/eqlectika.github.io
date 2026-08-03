@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.cdnfonts.com/css/copperplate-gothic-std" rel="stylesheet">
 <style>
 body { background-color: #00002f; color: #fff; max-width: 768px; font-family: monospace; padding: 0; margin: 0 auto; box-sizing: border-box; }
 #versus { width: 100%; margin: 2em 0; }
@@ -148,6 +149,11 @@ font-family: monospace;
     object-fit: contain;
 }
 
+#collapsible-content {
+    display: none; /* Гарантированно скрыт по умолчанию */
+    font-family: 'Copperplate Gothic Std', 'Copperplate', serif;
+}
+
 .progress-fill {
   width: 21%;
   height: 8px;
@@ -185,12 +191,12 @@ font-family: monospace;
 </head>
 <body>
 
-<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 0px;" class="main-header">
-<h2 style="font-family: 'Cinzel', sans-serif; font-weight: bold; letter-spacing: 1.5px; margin: 0 0 4px 0; line-height: 1.1;">
+<div style="display: flex; flex-direction: column; font-family: 'Cinzel';  align-items: center; justify-content: center; margin-bottom: 0px;" class="main-header">
+<h2 style="font-weight: bold; letter-spacing: 1.5px; margin: 0 0 4px 0; line-height: 1.1;">
   <a href="index.html" style="text-decoration: none; color: inherit;">Trust Fibonacci</a>
 </h2>
 
-    <p style="color: #a9a9a9; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 5px; margin: 0; line-height: 1;">Beauty and the best</p>
+    <p style="color: #fff; letter-spacing: 5px; margin: 0;">Beauty and the best</p>
 </div>
 
 <div id="versus">
@@ -217,28 +223,38 @@ font-family: monospace;
     <label for="new-img-file" class="file-label" id="file-label-text">Choose image</label>
     <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)">
     <button class="admin-btn" onclick="saveOrAddItem()">Add Item</button>
+</div> 
+
+<div id="collapsible-content"> 
+    <p style="text-align: center; color: #fff; margin: 0 auto 10px auto; max-width: 90%; word-wrap: break-word;">
+    I've used my mini-projects to demonstrate how ranking works. 
+    </p> 
+
+    <p style="text-align: center; color: #fff; margin: 0 auto 10px auto; max-width: 90%; word-wrap: break-word;">
+        Use this space for your private priorities—only you can add, rank, edit or delete items.
+    </p>
+
+    <p style="text-align: center; color: #fff; margin: 0 auto 10px auto; max-width: 90%; word-wrap: break-word;">
+        Note: Clearing browser cache will reset all data. To protect your notes, add this app to your Home Screen via the browser menu and use that shortcut to launch.
+    </p>
 </div>
 
-<p style="text-align: center; color: #a9a9a9; margin: 0 auto 10px auto; max-width: 90%; word-wrap: break-word;">
-I've used my mini-projects to demonstrate how ranking works. 
-</p>
+<div style="text-align: center; margin: 15px auto;">
+    <button id="toggle-btn" style="background: none; border: none; color: #fff; font-family: 'Copperplate Gothic Std', 'Copperplate', sans-serif; font-size: 16px; font-weight: bold; letter-spacing: 1.5px; cursor: pointer; padding: 5px;">
+        <span id="toggle-text">Help</span>
+    </button>
+</div>
 
-<p style="text-align: center; color: #a9a9a9; margin: 0 auto 10px auto; max-width: 90%; word-wrap: break-word;">
-    Use this space for your private priorities—only you can add, rank, edit or delete items.
-</p>
-
-<p style="text-align: center; color: #a9a9a9; margin: 0 auto 10px auto; max-width: 90%; word-wrap: break-word;">
-    Note: Clearing browser cache will reset all data. To protect your notes, add this app to your Home Screen via the browser menu and use that shortcut to launch.
-</p>
 
 <a href="index.html" id="header-link" style="display: flex; justify-content: center; align-items: center; margin: 30px auto 30px auto;">
     <img src="fleurdelis.png" id="header-logo">
 </a>
-    <h2 style="text-align: center; font-size: 21px; font-family: 'Cinzel', sans-serif; font-weight: bold;">
-      <a href="index.html" style="color: inherit; letter-spacing: 1.5px; text-decoration: none;">Made in Space</a>
-    </h2>
+<h2 style="text-align: center; font-size: 21px; font-family: 'Cinzel', sans-serif; font-weight: bold;">
+  <a href="index.html" style="color: inherit; letter-spacing: 1.5px; text-decoration: none;">Made in Space</a>
+</h2>
 
-<p style="text-align: center; color: #a9a9a9; margin: 40px 0 40px 0;">
+
+<p style="text-align: center; font-family: 'Ginzel'; color: #a9a9a9; margin: 40px 0 40px 0;">
   Made by <a href="https://t.me/eugenebox" target="_blank" id="author-link" style="text-decoration: none; color: #0066cc;">@eugenebox</a>
 </p>
     
@@ -499,7 +515,7 @@ function vote(side) {
 }
 
 function deleteItem(id) {
-    if (confirm("Вы уверены, что хотите удалить этот элемент?")) {
+    if (confirm("Are you sure to delete this item?")) {
         items = items.filter(item => item.id !== id);
         save();
         if (items.length < 2) {
@@ -531,7 +547,35 @@ if (bar) {
   }, { threshold: 0.5 }); 
 
   observer.observe(bar);
+} 
+
+const $toggleBtn = $('#toggle-btn');
+const $content = $('#collapsible-content');
+const $toggleText = $('#toggle-text');
+
+const savedState = localStorage.getItem('blockState');
+if (savedState === 'expanded') {
+    $content.show(); 
+    $toggleText.text('HIDE');
+} else {
+    $content.hide(); 
+    $toggleText.text('HELP');
+    localStorage.setItem('blockState', 'collapsed');
 }
+
+$toggleBtn.on('click', function() {
+    if ($content.is(':hidden')) {
+        $content.slideDown(200);
+        $toggleText.text('HIDE');
+        localStorage.setItem('blockState', 'expanded');
+    } else {
+        $content.slideUp(200);
+        $toggleText.text('HELP');
+        localStorage.setItem('blockState', 'collapsed');
+    }
+});
+
+
 </script>
 </body>
 </html>
