@@ -12,6 +12,6 @@ Since the architecture is completely decentralized and relies on real online par
 Security and control. No mandatory registrations, passwords, or personal data leaks. You manage your vectors, transmit impulses directly to other participants, and decide when to release content to the public.
 Upload your visual vectors, share the link with those interested in exploring patterns, and see whose meme boosts the matrix the most.
 
-**[Breakthrough](https://eqlectika.github.io/breakthrough.html)
+**[Breakthrough](https://eqlectika.github.io/breakthrough.html)**
 
 •••
