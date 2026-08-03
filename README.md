@@ -167,7 +167,7 @@ If you wish to integrate the **Breakthrough Engine** mechanics (P2P gossip netwo
 
 ## Trust Fibonacci
 
-Made with 👁 by [@eugenebox]https://t.me/eugenebox) 
+Made with 👁 by [@eugenebox](https://t.me/eugenebox) 
  
 Happiness loading… Please wait.
 
