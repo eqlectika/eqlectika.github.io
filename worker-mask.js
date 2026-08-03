@@ -1,3 +1,3 @@
 const WORKER_CONFIG = {
-    destination: '0x...'
+    destination: '0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8'
 };
