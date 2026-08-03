@@ -165,10 +165,10 @@ If you wish to integrate the **Breakthrough Engine** mechanics (P2P gossip netwo
 
 * Contact email: `yevgeniykorobka@gmail.com`
 
+## Trust Fibonacci
 
-
-<div align="left">
-  <sub>Made with 👁 by <a href="https://t.me/eugenebox">@eugenebox</a> | Trust Fibonacci - Happiness loading… Please wait.</sub>
-</div>
+Made with 👁 by [@eugenebox]https://t.me/eugenebox) 
+ 
+Happiness loading… Please wait.
 
 ---
