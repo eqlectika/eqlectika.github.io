@@ -163,7 +163,7 @@ If you wish to integrate the **Breakthrough Engine** mechanics (P2P gossip netwo
 
 * **Payment Methods:** B2B Wire Transfer (IBAN/SWIFT), Wise, Payoneer, or direct card payment via custom invoice.
 
-* Contact email: `yevgeniykorobka@gmail.com`
+* Email to [yevgeniykorobka@gmail.com](mailto:yevgeniykorobka@gmail.com)
 
 ## Trust Fibonacci
 
