@@ -237,11 +237,161 @@ window.addEventListener('pointerup', (e) => {
     scene.add(backLight);
 
     const collidableObjects = [];
-    const WORLD_SIZE = 800; 
+    const chunkRegistry = new Map(); // Хранилище сгенерированных чанков
+    const CHUNK_SIZE = 200;          // Размер одного чанка полигона
+    const CHUNK_RENDER_DISTANCE = 3; // Радиус прорисовки чанков вокруг игрока
 
     function addStructure(mesh) {
         scene.add(mesh);
         collidableObjects.push(mesh);
+    }
+
+    // Функция генерации контента для конкретного чанка
+    function generateChunk(chunkX, chunkZ) {
+        const chunkGroup = new THREE.Group();
+        const chunkColliders = [];
+        const localSeed = Math.sin(chunkX * 12.9898 + chunkZ * 78.233) * 43758.5453;
+        
+        // Генерация столбов и квадратов в чанке
+        for(let i=0; i<4; i++) {
+            const sizeX = 10 + Math.abs(Math.sin(localSeed + i)) * 20;
+
+let sizeY = 5 + Math.abs(Math.cos(localSeed * i)) * 25;
+if (i === 0) { 
+    sizeY += Math.abs(Math.sin(localSeed)) * 60; // Делаем один из кубов в чанке настоящим небоскребом
+}
+
+            const sizeZ = 10 + Math.abs(Math.sin(localSeed * 2 + i)) * 20;
+
+            const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
+            const material = new THREE.MeshPhongMaterial({ color: Math.abs(Math.sin(localSeed + i)) * 0xffffff });
+            const box = new THREE.Mesh(geometry, material);
+            
+            box.position.set(
+                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 3 + i)) - 0.5) * (CHUNK_SIZE - 40)),
+                sizeY / 2, 
+                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 4 + i)) - 0.5) * (CHUNK_SIZE - 40))
+            );
+            
+            chunkGroup.add(box);
+            chunkColliders.push(box);
+        }
+
+        // Генерация арок в чанке
+        for(let i=0; i<2; i++) {
+            const archGroup = new THREE.Group();
+            const archColor = Math.abs(Math.cos(localSeed + i * 5)) * 0xffffff;
+            const material = new THREE.MeshPhongMaterial({ color: archColor });
+
+            const w = 4;   
+            const h = 30;  
+            const d = 4;   
+            const span = 25; 
+
+            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+            leftLeg.position.set(-span/2, h/2, 0);
+            archGroup.add(leftLeg);
+
+            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+            rightLeg.position.set(span/2, h/2, 0);
+            archGroup.add(rightLeg);
+
+            const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w, d), material);
+            topBar.position.set(0, h + w/2, 0);
+            archGroup.add(topBar);
+
+            archGroup.position.set(
+                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 5 + i)) - 0.5) * (CHUNK_SIZE - 40)),
+                0,
+                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 6 + i)) - 0.5) * (CHUNK_SIZE - 40))
+            );
+            archGroup.rotation.y = Math.abs(Math.sin(localSeed + i)) * Math.PI;
+
+            leftLeg.updateMatrixWorld();
+            rightLeg.updateMatrixWorld();
+            topBar.updateMatrixWorld();
+            chunkColliders.push(leftLeg, rightLeg, topBar);
+            
+            chunkGroup.add(archGroup);
+        }
+
+        // Генерация мостов в чанке
+        for(let i=0; i<1; i++) {
+            const bridgeGroup = new THREE.Group();
+            const bridgeColor = 0x555566;
+            const material = new THREE.MeshPhongMaterial({ color: bridgeColor });
+
+            const length = 80;
+            const width = 12;
+            const height = 15;
+
+            const deck = new THREE.Mesh(new THREE.BoxGeometry(width, 2, length), material);
+            deck.position.set(0, height, 0);
+            bridgeGroup.add(deck);
+
+            for(let j = -length/3; j <= length/3; j += length/3) {
+                const pillar = new THREE.Mesh(new THREE.BoxGeometry(4, height, 4), material);
+                pillar.position.set(0, height/2, j);
+                bridgeGroup.add(pillar);
+                pillar.updateMatrixWorld();
+                chunkColliders.push(pillar);
+            }
+
+            bridgeGroup.position.set(
+                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 7 + i)) - 0.5) * (CHUNK_SIZE - 40)),
+                0,
+                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 8 + i)) - 0.5) * (CHUNK_SIZE - 40))
+            );
+            bridgeGroup.rotation.y = Math.abs(Math.cos(localSeed + i)) * Math.PI;
+
+            deck.updateMatrixWorld();
+            chunkColliders.push(deck);
+
+            chunkGroup.add(bridgeGroup);
+        }
+
+        scene.add(chunkGroup);
+        chunkRegistry.set(`${chunkX},${chunkZ}`, { group: chunkGroup, colliders: chunkColliders });
+    }
+
+    // Функция динамического обновления бесконечного мира (подгрузка/выгрузка чанков)
+    function updateInfiniteWorld(playerPos) {
+        const currentChunkX = Math.floor((playerPos.x + CHUNK_SIZE / 2) / CHUNK_SIZE);
+        const currentChunkZ = Math.floor((playerPos.z + CHUNK_SIZE / 2) / CHUNK_SIZE);
+
+        const activeChunks = new Set();
+
+        for (let x = -CHUNK_RENDER_DISTANCE; x <= CHUNK_RENDER_DISTANCE; x++) {
+            for (let z = -CHUNK_RENDER_DISTANCE; z <= CHUNK_RENDER_DISTANCE; z++) {
+                const cx = currentChunkX + x;
+                const cz = currentChunkZ + z;
+                const key = `${cx},${cz}`;
+                activeChunks.add(key);
+
+                if (!chunkRegistry.has(key)) {
+                    generateChunk(cx, cz);
+                }
+            }
+        }
+
+        // Удаление далеких чанков для оптимизации памяти и производительности
+        for (const [key, chunkData] of chunkRegistry.entries()) {
+            if (!activeChunks.has(key)) {
+                scene.remove(chunkData.group);
+                // Удаляем коллайдеры чанка из глобального массива
+                chunkData.colliders.forEach(collider => {
+                    const index = collidableObjects.indexOf(collider);
+                    if (index > -1) collidableObjects.splice(index, 1);
+                });
+                chunkRegistry.delete(key);
+            }
+        }
+
+        // Обновляем список коллайдеров активных чанков
+        collidableObjects.length = 0;
+        for (const chunkData of chunkRegistry.values()) {
+            collidableObjects.push(...chunkData.colliders);
+        }
     }
 
     // ==========================================
@@ -285,97 +435,6 @@ window.addEventListener('pointerup', (e) => {
     infiniteGrid.position.y = 0;
     scene.add(infiniteGrid);
 
-    // Столбы и квадраты
-    for(let i=0; i<40; i++) {
-        const sizeX = 10 + Math.random() * 20;
-        const sizeY = 4 + Math.random() * 15;
-        const sizeZ = 10 + Math.random() * 20;
-
-        const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
-        const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
-        const box = new THREE.Mesh(geometry, material);
-        
-        box.position.set(
-            (Math.random() - 0.5) * WORLD_SIZE,
-            sizeY / 2, 
-            (Math.random() - 0.5) * WORLD_SIZE
-        );
-        addStructure(box);
-    }
-
-    // Арки
-    for(let i=0; i<25; i++) {
-        const archGroup = new THREE.Group();
-        const archColor = Math.random() * 0xffffff;
-        const material = new THREE.MeshPhongMaterial({ color: archColor });
-
-        const w = 4;   
-        const h = 30;  
-        const d = 4;   
-        const span = 25; 
-
-        const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-        leftLeg.position.set(-span/2, h/2, 0);
-        archGroup.add(leftLeg);
-
-        const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-        rightLeg.position.set(span/2, h/2, 0);
-        archGroup.add(rightLeg);
-
-        const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w, d), material);
-        topBar.position.set(0, h + w/2, 0);
-        archGroup.add(topBar);
-
-        archGroup.position.set(
-            (Math.random() - 0.5) * WORLD_SIZE,
-            0,
-            (Math.random() - 0.5) * WORLD_SIZE
-        );
-        archGroup.rotation.y = Math.random() * Math.PI;
-
-        leftLeg.updateMatrixWorld();
-        rightLeg.updateMatrixWorld();
-        topBar.updateMatrixWorld();
-        collidableObjects.push(leftLeg, rightLeg, topBar);
-        
-        scene.add(archGroup);
-    }
-
-    // Мосты
-    for(let i=0; i<15; i++) {
-        const bridgeGroup = new THREE.Group();
-        const bridgeColor = 0x555566;
-        const material = new THREE.MeshPhongMaterial({ color: bridgeColor });
-
-        const length = 80;
-        const width = 12;
-        const height = 15;
-
-        const deck = new THREE.Mesh(new THREE.BoxGeometry(width, 2, length), material);
-        deck.position.set(0, height, 0);
-        bridgeGroup.add(deck);
-
-        for(let j = -length/3; j <= length/3; j += length/3) {
-            const pillar = new THREE.Mesh(new THREE.BoxGeometry(4, height, 4), material);
-            pillar.position.set(0, height/2, j);
-            bridgeGroup.add(pillar);
-            pillar.updateMatrixWorld();
-            collidableObjects.push(pillar);
-        }
-
-        bridgeGroup.position.set(
-            (Math.random() - 0.5) * WORLD_SIZE,
-            0,
-            (Math.random() - 0.5) * WORLD_SIZE
-        );
-        bridgeGroup.rotation.y = Math.random() * Math.PI;
-
-        deck.updateMatrixWorld();
-        collidableObjects.push(deck);
-
-        scene.add(bridgeGroup);
-    }
-
     const keys = {};
     let lastSpaceTime = 0;
     let superThrust = false;
@@ -404,15 +463,37 @@ window.addEventListener('pointerup', (e) => {
 
 function animate() {
     requestAnimationFrame(animate);
-    const raycaster = new THREE.Raycaster();
-    const downVector = new THREE.Vector3(0, -1, 0);
 
-    raycaster.set(player.position, downVector);
-    const intersects = raycaster.intersectObjects(collidableObjects);
+    // Динамическая подгрузка бесконечного мира вокруг игрока
+    updateInfiniteWorld(player.position);
 
-    if (velocity.y <= 0 && intersects.length > 0 && intersects[0].distance < 2.1) {
-        player.position.y = intersects[0].point.y + 2; 
-        velocity.y = 0; 
+    // --- ПЛОТНЫЕ ПРЕПЯТСТВИЯ (Коллизии со всех сторон) ---
+    const playerRadius = 1.5; // Радиус сферы коллизии игрока
+    const nextPos = player.position.clone().add(velocity);
+
+    // Проверяем столкновения со всеми объектами мира
+    for (let i = 0; i < collidableObjects.length; i++) {
+        const obj = collidableObjects[i];
+        
+        // Создаем ограничивающий параллелепипед (BoundingBox) для объекта с учетом его мировой матрицы
+        const bbox = new THREE.Box3().setFromObject(obj);
+        
+        // Ближайшая точка на боксе к будущей позиции игрока
+        const clampedPoint = new THREE.Vector3();
+        bbox.clampPoint(nextPos, clampedPoint);
+        
+        // Расстояние от центра игрока до ближайшей точки препятствия
+        const distance = nextPos.distanceTo(clampedPoint);
+        
+        if (distance < playerRadius) {
+            // Плотное столкновение: выталкиваем игрока обратно и гасим скорость по нормали
+            const pushDir = new THREE.Vector3().subVectors(nextPos, clampedPoint).normalize();
+            if (pushDir.lengthSq() === 0) pushDir.set(0, 1, 0);
+            
+            player.position.copy(clampedPoint).add(pushDir.multiplyScalar(playerRadius));
+            velocity.reflect(pushDir).multiplyScalar(0.2); // Упругость/гашение при ударе
+            break;
+        }
     }
 
     // --- УПРАВЛЕНИЕ КЛАВИАТУРОЙ ---
