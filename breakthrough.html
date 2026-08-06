@@ -540,7 +540,7 @@ a { color: #448aff; text-decoration: none; }
 <p style="margin-bottom: 8px;">Every competitor gets 8 free impacts, 5 free votes and 3 free publication slots.</p>
 <p style="margin-bottom: 8px;">Hourly Resonance Claim: lets you earn +4 Impact per hour (theoretically, would accumulate 96 impacts per 24 hours).</p>
 <p style="margin-bottom: 8px;">If you return in a day (or later), the long-term absence limitation will kick in, and you will receive only 24 impact.</p>
-<p style="margin-bottom: 8px;">Deleting a meme locally (click on meme in the ranking) incurs a penalty of -1 Impact.</p>
+<p style="margin-bottom: 8px;">Deleting a meme locally (click on meme in the ranking) incurs a penalty of -1 Post.</p>
 <p style="margin-bottom: 8px;">Use Convert Impacts to Action Limits to spend 1 impact for +3 votes, or 3 impacts for +1 post slot.</p>
 <p style="margin-bottom: 8px;">Use Transfer Impact(s) to send it(s) to other network participants.</p>
 <p style="margin-bottom: 8px;">You 'Buy Impacts via MetaMask' wallet with Ethereum.</p>
@@ -1063,7 +1063,7 @@ function editItem(id) {
 }
 
 function deleteItemLocal(id) {
-    if (!confirm('Are you sure you want to delete this meme from your device? Penalty: -1 Impact.')) return;
+    if (!confirm('Are you sure you want to delete this meme from your device? Penalty: -1 Post.')) return;
     
     let index = items.findIndex(i => i.id === id);
     if (index !== -1) {
@@ -1073,11 +1073,11 @@ function deleteItemLocal(id) {
         items.splice(index, 1);
         saveLocal();
 
-        playerState.impacts -= 1;
+        playerState.postsLeft -= 1;
         playerState.level = Math.floor(playerState.impacts / 20) + 1;
         updatePlayerStatsUI();
 
-        log(`You removed meme locally: ${id}. Penalty applied: -1 Impact.`);
+        log(`You removed meme locally: ${id}. Penalty applied: -1 Post.`);
         updateRankingList();
 
         if (items.length < 2) {
@@ -1118,7 +1118,7 @@ function updateRankingList() {
             <button class="edit-btn" onclick="event.stopPropagation(); editItem('${item.id}')">Edit and/or Re-inject Meme (free)</button>
             <p>${item.description || 'No description.'}</p>
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
-            <button class="admin-btn" type="button" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally (-1 Impact)</button>
+            <button class="admin-btn" type="button" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally (-1 Post)</button>
         </div>`;
     });
     $('#ranking-list').html(html || '<div style="text-align: center; padding:10px; color:#999;">Matrix is empty.<br>Inject first memes below!</div>');
