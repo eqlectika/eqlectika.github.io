@@ -212,7 +212,7 @@ window.addEventListener('pointerup', (e) => {
     camera.rotation.set(0, 0, 0);
     
     const player = new THREE.Group();
-    player.position.set(0, 2, 0);
+    player.position.set(0, 35, 0);
     player.rotation.order = 'YXZ';
     scene.add(player);
     player.add(camera);
@@ -237,54 +237,48 @@ window.addEventListener('pointerup', (e) => {
     scene.add(backLight);
 
     const collidableObjects = [];
-    const chunkRegistry = new Map(); // Хранилище сгенерированных чанков
-    const CHUNK_SIZE = 200;          // Размер одного чанка полигона
-    const CHUNK_RENDER_DISTANCE = 3; // Радиус прорисовки чанков вокруг игрока
+    const chunkRegistry = new Map(); 
+    const CHUNK_SIZE = 200;          
+    const CHUNK_RENDER_DISTANCE = 3; 
 
     function addStructure(mesh) {
         scene.add(mesh);
         collidableObjects.push(mesh);
     }
 
-    // Функция генерации контента для конкретного чанка
     function generateChunk(chunkX, chunkZ) {
         const chunkGroup = new THREE.Group();
         const chunkColliders = [];
         const localSeed = Math.sin(chunkX * 12.9898 + chunkZ * 78.233) * 43758.5453;
         
-        // Генерация столбов и квадратов в чанке
+        // Здания
         for(let i=0; i<4; i++) {
-            const sizeX = 10 + Math.abs(Math.sin(localSeed + i)) * 20;
-
-let sizeY = 5 + Math.abs(Math.cos(localSeed * i)) * 25;
-if (i === 0) { 
-    sizeY += Math.abs(Math.sin(localSeed)) * 60; // Делаем один из кубов в чанке настоящим небоскребом
-}
-
-            const sizeZ = 10 + Math.abs(Math.sin(localSeed * 2 + i)) * 20;
+            let sizeY = 5 + Math.abs(Math.cos(localSeed * i)) * 120;
+            const sizeX = 10 + Math.abs(Math.sin(localSeed + i)) * 15;
+            const sizeZ = 10 + Math.abs(Math.sin(localSeed * 2 + i)) * 15;
 
             const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
             const material = new THREE.MeshPhongMaterial({ color: Math.abs(Math.sin(localSeed + i)) * 0xffffff });
             const box = new THREE.Mesh(geometry, material);
             
             box.position.set(
-                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 3 + i)) - 0.5) * (CHUNK_SIZE - 40)),
+                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 3 + i)) - 0.5) * (CHUNK_SIZE - 60)),
                 sizeY / 2, 
-                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 4 + i)) - 0.5) * (CHUNK_SIZE - 40))
+                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 4 + i)) - 0.5) * (CHUNK_SIZE - 60))
             );
             
             chunkGroup.add(box);
             chunkColliders.push(box);
         }
 
-        // Генерация арок в чанке
+        // Арки
         for(let i=0; i<2; i++) {
             const archGroup = new THREE.Group();
             const archColor = Math.abs(Math.cos(localSeed + i * 5)) * 0xffffff;
             const material = new THREE.MeshPhongMaterial({ color: archColor });
 
             const w = 4;   
-            const h = 30;  
+            const h = 20;  
             const d = 4;   
             const span = 25; 
 
@@ -301,9 +295,9 @@ if (i === 0) {
             archGroup.add(topBar);
 
             archGroup.position.set(
-                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 5 + i)) - 0.5) * (CHUNK_SIZE - 40)),
+                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 5 + i)) - 0.5) * (CHUNK_SIZE - 60)),
                 0,
-                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 6 + i)) - 0.5) * (CHUNK_SIZE - 40))
+                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 6 + i)) - 0.5) * (CHUNK_SIZE - 60))
             );
             archGroup.rotation.y = Math.abs(Math.sin(localSeed + i)) * Math.PI;
 
@@ -315,46 +309,78 @@ if (i === 0) {
             chunkGroup.add(archGroup);
         }
 
-        // Генерация мостов в чанке
-        for(let i=0; i<1; i++) {
-            const bridgeGroup = new THREE.Group();
-            const bridgeColor = 0x555566;
-            const material = new THREE.MeshPhongMaterial({ color: bridgeColor });
+        // --- УРОВЕНЬ 1: Нижняя сетка дорог (проходит ровно по центрам чанков: 0, 0) ---
+        const roadMaterial1 = new THREE.MeshPhongMaterial({ color: 0x333344 });
+        const roadWidth = 14;
+        const roadHeight1 = 22;
 
-            const length = 80;
-            const width = 12;
-            const height = 15;
+        const roadX = new THREE.Mesh(new THREE.BoxGeometry(CHUNK_SIZE, 1.5, roadWidth), roadMaterial1);
+        roadX.position.set(chunkX * CHUNK_SIZE, roadHeight1, chunkZ * CHUNK_SIZE);
+        roadX.updateMatrixWorld();
+        chunkGroup.add(roadX);
+        chunkColliders.push(roadX);
 
-            const deck = new THREE.Mesh(new THREE.BoxGeometry(width, 2, length), material);
-            deck.position.set(0, height, 0);
-            bridgeGroup.add(deck);
+        const roadZ = new THREE.Mesh(new THREE.BoxGeometry(roadWidth, 1.5, CHUNK_SIZE), roadMaterial1);
+        roadZ.position.set(chunkX * CHUNK_SIZE, roadHeight1, chunkZ * CHUNK_SIZE);
+        roadZ.updateMatrixWorld();
+        chunkGroup.add(roadZ);
+        chunkColliders.push(roadZ);
 
-            for(let j = -length/3; j <= length/3; j += length/3) {
-                const pillar = new THREE.Mesh(new THREE.BoxGeometry(4, height, 4), material);
-                pillar.position.set(0, height/2, j);
-                bridgeGroup.add(pillar);
+        const pillarOffsets = [-40, 40];
+        for(let px of pillarOffsets) {
+            for(let pz of pillarOffsets) {
+                const pillar = new THREE.Mesh(new THREE.BoxGeometry(3.5, roadHeight1, 3.5), roadMaterial1);
+                pillar.position.set((chunkX * CHUNK_SIZE) + px, roadHeight1 / 2, (chunkZ * CHUNK_SIZE) + pz);
                 pillar.updateMatrixWorld();
+                chunkGroup.add(pillar);
                 chunkColliders.push(pillar);
             }
+        }
 
-            bridgeGroup.position.set(
-                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 7 + i)) - 0.5) * (CHUNK_SIZE - 40)),
-                0,
-                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 8 + i)) - 0.5) * (CHUNK_SIZE - 40))
-            );
-            bridgeGroup.rotation.y = Math.abs(Math.cos(localSeed + i)) * Math.PI;
+        // --- УРОВЕНЬ 2: Вторая сетка дорог (СМЕЩЕНА на ровно пол-чанка по X и Z) ---
+        // Теперь дороги второго уровня идут строго посередине между дорогами первого уровня
+        const roadMaterial2 = new THREE.MeshPhongMaterial({ color: 0x553366 });
+        const roadHeight2 = 70; 
+        const halfChunk = CHUNK_SIZE / 2;
 
-            deck.updateMatrixWorld();
-            chunkColliders.push(deck);
+        // Дорога X второго уровня смещена по Z на halfChunk (проходит там, где у первого уровня пустой интервал)
+        const roadX2 = new THREE.Mesh(new THREE.BoxGeometry(CHUNK_SIZE, 1.5, roadWidth), roadMaterial2);
+        roadX2.position.set(chunkX * CHUNK_SIZE, roadHeight2, chunkZ * CHUNK_SIZE + halfChunk);
+        roadX2.updateMatrixWorld();
+        chunkGroup.add(roadX2);
+        chunkColliders.push(roadX2);
 
-            chunkGroup.add(bridgeGroup);
+        // Дорога Z второго уровня смещена по X на halfChunk (проходит там, где у первого уровня пустой интервал)
+        const roadZ2 = new THREE.Mesh(new THREE.BoxGeometry(roadWidth, 1.5, CHUNK_SIZE), roadMaterial2);
+        roadZ2.position.set(chunkX * CHUNK_SIZE + halfChunk, roadHeight2, chunkZ * CHUNK_SIZE);
+        roadZ2.updateMatrixWorld();
+        chunkGroup.add(roadZ2);
+        chunkColliders.push(roadZ2);
+
+        // Опоры для второго уровня расставлены с учетом смещения
+        const upperPillarOffsets = [-40, 40];
+        for(let px of upperPillarOffsets) {
+            for(let pz of upperPillarOffsets) {
+                // Опоры под смещенную дорогу Z (смещена по X)
+                const upperPillarZ = new THREE.Mesh(new THREE.BoxGeometry(4, roadHeight2, 4), roadMaterial2);
+                upperPillarZ.position.set((chunkX * CHUNK_SIZE) + halfChunk + px, roadHeight2 / 2, (chunkZ * CHUNK_SIZE) + pz);
+                upperPillarZ.updateMatrixWorld();
+                chunkGroup.add(upperPillarZ);
+                chunkColliders.push(upperPillarZ);
+
+                // Опоры под смещенную дорогу X (смещена по Z)
+                const upperPillarX = new THREE.Mesh(new THREE.BoxGeometry(4, roadHeight2, 4), roadMaterial2);
+                upperPillarX.position.set((chunkX * CHUNK_SIZE) + px, roadHeight2 / 2, (chunkZ * CHUNK_SIZE) + halfChunk + pz);
+                upperPillarX.updateMatrixWorld();
+                chunkGroup.add(upperPillarX);
+                chunkColliders.push(upperPillarX);
+            }
         }
 
         scene.add(chunkGroup);
         chunkRegistry.set(`${chunkX},${chunkZ}`, { group: chunkGroup, colliders: chunkColliders });
     }
 
-    // Функция динамического обновления бесконечного мира (подгрузка/выгрузка чанков)
     function updateInfiniteWorld(playerPos) {
         const currentChunkX = Math.floor((playerPos.x + CHUNK_SIZE / 2) / CHUNK_SIZE);
         const currentChunkZ = Math.floor((playerPos.z + CHUNK_SIZE / 2) / CHUNK_SIZE);
@@ -374,11 +400,9 @@ if (i === 0) {
             }
         }
 
-        // Удаление далеких чанков для оптимизации памяти и производительности
         for (const [key, chunkData] of chunkRegistry.entries()) {
             if (!activeChunks.has(key)) {
                 scene.remove(chunkData.group);
-                // Удаляем коллайдеры чанка из глобального массива
                 chunkData.colliders.forEach(collider => {
                     const index = collidableObjects.indexOf(collider);
                     if (index > -1) collidableObjects.splice(index, 1);
@@ -387,7 +411,6 @@ if (i === 0) {
             }
         }
 
-        // Обновляем список коллайдеров активных чанков
         collidableObjects.length = 0;
         for (const chunkData of chunkRegistry.values()) {
             collidableObjects.push(...chunkData.colliders);
@@ -464,45 +487,33 @@ if (i === 0) {
 function animate() {
     requestAnimationFrame(animate);
 
-    // Динамическая подгрузка бесконечного мира вокруг игрока
     updateInfiniteWorld(player.position);
 
-    // --- ПЛОТНЫЕ ПРЕПЯТСТВИЯ (Коллизии со всех сторон) ---
-    const playerRadius = 1.5; // Радиус сферы коллизии игрока
+    const playerRadius = 1.5; 
     const nextPos = player.position.clone().add(velocity);
 
-    // Проверяем столкновения со всеми объектами мира
     for (let i = 0; i < collidableObjects.length; i++) {
         const obj = collidableObjects[i];
-        
-        // Создаем ограничивающий параллелепипед (BoundingBox) для объекта с учетом его мировой матрицы
         const bbox = new THREE.Box3().setFromObject(obj);
-        
-        // Ближайшая точка на боксе к будущей позиции игрока
         const clampedPoint = new THREE.Vector3();
         bbox.clampPoint(nextPos, clampedPoint);
-        
-        // Расстояние от центра игрока до ближайшей точки препятствия
         const distance = nextPos.distanceTo(clampedPoint);
         
         if (distance < playerRadius) {
-            // Плотное столкновение: выталкиваем игрока обратно и гасим скорость по нормали
             const pushDir = new THREE.Vector3().subVectors(nextPos, clampedPoint).normalize();
             if (pushDir.lengthSq() === 0) pushDir.set(0, 1, 0);
             
             player.position.copy(clampedPoint).add(pushDir.multiplyScalar(playerRadius));
-            velocity.reflect(pushDir).multiplyScalar(0.2); // Упругость/гашение при ударе
+            velocity.reflect(pushDir).multiplyScalar(0.2); 
             break;
         }
     }
 
-    // --- УПРАВЛЕНИЕ КЛАВИАТУРОЙ ---
     if (keys['ArrowLeft']) angularVelocityZ += TURN_SPEED;
     if (keys['ArrowRight']) angularVelocityZ -= TURN_SPEED;
     if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
     if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
 
-    // --- УПРАВЛЕНИЕ С ТАЧ-СКРИНА ---
     if (touchJoystick.active) {
         angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
         angularVelocityZ -= touchJoystick.moveX * TOUCH_TURN_SPEED;
@@ -554,4 +565,4 @@ function animate() {
 animate();
 </script>
 </body>
-</html>
+</html> 
