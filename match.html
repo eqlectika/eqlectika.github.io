@@ -49,24 +49,61 @@ display: block;
 margin: 30px 0 0 0; 
 font-weight: bold; 
 }
+
 .admin-panel { 
-padding: 20px 10px;
-margin-bottom: 40px; 
-padding: 10px; 
-font-family: 'Copperplate Gothic Std', 'Copperplate', serif; 
-background: #333; 
+    padding: 15px; /* Сделали отступы внутри панели одинаковыми со всех сторон */
+    margin-bottom: 40px; 
+    font-family: 'Copperplate Gothic Std', 'Copperplate', serif; 
+    background: #333; 
+    
+    /* Добавляем Flexbox для автоматического выравнивания */
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* <-- Вот это главный параметр! Он задает строго одинаковое расстояние (15px) между ВСЕМИ элементами */
 }
+
 .admin-input { 
     width: 100%; 
     padding: 12px; 
     font-family: 'Copperplate Gothic Std', 'Copperplate', serif; 
-    margin-bottom: 15px; 
+    margin-bottom: 0; /* Убираем старый отступ, так как теперь работает gap */
     background: #000; 
     border: 1px solid #777; 
     font-size: 16px;
     color: #fff; 
     box-sizing: border-box; 
 }
+
+.file-label {
+    font-family: 'Copperplate Gothic Std', 'Copperplate', serif; 
+    display: inline-block;
+    padding: 12px 18px;
+    background: #000;
+    color: #fff;
+    text-align: left;
+    box-sizing: border-box;
+    cursor: pointer;
+    margin: 0; 
+    border: 2px solid #fff;
+    align-self: flex-start; /* <-- Вот это вернет ей нормальную длину по размеру текста */
+}
+
+
+
+.admin-btn { 
+    width: 100%; 
+    padding: 16px; 
+    background: #fff; 
+    font-family: 'Copperplate Gothic Std', 'Copperplate', serif; 
+    color: #000; 
+    border: none; 
+    margin: 0; /* Убираем старый отступ */
+    font-weight: bold; 
+    cursor: pointer; 
+    text-transform: uppercase; 
+    font-size: 18px;
+}
+
 
 .edit-btn {
     background: #448aff;
@@ -102,30 +139,7 @@ textarea.admin-input {
 display: none; 
 font-family: 'Playfair Display', serif; 
 }
-.file-label {
-    font-family: 'Copperplate Gothic Std', 'Copperplate', serif; 
-    display: inline-block;
-    padding: 12px;
-    background: #000;
-    color: #fff;
-    text-align: left;
-    box-sizing: border-box;
-    cursor: pointer;
-    margin: 5px 0 30px 0;
-    border: 2px solid #fff;
-}
-.admin-btn { 
-    width: 100%; 
-    padding: 16px; 
-    background: #fff; 
-    font-family: 'Copperplate Gothic Std', 'Copperplate', serif; 
-    color: #000; 
-    border: none; 
-    font-weight: bold; 
-    cursor: pointer; 
-    text-transform: uppercase; 
-    font-size: 18px;
-}
+
 .main-header {
     text-align: left;
     padding: 20px 7px 10px 10px;
@@ -218,14 +232,15 @@ font-family: 'Playfair Display', serif;
     <div id="ranking-list"></div>
 </div>
 <div class="admin-panel">
-    <div class="ranking-title" style="margin: 15px 0 15px 0; border-bottom: none;">Admin Panel</div>
+    <div class="ranking-title" style="margin: 15px 0 0 0; border-bottom: none;">Admin Panel</div>
     <input type="text" id="new-title" class="admin-input" placeholder="Title">
     <textarea id="new-desc" class="admin-input" placeholder="Description"></textarea>
     <input type="url" id="new-url" class="admin-input" placeholder="External URL (optional)">
     <label for="new-img-file" class="file-label" id="file-label-text">Select image</label>
     <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)">
     <button class="admin-btn" onclick="saveOrAddItem()">Add Item</button>
-</div> 
+</div>
+
 
 <div id="collapsible-content" style="text-align: center; color: #999; margin: 50px auto;"> 
     <p style="text-align: center; margin: 0 auto 10px auto; max-width: 90%; word-wrap: break-word;">
