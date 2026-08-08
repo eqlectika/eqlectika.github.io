@@ -8,6 +8,8 @@
   <style>
     * {
       box-sizing: border-box;
+      -webkit-user-select: none;
+      user-select: none;
     }
 
     body {
@@ -20,6 +22,7 @@
       min-height: 100%; 
       display: flex;
       flex-direction: column;
+      -webkit-touch-callout: none;
     }
 
     #canvas-wrapper {
@@ -71,6 +74,7 @@
       align-items: center;
       gap: 5px;
       font-size: 0.9rem;
+      cursor: pointer;
     }
 
     #orbitCanvas {
@@ -78,7 +82,7 @@
       display: block;
       max-width: 100%;
       max-height: 100%;
-      touch-action: auto;
+      touch-action: none;
     }
     #legend {
       display: flex;
@@ -127,10 +131,6 @@
       display: block;
       margin-bottom: 5px;
     }
-    .speed-slider {
-      width: 80%;
-      margin-bottom: 0px;
-    }
     #pause-btn {
       margin-bottom: 5px;
       padding: 5px 10px;
@@ -155,6 +155,16 @@
       gap: 10px;
       margin-bottom: 5px;
     }
+    .direction-container {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 5px;
+      font-size: 0.9rem;
+    }
+    .direction-container label {
+      cursor: pointer;
+    }
     footer { 
       margin-top: auto; 
       padding: 20px 0; 
@@ -173,7 +183,10 @@
       <input type="date" id="date-picker">
       <button id="pause-btn">Resume</button>
     </div>
-    <input type="range" id="speed-slider" class="speed-slider" min="0.001" max="0.05" step="0.001" value="0.05">
+    <div class="direction-container">
+      <label><input type="radio" name="direction" value="forward" checked> Forward</label>
+      <label><input type="radio" name="direction" value="backward"> Backward</label>
+    </div>
   </div>
   <div id="canvas-wrapper">
     <canvas id="orbitCanvas"></canvas>
@@ -275,7 +288,6 @@
     
     const J2000 = new Date('2000-01-01T12:00:00Z');
     
-    // Установка текущей даты по умолчанию
     const today = new Date();
     const datePicker = document.getElementById('date-picker');
     datePicker.value = today.toISOString().split('T')[0];
@@ -283,17 +295,24 @@
     const msInDay = 86400000;
     let t = (new Date(datePicker.value + 'T12:00:00Z').getTime() - J2000.getTime()) / msInDay;
     
-    let dt = 0.05;
+    let baseSpeed = 0.0255;
+    let dt = baseSpeed;
     let frame = 'sun';
     const earthIndex = planets.findIndex(p => p.name === 'Earth');
+    const moonIndex = planets.findIndex(p => p.name === 'Moon');
     const trajectories = planets.map(() => []);
     
     let scale = 10;
     let offsetX = 0;
     let offsetY = 0;
     
-    let isPaused = true; // Старт на паузе
+    let isPaused = true;
     const pauseBtn = document.getElementById('pause-btn');
+
+    let isDraggingVector = false;
+    let isDragging = false;
+    let lastX = 0, lastY = 0;
+    let lastCalculatedPositions = []; 
 
     function updateView() {
       if (isPaused) {
@@ -321,9 +340,14 @@
       }
     });
 
-    const speedSlider = document.getElementById('speed-slider');
-    speedSlider.addEventListener('input', (e) => {
-      dt = parseFloat(e.target.value);
+    document.querySelector('.direction-container').addEventListener('change', (e) => {
+      if (e.target.name === 'direction') {
+        if (e.target.value === 'backward') {
+          dt = -baseSpeed;
+        } else {
+          dt = baseSpeed;
+        }
+      }
     });
     
     datePicker.addEventListener('change', (e) => {
@@ -342,6 +366,102 @@
       }
     });
     
+    function getEventPos(e) {
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const rect = canvas.getBoundingClientRect();
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    // Четкое разделение: клик по Луне захватывает вектор, клик в пустоту — двигает холст.
+    function handleDragStart(e) {
+      const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+      const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+      lastX = clientX;
+      lastY = clientY;
+
+      const pos = getEventPos(e);
+      const moonPos = lastCalculatedPositions[moonIndex];
+
+      if (moonPos && planetVisibility[moonIndex]) {
+        const dx = pos.x - moonPos.drawX;
+        const dy = pos.y - moonPos.drawY;
+        
+        // Увеличили радиус области захвата до 60 пикселей для удобства попадания палом/мышкой
+        if (Math.sqrt(dx * dx + dy * dy) < 60) {
+          isDraggingVector = true;
+          isDragging = false;
+          return;
+        }
+      }
+
+      // Если нажали не на Луну — сразу панорамируем холст
+      isDraggingVector = false;
+      isDragging = true;
+    }
+
+    canvas.addEventListener('mousedown', handleDragStart);
+    canvas.addEventListener('touchstart', (e) => {
+      handleDragStart(e);
+    }, {passive: false});
+
+    function handleDragMove(e) {
+      const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+      const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+
+      if (isDraggingVector) {
+        e.preventDefault();
+        const pos = getEventPos(e);
+        const centerX = canvas.width / 2 + offsetX;
+        const centerY = canvas.height / 2 + offsetY;
+        
+        const earthPos = lastCalculatedPositions[earthIndex];
+        if (earthPos) {
+          let targetX = pos.x;
+          let targetY = pos.y;
+          if (frame === 'earth') {
+            targetX = centerX + (pos.x - centerX);
+            targetY = centerY + (pos.y - centerY);
+          }
+          
+          const dx = targetX - earthPos.drawX;
+          const dy = targetY - earthPos.drawY;
+          const newAngle = Math.atan2(dy, dx);
+          
+          const moonData = planets[moonIndex];
+          let newM = newAngle;
+          if (newM < 0) newM += 2 * Math.PI;
+          t = (newM * moonData.period) / (2 * Math.PI);
+          
+          datePicker.value = getCurrentDate();
+          trajectories.forEach(arr => arr.length = 0);
+          updateView();
+        }
+        return;
+      }
+
+      if (!isDragging) return;
+      const dx = clientX - lastX;
+      const dy = clientY - lastY;
+      offsetX += dx;
+      offsetY += dy;
+      lastX = clientX;
+      lastY = clientY;
+      trajectories.forEach(arr => arr.length = 0);
+      updateView();
+    }
+
+    window.addEventListener('mousemove', handleDragMove);
+    window.addEventListener('touchmove', handleDragMove, {passive: false});
+
+    function handleDragEnd() {
+      isDragging = false;
+      isDraggingVector = false;
+    }
+
+    window.addEventListener('mouseup', handleDragEnd);
+    window.addEventListener('touchend', handleDragEnd);
+
     canvas.addEventListener('wheel', e => {
       e.preventDefault();
       const zoomSpeed = 0.001;
@@ -354,30 +474,6 @@
       trajectories.forEach(arr => arr.length = 0);
       updateView();
     }, {passive: false});
-    
-    let isDragging = false;
-    let lastX, lastY;
-    canvas.addEventListener('mousedown', e => {
-      if (e.button === 0) {
-        isDragging = true;
-        lastX = e.clientX;
-        lastY = e.clientY;
-      }
-    });
-    window.addEventListener('mousemove', e => {
-      if (!isDragging) return;
-      const dx = e.clientX - lastX;
-      const dy = e.clientY - lastY;
-      offsetX += dx;
-      offsetY += dy;
-      lastX = e.clientX;
-      lastY = e.clientY;
-      trajectories.forEach(arr => arr.length = 0);
-      updateView();
-    });
-    window.addEventListener('mouseup', () => {
-      isDragging = false;
-    });
     
     let lastTouchDistance = null;
     canvas.addEventListener('touchmove', function (e) {
@@ -401,6 +497,7 @@
         lastTouchDistance = distance;
       }
     }, { passive: false });
+    
     canvas.addEventListener('touchend', () => {
       lastTouchDistance = null;
     });
@@ -441,7 +538,6 @@
       const centerX = canvas.width / 2 + offsetX;
       const centerY = canvas.height / 2 + offsetY;
       
-      // Очистка холста: абсолютная на паузе и со следом при анимации
       if (isPaused) {
         ctx.fillStyle = '#000000';
       } else {
@@ -498,15 +594,19 @@
         drawPoint(sunX, sunY, '#ffff00', 6);
       }
 
+      lastCalculatedPositions = [];
+
       positions.forEach((pos, i) => {
-        if (!planetVisibility[i]) return;
-        
         let drawX = pos.x;
         let drawY = pos.y;
         if (frame === 'earth') {
           drawX = centerX + (pos.x - currentEarthPos.x);
           drawY = centerY + (pos.y - currentEarthPos.y);
         }
+
+        lastCalculatedPositions[i] = { drawX, drawY };
+
+        if (!planetVisibility[i]) return;
         
         if (planets[i].name === 'Moon') {
           const earthDrawX = frame === 'earth' ? centerX : currentEarthPos.x;
@@ -547,7 +647,6 @@
       }
     }
 
-    // Первичный вызов для отображения актуальной даты на паузе
     animate();
   </script>
 </body>
