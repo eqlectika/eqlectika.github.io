@@ -10,53 +10,52 @@
       box-sizing: border-box;
     }
 
-body {
-  margin: 0;
-  padding: 0;
-  background-color: #000;
-  color: #fff;
-  font-family: monospace;
-  overflow-y: auto;
-  min-height: 100%; 
-  display: flex;
-  flex-direction: column;
-}
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #000;
+      color: #fff;
+      font-family: monospace;
+      overflow-y: auto;
+      min-height: 100%; 
+      display: flex;
+      flex-direction: column;
+    }
 
-#canvas-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  position: relative;
-  margin: 5px 0; 
-}
+    #canvas-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+      margin: 5px 0; 
+    }
 
-.footer-logo-container {
-  text-align: center;
-  width: 100%;
-  padding: 10px 0 0 0;
-  margin-top: 0; 
-}
+    .footer-logo-container {
+      text-align: center;
+      width: 100%;
+      padding: 10px 0 0 0;
+      margin-top: 0; 
+    }
 
     h1 {
-margin: 15px;
+      margin: 15px;
       font-size: 1.2rem;
       text-align: center;
     }
 
+    .logo-image {
+      display: inline-block;
+      opacity: 1;
+      max-width: 48px;
+      transition: opacity 0.3s, transform 0.3s;
+      vertical-align: middle;
+    }
 
-  .logo-image {
-    display: inline-block;
-    opacity: 1;
-    max-width: 48px;
-    transition: opacity 0.3s, transform 0.3s;
-    vertical-align: middle;
-  }
-
-  .logo-image:hover {
-    opacity: 0.8;
-    transform: scale(1.1);
-  }
+    .logo-image:hover {
+      opacity: 0.8;
+      transform: scale(1.1);
+    }
     
     #controls {
       display: flex;
@@ -115,16 +114,6 @@ margin: 15px;
       margin: 0px;
       padding: 0 10px;
     }
-    .help-link {
-      position: center;
-      text-align: center;
-      margin: 5px;
-      top: 70px;
-      color: #777;
-      font-size: 18px;
-      text-decoration: none;
-      font-family: monospace;
-    }
     .hidden-planet {
       opacity: 0.3;
     }
@@ -167,12 +156,11 @@ margin: 15px;
       margin-bottom: 5px;
     }
     footer { 
-  margin-top: auto; 
-  padding: 20px 0; 
-  display: flex; 
-  justify-content: center; 
-}
-
+      margin-top: auto; 
+      padding: 20px 0; 
+      display: flex; 
+      justify-content: center; 
+    }
   </style>
 </head>
 <body>
@@ -182,9 +170,9 @@ margin: 15px;
   <div class="speed-control">
     <div class="control-container">
       <label for="date-picker">Date:</label>
-<input type="date" id="date-picker">
-      <button id="pause-btn">Pause</button>
-</div>
+      <input type="date" id="date-picker">
+      <button id="pause-btn">Resume</button>
+    </div>
     <input type="range" id="speed-slider" class="speed-slider" min="0.001" max="0.05" step="0.001" value="0.05">
   </div>
   <div id="canvas-wrapper">
@@ -209,19 +197,18 @@ margin: 15px;
     const ctx = canvas.getContext('2d');
     const legendDiv = document.getElementById('legend');
     
-function initCanvas() {
-  const size = window.innerWidth; // Берем всю ширину экрана
-  canvas.width = size;            // Ширина холста в пикселях
-  canvas.height = size;           // Высота холста такая же (делает его квадратным)
-  canvas.style.width = `${size}px`;
-  canvas.style.height = `${size}px`;
-}
+    function initCanvas() {
+      const size = window.innerWidth;
+      canvas.width = size;
+      canvas.height = size;
+      canvas.style.width = `${size}px`;
+      canvas.style.height = `${size}px`;
+    }
 
-
-    
     window.addEventListener('resize', () => {
       initCanvas();
       trajectories.forEach(arr => arr.length = 0);
+      updateView();
     });
     
     const planets = [
@@ -245,7 +232,7 @@ function initCanvas() {
         item.className = 'legend-item';
         const colorBox = document.createElement('div');
         colorBox.className = 'color-box';
-        colorBox.style.backgroundColor = planet.color 
+        colorBox.style.backgroundColor = planet.color; 
         if (!planetVisibility[index]) {
           colorBox.classList.add('hidden-planet');
         }
@@ -270,6 +257,7 @@ function initCanvas() {
             frame = 'sun';
           }
           trajectories.forEach(arr => arr.length = 0);
+          updateView();
         });
       });
     }
@@ -286,9 +274,16 @@ function initCanvas() {
     }
     
     const J2000 = new Date('2000-01-01T12:00:00Z');
-    let t = 0;
-    let dt = 0.05;
     
+    // Установка текущей даты по умолчанию
+    const today = new Date();
+    const datePicker = document.getElementById('date-picker');
+    datePicker.value = today.toISOString().split('T')[0];
+    
+    const msInDay = 86400000;
+    let t = (new Date(datePicker.value + 'T12:00:00Z').getTime() - J2000.getTime()) / msInDay;
+    
+    let dt = 0.05;
     let frame = 'sun';
     const earthIndex = planets.findIndex(p => p.name === 'Earth');
     const trajectories = planets.map(() => []);
@@ -296,6 +291,15 @@ function initCanvas() {
     let scale = 10;
     let offsetX = 0;
     let offsetY = 0;
+    
+    let isPaused = true; // Старт на паузе
+    const pauseBtn = document.getElementById('pause-btn');
+
+    function updateView() {
+      if (isPaused) {
+        animate();
+      }
+    }
     
     document.getElementById('controls').addEventListener('change', (e) => {
       if (e.target.name === 'frame') {
@@ -313,34 +317,23 @@ function initCanvas() {
         offsetX = 0;
         offsetY = 0;
         scale = 10;
+        updateView();
       }
     });
 
-    
     const speedSlider = document.getElementById('speed-slider');
     speedSlider.addEventListener('input', (e) => {
       dt = parseFloat(e.target.value);
     });
     
-    const datePicker = document.getElementById('date-picker');
-datePicker.addEventListener('change', (e) => {
-  const selectedDate = new Date(e.target.value + 'T12:00:00Z');
-  const msInDay = 86400000;
-  t = (selectedDate.getTime() - J2000.getTime()) / msInDay;
-  isPaused = true; 
-  pauseBtn.textContent = 'Resume'; 
-});
+    datePicker.addEventListener('change', (e) => {
+      const selectedDate = new Date(e.target.value + 'T12:00:00Z');
+      t = (selectedDate.getTime() - J2000.getTime()) / msInDay;
+      isPaused = true; 
+      pauseBtn.textContent = 'Resume';
+      animate(); 
+    });
     
-let isPaused = true;
-const pauseBtn = document.getElementById('pause-btn');
-
-const today = new Date();
-datePicker.value = today.toISOString().split('T')[0];
-
-const msInDay = 86400000;
-t = (today.setHours(12, 0, 0, 0) - J2000.getTime()) / msInDay;
-
-pauseBtn.textContent = 'Resume';
     pauseBtn.addEventListener('click', () => {
       isPaused = !isPaused;
       pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
@@ -359,6 +352,7 @@ pauseBtn.textContent = 'Resume';
       offsetX = offsetX * scaleChange;
       offsetY = offsetY * scaleChange;
       trajectories.forEach(arr => arr.length = 0);
+      updateView();
     }, {passive: false});
     
     let isDragging = false;
@@ -379,6 +373,7 @@ pauseBtn.textContent = 'Resume';
       lastX = e.clientX;
       lastY = e.clientY;
       trajectories.forEach(arr => arr.length = 0);
+      updateView();
     });
     window.addEventListener('mouseup', () => {
       isDragging = false;
@@ -401,6 +396,7 @@ pauseBtn.textContent = 'Resume';
           offsetX = offsetX * scaleChange;
           offsetY = offsetY * scaleChange;
           trajectories.forEach(arr => arr.length = 0);
+          updateView();
         }
         lastTouchDistance = distance;
       }
@@ -420,7 +416,6 @@ pauseBtn.textContent = 'Resume';
     }
     
     function getCurrentDate() {
-      const msInDay = 86400000;
       const currentDate = new Date(J2000.getTime() + t * msInDay);
       return currentDate.toISOString().split('T')[0];
     }
@@ -446,10 +441,14 @@ pauseBtn.textContent = 'Resume';
       const centerX = canvas.width / 2 + offsetX;
       const centerY = canvas.height / 2 + offsetY;
       
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      // Очистка холста: абсолютная на паузе и со следом при анимации
+      if (isPaused) {
+        ctx.fillStyle = '#000000';
+      } else {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      }
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 1. Вычисляем Землю
       const earthData = planets[earthIndex];
       const earthM = (2 * Math.PI * t) / earthData.period;
       const earthE = solveKepler(earthM, earthData.eccentricity);
@@ -459,8 +458,6 @@ pauseBtn.textContent = 'Resume';
       const earthX = earthR * Math.cos(earthTheta);
       const earthY = earthR * Math.sin(earthTheta) * Math.cos(earthData.inclination);
 
-
-      // 2. Вычисляем все объекты
       const positions = planets.map(planet => {
         let x, y;
 
@@ -469,7 +466,7 @@ pauseBtn.textContent = 'Resume';
           const moonE = solveKepler(moonM, planet.eccentricity);
           const moonTheta = getTrueAnomaly(moonE, planet.eccentricity);
           
-          const moonR = orbitRadius(0.05) * 2; // Увеличил радиус для видимости
+          const moonR = orbitRadius(0.05) * 2; 
           const localX = moonR * Math.cos(moonTheta);
           const localY = moonR * Math.sin(moonTheta) * Math.cos(planet.inclination);
           
@@ -491,11 +488,8 @@ pauseBtn.textContent = 'Resume';
         return { x: centerX + x * scale, y: centerY + y * scale, color: planet.color, name: planet.name };
       });
 
-      
-      // Отрисовка
       const currentEarthPos = positions[earthIndex];
       
-      // Рисуем Солнце
       if (frame === 'sun') {
         drawPoint(centerX, centerY, '#ffff00', 6);
       } else {
@@ -518,22 +512,17 @@ pauseBtn.textContent = 'Resume';
           const earthDrawX = frame === 'earth' ? centerX : currentEarthPos.x;
           const earthDrawY = frame === 'earth' ? centerY : currentEarthPos.y;
 
-          // 1. Линия Земля-Луна
           ctx.beginPath();
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
           ctx.moveTo(earthDrawX, earthDrawY);
           ctx.lineTo(drawX, drawY);
           ctx.stroke();
 
-          // 2. Линия ПРОДЛЕНИЯ (вставить этот кусок кода)
           ctx.beginPath();
           ctx.setLineDash([5, 5]); 
           ctx.strokeStyle = '#cccccc';
           ctx.moveTo(drawX, drawY);
-          // Удлиняем вектор: берем разницу координат и умножаем на 2
-// Умножаем разницу на 10, чтобы линия была длиннее
-ctx.lineTo(drawX + (drawX - earthDrawX) * 500, drawY + (drawY - earthDrawY) * 500);
-
+          ctx.lineTo(drawX + (drawX - earthDrawX) * 500, drawY + (drawY - earthDrawY) * 500);
           ctx.stroke();
           ctx.setLineDash([]);
         }
@@ -551,8 +540,6 @@ ctx.lineTo(drawX + (drawX - earthDrawX) * 500, drawY + (drawY - earthDrawY) * 50
         drawPoint(drawX, drawY, planets[i].color, 3);
       });
 
-
-      
       if (!isPaused) {
         t += dt;
         datePicker.value = getCurrentDate();
@@ -560,12 +547,8 @@ ctx.lineTo(drawX + (drawX - earthDrawX) * 500, drawY + (drawY - earthDrawY) * 50
       }
     }
 
+    // Первичный вызов для отображения актуальной даты на паузе
     animate();
-
-    
-    
-
   </script>
-
 </body>
 </html>
