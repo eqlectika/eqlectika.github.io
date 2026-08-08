@@ -312,6 +312,7 @@
     let isDraggingVector = false;
     let isDragging = false;
     let lastX = 0, lastY = 0;
+    let lastVectorAngle = 0;
     let lastCalculatedPositions = []; 
 
     function updateView() {
@@ -373,7 +374,6 @@
       return { x: clientX - rect.left, y: clientY - rect.top };
     }
 
-    // Четкое разделение: клик по Луне захватывает вектор, клик в пустоту — двигает холст.
     function handleDragStart(e) {
       const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
       const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
@@ -387,15 +387,26 @@
         const dx = pos.x - moonPos.drawX;
         const dy = pos.y - moonPos.drawY;
         
-        // Увеличили радиус области захвата до 60 пикселей для удобства попадания палом/мышкой
         if (Math.sqrt(dx * dx + dy * dy) < 60) {
           isDraggingVector = true;
           isDragging = false;
+          
+          const centerX = canvas.width / 2 + offsetX;
+          const centerY = canvas.height / 2 + offsetY;
+          const earthPos = lastCalculatedPositions[earthIndex];
+          if (earthPos) {
+            let targetX = pos.x;
+            let targetY = pos.y;
+            if (frame === 'earth') {
+              targetX = centerX + (pos.x - centerX);
+              targetY = centerY + (pos.y - centerY);
+            }
+            lastVectorAngle = Math.atan2(targetY - earthPos.drawY, targetX - earthPos.drawX);
+          }
           return;
         }
       }
 
-      // Если нажали не на Луну — сразу панорамируем холст
       isDraggingVector = false;
       isDragging = true;
     }
@@ -424,14 +435,18 @@
             targetY = centerY + (pos.y - centerY);
           }
           
-          const dx = targetX - earthPos.drawX;
-          const dy = targetY - earthPos.drawY;
-          const newAngle = Math.atan2(dy, dx);
+          const currentAngle = Math.atan2(targetY - earthPos.drawY, targetX - earthPos.drawX);
+          
+          // Вычисляем разницу с защитой от скачков через границу -PI / PI
+          let diff = currentAngle - lastVectorAngle;
+          if (diff > Math.PI) diff -= 2 * Math.PI;
+          if (diff < -Math.PI) diff += 2 * Math.PI;
+          
+          lastVectorAngle = currentAngle;
           
           const moonData = planets[moonIndex];
-          let newM = newAngle;
-          if (newM < 0) newM += 2 * Math.PI;
-          t = (newM * moonData.period) / (2 * Math.PI);
+          // Плавное добавление/убавление дней в зависимости от изменения угла
+          t += (diff / (2 * Math.PI)) * moonData.period;
           
           datePicker.value = getCurrentDate();
           trajectories.forEach(arr => arr.length = 0);
@@ -633,7 +648,8 @@
         ctx.beginPath();
         ctx.strokeStyle = planets[i].color;
         for (let j = 0; j < trajectories[i].length; j++) {
-            const p = trajectories[i][j];
+            const p = trajectories[i].length > j ? trajectories[i][j] : null;
+            if (!p) continue;
             j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
         }
         ctx.stroke();
