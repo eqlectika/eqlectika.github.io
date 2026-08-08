@@ -27,7 +27,7 @@ body {
 .edit-btn {
     width: 100%;
     background: #0097ff;
-    color: black;
+    color: white;
     border: none;
     padding: 10px 15px;
     margin-right: 10px;
@@ -106,17 +106,27 @@ body {
     background: #000;
     border: 1px solid #fff;
     padding: 12px;
-    margin-bottom: 10px;
     font-family: monospace;
     font-size: 14px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 }
-.stat-box span {
+
+.player-stats .stats-row {
+    display: flex;
+    gap: 15px;
+    justify-content: space-between;
+}
+
+.player-stats .stat-box {
+    flex: 1; /* Равномерно распределяем ширину */
+    text-align: center; /* Центрируем весь текст внутри блока */
+}
+
+.player-stats .stat-box span {
     color: #afff00;
     font-weight: bold;
 }
+
+
 
 #versus { width: 100%; margin: 2em 0; }
 .versus-wrapper { display: flex; gap: 10px; justify-content: center; }
@@ -399,7 +409,7 @@ a { color: #448aff; text-decoration: none; }
     
   <div style="display: flex; flex-direction: column;">
 
-<h2 id="invertTrigger" style="margin: -4px; line-height: 0.9; font-family: 'Cinzel', serif; margin-top: 28px; cursor: pointer;" title="Tap to invert interface">Magic Meme Battle</h2>
+<h2 id="invertTrigger" style="margin: -4px; line-height: 0.9; font-family: 'Cinzel', serif; margin-top: 28px; cursor: pointer;" title="Tap to invert interface">Magic Meme Battle  </h2>
 
 
     <span style="margin: -4px; font-family: sans-serif; font-size: 14px; color: #afff00; margin-top: 5px;">
@@ -463,16 +473,14 @@ a { color: #448aff; text-decoration: none; }
 </div>
 
 <div class="player-stats" style="margin-top: 50px;">
-    <div class="stat-box">Level: <span id="playerLevel">1</span></div>
-    <div class="stat-box">Impacts: <span id="playerImpact">8</span></div>
-    <div class="stat-box">Votes: <span id="votesLeft">5</span></div>
-    <div class="stat-box">Posts: <span id="postsLeft">3</span></div>
-</div>
-
-<div class="claim-panel">
-    <h3 style="text-align: center; color: #0097ff">Hourly Resonance Claim</h3>
-    <button class="admin-btn" id="claimBtn" style="background: #0097ff; color: #000;" onclick="claimHourly()">Claim Accumulated Impacts (<span id="claimableAmount">0</span>)</button>
-    <div id="claimTimer" style="font-family: monospace; font-size: 14px; text-align: center; color: #0097ff; margin-top: 10px;"></div>
+    <h3 style="text-align: center; font-family: sans-serif; color: #fff; margin-top: 0; margin-bottom: 12px;">State and Credits</h3>
+    
+    <div class="stats-row">
+        <div class="stat-box">Level <span id="playerLevel">1</span></div>
+        <div class="stat-box">Impacts <span id="playerImpact">8</span></div>
+        <div class="stat-box">Votes <span id="votesLeft">5</span></div>
+        <div class="stat-box">Posts <span id="postsLeft">3</span></div>
+    </div>
 </div>
 
 <div class="exchange-panel">
@@ -486,20 +494,26 @@ a { color: #448aff; text-decoration: none; }
 </div>
 
 <div class="transfer-panel">
-    <h3 style="text-align: center; color: #de00b2">Transfer Impact</h3>
+    <h3 style="text-align: center; color: #de00b2">Transfer Impact(s)</h3>
     <input type="text" id="target-peer" class="admin-input" placeholder="Target Peer (e.g., Peer-5851 or Custom ID)">
     <input type="number" id="transfer-amount" class="admin-input" placeholder="Amount (e.g., 7)" min="1">
     <button class="admin-btn" onclick="transferImpact()">Send Impacts</button>
+</div>
+
+<div class="claim-panel">
+    <h3 style="text-align: center; color: #0097ff">Hourly Resonance Claim</h3>
+    <button class="admin-btn" id="claimBtn" style="background: #0097ff; color: #fff;" onclick="claimHourly()">Claim Accumulated Impacts (<span id="claimableAmount">0</span>)</button>
+    <div id="claimTimer" style="font-family: monospace; font-size: 14px; text-align: center; color: #0097ff; margin-top: 10px;"></div>
 </div>
 
 <div class="exchange-panel" id="metamaskBuyPanel" style="margin-top: 20px; padding: 10px; background: #000; border: 1px solid #f6851b;">
     <h3 style="text-align: center; color: #f6851b">Buy Impacts via MetaMask</h3>
     <p style="text-align: center; color: #fff; font-family: monospace;">⚠️ Warning! Clearing your browser history and website data (cache) may cause you to lose purchased impacts! Also keep in mind: the system treats each browser and Progressive Web App (PWA) as a separate user. To prevent losing your main dashboard and state credits; we recommend Adding the site to your Home Screen via the browser menu and using that shortcut to launch. Don’t hold onto too many impacts—use them quickly or gift them to your friends. It's just a game.</p>
     <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #f6851b; color: #000;" onclick="buyWithMetaMask(25, '0.0005')">+25 Impacts (0.0005 ETH)</button>
-        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #f6851b; color: #000;" onclick="buyWithMetaMask(50, '0.001')">+50 Impacts (0.001 ETH)</button>
-        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #f6851b; color: #000;" onclick="buyWithMetaMask(100, '0.002')">+100 Impacts (0.002 ETH)</button>
-        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #f6851b; color: #000;" onclick="buyWithMetaMask(500, '0.01')">+500 Impacts (0.01 ETH)</button>
+        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #f6851b; color: #fff;" onclick="buyWithMetaMask(25, '0.0005')">+25 Impacts (0.0005 ETH)</button>
+        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #f6851b; color: #fff;" onclick="buyWithMetaMask(50, '0.001')">+50 Impacts (0.001 ETH)</button>
+        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #f6851b; color: #fff;" onclick="buyWithMetaMask(100, '0.002')">+100 Impacts (0.002 ETH)</button>
+        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #f6851b; color: #fff;" onclick="buyWithMetaMask(500, '0.01')">+500 Impacts (0.01 ETH)</button>
     </div>
 </div>
 
@@ -508,14 +522,14 @@ a { color: #448aff; text-decoration: none; }
     <p style="font-size: 14px; color: #fff; line-height: 1.5;">
         To make purchases on desktop, please install the MetaMask browser extension and read the ⚠️ warning notice before making a purchase!
     </p>
-<a href="https://metamask.io/" target="_blank" class="admin-btn" style="display: block; box-sizing: border-box; background: #f6851b; color: #000; margin-top: 10px; text-align: center; text-decoration: none;">Install MetaMask</a></div>
+<a href="https://metamask.io/" target="_blank" class="admin-btn" style="display: block; box-sizing: border-box; background: #f6851b; color: #fff; margin-top: 10px; text-align: center; text-decoration: none;">Install MetaMask</a></div>
 
 <div class="exchange-panel" id="mobileWarningPanel" style="display: none; background: #000; border: 1px solid #f6851b; text-align: center; padding: 20px;">
     <h3 style="color: #f6851b; margin-top: 0;">MetaMask Browser Required</h3>
     <p style="font-size: 14px; color: #fff; line-height: 1.5;">
         To make purchases on your mobile device, open this site in the MetaMask app's built-in browser and read the ⚠️ warning notice before making a purchase!
     </p>
-    <button class="admin-btn" style="background: #f6851b; color: #000; margin-top: 10px;" onclick="openInMetaMaskBrowser()">Open in MetaMask</button>
+    <button class="admin-btn" style="background: #f6851b; color: #fff; margin-top: 10px;" onclick="openInMetaMaskBrowser()">Open in MetaMask</button>
 </div>
 
 <div class="exchange-panel" style="border-color: #00ffcc; background: #000; margin-top: 20px;">
@@ -531,26 +545,26 @@ a { color: #448aff; text-decoration: none; }
 
 <div id="helpToggle" style="margin-top: 30px"><strong>Concept & Tips</strong></div>
 <div id="helpText" class="collapsed">
-<p>The ranking engine calculates the relative strength of players using the ELO formula.</p>
+<p>Global Matrix Rank: The ranking engine calculates the relative strength of players using the ELO formula.</p>
 <p>Other participants can see your meme and vote for them.</p>
-<p>You can also vote for other people's meme(s) that may appear on your screen.</p>
-<p>The meme you publish will appear and be stored only in the cache of devices of users who are currently online. However, you can always re-inject your alone published meme directly from the ranking (for free).</p>
-<p style="margin-bottom: 8px;">Every competitor gets 8 free impacts, 5 free votes and 3 free publication slots.</p>
-<p style="margin-bottom: 8px;">Hourly Resonance Claim: lets you earn +4 Impact per hour (theoretically, would accumulate 96 impacts per 24 hours).</p>
-<p style="margin-bottom: 8px;">If you return in a day (or later), the long-term absence limitation will kick in, and you will receive only 24 impact.</p>
-<p style="margin-bottom: 8px;">Deleting a meme locally (click on meme in the ranking) incurs a penalty of -1 Post.</p>
-<p style="margin-bottom: 8px;">Use Convert Impacts to Action Limits to spend 1 impact for +3 votes, or 3 impacts for +1 post slot.</p>
-<p style="margin-bottom: 8px;">Use Transfer Impact(s) to send it(s) to other network participants.</p>
-<p style="margin-bottom: 8px;">You 'Buy Impacts via MetaMask' wallet with Ethereum.</p>
-<p style="margin-bottom: 8px;">Install Metamask extension on your desktop browser and/or Metamask app on your mobile device and then follow instruction.</p>
-<p style="margin-bottom: 8px;">Due to the temporary absence of individual participants and the presence of memes they cannot see, the number of votes required to update ranking does not accumulate synchronously across devices. When parity is reached, "spontaneous" updates of the pair in the voting block occur.</p>
+<p>Resonance Match: You can also vote for other people's meme(s) that may appear on your screen.</p>
+<p>Broadcast Breakthrough Meme: The meme you publish will appear and be stored only in the cache of devices of users who are currently online. However, you can always re-inject your alone published meme directly from the ranking (for free).</p>
+<p>State and Credits: Every competitor gets 8 free impacts, 5 free votes and 3 free publication slots.</p>
+<p>Hourly Resonance Claim: lets you earn +4 Impact per hour (theoretically, would accumulate 96 impacts per 24 hours).</p>
+<p>If you return in a day (or later), the long-term absence limitation will kick in, and you will receive only 24 impact.</p>
+<p>Deleting a meme locally (click on meme in the ranking) incurs a penalty of -1 Post.</p>
+<p>Use 'Convert Impacts to Action Limits' to spend 1 impact for +3 votes, or 3 impacts for +1 post slot.</p>
+<p>Use 'Transfer Impact(s)' to send it(s) to other network participants.</p>
+<p>You can 'Buy Impacts via MetaMask' wallet with Ethereum.</p>
+<p>Install Metamask extension on your desktop browser and/or Metamask app on your mobile device and then follow instruction.</p>
 
-<p style="margin-bottom: 8px;">&</p>
+<p>&</p>
 
-<p style="margin-bottom: 8px;">Boost your meme(s) by voting for it.</p>
-<p style="margin-bottom: 8px;">To rise, vote for the weak memes against the strong ones.</p>
-<p style="margin-bottom: 8px; color: #fff;">⚠️ Clearing browser cache will reset all data.</p>
-<p style="margin-bottom: 8px;">To protect your notes keep things clear, add this app to your Home Screen via the browser menu and use that shortcut to launch. (•••)</p>
+<p >Boost your meme(s) by voting for it.</p>
+<p >To rise, vote for the weak memes against the strong ones.</p>
+<p>Due to the temporary absence of individual participants and the presence of memes they cannot see, the number of votes required to update ranking does not accumulate synchronously across devices. When parity is reached, "spontaneous" updates of the pair in the voting block occur.</p>
+<p>⚠️ Clearing browser cache will reset all data.</p>
+<p>To protect your notes keep things clear, add this app to your Home Screen via the browser menu and use that shortcut to launch. (•••)</p>
 </div>
 
 <!--<div style="text-align: center; margin: 40px 0;">
