@@ -11,23 +11,24 @@
   <style>
     html, body {
       overscroll-behavior: none; 
-      min-height: 100%;
+      height: 100vh;
+      height: var(--app-height, 100vh);
       margin: 0; padding: 0;
       background-color: #000000; color: #fff; font-family: Arial, sans-serif;
-      /* Разрешаем прокрутку всего экрана */
-      overflow-y: auto; 
+      overflow: hidden;
       -webkit-user-select: none; user-select: none;
     }
 
     #logoContainer {
-      position: relative; 
-      top: auto; left: auto; transform: none;
+      position: absolute; 
+      top: calc(env(safe-area-inset-top, 0px) + 10px);
+      left: 50%; 
+      transform: translateX(-50%); 
       z-index: 120;
       transition: opacity 0.5s ease;
       width: 100%; 
       display: flex;
       justify-content: center; 
-      margin: 15px 0;
     }
 
     #brandHeader {
@@ -35,6 +36,7 @@
       flex-direction: column;
       align-items: center; 
       text-align: center;
+      font-family: 'Cinzel', serif;
     }
 
     #mainButtons {
@@ -44,7 +46,6 @@
       flex-direction: column; 
       align-items: center; 
       gap: 5px; 
-      margin-top: 15px;
     }
 
     body.is-reading #logoContainer {
@@ -52,29 +53,34 @@
       pointer-events: none !important;
     }
 
-    /* Убираем fixed, чтобы контейнер сдвигался при прокрутке */
+    /* Изменено: теперь верхняя часть абсолютная/фиксированная с авто-высотой и прокруткой, если не влезает */
     #inputContainer { 
-      position: relative;
-      top: auto;
+      position: fixed;
+      top: calc(env(safe-area-inset-top, 0px) + 95px);
       left: 0;
-      padding: 20px 15px 10px 15px; 
+      flex-shrink: 0; 
+      padding: 0px 15px; 
       z-index: 100; 
       width: 100%; 
       display: flex; 
       flex-direction: column; 
       align-items: center; 
       box-sizing: border-box; 
+      transition: opacity 0.5s ease;
+      max-height: calc(100vh - env(safe-area-inset-top, 0px) - 100px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
-    /* Футер теперь идет естественным потоком */
     .footer-block { 
-      z-index: 120; 
-      width: 100%;
-      display: flex; 
-      flex-direction: column; 
-      align-items: center;
-      position: relative;
-      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 20px);
+      z-index: 120; width: 100%;
+      display: flex; flex-direction: column; align-items: center;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      padding-top: 20px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 10px);
+      pointer-events: none;
     }
 
     #inputContainer, #settingsContainer, #mainButtons, button, .setting-btn, .toolbar {
@@ -132,8 +138,15 @@
 
     body.is-reading .footer-block { 
       position: fixed;
+      margin-top: 40px;
       bottom: 0; 
+      height: auto; 
+      min-height: 50px; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: flex-end;
       z-index: 200; 
+      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 15px);
     }
 
     body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none !important; }
@@ -186,16 +199,16 @@
       -webkit-user-select: text !important;
       user-select: text !important;
       pointer-events: auto !important;
-      width: 100%; max-width: 650px; 
-      min-height: 150px;
-      height: 150px; /* Фиксированная удобная высота для ввода */
+      width: 100%; max-width: 650px; min-height: 140px;
       padding: 10px 14px; background: rgba(255,255,255,0.05); 
       color: #fff; border: 2px solid rgba(255,255,255,0.38); 
       border-radius: 0px; font-size: 16px; outline: none; 
       box-sizing: border-box; display: block;
       font-family: Arial, sans-serif;
-      resize: vertical; /* Разрешаем тянуть поле при желании */
+      height: 22vh;
+      resize: none;
       overflow-y: auto;
+      touch-action: pan-y !important;
     }
 
     .toolbar {
@@ -208,39 +221,34 @@
     }
     #fileInput { display: none; }
   </style>
-
 </head>
 <body>
   <script src="pwa-init.js"></script>
-<div id="logoContainer">
-  <div id="brandHeader">
-    <a href="match.html" id="logoLink" style="text-decoration: none;">
-      <img src="star.png" alt="Logo" style="max-width: 48px; opacity: 0.9;">
-    </a>
-    <h1 style="font-size: 14px; margin: 5px 0 0 0; font-weight: normal; letter-spacing: 1px; color: rgba(255,255,255,0.9);">
-      Fast Reading Converter
-    </h1>
-  </div>
-</div>
 
+  <div id="logoContainer">
+    <div id="brandHeader">
+      <a href="match.html" id="logoLink" style="text-decoration: none;">
+        <img src="star.png" alt="Logo" style="max-width: 48px; opacity: 0.9;">
+      </a>
+      <h1 style="font-size: 14px; margin: 5px 0 0 0; font-weight: normal; letter-spacing: 1px; color: rgba(255,255,255,0.9);">
+        Fast Reading Converter
+      </h1>
+    </div>
+  </div>
 
   <div id="container"></div>
 
   <div class="footer-block">
     <div id="inputContainer">
       <div class="toolbar">
-
-<button class="toolbar-btn" onclick="if(isReading) return; document.getElementById('fileInput').click()">Upload .txt</button>
-
+        <button class="toolbar-btn" onclick="if(isReading) return; document.getElementById('fileInput').click()">Upload .txt</button>
         <input type="file" id="fileInput" accept=".txt">
       </div>
       <textarea id="inputText" placeholder="Paste your text here or use the button above to display the function buttons.
 
-Click on any blank area of ​​the screen to invert the colors.
-        "></textarea>
+Click on any blank area of ​​the screen to invert the colors."></textarea>
     </div>
     
-
     <div id="mainButtons">
       <button id="editBtn" style="display: none; background: rgba(255,255,255,0.1); border: 2px solid rgba(255, 255, 255, 1.0); z-index: 210; margin-bottom: 5px;">Edit</button>
       <div class="button-row">
@@ -284,7 +292,6 @@ Click on any blank area of ​​the screen to invert the colors.
     document.body.style.backgroundColor = colors[colorIndex];
     inputText.value = localStorage.getItem('reading_text') || "";
 
-    // Загрузка файла
     fileInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -296,13 +303,10 @@ Click on any blank area of ​​the screen to invert the colors.
       reader.readAsText(file);
     });
 
-inputText.addEventListener('input', () => {
-    // 1. Сохраняем актуальное состояние
-    localStorage.setItem('reading_text', inputText.value);
-    // 2. Проверяем, нужно ли показывать кнопки
-    checkTextVisibility();
-});
-
+    inputText.addEventListener('input', () => {
+        localStorage.setItem('reading_text', inputText.value);
+        checkTextVisibility();
+    });
 
     function updateFontSize(text, el) {
         const maxWidth = window.innerWidth * 0.9;
@@ -332,28 +336,23 @@ inputText.addEventListener('input', () => {
         }, 15);
     }
 
-document.body.addEventListener('click', (e) => {
+    document.body.addEventListener('click', (e) => {
+        if (
+            e.target.tagName === 'BUTTON' || 
+            e.target.tagName === 'TEXTAREA' || 
+            e.target.closest('.toolbar') || 
+            e.target.closest('#logoContainer')
+        ) {
+            return; 
+        }
+        toggleInversion();
+    });
 
-    if (
-        e.target.tagName === 'BUTTON' || 
-        e.target.tagName === 'TEXTAREA' || 
-        e.target.closest('.toolbar') || 
-        e.target.closest('#logoContainer')
-    ) {
-        return; 
-    }
-
-    toggleInversion();
-});
-
-
-function clearOldWord(isLongExit = false) {
+    function clearOldWord(isLongExit = false) {
         const oldEl = container.querySelector('.word-active');
         if (oldEl) {
             const exitClass = isLongExit ? 'word-exit-long' : 'word-exit';
             oldEl.classList.replace('word-active', exitClass);
-            
-            // Удаляем элемент строго по окончании его анимации затухания (30% или 60% от интервала)
             const deleteTimeout = isLongExit ? (interval * 0.6) : (interval * 0.3);
             setTimeout(() => oldEl.remove(), deleteTimeout);
         }
@@ -382,13 +381,12 @@ function clearOldWord(isLongExit = false) {
             requestAnimationFrame(() => setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20));
         }
 
-// Изменяем логику: вместо умножения добавляем фиксированные миллисекунды
         let extraPause = 0; 
-        if (/[;,]/.test(rawTxt)) extraPause = 150;        // Запятая всегда добавляет ровно 150мс
+        if (/[;,]/.test(rawTxt)) extraPause = 150;        
         else if (/:/.test(rawTxt)) extraPause = 150;
-        else if (/[.!?—]/.test(rawTxt)) extraPause = 300; // Точка всегда добавляет ровно 300мс
+        else if (/[.!?—]/.test(rawTxt)) extraPause = 300; 
         
-        if (rawTxt.length > 13) extraPause += 500;          // Длинное слово дает +50мс
+        if (rawTxt.length > 13) extraPause += 500;          
         if (isLongHold) extraPause += 200;
 
         let currentInterval = interval;
@@ -402,12 +400,9 @@ function clearOldWord(isLongExit = false) {
             currentInterval = interval * factor;
         }
 
-        // Передаем текущую скорость шага в CSS перед отрисовкой слова, 
-        // чтобы даже при Dynamic Accel анимация подстраивалась на лету
         document.documentElement.style.setProperty('--speed', currentInterval + 'ms');
 
         index++;
-        // Итоговый таймер теперь складывается, а не умножается
         timer = setTimeout(showNext, currentInterval + extraPause);
     }
 
@@ -434,7 +429,6 @@ function clearOldWord(isLongExit = false) {
             if (!text) return;
             localStorage.setItem('reading_text', text);
             
-            // НОВАЯ ЛОГИКА ИЗ MATRIX: парсим только реальные слова, сжигая пробелы
             words = text
               .replace(/([,;:.!?])(?!\s|$)/g, '$1 ')
               .split(/\s+/)
@@ -454,14 +448,11 @@ function clearOldWord(isLongExit = false) {
         }
     };
 
-    // Листание НАЗАД (только слова)
     prevBtn.onclick = (e) => {
         e.stopPropagation();
         if (words.length === 0) return;
-        
         index = Math.max(0, index - 2); 
         clearOldWord();
-        
         if (isPaused) {
             const wasPaused = isPaused; isPaused = false;
             showNext(); clearTimeout(timer); isPaused = wasPaused;
@@ -470,13 +461,10 @@ function clearOldWord(isLongExit = false) {
         }
     };
 
-    // Листание ВПЕРЕД (только слова)
     nextBtn.onclick = (e) => {
         e.stopPropagation();
         if (words.length === 0 || index >= words.length) return;
-        
         clearOldWord();
-        
         if (isPaused) {
             const wasPaused = isPaused; isPaused = false;
             showNext(); clearTimeout(timer); isPaused = wasPaused;
@@ -485,7 +473,6 @@ function clearOldWord(isLongExit = false) {
         }
     };
 
-// Функция для синхронизации CSS-переменной со скоростью JS
     function syncCssSpeed() {
         document.documentElement.style.setProperty('--speed', interval + 'ms');
     }
@@ -494,17 +481,16 @@ function clearOldWord(isLongExit = false) {
         e.stopPropagation(); 
         interval = Math.max(50, interval - 50); 
         localStorage.setItem('reading_interval', interval); 
-        syncCssSpeed(); // <--- Передаем новую скорость в CSS
+        syncCssSpeed(); 
     };
     
     slowerBtn.onclick = (e) => { 
         e.stopPropagation(); 
         interval += 50; 
         localStorage.setItem('reading_interval', interval); 
-        syncCssSpeed(); // <--- Передаем новую скорость в CSS
+        syncCssSpeed(); 
     };
 
-    // Вызываем один раз при старте страницы, чтобы инициализировать значение
     syncCssSpeed();
 
     editBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); stopReading(); };
@@ -521,26 +507,19 @@ function clearOldWord(isLongExit = false) {
     window.addEventListener('orientationchange', () => { setTimeout(resetHeight, 100); });
     resetHeight();
 
-  const mainButtonsBlock = document.getElementById('mainButtons');
+    const mainButtonsBlock = document.getElementById('mainButtons');
 
-    // Функция, которая проверяет, есть ли текст, и управляет видимостью кнопок
     function checkTextVisibility() {
         if (inputText.value.trim().length > 0) {
-            mainButtonsBlock.style.display = 'flex'; // Показываем кнопки
+            mainButtonsBlock.style.display = 'flex'; 
         } else {
-            mainButtonsBlock.style.display = 'none';  // Прячем, если пусто
+            mainButtonsBlock.style.display = 'none';  
         }
     }
 
-    // 1. Проверяем текст сразу при загрузке страницы (если что-то восстановилось из localStorage)
     checkTextVisibility();
-
-    // 2. Слушаем живой ввод пользователя в текстовое поле
     inputText.addEventListener('input', checkTextVisibility);
-
-    // 3. Подвязываем проверку к событию загрузки файла через Upload
     fileInput.addEventListener('change', () => {
-        // Небольшой таймаут, чтобы FileReader успел записать текст в поле
         setTimeout(checkTextVisibility, 50);
     });
 </script> 
