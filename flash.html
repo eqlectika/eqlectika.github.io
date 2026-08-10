@@ -11,42 +11,40 @@
   <style>
     html, body {
       overscroll-behavior: none; 
-      height: 100vh;
-      height: var(--app-height, 100vh);
+      min-height: 100%;
       margin: 0; padding: 0;
       background-color: #000000; color: #fff; font-family: Arial, sans-serif;
-      overflow: hidden;
+      /* Разрешаем прокрутку всего экрана */
+      overflow-y: auto; 
       -webkit-user-select: none; user-select: none;
     }
 
-#logoContainer {
-  position: absolute; 
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
-  left: 50%; 
-  transform: translateX(-50%); 
-  z-index: 120;
-  transition: opacity 0.5s ease;
-  width: 100%; /* Убедитесь, что контейнер занимает ширину для корректной работы flex */
-  display: flex;
-  justify-content: center; /* Центрируем по горизонтали внутри */
-}
+    #logoContainer {
+      position: relative; 
+      top: auto; left: auto; transform: none;
+      z-index: 120;
+      transition: opacity 0.5s ease;
+      width: 100%; 
+      display: flex;
+      justify-content: center; 
+      margin: 15px 0;
+    }
 
-#brandHeader {
-  display: flex;
-  flex-direction: column;
-  align-items: center; 
-  font-family: 'Cinzel', serif;
-  text-align: center;
-}
-
+    #brandHeader {
+      display: flex;
+      flex-direction: column;
+      align-items: center; 
+      text-align: center;
+    }
 
     #mainButtons {
       position: relative;
       z-index: 110;
-      display: none; /* <--- Изначально прячем весь блок с кнопками */
+      display: none; 
       flex-direction: column; 
       align-items: center; 
       gap: 5px; 
+      margin-top: 15px;
     }
 
     body.is-reading #logoContainer {
@@ -54,24 +52,29 @@
       pointer-events: none !important;
     }
 
+    /* Убираем fixed, чтобы контейнер сдвигался при прокрутке */
     #inputContainer { 
-      position: fixed;
-      top: calc(env(safe-area-inset-top, 0px) + 100px);
+      position: relative;
+      top: auto;
       left: 0;
-      flex-shrink: 0; padding: 0px 15px; 
-      z-index: 100; width: 100%; display: flex; flex-direction: column; 
-      align-items: center; box-sizing: border-box; transition: opacity 0.5s ease;
+      padding: 20px 15px 10px 15px; 
+      z-index: 100; 
+      width: 100%; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      box-sizing: border-box; 
     }
 
+    /* Футер теперь идет естественным потоком */
     .footer-block { 
-      z-index: 120; width: 100%;
-      display: flex; flex-direction: column; align-items: center;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      padding-top: 20px;
-      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 10px);
-      pointer-events: none;
+      z-index: 120; 
+      width: 100%;
+      display: flex; 
+      flex-direction: column; 
+      align-items: center;
+      position: relative;
+      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 20px);
     }
 
     #inputContainer, #settingsContainer, #mainButtons, button, .setting-btn, .toolbar {
@@ -85,15 +88,6 @@
       z-index: 10;
       perspective: 1000px;
       pointer-events: none;
-    }
-
-    #mainButtons {
-      position: relative;
-      z-index: 110;
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      gap: 5px; 
     }
     
     .button-row { display: flex; align-items: center; gap: 5px; }
@@ -114,7 +108,6 @@
     .word-active { 
       opacity: 1; 
       transform: translate(-50%, -50%); 
-      /* Плавность появления теперь занимает 15% от текущего интервала */
       transition: all calc(var(--speed, 600ms) * 0.15) cubic-bezier(0.23, 1, 0.32, 1);
       filter: blur(0); 
     }
@@ -123,7 +116,6 @@
       opacity: 0; 
       transform: translate(-50%, -50%) scale(0);
       filter: blur(10px); 
-      /* Время затухания подстраивается: 30% от интервала на уход, 50% на прозрачность */
       transition: transform calc(var(--speed, 600ms) * 0.3) ease-in, 
                   opacity calc(var(--speed, 600ms) * 0.5) linear, 
                   filter calc(var(--speed, 600ms) * 0.4) calc(var(--speed, 600ms) * 0.2) ease-in;
@@ -133,7 +125,6 @@
       opacity: 0; 
       transform: translate(-50%, -50%) scale(1);
       filter: blur(20px); 
-      /* Для длинных слов — пропорционально увеличенное время */
       transition: transform calc(var(--speed, 600ms) * 0.6) cubic-bezier(0.1, 0.8, 0.2, 1), 
                   opacity calc(var(--speed, 600ms) * 1.0) linear, 
                   filter calc(var(--speed, 600ms) * 0.7) calc(var(--speed, 600ms) * 0.8) ease-in;
@@ -141,15 +132,8 @@
 
     body.is-reading .footer-block { 
       position: fixed;
-      margin-top: 40px;
       bottom: 0; 
-      height: auto; 
-      min-height: 50px; 
-      display: flex; 
-      flex-direction: column; 
-      justify-content: flex-end;
       z-index: 200; 
-      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 15px);
     }
 
     body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none !important; }
@@ -181,7 +165,7 @@
     }
 
     body.is-paused #startBtn { background: #fff; color: #000; opacity: 1; }
-        body.is-paused #slowerBtn, body.is-paused #fasterBtn { display: none !important; }
+    body.is-paused #slowerBtn, body.is-paused #fasterBtn { display: none !important; }
     #prevBtn, #nextBtn { display: none; background: rgba(255,255,255,0.1); }
     body.is-paused #prevBtn, body.is-paused #nextBtn { display: block; opacity: 1; border-color: #fff; }
 
@@ -202,28 +186,29 @@
       -webkit-user-select: text !important;
       user-select: text !important;
       pointer-events: auto !important;
-      width: 100%; max-width: 650px; min-height: 180px;
+      width: 100%; max-width: 650px; 
+      min-height: 150px;
+      height: 150px; /* Фиксированная удобная высота для ввода */
       padding: 10px 14px; background: rgba(255,255,255,0.05); 
       color: #fff; border: 2px solid rgba(255,255,255,0.38); 
       border-radius: 0px; font-size: 16px; outline: none; 
       box-sizing: border-box; display: block;
       font-family: Arial, sans-serif;
-      height: 25vh;
-      resize: none;
+      resize: vertical; /* Разрешаем тянуть поле при желании */
       overflow-y: auto;
-      touch-action: pan-y !important;
     }
 
-.toolbar {
-  display: flex; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 650px; justify-content: center;
-}
-.toolbar-btn {
-  width: 100%; /* <--- Кнопка теперь займет 100% ширины тулбара */
-  text-align: center;
-  font-size: 14px; padding: 10px 14px; border-radius: 0px; border: 1px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.1);
-}
+    .toolbar {
+      display: flex; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 650px; justify-content: center;
+    }
+    .toolbar-btn {
+      width: 100%; 
+      text-align: center;
+      font-size: 14px; padding: 10px 14px; border-radius: 0px; border: 1px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.1);
+    }
     #fileInput { display: none; }
   </style>
+
 </head>
 <body>
   <script src="pwa-init.js"></script>
