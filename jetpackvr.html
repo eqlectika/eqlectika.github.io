@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <link rel="manifest" href="manifest-jetpack.json">
+
+    <title>Jetpack</title>
+<style>
+html, body { 
+    margin: 0; 
+    padding: 0;
+    width: 100dvw;
+    height: 100dvh;
+    overflow: hidden; 
+    touch-action: none; 
+    user-select: none;
+    -webkit-user-select: none;
+    background-color: #0a0a12;
+}
+canvas { 
+    display: block; 
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#controls {
+    position: fixed;
+    bottom: 50px;
+    left: 20px;                      
+    display: flex;
+    justify-content: flex-start;
+    pointer-events: none;
+    z-index: 3000;
+}
+
+@media (pointer: coarse) { #controls { display: flex; } }
+#logoLink {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4000; 
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+#throttleArea {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 50vw;
+    height: 100vh;
+    z-index: 2000;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+#controlArea {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 50vw;
+    height: 100vh;
+    z-index: 2000;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+@media (pointer: fine) {
+    #throttleArea, #controlArea {
+        pointer-events: none;
+    }
+}
+
+#startButton {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5000;
+    padding: 15px 30px;
+    background-color: #3b3b4f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+}
+</style>
+</head>
+<body>
+    <button id="startButton">START GAME</button>
+
+<a href="match.html" id="logoLink">
+    <img src="star.png" alt="Logo" draggable="false" style="margin-bottom: 20px; width: 42px; height: 42px; opacity: 0.5;">
+</a>
+    
+    <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
+
+<script type="importmap">
+  { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { VRButton } from 'three/addons/webxr/VRButton.js';
+
+// --- БЛОК 1: Управление тягой и наклоном ---
+let currentThrottle = 0;
+let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
+let isReverseThrust = false;
+
+let currentPitch = 0; 
+let currentRoll = 0;  
+
+const throttleArea = document.getElementById('throttleArea');
+const controlArea = document.getElementById('controlArea');
+const logoLink = document.getElementById('logoLink');
+
+const activeTouches = {
+    throttle: null,
+    control: null
+};
+
+throttleArea.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    activeTouches.throttle = e.pointerId;
+    updateThrottle(e);
+}, { passive: false });
+
+function updateThrottle(e) {
+    const rect = throttleArea.getBoundingClientRect();
+    let val = 1 - ((e.clientY - rect.top) / rect.height);
+    currentThrottle = Math.max(0, Math.min(1, val));
+}
+
+controlArea.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    activeTouches.control = e.pointerId;
+    touchJoystick.active = true;
+    touchJoystick.startX = e.clientX;
+    touchJoystick.startY = e.clientY;
+    touchJoystick.moveX = 0;
+    touchJoystick.moveY = 0;
+}, { passive: false });
+
+window.addEventListener('pointermove', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        updateThrottle(e);
+    }
+    if (e.pointerId === activeTouches.control && touchJoystick.active) {
+        const maxDistance = 100; 
+        let diffX = e.clientX - touchJoystick.startX;
+        let diffY = e.clientY - touchJoystick.startY;
+        
+        touchJoystick.moveX = Math.max(-1, Math.min(1, diffX / maxDistance));
+        touchJoystick.moveY = Math.max(-1, Math.min(1, diffY / maxDistance));
+    }
+});
+
+window.addEventListener('pointerup', (e) => {
+    if (e.pointerId === activeTouches.throttle) {
+        activeTouches.throttle = null;
+        currentThrottle = 0;
+    }
+    if (e.pointerId === activeTouches.control) {
+        activeTouches.control = null;
+        touchJoystick.active = false;
+        touchJoystick.moveX = 0;
+        touchJoystick.moveY = 0;
+    }
+});
+
+    // ==========================================
+    // 1. НАСТРОЙКИ СКОРОСТИ, ИНЕРЦИИ И КРЕНА
+    // ==========================================
+    const FLY_SPEED = 0.0171;       
+    const TURN_SPEED = 0.0005;      
+    const TOUCH_TURN_SPEED = 0.0008; 
+    
+    const GRAVITY = 0.013; 
+    
+    const DAMPING_TURN = 0.96;
+    const DAMPING_MOVE = 0.98;
+
+    // ==========================================
+    // 2. ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННЫХ И СОСТОЯНИЙ
+    // ==========================================
+    document.getElementById('startButton').addEventListener('click', () => {
+        document.getElementById('startButton').style.display = 'none';
+        
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+        }
+
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => {});
+        }
+    });
+
+    // ==========================================
+    // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
+    // ==========================================
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a12); 
+    
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 3000);
+    camera.rotation.set(0, 0, 0);
+    
+    const player = new THREE.Group();
+    player.position.set(0, 35, 0);
+    player.rotation.order = 'YXZ';
+    scene.add(player);
+    player.add(camera);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true; // Включаем WebXR
+    document.body.appendChild(renderer.domElement);
+    document.body.appendChild(VRButton.createButton(renderer)); // Добавляем VR кнопку
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const light = new THREE.DirectionalLight(0xffffff, 2.5);
+    light.position.set(50, 200, 50);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x888888));
+
+    const backLight = new THREE.DirectionalLight(0xabcdef, 0.8);
+    backLight.position.set(-50, 100, -50); 
+    scene.add(backLight);
+
+    const collidableObjects = [];
+    const chunkRegistry = new Map(); 
+    const CHUNK_SIZE = 200;          
+    const CHUNK_RENDER_DISTANCE = 3; 
+
+    function addStructure(mesh) {
+        scene.add(mesh);
+        collidableObjects.push(mesh);
+    }
+
+    function generateChunk(chunkX, chunkZ) {
+        const chunkGroup = new THREE.Group();
+        const chunkColliders = [];
+        const localSeed = Math.sin(chunkX * 12.9898 + chunkZ * 78.233) * 43758.5453;
+        
+        // Здания
+        for(let i=0; i<4; i++) {
+            let sizeY = 5 + Math.abs(Math.cos(localSeed * i)) * 120;
+            const sizeX = 10 + Math.abs(Math.sin(localSeed + i)) * 15;
+            const sizeZ = 10 + Math.abs(Math.sin(localSeed * 2 + i)) * 15;
+
+            const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
+            const material = new THREE.MeshPhongMaterial({ color: Math.abs(Math.sin(localSeed + i)) * 0xffffff });
+            const box = new THREE.Mesh(geometry, material);
+            
+            box.position.set(
+                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 3 + i)) - 0.5) * (CHUNK_SIZE - 60)),
+                sizeY / 2, 
+                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 4 + i)) - 0.5) * (CHUNK_SIZE - 60))
+            );
+            
+            chunkGroup.add(box);
+            chunkColliders.push(box);
+        }
+
+        // Арки
+        for(let i=0; i<2; i++) {
+            const archGroup = new THREE.Group();
+            const archColor = Math.abs(Math.cos(localSeed + i * 5)) * 0xffffff;
+            const material = new THREE.MeshPhongMaterial({ color: archColor });
+
+            const w = 4;   
+            const h = 20;  
+            const d = 4;   
+            const span = 25; 
+
+            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+            leftLeg.position.set(-span/2, h/2, 0);
+            archGroup.add(leftLeg);
+
+            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+            rightLeg.position.set(span/2, h/2, 0);
+            archGroup.add(rightLeg);
+
+            const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w, d), material);
+            topBar.position.set(0, h + w/2, 0);
+            archGroup.add(topBar);
+
+            archGroup.position.set(
+                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 5 + i)) - 0.5) * (CHUNK_SIZE - 60)),
+                0,
+                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 6 + i)) - 0.5) * (CHUNK_SIZE - 60))
+            );
+            archGroup.rotation.y = Math.abs(Math.sin(localSeed + i)) * Math.PI;
+
+            leftLeg.updateMatrixWorld();
+            rightLeg.updateMatrixWorld();
+            topBar.updateMatrixWorld();
+            chunkColliders.push(leftLeg, rightLeg, topBar);
+            
+            chunkGroup.add(archGroup);
+        }
+
+        // --- УРОВЕНЬ 1: Нижняя сетка дорог ---
+        const roadMaterial1 = new THREE.MeshPhongMaterial({ color: 0x333344 });
+        const roadWidth = 14;
+        const roadHeight1 = 22;
+
+        const roadX = new THREE.Mesh(new THREE.BoxGeometry(CHUNK_SIZE, 1.5, roadWidth), roadMaterial1);
+        roadX.position.set(chunkX * CHUNK_SIZE, roadHeight1, chunkZ * CHUNK_SIZE);
+        roadX.updateMatrixWorld();
+        chunkGroup.add(roadX);
+        chunkColliders.push(roadX);
+
+        const roadZ = new THREE.Mesh(new THREE.BoxGeometry(roadWidth, 1.5, CHUNK_SIZE), roadMaterial1);
+        roadZ.position.set(chunkX * CHUNK_SIZE, roadHeight1, chunkZ * CHUNK_SIZE);
+        roadZ.updateMatrixWorld();
+        chunkGroup.add(roadZ);
+        chunkColliders.push(roadZ);
+
+        const pillarOffsets = [-40, 40];
+        for(let px of pillarOffsets) {
+            for(let pz of pillarOffsets) {
+                const pillar = new THREE.Mesh(new THREE.BoxGeometry(3.5, roadHeight1, 3.5), roadMaterial1);
+                pillar.position.set((chunkX * CHUNK_SIZE) + px, roadHeight1 / 2, (chunkZ * CHUNK_SIZE) + pz);
+                pillar.updateMatrixWorld();
+                chunkGroup.add(pillar);
+                chunkColliders.push(pillar);
+            }
+        }
+
+        // --- УРОВЕНЬ 2: Вторая сетка дорог ---
+        const roadMaterial2 = new THREE.MeshPhongMaterial({ color: 0x553366 });
+        const roadHeight2 = 70; 
+        const halfChunk = CHUNK_SIZE / 2;
+
+        const roadX2 = new THREE.Mesh(new THREE.BoxGeometry(CHUNK_SIZE, 1.5, roadWidth), roadMaterial2);
+        roadX2.position.set(chunkX * CHUNK_SIZE, roadHeight2, chunkZ * CHUNK_SIZE + halfChunk);
+        roadX2.updateMatrixWorld();
+        chunkGroup.add(roadX2);
+        chunkColliders.push(roadX2);
+
+        const roadZ2 = new THREE.Mesh(new THREE.BoxGeometry(roadWidth, 1.5, CHUNK_SIZE), roadMaterial2);
+        roadZ2.position.set(chunkX * CHUNK_SIZE + halfChunk, roadHeight2, chunkZ * CHUNK_SIZE);
+        roadZ2.updateMatrixWorld();
+        chunkGroup.add(roadZ2);
+        chunkColliders.push(roadZ2);
+
+        const upperPillarOffsets = [-40, 40];
+        for(let px of upperPillarOffsets) {
+            for(let pz of upperPillarOffsets) {
+                const upperPillarZ = new THREE.Mesh(new THREE.BoxGeometry(4, roadHeight2, 4), roadMaterial2);
+                upperPillarZ.position.set((chunkX * CHUNK_SIZE) + halfChunk + px, roadHeight2 / 2, (chunkZ * CHUNK_SIZE) + pz);
+                upperPillarZ.updateMatrixWorld();
+                chunkGroup.add(upperPillarZ);
+                chunkColliders.push(upperPillarZ);
+
+                const upperPillarX = new THREE.Mesh(new THREE.BoxGeometry(4, roadHeight2, 4), roadMaterial2);
+                upperPillarX.position.set((chunkX * CHUNK_SIZE) + px, roadHeight2 / 2, (chunkZ * CHUNK_SIZE) + halfChunk + pz);
+                upperPillarX.updateMatrixWorld();
+                chunkGroup.add(upperPillarX);
+                chunkColliders.push(upperPillarX);
+            }
+        }
+
+        scene.add(chunkGroup);
+        chunkRegistry.set(`${chunkX},${chunkZ}`, { group: chunkGroup, colliders: chunkColliders });
+    }
+
+    function updateInfiniteWorld(playerPos) {
+        const currentChunkX = Math.floor((playerPos.x + CHUNK_SIZE / 2) / CHUNK_SIZE);
+        const currentChunkZ = Math.floor((playerPos.z + CHUNK_SIZE / 2) / CHUNK_SIZE);
+
+        const activeChunks = new Set();
+
+        for (let x = -CHUNK_RENDER_DISTANCE; x <= CHUNK_RENDER_DISTANCE; x++) {
+            for (let z = -CHUNK_RENDER_DISTANCE; z <= CHUNK_RENDER_DISTANCE; z++) {
+                const cx = currentChunkX + x;
+                const cz = currentChunkZ + z;
+                const key = `${cx},${cz}`;
+                activeChunks.add(key);
+
+                if (!chunkRegistry.has(key)) {
+                    generateChunk(cx, cz);
+                }
+            }
+        }
+
+        for (const [key, chunkData] of chunkRegistry.entries()) {
+            if (!activeChunks.has(key)) {
+                scene.remove(chunkData.group);
+                chunkData.colliders.forEach(collider => {
+                    const index = collidableObjects.indexOf(collider);
+                    if (index > -1) collidableObjects.splice(index, 1);
+                });
+                chunkRegistry.delete(key);
+            }
+        }
+
+        collidableObjects.length = 0;
+        for (const chunkData of chunkRegistry.values()) {
+            collidableObjects.push(...chunkData.colliders);
+        }
+    }
+
+    // ==========================================
+    // БЕСКОНЕЧНАЯ СЕТКА
+    // ==========================================
+    const gridGeometry = new THREE.PlaneGeometry(10000, 10000);
+    const gridMaterial = new THREE.ShaderMaterial({
+        side: THREE.DoubleSide,
+        transparent: true,
+        uniforms: {
+            uSize: { value: 10.0 },
+        },
+        vertexShader: `
+            varying vec3 vWorldPosition;
+            void main() {
+                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                vWorldPosition = worldPosition.xyz;
+                gl_Position = projectionMatrix * viewMatrix * worldPosition;
+            }
+        `,
+        fragmentShader: `
+            varying vec3 vWorldPosition;
+            uniform float uSize;
+            void main() {
+                vec2 grid = abs(fract(vWorldPosition.xz / uSize - 0.5) - 0.5) / fwidth(vWorldPosition.xz / uSize);
+                float line = min(grid.x, grid.y);
+                float alpha = 1.0 - min(line, 1.0);
+                
+                float dist = length(vWorldPosition.xz);
+                float fade = 1.0 - smoothstep(100.0, 800.0, dist); 
+                
+                if (alpha < 0.1) discard;
+                
+                gl_FragColor = vec4(0.26, 0.26, 1.0, alpha * fade * 0.5);
+            }
+        `
+    });
+
+    const infiniteGrid = new THREE.Mesh(gridGeometry, gridMaterial);
+    infiniteGrid.rotation.x = -Math.PI / 2; 
+    infiniteGrid.position.y = 0;
+    scene.add(infiniteGrid);
+
+    const keys = {};
+    let lastSpaceTime = 0;
+    let superThrust = false;
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !keys['Space']) { 
+            const currentTime = performance.now();
+            if (currentTime - lastSpaceTime < 250) { 
+                superThrust = true;
+            }
+            lastSpaceTime = currentTime;
+        }
+        keys[e.code] = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+        keys[e.code] = false;
+        if (e.code === 'Space') {
+            superThrust = false; 
+        }
+    });
+    
+    let velocity = new THREE.Vector3(0, 0, 0);
+    let angularVelocityX = 0;
+    let angularVelocityZ = 0;
+
+    // Замена requestAnimationFrame на setAnimationLoop для поддержки WebXR/VR
+    renderer.setAnimationLoop(() => {
+        // Опрос VR-контроллеров (Oculus / Quest)
+        const session = renderer.xr.getSession();
+        if (session && session.inputSources) {
+            for (const source of session.inputSources) {
+                const gp = source.gamepad;
+                if (!gp) continue;
+                if (Math.abs(gp.axes[1]) > 0.1) angularVelocityX += gp.axes[1] * 0.005;
+                if (Math.abs(gp.axes[0]) > 0.1) angularVelocityZ -= gp.axes[0] * 0.005;
+                if (gp.buttons[0]?.pressed) {
+                    superThrust = true;
+                } else {
+                    superThrust = false;
+                }
+            }
+        }
+
+        updateInfiniteWorld(player.position);
+
+        const playerRadius = 1.5; 
+        const nextPos = player.position.clone().add(velocity);
+
+        for (let i = 0; i < collidableObjects.length; i++) {
+            const obj = collidableObjects[i];
+            const bbox = new THREE.Box3().setFromObject(obj);
+            const clampedPoint = new THREE.Vector3();
+            bbox.clampPoint(nextPos, clampedPoint);
+            const distance = nextPos.distanceTo(clampedPoint);
+            
+            if (distance < playerRadius) {
+                const pushDir = new THREE.Vector3().subVectors(nextPos, clampedPoint).normalize();
+                if (pushDir.lengthSq() === 0) pushDir.set(0, 1, 0);
+                
+                player.position.copy(clampedPoint).add(pushDir.multiplyScalar(playerRadius));
+                velocity.reflect(pushDir).multiplyScalar(0.2); 
+                break;
+            }
+        }
+
+        if (keys['ArrowLeft']) angularVelocityZ += TURN_SPEED;
+        if (keys['ArrowRight']) angularVelocityZ -= TURN_SPEED;
+        if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
+        if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
+
+        if (touchJoystick.active) {
+            angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
+            angularVelocityZ -= touchJoystick.moveX * TOUCH_TURN_SPEED;
+        }
+
+        angularVelocityX *= DAMPING_TURN;
+        angularVelocityZ *= DAMPING_TURN;
+
+        const deltaQuaternion = new THREE.Quaternion().setFromEuler(
+            new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
+        );
+        
+        player.quaternion.multiply(deltaQuaternion);
+
+        let currentFlySpeed = FLY_SPEED;
+
+        let thrustForce = 0;
+        if (keys['Space'] || superThrust) {
+            const spaceMultiplier = superThrust ? 2.5 : 1.0; 
+            thrustForce = currentFlySpeed * spaceMultiplier; 
+        } else if (currentThrottle > 0.05) {
+            thrustForce = currentFlySpeed * (currentThrottle * 2.0); 
+        }
+
+        let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+        
+        if (isReverseThrust) {
+            localUp.negate();
+        }
+
+        if (thrustForce > 0) {
+            velocity.add(localUp.clone().multiplyScalar(thrustForce));
+        }
+
+        velocity.y -= GRAVITY;
+
+        player.position.add(velocity);
+        velocity.multiplyScalar(DAMPING_MOVE);
+
+        if (player.position.y < 2) {
+            player.position.y = 2;
+            velocity.y = Math.max(0, velocity.y * -0.3);
+        }
+
+        infiniteGrid.position.set(player.position.x, 0, player.position.z);
+        renderer.render(scene, camera);
+    });
+</script>
+</body>
+</html>
