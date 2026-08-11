@@ -90,6 +90,18 @@ canvas {
     font-size: 18px;
     cursor: pointer;
 }
+
+#VRButton {
+    position: fixed !important;
+    top: 60% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 9999 !important;
+    opacity: 0.3 !important;
+}
+#VRButton:hover, #VRButton:active {
+    opacity: 0.8 !important;
+}
 </style>
 </head>
 <body>
@@ -220,9 +232,19 @@ window.addEventListener('pointerup', (e) => {
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.xr.enabled = true; // Включаем WebXR
+    renderer.xr.enabled = true;
     document.body.appendChild(renderer.domElement);
-    document.body.appendChild(VRButton.createButton(renderer)); // Добавляем VR кнопку
+    
+    const vrButton = VRButton.createButton(renderer);
+    document.body.appendChild(vrButton);
+
+    if (!('xr' in navigator)) {
+        vrButton.remove();
+    } else {
+        navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+            if (!supported) vrButton.remove();
+        });
+    }
 
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
@@ -243,11 +265,6 @@ window.addEventListener('pointerup', (e) => {
     const chunkRegistry = new Map(); 
     const CHUNK_SIZE = 200;          
     const CHUNK_RENDER_DISTANCE = 3; 
-
-    function addStructure(mesh) {
-        scene.add(mesh);
-        collidableObjects.push(mesh);
-    }
 
     function generateChunk(chunkX, chunkZ) {
         const chunkGroup = new THREE.Group();
@@ -481,98 +498,98 @@ window.addEventListener('pointerup', (e) => {
     let angularVelocityX = 0;
     let angularVelocityZ = 0;
 
-    // Замена requestAnimationFrame на setAnimationLoop для поддержки WebXR/VR
-    renderer.setAnimationLoop(() => {
-        // Опрос VR-контроллеров (Oculus / Quest)
-        const session = renderer.xr.getSession();
-        if (session && session.inputSources) {
-            for (const source of session.inputSources) {
-                const gp = source.gamepad;
-                if (!gp) continue;
-                if (Math.abs(gp.axes[1]) > 0.1) angularVelocityX += gp.axes[1] * 0.005;
-                if (Math.abs(gp.axes[0]) > 0.1) angularVelocityZ -= gp.axes[0] * 0.005;
-                if (gp.buttons[0]?.pressed) {
-                    superThrust = true;
-                } else {
-                    superThrust = false;
-                }
-            }
-        }
+renderer.setAnimationLoop(() => {
+    updateInfiniteWorld(player.position);
 
-        updateInfiniteWorld(player.position);
+    const session = renderer.xr.getSession();
+    let tX = 0;
+    let tY = 0;
 
-        const playerRadius = 1.5; 
-        const nextPos = player.position.clone().add(velocity);
+    const playerRadius = 1.5; 
+    const nextPos = player.position.clone().add(velocity);
 
-        for (let i = 0; i < collidableObjects.length; i++) {
-            const obj = collidableObjects[i];
-            const bbox = new THREE.Box3().setFromObject(obj);
-            const clampedPoint = new THREE.Vector3();
-            bbox.clampPoint(nextPos, clampedPoint);
-            const distance = nextPos.distanceTo(clampedPoint);
+    for (let i = 0; i < collidableObjects.length; i++) {
+        const obj = collidableObjects[i];
+        const bbox = new THREE.Box3().setFromObject(obj);
+        const clampedPoint = new THREE.Vector3();
+        bbox.clampPoint(nextPos, clampedPoint);
+        const distance = nextPos.distanceTo(clampedPoint);
+        
+        if (distance < playerRadius) {
+            const pushDir = new THREE.Vector3().subVectors(nextPos, clampedPoint).normalize();
+            if (pushDir.lengthSq() === 0) pushDir.set(0, 1, 0);
             
-            if (distance < playerRadius) {
-                const pushDir = new THREE.Vector3().subVectors(nextPos, clampedPoint).normalize();
-                if (pushDir.lengthSq() === 0) pushDir.set(0, 1, 0);
-                
-                player.position.copy(clampedPoint).add(pushDir.multiplyScalar(playerRadius));
-                velocity.reflect(pushDir).multiplyScalar(0.2); 
-                break;
-            }
+            player.position.copy(clampedPoint).add(pushDir.multiplyScalar(playerRadius));
+            velocity.reflect(pushDir).multiplyScalar(0.2); 
+            break;
         }
+    }
 
-        if (keys['ArrowLeft']) angularVelocityZ += TURN_SPEED;
-        if (keys['ArrowRight']) angularVelocityZ -= TURN_SPEED;
-        if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
-        if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
+    if (keys['ArrowLeft']) angularVelocityZ += TURN_SPEED;
+    if (keys['ArrowRight']) angularVelocityZ -= TURN_SPEED;
+    if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
+    if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
 
-        if (touchJoystick.active) {
-            angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
-            angularVelocityZ -= touchJoystick.moveX * TOUCH_TURN_SPEED;
+    if (touchJoystick.active) {
+        angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
+        angularVelocityZ -= touchJoystick.moveX * TOUCH_TURN_SPEED;
+    }
+
+    let thrustForce = 0;
+    if (keys['Space']) {
+        const spaceMultiplier = superThrust ? 2.5 : 1.0; 
+        thrustForce = currentFlySpeed * spaceMultiplier; 
+    } else if (currentThrottle > 0.05) {
+        thrustForce = currentFlySpeed * (currentThrottle * 2.0); 
+    }
+
+    if (session && session.inputSources) {
+        for (const source of session.inputSources) {
+            const gp = source.gamepad;
+            if (!gp) continue;
+            if (Math.abs(gp.axes[1]) > 0.2) tX = gp.axes[1];
+            if (Math.abs(gp.axes[0]) > 0.2) tY = gp.axes[0]; // Стик X управляет обоими[span_2](start_span)[span_2](end_span)
+            if (gp.buttons[0]?.pressed) thrustForce = FLY_SPEED * 2;
         }
+    }
 
-        angularVelocityX *= DAMPING_TURN;
-        angularVelocityZ *= DAMPING_TURN;
+    if (Math.abs(tX) > 0) angularVelocityX += tX * TOUCH_TURN_SPEED;
+    if (Math.abs(tY) > 0) angularVelocityZ -= tY * TOUCH_TURN_SPEED;
 
-        const deltaQuaternion = new THREE.Quaternion().setFromEuler(
-            new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
-        );
-        
-        player.quaternion.multiply(deltaQuaternion);
+    angularVelocityX *= DAMPING_TURN;
+    angularVelocityZ *= DAMPING_TURN;
 
-        let currentFlySpeed = FLY_SPEED;
+    const deltaQuaternion = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
+    );
+    
+    player.quaternion.multiply(deltaQuaternion);
 
-        let thrustForce = 0;
-        if (keys['Space'] || superThrust) {
-            const spaceMultiplier = superThrust ? 2.5 : 1.0; 
-            thrustForce = currentFlySpeed * spaceMultiplier; 
-        } else if (currentThrottle > 0.05) {
-            thrustForce = currentFlySpeed * (currentThrottle * 2.0); 
-        }
+    let currentFlySpeed = FLY_SPEED;
 
-        let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
-        
-        if (isReverseThrust) {
-            localUp.negate();
-        }
+    let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+    
+    if (isReverseThrust) {
+        localUp.negate();
+    }
 
-        if (thrustForce > 0) {
-            velocity.add(localUp.clone().multiplyScalar(thrustForce));
-        }
+    if (thrustForce > 0) {
+        velocity.add(localUp.clone().multiplyScalar(thrustForce));
+    }
 
-        velocity.y -= GRAVITY;
+    velocity.y -= GRAVITY;
 
-        player.position.add(velocity);
-        velocity.multiplyScalar(DAMPING_MOVE);
+    player.position.add(velocity);
+    velocity.multiplyScalar(DAMPING_MOVE);
 
-        if (player.position.y < 2) {
-            player.position.y = 2;
-            velocity.y = Math.max(0, velocity.y * -0.3);
-        }
+    if (player.position.y < 2) {
+        player.position.y = 2;
+        velocity.y = Math.max(0, velocity.y * -0.3);
+    }
 
-        infiniteGrid.position.set(player.position.x, 0, player.position.z);
-        renderer.render(scene, camera);
-    });
+    infiniteGrid.position.set(player.position.x, 0, player.position.z);
+    renderer.render(scene, camera);
+});
 </script>
 </body>
 </html>
