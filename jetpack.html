@@ -102,18 +102,16 @@ canvas {
     <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
 
 <script type="importmap">
-  { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+  { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
 </script>
 <script type="module">
 import * as THREE from 'three';
+import { VRButton } from 'three/addons/webxr/VRButton.js';
 
 // --- БЛОК 1: Управление тягой и наклоном ---
 let currentThrottle = 0;
 let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
 let isReverseThrust = false;
-
-let currentPitch = 0; 
-let currentRoll = 0;  
 
 const throttleArea = document.getElementById('throttleArea');
 const controlArea = document.getElementById('controlArea');
@@ -173,9 +171,6 @@ window.addEventListener('pointerup', (e) => {
     }
 });
 
-    // ==========================================
-    // 1. НАСТРОЙКИ СКОРОСТИ, ИНЕРЦИИ И КРЕНА
-    // ==========================================
     const FLY_SPEED = 0.0171;       
     const TURN_SPEED = 0.0005;      
     const TOUCH_TURN_SPEED = 0.0008; 
@@ -185,9 +180,6 @@ window.addEventListener('pointerup', (e) => {
     const DAMPING_TURN = 0.96;
     const DAMPING_MOVE = 0.98;
 
-    // ==========================================
-    // 2. ИНИЦИАЛИЗАЦИЯ ПЕРЕМЕННЫХ И СОСТОЯНИЙ
-    // ==========================================
     document.getElementById('startButton').addEventListener('click', () => {
         document.getElementById('startButton').style.display = 'none';
         
@@ -202,9 +194,6 @@ window.addEventListener('pointerup', (e) => {
         }
     });
 
-    // ==========================================
-    // 4. СЦЕНА THREE.JS И ОБЪЕКТЫ
-    // ==========================================
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0a12); 
     
@@ -219,7 +208,9 @@ window.addEventListener('pointerup', (e) => {
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
     document.body.appendChild(renderer.domElement);
+    document.body.appendChild(VRButton.createButton(renderer));
 
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
@@ -241,17 +232,11 @@ window.addEventListener('pointerup', (e) => {
     const CHUNK_SIZE = 200;          
     const CHUNK_RENDER_DISTANCE = 3; 
 
-    function addStructure(mesh) {
-        scene.add(mesh);
-        collidableObjects.push(mesh);
-    }
-
     function generateChunk(chunkX, chunkZ) {
         const chunkGroup = new THREE.Group();
         const chunkColliders = [];
         const localSeed = Math.sin(chunkX * 12.9898 + chunkZ * 78.233) * 43758.5453;
         
-        // Здания
         for(let i=0; i<4; i++) {
             let sizeY = 5 + Math.abs(Math.cos(localSeed * i)) * 120;
             const sizeX = 10 + Math.abs(Math.sin(localSeed + i)) * 15;
@@ -271,7 +256,6 @@ window.addEventListener('pointerup', (e) => {
             chunkColliders.push(box);
         }
 
-        // Арки
         for(let i=0; i<2; i++) {
             const archGroup = new THREE.Group();
             const archColor = Math.abs(Math.cos(localSeed + i * 5)) * 0xffffff;
@@ -309,7 +293,6 @@ window.addEventListener('pointerup', (e) => {
             chunkGroup.add(archGroup);
         }
 
-        // --- УРОВЕНЬ 1: Нижняя сетка дорог (проходит ровно по центрам чанков: 0, 0) ---
         const roadMaterial1 = new THREE.MeshPhongMaterial({ color: 0x333344 });
         const roadWidth = 14;
         const roadHeight1 = 22;
@@ -337,38 +320,31 @@ window.addEventListener('pointerup', (e) => {
             }
         }
 
-        // --- УРОВЕНЬ 2: Вторая сетка дорог (СМЕЩЕНА на ровно пол-чанка по X и Z) ---
-        // Теперь дороги второго уровня идут строго посередине между дорогами первого уровня
         const roadMaterial2 = new THREE.MeshPhongMaterial({ color: 0x553366 });
         const roadHeight2 = 70; 
         const halfChunk = CHUNK_SIZE / 2;
 
-        // Дорога X второго уровня смещена по Z на halfChunk (проходит там, где у первого уровня пустой интервал)
         const roadX2 = new THREE.Mesh(new THREE.BoxGeometry(CHUNK_SIZE, 1.5, roadWidth), roadMaterial2);
         roadX2.position.set(chunkX * CHUNK_SIZE, roadHeight2, chunkZ * CHUNK_SIZE + halfChunk);
         roadX2.updateMatrixWorld();
         chunkGroup.add(roadX2);
         chunkColliders.push(roadX2);
 
-        // Дорога Z второго уровня смещена по X на halfChunk (проходит там, где у первого уровня пустой интервал)
         const roadZ2 = new THREE.Mesh(new THREE.BoxGeometry(roadWidth, 1.5, CHUNK_SIZE), roadMaterial2);
         roadZ2.position.set(chunkX * CHUNK_SIZE + halfChunk, roadHeight2, chunkZ * CHUNK_SIZE);
         roadZ2.updateMatrixWorld();
         chunkGroup.add(roadZ2);
         chunkColliders.push(roadZ2);
 
-        // Опоры для второго уровня расставлены с учетом смещения
         const upperPillarOffsets = [-40, 40];
         for(let px of upperPillarOffsets) {
             for(let pz of upperPillarOffsets) {
-                // Опоры под смещенную дорогу Z (смещена по X)
                 const upperPillarZ = new THREE.Mesh(new THREE.BoxGeometry(4, roadHeight2, 4), roadMaterial2);
                 upperPillarZ.position.set((chunkX * CHUNK_SIZE) + halfChunk + px, roadHeight2 / 2, (chunkZ * CHUNK_SIZE) + pz);
                 upperPillarZ.updateMatrixWorld();
                 chunkGroup.add(upperPillarZ);
                 chunkColliders.push(upperPillarZ);
 
-                // Опоры под смещенную дорогу X (смещена по Z)
                 const upperPillarX = new THREE.Mesh(new THREE.BoxGeometry(4, roadHeight2, 4), roadMaterial2);
                 upperPillarX.position.set((chunkX * CHUNK_SIZE) + px, roadHeight2 / 2, (chunkZ * CHUNK_SIZE) + halfChunk + pz);
                 upperPillarX.updateMatrixWorld();
@@ -417,9 +393,6 @@ window.addEventListener('pointerup', (e) => {
         }
     }
 
-    // ==========================================
-    // БЕСКОНЕЧНАЯ СЕТКА
-    // ==========================================
     const gridGeometry = new THREE.PlaneGeometry(10000, 10000);
     const gridMaterial = new THREE.ShaderMaterial({
         side: THREE.DoubleSide,
@@ -458,111 +431,118 @@ window.addEventListener('pointerup', (e) => {
     infiniteGrid.position.y = 0;
     scene.add(infiniteGrid);
 
-    const keys = {};
-    let lastSpaceTime = 0;
-    let superThrust = false;
-
-    window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && !keys['Space']) { 
-            const currentTime = performance.now();
-            if (currentTime - lastSpaceTime < 250) { 
-                superThrust = true;
-            }
-            lastSpaceTime = currentTime;
-        }
-        keys[e.code] = true;
+    const keys = { w: false, s: false, a: false, d: false, q: false, e: false, shift: false, Space: false };
+    window.addEventListener('keydown', (e) => { 
+        let k = e.key.toLowerCase();
+        if (keys.hasOwnProperty(k)) keys[k] = true;
+        if (e.code === 'Space') keys['Space'] = true;
     });
-
-    window.addEventListener('keyup', (e) => {
-        keys[e.code] = false;
-        if (e.code === 'Space') {
-            superThrust = false; 
-        }
+    window.addEventListener('keyup', (e) => { 
+        let k = e.key.toLowerCase();
+        if (keys.hasOwnProperty(k)) keys[k] = false;
+        if (e.code === 'Space') keys['Space'] = false;
     });
     
     let velocity = new THREE.Vector3(0, 0, 0);
     let angularVelocityX = 0;
     let angularVelocityZ = 0;
 
-function animate() {
-    requestAnimationFrame(animate);
-
-    updateInfiniteWorld(player.position);
-
-    const playerRadius = 1.5; 
-    const nextPos = player.position.clone().add(velocity);
-
-    for (let i = 0; i < collidableObjects.length; i++) {
-        const obj = collidableObjects[i];
-        const bbox = new THREE.Box3().setFromObject(obj);
-        const clampedPoint = new THREE.Vector3();
-        bbox.clampPoint(nextPos, clampedPoint);
-        const distance = nextPos.distanceTo(clampedPoint);
+    renderer.setAnimationLoop(() => {
+        const session = renderer.xr.getSession();
         
-        if (distance < playerRadius) {
-            const pushDir = new THREE.Vector3().subVectors(nextPos, clampedPoint).normalize();
-            if (pushDir.lengthSq() === 0) pushDir.set(0, 1, 0);
-            
-            player.position.copy(clampedPoint).add(pushDir.multiplyScalar(playerRadius));
-            velocity.reflect(pushDir).multiplyScalar(0.2); 
-            break;
+        let tX = 0;
+        let tY = 0;
+        let vrThrust = 0;
+
+        if (keys.w) tX -= 1; 
+        if (keys.s) tX += 1;
+        if (keys.d) tY += 1; 
+        if (keys.a) tY -= 1; 
+        if (keys.shift || keys.space) vrThrust = FLY_SPEED * 2;
+
+        if (touchJoystick.active) {
+            angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
+            angularVelocityZ -= touchJoystick.moveX * TOUCH_TURN_SPEED;
         }
-    }
 
-    if (keys['ArrowLeft']) angularVelocityZ += TURN_SPEED;
-    if (keys['ArrowRight']) angularVelocityZ -= TURN_SPEED;
-    if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
-    if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
+        if (session && session.inputSources) {
+            for (const source of session.inputSources) {
+                const gp = source.gamepad;
+                if (!gp) continue;
+                if (Math.abs(gp.axes[1]) > 0.2) tX = gp.axes[1];
+                if (Math.abs(gp.axes[0]) > 0.2) tY = gp.axes[0];
+                if (gp.buttons[0]?.pressed) vrThrust = FLY_SPEED * 2;
+            }
+        }
 
-    if (touchJoystick.active) {
-        angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
-        angularVelocityZ -= touchJoystick.moveX * TOUCH_TURN_SPEED;
-    }
+        let tZ = -tY * 2.0;
 
-    angularVelocityX *= DAMPING_TURN;
-    angularVelocityZ *= DAMPING_TURN;
+        if (Math.abs(tX) > 0.01) angularVelocityX += tX * TURN_SPEED;
+        if (Math.abs(tY) > 0.01) angularVelocityZ -= tY * TURN_SPEED;
+        if (Math.abs(tZ) > 0.01) angularVelocityZ += tZ * TURN_SPEED * 0.5;
 
-    const deltaQuaternion = new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
-    );
-    
-    player.quaternion.multiply(deltaQuaternion);
+        if (keys['ArrowLeft']) angularVelocityZ += TURN_SPEED;
+        if (keys['ArrowRight']) angularVelocityZ -= TURN_SPEED;
+        if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
+        if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
 
-    let currentFlySpeed = FLY_SPEED;
+        angularVelocityX *= DAMPING_TURN;
+        angularVelocityZ *= DAMPING_TURN;
 
-    let thrustForce = 0;
-    if (keys['Space']) {
-        const spaceMultiplier = superThrust ? 2.5 : 1.0; 
-        thrustForce = currentFlySpeed * spaceMultiplier; 
-    } else if (currentThrottle > 0.05) {
-        thrustForce = currentFlySpeed * (currentThrottle * 2.0); 
-    }
+        const deltaQuaternion = new THREE.Quaternion().setFromEuler(
+            new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
+        );
+        
+        player.quaternion.multiply(deltaQuaternion);
 
-    let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
-    
-    if (isReverseThrust) {
-        localUp.negate();
-    }
+        let thrustForce = 0;
+        if (vrThrust > 0) {
+            thrustForce = vrThrust;
+        } else if (keys['Space']) {
+            thrustForce = FLY_SPEED;
+        } else if (currentThrottle > 0.05) {
+            thrustForce = FLY_SPEED * (currentThrottle * 2.0); 
+        }
 
-    if (thrustForce > 0) {
-        velocity.add(localUp.clone().multiplyScalar(thrustForce));
-    }
+        let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
 
-    velocity.y -= GRAVITY;
+        if (thrustForce > 0) {
+            velocity.add(localUp.clone().multiplyScalar(thrustForce));
+        }
 
-    player.position.add(velocity);
-    velocity.multiplyScalar(DAMPING_MOVE);
+        velocity.y -= GRAVITY;
 
-    if (player.position.y < 2) {
-        player.position.y = 2;
-        velocity.y = Math.max(0, velocity.y * -0.3);
-    }
+        updateInfiniteWorld(player.position);
 
-    infiniteGrid.position.set(player.position.x, 0, player.position.z);
-    renderer.render(scene, camera);
-}
+        const playerRadius = 1.5; 
+        const nextPos = player.position.clone().add(velocity);
 
-animate();
+        for (let i = 0; i < collidableObjects.length; i++) {
+            const obj = collidableObjects[i];
+            const bbox = new THREE.Box3().setFromObject(obj);
+            const clampedPoint = new THREE.Vector3();
+            bbox.clampPoint(nextPos, clampedPoint);
+            const distance = nextPos.distanceTo(clampedPoint);
+            
+            if (distance < playerRadius) {
+                const pushDir = new THREE.Vector3().subVectors(nextPos, clampedPoint).normalize();
+                if (pushDir.lengthSq() === 0) pushDir.set(0, 1, 0);
+                
+                player.position.copy(clampedPoint).add(pushDir.multiplyScalar(playerRadius));
+                velocity.reflect(pushDir).multiplyScalar(0.2); 
+                break;
+            }
+        }
+
+        player.position.add(velocity);
+        velocity.multiplyScalar(DAMPING_MOVE);
+
+        if (player.position.y < 2) {
+            player.position.y = 2;
+            velocity.y = Math.max(0, velocity.y * -0.3);
+        }[span_0](start_span)[span_0](end_span)        infiniteGrid.position.set(player.position.x, 0, player.position.z);
+        renderer.render(scene, camera);
+    });
 </script>
 </body>
-</html> 
+</html>
