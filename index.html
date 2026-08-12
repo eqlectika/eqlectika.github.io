@@ -455,9 +455,15 @@ a { color: #448aff; text-decoration: none; }
     <p>Do not transmit sensitive personal data.</p>
     <p>⚠️ Clearing the browser cache restores the interface to its default state.</p>
     <p>⚠️ The image you publish is compressed to a size of 15–50kB, so even a large amount of all images will not take up much space in your device's storage. However, you can delete individual meme(s) along with their images entirely from your device via ranking, and if you ever wish to delete all of them with stats and credits, tap this text to reveal the corresponding function.</p>
+
         <div style="margin: 25px 0;">
-            <button class="admin-btn" style="background: #ff3333; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="clearAllExceptDemo()">Clear All</button>
+            <button class="admin-btn" style="background: #de00b2; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="clearAllExceptDemo()">Clear All Except Demo and Credits</button>
         </div>
+    
+        <div style="margin: 25px 0;">
+            <button class="admin-btn" style="background: #ff3333; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="clearAllData()">Clear All</button>
+        </div>
+    
     <p style="color: #ffce18;">⭕️ This application is experimental: Purchasing impacts is treated as a voluntary donation to support the project. Because data is stored locally, please spend only what you are willing to lose or donate, and use your impacts promptly. Please read the warning notice in the purchase block before making a purchase!</p>
     <p style="color: #ffce18;">⭕️ Use the third-party application Metamask with particular care.</p>
     
@@ -1486,6 +1492,18 @@ function clearAllData() {
         peerBalances = {};
         blacklistedPeers = [];
         pendingTransfers = {};
+
+        location.reload();
+    }
+}
+
+function clearAllExceptDemo() {
+    if (confirm("Are you sure? This action will delete all your created memes and transaction history, but will KEEP your current State & Credits (Level, Impacts, Votes) and restore the system's demo memes.")) {
+        
+        localStorage.removeItem('paramount_versus_items');
+        localStorage.removeItem('paramount_peer_balances');
+        localStorage.removeItem('paramount_blacklist');
+        localStorage.removeItem('paramount_pending_transfers');
 
         location.reload();
     }
