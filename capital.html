@@ -1380,25 +1380,35 @@ const percentChartLabelsPlugin = {
   afterDatasetsDraw(chart) {
     const { ctx, chartArea: { top, bottom, right } } = chart;
     
-    // Получаем список только видимых датасетов
-    const visibleDatasets = chart.data.datasets.filter((_, idx) => chart.isDatasetVisible(idx));
+    const visibleDatasets = chart.data.datasets.map((d, idx) => ({ dataset: d, index: idx }));
     if (visibleDatasets.length === 0) return;
 
-    // Рассчитываем шаг по высоте, чтобы равномерно распределить подписи
     const totalHeight = bottom - top;
     const step = totalHeight / (visibleDatasets.length + 1);
 
-    visibleDatasets.forEach((dataset, index) => {
+    // Сохраняем координаты меток для кликов
+    chart._labelClickAreas = chart._labelClickAreas || [];
+    chart._labelClickAreas = [];
+
+    visibleDatasets.forEach(({ dataset, index: datasetIndex }, index) => {
+      const isVisible = chart.isDatasetVisible(datasetIndex);
       const pairName = dataset.label.toLowerCase();
       const fundingRate = allPairsFunding[pairName] || 0; 
       const absRate = Math.abs(fundingRate) * 100;
       const isPositive = fundingRate >= 0;
       const fundingColor = fundingRate > 0 ? '#00e676' : fundingRate < 0 ? '#ff5252' : '#ffffff';
       
-      // Порядковая позиция по Y (равномерные отступы сверху вниз)
       const yPos = top + step * (index + 1);
 
-      // Локальная инициализация блоков
+      // Зона клика для строки метки
+      chart._labelClickAreas.push({
+        datasetIndex: datasetIndex,
+        top: yPos - 8,
+        bottom: yPos + 8,
+        left: right + 5,
+        right: right + 140
+      });
+
       let filled = 0;
       let partial = 0;
 
@@ -1416,17 +1426,18 @@ const percentChartLabelsPlugin = {
       ctx.save();
       ctx.font = '10px sans-serif';
       ctx.textBaseline = 'middle';
+      ctx.globalAlpha = isVisible ? 1.0 : 0.3; // Полупрозрачность для скрытых пар
 
       // Название пары
       ctx.fillStyle = dataset.borderColor;
       ctx.fillText(dataset.label, right + 5, yPos);
       
-      // Значение funding (выравнивание по правому краю перед кубиками)
+      // Значение funding
       ctx.textAlign = 'right';
       ctx.fillStyle = fundingColor;
       ctx.fillText((fundingRate * 100).toFixed(4) + '%', right + 120, yPos);
       
-      // Отрисовка кубиков (блоков)
+      // Кубики
       const blockBaseX = right + 125;
       for (let i = 0; i < 5; i++) {
         ctx.fillStyle = '#2c3145';
@@ -1443,10 +1454,34 @@ const percentChartLabelsPlugin = {
       }
       ctx.restore();
     });
+  },
+  afterEvent(chart, args) {
+    if (args.event.type === 'click') {
+      const { x, y } = args.event;
+      if (chart._labelClickAreas) {
+        chart._labelClickAreas.forEach(area => {
+          if (x >= area.left && x <= area.right && y >= area.top && y <= area.bottom) {
+            const meta = chart.getDatasetMeta(area.datasetIndex);
+            
+            // Явно определяем текущее состояние видимости
+            const currentState = meta.hidden === true;
+            const newState = !currentState;
+            
+            meta.hidden = newState;
+            chart.update();
+            
+            // Синхронизируем со вторым графиком
+            if (window.fundingPercentChart) {
+              const targetMeta = window.fundingPercentChart.getDatasetMeta(area.datasetIndex);
+              targetMeta.hidden = newState;
+              window.fundingPercentChart.update();
+            }
+          }
+        });
+      }
+    }
   }
 };
-
-
 
 
 
@@ -1689,16 +1724,19 @@ const rsiRightScaleLabelsPlugin = {
   afterDatasetsDraw(chart) {
     const { ctx, chartArea: { top, bottom, right } } = chart;
     
-    const visibleDatasets = chart.data.datasets.filter((_, idx) => chart.isDatasetVisible(idx));
+    const visibleDatasets = chart.data.datasets.map((d, idx) => ({ dataset: d, index: idx }));
     if (visibleDatasets.length === 0) return;
 
     const totalHeight = bottom - top;
     const step = totalHeight / (visibleDatasets.length + 1);
 
-    visibleDatasets.forEach((dataset, index) => {
+    chart._labelClickAreas = chart._labelClickAreas || [];
+    chart._labelClickAreas = [];
+
+    visibleDatasets.forEach(({ dataset, index: datasetIndex }, index) => {
+      const isVisible = chart.isDatasetVisible(datasetIndex);
       const pairName = dataset.label.toLowerCase();
       
-      // Берем свечи конкретной пары из глобального хранилища
       const candles = allPairsCandles[pairName];
       let currentRsi = 50;
       if (candles && candles.length > 0) {
@@ -1709,23 +1747,59 @@ const rsiRightScaleLabelsPlugin = {
       const yPos = top + step * (index + 1);
       const rsiColor = `hsl(${120 - (currentRsi / 100) * 120}, 100%, 50%)`;
 
+      chart._labelClickAreas.push({
+        datasetIndex: datasetIndex,
+        top: yPos - 8,
+        bottom: yPos + 8,
+        left: right + 5,
+        right: right + 135
+      });
+
       ctx.save();
       ctx.font = '11px sans-serif';
       ctx.textBaseline = 'middle';
+      ctx.globalAlpha = isVisible ? 1.0 : 0.3; // Затемнение для неактивных
 
-      // 1. Название пары
+      // Название пары
       ctx.fillStyle = dataset.borderColor;
       ctx.fillText(dataset.label, right + 5, yPos);
       
-      // 2. Индивидуальное значение RSI для каждой пары
+      // Значение RSI
       ctx.textAlign = 'right';
       ctx.fillStyle = rsiColor;
       ctx.fillText(`RSI: ${currentRsi.toFixed(1)}`, right + 128, yPos);
 
       ctx.restore();
     });
+  },
+  afterEvent(chart, args) {
+    if (args.event.type === 'click') {
+      const { x, y } = args.event;
+      if (chart._labelClickAreas) {
+        chart._labelClickAreas.forEach(area => {
+          if (x >= area.left && x <= area.right && y >= area.top && y <= area.bottom) {
+            const meta = chart.getDatasetMeta(area.datasetIndex);
+            
+            // Явно определяем текущее состояние видимости
+            const currentState = meta.hidden === true;
+            const newState = !currentState;
+            
+            meta.hidden = newState;
+            chart.update();
+
+            // Синхронизируем с первым графиком
+            if (window.percentChart) {
+              const targetMeta = window.percentChart.getDatasetMeta(area.datasetIndex);
+              targetMeta.hidden = newState;
+              window.percentChart.update();
+            }
+          }
+        });
+      }
+    }
   }
 };
+
 
 
 function initFundingPercentChart() {
