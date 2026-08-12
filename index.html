@@ -480,8 +480,8 @@ a { color: #448aff; text-decoration: none; }
     <p>Broadcast Breakthrough Meme: The meme you publish will appear and be stored only in the cache of devices of users who are currently online.</p> 
     <p style="color: #afff00;">However, you can always re-inject your alone published meme directly from the ranking (for free).</p>
     <p>State and Credits: Every competitor gets 8 free impacts, 5 free votes and 3 free publication slots.</p>
-    <p>Hourly Resonance Claim: lets you earn +1 Impact per hour.</p>
-    <p>If you return in a day (or later), the long-term absence limitation will kick in, and you will receive +4 impact.</p>
+    <p>Hourly Resonance Claim: lets you earn +4 Impact per hour.</p>
+    <p>If you return in a day (or later), the long-term absence limitation will kick in, and you will receive +24 impact.</p>
     <p>You can delete any meme in the ranking.</p>
     <p>Use 'Convert Impacts to Action Limits' to spend 1 impact for +3 votes, or 3 impacts for +1 post slot.</p>
     <p>Use 'Transfer Impact(s)' to send it(s) to other network participants.</p>
@@ -723,7 +723,7 @@ function updatePlayerStatsUI() {
 updatePlayerStatsUI();
 
 const HOUR_MS = 60 * 60 * 1000;
-const DAY_MS = 4 * HOUR_MS;
+const DAY_MS = 24 * HOUR_MS;
 
 function getClaimableCount() {
     let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || '0');
@@ -737,9 +737,9 @@ function getClaimableCount() {
         return 0;
     }
     if (elapsed >= DAY_MS) {
-        return 4;
+        return 24;
     }
-    return 1;
+    return 4;
 }
 
 function updateClaimUI() {
@@ -757,9 +757,9 @@ function updateClaimUI() {
         const mins = Math.floor((timeLeft % HOUR_MS) / 60000);
         const secs = Math.floor((timeLeft % 60000) / 1000);
         const hours = Math.floor(timeLeft / HOUR_MS);
-        document.getElementById('claimTimer').innerText = `Next +1 impacts in: ${hours > 0 ? hours + 'h ' : ''}${mins}m ${secs}s`;
+        document.getElementById('claimTimer').innerText = `Next +4 impacts in: ${hours > 0 ? hours + 'h ' : ''}${mins}m ${secs}s`;
     } else {
-        document.getElementById('claimTimer').innerText = 'Claim one impact every hour or four impacts every day';
+        document.getElementById('claimTimer').innerText = 'Claim impacts +4 every hour or wait up to 24h for accumulate +24 every day';
     }
 }
 
