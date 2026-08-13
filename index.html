@@ -24,6 +24,16 @@ body {
     padding: 0; 
 }
 
+.demo-badge {
+    background: #f0f0f0;
+    color: #888;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+    border: 1px solid #ddd;
+}
+
 .edit-btn {
     width: 100%;
     background: #0097ff;
@@ -1256,9 +1266,11 @@ function updateRankingList() {
         let deletedCount = item.deleteAcks ? item.deleteAcks.length : 0;
         let deletingClass = item.isDeleting ? 'is-deleting' : '';
 
-        // Генерируем строку счетчика, если пользователь автор
+        // ИЗМЕНЕНИЕ ЗДЕСЬ: Проверяем, демо-мем ли это
         let authorStats = '';
-        if (isAuthor) {
+        if (item.isDemo) {
+            authorStats = `<p style="color: #888; margin-top: 10px; font-size: 12px; font-weight: bold;">[ DEMO MEME ]</p>`;
+        } else if (isAuthor) {
             authorStats = `<p style="color: #afff00; margin-top: 10px; font-size: 12px;">
                 Stats: Delivered to [${deliveredCount}] devices
                 ${item.isDeleting ? `<br>Deletion progress: [${deletedCount}] / [${deliveredCount}]` : ''}
@@ -1277,7 +1289,7 @@ function updateRankingList() {
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
             <p>${item.description || 'No description.'}</p>
             
-            ${isAuthor ? `<button class="admin-btn" type="button" style="margin-top: 15px; background: #ff9900; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemEverywhere('${item.id}');">Delete Everywhere</button>` : ''}
+            ${isAuthor ? `<button class="admin-admin-btn" type="button" style="margin-top: 15px; background: #ff9900; color: #fff; padding: 10px; font-size: 14px; width: 100%; border: none;" onclick="event.stopPropagation(); deleteItemEverywhere('${item.id}');">Delete Everywhere</button>` : ''}
             
             <button class="admin-btn" type="button" style="margin-top: 10px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
             
