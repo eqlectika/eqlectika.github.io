@@ -1211,31 +1211,13 @@ function deleteItemEverywhere(id) {
 
     if (!confirm('Are you sure you want to delete this meme everywhere?')) return;
 
-    let deliveredCount = item.deliveredTo ? item.deliveredTo.length : 0;
-
-    if (deliveredCount === 0) {
-        let index = items.findIndex(i => i.id === id);
-        if (index !== -1) {
-            items.splice(index, 1);
-            saveLocal();
-            updateRankingList();
-            log(`[Global Delete] Meme "${item.title}" deleted immediately (no active recipients).`);
-        }
-
-        client.publish(TOPIC, JSON.stringify({
-            type: 'DELETE_MEME',
-            memeId: item.id,
-            author: myId
-        }), { qos: 1 });
-        return;
-    }
-
     client.publish(TOPIC, JSON.stringify({
         type: 'DELETE_MEME',
         memeId: item.id,
         author: myId
     }), { qos: 1 });
 
+    let deliveredCount = item.deliveredTo ? item.deliveredTo.length : 0;
     log(`[Global Delete] Initiated for "${item.title}". Waiting for ${deliveredCount} peers...`);
 }
 
