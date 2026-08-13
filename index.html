@@ -1236,10 +1236,34 @@ function deleteItemEverywhere(id) {
     if (deliveredCount === 0) {
         let index = items.findIndex(i => i.id === id);
         if (index !== -1) {
+            const activeLeftId = currentPair.length > 0 ? items[currentPair[0]]?.id : null;
+            const activeRightId = currentPair.length > 0 ? items[currentPair[1]]?.id : null;
+
             items.splice(index, 1);
             saveLocal();
             updateRankingList();
             log(`[Global Delete] Meme "${item.title}" deleted locally (no peers to wait for).`);
+
+            if (items.length < 2) {
+                currentPair = [];
+                nextPair();
+                return;
+            }
+
+            const wasActivePairAffected = (id === activeLeftId || id === activeRightId);
+
+            if (wasActivePairAffected || currentPair.length === 0) {
+                nextPair();
+            } else {
+                const newLeftIndex = items.findIndex(i => i.id === activeLeftId);
+                const newRightIndex = items.findIndex(i => i.id === activeRightId);
+
+                if (newLeftIndex !== -1 && newRightIndex !== -1) {
+                    currentPair = [newLeftIndex, newRightIndex];
+                } else {
+                    nextPair();
+                }
+            }
         }
         return;
     }
@@ -1268,7 +1292,7 @@ function deleteItemLocal(id) {
         items.splice(index, 1);
         saveLocal();
 
-        //  playerState.postsLeft -= 1;
+        // playerState.postsLeft -= 1;
         // playerState.level = Math.floor(playerState.impacts / 20) + 1;
         // updatePlayerStatsUI();
 
