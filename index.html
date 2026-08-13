@@ -897,13 +897,16 @@ client.on('message', (topic, payload) => {
             }
         } 
 
-        else if (packet.type === 'RECV_ACK') {
+else if (packet.type === 'RECV_ACK') {
     let item = items.find(i => i.id === packet.memeId && i.sender === myId);
     if (item && packet.receiver !== myId) {
         if (!item.deliveredTo) item.deliveredTo = [];
         if (!item.deliveredTo.includes(packet.receiver)) {
             item.deliveredTo.push(packet.receiver);
             saveLocal();
+            
+            log(`[Delivery] Meme "${item.title}" confirmed by peer: ${packet.receiver}`);
+            
             updateRankingList();
         }
     }
@@ -1310,8 +1313,35 @@ function updateRankingList() {
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
             <p>${item.description || 'No description.'}</p>
             
-            ${isAuthor ? `<button class="admin-btn" type="button" style="margin-top: 15px; background: #ff9900; color: #fff; padding: 10px; font-size: 14px; width: 100%; border: none;" onclick="event.stopPropagation(); deleteItemEverywhere('${item.id}');">Delete Everywhere</button>` : ''}
-            
+${isAuthor ? (() => {
+    let deliveredCount = item.deliveredTo ? item.deliveredTo.length : 0;
+    let deletedCount = item.deleteAcks ? item.deleteAcks.length : 0;
+    let pendingPeers = deliveredCount - deletedCount;
+
+    if (deliveredCount === 0) {
+        return `
+            <button class="admin-btn delete-everywhere-btn" type="button" 
+                style="margin-top: 15px; background: #444; color: #fff; padding: 10px; font-size: 14px; width: 100%; border: none; cursor: not-allowed; opacity: 0.6;" 
+                disabled 
+                onclick="event.stopPropagation(); alert('There are no active online users/peers to whom this meme has been delivered. Removal is only possible locally.');">
+                No Online Peers to Delete From
+            </button>`;
+    } else if (pendingPeers > 0) {
+        return `
+            <button class="admin-btn delete-everywhere-btn" type="button" 
+                style="margin-top: 15px; background: #ff9900; color: #fff; padding: 10px; font-size: 14px; width: 100%; border: none;" 
+                onclick="event.stopPropagation(); deleteItemEverywhere('${item.id}');">
+                Retry Delete Everywhere (${pendingPeers} pending)
+            </button>`;
+    } else {
+        return `
+            <button class="admin-btn delete-everywhere-btn" type="button" 
+                style="margin-top: 15px; background: #222; color: #666; padding: 10px; font-size: 14px; width: 100%; border: 1px solid #444; cursor: not-allowed;" 
+                disabled>
+                Deleted Everywhere
+            </button>`;
+    }
+})() : ''}          
             <button class="admin-btn" type="button" style="margin-top: 10px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
             
             ${authorStats}
