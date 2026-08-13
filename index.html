@@ -1313,35 +1313,21 @@ function updateRankingList() {
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
             <p>${item.description || 'No description.'}</p>
             
-${isAuthor ? (() => {
-    let deliveredCount = item.deliveredTo ? item.deliveredTo.length : 0;
-    let deletedCount = item.deleteAcks ? item.deleteAcks.length : 0;
-    let pendingPeers = deliveredCount - deletedCount;
+${isAuthor ? `
 
-    if (deliveredCount === 0) {
-        return `
-            <button class="admin-btn delete-everywhere-btn" type="button" 
-                style="margin-top: 15px; background: #444; color: #fff; padding: 10px; font-size: 14px; width: 100%; border: none; cursor: not-allowed; opacity: 0.6;" 
-                disabled 
-                onclick="event.stopPropagation(); alert('There are no active online users/peers to whom this meme has been delivered. Removal is only possible locally.');">
-                No Online Peers to Delete From
-            </button>`;
-    } else if (pendingPeers > 0) {
-        return `
-            <button class="admin-btn delete-everywhere-btn" type="button" 
-                style="margin-top: 15px; background: #ff9900; color: #fff; padding: 10px; font-size: 14px; width: 100%; border: none;" 
-                onclick="event.stopPropagation(); deleteItemEverywhere('${item.id}');">
-                Retry Delete Everywhere (${pendingPeers} pending)
-            </button>`;
-    } else {
-        return `
-            <button class="admin-btn delete-everywhere-btn" type="button" 
-                style="margin-top: 15px; background: #222; color: #666; padding: 10px; font-size: 14px; width: 100%; border: 1px solid #444; cursor: not-allowed;" 
-                disabled>
-                Deleted Everywhere
-            </button>`;
-    }
-})() : ''}          
+    <button class="admin-btn delete-everywhere-btn" type="button" 
+
+        style="margin-top: 15px; background: ${deliveredCount > 0 ? '#ff9900' : '#444'}; color: #fff; padding: 10px; font-size: 14px; width: 100%; border: none; ${deliveredCount === 0 ? 'cursor: not-allowed; opacity: 0.6;' : ''}" 
+
+        ${deliveredCount === 0 ? 'disabled' : ''} 
+
+        onclick="event.stopPropagation(); ${deliveredCount > 0 ? `deleteItemEverywhere('${item.id}')` : `alert('There are no active online users/peers to whom this meme has been delivered. Removal is only possible locally.');`}">
+
+        ${deliveredCount > 0 ? 'Delete Everywhere' : 'No Online Peers to Delete From'}
+
+    </button>
+
+` : ''}            
             <button class="admin-btn" type="button" style="margin-top: 10px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
             
             ${authorStats}
