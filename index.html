@@ -1256,6 +1256,15 @@ function updateRankingList() {
         let deletedCount = item.deleteAcks ? item.deleteAcks.length : 0;
         let deletingClass = item.isDeleting ? 'is-deleting' : '';
 
+        // Генерируем строку счетчика, если пользователь автор
+        let authorStats = '';
+        if (isAuthor) {
+            authorStats = `<p style="color: #afff00; margin-top: 10px; font-size: 12px;">
+                Stats: Delivered to [${deliveredCount}] devices
+                ${item.isDeleting ? `<br>Deletion progress: [${deletedCount}] / [${deliveredCount}]` : ''}
+            </p>`;
+        }
+
         html += `<div class="ranking-item ${deletingClass}" onclick="toggleDetails('${item.id}')">
             <img src="${item.img}" class="ranking-img">
             <div class="ranking-info">
@@ -1272,7 +1281,7 @@ function updateRankingList() {
             
             <button class="admin-btn" type="button" style="margin-top: 10px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
             
-            ${item.isDeleting ? `<p style="color: #ff9900; margin-top: 10px; font-size: 12px;">Deleted on [${deletedCount}] / [${deliveredCount}] devices</p>` : ''}
+            ${authorStats}
         </div>`;
     });
     $('#ranking-list').html(html || '<div style="text-align: center; padding:10px; color:#999;">Matrix is empty.<br>Inject first memes below!</div>');
