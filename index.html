@@ -900,7 +900,7 @@ client.on('message', (topic, payload) => {
 
         else if (packet.type === 'RECV_ACK') {
     let item = items.find(i => i.id === packet.memeId && i.sender === myId);
-    if (item) {
+    if (item && packet.receiver !== myId) {
         if (!item.deliveredTo) item.deliveredTo = [];
         if (!item.deliveredTo.includes(packet.receiver)) {
             item.deliveredTo.push(packet.receiver);
@@ -930,18 +930,22 @@ else if (packet.type === 'DELETE_ACK') {
     let item = items.find(i => i.id === packet.memeId && i.sender === myId);
     if (item) {
         if (!item.deleteAcks) item.deleteAcks = [];
+        
         if (!item.deleteAcks.includes(packet.receiver)) {
             item.deleteAcks.push(packet.receiver);
             saveLocal();
 
-            let Y = item.deliveredTo.length;
+            let Y = item.deliveredTo ? item.deliveredTo.length : 0;
             let X = item.deleteAcks.length;
+            
+            log(`[Global Delete] Progress for "${item.title}": [${X}] / [${Y}] acknowledgments received.`);
+
             if (Y > 0 && X >= Y) {
                 let index = items.findIndex(i => i.id === packet.memeId);
                 if (index !== -1) {
                     items.splice(index, 1);
                     saveLocal();
-                    log(`[Global Delete] Meme "${item.title}" fully erased from all ${Y} devices.`);
+                    log(`[Global Delete] Meme "${item.title}" fully erased after receiving all ${Y} acknowledgments.`);
                 }
             }
             updateRankingList();
@@ -1209,6 +1213,8 @@ function deleteItemEverywhere(id) {
 
     item.isDeleting = true;
     if (!item.deliveredTo) item.deliveredTo = [];
+    if (!item.deleteAcks) item.deleteAcks = [];
+    
     saveLocal();
     updateRankingList();
 
@@ -1218,7 +1224,7 @@ function deleteItemEverywhere(id) {
         author: myId
     }), { qos: 1 });
 
-    log(`[Global Delete] Initiated for meme: "${item.title}"`);
+    log(`[Global Delete] Initiated for meme: "${item.title}". Waiting for peer acks...`);
 }
 
 function deleteItemLocal(id) {
