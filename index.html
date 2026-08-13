@@ -937,6 +937,13 @@ else if (packet.type === 'DELETE_MEME') {
         saveLocal();
         updateRankingList();
 
+        const activeLeftId = currentPair.length > 0 ? items[currentPair[0]]?.id : null;
+        const activeRightId = currentPair.length > 0 ? items[currentPair[1]]?.id : null;
+        if (packet.memeId === activeLeftId || packet.memeId === activeRightId) {
+            currentPair = [];
+            nextPair();
+        }
+
         client.publish(TOPIC, JSON.stringify({
             type: 'DELETE_ACK',
             memeId: packet.memeId,
@@ -966,6 +973,13 @@ else if (packet.type === 'DELETE_ACK') {
                     items.splice(index, 1);
                     saveLocal();
                     log(`[Global Delete] Meme "${item.title}" fully erased after receiving all ${Y} acknowledgments.`);
+                    
+                    const activeLeftId = currentPair.length > 0 ? items[currentPair[0]]?.id : null;
+                    const activeRightId = currentPair.length > 0 ? items[currentPair[1]]?.id : null;
+                    if (packet.memeId === activeLeftId || packet.memeId === activeRightId) {
+                        currentPair = [];
+                        nextPair();
+                    }
                 }
             }
             updateRankingList();
