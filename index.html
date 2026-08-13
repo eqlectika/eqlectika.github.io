@@ -698,7 +698,9 @@ if (loreToggle && loreText) {
         loreToggle.classList.toggle('open');
     });
 }
-
+    
+let onlinePeers = new Set();
+    
 let myId = localStorage.getItem('paramount_custom_my_id');
 if (!myId) {
     myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
@@ -867,6 +869,7 @@ client.on('connect', () => {
     document.getElementById('netStatus').innerHTML = `Status: Connected to the transport layer as ${myId}`;
     log("Waiting for peer(s)...");
     client.subscribe(TOPIC, { qos: 1 });
+    client.subscribe(`peerbattle/online/${myId}`);
 });
 
 client.on('error', (err) => {
@@ -911,6 +914,19 @@ else if (packet.type === 'RECV_ACK') {
         }
     }
 }
+
+else if (packet.type === 'WHO_IS_ONLINE') {
+            if (packet.sender === myId) return; 
+            
+            client.publish(`peerbattle/online/${packet.sender}`, JSON.stringify({
+                type: 'I_AM_ONLINE',
+                sender: myId
+            }), { qos: 1 });
+        }
+
+        else if (packet.type === 'I_AM_ONLINE') {
+            onlinePeers.add(packet.sender);
+        }
 
 else if (packet.type === 'DELETE_MEME') {
     if (packet.author === myId) return;
