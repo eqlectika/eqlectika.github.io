@@ -1122,7 +1122,7 @@ function editItem(id) {
 }
 
 function deleteItemLocal(id) {
-    if (!confirm('Are you sure you want to delete this meme from your device? Penalty: -1 Post.')) return;
+    if (!confirm('Are you sure you want to delete this meme from your device?')) return;
     
     let index = items.findIndex(i => i.id === id);
     if (index !== -1) {
@@ -1132,9 +1132,9 @@ function deleteItemLocal(id) {
         items.splice(index, 1);
         saveLocal();
 
-        playerState.postsLeft -= 1;
-        playerState.level = Math.floor(playerState.impacts / 20) + 1;
-        updatePlayerStatsUI();
+        //  playerState.postsLeft -= 1;
+        // playerState.level = Math.floor(playerState.impacts / 20) + 1;
+        // updatePlayerStatsUI();
 
         log(`You removed meme locally: ${id}. Penalty applied: -1 Post.`);
         updateRankingList();
@@ -1177,7 +1177,7 @@ function updateRankingList() {
             <button class="edit-btn" onclick="event.stopPropagation(); editItem('${item.id}')">Edit and/or Re-inject Meme (free)</button>
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
             <p>${item.description || 'No description.'}</p>
-            <button class="admin-btn" type="button" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally (-1 Post)</button>
+            <button class="admin-btn" type="button" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
         </div>`;
     });
     $('#ranking-list').html(html || '<div style="text-align: center; padding:10px; color:#999;">Matrix is empty.<br>Inject first memes below!</div>');
