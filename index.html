@@ -937,9 +937,7 @@ else if (packet.type === 'DELETE_MEME') {
         saveLocal();
         updateRankingList();
 
-        const activeLeftId = currentPair.length > 0 ? items[currentPair[0]]?.id : null;
-        const activeRightId = currentPair.length > 0 ? items[currentPair[1]]?.id : null;
-        if (packet.memeId === activeLeftId || packet.memeId === activeRightId) {
+        if (currentPair.some(idx => items[idx]?.id === packet.memeId)) {
             currentPair = [];
             nextPair();
         }
@@ -974,9 +972,8 @@ else if (packet.type === 'DELETE_ACK') {
                     saveLocal();
                     log(`[Global Delete] Meme "${item.title}" fully erased after receiving all ${Y} acknowledgments.`);
                     
-                    const activeLeftId = currentPair.length > 0 ? items[currentPair[0]]?.id : null;
-                    const activeRightId = currentPair.length > 0 ? items[currentPair[1]]?.id : null;
-                    if (packet.memeId === activeLeftId || packet.memeId === activeRightId) {
+                    // УНИВЕРСАЛЬНЫЙ СБРОС ПАРЫ ЗДЕСЬ ТОЖЕ
+                    if (currentPair.some(idx => items[idx]?.id === packet.memeId)) {
                         currentPair = [];
                         nextPair();
                     }
