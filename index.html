@@ -860,6 +860,31 @@ client.on('error', (err) => {
 client.on('message', (topic, payload) => {
     try {
         let packet = JSON.parse(payload.toString());
+
+        if (packet.type === 'TRANSFER_IMPACT' && packet.target === myId) {
+            log(`[Network] Received ${packet.amount} impacts from ${packet.sender}`);
+            
+            playerState.impacts += parseInt(packet.amount);
+            playerState.level = Math.floor(playerState.impacts / 20) + 1;
+            updatePlayerStatsUI();
+            saveLocal();
+
+            client.publish(TOPIC, JSON.stringify({
+                type: 'TRANSFER_ACK',
+                txId: packet.txId,
+                sender: myId 
+            }), { qos: 1 });
+            
+            alert(`Received ${packet.amount} impacts from ${packet.sender}`);
+        }
+        
+        else if (packet.type === 'TRANSFER_ACK') {
+            if (pendingTransfers[packet.txId]) {
+                delete pendingTransfers[packet.txId];
+                savePending();
+                log(`[Network] Transfer ${packet.txId} confirmed by receiver.`);
+            }
+        }
         
         if (packet.type === 'ADD_ITEM') {
             if (!items.some(i => i.id === packet.item.id)) {
