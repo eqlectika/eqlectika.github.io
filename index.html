@@ -1231,11 +1231,15 @@ function deleteItemEverywhere(id) {
 
     if (!confirm('Are you sure you want to delete this meme everywhere?')) return;
 
-    let deliveredCount = item.deliveredTo ? item.deliveredTo.length : 0;
-
     const activeLeftId = currentPair.length > 0 ? items[currentPair[0]]?.id : null;
     const activeRightId = currentPair.length > 0 ? items[currentPair[1]]?.id : null;
-    const wasActivePairAffected = (id === activeLeftId || id === activeRightId);
+    const isCurrentlyInPair = (id === activeLeftId || id === activeRightId);
+
+    if (isCurrentlyInPair) {
+        currentPair = []; 
+    }
+
+    let deliveredCount = item.deliveredTo ? item.deliveredTo.length : 0;
 
     if (deliveredCount === 0) {
         let index = items.findIndex(i => i.id === id);
@@ -1243,26 +1247,8 @@ function deleteItemEverywhere(id) {
             items.splice(index, 1);
             saveLocal();
             updateRankingList();
-            log(`[Global Delete] Meme "${item.title}" deleted locally (no peers to wait for).`);
-
-            if (items.length < 2) {
-                currentPair = [];
-                nextPair();
-                return;
-            }
-
-            if (wasActivePairAffected || currentPair.length === 0) {
-                nextPair();
-            } else {
-                const newLeftIndex = items.findIndex(i => i.id === activeLeftId);
-                const newRightIndex = items.findIndex(i => i.id === activeRightId);
-
-                if (newLeftIndex !== -1 && newRightIndex !== -1) {
-                    currentPair = [newLeftIndex, newRightIndex];
-                } else {
-                    nextPair();
-                }
-            }
+            
+            nextPair(); 
         }
         return;
     }
@@ -1277,9 +1263,7 @@ function deleteItemEverywhere(id) {
         author: myId
     }), { qos: 1 });
 
-    log(`[Global Delete] Initiated for "${item.title}". Waiting for ${deliveredCount} peers...`);
-
-    if (wasActivePairAffected || currentPair.length === 0) {
+    if (isCurrentlyInPair) {
         nextPair();
     }
 }
