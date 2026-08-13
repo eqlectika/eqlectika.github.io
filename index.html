@@ -937,6 +937,8 @@ else if (packet.type === 'DELETE_MEME') {
         saveLocal();
         updateRankingList();
 
+        // УНИВЕРСАЛЬНЫЙ СБРОС ПАРЫ: 
+        // Если удаленный memeId вообще присутствует в текущей паре — сбрасываем её
         if (currentPair.some(idx => items[idx]?.id === packet.memeId)) {
             currentPair = [];
             nextPair();
@@ -1016,57 +1018,7 @@ else if (packet.type === 'DELETE_ACK') {
                 nextPair();
             }
         }
-        else if (packet.type === 'TRANSFER_IMPACT') {
 
-        if (blacklistedPeers.includes(packet.sender)) {
-        log(`[Security] Ignored transaction from blacklisted peer: ${packet.sender}`);
-        return;
-    }
-
-    let senderBalance = peerBalances[packet.sender] ?? 8; 
-    if (senderBalance < packet.amount) {
-        log(`[CONFLICT] Double-spend or fraud detected from ${packet.sender}! Balance: ${senderBalance}, requested: ${packet.amount}`);
-        
-        client.publish(TOPIC, JSON.stringify({
-            type: 'CONFLICT_DETECT',
-            sender: myId,
-            violator: packet.sender,
-            txId: packet.txId
-        }), { qos: 1 });
-        return;
-    }
-
-    peerBalances[packet.sender] = senderBalance - packet.amount;
-    
-    if (packet.target === myId) {
-        playerState.impacts += packet.amount;
-        playerState.level = Math.floor(playerState.impacts / 20) + 1;
-        updatePlayerStatsUI();
-        
-        client.publish(TOPIC, JSON.stringify({
-            type: 'TRANSFER_ACK',
-            sender: myId,
-            target: packet.sender,
-            txId: packet.txId
-        }), { qos: 1 });
-        
-        alert(`Attention! Received ${packet.amount} impacts from ${packet.sender}`);
-    } else {
-        let targetBalance = peerBalances[packet.target] ?? 8;
-        peerBalances[packet.target] = targetBalance + packet.amount;
-    }
-    
-    localStorage.setItem('paramount_peer_balances', JSON.stringify(peerBalances));
-    saveLocal();
-}
-
-else if (packet.type === 'CONFLICT_DETECT') {
-    if (!blacklistedPeers.includes(packet.violator)) {
-        blacklistedPeers.push(packet.violator);
-        localStorage.setItem('paramount_blacklist', JSON.stringify(blacklistedPeers));
-        log(`[SECURITY ALERT] Peer ${packet.violator} added to blacklist due to conflict reported by ${packet.sender}`);
-    }
-}
     } catch(e) {
         log("Packet processing error: " + e.message);
     }
