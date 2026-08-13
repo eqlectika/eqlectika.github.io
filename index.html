@@ -126,7 +126,11 @@ body {
     font-weight: bold;
 }
 
-
+.is-deleting {
+    opacity: 0.5;
+    filter: grayscale(50%);
+    pointer-events: none;
+}
 
 #versus { width: 100%; margin: 2em 0; }
 .versus-wrapper { display: flex; gap: 10px; justify-content: center; }
@@ -869,7 +873,66 @@ client.on('message', (topic, payload) => {
                 updateRankingList();
                 if (items.length >= 2 && currentPair.length === 0) nextPair();
             }
+            if (packet.item.sender !== myId) {
+                client.publish(TOPIC, JSON.stringify({
+                    type: 'RECV_ACK',
+                    memeId: packet.item.id,
+                    receiver: myId,
+                    author: packet.item.sender
+                }), { qos: 1 });
+            }
         } 
+
+        else if (packet.type === 'RECV_ACK') {
+    let item = items.find(i => i.id === packet.memeId && i.sender === myId);
+    if (item) {
+        if (!item.deliveredTo) item.deliveredTo = [];
+        if (!item.deliveredTo.includes(packet.receiver)) {
+            item.deliveredTo.push(packet.receiver);
+            saveLocal();
+            updateRankingList();
+        }
+    }
+}
+
+else if (packet.type === 'DELETE_MEME') {
+    let index = items.findIndex(i => i.id === packet.memeId);
+    if (index !== -1) {
+        items.splice(index, 1);
+        saveLocal();
+        updateRankingList();
+
+        client.publish(TOPIC, JSON.stringify({
+            type: 'DELETE_ACK',
+            memeId: packet.memeId,
+            receiver: myId,
+            author: packet.author
+        }), { qos: 1 });
+    }
+}
+
+else if (packet.type === 'DELETE_ACK') {
+    let item = items.find(i => i.id === packet.memeId && i.sender === myId);
+    if (item) {
+        if (!item.deleteAcks) item.deleteAcks = [];
+        if (!item.deleteAcks.includes(packet.receiver)) {
+            item.deleteAcks.push(packet.receiver);
+            saveLocal();
+
+            let Y = item.deliveredTo.length;
+            let X = item.deleteAcks.length;
+            if (Y > 0 && X >= Y) {
+                let index = items.findIndex(i => i.id === packet.memeId);
+                if (index !== -1) {
+                    items.splice(index, 1);
+                    saveLocal();
+                    log(`[Global Delete] Meme "${item.title}" fully erased from all ${Y} devices.`);
+                }
+            }
+            updateRankingList();
+        }
+    }
+}
 
         else if (packet.type === 'UPDATE_ITEM') {
             let existingItem = items.find(i => i.id === packet.item.id);
@@ -903,9 +966,9 @@ client.on('message', (topic, payload) => {
                 nextPair();
             }
         }
-else if (packet.type === 'TRANSFER_IMPACT') {
+        else if (packet.type === 'TRANSFER_IMPACT') {
 
-    if (blacklistedPeers.includes(packet.sender)) {
+        if (blacklistedPeers.includes(packet.sender)) {
         log(`[Security] Ignored transaction from blacklisted peer: ${packet.sender}`);
         return;
     }
@@ -1079,7 +1142,9 @@ async function addItem() {
             description: desc, 
             externalUrl: url, 
             img: imgData, 
-            rating: 1500 
+            rating: 1500,
+            deliveredTo: [], 
+            deleteAcks: []
         };
 
         items.push(newItem);
@@ -1119,6 +1184,26 @@ function editItem(id) {
     editingId = id;
     $('.inject-btn-bg').text('Save Changes');
     $('.main-panel')[0].scrollIntoView({ behavior: 'smooth' });
+}
+
+function deleteItemEverywhere(id) {
+    let item = items.find(i => i.id === id);
+    if (!item) return;
+    
+    if (!confirm('Are you sure you want to delete this meme everywhere?')) return;
+
+    item.isDeleting = true;
+    if (!item.deliveredTo) item.deliveredTo = [];
+    saveLocal();
+    updateRankingList();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'DELETE_MEME',
+        memeId: item.id,
+        author: myId
+    }), { qos: 1 });
+
+    log(`[Global Delete] Initiated for meme: "${item.title}"`);
 }
 
 function deleteItemLocal(id) {
@@ -1166,7 +1251,12 @@ function updateRankingList() {
     const sorted = [...items].sort((a, b) => b.rating - a.rating);
     let html = '';
     sorted.forEach((item, index) => {
-        html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
+        let isAuthor = (item.sender === myId);
+        let deliveredCount = item.deliveredTo ? item.deliveredTo.length : 0;
+        let deletedCount = item.deleteAcks ? item.deleteAcks.length : 0;
+        let deletingClass = item.isDeleting ? 'is-deleting' : '';
+
+        html += `<div class="ranking-item ${deletingClass}" onclick="toggleDetails('${item.id}')">
             <img src="${item.img}" class="ranking-img">
             <div class="ranking-info">
                 <p class="title" style="text-align: center; font-size: 16px; margin: 0;">${index + 1}. ${item.title}</p>
@@ -1177,7 +1267,12 @@ function updateRankingList() {
             <button class="edit-btn" onclick="event.stopPropagation(); editItem('${item.id}')">Edit and/or Re-inject Meme (free)</button>
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
             <p>${item.description || 'No description.'}</p>
-            <button class="admin-btn" type="button" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
+            
+            ${isAuthor ? `<button class="admin-btn" type="button" style="margin-top: 15px; background: #ff9900; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemEverywhere('${item.id}');">Delete Everywhere</button>` : ''}
+            
+            <button class="admin-btn" type="button" style="margin-top: 10px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
+            
+            ${item.isDeleting ? `<p style="color: #ff9900; margin-top: 10px; font-size: 12px;">Deleted on [${deletedCount}] / [${deliveredCount}] devices</p>` : ''}
         </div>`;
     });
     $('#ranking-list').html(html || '<div style="text-align: center; padding:10px; color:#999;">Matrix is empty.<br>Inject first memes below!</div>');
