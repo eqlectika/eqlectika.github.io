@@ -10,7 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
   <style>
-      body {
+body {
       overscroll-behavior-y: auto;
       overflow-y: auto; 
       background: #000000; 
@@ -29,26 +29,26 @@
     }
 
     #log, #log-parrots, #log-cloud {
-    /* Скрыть для Webkit (Chrome, Safari, Edge) */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
 #log::-webkit-scrollbar,
 #log-parrots::-webkit-scrollbar,
 #log-cloud::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
+    display: none;
 }
-    /* Оставить возможность прокрутки, но сделать полосу невидимой */
+
 .scroll-container {
     overflow-y: scroll;
-    scrollbar-width: none; /* Firefox */
+    scrollbar-width: none;
 }
 
 .scroll-container::-webkit-scrollbar {
     width: 0;
     height: 0;
 }
+
     #terminal { 
       width: 100%; 
       max-width: 100%; 
@@ -62,12 +62,12 @@
 #tf:hover {
   background-color: #e68a00; 
 }
+
 a {
   text-decoration: none;
   color: #2962ff;
 }
     
-    /* Специфический контейнер для процентного графика */
     .percent-chart-container {
       position: relative;
       width: 100%;
@@ -80,7 +80,18 @@ a {
     -moz-appearance: none;
     appearance: none;
     }
-    select, button { background: #2962ff; color: white; border: none; padding: 6px 10px; margin: 0 5px 10px 0;; border-radius: 4px; font-size: 14px; cursor: pointer; }
+
+    select, button { 
+      background: #2962ff; 
+      color: white; 
+      border: none; 
+      padding: 6px 10px; 
+      margin: 0 5px 10px 0; 
+      border-radius: 4px; 
+      font-size: 14px; 
+      cursor: pointer; 
+    }
+
     button:hover { background: #1e4bd8; }
     #status { margin: 5px 0; font-size: 14px; font-family: sans-serif; }
     
@@ -95,26 +106,28 @@ a {
     }
     canvas#moireChart:active, canvas#percentChart:active { cursor: grabbing; }
 
-/* Основной контейнер с двумя колонками */
+/* Принудительное выстраивание блоков друг под другом на любых экранах (мобильная логика для десктопа) */
 .main-layout {
     display: flex;
-    flex-direction: row;
-
+    flex-direction: column !important;
     width: 100%;
     align-items: stretch;
-    min-height: 50vh;
-    max-height: 120vh;
-    height: auto;
-    overflow: hidden; /* Важно! Не даем содержимому выходить за пределы */
+    height: auto !important;
+    max-height: none !important;
+    min-height: auto !important;
+    overflow: visible !important;
 }
 
-/* Левая колонка - теперь flex-контейнер */
+/* Левая колонка */
 .column-left {
-    flex: 2;
+    width: 100% !important;
     display: flex;
     flex-direction: column;
-    gap: 10px; /* Отступ между элементами */
-    min-height: 0;
+    gap: 10px;
+    min-height: 300px;
+    height: auto;
+    flex-shrink: 0;
+    overflow: hidden;
 }
 
 /* Индикатор Akai */
@@ -123,35 +136,38 @@ a {
     width: 100%;
     height: 8px;
     background: #2c3145;
-    flex-shrink: 0; /* Не сжимается */
-    margin: 0; /* Убираем старые отступы */
+    flex-shrink: 0;
+    margin: 0;
 }
 
-/* Правая колонка */
+/* Правая колонка с логами под графиками */
 .column-right {
-    flex: 0.7;
+    width: 100% !important;
     display: flex;
     flex-direction: column;
     min-height: 0;
-    max-height: 100%;
+    height: 80vh;
+    flex-shrink: 0;
+    overflow: hidden;
+    margin-top: 15px;
 }
 
-/* Обертка логов заполняет всю доступную высоту колонки */
+/* Обертка логов */
 .logs-wrapper {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
     gap: 40px;
-    min-height: 0; /* Критично для flex-дочерних элементов в Safari/iOS */
+    min-height: 0;
     height: 100%;
     overflow: hidden;
 }
 
-/* Каждый лог занимает ровно 1/3 доступного пространства и не ломает верстку */
+/* Каждый лог */
 #log,
 #log-parrots,
 #log-cloud {
-    flex: 1 1 0px;
+    flex: 1;
     height: auto; 
     min-height: 0;
     overflow-y: auto;
@@ -166,72 +182,8 @@ a {
     -ms-overflow-style: none;
 }
 
-/* Исправленные стили для выравнивания по правому краю */
+/* Выравнивание текста в логах */
 #log,
-#log div,
-#log-parrots,
-#log-parrots div,
-#log-cloud,
-#log-cloud div {
-    text-align: right !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-}
-
-/* Адаптив для мобильных устройств */
-@media (max-width: 768px) {
-    .main-layout {
-        flex-direction: column;
-        height: auto !important;
-        max-height: none !important;
-        min-height: auto !important;
-        overflow: visible !important;
-    }
-    
-    .column-left {
-        width: 100%;
-        height: auto;
-        min-height: 300px;
-        flex-shrink: 0;
-        gap: 10px;
-        overflow: hidden;
-    }
-    
-    .percent-chart-container {
-        flex-shrink: 0;
-        height: 40vh;
-    }
-    
-    #akai-indicator {
-        flex-shrink: 0;
-        height: 8px;
-        margin: 0;
-    }
-    
-    .column-left-spacer {
-        flex-shrink: 0;
-        height: 20px;
-    }
-    
-    .column-right {
-        width: 100%;
-        height: 80vh;
-        flex-shrink: 0;
-        overflow: hidden;
-    }
-    
-    .logs-wrapper {
-        gap: 40px;
-        height: 100%;
-    }
-    
-    #log,
-    #log-parrots,
-    #log-cloud {
-        flex: 1;
-    }
-    
-    #log,
 #log div,
 #log-parrots,
 #log-parrots div,
@@ -241,8 +193,6 @@ a {
     width: 100% !important;
     box-sizing: border-box !important;
 }
-}
-    
 
     .BUY { color: #00e676; }
     .SELL { color: #ff5252; }
@@ -268,18 +218,17 @@ a {
 }
 
 #header-link {
-            z-index: 1000;
-            display: flex;
-            align-items: left;
-            padding: 6px;
-
+    z-index: 1000;
+    display: flex;
+    align-items: left;
+    padding: 6px;
 }
+
 #header-logo {
-            max-height: 48px;
-            display: block;
+    max-height: 48px;
+    display: block;
 }
 
-/* Стили для нового глобального индикатора над заголовком */
 #global-fng-container {
   width: calc(100%);
   max-width: 100%;
@@ -287,27 +236,26 @@ a {
   font-family: sans-serif;
   font-size: 12px; 
 }
+
 .fng-text-wrapper {
   display: flex;
   justify-content: flex-start;
-  gap: 8px; /* регулирует расстояние */
+  gap: 8px;
 }
+
 .fng-bar-bg {
   width: 100%;
   height: 6px;
   background: #2c3145;
- ;
   overflow: hidden;
   position: relative;
 }
+
 #global-fng-fill {
   height: 100%;
   width: 50%; 
   background: #2962ff;
   transition: width 0.1s linear, background-color 0.1s linear;
-}
-.fng-bar-bg {
-    position: relative;
 }
 
 .fng-center {
@@ -322,7 +270,7 @@ a {
     pointer-events: none;
 }
 
-    .akai-center {
+.akai-center {
     position: absolute;
     left: 50%;
     top: 0;
@@ -334,7 +282,6 @@ a {
     pointer-events: none;
 }
 
-/* Стили для индикатора funding rate */
 #funding-indicator {
   display: flex;
   align-items: center;
@@ -371,7 +318,6 @@ a {
   transition: height 0.3s ease;
 }
 
-/* Полупрозрачные блоки (дробные числа) */
 .funding-block.partial {
   background: rgba(255, 167, 38, 0.5);
 }
@@ -380,12 +326,10 @@ a {
   background: rgba(255, 167, 38);
 }
 
-/* Непрозрачные блоки (целые числа) */
 .funding-block.filled {
   background: #ffa726;
 }
 
-/* Цвета в зависимости от знака */
 .funding-block.positive {
   background: rgba(0, 230, 118, 0.5);
 }
@@ -412,16 +356,14 @@ a {
 
 #funding-value {
   color: #ffa726;
-
   min-width: 70px;
   font-size: 13px;
 }
 
-/* Основной контейнер для большого графика цены */
 .chart-container {
     position: relative;
     width: 100%;
-    height: 50vh; /* Возвращаем нормальную высоту основному графику */
+    height: 50vh;
     margin-bottom: 15px;
 }
 
@@ -430,7 +372,6 @@ a {
     max-height: 160px !important;
     min-height: 80px !important;
     width: 100% !important;
-
 }
 
 .funding-chart-container canvas {
@@ -439,7 +380,6 @@ a {
     width: 100% !important;
 }
 
-/* Специфический контейнер для процентного графика */
 .percent-chart-container {
     position: relative;
     width: 100%;
@@ -453,7 +393,6 @@ a {
     height: 50vh;
     margin: 2px 0 15px 0;
 }
-
 </style>
 </head>
 <body>
