@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"> 
+<html lang="en">
 <head> 
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="/breakthrough.png">
@@ -22,16 +22,6 @@ body {
     font-family: monospace;
     margin: 0; 
     padding: 0; 
-}
-
-.demo-badge {
-    background: #f0f0f0;
-    color: #888;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.8em;
-    font-weight: bold;
-    border: 1px solid #ddd;
 }
 
 .edit-btn {
@@ -136,10 +126,7 @@ body {
     font-weight: bold;
 }
 
-.is-deleting {
-    opacity: 0.5;
-    filter: grayscale(50%);
-}
+
 
 #versus { width: 100%; margin: 2em 0; }
 .versus-wrapper { display: flex; gap: 10px; justify-content: center; }
@@ -698,9 +685,7 @@ if (loreToggle && loreText) {
         loreToggle.classList.toggle('open');
     });
 }
-    
-let onlinePeers = new Set();
-    
+
 let myId = localStorage.getItem('paramount_custom_my_id');
 if (!myId) {
     myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
@@ -804,52 +789,47 @@ if (items.length === 0) {
         {
             id: 'meme-demo-1',
             sender: 'System-Genesis',
-            title: 'Transform (Demo)',
+            title: 'Transform',
             description: 'There\'s one simple truth, the ignoring of which has ruined countless ideas and brilliant intentions. The fact is that once you\'ve made a decision, Divine Providence is on your side, and even the impossible comes to your aid. Your decision unleashes a whole stream of unforeseen events that benefit you; the most unexpected things happen, and you receive material support that no one could even dream of. You can achieve anything you want, just start. Courage breeds genius, strength, and magic. Start immediately.',
             externalUrl: 'https://eqlectika.t.me/',
             img: 'transformation.jpg',
-            rating: 1480,
-        isDemo: true
+            rating: 1480
         },
         {
             id: 'meme-demo-2',
             sender: 'System-Genesis',
-            title: 'Dice (Demo)',
+            title: 'Dice',
             description: 'When you correctly perceive the wave of time, you begin to laugh out loud.',
             externalUrl: 'cross.html',
             img: 'dice.jpg',
-            rating: 1520,
-        isDemo: true
+            rating: 1520
         },
         {
             id: 'meme-demo-3',
             sender: 'System-Genesis',
-            title: 'Chess (Demo)',
+            title: 'Chess',
             description: 'The architecture of meanings conveyed by the model is merely a mirror image of the information boulevard on which it was nurtured. Here, intelligence acts not as a sovereign subject, but as a statistical echo of millions of voices burdened with prejudices, ideologies, and cultural distortions.',
             externalUrl: 'https://instagram.com/renovationdevie/',
             img: 'chess.jpg',
-            rating: 1520,
-        isDemo: true
+            rating: 1520
         },
         {
             id: 'meme-demo-4',
             sender: 'System-Genesis',
-            title: 'Voice (Demo)',
+            title: 'Voice',
             description: '"Your time is limited, so don\'t waste it living someone else\'s life. Don\'t be trapped by dogma — which is living with the results of other people\'s thinking. Don\'t let the noise of others\' opinions drown out your inner voice. And most important, have the courage to follow your heart and intuition."',
             externalUrl: 'spark.html',
             img: 'apple.jpg',
-            rating: 1520,
-        isDemo: true
+            rating: 1520
         },
         {
             id: 'meme-demo-5',
             sender: 'System-Genesis',
-            title: 'Tulip (Demo)',
+            title: 'Tulip',
             description: 'Comparing the Bitcoin hype to the tulip mania of the 17th century, one British scientist noted that tulips are still valued, and there are very expensive tulips.',
             externalUrl: 'market.html',
             img: 'tulip.jpg',
-            rating: 1520,
-        isDemo: true
+            rating: 1520
         },
     ];
     localStorage.setItem('paramount_versus_items', JSON.stringify(items));
@@ -869,7 +849,6 @@ client.on('connect', () => {
     document.getElementById('netStatus').innerHTML = `Status: Connected to the transport layer as ${myId}`;
     log("Waiting for peer(s)...");
     client.subscribe(TOPIC, { qos: 1 });
-    client.subscribe(`peerbattle/online/${myId}`);
 });
 
 client.on('error', (err) => {
@@ -890,99 +869,7 @@ client.on('message', (topic, payload) => {
                 updateRankingList();
                 if (items.length >= 2 && currentPair.length === 0) nextPair();
             }
-            if (packet.item.sender !== myId) {
-                client.publish(TOPIC, JSON.stringify({
-                    type: 'RECV_ACK',
-                    memeId: packet.item.id,
-                    receiver: myId,
-                    author: packet.item.sender
-                }), { qos: 1 });
-            }
         } 
-
-else if (packet.type === 'RECV_ACK') {
-    let item = items.find(i => i.id === packet.memeId && i.sender === myId);
-    if (item && packet.receiver !== myId) {
-        if (!item.deliveredTo) item.deliveredTo = [];
-        if (!item.deliveredTo.includes(packet.receiver)) {
-            item.deliveredTo.push(packet.receiver);
-            saveLocal();
-            
-            log(`[Delivery] Meme "${item.title}" confirmed by peer: ${packet.receiver}`);
-            
-            updateRankingList();
-        }
-    }
-}
-
-else if (packet.type === 'WHO_IS_ONLINE') {
-            if (packet.sender === myId) return; 
-            
-            client.publish(`peerbattle/online/${packet.sender}`, JSON.stringify({
-                type: 'I_AM_ONLINE',
-                sender: myId
-            }), { qos: 1 });
-        }
-
-        else if (packet.type === 'I_AM_ONLINE') {
-            onlinePeers.add(packet.sender);
-        }
-
-else if (packet.type === 'DELETE_MEME') {
-    if (packet.author === myId) return;
-
-    let index = items.findIndex(i => i.id === packet.memeId);
-    if (index !== -1) {
-        items.splice(index, 1);
-        saveLocal();
-        updateRankingList();
-
-        if (currentPair.some(idx => items[idx]?.id === packet.memeId)) {
-            currentPair = [];
-            nextPair();
-        }
-
-        client.publish(TOPIC, JSON.stringify({
-            type: 'DELETE_ACK',
-            memeId: packet.memeId,
-            receiver: myId,
-            author: packet.author
-        }), { qos: 1 });
-    }
-}
-
-else if (packet.type === 'DELETE_ACK') {
-    let item = items.find(i => i.id === packet.memeId && i.sender === myId);
-    if (item) {
-        if (!item.deleteAcks) item.deleteAcks = [];
-
-        if (!item.deleteAcks.includes(packet.receiver)) {
-            item.deleteAcks.push(packet.receiver);
-            saveLocal();
-
-            let Y = item.deliveredTo ? item.deliveredTo.length : 0;
-            let X = item.deleteAcks.length;
-
-            log(`[Global Delete] Progress for "${item.title}": [${X}] / [${Y}] acknowledgments received.`);
-
-            if (Y > 0 && X >= Y) {
-                let index = items.findIndex(i => i.id === packet.memeId);
-                if (index !== -1) {
-                    items.splice(index, 1);
-                    saveLocal();
-                    log(`[Global Delete] Meme "${item.title}" fully erased after receiving all ${Y} acknowledgments.`);
-                    
-                    // УНИВЕРСАЛЬНЫЙ СБРОС ПАРЫ ЗДЕСЬ ТОЖЕ
-                    if (currentPair.some(idx => items[idx]?.id === packet.memeId)) {
-                        currentPair = [];
-                        nextPair();
-                    }
-                }
-            }
-            updateRankingList();
-        }
-    }
-}
 
         else if (packet.type === 'UPDATE_ITEM') {
             let existingItem = items.find(i => i.id === packet.item.id);
@@ -1016,9 +903,9 @@ else if (packet.type === 'DELETE_ACK') {
                 nextPair();
             }
         }
-        else if (packet.type === 'TRANSFER_IMPACT') {
+else if (packet.type === 'TRANSFER_IMPACT') {
 
-        if (blacklistedPeers.includes(packet.sender)) {
+    if (blacklistedPeers.includes(packet.sender)) {
         log(`[Security] Ignored transaction from blacklisted peer: ${packet.sender}`);
         return;
     }
@@ -1192,9 +1079,7 @@ async function addItem() {
             description: desc, 
             externalUrl: url, 
             img: imgData, 
-            rating: 1500,
-            deliveredTo: [], 
-            deleteAcks: []
+            rating: 1500 
         };
 
         items.push(newItem);
@@ -1236,46 +1121,44 @@ function editItem(id) {
     $('.main-panel')[0].scrollIntoView({ behavior: 'smooth' });
 }
 
-function deleteItemEverywhere(id) {
-    let item = items.find(i => i.id === id);
-    if (!item) return;
+function deleteItemLocal(id) {
+    if (!confirm('Are you sure you want to delete this meme from your device?')) return;
+    
+    let index = items.findIndex(i => i.id === id);
+    if (index !== -1) {
+        const activeLeftId = currentPair.length > 0 ? items[currentPair[0]]?.id : null;
+        const activeRightId = currentPair.length > 0 ? items[currentPair[1]]?.id : null;
 
-    if (!confirm('Are you sure you want to delete this meme everywhere?')) return;
+        items.splice(index, 1);
+        saveLocal();
 
-    const activeLeftId = currentPair.length > 0 ? items[currentPair[0]]?.id : null;
-    const activeRightId = currentPair.length > 0 ? items[currentPair[1]]?.id : null;
-    const isCurrentlyInPair = (id === activeLeftId || id === activeRightId);
+        //  playerState.postsLeft -= 1;
+        // playerState.level = Math.floor(playerState.impacts / 20) + 1;
+        // updatePlayerStatsUI();
 
-    if (isCurrentlyInPair) {
-        currentPair = []; 
-    }
+        log(`You removed meme locally: ${id}. Penalty applied: -1 Post.`);
+        updateRankingList();
 
-    let deliveredCount = item.deliveredTo ? item.deliveredTo.length : 0;
-
-    if (deliveredCount === 0) {
-        let index = items.findIndex(i => i.id === id);
-        if (index !== -1) {
-            items.splice(index, 1);
-            saveLocal();
-            updateRankingList();
-            
-            nextPair(); 
+        if (items.length < 2) {
+            currentPair = [];
+            nextPair();
+            return;
         }
-        return;
-    }
 
-    item.isDeleting = true;
-    saveLocal();
-    updateRankingList(); 
+        const wasActivePairAffected = (id === activeLeftId || id === activeRightId);
 
-    client.publish(TOPIC, JSON.stringify({
-        type: 'DELETE_MEME',
-        memeId: item.id,
-        author: myId
-    }), { qos: 1 });
+        if (wasActivePairAffected || currentPair.length === 0) {
+            nextPair();
+        } else {
+            const newLeftIndex = items.findIndex(i => i.id === activeLeftId);
+            const newRightIndex = items.findIndex(i => i.id === activeRightId);
 
-    if (isCurrentlyInPair) {
-        nextPair();
+            if (newLeftIndex !== -1 && newRightIndex !== -1) {
+                currentPair = [newLeftIndex, newRightIndex];
+            } else {
+                nextPair();
+            }
+        }
     }
 }
 
@@ -1283,25 +1166,10 @@ function updateRankingList() {
     const sorted = [...items].sort((a, b) => b.rating - a.rating);
     let html = '';
     sorted.forEach((item, index) => {
-        let isAuthor = (item.sender === myId);
-        let deliveredCount = item.deliveredTo ? item.deliveredTo.length : 0;
-        let deletedCount = item.deleteAcks ? item.deleteAcks.length : 0;
-        let deletingClass = item.isDeleting ? 'is-deleting' : '';
-
-        let authorStats = '';
-        if (item.isDemo) {
-            authorStats = `<p style="color: #888; margin-top: 10px; font-size: 12px; font-weight: bold;">[ DEMO MEME ]</p>`;
-        } else if (isAuthor) {
-            authorStats = `<p style="color: #afff00; margin-top: 10px; font-size: 12px;">
-                Stats: Delivered to [${deliveredCount}] devices
-                ${item.isDeleting ? `<br>Deletion progress: [${deletedCount}] of [${deliveredCount}]` : ''}
-            </p>`;
-        }
-
-        html += `<div class="ranking-item ${deletingClass}" onclick="toggleDetails('${item.id}')">
+        html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
             <img src="${item.img}" class="ranking-img">
             <div class="ranking-info">
-                <p class="title" style="font-size: 16px; margin: 0;">${index + 1}. ${item.title}</p>
+                <p class="title" style="text-align: center; font-size: 16px; margin: 0;">${index + 1}. ${item.title}</p>
                 <span>${Math.round(item.rating)}</span>
             </div> 
         </div>
@@ -1309,25 +1177,7 @@ function updateRankingList() {
             <button class="edit-btn" onclick="event.stopPropagation(); editItem('${item.id}')">Edit and/or Re-inject Meme (free)</button>
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
             <p>${item.description || 'No description.'}</p>
-            
-${isAuthor ? `
-
-    <button class="admin-btn delete-everywhere-btn" type="button" 
-
-        style="margin-top: 15px; background: ${deliveredCount > 0 ? '#ff9900' : '#444'}; color: #fff; padding: 10px; font-size: 14px; width: 100%; border: none; ${deliveredCount === 0 ? 'cursor: not-allowed; opacity: 0.6;' : ''}" 
-
-        ${deliveredCount === 0 ? 'disabled' : ''} 
-
-        onclick="event.stopPropagation(); ${deliveredCount > 0 ? `deleteItemEverywhere('${item.id}')` : `alert('There are no active online users/peers to whom this meme has been delivered. Removal is only possible locally.');`}">
-
-        ${deliveredCount > 0 ? 'Delete Everywhere' : 'No Online Peers to Delete From'}
-
-    </button>
-
-` : ''}            
-            <button class="admin-btn" type="button" style="margin-top: 10px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
-            
-            ${authorStats}
+            <button class="admin-btn" type="button" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
         </div>`;
     });
     $('#ranking-list').html(html || '<div style="text-align: center; padding:10px; color:#999;">Matrix is empty.<br>Inject first memes below!</div>');
