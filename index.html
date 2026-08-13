@@ -930,14 +930,14 @@ else if (packet.type === 'DELETE_ACK') {
     let item = items.find(i => i.id === packet.memeId && i.sender === myId);
     if (item) {
         if (!item.deleteAcks) item.deleteAcks = [];
-        
+
         if (!item.deleteAcks.includes(packet.receiver)) {
             item.deleteAcks.push(packet.receiver);
             saveLocal();
 
             let Y = item.deliveredTo ? item.deliveredTo.length : 0;
             let X = item.deleteAcks.length;
-            
+
             log(`[Global Delete] Progress for "${item.title}": [${X}] / [${Y}] acknowledgments received.`);
 
             if (Y > 0 && X >= Y) {
@@ -1208,13 +1208,27 @@ function editItem(id) {
 function deleteItemEverywhere(id) {
     let item = items.find(i => i.id === id);
     if (!item) return;
-    
+
     if (!confirm('Are you sure you want to delete this meme everywhere?')) return;
 
-    item.isDeleting = true;
-    
-    saveLocal();
-    updateRankingList();
+    let deliveredCount = item.deliveredTo ? item.deliveredTo.length : 0;
+
+    if (deliveredCount === 0) {
+        let index = items.findIndex(i => i.id === id);
+        if (index !== -1) {
+            items.splice(index, 1);
+            saveLocal();
+            updateRankingList();
+            log(`[Global Delete] Meme "${item.title}" deleted immediately (no active recipients).`);
+        }
+
+        client.publish(TOPIC, JSON.stringify({
+            type: 'DELETE_MEME',
+            memeId: item.id,
+            author: myId
+        }), { qos: 1 });
+        return;
+    }
 
     client.publish(TOPIC, JSON.stringify({
         type: 'DELETE_MEME',
@@ -1222,7 +1236,7 @@ function deleteItemEverywhere(id) {
         author: myId
     }), { qos: 1 });
 
-    log(`[Global Delete] Initiated for "${item.title}". Waiting for ${item.deliveredTo.length} peers...`);
+    log(`[Global Delete] Initiated for "${item.title}". Waiting for ${deliveredCount} peers...`);
 }
 
 function deleteItemLocal(id) {
