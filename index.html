@@ -851,6 +851,17 @@ client.on('connect', () => {
     document.getElementById('netStatus').innerHTML = `Status: Connected to the transport layer as ${myId}`;
     log("Waiting for peer(s)...");
     client.subscribe(TOPIC, { qos: 1 });
+
+    setInterval(() => {
+        if (client && client.connected) {
+            client.publish(TOPIC, JSON.stringify({
+                type: 'PING',
+                sender: myId
+            }), { qos: 0 });
+        }
+    }, 5000);
+
+    setInterval(updateOnlinePeersCount, 5000);
 });
 
 client.on('error', (err) => {
@@ -885,6 +896,12 @@ client.on('message', (topic, payload) => {
                 delete pendingTransfers[packet.txId];
                 savePending();
                 log(`[Network] Transfer ${packet.txId} confirmed by receiver.`);
+            }
+        }
+
+        if (packet.type === 'PING') {
+            if (packet.sender !== myId) {
+                activePeers[packet.sender] = Date.now();
             }
         }
         
@@ -1324,6 +1341,20 @@ function transferImpact() {
 
 updateRankingList();
 if (items.length >= 2) nextPair();
+
+let activePeers = {};
+
+function updateOnlinePeersCount() {
+    const now = Date.now();
+    for (let peerId in activePeers) {
+        if (now - activePeers[peerId] > 12000) {
+            delete activePeers[peerId];
+        }
+    }
+    const onlineCount = Object.keys(activePeers).length;
+    const peerLabel = onlineCount === 1 ? 'peer' : 'peers';
+    log(`[Network] Active online: ${onlineCount} ${peerLabel}`);
+}
 
 function log(txt) {
     let l = document.getElementById('logContainer');
