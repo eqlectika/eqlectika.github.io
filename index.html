@@ -899,23 +899,31 @@ client.on('message', (topic, payload) => {
         else if (packet.type === 'UPDATE_ITEM') {
             let existingItem = items.find(i => i.id === packet.item.id);
             if (existingItem) {
-
                 existingItem.title = packet.item.title;
                 existingItem.description = packet.item.description;
                 existingItem.externalUrl = packet.item.externalUrl;
-                if (packet.item.img) {
-                    existingItem.img = packet.item.img;
-                }
+                if (packet.item.img) existingItem.img = packet.item.img;
                 saveLocal();
                 log(`[Resonance] Meme updated by ${packet.sender}: "${packet.item.title}"`);
                 updateRankingList();
             } else {
-
                 items.push(packet.item);
                 saveLocal();
                 updateRankingList();
+                if (items.length >= 2 && currentPair.length === 0) nextPair();
+            }
+            
+            // Если мы получили UPDATE_ITEM и это чужой мем — то отправляем ACK
+            if (packet.sender !== myId) {
+                client.publish(TOPIC, JSON.stringify({
+                    type: 'DELIVERY_ACK',
+                    itemId: packet.item.id,
+                    authorId: packet.sender,
+                    peerId: myId
+                }), { qos: 1 });
             }
         }
+            
         else if (packet.type === 'VOTE') {
             let winItem = items.find(i => i.id === packet.winId);
             let loseItem = items.find(i => i.id === packet.loseId);
@@ -1013,7 +1021,6 @@ async function addItem() {
 
     let imgData = "";
     if (editingId !== null) {
-
         const item = items.find(i => i.id === editingId);
         if (item) {
             item.title = title;
@@ -1022,7 +1029,6 @@ async function addItem() {
             if (file) {
                 item.img = await compressImage(file);
             }
-            
             saveLocal();
 
             client.publish(TOPIC, JSON.stringify({
@@ -1047,6 +1053,7 @@ async function addItem() {
         if (file) {
             imgData = await compressImage(file);
         }
+        
         const newItem = { 
             id: 'meme-' + Date.now() + '-' + Math.floor(Math.random()*1000), 
             sender: myId, 
@@ -1054,7 +1061,8 @@ async function addItem() {
             description: desc, 
             externalUrl: url, 
             img: imgData, 
-            rating: 1500 
+            rating: 1500,
+            deliveredPeers: [] 
         };
 
         items.push(newItem);
