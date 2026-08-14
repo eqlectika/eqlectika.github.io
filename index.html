@@ -898,6 +898,18 @@ client.on('message', (topic, payload) => {
             }
         } 
 
+        else if (packet.type === 'DELIVERY_ACK') {
+    let item = items.find(i => i.id === packet.itemId);
+    if (item) {
+        if (!item.deliveredPeers) item.deliveredPeers = [];
+        if (!item.deliveredPeers.includes(packet.peerId)) {
+            item.deliveredPeers.push(packet.peerId);
+            saveLocal();
+            updateRankingList(); 
+        }
+    }
+}
+            
         else if (packet.type === 'UPDATE_ITEM') {
             let existingItem = items.find(i => i.id === packet.item.id);
             if (existingItem) {
@@ -1151,6 +1163,9 @@ function updateRankingList() {
     const sorted = [...items].sort((a, b) => b.rating - a.rating);
     let html = '';
     sorted.forEach((item, index) => {
+        const deliveredCount = item.deliveredPeers ? item.deliveredPeers.length : 0;
+        const peerLabel = deliveredCount === 1 ? 'peer' : 'peers';
+        
         html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
             <img src="${item.img}" class="ranking-img">
             <div class="ranking-info">
@@ -1159,6 +1174,7 @@ function updateRankingList() {
             </div> 
         </div>
         <div id="details-${item.id}" class="item-details">
+            <div style="color: #00ffcc; margin-bottom: 10px;">Delivered to: ${deliveredCount} ${peerLabel}</div>
             <button class="edit-btn" onclick="event.stopPropagation(); editItem('${item.id}')">Edit and/or Re-inject Meme (free)</button>
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
             <p>${item.description || 'No description.'}</p>
