@@ -6,7 +6,7 @@
 >
 > Over time, each of us will learn to create and transmit our own virtual worlds into neural networks.
 >
-> I create unique websites, tools, and applications to help continuously improve life.
+> I create unique websites, tools, and applications for continuously improving life.
 >
 > Yevgeniy Korobka
 >
