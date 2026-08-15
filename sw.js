@@ -3,6 +3,7 @@ const CACHE_NAME = 'polarity-sanctuary-v2';
 const CORE_ASSETS = [
     './',
     './index.html',
+    './manifest.json',
 
     './cross.html',
     './match.html',
