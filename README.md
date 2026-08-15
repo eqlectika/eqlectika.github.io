@@ -6,9 +6,10 @@
 >
 > Over time, each of us will learn to create and transmit our own virtual worlds into neural networks.
 >
-> I don’t simply create websites and web applications; I help people master unique techniques for continuously improving their lives.
+> I create unique websites, tools, and applications to help continuously improve life.
 >
 > Yevgeniy Korobka
+>
 >
 
 ## The Concept of Project Eqlectika: Semantic Field Core & Building an Outside-in Planets Network
