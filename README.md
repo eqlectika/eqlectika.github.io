@@ -9,6 +9,7 @@
 > I don’t simply create websites and web applications; I help people master unique techniques for continuously improving their lives.
 >
 > Yevgeniy Korobka
+>
 
 ## The Concept of Project Eqlectika: Semantic Field Core & Building an Outside-in Planets Network
 
