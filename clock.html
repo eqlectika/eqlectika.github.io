@@ -293,7 +293,8 @@
     datePicker.value = today.toISOString().split('T')[0];
     
     const msInDay = 86400000;
-    let t = (new Date(datePicker.value + 'T12:00:00Z').getTime() - J2000.getTime()) / msInDay;
+    const PLANET_DATE_OFFSET = 2;
+    let t = (new Date(datePicker.value + 'T12:00:00Z').getTime() - J2000.getTime()) / msInDay         + PLANET_DATE_OFFSET;
     
     let baseSpeed = 0.2;
     let dt = baseSpeed;
@@ -353,7 +354,7 @@
     
     datePicker.addEventListener('change', (e) => {
       const selectedDate = new Date(e.target.value + 'T12:00:00Z');
-      t = (selectedDate.getTime() - J2000.getTime()) / msInDay;
+      t = (selectedDate.getTime() - J2000.getTime()) / msInDay     + PLANET_DATE_OFFSET;
       isPaused = true; 
       pauseBtn.textContent = 'Resume';
       animate(); 
