@@ -1,17 +1,5 @@
 <a href="https://eqlectika.github.io"><img src="logo.png" width="48" height="48" alt="logo"></a>
 
-> Obviously, the exchange of information, from cave paintings, is evolving through a virtual interface into a new measurable hyperspace based on an immutable ledger.
->
-> Between these two extremes lies a gradient encompassing an infinite variety of phenomenal conventions and degrees of freedom.
->
-> Over time, each of us will learn to create and transmit our own virtual worlds into neural networks.
->
-> I create unique websites, tools, and applications for continuously improving life.
->
-> Yevgeniy Korobka
->
->
-
 ## The Concept of Project Eqlectika: Semantic Field Core & Building an Outside-in Planets Network
 
 Imagine for a moment that anything is possible. Imagine, for example, that the laws of physics were suddenly replaced by the laws of imagination. And this is a very interesting meditation, because it begins like this: "Well, if I could have anything I wanted, what would I want, or what would I prefer to have?" For example, I would somehow move the Vatican Library to Versailles and live in Versailles, have access to every book and work of art that ever existed, and stroll in the garden.
