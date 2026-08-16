@@ -16,7 +16,7 @@ const CORE_ASSETS = [
     './manifest-life.json',
 
     './handle.png',
-    './ladybug.png',
+    '.ladybug-icon-10.png',
     './handle-black.png',
     './logo.png',
     './fleurdelis.png',
