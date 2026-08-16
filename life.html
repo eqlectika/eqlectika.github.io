@@ -36,7 +36,7 @@ canvas {
 @media (pointer: coarse) { #controls { display: flex; } }
 #logoLink {
     position: fixed;
-    bottom: 50%;
+    bottom: 5%;
     left: 50%;
     transform: translateX(-50%);
     z-index: 4000; 
@@ -85,16 +85,47 @@ canvas {
     font-size: 18px;
     cursor: pointer;
 }
+
+    #navigationMenu {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 6000;
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+    text-align: center;
+}
+
+#navigationMenu a {
+    color: white;
+    font-family: monospace;
+    text-decoration: none;
+    font-size: 18px;
+}
+
+#navigationMenu a:hover {
+    color: #00ffff;
+}
 </style>
 </head>
 <body>
     <button id="startButton">FULL SCREEN</button>
 
 <a href="match.html" id="logoLink">
-    <img src="star.png" alt="Logo" draggable="false" style="margin-bottom: 20px; width: 42px; height: 42px; opacity: 0.4;">
+    <img src="star.png" alt="Logo" draggable="false" style="margin-bottom: 20px; width: 42px; height: 42px; opacity: 0.5;">
 </a>
     
     <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
+
+    <div id="navigationMenu">
+    <a href="cross.html">Cross</a>
+    <a href="match.html">Match</a>
+    <a href="index.html">Breakthrough</a>
+    <a href="flash.html">Flash</a>
+    <a href="capital.html">Capital</a>
+    </div>
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -591,6 +622,8 @@ window.addEventListener('dragstart', (e) => e.preventDefault());
     let velocity = new THREE.Vector3(0, 0, 0);
     let angularVelocityX = 0;
     let angularVelocityZ = 0;
+    let collisionStartTime = null;
+    let navigationShown = false;
 
 function animate() {
     requestAnimationFrame(animate);
@@ -653,12 +686,49 @@ function animate() {
     raycaster.set(player.position, playerDirection);
     const intersects = raycaster.intersectObjects(collidableObjects);
 
-    if (intersects.length > 0 && intersects[0].distance < PLAYER_HEIGHT + 0.1) {
-        const groundDistance = intersects[0].point.length();
-        player.position.copy(playerDirection.clone().multiplyScalar(groundDistance - PLAYER_HEIGHT));
-        const normalVelocity = velocity.dot(playerDirection);
-        if (normalVelocity > 0) { velocity.addScaledVector(playerDirection, -normalVelocity); }
+const isColliding =
+    intersects.length > 0 &&
+    intersects[0].distance < PLAYER_HEIGHT + 0.1;
+
+if (isColliding) {
+
+    if (collisionStartTime === null) {
+        collisionStartTime = performance.now();
     }
+
+    const groundDistance = intersects[0].point.length();
+
+    player.position.copy(
+        playerDirection.clone().multiplyScalar(
+            groundDistance - PLAYER_HEIGHT
+        )
+    );
+
+    const normalVelocity = velocity.dot(playerDirection);
+
+    if (normalVelocity > 0) {
+        velocity.addScaledVector(
+            playerDirection,
+            -normalVelocity
+        );
+    }
+
+    if (!navigationShown &&
+        performance.now() - collisionStartTime >= 5000) {
+
+        navigationShown = true;
+        document.getElementById('navigationMenu').style.display = 'flex';
+    }
+
+} else {
+
+    collisionStartTime = null;
+
+    if (navigationShown) {
+        navigationShown = false;
+        document.getElementById('navigationMenu').style.display = 'none';
+    }
+}
 
     if (player.position.length() > PLANET_RADIUS - PLAYER_HEIGHT) {
         player.position.copy(playerDirection.clone().multiplyScalar(PLANET_RADIUS - PLAYER_HEIGHT));
