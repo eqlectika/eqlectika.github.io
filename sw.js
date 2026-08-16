@@ -9,19 +9,30 @@ const CORE_ASSETS = [
     './flash.html',
     './match.html',
     './life.html',
+    './spark.html',
+    './capital.html',
+    './clock.html',
+    './syntax.html',
+
 
     './manifest-cross.json',
     './manifest-flash.json',
     './manifest-match.json',
     './manifest-life.json',
+    './manifest-spark.json',
+    './manifest-capital.json',
+    './manifest-syntax.json',
+
 
     './handle.png',
-    '.ladybug-icon-10.png',
+    './ladybug-icon-10.png',
     './handle-black.png',
     './logo.png',
     './fleurdelis.png',
     './break.png',
     './onlyyou.png',
+    './spark.png',
+    './clock.PNG',
     './star.png'
 ];
 
