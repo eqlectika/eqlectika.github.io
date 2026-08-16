@@ -258,14 +258,6 @@ This interface is just a template. I've used a few of my sketch projects to show
 <p>Feel free to contact<br>
 <a href="https://t.me/eugenebox" target="_blank" id="author-link" style="text-decoration: none; color: #fff;">@eugenebox</a>
 </p>
-</div>
-
-<div style="margin-bottom: 0; text-align: center;">
-    <button id="toggle-btn" style="display: inline-block; background: none; border: none; color: #fff; font-family: 'Cinzel'; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0;">
-        <span id="toggle-text">About</span>
-    </button>
-</div>
-
 <div style="display: flex; margin-bottom: 70px; flex-direction: column; align-items: center; justify-content: center;" class="main-header">
 <a href="research.html" id="header-link" style="display: flex; justify-content: center; align-items: center; margin: 30px auto 20px auto;">
     <img src="logo.png" id="header-logo">
@@ -273,8 +265,17 @@ This interface is just a template. I've used a few of my sketch projects to show
 <h2 style="font-weight: bold; font-size: 18px; margin: 0 0 0 0; line-height: 1.1;">
 <a href="research.html" style="text-decoration: none; font-size: 22px; font-family: 'Roboto Condensed'; color: inherit; position: relative;">Made in Space</a>
 </h2>
-    <p style="color: #ccc; font-size: 14px; letter-spacing: 3px; font-family: 'Roboto Condensed'; margin: 0; position: relative;">Research workspace</p>
+    <p style="color: #ccc; font-size: 14px; letter-spacing: 3px; font-family: 'Roboto Condensed'; margin: 0; position: relative;">Linguistic architecture research workspace</p>
 </div>
+</div>
+
+<div style="margin-bottom: 0; text-align: center;">
+    <button id="toggle-btn" style="display: inline-block; margin: 0 0 120px 0; background: none; border: none; color: #fff; font-family: 'Cinzel'; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0;">
+        <span id="toggle-text">About</span>
+    </button>
+</div>
+
+
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -527,6 +528,14 @@ $toggleBtn.on('click', function() {
         $content.addClass('expanded');
         $toggleText.text('Hide');
         localStorage.setItem('blockState', 'expanded');
+
+        // Плавный скролл к самому низу страницы
+        setTimeout(() => {
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: 'smooth'
+            });
+        }, 100); // небольшая задержка, чтобы успела запуститься CSS-анимация раскрытия
     } else {
         $content.removeClass('expanded');
         $toggleText.text('About');
