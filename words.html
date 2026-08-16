@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Мозаика Слов</title>
+    <link rel="manifest" href="manifest-words.json">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Roboto Condensed', sans-serif;
+            transition: background-color 0.5s ease;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100vh;
+            padding: 10px;
+        }
+
+        .words-wrapper {
+            flex-grow: 1;
+            width: 100%;
+            position: relative;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 6px 8px;
+            padding: 10px;
+            overflow-y: auto;
+            cursor: default;
+            touch-action: pan-y;
+        }
+
+        .word-cell {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            white-space: nowrap;
+            background: transparent;
+            border: none;
+            padding: 2px 4px;
+            line-height: 1;
+            opacity: 0.95;
+            transition: color 0.5s ease;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+        }
+
+        .footer-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            flex-shrink: 0;
+            z-index: 10;
+            padding-top: 5px;
+        }
+
+        #word-input {
+            width: 100%;
+            max-width: 500px;
+            padding: 10px 18px;
+            font-family: 'Roboto Condensed', sans-serif;
+            font-size: 16px;
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .logo-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 34px;
+        }
+
+        .logo-link img {
+            height: 34px;
+            width: auto;
+            display: block;
+        }
+
+        #word-input::placeholder {
+            color: var(--placeholder-color, #424242);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="main-container">
+        <div class="words-wrapper" id="words-wrapper"></div>
+
+        <div class="footer-panel">
+            <input type="text" id="word-input" placeholder="Введите слова и нажмите Enter..." autofocus>
+            
+            <a href="match.html" class="logo-link">
+                <img src="star.png" alt="Логотип">
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const inputField = document.getElementById('word-input');
+        const displayContainer = document.getElementById('words-wrapper');
+        const mainContainer = document.getElementById('main-container');
+
+        let wordsList = [];
+
+        // Загружаем сохраненные слова из Local Storage при запуске
+        const savedWords = localStorage.getItem('mosaic_words');
+        if (savedWords) {
+            try {
+                wordsList = JSON.parse(savedWords);
+            } catch (e) {
+                wordsList = [];
+            }
+        }
+
+        const themes = [
+            { bg: '#121212', inputBg: '#212121', inputColor: '#E0E0E0', inputBorder: '#424242' },
+            { bg: '#000033', inputBg: '#0D47A1', inputColor: '#B3E5FC', inputBorder: '#1976D2' },
+            { bg: '#331a00', inputBg: '#E65100', inputColor: '#FFE0B2', inputBorder: '#EF6C00' },
+            { bg: '#1a3300', inputBg: '#1B5E20', inputColor: '#C8E6C9', inputBorder: '#2E7D32' },
+            { bg: '#2b1a33', inputBg: '#4A148C', inputColor: '#E1BEE7', inputBorder: '#7B1FA2' }
+        ];
+
+        let currentThemeIndex = 0;
+
+        function applyTheme(theme) {
+            mainContainer.style.backgroundColor = theme.bg;
+            inputField.style.backgroundColor = theme.inputBg;
+            inputField.style.color = theme.inputColor;
+            inputField.style.borderColor = theme.inputBorder;
+            inputField.style.setProperty('--placeholder-color', theme.inputBorder);
+
+            const cells = document.querySelectorAll('.word-cell');
+            cells.forEach((cell, index) => {
+                cell.style.color = getPastelTextColor(index);
+            });
+        }
+
+        function getPastelTextColor(index) {
+            const hue = (index * 53 + currentThemeIndex * 70) % 360;
+            return `hsl(${hue}, 65%, 80%)`;
+        }
+
+        function updateLayout() {
+            displayContainer.innerHTML = '';
+            
+            if (wordsList.length === 0) return;
+
+            const fragment = document.createDocumentFragment();
+
+            const tempCells = wordsList.map((word, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'word-cell';
+                cell.textContent = word;
+                cell.style.color = getPastelTextColor(index);
+                cell.style.fontSize = '40px';
+                fragment.appendChild(cell);
+                return cell;
+            });
+
+            displayContainer.appendChild(fragment);
+
+            requestAnimationFrame(() => {
+                const containerHeight = displayContainer.clientHeight;
+                const contentHeight = displayContainer.scrollHeight;
+
+                if (contentHeight > containerHeight && containerHeight > 0) {
+                    const currentSize = 40;
+                    const ratio = containerHeight / contentHeight;
+                    const newSize = Math.max(8, Math.floor(currentSize * ratio * 0.9));
+                    
+                    tempCells.forEach(cell => {
+                        cell.style.fontSize = `${newSize}px`;
+                    });
+                }
+            });
+        }
+
+        document.body.addEventListener('click', (event) => {
+            if (event.target === inputField || event.target.closest('#word-input') || event.target.closest('.logo-link')) return;
+
+            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+            applyTheme(themes[currentThemeIndex]);
+            updateLayout();
+        });
+
+        inputField.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                const text = inputField.value.trim();
+                if (text) {
+                    const newWords = text.split(/\s+/).filter(w => w.length > 0);
+                    if (newWords.length > 0) {
+                        wordsList = wordsList.concat(newWords);
+                        localStorage.setItem('mosaic_words', JSON.stringify(wordsList));
+                        inputField.value = '';
+                        updateLayout();
+                    }
+                }
+            }
+        });
+
+        applyTheme(themes[0]);
+        updateLayout();
+    </script>
+</body>
+</html>
