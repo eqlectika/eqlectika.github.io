@@ -6,15 +6,17 @@ const CORE_ASSETS = [
     './manifest.json',
 
     './cross.html',
+    './flash.html',
     './match.html',
     './life.html',
 
     './manifest-cross.json',
-    './manifest-ranking.json',
+    './manifest-flash.json',
     './manifest-match.json',
     './manifest-life.json',
 
     './handle.png',
+    './ladybug.png',
     './handle-black.png',
     './logo.png',
     './fleurdelis.png',
