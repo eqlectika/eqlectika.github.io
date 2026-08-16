@@ -153,7 +153,6 @@ font-family: 'Playfair Display', serif;
 .main-header p {
     color: #888;
     font-size: 14px;
-    margin-top: 5px;
 }
 #header-logo {
     width: 48px;
@@ -259,19 +258,19 @@ This interface is just a template. I've used a few of my sketch projects to show
 <p>Feel free to contact<br>
 <a href="https://t.me/eugenebox" target="_blank" id="author-link" style="text-decoration: none; color: #fff;">@eugenebox</a>
 </p>
-<div style="display: flex; margin-bottom: 70px; flex-direction: column; align-items: center; justify-content: center;" class="main-header">
-<a href="research.html" id="header-link" style="display: flex; justify-content: center; align-items: center; margin: 30px auto 20px auto;">
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center;" class="main-header">
+<a href="research.html" id="header-link" style="display: flex; justify-content: center; align-items: center; margin: 0 auto 0 auto;">
     <img src="logo.png" id="header-logo">
 </a>
-<h2 style="font-weight: bold; font-size: 18px; margin: 0 0 0 0; line-height: 1.1;">
+<h2 style="font-weight: bold; font-size: 18px; line-height: 1.1;">
 <a href="research.html" style="text-decoration: none; font-size: 22px; font-family: 'Roboto Condensed'; color: white; position: relative;">Made in Space</a>
 </h2>
-    <p style="color: #ccc; font-size: 14px; letter-spacing: 3px; font-family: 'Roboto Condensed'; margin: 0; position: relative;">Linguistic architecture research workspace</p>
+    <p style="color: #ccc; font-size: 14px; letter-spacing: 3px; font-family: 'Roboto Condensed'; margin: 0 0 20px 0; position: relative;">Linguistic architecture research workspace</p>
 </div>
 </div>
 
 <div style="margin-bottom: 0; text-align: center;">
-    <button id="toggle-btn" style="display: inline-block; margin: 0 0 120px 0; background: none; border: none; color: #fff; font-family: 'Cinzel'; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0;">
+    <button id="toggle-btn" style="display: inline-block; margin: 0 0 70px 0; background: none; border: none; color: #fff; font-family: 'Cinzel'; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0;">
         <span id="toggle-text">About</span>
     </button>
 </div>
@@ -514,6 +513,7 @@ const $toggleBtn = $('#toggle-btn');
 const $content = $('#collapsible-content');
 const $toggleText = $('#toggle-text');
 
+
 const savedState = localStorage.getItem('blockState');
 if (savedState === 'expanded') {
     $content.addClass('expanded'); 
@@ -521,28 +521,39 @@ if (savedState === 'expanded') {
 } else {
     $content.removeClass('expanded'); 
     $toggleText.text('About');
-    localStorage.setItem('blockState', 'collapsed');
 }
 
 $toggleBtn.on('click', function() {
     if (!$content.hasClass('expanded')) {
+
         $content.addClass('expanded');
         $toggleText.text('Hide');
         localStorage.setItem('blockState', 'expanded');
 
-        // Плавный скролл к самому низу страницы
         setTimeout(() => {
+
+            const toggleBtnRect = $toggleBtn[0].getBoundingClientRect();
+            const absoluteBtnBottom = window.pageYOffset + toggleBtnRect.bottom;
+            
+
+            const targetScroll = absoluteBtnBottom - window.innerHeight + 70; // 20px небольшой комфортный отступ
+
             window.scrollTo({
-                top: document.body.scrollHeight,
+                top: Math.max(0, targetScroll),
                 behavior: 'smooth'
             });
-        }, 100); // небольшая задержка, чтобы успела запуститься CSS-анимация раскрытия
+        }, 300);
+
+
     } else {
+
         $content.removeClass('expanded');
         $toggleText.text('About');
         localStorage.setItem('blockState', 'collapsed');
     }
 });
+
+
 
 
 
