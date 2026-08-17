@@ -175,26 +175,33 @@
                 cell.style.color = getPastelTextColor(index);
                 cell.style.fontSize = '40px';
 
-                let pressTimer;
-                let longPressTriggered = false;
+let pressTimer;
+let pressStartTime = 0;
+let longPressTriggered = false;
 
-                cell.addEventListener('pointerdown', () => {
-                    longPressTriggered = false;
+cell.addEventListener('pointerdown', (event) => {
+    event.stopPropagation();
+    pressStartTime = Date.now();
+    longPressTriggered = false;
 
-                    pressTimer = setTimeout(() => {
-                        longPressTriggered = true;
+    pressTimer = setTimeout(() => {
+        longPressTriggered = true;
 
-                        wordsList.splice(index, 1);
-                        localStorage.setItem('mosaic_words', JSON.stringify(wordsList));
-                        updateLayout();
-                    }, 600);
-                });
+        wordsList.splice(index, 1);
+        localStorage.setItem('mosaic_words', JSON.stringify(wordsList));
+        updateLayout();
+    }, 600);
+});
 
-cell.addEventListener('pointerup', () => {
+cell.addEventListener('pointerup', (event) => {
+    event.stopPropagation();
+
+    const pressDuration = Date.now() - pressStartTime;
     clearTimeout(pressTimer);
 
-    if (!longPressTriggered) {
+    if (pressDuration < 600 && !longPressTriggered) {
         const query = `What is the definition of the word "${word}" in the interface language?`;
+
         window.open(
             `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
             '_blank'
@@ -202,13 +209,14 @@ cell.addEventListener('pointerup', () => {
     }
 });
 
-                cell.addEventListener('pointerleave', () => {
-                    clearTimeout(pressTimer);
-                });
+cell.addEventListener('pointercancel', (event) => {
+    event.stopPropagation();
+    clearTimeout(pressTimer);
+});
 
-                cell.addEventListener('pointercancel', () => {
-                    clearTimeout(pressTimer);
-                });
+cell.addEventListener('pointerleave', (event) => {
+    event.stopPropagation();
+});
                 
                 fragment.appendChild(cell);
                 return cell;
