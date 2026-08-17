@@ -13,6 +13,7 @@ const CORE_ASSETS = [
     './capital.html',
     './clock.html',
     './syntax.html',
+    './words.html',
 
 
     './manifest-cross.json',
@@ -22,7 +23,8 @@ const CORE_ASSETS = [
     './manifest-spark.json',
     './manifest-capital.json',
     './manifest-syntax.json',
-
+    './manifest-words.json',
+    
 
     './handle.png',
     './ladybug-icon-10.png',
@@ -33,6 +35,7 @@ const CORE_ASSETS = [
     './onlyyou.png',
     './spark.png',
     './clock.PNG',
+    './words.png',
     './star.png'
 ];
 
