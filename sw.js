@@ -35,6 +35,7 @@ const CORE_ASSETS = [
     './onlyyou.png',
     './spark.png',
     './clock.PNG',
+    './syntax.png',
     './words.png',
     './star.png'
 ];
