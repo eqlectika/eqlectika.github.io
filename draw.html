@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dynamic Drawing</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background: #1a1a1a;
+      color: #eee;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    #canvas {
+      display: block;
+      background: #f8f5f0;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    #ui {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(30, 30, 30, 0.92);
+      backdrop-filter: blur(12px);
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+      align-items: center;
+      z-index: 10;
+      border-bottom: 1px solid #333;
+    }
+
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 90px;
+    }
+
+    .control label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #aaa;
+    }
+
+    .control input[type="range"] {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: #444;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .control input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #4fc3f7;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .value {
+      font-size: 12px;
+      color: #4fc3f7;
+      font-variant-numeric: tabular-nums;
+    }
+
+    button {
+      background: #333;
+      color: #eee;
+      border: 1px solid #555;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    button:active {
+      background: #555;
+    }
+
+    #clearBtn {
+      background: #c62828;
+      border-color: #e53935;
+    }
+
+    #colorPicker {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: none;
+    }
+
+    .title {
+      font-weight: 600;
+      font-size: 15px;
+      margin-right: 8px;
+      color: #fff;
+    }
+
+    #info {
+      position: fixed;
+      bottom: 12px;
+      left: 12px;
+      font-size: 12px;
+      color: #666;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div class="title">Dynamic Drawing</div>
+
+    <div class="control">
+      <label>Mass</label>
+      <input type="range" id="mass" min="0.1" max="2.0" step="0.05" value="0.6">
+      <span class="value" id="massVal">0.60</span>
+    </div>
+
+    <div class="control">
+      <label>Spring</label>
+      <input type="range" id="spring" min="0.05" max="1.0" step="0.05" value="0.35">
+      <span class="value" id="springVal">0.35</span>
+    </div>
+
+    <div class="control">
+      <label>Drag</label>
+      <input type="range" id="drag" min="0.05" max="0.95" step="0.05" value="0.55">
+      <span class="value" id="dragVal">0.55</span>
+    </div>
+
+    <div class="control">
+      <label>Size</label>
+      <input type="range" id="size" min="1" max="40" step="1" value="8">
+      <span class="value" id="sizeVal">8</span>
+    </div>
+
+    <input type="color" id="colorPicker" value="#1a1a1a">
+    <button id="clearBtn">Очистить</button>
+  </div>
+
+  <canvas id="canvas"></canvas>
+  <div id="info">Палец / мышь тянет кисть через пружину</div>
+
+  <script>
+    // ========== DynaDraw Core ==========
+    // Based on Paul Haeberli's original 1989 algorithm
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Physics state
+    let brushX = 0, brushY = 0;
+    let velX = 0, velY = 0;
+    let lastX = 0, lastY = 0;
+    let isDrawing = false;
+    let hasStarted = false;
+
+    // Parameters
+    let mass = 0.6;
+    let spring = 0.35;
+    let drag = 0.55;
+    let brushSize = 8;
+    let brushColor = '#1a1a1a';
+
+    // UI elements
+    const massSlider = document.getElementById('mass');
+    const springSlider = document.getElementById('spring');
+    const dragSlider = document.getElementById('drag');
+    const sizeSlider = document.getElementById('size');
+    const colorPicker = document.getElementById('colorPicker');
+    const clearBtn = document.getElementById('clearBtn');
+
+    // Update displayed values
+    function updateLabels() {
+      document.getElementById('massVal').textContent = mass.toFixed(2);
+      document.getElementById('springVal').textContent = spring.toFixed(2);
+      document.getElementById('dragVal').textContent = drag.toFixed(2);
+      document.getElementById('sizeVal').textContent = brushSize;
+    }
+
+    massSlider.addEventListener('input', e => {
+      mass = parseFloat(e.target.value);
+      updateLabels();
+    });
+    springSlider.addEventListener('input', e => {
+      spring = parseFloat(e.target.value);
+      updateLabels();
+    });
+    dragSlider.addEventListener('input', e => {
+      drag = parseFloat(e.target.value);
+      updateLabels();
+    });
+    sizeSlider.addEventListener('input', e => {
+      brushSize = parseInt(e.target.value);
+      updateLabels();
+    });
+    colorPicker.addEventListener('input', e => {
+      brushColor = e.target.value;
+    });
+    clearBtn.addEventListener('click', () => {
+      ctx.fillStyle = '#f8f5f0';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      hasStarted = false;
+    });
+
+    // Resize canvas
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      const uiHeight = document.getElementById('ui').offsetHeight;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = (window.innerHeight - uiHeight) * dpr;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = (window.innerHeight - uiHeight) + 'px';
+      ctx.scale(dpr, dpr);
+      ctx.fillStyle = '#f8f5f0';
+      ctx.fillRect(0, 0, window.innerWidth, window.innerHeight - uiHeight);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Get pointer position relative to canvas
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    // Physics step (the heart of DynaDraw)
+    function updatePhysics(targetX, targetY) {
+      // Spring force pulls brush toward finger
+      const forceX = (targetX - brushX) * spring;
+      const forceY = (targetY - brushY) * spring;
+
+      // Acceleration = force / mass
+      const accX = forceX / mass;
+      const accY = forceY / mass;
+
+      // Update velocity with drag (friction)
+      velX = (velX + accX) * drag;
+      velY = (velY + accY) * drag;
+
+      // Update position
+      lastX = brushX;
+      lastY = brushY;
+      brushX += velX;
+      brushY += velY;
+    }
+
+    // Draw a stroke segment
+    function drawSegment() {
+      const dx = brushX - lastX;
+      const dy = brushY - lastY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // Vary thickness slightly based on speed (calligraphy feel)
+      const speed = Math.min(dist, 20);
+      const width = brushSize * (0.6 + 0.4 * (1 - speed / 20));
+
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(brushX, brushY);
+      ctx.strokeStyle = brushColor;
+      ctx.lineWidth = Math.max(1, width);
+      ctx.stroke();
+    }
+
+    // Animation loop while drawing
+    function loop(targetX, targetY) {
+      if (!isDrawing) return;
+
+      updatePhysics(targetX, targetY);
+      drawSegment();
+
+      requestAnimationFrame(() => loop(targetX, targetY));
+    }
+
+    // Start drawing
+    function start(e) {
+      e.preventDefault();
+      const pos = getPos(e);
+      isDrawing = true;
+      hasStarted = true;
+
+      // Initialize brush at finger position
+      brushX = pos.x;
+      brushY = pos.y;
+      lastX = pos.x;
+      lastY = pos.y;
+      velX = 0;
+      velY = 0;
+
+      // Start continuous physics loop
+      loop(pos.x, pos.y);
+    }
+
+    // Move
+    function move(e) {
+      if (!isDrawing) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      // Update target — the loop will pull the brush toward it
+      // We store the latest target in a global so the loop can use it
+      window._targetX = pos.x;
+      window._targetY = pos.y;
+    }
+
+    // End
+    function end(e) {
+      isDrawing = false;
+    }
+
+    // Improved loop that always uses the latest target
+    function continuousLoop() {
+      if (isDrawing && window._targetX !== undefined) {
+        updatePhysics(window._targetX, window._targetY);
+        drawSegment();
+      }
+      requestAnimationFrame(continuousLoop);
+    }
+    continuousLoop();
+
+    // Events
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    canvas.addEventListener('mouseup', end);
+    canvas.addEventListener('mouseleave', end);
+
+    canvas.addEventListener('touchstart', start, { passive: false });
+    canvas.addEventListener('touchmove', move, { passive: false });
+    canvas.addEventListener('touchend', end);
+    canvas.addEventListener('touchcancel', end);
+
+    // Prevent scrolling on mobile
+    document.body.addEventListener('touchmove', e => {
+      if (e.target === canvas) e.preventDefault();
+    }, { passive: false });
+
+    updateLabels();
+  </script>
+</body>
+</html>
