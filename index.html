@@ -619,20 +619,26 @@ a { color: #448aff; text-decoration: none; }
     <div id="activityReadout" style="text-align: center; font-family: monospace; font-size: 12px; color: #888; margin-bottom: 8px;">
         <span style="color:#afff00">Votes 0</span> · <span style="color:#de00b2">Posts 0</span> · <span style="color:#00ffcc">Deliveries 0</span>
     </div>
+    <div id="activityRangeBtns" style="display: flex; gap: 6px; justify-content: center; margin-bottom: 10px; flex-wrap: wrap;">
+        <button type="button" class="activity-range-btn" data-range="week"  style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #afff00; border: 1px solid #afff00; cursor: pointer; border-radius: 3px;">Week</button>
+        <button type="button" class="activity-range-btn" data-range="month" style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">Month</button>
+        <button type="button" class="activity-range-btn" data-range="year"  style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">Year</button>
+        <button type="button" class="activity-range-btn" data-range="all"   style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">All</button>
+    </div>
     <div style="position: relative; width: 100%; height: 180px; background: #000; border: 1px solid #222; box-sizing: border-box;">
         <canvas id="activityChart" style="width: 100%; height: 100%; display: block;"></canvas>
     </div>
-    <p style="text-align: center; font-family: monospace; font-size: 11px; color: #555; margin: 8px 0 0 0;">X — time · Y — cumulative count · labels on lines</p>
+
 </div>
 
-<div class="exchange-panel" style="border-color: #ccc; background: #000; margin-top: 20px;">
-    <h3 style="color: #ccc; text-align: center;">Breakthrough Local Guide</h3>
-    <div id="guide-chat-log" style="height: 120px; overflow-y: auto; font-family: monospace; font-size: 14px; color: #ccc; background: #000; padding: 0px; margin-bottom: 10px; scrollbar-width: thin; scrollbar-color: #333 #000;">
+<div class="exchange-panel" style="border-color: #00ffcc; background: #000; margin-top: 20px;">
+    <h3 style="color: #00ffcc; text-align: center;">Breakthrough Local Guide</h3>
+    <div id="guide-chat-log" style="height: 120px; overflow-y: auto; font-family: monospace; font-size: 14px; color: #00ffcc; background: #000; padding: 0px; margin-bottom: 10px; scrollbar-width: thin; scrollbar-color: #333 #000;">
         > System: Local Guide initialized. Ask me about memes, voting, impacts, or mechanics.
     </div>
     <div style="display: flex; gap: 5px;">
         <input type="text" id="guide-input" class="admin-input" placeholder="Ask Guide (e.g., inject, vote, impact)..." style="margin-bottom: 0; padding: 8px;">
-        <button class="admin-btn" style="width: auto; padding: 8px 15px; background: #ccc; color: #000;" onclick="sendToGuide()">Send</button>
+        <button class="admin-btn" style="width: auto; padding: 8px 15px; background: #00ffcc; color: #000;" onclick="sendToGuide()">Send</button>
     </div>
 </div>
 
@@ -745,11 +751,14 @@ let activityHistory = JSON.parse(localStorage.getItem('paramount_activity_histor
     posts: [],
     deliveries: []
 };
+// Time range for chart: 'week' | 'month' | 'year' | 'all'
+let activityRange = localStorage.getItem('paramount_activity_range') || 'week';
+
 function saveActivityHistory() {
-    // Keep last 500 events per series to avoid unbounded growth
+    // Keep last 2000 events per series (enough for year-scale view)
     ['votes', 'posts', 'deliveries'].forEach(key => {
-        if (activityHistory[key].length > 500) {
-            activityHistory[key] = activityHistory[key].slice(-500);
+        if (activityHistory[key].length > 2000) {
+            activityHistory[key] = activityHistory[key].slice(-2000);
         }
     });
     localStorage.setItem('paramount_activity_history', JSON.stringify(activityHistory));
@@ -758,6 +767,18 @@ function recordActivity(type) {
     if (!activityHistory[type]) activityHistory[type] = [];
     activityHistory[type].push(Date.now());
     saveActivityHistory();
+    updateActivityChart();
+}
+
+function setActivityRange(range) {
+    activityRange = range;
+    localStorage.setItem('paramount_activity_range', range);
+    // Update button styles
+    document.querySelectorAll('.activity-range-btn').forEach(btn => {
+        const active = btn.getAttribute('data-range') === range;
+        btn.style.color = active ? '#afff00' : '#888';
+        btn.style.borderColor = active ? '#afff00' : '#444';
+    });
     updateActivityChart();
 }
 
@@ -799,31 +820,40 @@ function updateActivityChart() {
         { key: 'deliveries', color: '#00ffcc', label: 'Deliveries' }
     ];
     
-    // Determine time window: last 24h or full range if shorter, min 1h
+    // Determine time window based on selected range
     const now = Date.now();
+    const MS = {
+        week:  7 * 24 * 3600000,
+        month: 30 * 24 * 3600000,
+        year:  365 * 24 * 3600000
+    };
+    
     let allTs = [];
     series.forEach(s => {
         (activityHistory[s.key] || []).forEach(t => allTs.push(t));
     });
     
     let tMin, tMax;
-    if (allTs.length === 0) {
-        tMax = now;
-        tMin = now - 3600000; // 1h empty
+    tMax = now;
+    
+    if (activityRange === 'all') {
+        if (allTs.length === 0) {
+            tMin = now - 3600000;
+        } else {
+            tMin = Math.min(...allTs);
+            // minimum 1h span for readability
+            if (tMax - tMin < 3600000) tMin = tMax - 3600000;
+        }
     } else {
-        tMin = Math.min(...allTs);
-        tMax = Math.max(now, Math.max(...allTs));
-        // Ensure at least 1 hour span for readability
-        if (tMax - tMin < 3600000) tMin = tMax - 3600000;
-        // Cap display window to last 7 days for density
-        const sevenDays = 7 * 24 * 3600000;
-        if (tMax - tMin > sevenDays) tMin = tMax - sevenDays;
+        const windowMs = MS[activityRange] || MS.week;
+        tMin = tMax - windowMs;
+        // If real data is shorter than window, still show full window (empty left side is ok)
     }
     
     const span = tMax - tMin || 1;
     
     // Padding
-    const padL = 36, padR = 12, padT = 18, padB = 28;
+    const padL = 12, padR = 12, padT = 18, padB = 28;
     const plotW = W - padL - padR;
     const plotH = H - padT - padB;
     
@@ -889,12 +919,14 @@ function updateActivityChart() {
         ctx.lineTo(x, padT + plotH);
         ctx.stroke();
         
-        // Label
+        // Label depends on selected range / span
         const d = new Date(t);
         let label;
-        if (span <= 2 * 3600000) { // < 2h → HH:MM
-            label = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        } else if (span <= 48 * 3600000) { // < 2d → HH:MM
+        if (activityRange === 'year' || span > 90 * 24 * 3600000) {
+            label = d.toLocaleDateString([], { month: 'short', year: '2-digit' });
+        } else if (activityRange === 'month' || span > 10 * 24 * 3600000) {
+            label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        } else if (span <= 48 * 3600000) {
             label = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         } else {
             label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
@@ -940,7 +972,7 @@ function updateActivityChart() {
     
     // Labels on lines (near the end, slightly offset)
     ctx.font = '11px monospace';
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
     cumSeries.forEach((s, idx) => {
         const last = s.points[s.points.length - 1];
@@ -1638,6 +1670,15 @@ window.addEventListener('resize', () => {
     clearTimeout(window._activityChartResizeTimer);
     window._activityChartResizeTimer = setTimeout(updateActivityChart, 150);
 });
+
+// Wire range switcher buttons
+document.querySelectorAll('.activity-range-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        setActivityRange(btn.getAttribute('data-range'));
+    });
+});
+// Apply saved range styling on load
+setActivityRange(activityRange);
 
 let activePeers = {};
 
