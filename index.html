@@ -478,9 +478,6 @@ a { color: #448aff; text-decoration: none; }
 </button>
         </div>
     
-   <!-- <p style="color: #ffce18;">⭕️ This application is experimental. Any in-app purchase is considered a voluntary donation to support the project. Boosted data may currently only affect your local device if no one else is online. Please spend only what you can afford to lose, and carefully read the warning notice in the purchase section.</p> -->
-   <!-- <p style="color: #ffce18;">⭕️ Use the third-party application Metamask with particular care.</p> -->
-
     <p>⚠️ Clearing browser cache will reset all data.</p>
 
     <div style="margin: 10px 0;">
@@ -501,8 +498,6 @@ a { color: #448aff; text-decoration: none; }
     <p>You can delete any meme in the ranking.</p>
     <p>Use 'Convert Impacts to Action Limits' to spend 1 impact for +3 votes, or 3 impacts for +1 post slot.</p>
     <p>Use 'Transfer Impact(s)' to send it(s) to other network participants.</p>
- <!--   <p>You can 'Buy Impacts via MetaMask' wallet with Ethereum.</p>
-     <p>Install Metamask extension on your desktop browser and/or Metamask app on your mobile device and then follow instruction.</p> -->
 
     <p>To rise, vote for the weak memes against the strong ones.</p>
     <p><strong>Votes are counted only in a <span class="about-alert" style="color: #ff0000;">live</span> session</strong>.</p>
@@ -589,33 +584,6 @@ a { color: #448aff; text-decoration: none; }
     <div id="claimTimer" style="font-family: monospace; font-size: 14px; text-align: center; color: #ccc; margin-top: 10px;"></div>
 </div>
 
-<!-- <div class="exchange-panel" id="metamaskBuyPanel" style="margin-top: 20px; padding: 10px; text-align: center; background: #000; border: 1px solid #e97509;">
-    <h3 style="text-align: center; color: #e97509">Buy Impacts via MetaMask</h3>
-    ⚠️
-    <p style="text-align: center; color: #ccc; font-family: monospace;">Warning! Clearing your browser history and website data (cache) may cause you to lose purchased impacts! Also keep in mind: the system treats each browser as a separate user. To prevent losing your main dashboard and state credits, add the site to your Home Screen via the browser menu and use that shortcut to launch.</p>
-    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #e97509; color: #fff;" onclick="buyWithMetaMask(25, '0.0005')">+25 Impacts (0.0005 ETH)</button>
-        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #e97509; color: #fff;" onclick="buyWithMetaMask(50, '0.001')">+50 Impacts (0.001 ETH)</button>
-        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #e97509; color: #fff;" onclick="buyWithMetaMask(100, '0.002')">+100 Impacts (0.002 ETH)</button>
-        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #e97509; color: #fff;" onclick="buyWithMetaMask(500, '0.01')">+500 Impacts (0.01 ETH)</button>
-    </div>
-</div>
-
-<div class="exchange-panel" id="desktopWarningPanel" style="display: none; background: #000; border: 1px solid #e97509; text-align: center; padding: 20px;">
-    <h3 style="color: #e97509; margin-top: 0;">MetaMask Extension Required</h3>
-    <p style="font-size: 14px; color: #ccc; line-height: 1.5;">
-        To make purchases on desktop, please install the MetaMask browser extension and read the ⚠️ warning notice before making a purchase!
-    </p>
-<a href="https://metamask.io/" target="_blank" class="admin-btn" style="display: block; box-sizing: border-box; background: #e97509; color: #fff; margin-top: 10px; text-align: center; text-decoration: none;">Install MetaMask</a></div>
-
-<div class="exchange-panel" id="mobileWarningPanel" style="display: none; background: #000; border: 1px solid #e97509; text-align: center; padding: 20px;">
-    <h3 style="color: #e97509; margin-top: 0;">MetaMask Browser Required</h3>
-    <p style="font-size: 14px; color: #ccc; line-height: 1.5;">
-        To make purchases on your mobile device, open this site in the MetaMask app's built-in browser and read the ⚠️ warning notice before making a purchase!
-    </p>
-    <button class="admin-btn" style="background: #e97509; color: #fff; margin-top: 10px;" onclick="openInMetaMaskBrowser()">Open in MetaMask</button> 
-</div> -->
-
 <div class="exchange-panel" style="border-color: #afff00; background: #000; margin-top: 20px;">
     <h3 style="color: #afff00; text-align: center; margin-bottom: 4px;">Terra Incognita</h3>
     <div id="activityReadout" style="text-align: center; font-family: monospace; font-size: 12px; color: #888; margin-bottom: 8px;">
@@ -644,10 +612,7 @@ a { color: #448aff; text-decoration: none; }
     </div>
 </div>
 
-<!--<div style="text-align: center; margin: 40px 0;">
-    <a href="peerchat.html" style="color: #0f0; font-family: monospace; font-size: 18px; font-weight: bold; text-decoration: none;">Peer Chat</a>
-</div>-->
-    
+   
 <div class="footer-credit">
     <a href="match.html" style="display: inline-block; margin-bottom: 0px;">
 
@@ -1570,48 +1535,6 @@ function vote(side) {
     });
 }
 
-/* async function buyWithMetaMask(amountOfImpacts, ethCost) {
-    let provider = window.ethereum;
-
-    if (!provider) {
-        return alert('MetaMask is not installed!');
-    }
-
-    if (provider.providers) {
-        provider = provider.providers.find((p) => p.isMetaMask) || provider;
-    }
-
-    try {
-        const accounts = await provider.request({ method: 'eth_requestAccounts' });
-        const userAccount = accounts[0];
-
-        const recipientAddress = WORKER_CONFIG.destination;
-        const valueWei = '0x' + BigInt(Math.floor(parseFloat(ethCost) * 1e18)).toString(16);        
-
-        const transactionParameters = {
-            from: userAccount,
-            to: recipientAddress,
-            value: valueWei,
-        };
-
-        const txHash = await provider.request({
-            method: 'eth_sendTransaction',
-            params: [transactionParameters],
-        });
-
-        log(`[MetaMask] Transaction sent: ${txHash}`);
-        alert('Transaction submitted! Impacts will be added to your balance.');
-
-        playerState.impacts += amountOfImpacts;
-        playerState.level = Math.floor(playerState.impacts / 20) + 1;
-        updatePlayerStatsUI();
-        saveLocal();
-
-    } catch (error) {
-        log(`[MetaMask Error] ${error.message}`);
-        alert('Transaction failed or was rejected.');
-    }
-} */
 
 function transferImpact() {
     const target = $('#target-peer').val().trim();
@@ -1756,23 +1679,6 @@ window.addEventListener('touchend', () => {
     pullDistance = 0;
 });
 
-/* const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-const hasEthereum = typeof window.ethereum !== 'undefined';
-
-if (!hasEthereum) {
-    document.getElementById('metamaskBuyPanel').style.display = 'none';
-    if (isMobile) {
-        document.getElementById('mobileWarningPanel').style.display = 'block';
-    } else {
-        document.getElementById('desktopWarningPanel').style.display = 'block';
-    }
-} */
-    
-/* function openInMetaMaskBrowser() {
-    const currentUrl = window.location.href.replace(/^https?:\/\//, '');
-    const metamaskAppUrl = `https://metamask.app.link/dapp/${currentUrl}`;
-    window.location.href = metamaskAppUrl;
-} */
 
 function sendToGuide() {
     const inputField = document.getElementById('guide-input');
