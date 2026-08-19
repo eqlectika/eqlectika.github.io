@@ -484,7 +484,7 @@ a { color: #448aff; text-decoration: none; }
     <p>⚠️ Clearing browser cache will reset all data.</p>
 
     <div style="margin: 10px 0;">
-        <button class="admin-btn" style="background: #ff3333; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="resetToDemo()">Reset to Default</button>
+        <button class="admin-btn" style="background: #ff3333; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="resetToDefault()">Reset to Default</button>
     </div>
     
     <p>The mechanics of impact transmission and collision detection are based on trust between clients in an open network without cryptographic guarantees of transaction authenticity and allow packet interception or forgery.</p>
@@ -1899,7 +1899,37 @@ function clearAllExceptDemo() {
     }
 }
 
-function syncAndKeepData() {
+async function resetToDefault() {
+    if (!confirm("⚠️ This will DELETE ALL your custom memes and reset everything to default.\n\nOnly demo memes and default stats (8 impacts, 5 votes, 3 posts) will remain.\n\nContinue?")) {
+        return;
+    }
+    
+    localStorage.clear();
+    
+    if ('caches' in window) {
+        try {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+            console.log('[Reset] Cache cleared');
+        } catch(e) {
+            console.log('[Reset] Cache clear error:', e);
+        }
+    }
+    
+    items = [];
+    playerState = { impacts: 8, level: 1, votesLeft: 5, postsLeft: 3 };
+    peerBalances = {};
+    pendingTransfers = {};
+    activityHistory = { votes: [], posts: [], deliveries: [] };
+    processedTxIds = [];
+    
+    log(`[Reset] All data and cache cleared. Reloading...`);
+    alert(`✅ Reset complete!\n\nCache and data cleared.`);
+    
+    window.location.reload(true);
+}
+
+async function syncAndKeepData() {
     if (!confirm("This will refresh the interface and synchronize data, but KEEP all your memes, impacts, votes and posts. Continue?")) {
         return;
     }
@@ -1912,7 +1942,15 @@ function syncAndKeepData() {
     const savedPendingTransfers = JSON.parse(JSON.stringify(pendingTransfers));
     const savedMyId = myId;
     
-    log(`[Sync] Preserved ${savedItems.length} memes, ${savedPlayerState.impacts} impacts, ${savedPlayerState.votesLeft} votes, ${savedPlayerState.postsLeft} posts`);
+    if ('caches' in window) {
+        try {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+            console.log('[Sync] Cache cleared');
+        } catch(e) {
+            console.log('[Sync] Cache clear error:', e);
+        }
+    }
     
     const keysToKeep = [
         'paramount_versus_items',
@@ -1940,24 +1978,10 @@ function syncAndKeepData() {
     localStorage.setItem('paramount_pending_transfers', JSON.stringify(savedPendingTransfers));
     localStorage.setItem('paramount_custom_my_id', savedMyId);
     
-    
-    log(`[Sync] Data preserved and synchronized. Refreshing...`);
+    log(`[Sync] Data preserved. Cache cleared. Refreshing...`);
     alert(`✅ Synchronized!\n\nPreserved:\n• ${savedItems.length} memes\n• ${savedPlayerState.impacts} impacts\n• ${savedPlayerState.votesLeft} votes\n• ${savedPlayerState.postsLeft} posts`);
     
-    location.reload();
-}
-
-function resetToDefault() {
-    if (!confirm("⚠️ This will DELETE ALL your custom memes and reset everything to default.\n\nOnly demo memes and default stats (8 impacts, 5 votes, 3 posts) will remain.\n\nContinue?")) {
-        return;
-    }
-    
-    localStorage.clear();
-    
-    log(`[Reset] All data cleared. Reloading to load defaults...`);
-    alert(`✅ Reset complete!\n\nPage will reload with demo memes and default stats.`);
-    
-    location.reload();
+    window.location.reload(true);
 }
 
 const aboutToggle = document.getElementById('aboutToggle');
