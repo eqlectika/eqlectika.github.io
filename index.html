@@ -595,7 +595,7 @@ a { color: #448aff; text-decoration: none; }
         <button type="button" class="activity-range-btn" data-range="year"  style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">Year</button>
         <button type="button" class="activity-range-btn" data-range="all"   style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">All</button>
     </div>
-    <div style="position: relative; width: 100%; height: 180px; background: #000; border: 1px solid #222; box-sizing: border-box;">
+    <div style="position: relative; width: 100%; height: 180px; background: #000; box-sizing: border-box;">
         <canvas id="activityChart" style="width: 100%; height: 100%; display: block;"></canvas>
     </div>
 
@@ -756,7 +756,7 @@ function setActivityRange(range) {
     document.querySelectorAll('.activity-range-btn').forEach(btn => {
         const active = btn.getAttribute('data-range') === range;
         btn.style.color = active ? '#afff00' : '#888';
-        btn.style.borderColor = active ? '#afff00' : '#444';
+        btn.style.borderColor = active ? '#afff00' : '#888';
     });
     updateActivityChart();
 }
@@ -869,48 +869,30 @@ function updateActivityChart() {
     rightScaleX = padL + plotW + gapToRightScale;
 
     
-    ctx.strokeStyle = '#222';
-    ctx.lineWidth = 1;
-    ctx.fillStyle = '#666';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
+ctx.textAlign = 'left';
+ctx.textBaseline = 'top';
+ctx.fillStyle = '#666';
+ctx.font = '10px monospace';
+
+const timeTicks = 5;
+for (let i = 0; i <= timeTicks; i++) {
+    const t = tMin + (i / timeTicks) * span;
+    const x = padL + (i / timeTicks) * plotW;
     
-    const yTicks = 4;
-    for (let i = 0; i <= yTicks; i++) {
-        const y = padT + plotH - (i / yTicks) * plotH;
-        const val = Math.round((i / yTicks) * yMax);
-        ctx.beginPath();
-        ctx.moveTo(padL, y);
-        ctx.lineTo(padL + plotW, y);
-        ctx.stroke();
-        ctx.fillText(String(val), padL - 6, y);
+    const d = new Date(t);
+    let label;
+    if (activityRange === 'year' || span > 90 * 24 * 3600000) {
+        label = d.toLocaleDateString([], { month: 'short', year: '2-digit' });
+    } else if (activityRange === 'month' || span > 10 * 24 * 3600000) {
+        label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    } else if (span <= 48 * 3600000) {
+        label = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+        label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
-    
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    const timeTicks = 5;
-    for (let i = 0; i <= timeTicks; i++) {
-        const t = tMin + (i / timeTicks) * span;
-        const x = padL + (i / timeTicks) * plotW;
-        ctx.beginPath();
-        ctx.moveTo(x, padT);
-        ctx.lineTo(x, padT + plotH);
-        ctx.stroke();
-        
-        const d = new Date(t);
-        let label;
-        if (activityRange === 'year' || span > 90 * 24 * 3600000) {
-            label = d.toLocaleDateString([], { month: 'short', year: '2-digit' });
-        } else if (activityRange === 'month' || span > 10 * 24 * 3600000) {
-            label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-        } else if (span <= 48 * 3600000) {
-            label = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        } else {
-            label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-        }
-        ctx.fillText(label, x, padT + plotH + 6);
-    }
+    ctx.fillStyle = '#ccc';
+    ctx.fillText(label, x, padT + plotH + 6);
+}
     
     function drawLine(points, color) {
         if (points.length < 2) return;
