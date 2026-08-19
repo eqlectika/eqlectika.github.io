@@ -731,6 +731,22 @@ if (!myId) {
 }
 document.getElementById('nodeId').innerText = myId;
 
+let processedTxIds = JSON.parse(localStorage.getItem('paramount_processed_txs')) || [];
+
+function isTxProcessed(txId) {
+    return processedTxIds.includes(txId);
+}
+
+function markTxProcessed(txId) {
+    if (!processedTxIds.includes(txId)) {
+        processedTxIds.push(txId);
+        if (processedTxIds.length > 1000) {
+            processedTxIds = processedTxIds.slice(-500);
+        }
+        localStorage.setItem('paramount_processed_txs', JSON.stringify(processedTxIds));
+    }
+}
+
 let playerState = JSON.parse(localStorage.getItem('paramount_player_state'));
 if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playerState.postsLeft === 'undefined') {
     playerState = { 
@@ -745,17 +761,14 @@ if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playe
 let peerBalances = JSON.parse(localStorage.getItem('paramount_peer_balances')) || {};
 let blacklistedPeers = JSON.parse(localStorage.getItem('paramount_blacklist')) || [];
 
-// Activity history: arrays of timestamps for each event type (time-series)
 let activityHistory = JSON.parse(localStorage.getItem('paramount_activity_history')) || {
     votes: [],
     posts: [],
     deliveries: []
 };
-// Time range for chart: 'week' | 'month' | 'year' | 'all'
 let activityRange = localStorage.getItem('paramount_activity_range') || 'week';
 
 function saveActivityHistory() {
-    // Keep last 2000 events per series (enough for year-scale view)
     ['votes', 'posts', 'deliveries'].forEach(key => {
         if (activityHistory[key].length > 2000) {
             activityHistory[key] = activityHistory[key].slice(-2000);
@@ -773,7 +786,6 @@ function recordActivity(type) {
 function setActivityRange(range) {
     activityRange = range;
     localStorage.setItem('paramount_activity_range', range);
-    // Update button styles
     document.querySelectorAll('.activity-range-btn').forEach(btn => {
         const active = btn.getAttribute('data-range') === range;
         btn.style.color = active ? '#afff00' : '#888';
@@ -810,7 +822,6 @@ function updateActivityChart() {
     canvas.height = H * dpr;
     ctx.scale(dpr, dpr);
     
-    // Clear
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, W, H);
     
@@ -820,7 +831,6 @@ function updateActivityChart() {
         { key: 'deliveries', color: '#00ffcc', label: 'Deliveries' }
     ];
     
-    // Determine time window based on selected range
     const now = Date.now();
     const MS = {
         week:  7 * 24 * 3600000,
@@ -841,33 +851,27 @@ function updateActivityChart() {
             tMin = now - 3600000;
         } else {
             tMin = Math.min(...allTs);
-            // minimum 1h span for readability
             if (tMax - tMin < 3600000) tMin = tMax - 3600000;
         }
     } else {
         const windowMs = MS[activityRange] || MS.week;
         tMin = tMax - windowMs;
-        // If real data is shorter than window, still show full window (empty left side is ok)
     }
     
     const span = tMax - tMin || 1;
     
-    // Padding
     const padL = 12, padR = 12, padT = 18, padB = 28;
     let plotW, plotH, rightScaleX;
 
-    // Build cumulative series within window
     function buildCumulative(timestamps) {
         const sorted = (timestamps || []).filter(t => t >= tMin && t <= tMax).sort((a, b) => a - b);
         const points = [];
-        // Start from count of events before window
         let count = (timestamps || []).filter(t => t < tMin).length;
         points.push({ t: tMin, c: count });
         sorted.forEach(t => {
             count++;
             points.push({ t, c: count });
         });
-        // Extend to now
         if (points.length === 0 || points[points.length - 1].t < tMax) {
             points.push({ t: tMax, c: count });
         }
@@ -879,14 +883,12 @@ function updateActivityChart() {
         points: buildCumulative(activityHistory[s.key])
     }));
     
-    // Y max
     let yMax = 1;
     cumSeries.forEach(s => {
         s.points.forEach(p => { if (p.c > yMax) yMax = p.c; });
     });
-    yMax = Math.ceil(yMax * 1.15) || 1; // headroom
+    yMax = Math.ceil(yMax * 1.15) || 1; 
 
-    // Separate right-side Y scale. Width adapts to the number of characters.
     const yLabelMax = Math.max(
         String(yMax).length,
         ...Array.from({length: 5}, (_, i) =>
@@ -900,7 +902,6 @@ function updateActivityChart() {
     rightScaleX = padL + plotW + gapToRightScale;
 
     
-    // Grid + axes
     ctx.strokeStyle = '#222';
     ctx.lineWidth = 1;
     ctx.fillStyle = '#666';
@@ -908,7 +909,6 @@ function updateActivityChart() {
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     
-    // Horizontal grid + Y labels
     const yTicks = 4;
     for (let i = 0; i <= yTicks; i++) {
         const y = padT + plotH - (i / yTicks) * plotH;
@@ -920,7 +920,6 @@ function updateActivityChart() {
         ctx.fillText(String(val), padL - 6, y);
     }
     
-    // Vertical time ticks
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     const timeTicks = 5;
@@ -932,7 +931,6 @@ function updateActivityChart() {
         ctx.lineTo(x, padT + plotH);
         ctx.stroke();
         
-        // Label depends on selected range / span
         const d = new Date(t);
         let label;
         if (activityRange === 'year' || span > 90 * 24 * 3600000) {
@@ -947,7 +945,6 @@ function updateActivityChart() {
         ctx.fillText(label, x, padT + plotH + 6);
     }
     
-    // Draw lines (step style for cumulative counts looks cleaner)
     function drawLine(points, color) {
         if (points.length < 2) return;
         ctx.beginPath();
@@ -961,17 +958,15 @@ function updateActivityChart() {
             const y = padT + plotH - (p.c / yMax) * plotH;
             if (i === 0) ctx.moveTo(x, y);
             else {
-                // step: horizontal then vertical
                 const prev = points[i - 1];
                 const prevX = padL + ((prev.t - tMin) / span) * plotW;
                 const prevY = padT + plotH - (prev.c / yMax) * plotH;
-                ctx.lineTo(x, prevY); // horizontal
-                ctx.lineTo(x, y);     // vertical
+                ctx.lineTo(x, prevY); 
+                ctx.lineTo(x, y);     
             }
         });
         ctx.stroke();
         
-        // Endpoint dot + label
         const last = points[points.length - 1];
         const lx = padL + ((last.t - tMin) / span) * plotW;
         const ly = padT + plotH - (last.c / yMax) * plotH;
@@ -983,7 +978,6 @@ function updateActivityChart() {
     
     cumSeries.forEach(s => drawLine(s.points, s.color));
     
-    // Current values beside the line endpoints.
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -997,7 +991,6 @@ function updateActivityChart() {
         ctx.fillText(String(last.c), valueX, ly);
     });
     
-    // Current totals under title area (optional small readout)
     const totalVotes = (activityHistory.votes || []).length;
     const totalPosts = (activityHistory.posts || []).length;
     const totalDeliveries = (activityHistory.deliveries || []).length;
@@ -1161,22 +1154,33 @@ client.on('message', (topic, payload) => {
     try {
         let packet = JSON.parse(payload.toString());
 
-        if (packet.type === 'TRANSFER_IMPACT' && packet.target === myId) {
-            log(`[Network] Received ${packet.amount} impacts from ${packet.sender}`);
-            
-            playerState.impacts += parseInt(packet.amount);
-            playerState.level = Math.floor(playerState.impacts / 20) + 1;
-            updatePlayerStatsUI();
-            saveLocal();
+if (packet.type === 'TRANSFER_IMPACT' && packet.target === myId) {
+    if (packet.sender === myId) {
+        log(`[Security] Blocked self-transfer from ${packet.sender}`);
+        return;
+    }
+    if (isTxProcessed(packet.txId)) {
+        log(`[Security] Duplicate transfer ${packet.txId} blocked.`);
+        return;
+    }
+    
+    log(`[Network] Received ${packet.amount} impacts from ${packet.sender}`);
+    
+    playerState.impacts += parseInt(packet.amount);
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+    saveLocal();
 
-            client.publish(TOPIC, JSON.stringify({
-                type: 'TRANSFER_ACK',
-                txId: packet.txId,
-                sender: myId 
-            }), { qos: 1 });
-            
-            alert(`Received ${packet.amount} impacts from ${packet.sender}`);
-        }
+    markTxProcessed(packet.txId);
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'TRANSFER_ACK',
+        txId: packet.txId,
+        sender: myId 
+    }), { qos: 1 });
+    
+    alert(`Received ${packet.amount} impacts from ${packet.sender}`);
+}
         
         else if (packet.type === 'TRANSFER_ACK') {
             if (pendingTransfers[packet.txId]) {
@@ -1200,7 +1204,6 @@ client.on('message', (topic, payload) => {
                 updateRankingList();
                 if (items.length >= 2 && currentPair.length === 0) nextPair();
                 
-                // Send delivery ACK so author can track deliveries
                 if (packet.sender !== myId) {
                     client.publish(TOPIC, JSON.stringify({
                         type: 'DELIVERY_ACK',
@@ -1221,7 +1224,6 @@ client.on('message', (topic, payload) => {
                     saveLocal();
                     updateRankingList();
                     
-                    // Count delivery for our own memes
                     if (item.sender === myId) {
                         recordActivity('deliveries');
                     }
@@ -1246,7 +1248,6 @@ client.on('message', (topic, payload) => {
                 if (items.length >= 2 && currentPair.length === 0) nextPair();
             }
             
-            // Если мы получили UPDATE_ITEM и это чужой мем — то отправляем ACK
             if (packet.sender !== myId) {
                 client.publish(TOPIC, JSON.stringify({
                     type: 'DELIVERY_ACK',
@@ -1329,7 +1330,6 @@ function convertImpacts(type) {
         playerState.impacts -= cost;
         playerState.votesLeft += 3;
         log(`Converted ${cost} impact into +3 votes.`);
-        // alert('Success! 3 votes added.');
     } else if (type === 'posts') {
         const cost = 3;
         if (playerState.impacts < cost) {
@@ -1338,7 +1338,6 @@ function convertImpacts(type) {
         playerState.impacts -= cost;
         playerState.postsLeft += 1;
         log(`Converted ${cost} impacts into +1 post slot.`);
-        // alert('Success! 1 publication slot added.');
     }
     playerState.level = Math.floor(playerState.impacts / 20) + 1;
     updatePlayerStatsUI();
@@ -1450,9 +1449,6 @@ function deleteItemLocal(id) {
         items.splice(index, 1);
         saveLocal();
 
-        //  playerState.postsLeft -= 1;
-        // playerState.level = Math.floor(playerState.impacts / 20) + 1;
-        // updatePlayerStatsUI();
 
         log(`You removed meme locally: ${id}.`);
         updateRankingList();
@@ -1618,6 +1614,22 @@ async function buyWithMetaMask(amountOfImpacts, ethCost) {
 function transferImpact() {
     const target = $('#target-peer').val().trim();
     const amount = parseInt($('#transfer-amount').val());
+
+    if (target === myId) {
+        alert('❌ Cannot send impacts to yourself!');
+        return;
+    }
+    
+    peerBalances[myId] = playerState.impacts;
+    localStorage.setItem('paramount_peer_balances', JSON.stringify(peerBalances));
+
+    if (!target || !amount || amount < 1) {
+        return alert('Please enter the correct participant ID and number of impacts!');
+    }
+    if (playerState.impacts < amount) {
+        return alert('Impacts are out! You do not have enough impacts to translate.');
+    }
+    
     peerBalances[myId] = playerState.impacts;
     localStorage.setItem('paramount_peer_balances', JSON.stringify(peerBalances));
 
@@ -1656,7 +1668,6 @@ function transferImpact() {
 updateRankingList();
 if (items.length >= 2) nextPair();
 
-// Bootstrap deliveries history from existing deliveredPeers only if history is empty
 (function bootstrapDeliveriesHistory() {
     const hasHistory = (activityHistory.deliveries && activityHistory.deliveries.length > 0);
     if (hasHistory) return;
@@ -1667,7 +1678,6 @@ if (items.length >= 2) nextPair();
         }
     });
     if (total > 0) {
-        // Place synthetic points evenly over last hour so the line is visible
         const now = Date.now();
         for (let i = 0; i < total; i++) {
             activityHistory.deliveries.push(now - 3600000 + Math.floor((i / total) * 3600000));
@@ -1677,19 +1687,16 @@ if (items.length >= 2) nextPair();
 })();
 updateActivityChart();
 
-// Redraw chart on resize
 window.addEventListener('resize', () => {
     clearTimeout(window._activityChartResizeTimer);
     window._activityChartResizeTimer = setTimeout(updateActivityChart, 150);
 });
 
-// Wire range switcher buttons
 document.querySelectorAll('.activity-range-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         setActivityRange(btn.getAttribute('data-range'));
     });
 });
-// Apply saved range styling on load
 setActivityRange(activityRange);
 
 let activePeers = {};
