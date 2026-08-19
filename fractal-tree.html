@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Fractal Tree</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background: #0a0a0a;
+      color: #eee;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    #canvas {
+      display: block;
+      background: #000;
+      touch-action: none;
+    }
+
+    #ui {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(20, 20, 20, 0.92);
+      backdrop-filter: blur(12px);
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      align-items: center;
+      z-index: 10;
+      border-bottom: 1px solid #333;
+    }
+
+    .control {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 80px;
+    }
+
+    .control label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #999;
+    }
+
+    .control input[type="range"] {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: #333;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    .control input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #81c784;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .value {
+      font-size: 12px;
+      color: #81c784;
+      font-variant-numeric: tabular-nums;
+    }
+
+    button {
+      background: #2e2e2e;
+      color: #eee;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    button:active {
+      background: #444;
+    }
+
+    #regenBtn {
+      background: #2e7d32;
+      border-color: #43a047;
+    }
+
+    .title {
+      font-weight: 600;
+      font-size: 15px;
+      margin-right: 6px;
+      color: #fff;
+    }
+
+    #info {
+      position: fixed;
+      bottom: 14px;
+      left: 14px;
+      font-size: 12px;
+      color: #555;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div class="title">Fractal Tree</div>
+
+    <div class="control">
+      <label>Глубина</label>
+      <input type="range" id="depth" min="3" max="12" step="1" value="9">
+      <span class="value" id="depthVal">9</span>
+    </div>
+
+    <div class="control">
+      <label>Угол</label>
+      <input type="range" id="angle" min="10" max="45" step="1" value="25">
+      <span class="value" id="angleVal">25°</span>
+    </div>
+
+    <div class="control">
+      <label>Длина</label>
+      <input type="range" id="length" min="0.55" max="0.85" step="0.01" value="0.72">
+      <span class="value" id="lengthVal">0.72</span>
+    </div>
+
+    <div class="control">
+      <label>Толщина</label>
+      <input type="range" id="thickness" min="1" max="12" step="0.5" value="4">
+      <span class="value" id="thicknessVal">4</span>
+    </div>
+
+    <button id="regenBtn">Обновить</button>
+    <button id="randomBtn">Случайно</button>
+  </div>
+
+  <canvas id="canvas"></canvas>
+  <div id="info">Каждая ветка раздваивается • Классический бинарный фрактал</div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    let depth = 9;
+    let angleDeg = 25;
+    let lengthRatio = 0.72;
+    let baseThickness = 4;
+
+    // UI
+    const depthSlider = document.getElementById('depth');
+    const angleSlider = document.getElementById('angle');
+    const lengthSlider = document.getElementById('length');
+    const thicknessSlider = document.getElementById('thickness');
+
+    function updateLabels() {
+      document.getElementById('depthVal').textContent = depth;
+      document.getElementById('angleVal').textContent = angleDeg + '°';
+      document.getElementById('lengthVal').textContent = lengthRatio.toFixed(2);
+      document.getElementById('thicknessVal').textContent = baseThickness;
+    }
+
+    depthSlider.addEventListener('input', e => {
+      depth = parseInt(e.target.value);
+      updateLabels();
+      draw();
+    });
+    angleSlider.addEventListener('input', e => {
+      angleDeg = parseInt(e.target.value);
+      updateLabels();
+      draw();
+    });
+    lengthSlider.addEventListener('input', e => {
+      lengthRatio = parseFloat(e.target.value);
+      updateLabels();
+      draw();
+    });
+    thicknessSlider.addEventListener('input', e => {
+      baseThickness = parseFloat(e.target.value);
+      updateLabels();
+      draw();
+    });
+
+    document.getElementById('regenBtn').addEventListener('click', draw);
+    document.getElementById('randomBtn').addEventListener('click', () => {
+      depth = 7 + Math.floor(Math.random() * 5);
+      angleDeg = 15 + Math.floor(Math.random() * 25);
+      lengthRatio = 0.62 + Math.random() * 0.18;
+      baseThickness = 2 + Math.random() * 6;
+
+      depthSlider.value = depth;
+      angleSlider.value = angleDeg;
+      lengthSlider.value = lengthRatio;
+      thicknessSlider.value = baseThickness;
+      updateLabels();
+      draw();
+    });
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      const uiHeight = document.getElementById('ui').offsetHeight;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = (window.innerHeight - uiHeight) * dpr;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = (window.innerHeight - uiHeight) + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    window.addEventListener('resize', resize);
+
+    // Classic recursive binary tree
+    function branch(x, y, len, angle, level, thickness) {
+      if (level <= 0 || len < 2) return;
+
+      const rad = angle * Math.PI / 180;
+      const x2 = x + Math.cos(rad) * len;
+      const y2 = y + Math.sin(rad) * len;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = Math.max(0.5, thickness);
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Two new branches
+      const nextLen = len * lengthRatio;
+      const nextThick = thickness * 0.7;
+      const spread = angleDeg;
+
+      branch(x2, y2, nextLen, angle - spread, level - 1, nextThick);
+      branch(x2, y2, nextLen, angle + spread, level - 1, nextThick);
+    }
+
+    function draw() {
+      const w = window.innerWidth;
+      const h = window.innerHeight - document.getElementById('ui').offsetHeight;
+
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, w, h);
+
+      // Start from bottom center, going upward
+      const startX = w / 2;
+      const startY = h - 20;
+      const trunkLength = Math.min(w, h) * 0.28;
+
+      branch(startX, startY, trunkLength, -90, depth, baseThickness);
+    }
+
+    updateLabels();
+    resize();
+  </script>
+</body>
+</html>
