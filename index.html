@@ -854,9 +854,8 @@ function updateActivityChart() {
     
     // Padding
     const padL = 12, padR = 12, padT = 18, padB = 28;
-    const plotW = W - padL - padR;
-    const plotH = H - padT - padB;
-    
+    let plotW, plotH, rightScaleX;
+
     // Build cumulative series within window
     function buildCumulative(timestamps) {
         const sorted = (timestamps || []).filter(t => t >= tMin && t <= tMax).sort((a, b) => a - b);
@@ -886,6 +885,20 @@ function updateActivityChart() {
         s.points.forEach(p => { if (p.c > yMax) yMax = p.c; });
     });
     yMax = Math.ceil(yMax * 1.15) || 1; // headroom
+
+    // Separate right-side Y scale. Width adapts to the number of characters.
+    const yLabelMax = Math.max(
+        String(yMax).length,
+        ...Array.from({length: 5}, (_, i) =>
+            String(Math.round((i / 4) * yMax)).length
+        )
+    );
+    const rightScaleWidth = Math.max(24, yLabelMax * 7 + 10);
+    const gapToRightScale = 8;
+    plotW = Math.max(20, W - padL - padR - rightScaleWidth - gapToRightScale);
+    plotH = H - padT - padB;
+    rightScaleX = padL + plotW + gapToRightScale;
+
     
     // Grid + axes
     ctx.strokeStyle = '#222';
@@ -902,7 +915,7 @@ function updateActivityChart() {
         const val = Math.round((i / yTicks) * yMax);
         ctx.beginPath();
         ctx.moveTo(padL, y);
-        ctx.lineTo(W - padR, y);
+        ctx.lineTo(padL + plotW, y);
         ctx.stroke();
         ctx.fillText(String(val), padL - 6, y);
     }
@@ -970,19 +983,18 @@ function updateActivityChart() {
     
     cumSeries.forEach(s => drawLine(s.points, s.color));
     
-    // Labels on lines (near the end, slightly offset)
+    // Current values beside the line endpoints.
     ctx.font = '11px monospace';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'bottom';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
     cumSeries.forEach((s, idx) => {
         const last = s.points[s.points.length - 1];
         if (!last) return;
         const lx = padL + ((last.t - tMin) / span) * plotW;
         const ly = padT + plotH - (last.c / yMax) * plotH;
-        // Offset labels vertically so they don't overlap
-        const offsetY = -6 - (idx * 14);
+        const valueX = Math.min(lx + 7, rightScaleX - 2);
         ctx.fillStyle = s.color;
-        ctx.fillText(`${s.label} ${last.c}`, Math.min(lx + 6, W - padR - 70), ly + offsetY);
+        ctx.fillText(String(last.c), valueX, ly);
     });
     
     // Current totals under title area (optional small readout)
