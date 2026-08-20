@@ -1180,21 +1180,30 @@ if (packet.type === 'TRANSFER_IMPACT' && packet.target === myId) {
             }
         } 
 
-        else if (packet.type === 'DELIVERY_ACK') {
-            let item = items.find(i => i.id === packet.itemId);
-            if (item) {
-                if (!item.deliveredPeers) item.deliveredPeers = [];
-                if (!item.deliveredPeers.includes(packet.peerId)) {
-                    item.deliveredPeers.push(packet.peerId);
-                    saveLocal();
-                    updateRankingList();
-                    
-                    if (item.sender === myId) {
-                        recordActivity('deliveries');
-                    }
+else if (packet.type === 'DELIVERY_ACK') {
+    let item = items.find(i => i.id === packet.itemId);
+    if (item) {
+        if (!item.deliveredPeers) item.deliveredPeers = [];
+        if (!item.deliveredPeers.includes(packet.peerId)) {
+            item.deliveredPeers.push(packet.peerId);
+            saveLocal();
+            updateRankingList();
+            
+            if (item.sender === myId) {
+                recordActivity('deliveries');
+
+                if (client && client.connected) {
+                    client.publish(TOPIC, JSON.stringify({
+                        type: 'ACTIVITY',
+                        activityType: 'deliveries',
+                        sender: myId,
+                        ts: Date.now()
+                    }), { qos: 0 });
                 }
             }
         }
+    }
+}
             
         else if (packet.type === 'UPDATE_ITEM') {
             let existingItem = items.find(i => i.id === packet.item.id);
@@ -1238,6 +1247,26 @@ else if (packet.type === 'VOTE') {
             nextPair();
         }
     }
+}
+
+else if (packet.type === 'ACTIVITY') {
+    if (packet.sender === myId) return;
+
+    const type = packet.activityType; 
+    if (!['votes', 'posts', 'deliveries'].includes(type)) return;
+
+    const ts = packet.ts || Date.now();
+    if (!activityHistory[type]) activityHistory[type] = [];
+    
+ //   const recent = activityHistory[type].slice(-5);
+ //   if (recent.some(t => Math.abs(t - ts) < 400)) return;
+
+    activityHistory[type].push(ts);
+    saveActivityHistory();
+    updateActivityChart();
+
+    log(`[Activity] ${packet.sender}: ${type}`);
+    
 }
 
 
@@ -1353,6 +1382,15 @@ async function addItem() {
         updatePlayerStatsUI();
 
         recordActivity('posts');
+
+if (client && client.connected) {
+    client.publish(TOPIC, JSON.stringify({
+        type: 'ACTIVITY',
+        activityType: 'posts',
+        sender: myId,
+        ts: Date.now()
+    }), { qos: 0 });
+}
 
         if (file) {
             imgData = await compressImage(file);
@@ -1507,6 +1545,15 @@ function vote(side) {
     updatePlayerStatsUI();
 
     recordActivity('votes');
+
+    if (client && client.connected) {
+    client.publish(TOPIC, JSON.stringify({
+        type: 'ACTIVITY',
+        activityType: 'votes',
+        sender: myId,
+        ts: Date.now()
+    }), { qos: 0 });
+}
 
     const winIdx = currentPair[side === 'left' ? 0 : 1];
     const loseIdx = currentPair[side === 'left' ? 1 : 0];
