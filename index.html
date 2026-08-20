@@ -506,11 +506,13 @@ a { color: #448aff; text-decoration: none; }
 </div>
 </div>
 
-<div class="network-status open" style="margin-top: 10px;" id="statusToggle">
-    <span id="netStatus">Status: Connecting to node network... (<span id="nodeId">...</span>)</span>
-</div>
+<div id="logArea">
+    <div class="network-status open" style="margin-top: 10px;" id="statusToggle">
+        <span id="netStatus">Status: Connecting to node network... (<span id="nodeId">...</span>)</span>
+    </div>
 
-<div id="logContainer"></div>
+    <div id="logContainer"></div>
+</div>
 
 <div id="versus">
     <div class="ranking-title" style="color: #afff00">Resonance Match</div>
@@ -645,14 +647,28 @@ a { color: #448aff; text-decoration: none; }
     }
 </script>
 
-<script src="worker-mask.js"></script>
+
 <script>
+const logArea = document.getElementById('logArea');
 const statusToggle = document.getElementById('statusToggle');
 const logContainer = document.getElementById('logContainer');
-if (statusToggle && logContainer) {
-    statusToggle.addEventListener('click', () => {
-        logContainer.classList.toggle('collapsed');
-        statusToggle.classList.toggle('open');
+
+if (logArea && statusToggle && logContainer) {
+    let pressStart = 0;
+
+    logArea.addEventListener('pointerdown', () => {
+        pressStart = Date.now();
+    });
+
+    logArea.addEventListener('pointerup', () => {
+        const pressDuration = Date.now() - pressStart;
+
+        if (pressDuration < 500) {
+            logContainer.classList.toggle('collapsed');
+            statusToggle.classList.toggle('open');
+        }
+
+        pressStart = 0;
     });
 }
 
