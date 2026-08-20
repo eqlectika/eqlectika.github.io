@@ -1223,18 +1223,23 @@ if (packet.type === 'TRANSFER_IMPACT' && packet.target === myId) {
             }
         }
             
-        else if (packet.type === 'VOTE') {
-            let winItem = items.find(i => i.id === packet.winId);
-            let loseItem = items.find(i => i.id === packet.loseId);
-            if (winItem && loseItem) {
-                winItem.rating = packet.newWinRating;
-                loseItem.rating = packet.newLoseRating;
-                saveLocal();
-                log(`[Resonance] Global sync adjusted by ${packet.sender}`);
-                updateRankingList();
-                nextPair();
-            }
+else if (packet.type === 'VOTE') {
+    let winItem = items.find(i => i.id === packet.winId);
+    let loseItem = items.find(i => i.id === packet.loseId);
+    
+    if (winItem && loseItem) {
+        winItem.rating = packet.newWinRating;
+        loseItem.rating = packet.newLoseRating;
+        saveLocal();
+        updateRankingList();
+
+        if (packet.sender !== myId) {
+            log(`[Resonance] Global sync adjusted by ${packet.sender}`);
+            nextPair();
         }
+    }
+}
+
 
     } catch(e) {
         log("Packet processing error: " + e.message);
@@ -1517,20 +1522,35 @@ function vote(side) {
     loseItem.rating -= change;
     saveLocal();
 
-    client.publish(TOPIC, JSON.stringify({
-        type: 'VOTE',
-        sender: myId,
-        winId: winItem.id,
-        loseId: loseItem.id,
-        newWinRating: winItem.rating,
-        newLoseRating: loseItem.rating
-    }), { qos: 1 });
+    const isConnectedToBroker = (typeof client !== 'undefined' && client.connected);
 
-    updateRankingList();
-    $('#versus').animate({ opacity: 0 }, 50, function() { 
-        nextPair(); 
-        $(this).animate({ opacity: 1 }, 50); 
-    });
+    if (isConnectedToBroker) {
+        // Уникальный ID голоса, чтобы отличить свое действие от чужого
+        const voteId = 'vote-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        winItem.lastVoteId = voteId; // Помечаем элемент
+
+        client.publish(TOPIC, JSON.stringify({
+            type: 'VOTE',
+            sender: myId,
+            voteId: voteId,
+            winId: winItem.id,
+            loseId: loseItem.id,
+            newWinRating: winItem.rating,
+            newLoseRating: loseItem.rating
+        }), { qos: 1 });
+
+
+        updateRankingList();
+        nextPair();
+
+    } else {
+
+        updateRankingList();
+        $('#versus').animate({ opacity: 0 }, 50, function() { 
+            nextPair(); 
+            $(this).animate({ opacity: 1 }, 50); 
+        });
+    }
 }
 
 
