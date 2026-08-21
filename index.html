@@ -451,6 +451,7 @@ a { color: #448aff; text-decoration: none; }
 
 <div id="disclaimerText" class="collapsed">
     <p>Some updates happen constantly, you can use this button anytime without waiting for "Update Available" notification.</p>
+    <p>⚠️ Before updating, please verify if your current meme is ready but was not injected to avoid losing any unsent content.</p>
             <div style="margin: 10px 0;">
 <button class="admin-btn" style="background: #0097ff; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="syncAndKeepData()">
     Update & Keep All Memes & Credits
@@ -465,7 +466,7 @@ a { color: #448aff; text-decoration: none; }
     </p>
 
     <p style="color: #afff00;">
-    ⚠️ <strong>Transport Layer Notice:</strong> Public MQTT brokers may experience temporary downtime or network congestion. If connectivity drops or messages are not syncing, switch to an alternate broker using the connection controls below and monitor the active peer count in the system log.
+    ⚠️ Transport Layer Notice: Public MQTT brokers may experience temporary downtime or network congestion. If connectivity drops or messages are not syncing, switch to an alternate broker using the connection controls below and monitor the active peer count in the system log.
     </p>
     
 <select id="brokerSelect" class="admin-input" onchange="onBrokerSelectChange(this)" style="margin-bottom: 10px; width: 100%; box-sizing: border-box; appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23afff00%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 10px; padding-right: 30px;">    <option value="wss://broker.emqx.io:8084/mqtt">EMQX Public Broker (Default)</option>
@@ -647,13 +648,26 @@ a { color: #448aff; text-decoration: none; }
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js');
+        let newWorker;
+        
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+            if (reg.waiting) {
+                document.getElementById('updateAvailableLine').style.display = 'block';
+            }
+            
+            reg.addEventListener('updatefound', () => {
+                newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        document.getElementById('updateAvailableLine').style.display = 'block';
+                    }
+                });
+            });
+        });
     }
 </script>
 
-
 <script>
-const APP_VERSION = '1.0.4'; 
 
 const logArea = document.getElementById('logArea');
 const statusToggle = document.getElementById('statusToggle');
@@ -1805,7 +1819,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    checkForUpdate();
 });
 
 const bar = document.getElementById('happiness-bar');
@@ -1951,6 +1964,16 @@ async function syncAndKeepData() {
     
     log(`[Sync] Data preserved. Cache cleared. Refreshing...`);
     alert(`✅ Synchronized!\n\nPreserved:\n• ${savedItems.length} memes\n• ${savedPlayerState.impacts} impacts\n• ${savedPlayerState.votesLeft} votes\n• ${savedPlayerState.postsLeft} posts`);
+
+    navigator.serviceWorker.ready.then(reg => {
+    if (reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+    });
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload(true);
+    });
     
     window.location.reload(true);
 }
@@ -1965,19 +1988,6 @@ if (aboutToggle && aboutContent) {
     });
 }
 
-function checkForUpdate() {
-    const lastVersion = localStorage.getItem('paramount_app_version');
-    
-    if (lastVersion && lastVersion !== APP_VERSION) {
-        const updateLine = document.getElementById('updateAvailableLine');
-        if (updateLine) {
-            updateLine.style.display = 'block';
-        }
-    }
-    
-    localStorage.setItem('paramount_app_version', APP_VERSION);
-}
-    
 </script>
 
 </body>
