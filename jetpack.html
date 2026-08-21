@@ -38,7 +38,7 @@ canvas {
 @media (pointer: coarse) { #controls { display: flex; } }
 #logoLink {
     position: fixed;
-    bottom: 10px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 4000; 
@@ -215,7 +215,6 @@ window.addEventListener('pointerup', (e) => {
     renderer.xr.enabled = true;
     document.body.appendChild(renderer.domElement);
     
-    // Добавляем VR кнопку только если поддерживается WebXR
     if (navigator.xr) {
         document.body.appendChild(VRButton.createButton(renderer));
     }
@@ -245,34 +244,52 @@ window.addEventListener('pointerup', (e) => {
         const chunkColliders = [];
         const localSeed = Math.sin(chunkX * 12.9898 + chunkZ * 78.233) * 43758.5453;
         
-        for(let i=0; i<4; i++) {
-            let sizeY = 5 + Math.abs(Math.cos(localSeed * i)) * 120;
-            const sizeX = 10 + Math.abs(Math.sin(localSeed + i)) * 15;
-            const sizeZ = 10 + Math.abs(Math.sin(localSeed * 2 + i)) * 15;
+        // --- ЗДАНИЯ с РАЗНОЙ ВЫСОТОЙ ---
+        for(let i=0; i<3; i++) { // Увеличил количество зданий до 6
+            // Случайная высота от 5 до 150
+            let sizeY = 5 + Math.abs(Math.sin(localSeed * i + 1.7)) * 145;
+            
+            // Иногда делаем очень высокие здания (небоскребы)
+            if (Math.abs(Math.sin(localSeed * i + 3.14)) > 0.8) {
+                sizeY = 80 + Math.abs(Math.sin(localSeed * i + 2.5)) * 120;
+            }
+            
+            const sizeX = 8 + Math.abs(Math.sin(localSeed + i * 1.3)) * 20;
+            const sizeZ = 8 + Math.abs(Math.sin(localSeed * 2 + i * 0.7)) * 20;
 
-            const geometry = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
-            const material = new THREE.MeshPhongMaterial({ color: Math.abs(Math.sin(localSeed + i)) * 0xffffff });
-            const box = new THREE.Mesh(geometry, material);
+            // Разноцветные здания
+            const hue = Math.abs(Math.sin(localSeed + i * 2.1));
+            const color = new THREE.Color().setHSL(hue * 0.7 + 0.5, 0.7, 0.3 + hue * 0.3);
+            const material = new THREE.MeshPhongMaterial({ color: color });
+            
+            const box = new THREE.Mesh(new THREE.BoxGeometry(sizeX, sizeY, sizeZ), material);
             
             box.position.set(
-                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 3 + i)) - 0.5) * (CHUNK_SIZE - 60)),
-                sizeY / 2, 
-                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 4 + i)) - 0.5) * (CHUNK_SIZE - 60))
+                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 3 + i * 1.1)) - 0.5) * (CHUNK_SIZE - 40)),
+                sizeY / 2 + Math.abs(Math.sin(localSeed + i)) * 10, 
+                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 4 + i * 0.9)) - 0.5) * (CHUNK_SIZE - 40))
             );
             
             chunkGroup.add(box);
             chunkColliders.push(box);
         }
 
-        for(let i=0; i<2; i++) {
+        // --- АРКИ с РАЗНЫМИ РАЗМЕРАМИ ---
+        for(let i=0; i<3; i++) { // Увеличил до 3 арок
             const archGroup = new THREE.Group();
-            const archColor = Math.abs(Math.cos(localSeed + i * 5)) * 0xffffff;
-            const material = new THREE.MeshPhongMaterial({ color: archColor });
+            
+            // Случайные размеры арки
+            const w = 3 + Math.abs(Math.sin(localSeed + i * 2.3)) * 5;    // ширина ног
+            const h = 30 + Math.abs(Math.cos(localSeed * 2 + i * 1.7)) * 70;
+            const d = 3 + Math.abs(Math.sin(localSeed * 3 + i)) * 4;      // глубина
+            const span = 15 + Math.abs(Math.cos(localSeed + i * 1.3)) * 20; // ширина пролета
 
-            const w = 4;   
-            const h = 20;  
-            const d = 4;   
-            const span = 25; 
+            const archColor = new THREE.Color().setHSL(
+                0.5 + Math.abs(Math.sin(localSeed + i * 3.7)) * 0.3,
+                0.6,
+                0.3 + Math.abs(Math.cos(localSeed * 2 + i)) * 0.3
+            );
+            const material = new THREE.MeshPhongMaterial({ color: archColor });
 
             const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
             leftLeg.position.set(-span/2, h/2, 0);
@@ -282,16 +299,16 @@ window.addEventListener('pointerup', (e) => {
             rightLeg.position.set(span/2, h/2, 0);
             archGroup.add(rightLeg);
 
-            const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w, d), material);
-            topBar.position.set(0, h + w/2, 0);
+            const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w * 1.2, d), material);
+            topBar.position.set(0, h + w/2 * 1.2, 0);
             archGroup.add(topBar);
 
             archGroup.position.set(
-                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 5 + i)) - 0.5) * (CHUNK_SIZE - 60)),
+                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 5 + i * 2.7)) - 0.5) * (CHUNK_SIZE - 50)),
                 0,
-                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 6 + i)) - 0.5) * (CHUNK_SIZE - 60))
+                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 6 + i * 1.9)) - 0.5) * (CHUNK_SIZE - 50))
             );
-            archGroup.rotation.y = Math.abs(Math.sin(localSeed + i)) * Math.PI;
+            archGroup.rotation.y = Math.abs(Math.sin(localSeed + i * 1.1)) * Math.PI * 2;
 
             leftLeg.updateMatrixWorld();
             rightLeg.updateMatrixWorld();
@@ -301,9 +318,11 @@ window.addEventListener('pointerup', (e) => {
             chunkGroup.add(archGroup);
         }
 
+        // --- ДОРОГИ с ПЕРЕМЕННОЙ ВЫСОТОЙ ---
+        // Первый уровень дорог - случайная высота от 15 до 40
         const roadMaterial1 = new THREE.MeshPhongMaterial({ color: 0x333344 });
         const roadWidth = 14;
-        const roadHeight1 = 22;
+        const roadHeight1 = 15 + Math.abs(Math.sin(localSeed * 7 + chunkX * 3 + chunkZ * 5)) * 25;
 
         const roadX = new THREE.Mesh(new THREE.BoxGeometry(CHUNK_SIZE, 1.5, roadWidth), roadMaterial1);
         roadX.position.set(chunkX * CHUNK_SIZE, roadHeight1, chunkZ * CHUNK_SIZE);
@@ -317,19 +336,11 @@ window.addEventListener('pointerup', (e) => {
         chunkGroup.add(roadZ);
         chunkColliders.push(roadZ);
 
-        const pillarOffsets = [-40, 40];
-        for(let px of pillarOffsets) {
-            for(let pz of pillarOffsets) {
-                const pillar = new THREE.Mesh(new THREE.BoxGeometry(3.5, roadHeight1, 3.5), roadMaterial1);
-                pillar.position.set((chunkX * CHUNK_SIZE) + px, roadHeight1 / 2, (chunkZ * CHUNK_SIZE) + pz);
-                pillar.updateMatrixWorld();
-                chunkGroup.add(pillar);
-                chunkColliders.push(pillar);
-            }
-        }
 
+
+        // --- ВТОРОЙ УРОВЕНЬ ДОРОГ - СЛУЧАЙНАЯ ВЫСОТА ---
         const roadMaterial2 = new THREE.MeshPhongMaterial({ color: 0x553366 });
-        const roadHeight2 = 70; 
+        const roadHeight2 = 50 + Math.abs(Math.cos(localSeed * 11 + chunkX * 7 + chunkZ * 3)) * 80;
         const halfChunk = CHUNK_SIZE / 2;
 
         const roadX2 = new THREE.Mesh(new THREE.BoxGeometry(CHUNK_SIZE, 1.5, roadWidth), roadMaterial2);
@@ -344,22 +355,9 @@ window.addEventListener('pointerup', (e) => {
         chunkGroup.add(roadZ2);
         chunkColliders.push(roadZ2);
 
-        const upperPillarOffsets = [-40, 40];
-        for(let px of upperPillarOffsets) {
-            for(let pz of upperPillarOffsets) {
-                const upperPillarZ = new THREE.Mesh(new THREE.BoxGeometry(4, roadHeight2, 4), roadMaterial2);
-                upperPillarZ.position.set((chunkX * CHUNK_SIZE) + halfChunk + px, roadHeight2 / 2, (chunkZ * CHUNK_SIZE) + pz);
-                upperPillarZ.updateMatrixWorld();
-                chunkGroup.add(upperPillarZ);
-                chunkColliders.push(upperPillarZ);
 
-                const upperPillarX = new THREE.Mesh(new THREE.BoxGeometry(4, roadHeight2, 4), roadMaterial2);
-                upperPillarX.position.set((chunkX * CHUNK_SIZE) + px, roadHeight2 / 2, (chunkZ * CHUNK_SIZE) + halfChunk + pz);
-                upperPillarX.updateMatrixWorld();
-                chunkGroup.add(upperPillarX);
-                chunkColliders.push(upperPillarX);
-            }
-        }
+
+
 
         scene.add(chunkGroup);
         chunkRegistry.set(`${chunkX},${chunkZ}`, { group: chunkGroup, colliders: chunkColliders });
@@ -439,16 +437,50 @@ window.addEventListener('pointerup', (e) => {
     infiniteGrid.position.y = 0;
     scene.add(infiniteGrid);
 
-    const keys = { w: false, s: false, a: false, d: false, q: false, e: false, shift: false, Space: false };
-    window.addEventListener('keydown', (e) => { 
-        let k = e.key.toLowerCase();
-        if (keys.hasOwnProperty(k)) keys[k] = true;
-        if (e.code === 'Space') keys['Space'] = true;
+    // ==========================================
+    // ИСПРАВЛЕННЫЙ БЛОК С КЛАВИШАМИ
+    // Стрелки работают! Двойной Space вместо Shift!
+    // ==========================================
+    const keys = { 
+        ArrowLeft: false, 
+        ArrowRight: false, 
+        ArrowUp: false, 
+        ArrowDown: false,
+        Space: false 
+    };
+    
+    let lastSpaceTime = 0;
+    let superThrust = false;
+    
+    window.addEventListener('keydown', (e) => {
+        // Обработка стрелок
+        if (e.key.startsWith('Arrow')) {
+            keys[e.code] = true;
+            e.preventDefault();
+        }
+        
+        // Обработка Space с двойным тапом
+        if (e.code === 'Space') {
+            e.preventDefault();
+            const currentTime = performance.now();
+            if (currentTime - lastSpaceTime < 300) { // 300ms для двойного тапа
+                superThrust = true;
+            }
+            lastSpaceTime = currentTime;
+            keys['Space'] = true;
+        }
     });
-    window.addEventListener('keyup', (e) => { 
-        let k = e.key.toLowerCase();
-        if (keys.hasOwnProperty(k)) keys[k] = false;
-        if (e.code === 'Space') keys['Space'] = false;
+    
+    window.addEventListener('keyup', (e) => {
+        if (e.key.startsWith('Arrow')) {
+            keys[e.code] = false;
+            e.preventDefault();
+        }
+        if (e.code === 'Space') {
+            e.preventDefault();
+            keys['Space'] = false;
+            superThrust = false;
+        }
     });
     
     let velocity = new THREE.Vector3(0, 0, 0);
@@ -462,11 +494,17 @@ window.addEventListener('pointerup', (e) => {
         let tY = 0;
         let vrThrust = 0;
 
-        if (keys.w) tX -= 1; 
-        if (keys.s) tX += 1;
-        if (keys.d) tY += 1; 
-        if (keys.a) tY -= 1; 
-        if (keys.shift || keys.space) vrThrust = FLY_SPEED * 2;
+        // Управление стрелками (теперь работают!)
+        if (keys['ArrowLeft']) tY = -1;
+        if (keys['ArrowRight']) tY = 1;
+        if (keys['ArrowUp']) tX = -1;
+        if (keys['ArrowDown']) tX = 1;
+
+        // Тяга: обычная или супер (двойной тап Space)
+        if (keys['Space']) {
+            const thrustMultiplier = superThrust ? 2.5 : 1.0;
+            vrThrust = FLY_SPEED * thrustMultiplier;
+        }
 
         if (touchJoystick.active) {
             angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
@@ -489,11 +527,6 @@ window.addEventListener('pointerup', (e) => {
         if (Math.abs(tY) > 0.01) angularVelocityZ -= tY * TURN_SPEED;
         if (Math.abs(tZ) > 0.01) angularVelocityZ += tZ * TURN_SPEED * 0.5;
 
-        if (keys['ArrowLeft']) angularVelocityZ += TURN_SPEED;
-        if (keys['ArrowRight']) angularVelocityZ -= TURN_SPEED;
-        if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
-        if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
-
         angularVelocityX *= DAMPING_TURN;
         angularVelocityZ *= DAMPING_TURN;
 
@@ -506,8 +539,6 @@ window.addEventListener('pointerup', (e) => {
         let thrustForce = 0;
         if (vrThrust > 0) {
             thrustForce = vrThrust;
-        } else if (keys['Space']) {
-            thrustForce = FLY_SPEED;
         } else if (currentThrottle > 0.05) {
             thrustForce = FLY_SPEED * (currentThrottle * 2.0); 
         }
@@ -550,7 +581,6 @@ window.addEventListener('pointerup', (e) => {
             velocity.y = Math.max(0, velocity.y * -0.3);
         }
 
-        // ИСПРАВЛЕНО: убраны лишние символы
         infiniteGrid.position.set(player.position.x, 0, player.position.z);
         renderer.render(scene, camera);
     });
