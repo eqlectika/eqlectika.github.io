@@ -608,8 +608,8 @@ a { color: #448aff; text-decoration: none; }
 
 <div class="exchange-panel" style="border-color: #ccc; background: #000; margin-top: 20px;">
     <h3 style="color: #ccc; text-align: center;">Breakthrough Local Guide</h3>
-    <div id="guide-chat-log" style="height: 120px; overflow-y: auto; font-family: monospace; font-size: 14px; color: #ccc; background: #000; padding: 0px; margin-bottom: 10px; scrollbar-width: thin; scrollbar-color: #333 #000;">
-        > System: Local Guide initialized. Ask me about memes, voting, impacts, or mechanics.
+    <div id="guide-chat-log" style="height: 120px; overflow-y: auto; font-family: monospace; font-size: 14px; color: #ccc; background: #000; padding: 0px; margin-bottom: 10px; scrollbar-width: thin; scrollbar-color: #333 #000; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start;">
+        System: Local Guide initialized. You can simply use words from the content instead of formulating full questions, for example: meme, vote, breakthrough.
     </div>
     <div style="display: flex; gap: 5px;">
         <input type="text" id="guide-input" class="admin-input" placeholder="Ask Guide (e.g., inject, vote, impact)..." style="margin-bottom: 0; padding: 8px;">
@@ -1757,14 +1757,17 @@ function sendToGuide() {
 function appendGuideChat(msg) {
     const log = document.getElementById('guide-chat-log');
     log.innerHTML += `<div>${msg}</div>`;
-    log.scrollTop = log.scrollHeight;
+const lastMsg = log.lastElementChild;
+if (lastMsg) {
+    lastMsg.scrollIntoView({ block: 'start' });
+}
 }
 
 function generateGuideResponse(query) {
     const q = query.toLowerCase();
     
     if (q.includes('hi') || q.includes('hello') || q.includes('hey') || q.includes('how') || q.includes('what') || q.includes('greetings')) {
-        return 'Hi! This is not an AI agent, and the list of responses is limited. You can use keywords (why, battle, matrix, meme, etc.) from content instead of detailed questions or refer to the description below for more detailed information. How can I help you navigate the matrix?';
+        return 'Hello! This is not an AI agent, and the answer list is limited. The logic in this section is mechanical and is being refined at the developer level. If you don not receive a satisfactory answer, it means the phrases you entered were not predicted by the system. Use simple words from the content. Read the Disclaimer & About section to the end. Try submitting your meme in the Broadcast Breakthrough Meme section. Vote for memes in the Resonance Match section and track their position in the Global Matrix Rank.';
     }
     
     if (q.includes('inject') || q.includes('meme') || q.includes('manifest') ||q.includes('matrix') || q.includes('link') || q.includes('description') || q.includes('details') || q.includes('external') || q.includes('post') || q.includes('publish') || q.includes('image') || q.includes('to do') || q.includes('upload') || q.includes('choose')) {
