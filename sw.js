@@ -68,7 +68,17 @@ self.addEventListener('activate', event => {
                     .filter(key => key !== CACHE_NAME)
                     .map(key => caches.delete(key))
             )
-        ).then(() => self.clients.claim())
+        ).then(() => {
+            self.clients.claim();
+            return self.clients.matchAll().then(clients => {
+                clients.forEach(client => {
+                    client.postMessage({
+                        type: 'SW_ACTIVATED',
+                        version: CACHE_NAME
+                    });
+                });
+            });
+        })
     );
 });
 
@@ -112,4 +122,10 @@ self.addEventListener('fetch', event => {
             return Response.error();
         })
     );
+});
+
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
 });
