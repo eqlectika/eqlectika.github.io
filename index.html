@@ -848,7 +848,7 @@ function updateActivityChart() {
     
     const span = tMax - tMin || 1;
     
-    const padL = 12, padR = 12, padT = 18, padB = 28;
+    const padL = 4, padR = 4, padT = 18, padB = 28;
     let plotW, plotH, rightScaleX;
 
     function buildCumulative(timestamps) {
@@ -877,13 +877,19 @@ function updateActivityChart() {
     });
     yMax = Math.ceil(yMax * 1.15) || 1; 
 
-    const yLabelMax = Math.max(
-        String(yMax).length,
-        ...Array.from({length: 5}, (_, i) =>
-            String(Math.round((i / 4) * yMax)).length
-        )
-    );
-    const rightScaleWidth = Math.max(24, yLabelMax * 7 + 10);
+const yLabels = [
+    String(yMax),
+    ...Array.from({length: 5}, (_, i) =>
+        String(Math.round((i / 4) * yMax))
+    )
+];
+
+let maxLen = 0;
+for (let label of yLabels) {
+    if (label.length > maxLen) maxLen = label.length;
+}
+
+const rightScaleWidth = maxLen * 7;
     const gapToRightScale = 8;
     plotW = Math.max(20, W - padL - padR - rightScaleWidth - gapToRightScale);
     plotH = H - padT - padB;
@@ -912,7 +918,9 @@ for (let i = 0; i <= timeTicks; i++) {
         label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
     ctx.fillStyle = '#ccc';
-    ctx.fillText(label, x, padT + plotH + 6);
+ctx.textAlign = 'center';
+ctx.fillText(label, x, padT + plotH + 6);
+ctx.textAlign = 'left';
 }
     
     function drawLine(points, color) {
