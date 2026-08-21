@@ -2,9 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-
     <link rel="manifest" href="manifest-jetpack.json">
-
     <title>Jetpack</title>
 <style>
 html, body { 
@@ -103,7 +101,7 @@ canvas {
 
 <script>
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js');
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 </script>
     
@@ -216,7 +214,11 @@ window.addEventListener('pointerup', (e) => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.xr.enabled = true;
     document.body.appendChild(renderer.domElement);
-    document.body.appendChild(VRButton.createButton(renderer));
+    
+    // Добавляем VR кнопку только если поддерживается WebXR
+    if (navigator.xr) {
+        document.body.appendChild(VRButton.createButton(renderer));
+    }
 
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
@@ -546,7 +548,10 @@ window.addEventListener('pointerup', (e) => {
         if (player.position.y < 2) {
             player.position.y = 2;
             velocity.y = Math.max(0, velocity.y * -0.3);
-        }[span_0](start_span)[span_0](end_span)        infiniteGrid.position.set(player.position.x, 0, player.position.z);
+        }
+
+        // ИСПРАВЛЕНО: убраны лишние символы
+        infiniteGrid.position.set(player.position.x, 0, player.position.z);
         renderer.render(scene, camera);
     });
 </script>
