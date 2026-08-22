@@ -2008,10 +2008,15 @@ if (aboutToggle && aboutContent) {
 }
 
 document.addEventListener('click', function(e) {
-    let link = e.target.closest('a.external-link');
+    let link = e.target.closest('a[href]');
     if (link) {
-        e.preventDefault();
-        window.open(link.href, '_blank');
+        let href = link.getAttribute('href');
+        if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.open(href, '_blank', 'noopener,noreferrer');
+            return false;
+        }
     }
 });
 </script>
