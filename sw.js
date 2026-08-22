@@ -1,4 +1,4 @@
-const CACHE_NAME = 'polarity-sanctuary-vui';
+const CACHE_NAME = 'polarity-sanctuary-vblank';
 
 const CORE_ASSETS = [
     './',
