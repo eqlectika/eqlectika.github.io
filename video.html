@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Loop</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #111;
+      color: #ddd;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+    video {
+      width: 100%;
+      max-width: 800px;
+      background: #000;
+      border-radius: 8px;
+    }
+    .controls {
+      width: 100%;
+      max-width: 800px;
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    input[type="file"] { display: none; }
+    label, button {
+      background: #333;
+      color: #eee;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      white-space: nowrap;
+    }
+    label:hover, button:hover { background: #444; }
+    button:disabled { opacity: 0.4; cursor: default; }
+    .times {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 16px;
+    }
+    .times input {
+      width: 90px;
+      background: #222;
+      border: 1px solid #444;
+      color: #eee;
+      padding: 10px;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 16px;
+    }
+    input[type="range"] {
+      flex: 1;
+      max-width: 320px;
+      min-width: 120px;
+      height: 8px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: #333;
+      border-radius: 4px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      background: #6c5ce7;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      background: #6c5ce7;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+    }
+    .logo {
+      margin-top: auto;
+      margin-bottom: 30px;
+      padding-top: 40px;
+    }
+    .logo img {
+      width: 38px;
+      height: 38px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <video id="v" controls playsinline></video>
+
+  <div class="controls">
+    <!-- Row 1: Choose video + time inputs -->
+    <div class="row">
+      <label for="f">Choose video</label>
+      <input type="file" id="f" accept="video/*">
+      <div class="times">
+        <input type="number" id="start" value="0" step="0.1" min="0" disabled> –
+        <input type="number" id="end" value="0" step="0.1" min="0" disabled>
+      </div>
+    </div>
+
+    <!-- Row 2: Sliders -->
+    <div class="row">
+      <input type="range" id="s" min="0" max="100" step="0.1" value="0" disabled>
+      <input type="range" id="e" min="0" max="100" step="0.1" value="100" disabled>
+    </div>
+
+    <!-- Row 3: Buttons stacked -->
+    <div class="buttons">
+      <button id="loop" disabled>Loop</button>
+      <button id="stop" disabled>Stop</button>
+    </div>
+  </div>
+
+  <a href="research.html" class="logo">
+    <img src="logo.png" alt="Logo" width="38" height="38">
+  </a>
+
+  <script>
+    const v = document.getElementById('v');
+    const f = document.getElementById('f');
+    const start = document.getElementById('start');
+    const end = document.getElementById('end');
+    const s = document.getElementById('s');
+    const e = document.getElementById('e');
+    const loopBtn = document.getElementById('loop');
+    const stopBtn = document.getElementById('stop');
+
+    let looping = false, from = 0, to = 0;
+
+    f.onchange = () => {
+      const file = f.files[0];
+      if (!file) return;
+      v.src = URL.createObjectURL(file);
+    };
+
+    v.onloadedmetadata = () => {
+      const d = v.duration;
+      [start, end, s, e, loopBtn].forEach(el => el.disabled = false);
+      start.max = end.max = s.max = e.max = d;
+      end.value = e.value = d.toFixed(1);
+      start.value = s.value = 0;
+    };
+
+    function sync(fromSlider) {
+      let a = +start.value, b = +end.value;
+      if (fromSlider) {
+        a = +s.value;
+        b = +e.value;
+      }
+      if (a >= b) a = Math.max(0, b - 0.5);
+      start.value = s.value = a.toFixed(1);
+      end.value = e.value = b.toFixed(1);
+    }
+
+    s.oninput = e.oninput = () => sync(true);
+    start.onchange = end.onchange = () => sync(false);
+
+    loopBtn.onclick = () => {
+      from = +start.value;
+      to = +end.value;
+      if (to <= from) return;
+      looping = true;
+      v.currentTime = from;
+      v.play();
+      loopBtn.disabled = true;
+      stopBtn.disabled = false;
+    };
+
+    stopBtn.onclick = () => {
+      looping = false;
+      v.pause();
+      loopBtn.disabled = false;
+      stopBtn.disabled = true;
+    };
+
+    v.ontimeupdate = () => {
+      if (looping && v.currentTime >= to) v.currentTime = from;
+    };
+  </script>
+</body>
+</html>
