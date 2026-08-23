@@ -10,28 +10,37 @@
     body {
       background: #111;
       color: #ddd;
-      font-family: system-ui, sans-serif;
+      font-family: system-ui, -apple-system, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
       padding: 16px;
     }
-    #media {
+    .media-wrapper {
       width: 100%;
       max-width: 800px;
       background: #000;
       border-radius: 8px;
-      min-height: 80px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 120px;
+    }
+    #media {
+      width: 100%;
+      max-height: 70vh;
     }
     video#media { aspect-ratio: 16/9; }
+    audio#media { width: 100%; padding: 20px; }
     .controls {
       width: 100%;
       max-width: 800px;
       margin-top: 24px;
       display: flex;
       flex-direction: column;
-      gap: 28px;
+      gap: 20px;
     }
     .row {
       display: flex;
@@ -126,14 +135,12 @@
       overflow: hidden;
       display: none;
     }
-    .progress-bar.active {
-      display: block;
-    }
+    .progress-bar.active { display: block; }
     .progress-fill {
       width: 0%;
       height: 100%;
       background: #6c5ce7;
-      transition: width 0.3s;
+      transition: width 0.2s;
     }
     .status-text {
       font-size: 14px;
@@ -142,27 +149,14 @@
       text-align: center;
       display: none;
     }
-    .status-text.active {
-      display: block;
-    }
+    .status-text.active { display: block; }
     .extract-options {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
       justify-content: center;
     }
-    .extract-options button {
-      background: #2a2a3a;
-      min-width: 120px;
-    }
-    .extract-options button:hover {
-      background: #3a3a4a;
-    }
-    .extract-options button.extracting {
-      background: #6c5ce7;
-      color: white;
-    }
-    .format-selector {
+    .format-selector, .quality-selector {
       display: flex;
       gap: 8px;
       align-items: center;
@@ -174,31 +168,6 @@
       background: transparent;
       padding: 4px 12px;
       font-size: 14px;
-      cursor: pointer;
-    }
-    .format-selector label:hover {
-      background: #333;
-    }
-    .format-selector input[type="radio"] {
-      accent-color: #6c5ce7;
-      margin-right: 4px;
-    }
-    .format-selector input[type="radio"]:checked + span {
-      color: #6c5ce7;
-    }
-    .size-info {
-      font-size: 12px;
-      color: #666;
-      margin-top: 4px;
-      text-align: center;
-    }
-    .quality-selector {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      background: #222;
-      padding: 8px 16px;
-      border-radius: 8px;
     }
     .quality-selector select {
       background: #333;
@@ -206,73 +175,63 @@
       border: 1px solid #444;
       padding: 4px 8px;
       border-radius: 4px;
-      font-size: 14px;
     }
-    .extract-header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
+    .size-info {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <video id="media" controls playsinline></video>
+
+  <div class="media-wrapper">
+    <video id="media" controls playsinline></video>
+  </div>
 
   <div class="controls">
     <div class="row">
       <label for="f">📁 Choose media</label>
-      <input type="file" id="f" accept="video/*,audio/*">
+      <!-- Сняты строгости accept для мобильного Safari/iOS -->
+      <input type="file" id="f" accept="video/*,audio/*,.mov,.mp4,.m4a,.mp3,.wav,.aac,.ogg,.flac">
       <div class="times">
         <input type="number" id="start" value="0" step="0.1" min="0" disabled> –
         <input type="number" id="end" value="0" step="0.1" min="0" disabled>
       </div>
     </div>
-
     <div class="row">
       <input type="range" id="s" min="0" max="100" step="0.1" value="0" disabled>
       <input type="range" id="e" min="0" max="100" step="0.1" value="100" disabled>
     </div>
-
     <div class="buttons">
-      <button id="loop" disabled>🔁 Loop</button>
-      <button id="stop" disabled>⏹ Stop</button>
-      
-      <div class="extract-header">
-        <div class="extract-options" id="extractOptions" style="display:none;">
-          <div class="format-selector">
-            <label>
-              <input type="radio" name="format" value="wav" checked>
-              <span>WAV</span>
-            </label>
-            <label>
-              <input type="radio" name="format" value="mp3">
-              <span>MP3</span>
-            </label>
-          </div>
-          
-          <div class="quality-selector" id="qualitySelector" style="display:none;">
-            <span>Quality:</span>
-            <select id="mp3Quality">
-              <option value="128">128 kbps</option>
-              <option value="192" selected>192 kbps</option>
-              <option value="256">256 kbps</option>
-              <option value="320">320 kbps</option>
-            </select>
-          </div>
-          
-          <button id="extractBtn">🎵 Extract Audio</button>
-        </div>
-        <div class="size-info" id="sizeInfo"></div>
+      <div class="row">
+        <button id="loop" disabled>🔁 Loop</button>
+        <button id="stop" disabled>⏹ Stop</button>
       </div>
+
+      <div class="extract-options" id="extractOptions" style="display:none;">
+        <div class="format-selector">
+          <label><input type="radio" name="format" value="wav" checked> <span>WAV</span></label>
+          <label><input type="radio" name="format" value="mp3"> <span>MP3</span></label>
+        </div>
+        <div class="quality-selector" id="qualitySelector" style="display:none;">
+          <span>Bitrate:</span>
+          <select id="mp3Quality">
+            <option value="128">128 kbps</option>
+            <option value="192" selected>192 kbps</option>
+            <option value="256">256 kbps</option>
+            <option value="320">320 kbps</option>
+          </select>
+        </div>
+        <button id="extractBtn">🎵 Extract Audio</button>
+      </div>
+      <div class="size-info" id="sizeInfo"></div>
     </div>
   </div>
 
   <div class="progress-container">
-    <div class="progress-bar" id="progressBar">
-      <div class="progress-fill" id="progressFill"></div>
-    </div>
+    <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="status-text" id="statusText">Processing...</div>
   </div>
 
@@ -281,20 +240,6 @@
   </a>
 
   <script>
-    // Media Session API for background playback
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.setActionHandler('play', () => {
-        media.play();
-      });
-      navigator.mediaSession.setActionHandler('pause', () => {
-        media.pause();
-      });
-      navigator.mediaSession.setActionHandler('stop', () => {
-        media.pause();
-        media.currentTime = 0;
-      });
-    }
-
     const f = document.getElementById('f');
     const start = document.getElementById('start');
     const end = document.getElementById('end');
@@ -310,24 +255,16 @@
     const progressFill = document.getElementById('progressFill');
     const statusText = document.getElementById('statusText');
     const sizeInfo = document.getElementById('sizeInfo');
-
+    
     let media = document.getElementById('media');
     let looping = false, from = 0, to = 0;
     let currentFile = null;
-    let isVideo = false;
     let objectUrl = null;
-    let cachedAudioBlob = null;
-    let cachedFormat = '';
 
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    // Показываем/скрываем выбор качества для MP3
+    // Переключение отображения выбора качества MP3
     document.querySelectorAll('input[name="format"]').forEach(radio => {
-      radio.addEventListener('change', (e) => {
-        qualitySelector.style.display = e.target.value === 'mp3' ? 'flex' : 'none';
-        // Сбрасываем кэш при смене формата
-        cachedAudioBlob = null;
+      radio.addEventListener('change', (evt) => {
+        qualitySelector.style.display = evt.target.value === 'mp3' ? 'flex' : 'none';
       });
     });
 
@@ -335,61 +272,31 @@
       const file = f.files[0];
       if (!file) return;
 
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-        objectUrl = null;
-      }
-
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
       currentFile = file;
-      isVideo = file.type.startsWith('video/');
       objectUrl = URL.createObjectURL(file);
-      cachedAudioBlob = null;
 
-      const newMedia = document.createElement(isVideo ? 'video' : 'audio');
-      newMedia.id = 'media';
-      newMedia.controls = true;
-      newMedia.playsInline = true;
-      if (isVideo) newMedia.style.aspectRatio = '16/9';
-      else newMedia.style.minHeight = '80px';
-
-      media.replaceWith(newMedia);
-      media = newMedia;
-
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: file.name.replace(/\.[^/.]+$/, ''),
-          artist: 'Media Loop',
-          album: 'Local Media'
-        });
+      // Проверка типа файла для отображения меню извлечения
+      const isVideo = file.type.startsWith('video/') || /\.(mov|mp4|webm|m4v|avi)$/i.test(file.name);
+      
+      // Заменяем элемент медиа аккуратно без разрушения UI
+      const newType = isVideo ? 'video' : 'audio';
+      if (media.tagName.toLowerCase() !== newType) {
+        const newMedia = document.createElement(newType);
+        newMedia.id = 'media';
+        newMedia.controls = true;
+        newMedia.playsInline = true;
+        media.replaceWith(newMedia);
+        media = newMedia;
       }
-
-      media.addEventListener('loadedmetadata', onLoaded);
-      media.addEventListener('timeupdate', onTimeUpdate);
-      media.addEventListener('play', () => {
-        if ('mediaSession' in navigator) {
-          navigator.mediaSession.playbackState = 'playing';
-        }
-      });
-      media.addEventListener('pause', () => {
-        if ('mediaSession' in navigator) {
-          navigator.mediaSession.playbackState = 'paused';
-        }
-      });
 
       media.src = objectUrl;
-      
-      if (isVideo) {
-        extractOptions.style.display = 'flex';
-        extractBtn.disabled = true;
-        // Показываем размер файла
-        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
-        const isLarge = isIOS && file.size > 30 * 1024 * 1024;
-        sizeInfo.textContent = `Video: ${sizeMB}MB ${isLarge ? '⚠️ Large for iOS' : ''}`;
-        sizeInfo.style.color = isLarge ? '#ff6b6b' : '#666';
-      } else {
-        extractOptions.style.display = 'none';
-        sizeInfo.textContent = '';
-      }
+      media.addEventListener('loadedmetadata', onLoaded);
+      media.addEventListener('timeupdate', onTimeUpdate);
+
+      extractOptions.style.display = 'flex'; // Позволяем извлекать/перекодировать аудио из любого файла
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      sizeInfo.textContent = `File size: ${sizeMB} MB`;
     };
 
     function onLoaded() {
@@ -399,10 +306,6 @@
       start.max = end.max = s.max = e.max = d;
       end.value = e.value = d.toFixed(1);
       start.value = s.value = 0;
-      
-      if (isVideo) {
-        extractBtn.disabled = false;
-      }
     }
 
     function onTimeUpdate() {
@@ -413,10 +316,7 @@
 
     function sync(fromSlider) {
       let a = +start.value, b = +end.value;
-      if (fromSlider) {
-        a = +s.value;
-        b = +e.value;
-      }
+      if (fromSlider) { a = +s.value; b = +e.value; }
       if (a >= b) a = Math.max(0, b - 0.5);
       start.value = s.value = a.toFixed(1);
       end.value = e.value = b.toFixed(1);
@@ -443,392 +343,171 @@
       stopBtn.disabled = true;
     };
 
-    // Функция извлечения аудио из видео
-    async function extractAudioFromVideo(file, format = 'wav', bitrate = 192) {
-      return new Promise((resolve, reject) => {
-        if (isIOS && file.size > 30 * 1024 * 1024) {
-          reject(new Error(`File too large for iOS (${(file.size / 1024 / 1024).toFixed(1)}MB). Max: 30MB`));
-          return;
-        }
+    // ПРЯМОЕ ДЕКОДИРОВАНИЕ АУДИО ИЗ ВИДЕО/АУДИО ФАЙЛА
+    async function decodeAudioFromFile(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      statusText.textContent = 'Decoding audio stream...';
+      progressFill.style.width = '40%';
 
-        const video = document.createElement('video');
-        video.playsInline = true;
-        video.muted = true;
-        video.preload = 'metadata';
-        video.style.display = 'none';
-        document.body.appendChild(video);
-
-        const url = URL.createObjectURL(file);
-        video.src = url;
-
-        let audioData = [];
-        let totalDuration = 0;
-        let sampleRate = isIOS ? 22050 : 44100;
-        let channels = 2;
-        let extractionComplete = false;
-
-        video.onloadedmetadata = () => {
-          totalDuration = video.duration;
-          startExtraction();
-        };
-
-        function startExtraction() {
-          let currentTime = 0;
-          const chunkDuration = isIOS ? 0.3 : 0.5;
-          const audioContext = new (window.AudioContext || window.webkitAudioContext)({
-            sampleRate: sampleRate
-          });
-
-          function processChunk() {
-            if (currentTime >= totalDuration) {
-              finishExtraction();
-              return;
-            }
-
-            const progress = (currentTime / totalDuration) * 100;
-            progressFill.style.width = `${Math.min(progress, 95)}%`;
-            statusText.textContent = `Extracting audio... ${Math.round(progress)}%`;
-
-            const endTime = Math.min(currentTime + chunkDuration, totalDuration);
-            const duration = endTime - currentTime;
-            const sampleCount = Math.floor(duration * sampleRate);
-            
-            // Создаём буфер для фрагмента
-            const buffer = new AudioBuffer({
-              length: sampleCount,
-              sampleRate: sampleRate,
-              numberOfChannels: channels
-            });
-
-            try {
-              // Захватываем аудио из видео
-              const source = audioContext.createMediaElementSource(video);
-              const analyser = audioContext.createAnalyser();
-              analyser.fftSize = 2048;
-              source.connect(analyser);
-              analyser.connect(audioContext.destination);
-
-              const dataArray = new Float32Array(analyser.fftSize);
-              const samples = [];
-              
-              video.currentTime = currentTime;
-              video.play();
-
-              const chunks = Math.ceil(sampleCount / 1024);
-              let collected = 0;
-
-              function collectChunk() {
-                if (collected >= chunks || video.currentTime >= endTime) {
-                  video.pause();
-                  
-                  if (samples.length > 0) {
-                    const audioBuffer = audioContext.createBuffer(
-                      channels,
-                      samples.length,
-                      sampleRate
-                    );
-                    audioBuffer.copyToChannel(new Float32Array(samples), 0, 0);
-                    
-                    const wavData = audioBufferToWav(audioBuffer);
-                    audioData.push(wavData);
-                  }
-                  
-                  currentTime = endTime;
-                  setTimeout(processChunk, 10);
-                  return;
-                }
-
-                setTimeout(() => {
-                  analyser.getFloatTimeDomainData(dataArray);
-                  for (let j = 0; j < dataArray.length && samples.length < sampleCount; j++) {
-                    samples.push(dataArray[j]);
-                  }
-                  collected++;
-                  collectChunk();
-                }, 20);
-              }
-
-              collectChunk();
-            } catch (err) {
-              console.warn('Extraction method failed:', err);
-              // Fallback - генерируем шум
-              const samples = new Float32Array(sampleCount);
-              for (let i = 0; i < samples.length; i++) {
-                samples[i] = (Math.random() - 0.5) * 0.01;
-              }
-              const audioBuffer = audioContext.createBuffer(channels, sampleCount, sampleRate);
-              audioBuffer.copyToChannel(samples, 0, 0);
-              const wavData = audioBufferToWav(audioBuffer);
-              audioData.push(wavData);
-              currentTime = endTime;
-              setTimeout(processChunk, 10);
-            }
-          }
-
-          function finishExtraction() {
-            extractionComplete = true;
-            
-            if (audioData.length === 0) {
-              reject(new Error('No audio data extracted'));
-              return;
-            }
-
-            try {
-              // Объединяем WAV данные
-              let totalLength = 0;
-              audioData.forEach(data => {
-                totalLength += data.byteLength;
-              });
-
-              const fullWav = new Uint8Array(totalLength);
-              let offset = 0;
-              audioData.forEach(data => {
-                fullWav.set(new Uint8Array(data), offset);
-                offset += data.byteLength;
-              });
-
-              const wavBlob = new Blob([fullWav], { type: 'audio/wav' });
-              
-              video.pause();
-              video.remove();
-              URL.revokeObjectURL(url);
-              audioContext.close();
-
-              // Если нужен MP3, конвертируем
-              if (format === 'mp3') {
-                convertWavToMp3(wavBlob, bitrate).then(mp3Blob => {
-                  resolve(mp3Blob);
-                }).catch(() => {
-                  // Если конвертация не удалась, возвращаем WAV
-                  resolve(wavBlob);
-                });
-              } else {
-                resolve(wavBlob);
-              }
-            } catch (err) {
-              reject(err);
-            }
-          }
-
-          processChunk();
-        }
-
-        const timeout = setTimeout(() => {
-          if (!extractionComplete) {
-            reject(new Error('Extraction timeout'));
-            video.pause();
-            video.remove();
-            URL.revokeObjectURL(url);
-          }
-        }, 120000);
-
-        video.onerror = () => {
-          if (!extractionComplete) {
-            reject(new Error('Video loading error'));
-            video.remove();
-            URL.revokeObjectURL(url);
-            clearTimeout(timeout);
-          }
-        };
-      });
-    }
-
-    // Конвертация AudioBuffer в WAV
-    function audioBufferToWav(buffer) {
-      const numOfChan = buffer.numberOfChannels;
-      const sampleRate = buffer.sampleRate;
-      const bitDepth = 16;
-      const bytesPerSample = bitDepth / 8;
-      const blockAlign = numOfChan * bytesPerSample;
-      const dataLength = buffer.length * blockAlign;
-      const arrayBuffer = new ArrayBuffer(44 + dataLength);
-      const view = new DataView(arrayBuffer);
-
-      const writeString = (offset, str) => {
-        for (let i = 0; i < str.length; i++) {
-          view.setUint8(offset + i, str.charCodeAt(i));
-        }
-      };
-
-      writeString(0, 'RIFF');
-      view.setUint32(4, 36 + dataLength, true);
-      writeString(8, 'WAVE');
-      writeString(12, 'fmt ');
-      view.setUint32(16, 16, true);
-      view.setUint16(20, 1, true);
-      view.setUint16(22, numOfChan, true);
-      view.setUint32(24, sampleRate, true);
-      view.setUint32(28, sampleRate * blockAlign, true);
-      view.setUint16(32, blockAlign, true);
-      view.setUint16(34, bitDepth, true);
-      writeString(36, 'data');
-      view.setUint32(40, dataLength, true);
-
-      const channels = [];
-      for (let i = 0; i < numOfChan; i++) {
-        channels.push(buffer.getChannelData(i));
-      }
-
-      let offset = 44;
-      for (let i = 0; i < buffer.length; i++) {
-        for (let ch = 0; ch < numOfChan; ch++) {
-          let sample = Math.max(-1, Math.min(1, channels[ch][i]));
-          sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-          view.setInt16(offset, sample, true);
-          offset += 2;
-        }
-      }
-      return arrayBuffer;
-    }
-
-    // Конвертация WAV в MP3
-    async function convertWavToMp3(wavBlob, bitrate = 192) {
       try {
-        // Загружаем LameJS если не загружен
-        if (typeof lamejs === 'undefined') {
-          await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-          });
-        }
-
-        const arrayBuffer = await wavBlob.arrayBuffer();
-        const audioCtx = new AudioContext();
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-        
-        const mp3Encoder = new lamejs.Mp3Encoder(
-          audioBuffer.numberOfChannels,
-          audioBuffer.sampleRate,
-          bitrate
-        );
-        
-        const mp3Data = [];
-        const samples = audioBuffer.getChannelData(0);
-        const sampleBlockSize = 1152;
-        
-        for (let i = 0; i < samples.length; i += sampleBlockSize) {
-          const sampleChunk = samples.subarray(i, Math.min(i + sampleBlockSize, samples.length));
-          const mp3buf = mp3Encoder.encodeBuffer(sampleChunk);
-          if (mp3buf.length > 0) {
-            mp3Data.push(new Uint8Array(mp3buf));
-          }
-        }
-        
-        const mp3buf = mp3Encoder.flush();
-        if (mp3buf.length > 0) {
-          mp3Data.push(new Uint8Array(mp3buf));
-        }
-        
         await audioCtx.close();
-        
-        return new Blob(mp3Data, { type: 'audio/mpeg' });
+        return audioBuffer;
       } catch (err) {
-        console.warn('MP3 conversion failed:', err);
-        throw err;
+        await audioCtx.close();
+        throw new Error('Unable to decode audio from file. Format may not be supported by browser engine.');
       }
     }
 
-    // Обработчик извлечения
+    // Извлечение аудио
     extractBtn.onclick = async () => {
-      if (!currentFile || !isVideo) return;
+      if (!currentFile) return;
 
       const format = document.querySelector('input[name="format"]:checked').value;
       const bitrate = parseInt(mp3Quality.value);
 
-      // Проверяем кэш
-      const cacheKey = `${currentFile.name}_${format}_${bitrate}`;
-      if (cachedAudioBlob && cachedFormat === cacheKey) {
-        // Используем кэшированный файл
-        const extension = format === 'mp3' ? 'mp3' : 'wav';
-        const mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
-        const filename = (currentFile.name.replace(/\.[^/.]+$/, '') || 'audio') + '.' + extension;
-        downloadBlob(cachedAudioBlob, filename);
-        return;
-      }
-
       extractBtn.disabled = true;
-      extractBtn.textContent = '⏳ Extracting...';
-      extractBtn.classList.add('extracting');
       progressBar.classList.add('active');
       statusText.classList.add('active');
-      progressFill.style.width = '0%';
-      statusText.textContent = 'Preparing...';
+      progressFill.style.width = '10%';
+      statusText.textContent = 'Reading file...';
 
       try {
-        const audioBlob = await extractAudioFromVideo(currentFile, format, bitrate);
+        // 1. Декодируем аудиопоток напрямую из видео
+        const audioBuffer = await decodeAudioFromFile(currentFile);
         
-        // Кэшируем результат
-        cachedAudioBlob = audioBlob;
-        cachedFormat = cacheKey;
-        
+        progressFill.style.width = '70%';
+        statusText.textContent = `Converting to ${format.toUpperCase()}...`;
+
+        let resultBlob;
+        if (format === 'mp3') {
+          resultBlob = await convertBufferToMp3(audioBuffer, bitrate);
+        } else {
+          resultBlob = audioBufferToWav(audioBuffer);
+        }
+
         progressFill.style.width = '100%';
-        statusText.textContent = '✅ Complete!';
-        
-        const extension = format === 'mp3' ? 'mp3' : 'wav';
-        const mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/wav';
-        const filename = (currentFile.name.replace(/\.[^/.]+$/, '') || 'audio') + '.' + extension;
-        
-        // Показываем размер полученного файла
-        const sizeMB = (audioBlob.size / 1024 / 1024).toFixed(1);
-        sizeInfo.textContent = `Extracted: ${sizeMB}MB ${format.toUpperCase()}`;
-        sizeInfo.style.color = '#6c5ce7';
-        
-        downloadBlob(audioBlob, filename);
+        statusText.textContent = '✅ Extraction complete!';
+
+        const ext = format === 'mp3' ? 'mp3' : 'wav';
+        const baseName = currentFile.name.replace(/\.[^/.]+$/, '');
+        downloadBlob(resultBlob, `${baseName}_audio.${ext}`);
 
       } catch (err) {
-        console.error('Extraction error:', err);
-        let errorMsg = 'Failed to extract audio.';
-        if (err.message.includes('too large')) {
-          errorMsg = 'Video too large for iOS. Try using a desktop browser.';
-        } else if (err.message.includes('timeout')) {
-          errorMsg = 'Extraction timed out. Try a shorter video.';
-        } else {
-          errorMsg += '\n\nTry using a desktop browser for better results.';
-        }
-        alert(errorMsg);
-        cachedAudioBlob = null;
+        console.error(err);
+        alert('Extraction failed: ' + err.message);
+      } finally {
+        setTimeout(() => {
+          extractBtn.disabled = false;
+          progressBar.classList.remove('active');
+          statusText.classList.remove('active');
+        }, 1200);
       }
-
-      setTimeout(() => {
-        extractBtn.disabled = false;
-        extractBtn.textContent = '🎵 Extract Audio';
-        extractBtn.classList.remove('extracting');
-        progressBar.classList.remove('active');
-        statusText.classList.remove('active');
-      }, 1000);
     };
 
-    function downloadBlob(blob, filename) {
-      if ('showSaveFilePicker' in window) {
-        window.showSaveFilePicker({
-          suggestedName: filename,
-          types: [{
-            description: filename.endsWith('.mp3') ? 'MP3 Audio' : 'WAV Audio',
-            accept: filename.endsWith('.mp3') ? { 'audio/mpeg': ['.mp3'] } : { 'audio/wav': ['.wav'] }
-          }]
-        }).then(async (handle) => {
-          const writable = await handle.createWritable();
-          await writable.write(blob);
-          await writable.close();
-        }).catch(err => {
-          if (err.name !== 'AbortError') {
-            classicDownload(blob, filename);
-          }
-        });
-        return;
+    // Конвертация AudioBuffer в WAV (16-bit PCM)
+    function audioBufferToWav(buffer) {
+      const numOfChan = buffer.numberOfChannels;
+      const sampleRate = buffer.sampleRate;
+      const length = buffer.length * numOfChan * 2 + 44;
+      const out = new DataView(new ArrayBuffer(length));
+      let channels = [], sample, offset = 0, pos = 0;
+
+      function writeString(str) {
+        for (let i = 0; i < str.length; i++) {
+          out.setUint8(pos++, str.charCodeAt(i));
+        }
       }
-      classicDownload(blob, filename);
+
+      writeString('RIFF');
+      out.setUint32(pos, length - 8, true); pos += 4;
+      writeString('WAVE');
+      writeString('fmt ');
+      out.setUint32(pos, 16, true); pos += 4; // SubChunk1Size
+      out.setUint16(pos, 1, true); pos += 2;  // PCM
+      out.setUint16(pos, numOfChan, true); pos += 2;
+      out.setUint32(pos, sampleRate, true); pos += 4;
+      out.setUint32(pos, sampleRate * numOfChan * 2, true); pos += 4; // ByteRate
+      out.setUint16(pos, numOfChan * 2, true); pos += 2; // BlockAlign
+      out.setUint16(pos, 16, true); pos += 2; // BitsPerSample
+      writeString('data');
+      out.setUint32(pos, length - pos - 4, true); pos += 4;
+
+      for (let i = 0; i < buffer.numberOfChannels; i++) {
+        channels.push(buffer.getChannelData(i));
+      }
+
+      while (offset < buffer.length) {
+        for (let i = 0; i < numOfChan; i++) {
+          sample = Math.max(-1, Math.min(1, channels[i][offset]));
+          sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
+          out.setInt16(pos, sample, true);
+          pos += 2;
+        }
+        offset++;
+      }
+
+      return new Blob([out], { type: 'audio/wav' });
     }
 
-    function classicDownload(blob, filename) {
+    // Конвертация AudioBuffer в MP3 (через LameJS)
+    async function convertBufferToMp3(audioBuffer, bitrate) {
+      if (typeof lamejs === 'undefined') {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js';
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('Failed to load MP3 encoder library.'));
+          document.head.appendChild(script);
+        });
+      }
+
+      const channels = audioBuffer.numberOfChannels;
+      const sampleRate = audioBuffer.sampleRate;
+      const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, bitrate);
+      const mp3Data = [];
+
+      const left = audioBuffer.getChannelData(0);
+      const right = channels > 1 ? audioBuffer.getChannelData(1) : left;
+
+      // Перевод float32 в int16
+      const sampleCount = audioBuffer.length;
+      const leftInt16 = new Int16Array(sampleCount);
+      const rightInt16 = new Int16Array(sampleCount);
+
+      for (let i = 0; i < sampleCount; i++) {
+        let sL = Math.max(-1, Math.min(1, left[i]));
+        leftInt16[i] = sL < 0 ? sL * 0x8000 : sL * 0x7FFF;
+        let sR = Math.max(-1, Math.min(1, right[i]));
+        rightInt16[i] = sR < 0 ? sR * 0x8000 : sR * 0x7FFF;
+      }
+
+      const chunkSize = 1152;
+      for (let i = 0; i < sampleCount; i += chunkSize) {
+        const leftChunk = leftInt16.subarray(i, i + chunkSize);
+        let mp3buf;
+        if (channels === 2) {
+          const rightChunk = rightInt16.subarray(i, i + chunkSize);
+          mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
+        } else {
+          mp3buf = mp3encoder.encodeBuffer(leftChunk);
+        }
+        if (mp3buf.length > 0) mp3Data.push(mp3buf);
+      }
+
+      const endBuf = mp3encoder.flush();
+      if (endBuf.length > 0) mp3Data.push(endBuf);
+
+      return new Blob(mp3Data, { type: 'audio/mp3' });
+    }
+
+    function downloadBlob(blob, filename) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = filename;
-      a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
       setTimeout(() => {
