@@ -1,4 +1,4 @@
-const CACHE_NAME = 'polarity-vmedia';
+const CACHE_NAME = 'polarity-vcapital';
 
 const CORE_ASSETS = [
     './',
@@ -10,7 +10,6 @@ const CORE_ASSETS = [
     './match.html',
     './life.html',
     './spark.html',
-    './capital.html',
     './clock.html',
     './syntax.html',
     './words.html',
@@ -23,7 +22,6 @@ const CORE_ASSETS = [
     './manifest-match.json',
     './manifest-life.json',
     './manifest-spark.json',
-    './manifest-capital.json',
     './manifest-syntax.json',
     './manifest-words.json',
     './manifest-jetpack.json',
