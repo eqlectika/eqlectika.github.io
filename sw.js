@@ -1,4 +1,4 @@
-const CACHE_NAME = 'polarity-vvideo';
+const CACHE_NAME = 'polarity-vmedia';
 
 const CORE_ASSETS = [
     './',
@@ -15,7 +15,7 @@ const CORE_ASSETS = [
     './syntax.html',
     './words.html',
     './jetpack.html',
-    './video.html',
+    './media.html',
 
 
     './manifest-cross.json',
@@ -27,7 +27,7 @@ const CORE_ASSETS = [
     './manifest-syntax.json',
     './manifest-words.json',
     './manifest-jetpack.json',
-    './manifest-video.json',
+    './manifest-media.json',
     
 
     './handle.png',
