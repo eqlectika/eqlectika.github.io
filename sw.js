@@ -41,6 +41,7 @@ const CORE_ASSETS = [
     './clock.PNG',
     './syntax.png',
     './words.png',
+    './media.png',
     './star.png'
 ];
 
