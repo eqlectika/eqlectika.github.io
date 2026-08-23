@@ -485,12 +485,11 @@ video#media { aspect-ratio: 16/9; }
     <div class="status-text" id="statusText">Processing...</div>
   </div>
 
-  <div class="logo" id="logoBtn" title="Hold to update app">
-     <a href="research.html">
-       <img src="logo.png" alt="Logo">
-     </a>
-    <span class="logo-tip">Hold to update</span>
-  </div>
+<div class="logo" id="logoBtn" title="Hold to update app">
+   <img src="logo.png" alt="Logo">
+   <span class="logo-tip">Hold to update</span>
+</div>
+
 
   <script>
     const DB_NAME = 'MediaLoopDB';
@@ -903,38 +902,43 @@ function onTimeUpdate() {
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
     }
 
-    let holdTimer = null;
+    let pressTimer = null;
+    let isLongPress = false;
 
-    
-
-    function startHold() {
-      holdTimer = setTimeout(async () => {
+    function startPress() {
+      isLongPress = false;
+      pressTimer = setTimeout(async () => {
+        isLongPress = true;
         if ('serviceWorker' in navigator) {
           const registrations = await navigator.serviceWorker.getRegistrations();
-          for (let reg of registrations) {
-            await reg.unregister();
-          }
+          for (let reg of registrations) { await reg.unregister(); }
         }
         if ('caches' in window) {
           const keys = await caches.keys();
-          for (let key of keys) {
-            await caches.delete(key);
-          }
+          for (let key of keys) { await caches.delete(key); }
         }
         alert('App update requested! Cache and Service Worker cleared. Reloading...');
         window.location.reload(true);
       }, 1500);
     }
 
-    function cancelHold() {
-      if (holdTimer) clearTimeout(holdTimer);
+    function cancelPress() {
+      if (pressTimer) clearTimeout(pressTimer);
     }
 
-    logoBtn.addEventListener('mousedown', startHold);
-    logoBtn.addEventListener('mouseup', cancelHold);
-    logoBtn.addEventListener('mouseleave', cancelHold);
-    logoBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startHold(); });
-    logoBtn.addEventListener('touchend', cancelHold);
+    logoBtn.addEventListener('click', () => {
+      if (!isLongPress) {
+        window.location.href = 'research.html';
+      }
+    });
+
+    logoBtn.addEventListener('mousedown', startPress);
+    logoBtn.addEventListener('mouseup', cancelPress);
+    logoBtn.addEventListener('mouseleave', cancelPress);
+    logoBtn.addEventListener('touchstart', startPress);
+    logoBtn.addEventListener('touchend', cancelPress);
+    logoBtn.addEventListener('touchcancel', cancelPress);
+
     
   </script>
 </body>
