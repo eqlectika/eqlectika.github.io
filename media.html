@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="manifest-video.json">
-  <title>Video Loop</title>
+<link rel="manifest" href="manifest-video.json">
+  <title>Media Loop</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -17,12 +17,14 @@
       min-height: 100vh;
       padding: 16px;
     }
-    video {
+    #media {
       width: 100%;
       max-width: 800px;
       background: #000;
       border-radius: 8px;
+      min-height: 80px;
     }
+    video#media { aspect-ratio: 16/9; }
     .controls {
       width: 100%;
       max-width: 800px;
@@ -111,16 +113,17 @@
       height: 38px;
       display: block;
     }
+    #extractBtn { display: none; }
   </style>
 </head>
 <body>
-  <video id="v" controls playsinline></video>
+  <video id="media" controls playsinline></video>
 
   <div class="controls">
-    <!-- Row 1: Choose video + time inputs -->
+    <!-- Row 1 -->
     <div class="row">
-      <label for="f">Choose video</label>
-      <input type="file" id="f" accept="video/*">
+      <label for="f">Choose media</label>
+      <input type="file" id="f" accept="video/*,audio/*">
       <div class="times">
         <input type="number" id="start" value="0" step="0.1" min="0" disabled> –
         <input type="number" id="end" value="0" step="0.1" min="0" disabled>
@@ -133,10 +136,11 @@
       <input type="range" id="e" min="0" max="100" step="0.1" value="100" disabled>
     </div>
 
-    <!-- Row 3: Buttons stacked -->
+    <!-- Row 3: Buttons -->
     <div class="buttons">
       <button id="loop" disabled>Loop</button>
       <button id="stop" disabled>Stop</button>
+      <button id="extractBtn">Extract Audio</button>
     </div>
   </div>
 
@@ -145,7 +149,7 @@
   </a>
 
   <script>
-    const v = document.getElementById('v');
+    const media = document.getElementById('media');
     const f = document.getElementById('f');
     const start = document.getElementById('start');
     const end = document.getElementById('end');
@@ -153,22 +157,51 @@
     const e = document.getElementById('e');
     const loopBtn = document.getElementById('loop');
     const stopBtn = document.getElementById('stop');
+    const extractBtn = document.getElementById('extractBtn');
 
     let looping = false, from = 0, to = 0;
+    let currentFile = null;
+    let isVideo = false;
 
     f.onchange = () => {
       const file = f.files[0];
       if (!file) return;
-      v.src = URL.createObjectURL(file);
+
+      currentFile = file;
+      isVideo = file.type.startsWith('video/');
+
+      // Switch element if needed
+      const newMedia = document.createElement(isVideo ? 'video' : 'audio');
+      newMedia.id = 'media';
+      newMedia.controls = true;
+      newMedia.playsInline = true;
+      if (isVideo) newMedia.style.aspectRatio = '16/9';
+      media.replaceWith(newMedia);
+      window.media = newMedia; // update reference
+
+      // Re-bind events
+      bindMediaEvents(newMedia);
+
+      newMedia.src = URL.createObjectURL(file);
+      extractBtn.style.display = isVideo ? 'inline-block' : 'none';
     };
 
-    v.onloadedmetadata = () => {
-      const d = v.duration;
-      [start, end, s, e, loopBtn].forEach(el => el.disabled = false);
-      start.max = end.max = s.max = e.max = d;
-      end.value = e.value = d.toFixed(1);
-      start.value = s.value = 0;
-    };
+    function bindMediaEvents(el) {
+      el.onloadedmetadata = () => {
+        const d = el.duration;
+        [start, end, s, e, loopBtn].forEach(x => x.disabled = false);
+        start.max = end.max = s.max = e.max = d;
+        end.value = e.value = d.toFixed(1);
+        start.value = s.value = 0;
+      };
+
+      el.ontimeupdate = () => {
+        if (looping && el.currentTime >= to) el.currentTime = from;
+      };
+    }
+
+    // Initial bind
+    bindMediaEvents(media);
 
     function sync(fromSlider) {
       let a = +start.value, b = +end.value;
@@ -185,26 +218,98 @@
     start.onchange = end.onchange = () => sync(false);
 
     loopBtn.onclick = () => {
+      const el = document.getElementById('media');
       from = +start.value;
       to = +end.value;
       if (to <= from) return;
       looping = true;
-      v.currentTime = from;
-      v.play();
+      el.currentTime = from;
+      el.play();
       loopBtn.disabled = true;
       stopBtn.disabled = false;
     };
 
     stopBtn.onclick = () => {
+      const el = document.getElementById('media');
       looping = false;
-      v.pause();
+      el.pause();
       loopBtn.disabled = false;
       stopBtn.disabled = true;
     };
 
-    v.ontimeupdate = () => {
-      if (looping && v.currentTime >= to) v.currentTime = from;
+    // ===== Extract Audio (to WAV) =====
+    extractBtn.onclick = async () => {
+      if (!currentFile || !isVideo) return;
+
+      extractBtn.disabled = true;
+      extractBtn.textContent = 'Extracting...';
+
+      try {
+        const arrayBuffer = await currentFile.arrayBuffer();
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+        // Convert to WAV
+        const wav = audioBufferToWav(audioBuffer);
+        const blob = new Blob([wav], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = (currentFile.name.replace(/\.[^/.]+$/, '') || 'audio') + '.wav';
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert('Failed to extract audio: ' + err.message);
+      }
+
+      extractBtn.disabled = false;
+      extractBtn.textContent = 'Extract Audio';
     };
+
+    // Helper: AudioBuffer → WAV
+    function audioBufferToWav(buffer) {
+      const numOfChan = buffer.numberOfChannels;
+      const length = buffer.length * numOfChan * 2 + 44;
+      const bufferArray = new ArrayBuffer(length);
+      const view = new DataView(bufferArray);
+      const channels = [];
+      let pos = 0;
+
+      setUint32(0x46464952); // "RIFF"
+      setUint32(length - 8);
+      setUint32(0x45564157); // "WAVE"
+      setUint32(0x20746d66); // "fmt "
+      setUint32(16);
+      setUint16(1); // PCM
+      setUint16(numOfChan);
+      setUint32(buffer.sampleRate);
+      setUint32(buffer.sampleRate * 2 * numOfChan);
+      setUint16(numOfChan * 2);
+      setUint16(16);
+      setUint32(0x61746164); // "data"
+      setUint32(length - 44);
+
+      for (let i = 0; i < buffer.numberOfChannels; i++) {
+        channels.push(buffer.getChannelData(i));
+      }
+
+      let offset = 0;
+      while (pos < length) {
+        for (let i = 0; i < numOfChan; i++) {
+          let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+          sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+          view.setInt16(pos, sample, true);
+          pos += 2;
+        }
+        offset++;
+      }
+
+      return bufferArray;
+
+      function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+      function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+    }
   </script>
 </body>
 </html>
