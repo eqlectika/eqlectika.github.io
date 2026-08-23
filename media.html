@@ -425,7 +425,7 @@ video#media { aspect-ratio: 16/9; }
 
   <div class="controls">
     <div class="timeline-container">
-      <input type="range" id="seekBar" class="custom-slider" value="0" min="0" max="100" step="0.1" disabled>
+      <input type="range" id="seekBar" class="custom-slider" value="0" min="0" max="100" step="0.01" disabled>
     </div>
 
 
@@ -435,16 +435,16 @@ video#media { aspect-ratio: 16/9; }
       <input type="file" id="f" accept="video/*,audio/*,.mov,.mp4,.m4a,.mp3,.wav,.aac,.ogg,.flac">
       
       <div class="times">
-        <input type="number" id="start" value="0" step="0.1" min="0" disabled> –
-        <input type="number" id="end" value="0" step="0.1" min="0" disabled>
+        <input type="number" id="start" value="0" step="0.01" min="0" disabled> –
+        <input type="number" id="end" value="0" step="0.01" min="0" disabled>
       </div>
     </div>
 
 <div class="range-container">
   <div class="range-track-bg"></div>
   <div class="range-highlight" id="rangeHighlight"></div>
-  <input type="range" id="s" class="range-slider-multi" min="0" max="100" step="0.1" value="0" disabled>
-  <input type="range" id="e" class="range-slider-multi" min="0" max="100" step="0.1" value="100" disabled>
+  <input type="range" id="s" class="range-slider-multi" min="0" max="100" step="0.01" value="0" disabled>
+  <input type="range" id="e" class="range-slider-multi" min="0" max="100" step="0.01" value="100" disabled>
 </div>
 
     <div class="row">
@@ -565,31 +565,75 @@ video#media { aspect-ratio: 16/9; }
       if (f.files[0]) loadMediaFile(f.files[0]);
     };
 
-    function loadMediaFile(file, savedStart = 0, savedEnd = null, savedCue = 0) {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-      currentFile = file;
-      objectUrl = URL.createObjectURL(file);
+    function initMediaSession() {
+  if (!('mediaSession' in navigator)) return;
 
-      const isVideo = file.type.startsWith('video/') || /\.(mov|mp4|webm|m4v|avi)$/i.test(file.name);
-      const newType = isVideo ? 'video' : 'audio';
+  const fileName = currentFile ? currentFile.name : 'Track';
 
-      if (media.tagName.toLowerCase() !== newType) {
-        const newMedia = document.createElement(newType);
-        newMedia.id = 'media';
-        newMedia.controls = true;
-        newMedia.playsInline = true;
-        media.replaceWith(newMedia);
-        media = newMedia;
-      }
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: fileName,
+    artist: 'Media Loop DJ',
+    album: 'DJ Edition',
+    artwork: [
+      { src: 'logo.png', sizes: '512x512', type: 'image/png' }
+    ]
+  });
 
-      media.src = objectUrl;
-      media.volume = volumeBar.value;
-      media.addEventListener('loadedmetadata', () => onLoaded(savedStart, savedEnd, savedCue));
-      media.addEventListener('timeupdate', onTimeUpdate);
-
-      extractOptions.style.display = 'flex';
-      sizeInfo.textContent = `File: ${file.name} (${(file.size / 1048576).toFixed(1)} MB)`;
+  // Связываем системные кнопки на заблокированном экране с плеером
+  navigator.mediaSession.setActionHandler('play', () => { media.play(); });
+  navigator.mediaSession.setActionHandler('pause', () => { media.pause(); });
+  navigator.mediaSession.setActionHandler('stop', () => {
+    stopBtn.click();
+  });
+  navigator.mediaSession.setActionHandler('seekto', (details) => {
+    if (details.seekTime !== undefined) {
+      media.currentTime = details.seekTime;
     }
+  });
+}
+
+// Обновление положения ползунка на системном экране блокировки
+function updateMediaSessionPosition() {
+  if (!('mediaSession' in navigator) || !media.duration || !isFinite(media.duration)) return;
+  try {
+    navigator.mediaSession.setPositionState({
+      duration: media.duration,
+      playbackRate: media.playbackRate,
+      position: media.currentTime
+    });
+  } catch (e) {
+    // Игнорируем ошибки, если время вышло за пределы
+  }
+}
+
+function loadMediaFile(file, savedStart = 0, savedEnd = null, savedCue = 0) {
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
+  currentFile = file;
+  objectUrl = URL.createObjectURL(file);
+
+  const isVideo = file.type.startsWith('video/') || /\.(mov|mp4|webm|m4v|avi)$/i.test(file.name);
+  const newType = isVideo ? 'video' : 'audio';
+
+  if (media.tagName.toLowerCase() !== newType) {
+    const newMedia = document.createElement(newType);
+    newMedia.id = 'media';
+    newMedia.controls = true;
+    newMedia.playsInline = true;
+    media.replaceWith(newMedia);
+    media = newMedia;
+  }
+
+  media.src = objectUrl;
+  media.volume = volumeBar.value;
+  media.addEventListener('loadedmetadata', () => onLoaded(savedStart, savedEnd, savedCue));
+  media.addEventListener('timeupdate', onTimeUpdate);
+
+  // Инициализируем системную сессию для фона
+  initMediaSession();
+
+  extractOptions.style.display = 'flex';
+  sizeInfo.textContent = `File: ${file.name} (${(file.size / 1048576).toFixed(1)} MB)`;
+}
 
     function onLoaded(savedStart, savedEnd, savedCue) {
       const d = media.duration;
@@ -602,8 +646,8 @@ video#media { aspect-ratio: 16/9; }
       const startVal = savedStart || 0;
       const endVal = (savedEnd !== null && savedEnd <= d) ? savedEnd : d;
 
-      start.value = s.value = startVal.toFixed(1);
-      end.value = e.value = endVal.toFixed(1);
+      start.value = s.value = startVal.toFixed(2);
+      end.value = e.value = endVal.toFixed(2);
       cueTime = savedCue || startVal;
       media.currentTime = cueTime;
       seekBar.value = cueTime;
@@ -611,21 +655,24 @@ video#media { aspect-ratio: 16/9; }
       saveMediaToDB(currentFile, startVal, endVal, cueTime);
     }
 
-    function onTimeUpdate() {
-      if (!media.duration) return;
-      seekBar.value = media.currentTime;
+function onTimeUpdate() {
+  if (!media.duration) return;
+  seekBar.value = media.currentTime;
 
-      const from = +start.value;
-      const to = +end.value;
+  const from = +start.value;
+  const to = +end.value;
 
-      // Проверка петли
-      if (isLoopActive && media.currentTime >= to) {
-        media.currentTime = from;
-        media.play();
-      }
+  // Проверка петли
+  if (isLoopActive && media.currentTime >= to) {
+    media.currentTime = from;
+    media.play();
+  }
 
-      playBtn.textContent = media.paused ? '▶ Play' : '⏸ Pause';
-    }
+  playBtn.textContent = media.paused ? '▶ Play' : '⏸ Pause';
+
+  // Обновляем шкалу времени на шторке / заблокированном экране
+  updateMediaSessionPosition();
+}
 
     seekBar.oninput = () => {
       media.currentTime = seekBar.value;
@@ -640,8 +687,8 @@ video#media { aspect-ratio: 16/9; }
       let a = +start.value, b = +end.value;
       if (fromSlider) { a = +s.value; b = +e.value; }
       if (a >= b) a = Math.max(0, b - 0.5);
-      start.value = s.value = a.toFixed(1);
-      end.value = e.value = b.toFixed(1);
+      start.value = s.value = a.toFixed(2);
+      end.value = e.value = b.toFixed(2);
 
       if (currentFile) saveMediaToDB(currentFile, a, b, cueTime);
     }
@@ -854,6 +901,8 @@ video#media { aspect-ratio: 16/9; }
     }
 
     let holdTimer = null;
+
+    
 
     function startHold() {
       holdTimer = setTimeout(async () => {
