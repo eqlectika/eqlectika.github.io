@@ -1,4 +1,4 @@
-const CACHE_NAME = 'polarity-vflash';
+const CACHE_NAME = 'polarity-vvideo';
 
 const CORE_ASSETS = [
     './',
