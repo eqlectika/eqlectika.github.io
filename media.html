@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="manifest" href="manifest-media.json">
+  <link rel="manifest" href="manifest-media.json">
   <title>Media Loop</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -120,7 +120,6 @@
   <video id="media" controls playsinline></video>
 
   <div class="controls">
-    <!-- Row 1 -->
     <div class="row">
       <label for="f">Choose media</label>
       <input type="file" id="f" accept="video/*,audio/*">
@@ -130,13 +129,11 @@
       </div>
     </div>
 
-    <!-- Row 2: Sliders -->
     <div class="row">
       <input type="range" id="s" min="0" max="100" step="0.1" value="0" disabled>
       <input type="range" id="e" min="0" max="100" step="0.1" value="100" disabled>
     </div>
 
-    <!-- Row 3: Buttons -->
     <div class="buttons">
       <button id="loop" disabled>Loop</button>
       <button id="stop" disabled>Stop</button>
@@ -149,7 +146,6 @@
   </a>
 
   <script>
-    const media = document.getElementById('media');
     const f = document.getElementById('f');
     const start = document.getElementById('start');
     const end = document.getElementById('end');
@@ -159,49 +155,69 @@
     const stopBtn = document.getElementById('stop');
     const extractBtn = document.getElementById('extractBtn');
 
+    let media = document.getElementById('media');
     let looping = false, from = 0, to = 0;
     let currentFile = null;
     let isVideo = false;
+    let objectUrl = null;
+    let cachedWavBlob = null;
+    let cachedName = '';
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
     f.onchange = () => {
       const file = f.files[0];
       if (!file) return;
 
+      // Cleanup
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+      cachedWavBlob = null;
+      looping = false;
+      loopBtn.disabled = true;
+      stopBtn.disabled = true;
+
       currentFile = file;
       isVideo = file.type.startsWith('video/');
+      objectUrl = URL.createObjectURL(file);
 
-      // Switch element if needed
+      // Recreate media element
       const newMedia = document.createElement(isVideo ? 'video' : 'audio');
       newMedia.id = 'media';
       newMedia.controls = true;
       newMedia.playsInline = true;
       if (isVideo) newMedia.style.aspectRatio = '16/9';
+      else newMedia.style.minHeight = '80px';
+
       media.replaceWith(newMedia);
-      window.media = newMedia; // update reference
+      media = newMedia;
 
-      // Re-bind events
-      bindMediaEvents(newMedia);
+      media.addEventListener('loadedmetadata', onLoaded);
+      media.addEventListener('timeupdate', onTimeUpdate);
 
-      newMedia.src = URL.createObjectURL(file);
+      media.src = objectUrl;
       extractBtn.style.display = isVideo ? 'inline-block' : 'none';
+      extractBtn.textContent = 'Extract Audio';
+      extractBtn.disabled = false;
     };
 
-    function bindMediaEvents(el) {
-      el.onloadedmetadata = () => {
-        const d = el.duration;
-        [start, end, s, e, loopBtn].forEach(x => x.disabled = false);
-        start.max = end.max = s.max = e.max = d;
-        end.value = e.value = d.toFixed(1);
-        start.value = s.value = 0;
-      };
-
-      el.ontimeupdate = () => {
-        if (looping && el.currentTime >= to) el.currentTime = from;
-      };
+    function onLoaded() {
+      const d = media.duration;
+      if (!isFinite(d)) return;
+      [start, end, s, e, loopBtn].forEach(el => el.disabled = false);
+      start.max = end.max = s.max = e.max = d;
+      end.value = e.value = d.toFixed(1);
+      start.value = s.value = 0;
     }
 
-    // Initial bind
-    bindMediaEvents(media);
+    function onTimeUpdate() {
+      if (looping && media.currentTime >= to) {
+        media.currentTime = from;
+      }
+    }
 
     function sync(fromSlider) {
       let a = +start.value, b = +end.value;
@@ -218,97 +234,154 @@
     start.onchange = end.onchange = () => sync(false);
 
     loopBtn.onclick = () => {
-      const el = document.getElementById('media');
       from = +start.value;
       to = +end.value;
       if (to <= from) return;
       looping = true;
-      el.currentTime = from;
-      el.play();
+      media.currentTime = from;
+      media.play();
       loopBtn.disabled = true;
       stopBtn.disabled = false;
     };
 
     stopBtn.onclick = () => {
-      const el = document.getElementById('media');
       looping = false;
-      el.pause();
+      media.pause();
       loopBtn.disabled = false;
       stopBtn.disabled = true;
     };
 
-    // ===== Extract Audio (to WAV) =====
     extractBtn.onclick = async () => {
       if (!currentFile || !isVideo) return;
+
+      // На iOS большие файлы почти всегда роняют вкладку
+      if (isIOS && currentFile.size > 40 * 1024 * 1024) {
+        alert('This video is too large for audio extraction on iPhone.\n\nPlease try a shorter video or use a computer.');
+        return;
+      }
 
       extractBtn.disabled = true;
       extractBtn.textContent = 'Extracting...';
 
       try {
-        const arrayBuffer = await currentFile.arrayBuffer();
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        if (!cachedWavBlob) {
+          // Читаем файл
+          const arrayBuffer = await currentFile.arrayBuffer();
 
-        // Convert to WAV
-        const wav = audioBufferToWav(audioBuffer);
-        const blob = new Blob([wav], { type: 'audio/wav' });
-        const url = URL.createObjectURL(blob);
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = (currentFile.name.replace(/\.[^/.]+$/, '') || 'audio') + '.wav';
-        a.click();
-        URL.revokeObjectURL(url);
+          // Сразу освобождаем AudioContext
+          await audioCtx.close();
+
+          const wav = audioBufferToWav(audioBuffer);
+          cachedWavBlob = new Blob([wav], { type: 'audio/wav' });
+          cachedName = (currentFile.name.replace(/\.[^/.]+$/, '') || 'audio') + '.wav';
+
+          // Помогаем сборщику мусора
+          // (arrayBuffer и audioBuffer больше не нужны)
+        }
+
+        // Скачивание
+        downloadBlob(cachedWavBlob, cachedName);
+
       } catch (err) {
-        alert('Failed to extract audio: ' + err.message);
+        console.error(err);
+        alert('Failed to extract audio.\n\nOn iPhone this often happens with large videos because of memory limits.\nTry a shorter video or use a desktop browser.');
+        cachedWavBlob = null; // сбрасываем кэш при ошибке
       }
 
       extractBtn.disabled = false;
       extractBtn.textContent = 'Extract Audio';
     };
 
-    // Helper: AudioBuffer → WAV
+    function downloadBlob(blob, filename) {
+      // Пробуем современный API (работает в Chrome/Edge)
+      if ('showSaveFilePicker' in window) {
+        window.showSaveFilePicker({
+          suggestedName: filename,
+          types: [{
+            description: 'WAV Audio',
+            accept: { 'audio/wav': ['.wav'] }
+          }]
+        }).then(async (handle) => {
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+        }).catch(err => {
+          if (err.name !== 'AbortError') {
+            // Fallback если что-то пошло не так
+            classicDownload(blob, filename);
+          }
+        });
+        return;
+      }
+
+      // Обычный способ (Safari, Firefox, iOS)
+      classicDownload(blob, filename);
+    }
+
+    function classicDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+
+      // Важно: не удаляем ссылку сразу
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 1000);
+    }
+
     function audioBufferToWav(buffer) {
       const numOfChan = buffer.numberOfChannels;
-      const length = buffer.length * numOfChan * 2 + 44;
-      const bufferArray = new ArrayBuffer(length);
-      const view = new DataView(bufferArray);
+      const sampleRate = buffer.sampleRate;
+      const bitDepth = 16;
+      const bytesPerSample = bitDepth / 8;
+      const blockAlign = numOfChan * bytesPerSample;
+      const dataLength = buffer.length * blockAlign;
+      const arrayBuffer = new ArrayBuffer(44 + dataLength);
+      const view = new DataView(arrayBuffer);
+
+      const writeString = (offset, str) => {
+        for (let i = 0; i < str.length; i++) {
+          view.setUint8(offset + i, str.charCodeAt(i));
+        }
+      };
+
+      writeString(0, 'RIFF');
+      view.setUint32(4, 36 + dataLength, true);
+      writeString(8, 'WAVE');
+      writeString(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numOfChan, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, bitDepth, true);
+      writeString(36, 'data');
+      view.setUint32(40, dataLength, true);
+
       const channels = [];
-      let pos = 0;
-
-      setUint32(0x46464952); // "RIFF"
-      setUint32(length - 8);
-      setUint32(0x45564157); // "WAVE"
-      setUint32(0x20746d66); // "fmt "
-      setUint32(16);
-      setUint16(1); // PCM
-      setUint16(numOfChan);
-      setUint32(buffer.sampleRate);
-      setUint32(buffer.sampleRate * 2 * numOfChan);
-      setUint16(numOfChan * 2);
-      setUint16(16);
-      setUint32(0x61746164); // "data"
-      setUint32(length - 44);
-
-      for (let i = 0; i < buffer.numberOfChannels; i++) {
+      for (let i = 0; i < numOfChan; i++) {
         channels.push(buffer.getChannelData(i));
       }
 
-      let offset = 0;
-      while (pos < length) {
-        for (let i = 0; i < numOfChan; i++) {
-          let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+      let offset = 44;
+      for (let i = 0; i < buffer.length; i++) {
+        for (let ch = 0; ch < numOfChan; ch++) {
+          let sample = Math.max(-1, Math.min(1, channels[ch][i]));
           sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-          view.setInt16(pos, sample, true);
-          pos += 2;
+          view.setInt16(offset, sample, true);
+          offset += 2;
         }
-        offset++;
       }
-
-      return bufferArray;
-
-      function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
-      function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+      return arrayBuffer;
     }
   </script>
 </body>
