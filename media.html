@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <link rel="manifest" href="manifest-media.json">
-  <title>Media Loop</title>
+  <title>Media Loop DJ Edition</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -16,63 +16,240 @@
       align-items: center;
       min-height: 100vh;
       padding: 16px;
+      user-select: none;
     }
-    .media-wrapper {
-      width: 100%;
-      max-width: 800px;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 120px;
-    }
-    #media {
-      width: 100%;
-      max-height: 70vh;
-    }
-    video#media { aspect-ratio: 16/9; }
-    audio#media { width: 100%; padding: 20px; }
+.media-wrapper {
+  width: 100%;
+  max-width: 800px;
+  background: linear-gradient(145deg, #16161a, #0a0a0c);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  border: 1px solid #2a2a35;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  position: relative;
+}
+
+#media {
+  width: 100%;
+  max-height: 60vh;
+}
+video#media { aspect-ratio: 16/9; }
+
+/* Кастомный информативный дисплей для Audio */
+.audio-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 24px;
+  gap: 16px;
+  background: radial-gradient(circle at center, rgba(108, 92, 231, 0.15) 0%, transparent 70%);
+}
+
+.audio-info-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.audio-cover {
+  width: 72px;
+  height: 72px;
+  background: #22222e;
+  border: 2px solid #6c5ce7;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  box-shadow: 0 0 15px rgba(108, 92, 231, 0.3);
+  flex-shrink: 0;
+}
+
+.audio-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.audio-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.audio-meta {
+  font-size: 13px;
+  color: #888;
+  display: flex;
+  gap: 12px;
+}
+
+.audio-time-big {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 36px;
+  font-weight: bold;
+  color: #00b894;
+  text-shadow: 0 0 12px rgba(0, 184, 148, 0.4);
+  letter-spacing: 1px;
+}
+
+/* Имитация эквалайзера / статуса */
+.audio-status-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  background: #252533;
+  color: #aaa;
+}
+.audio-status-badge.playing {
+  background: rgba(0, 184, 148, 0.2);
+  color: #00b894;
+  border: 1px solid #00b894;
+}
+
     .controls {
       width: 100%;
       max-width: 800px;
-      margin-top: 24px;
+      margin-top: 20px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
     }
+
+    /* Шкалы: Время и Громкость */
+    .timeline-container, .volume-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .slider-label {
+      font-size: 14px;
+      color: #aaa;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .custom-slider {
+      width: 100%;
+      height: 16px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: #252525;
+      border-radius: 8px;
+      outline: none;
+      cursor: pointer;
+    }
+    .custom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 28px;
+      height: 28px;
+      background: #6c5ce7;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid #fff;
+      box-shadow: 0 0 10px rgba(108, 92, 231, 0.5);
+    }
+    .custom-slider::-moz-range-thumb {
+      width: 28px;
+      height: 28px;
+      background: #6c5ce7;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid #fff;
+    }
+
+    /* Ползунок громкости в том же стиле, но другой акцентный цвет */
+    .volume-slider::-webkit-slider-thumb {
+      background: #00cec9;
+      box-shadow: 0 0 10px rgba(0, 206, 201, 0.5);
+    }
+    .volume-slider::-moz-range-thumb {
+      background: #00cec9;
+    }
+
     .row {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 16px;
+      gap: 12px;
       flex-wrap: wrap;
     }
-    .buttons {
-      display: flex;
-      flex-direction: column;
+
+    /* Кнопки управления */
+    .primary-btn, label.upload-label {
+      background: #6c5ce7;
+      color: #fff;
+      border: none;
+      padding: 16px 22px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      display: inline-flex;
       align-items: center;
-      gap: 12px;
+      justify-content: center;
+      gap: 8px;
     }
-    input[type="file"] { display: none; }
-    label, button {
+    .primary-btn:active, label.upload-label:active { transform: scale(0.97); }
+    
+    .cue-btn {
+      background: #fdcb6e;
+      color: #111;
+    }
+    .cue-btn.active {
+      background: #ffeaa7;
+      box-shadow: 0 0 16px #fdcb6e;
+    }
+
+    .loop-btn {
+      background: #333;
+      color: #eee;
+    }
+    .loop-btn.active {
+      background: #00b894;
+      color: #fff;
+      box-shadow: 0 0 14px #00b894;
+    }
+
+    .secondary-btn {
       background: #333;
       color: #eee;
       border: none;
-      padding: 12px 20px;
-      border-radius: 8px;
+      padding: 16px 20px;
+      border-radius: 12px;
       cursor: pointer;
-      font-size: 16px;
-      white-space: nowrap;
+      font-size: 18px;
+      font-weight: 600;
     }
-    label:hover, button:hover { background: #444; }
-    button:disabled { opacity: 0.4; cursor: default; }
+    .secondary-btn:disabled, .primary-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+
+    input[type="file"] { display: none; }
+
     .times {
       display: flex;
       gap: 10px;
       align-items: center;
-      font-size: 16px;
+      font-size: 18px;
     }
     .times input {
       width: 90px;
@@ -80,58 +257,122 @@
       border: 1px solid #444;
       color: #eee;
       padding: 10px;
-      border-radius: 6px;
+      border-radius: 8px;
       text-align: center;
       font-size: 16px;
+      font-weight: bold;
     }
-    input[type="range"] {
-      flex: 1;
-      max-width: 320px;
-      min-width: 120px;
-      height: 8px;
-      -webkit-appearance: none;
-      appearance: none;
+
+.range-container {
+  position: relative;
+  width: 100%;
+  height: 30px;
+  display: grid;
+  align-items: center;
+}
+
+.range-slider-multi {
+  grid-area: 1 / 1;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: none;
+  pointer-events: none; /* Пропускаем клики сквозь трек */
+  outline: none;
+  margin: 0;
+}
+
+/* Фон подложки трека */
+.range-track-bg {
+  grid-area: 1 / 1;
+  height: 8px;
+  background: #252525;
+  border-radius: 4px;
+  width: 100%;
+}
+
+/* Стилизация бегунков для всех браузеров */
+.range-slider-multi::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto; /* Включаем клики обратно только для ручки */
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #a29bfe;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 0 6px rgba(162, 155, 254, 0.8);
+}
+
+.range-slider-multi::-moz-range-thumb {
+  pointer-events: auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #a29bfe;
+  cursor: pointer;
+  border: 2px solid #fff;
+}
+
+.range-highlight {
+  grid-area: 1 / 1;
+  height: 8px;
+  background: linear-gradient(90deg, #00b894, #6c5ce7); /* Градиент от Start к End */
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 1;
+  width: 0%;
+  left: 0%;
+  position: relative;
+  box-shadow: 0 0 10px rgba(0, 184, 148, 0.4);
+}
+
+/* Убедитесь, что слои ползунков находятся выше подсветки */
+.range-slider-multi {
+  z-index: 2;
+}
+
+/* Различаем Start (зеленый) и End (красный/фиолетовый) */
+#s::-webkit-slider-thumb { background: #00b894; }
+#s::-moz-range-thumb { background: #00b894; }
+#e::-webkit-slider-thumb { background: #ff7675; }
+#e::-moz-range-thumb { background: #ff7675; }
+
+    .extract-options {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .format-selector, .quality-selector {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: #222;
+      padding: 10px 16px;
+      border-radius: 8px;
+    }
+    .quality-selector select {
       background: #333;
-      border-radius: 4px;
-      outline: none;
+      color: #eee;
+      border: 1px solid #444;
+      padding: 6px 10px;
+      border-radius: 6px;
     }
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 22px;
-      height: 22px;
-      background: #6c5ce7;
-      border-radius: 50%;
-      cursor: pointer;
-    }
-    input[type="range"]::-moz-range-thumb {
-      width: 22px;
-      height: 22px;
-      background: #6c5ce7;
-      border-radius: 50%;
-      cursor: pointer;
-      border: none;
-    }
-    .logo {
-      margin-top: auto;
-      margin-bottom: 30px;
-      padding-top: 40px;
-    }
-    .logo img {
-      width: 38px;
-      height: 38px;
-      display: block;
-    }
+
     .progress-container {
       width: 100%;
       max-width: 800px;
-      margin-top: 10px;
+      margin-top: 12px;
     }
     .progress-bar {
       width: 100%;
-      height: 4px;
+      height: 6px;
       background: #333;
-      border-radius: 2px;
+      border-radius: 3px;
       overflow: hidden;
       display: none;
     }
@@ -142,45 +383,37 @@
       background: #6c5ce7;
       transition: width 0.2s;
     }
+    
     .status-text {
       font-size: 14px;
-      color: #888;
+      color: #aaa;
       margin-top: 8px;
       text-align: center;
       display: none;
     }
     .status-text.active { display: block; }
-    .extract-options {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
+
+    .logo {
+      margin-top: auto;
+      margin-bottom: 40px;
+      padding-top: 30px;
+      cursor: pointer;
+      position: relative;
     }
-    .format-selector, .quality-selector {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      background: #222;
-      padding: 8px 16px;
-      border-radius: 8px;
+    .logo img {
+      width: 44px;
+      height: 44px;
+      display: block;
+      touch-action: none;
     }
-    .format-selector label {
-      background: transparent;
-      padding: 4px 12px;
-      font-size: 14px;
-    }
-    .quality-selector select {
-      background: #333;
-      color: #eee;
-      border: 1px solid #444;
-      padding: 4px 8px;
-      border-radius: 4px;
-    }
-    .size-info {
+    .logo-tip {
+      position: absolute;
+      bottom: -18px;
+      left: 50%;
+      transform: translateX(-50%);
       font-size: 12px;
-      color: #888;
-      margin-top: 4px;
-      text-align: center;
+      color: #777;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -191,43 +424,59 @@
   </div>
 
   <div class="controls">
+    <div class="timeline-container">
+      <input type="range" id="seekBar" class="custom-slider" value="0" min="0" max="100" step="0.1" disabled>
+    </div>
+
+
+
     <div class="row">
-      <label for="f">📁 Choose media</label>
-      <!-- Сняты строгости accept для мобильного Safari/iOS -->
+      <label for="f" class="upload-label">Choose media</label>
       <input type="file" id="f" accept="video/*,audio/*,.mov,.mp4,.m4a,.mp3,.wav,.aac,.ogg,.flac">
+      
       <div class="times">
         <input type="number" id="start" value="0" step="0.1" min="0" disabled> –
         <input type="number" id="end" value="0" step="0.1" min="0" disabled>
       </div>
     </div>
-    <div class="row">
-      <input type="range" id="s" min="0" max="100" step="0.1" value="0" disabled>
-      <input type="range" id="e" min="0" max="100" step="0.1" value="100" disabled>
-    </div>
-    <div class="buttons">
-      <div class="row">
-        <button id="loop" disabled>🔁 Loop</button>
-        <button id="stop" disabled>⏹ Stop</button>
-      </div>
 
-      <div class="extract-options" id="extractOptions" style="display:none;">
-        <div class="format-selector">
-          <label><input type="radio" name="format" value="wav" checked> <span>WAV</span></label>
-          <label><input type="radio" name="format" value="mp3"> <span>MP3</span></label>
-        </div>
-        <div class="quality-selector" id="qualitySelector" style="display:none;">
-          <span>Bitrate:</span>
-          <select id="mp3Quality">
-            <option value="128">128 kbps</option>
-            <option value="192" selected>192 kbps</option>
-            <option value="256">256 kbps</option>
-            <option value="320">320 kbps</option>
-          </select>
-        </div>
-        <button id="extractBtn">🎵 Extract Audio</button>
-      </div>
-      <div class="size-info" id="sizeInfo"></div>
+<div class="range-container">
+  <div class="range-track-bg"></div>
+  <div class="range-highlight" id="rangeHighlight"></div>
+  <input type="range" id="s" class="range-slider-multi" min="0" max="100" step="0.1" value="0" disabled>
+  <input type="range" id="e" class="range-slider-multi" min="0" max="100" step="0.1" value="100" disabled>
+</div>
+
+    <div class="row">
+      <button id="cueBtn" class="primary-btn cue-btn" disabled>CUE</button>
+      <button id="playBtn" class="primary-btn" disabled>▶ Play</button>
+      <button id="loopBtn" class="primary-btn loop-btn" disabled>Loop</button>
+      <button id="stopBtn" class="secondary-btn" disabled>⏹ Stop</button>
     </div>
+    <div class="volume-container">
+      <div class="slider-label">
+        <span>Volume</span>
+        <span id="volValue">100%</span>
+      </div>
+      <input type="range" id="volumeBar" class="custom-slider volume-slider" value="1" min="0" max="1" step="0.01">
+    </div>
+    <div class="extract-options" id="extractOptions" style="display:none;">
+      <div class="format-selector">
+        <label><input type="radio" name="format" value="wav" checked> <span>WAV</span></label>
+        <label><input type="radio" name="format" value="mp3"> <span>MP3</span></label>
+      </div>
+      <div class="quality-selector" id="qualitySelector" style="display:none;">
+        <span>Bitrate:</span>
+        <select id="mp3Quality">
+          <option value="128">128 kbps</option>
+          <option value="192" selected>192 kbps</option>
+          <option value="256">256 kbps</option>
+          <option value="320">320 kbps</option>
+        </select>
+      </div>
+      <button id="extractBtn" class="secondary-btn">Extract Audio</button>
+    </div>
+    <div class="status-text" id="sizeInfo" style="display:block;"></div>
   </div>
 
   <div class="progress-container">
@@ -235,18 +484,53 @@
     <div class="status-text" id="statusText">Processing...</div>
   </div>
 
-  <a href="research.html" class="logo">
-    <img src="logo.png" alt="Logo" width="38" height="38">
-  </a>
+  <div class="logo" id="logoBtn" title="Hold to update app">
+    <img src="logo.png" alt="Logo">
+    <span class="logo-tip">Hold to update</span>
+  </div>
 
   <script>
+    const DB_NAME = 'MediaLoopDB';
+    const STORE_NAME = 'mediaStore';
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function saveMediaToDB(file, startVal, endVal, cueVal = 0) {
+      const db = await openDB();
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.objectStore(STORE_NAME).put({ file, name: file.name, type: file.type, start: startVal, end: endVal, cue: cueVal }, 'cachedMedia');
+      return tx.complete;
+    }
+
+    async function getMediaFromDB() {
+      const db = await openDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const req = tx.objectStore(STORE_NAME).get('cachedMedia');
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      });
+    }
+
     const f = document.getElementById('f');
     const start = document.getElementById('start');
     const end = document.getElementById('end');
     const s = document.getElementById('s');
     const e = document.getElementById('e');
-    const loopBtn = document.getElementById('loop');
-    const stopBtn = document.getElementById('stop');
+    const seekBar = document.getElementById('seekBar');
+    const volumeBar = document.getElementById('volumeBar');
+    const volValue = document.getElementById('volValue');
+    const cueBtn = document.getElementById('cueBtn');
+    const playBtn = document.getElementById('playBtn');
+    const loopBtn = document.getElementById('loopBtn');
+    const stopBtn = document.getElementById('stopBtn');
     const extractBtn = document.getElementById('extractBtn');
     const extractOptions = document.getElementById('extractOptions');
     const qualitySelector = document.getElementById('qualitySelector');
@@ -255,32 +539,40 @@
     const progressFill = document.getElementById('progressFill');
     const statusText = document.getElementById('statusText');
     const sizeInfo = document.getElementById('sizeInfo');
+    const logoBtn = document.getElementById('logoBtn');
     
     let media = document.getElementById('media');
-    let looping = false, from = 0, to = 0;
+    let isLoopActive = false;
+    let cueTime = 0;
     let currentFile = null;
     let objectUrl = null;
+    let isCueHolding = false;
 
-    // Переключение отображения выбора качества MP3
     document.querySelectorAll('input[name="format"]').forEach(radio => {
       radio.addEventListener('change', (evt) => {
         qualitySelector.style.display = evt.target.value === 'mp3' ? 'flex' : 'none';
       });
     });
 
-    f.onchange = () => {
-      const file = f.files[0];
-      if (!file) return;
+    window.addEventListener('DOMContentLoaded', async () => {
+      const cached = await getMediaFromDB();
+      if (cached && cached.file) {
+        loadMediaFile(cached.file, cached.start, cached.end, cached.cue);
+      }
+    });
 
+    f.onchange = () => {
+      if (f.files[0]) loadMediaFile(f.files[0]);
+    };
+
+    function loadMediaFile(file, savedStart = 0, savedEnd = null, savedCue = 0) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       currentFile = file;
       objectUrl = URL.createObjectURL(file);
 
-      // Проверка типа файла для отображения меню извлечения
       const isVideo = file.type.startsWith('video/') || /\.(mov|mp4|webm|m4v|avi)$/i.test(file.name);
-      
-      // Заменяем элемент медиа аккуратно без разрушения UI
       const newType = isVideo ? 'video' : 'audio';
+
       if (media.tagName.toLowerCase() !== newType) {
         const newMedia = document.createElement(newType);
         newMedia.id = 'media';
@@ -291,28 +583,58 @@
       }
 
       media.src = objectUrl;
-      media.addEventListener('loadedmetadata', onLoaded);
+      media.volume = volumeBar.value;
+      media.addEventListener('loadedmetadata', () => onLoaded(savedStart, savedEnd, savedCue));
       media.addEventListener('timeupdate', onTimeUpdate);
 
-      extractOptions.style.display = 'flex'; // Позволяем извлекать/перекодировать аудио из любого файла
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      sizeInfo.textContent = `File size: ${sizeMB} MB`;
-    };
+      extractOptions.style.display = 'flex';
+      sizeInfo.textContent = `File: ${file.name} (${(file.size / 1048576).toFixed(1)} MB)`;
+    }
 
-    function onLoaded() {
+    function onLoaded(savedStart, savedEnd, savedCue) {
       const d = media.duration;
       if (!isFinite(d)) return;
-      [start, end, s, e, loopBtn].forEach(el => el.disabled = false);
-      start.max = end.max = s.max = e.max = d;
-      end.value = e.value = d.toFixed(1);
-      start.value = s.value = 0;
+
+      [start, end, s, e, seekBar, cueBtn, playBtn, loopBtn, stopBtn].forEach(el => el.disabled = false);
+      
+      start.max = end.max = s.max = e.max = seekBar.max = d;
+      
+      const startVal = savedStart || 0;
+      const endVal = (savedEnd !== null && savedEnd <= d) ? savedEnd : d;
+
+      start.value = s.value = startVal.toFixed(1);
+      end.value = e.value = endVal.toFixed(1);
+      cueTime = savedCue || startVal;
+      media.currentTime = cueTime;
+      seekBar.value = cueTime;
+
+      saveMediaToDB(currentFile, startVal, endVal, cueTime);
     }
 
     function onTimeUpdate() {
-      if (looping && media.currentTime >= to) {
+      if (!media.duration) return;
+      seekBar.value = media.currentTime;
+
+      const from = +start.value;
+      const to = +end.value;
+
+      // Проверка петли
+      if (isLoopActive && media.currentTime >= to) {
         media.currentTime = from;
+        media.play();
       }
+
+      playBtn.textContent = media.paused ? '▶ Play' : '⏸ Pause';
     }
+
+    seekBar.oninput = () => {
+      media.currentTime = seekBar.value;
+    };
+
+    volumeBar.oninput = () => {
+      media.volume = volumeBar.value;
+      volValue.textContent = Math.round(volumeBar.value * 100) + '%';
+    };
 
     function sync(fromSlider) {
       let a = +start.value, b = +end.value;
@@ -320,51 +642,93 @@
       if (a >= b) a = Math.max(0, b - 0.5);
       start.value = s.value = a.toFixed(1);
       end.value = e.value = b.toFixed(1);
+
+      if (currentFile) saveMediaToDB(currentFile, a, b, cueTime);
     }
 
     s.oninput = e.oninput = () => sync(true);
     start.onchange = end.onchange = () => sync(false);
 
+    // --- DJ CUE ЛОГИКА ---
+    function handleCuePress(e) {
+      e.preventDefault();
+      if (!media.duration) return;
+
+      if (!media.paused) {
+        media.pause();
+        media.currentTime = cueTime;
+      } else {
+        isCueHolding = true;
+        cueTime = media.currentTime;
+        media.currentTime = cueTime;
+        media.play();
+        cueBtn.classList.add('active');
+        if (currentFile) saveMediaToDB(currentFile, +start.value, +end.value, cueTime);
+      }
+    }
+
+    function handleCueRelease(e) {
+      e.preventDefault();
+      if (isCueHolding) {
+        isCueHolding = false;
+        media.pause();
+        media.currentTime = cueTime;
+        cueBtn.classList.remove('active');
+      }
+    }
+
+    cueBtn.addEventListener('mousedown', handleCuePress);
+    cueBtn.addEventListener('mouseup', handleCueRelease);
+    cueBtn.addEventListener('mouseleave', handleCueRelease);
+    cueBtn.addEventListener('touchstart', handleCuePress);
+    cueBtn.addEventListener('touchend', handleCueRelease);
+
+    playBtn.onclick = () => {
+      if (media.paused) media.play();
+      else media.pause();
+    };
+
+    // --- ИСПРАВЛЕННАЯ ЛОГИКА LOOP И STOP ---
     loopBtn.onclick = () => {
-      from = +start.value;
-      to = +end.value;
-      if (to <= from) return;
-      looping = true;
-      media.currentTime = from;
-      media.play();
-      loopBtn.disabled = true;
-      stopBtn.disabled = false;
+      isLoopActive = !isLoopActive; // Переключатель режимов
+      
+      if (isLoopActive) {
+        loopBtn.classList.add('active');
+        const from = +start.value;
+        const to = +end.value;
+        if (media.currentTime < from || media.currentTime >= to) {
+          media.currentTime = from;
+        }
+        if (media.paused) media.play();
+      } else {
+        loopBtn.classList.remove('active'); 
+      }
     };
 
     stopBtn.onclick = () => {
-      looping = false;
+      isLoopActive = false; 
+      loopBtn.classList.remove('active');
       media.pause();
-      loopBtn.disabled = false;
-      stopBtn.disabled = true;
+      media.currentTime = cueTime || +start.value; 
     };
 
-    // ПРЯМОЕ ДЕКОДИРОВАНИЕ АУДИО ИЗ ВИДЕО/АУДИО ФАЙЛА
     async function decodeAudioFromFile(file) {
       const arrayBuffer = await file.arrayBuffer();
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      
       statusText.textContent = 'Decoding audio stream...';
       progressFill.style.width = '40%';
-
       try {
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
         await audioCtx.close();
         return audioBuffer;
       } catch (err) {
         await audioCtx.close();
-        throw new Error('Unable to decode audio from file. Format may not be supported by browser engine.');
+        throw new Error('Decoding error. Unsupported media format.');
       }
     }
 
-    // Извлечение аудио
     extractBtn.onclick = async () => {
       if (!currentFile) return;
-
       const format = document.querySelector('input[name="format"]:checked').value;
       const bitrate = parseInt(mp3Quality.value);
 
@@ -375,28 +739,21 @@
       statusText.textContent = 'Reading file...';
 
       try {
-        // 1. Декодируем аудиопоток напрямую из видео
         const audioBuffer = await decodeAudioFromFile(currentFile);
-        
         progressFill.style.width = '70%';
         statusText.textContent = `Converting to ${format.toUpperCase()}...`;
 
-        let resultBlob;
-        if (format === 'mp3') {
-          resultBlob = await convertBufferToMp3(audioBuffer, bitrate);
-        } else {
-          resultBlob = audioBufferToWav(audioBuffer);
-        }
+        const resultBlob = format === 'mp3' 
+          ? await convertBufferToMp3(audioBuffer, bitrate)
+          : audioBufferToWav(audioBuffer);
 
         progressFill.style.width = '100%';
-        statusText.textContent = '✅ Extraction complete!';
+        statusText.textContent = 'Extraction complete!';
 
         const ext = format === 'mp3' ? 'mp3' : 'wav';
         const baseName = currentFile.name.replace(/\.[^/.]+$/, '');
         downloadBlob(resultBlob, `${baseName}_audio.${ext}`);
-
       } catch (err) {
-        console.error(err);
         alert('Extraction failed: ' + err.message);
       } finally {
         setTimeout(() => {
@@ -407,73 +764,60 @@
       }
     };
 
-    // Конвертация AudioBuffer в WAV (16-bit PCM)
     function audioBufferToWav(buffer) {
-      const numOfChan = buffer.numberOfChannels;
-      const sampleRate = buffer.sampleRate;
+      const numOfChan = buffer.numberOfChannels, sampleRate = buffer.sampleRate;
       const length = buffer.length * numOfChan * 2 + 44;
       const out = new DataView(new ArrayBuffer(length));
       let channels = [], sample, offset = 0, pos = 0;
 
       function writeString(str) {
-        for (let i = 0; i < str.length; i++) {
-          out.setUint8(pos++, str.charCodeAt(i));
-        }
+        for (let i = 0; i < str.length; i++) out.setUint8(pos++, str.charCodeAt(i));
       }
 
       writeString('RIFF');
       out.setUint32(pos, length - 8, true); pos += 4;
-      writeString('WAVE');
-      writeString('fmt ');
-      out.setUint32(pos, 16, true); pos += 4; // SubChunk1Size
-      out.setUint16(pos, 1, true); pos += 2;  // PCM
+      writeString('WAVE'); writeString('fmt ');
+      out.setUint32(pos, 16, true); pos += 4;
+      out.setUint16(pos, 1, true); pos += 2;
       out.setUint16(pos, numOfChan, true); pos += 2;
       out.setUint32(pos, sampleRate, true); pos += 4;
-      out.setUint32(pos, sampleRate * numOfChan * 2, true); pos += 4; // ByteRate
-      out.setUint16(pos, numOfChan * 2, true); pos += 2; // BlockAlign
-      out.setUint16(pos, 16, true); pos += 2; // BitsPerSample
+      out.setUint32(pos, sampleRate * numOfChan * 2, true); pos += 4;
+      out.setUint16(pos, numOfChan * 2, true); pos += 2;
+      out.setUint16(pos, 16, true); pos += 2;
       writeString('data');
       out.setUint32(pos, length - pos - 4, true); pos += 4;
 
-      for (let i = 0; i < buffer.numberOfChannels; i++) {
-        channels.push(buffer.getChannelData(i));
-      }
+      for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
 
       while (offset < buffer.length) {
         for (let i = 0; i < numOfChan; i++) {
           sample = Math.max(-1, Math.min(1, channels[i][offset]));
           sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767) | 0;
-          out.setInt16(pos, sample, true);
-          pos += 2;
+          out.setInt16(pos, sample, true); pos += 2;
         }
         offset++;
       }
-
       return new Blob([out], { type: 'audio/wav' });
     }
 
-    // Конвертация AudioBuffer в MP3 (через LameJS)
     async function convertBufferToMp3(audioBuffer, bitrate) {
       if (typeof lamejs === 'undefined') {
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
           script.src = 'https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js';
           script.onload = resolve;
-          script.onerror = () => reject(new Error('Failed to load MP3 encoder library.'));
+          script.onerror = () => reject(new Error('Failed to load MP3 library.'));
           document.head.appendChild(script);
         });
       }
 
       const channels = audioBuffer.numberOfChannels;
-      const sampleRate = audioBuffer.sampleRate;
-      const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, bitrate);
+      const mp3encoder = new lamejs.Mp3Encoder(channels, audioBuffer.sampleRate, bitrate);
       const mp3Data = [];
-
       const left = audioBuffer.getChannelData(0);
       const right = channels > 1 ? audioBuffer.getChannelData(1) : left;
-
-      // Перевод float32 в int16
       const sampleCount = audioBuffer.length;
+
       const leftInt16 = new Int16Array(sampleCount);
       const rightInt16 = new Int16Array(sampleCount);
 
@@ -487,13 +831,9 @@
       const chunkSize = 1152;
       for (let i = 0; i < sampleCount; i += chunkSize) {
         const leftChunk = leftInt16.subarray(i, i + chunkSize);
-        let mp3buf;
-        if (channels === 2) {
-          const rightChunk = rightInt16.subarray(i, i + chunkSize);
-          mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
-        } else {
-          mp3buf = mp3encoder.encodeBuffer(leftChunk);
-        }
+        let mp3buf = (channels === 2) 
+          ? mp3encoder.encodeBuffer(leftChunk, rightInt16.subarray(i, i + chunkSize))
+          : mp3encoder.encodeBuffer(leftChunk);
         if (mp3buf.length > 0) mp3Data.push(mp3buf);
       }
 
@@ -510,11 +850,40 @@
       a.download = filename;
       document.body.appendChild(a);
       a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 1000);
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
     }
+
+    let holdTimer = null;
+
+    function startHold() {
+      holdTimer = setTimeout(async () => {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (let reg of registrations) {
+            await reg.unregister();
+          }
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          for (let key of keys) {
+            await caches.delete(key);
+          }
+        }
+        alert('App update requested! Cache and Service Worker cleared. Reloading...');
+        window.location.reload(true);
+      }, 1500);
+    }
+
+    function cancelHold() {
+      if (holdTimer) clearTimeout(holdTimer);
+    }
+
+    logoBtn.addEventListener('mousedown', startHold);
+    logoBtn.addEventListener('mouseup', cancelHold);
+    logoBtn.addEventListener('mouseleave', cancelHold);
+    logoBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startHold(); });
+    logoBtn.addEventListener('touchend', cancelHold);
+    
   </script>
 </body>
 </html>
