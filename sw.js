@@ -1,4 +1,4 @@
-const CACHE_NAME = 'polarity-vmedia';
+const CACHE_NAME = 'polarity-vmediaagain';
 
 const CORE_ASSETS = [
     './',
