@@ -15,7 +15,7 @@ const CORE_ASSETS = [
     './syntax.html',
     './words.html',
     './jetpack.html',
-    './sample.html',
+    './media.html',
 
 
 
@@ -28,7 +28,7 @@ const CORE_ASSETS = [
     './manifest-syntax.json',
     './manifest-words.json',
     './manifest-jetpack.json',
-    './manifest-sample.json',
+    './manifest-media.json',
 
     
 
