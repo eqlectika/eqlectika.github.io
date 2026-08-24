@@ -492,14 +492,22 @@ video#media { aspect-ratio: 16/9; }
     const STORE_NAME = 'mediaStore';
     const SETTINGS_PREFIX = 'mediaLoop_settings_';
 
-    function openDB() {
-      return new Promise((resolve, reject) => {
-        const req = indexedDB.open(DB_NAME, 1);
-        req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME);
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      });
-    }
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 2); // поменяли версию на 2
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+    };
+    req.onsuccess = () => {
+      const db = req.result;
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
 
     async function saveMediaToDB(file, startVal, endVal, cueVal = 0) {
       const db = await openDB();
