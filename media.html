@@ -558,11 +558,40 @@ video#media { aspect-ratio: 16/9; }
     });
 
     window.addEventListener('DOMContentLoaded', async () => {
+
+      const lastFileName = localStorage.getItem('mediaLoop_lastFile');
+      if (lastFileName) {
+        const savedDataStr = localStorage.getItem(SETTINGS_PREFIX + lastFileName);
+        if (savedDataStr) {
+          try {
+            const cfg = JSON.parse(savedDataStr);
+            
+            [start, end, s, e].forEach(el => el.disabled = false);
+            start.value = cfg.start || 0;
+            end.value = cfg.end || 0;
+            s.value = cfg.s || 0;
+            e.value = cfg.e || 100;
+            cueTime = cfg.cueTime || cfg.start || 0;
+
+            sizeInfo.innerHTML = `🎵 Последний файл: <b style="color:#fff;">${lastFileName}</b>. Выберите его снова для старта.`;
+            sizeInfo.style.display = 'block';
+            sizeInfo.style.color = '#fdcb6e';
+            sizeInfo.style.background = 'rgba(253, 203, 110, 0.08)';
+            sizeInfo.style.padding = '8px 12px';
+            sizeInfo.style.borderRadius = '8px';
+            sizeInfo.style.border = '1px dashed #fdcb6e44';
+          } catch (e) {
+            console.error('Ошибка чтения настроек', e);
+          }
+        }
+      }
+
       const cached = await getMediaFromDB();
       if (cached && cached.file) {
         loadMediaFile(cached.file, cached.start, cached.end, cached.cue);
       }
     });
+
 
     f.onchange = () => {
       if (f.files[0]) loadMediaFile(f.files[0]);
@@ -634,9 +663,12 @@ function loadMediaFile(file, savedStart = 0, savedEnd = null, savedCue = 0) {
   // Инициализируем системную сессию для фона
   initMediaSession();
 
-  extractOptions.style.display = 'flex';
-  sizeInfo.textContent = `File: ${file.name} (${(file.size / 1048576).toFixed(1)} MB)`;
-}
+      extractOptions.style.display = 'flex';
+      sizeInfo.textContent = `File: ${file.name} (${(file.size / 1048576).toFixed(1)} MB)`;
+      
+      saveCurrentSettings(); 
+    }
+
 
     function onLoaded(savedStart, savedEnd, savedCue) {
       const d = media.duration;
@@ -694,7 +726,9 @@ function onTimeUpdate() {
       end.value = e.value = b.toFixed(2);
 
       if (currentFile) saveMediaToDB(currentFile, a, b, cueTime);
+      saveCurrentSettings(); 
     }
+
 
     s.oninput = e.oninput = () => sync(true);
     start.onchange = end.onchange = () => sync(false);
@@ -940,7 +974,22 @@ function onTimeUpdate() {
     logoBtn.addEventListener('touchend', cancelPress);
     logoBtn.addEventListener('touchcancel', cancelPress);
 
-    
+        const SETTINGS_PREFIX = 'mediaLoop_settings_';
+
+    function saveCurrentSettings() {
+      if (!currentFile) return;
+      const settings = {
+        fileName: currentFile.name,
+        start: start.value,
+        end: end.value,
+        s: s.value,
+        e: e.value,
+        cueTime: cueTime
+      };
+      localStorage.setItem('mediaLoop_lastFile', currentFile.name);
+      localStorage.setItem(SETTINGS_PREFIX + currentFile.name, JSON.stringify(settings));
+    }
+
   </script>
 </body>
 </html>
