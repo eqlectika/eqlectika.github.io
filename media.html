@@ -395,19 +395,20 @@ video#media { aspect-ratio: 16/9; }
     }
     .status-text.active { display: block; }
 
-    .logo {
+.logo {
       margin-top: auto;
       margin-bottom: 40px;
-      padding-top: 30px;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
       cursor: pointer;
       position: relative;
-      pointer-events: none;
+      text-decoration: none;
     }
     .logo img {
       width: 44px;
       height: 44px;
       display: block;
-      touch-action: none;
     }
     .logo-tip {
       position: absolute;
@@ -481,10 +482,10 @@ video#media { aspect-ratio: 16/9; }
     <div class="status-text" id="statusText">Processing...</div>
   </div>
 
-<div class="logo" id="logoBtn" title="Hold to update app">
+<a href="research.html" class="logo" id="logoBtn" title="Hold to update app">
    <img src="logo.png" alt="Logo">
    <span class="logo-tip">Hold to update</span>
-</div>
+</a>
 
 
   <script>
@@ -944,12 +945,12 @@ function openDB() {
     }
 
     let pressTimer = null;
-    let isLongPress = false;
 
-    function startPress() {
-      isLongPress = false;
+    function startPress(e) {
       pressTimer = setTimeout(async () => {
-        isLongPress = true;
+        // Если палец держали долго — это обновление, отменяем переход по ссылке
+        e.preventDefault();
+
         if ('serviceWorker' in navigator) {
           const registrations = await navigator.serviceWorker.getRegistrations();
           for (let reg of registrations) { await reg.unregister(); }
@@ -967,11 +968,9 @@ function openDB() {
       if (pressTimer) clearTimeout(pressTimer);
     }
 
-    logoBtn.addEventListener('click', () => {
-      if (!isLongPress) {
-        window.location.href = 'research.html';
-      }
-    });
+    // Обработчик 'click' больше вообще не нужен, 
+    // потому что переход на research.html сделает сам HTML-тег <a>.
+    // Оставляем только удержание:
 
     logoBtn.addEventListener('mousedown', startPress);
     logoBtn.addEventListener('mouseup', cancelPress);
