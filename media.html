@@ -455,13 +455,7 @@ video#media { aspect-ratio: 16/9; }
       <button id="loopBtn" class="primary-btn loop-btn" disabled>Loop</button>
       <button id="stopBtn" class="secondary-btn" disabled>⏹ Stop</button>
     </div>
-<!--   <div class="volume-container">
-      <div class="slider-label">
-        <span>Volume</span>
-        <span id="volValue">100%</span>
-      </div>
-      <input type="range" id="volumeBar" class="custom-slider volume-slider" value="1" min="0" max="1" step="0.01">
-    </div> -->
+
     <div class="extract-options" id="extractOptions" style="display:none;">
       <div class="format-selector">
         <label><input type="radio" name="format" value="wav" checked> <span>WAV</span></label>
@@ -495,6 +489,7 @@ video#media { aspect-ratio: 16/9; }
   <script>
     const DB_NAME = 'MediaLoopDB';
     const STORE_NAME = 'mediaStore';
+    const SETTINGS_PREFIX = 'mediaLoop_settings_';
 
     function openDB() {
       return new Promise((resolve, reject) => {
@@ -551,6 +546,20 @@ video#media { aspect-ratio: 16/9; }
     let objectUrl = null;
     let isCueHolding = false;
 
+    function saveCurrentSettings() {
+      if (!currentFile) return;
+      const settings = {
+        fileName: currentFile.name,
+        start: start.value,
+        end: end.value,
+        s: s.value,
+        e: e.value,
+        cueTime: cueTime
+      };
+      localStorage.setItem('mediaLoop_lastFile', currentFile.name);
+      localStorage.setItem(SETTINGS_PREFIX + currentFile.name, JSON.stringify(settings));
+    }
+
     document.querySelectorAll('input[name="format"]').forEach(radio => {
       radio.addEventListener('change', (evt) => {
         qualitySelector.style.display = evt.target.value === 'mp3' ? 'flex' : 'none';
@@ -558,7 +567,6 @@ video#media { aspect-ratio: 16/9; }
     });
 
     window.addEventListener('DOMContentLoaded', async () => {
-
       const lastFileName = localStorage.getItem('mediaLoop_lastFile');
       if (lastFileName) {
         const savedDataStr = localStorage.getItem(SETTINGS_PREFIX + lastFileName);
@@ -580,8 +588,8 @@ video#media { aspect-ratio: 16/9; }
             sizeInfo.style.padding = '8px 12px';
             sizeInfo.style.borderRadius = '8px';
             sizeInfo.style.border = '1px dashed #fdcb6e44';
-          } catch (e) {
-            console.error('Ошибка чтения настроек', e);
+          } catch (err) {
+            console.error('Ошибка чтения настроек', err);
           }
         }
       }
@@ -592,83 +600,76 @@ video#media { aspect-ratio: 16/9; }
       }
     });
 
-
     f.onchange = () => {
       if (f.files[0]) loadMediaFile(f.files[0]);
     };
 
     function initMediaSession() {
-  if (!('mediaSession' in navigator)) return;
+      if (!('mediaSession' in navigator)) return;
 
-  const fileName = currentFile ? currentFile.name : 'Track';
+      const fileName = currentFile ? currentFile.name : 'Track';
 
-  navigator.mediaSession.metadata = new MediaMetadata({
-    title: fileName,
-    artist: 'Media Loop DJ',
-    album: 'DJ Edition',
-    artwork: [
-      { src: 'logo.png', sizes: '512x512', type: 'image/png' }
-    ]
-  });
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: fileName,
+        artist: 'Media Loop DJ',
+        album: 'DJ Edition',
+        artwork: [
+          { src: 'logo.png', sizes: '512x512', type: 'image/png' }
+        ]
+      });
 
-  // Связываем системные кнопки на заблокированном экране с плеером
-  navigator.mediaSession.setActionHandler('play', () => { media.play(); });
-  navigator.mediaSession.setActionHandler('pause', () => { media.pause(); });
-  navigator.mediaSession.setActionHandler('stop', () => {
-    stopBtn.click();
-  });
-  navigator.mediaSession.setActionHandler('seekto', (details) => {
-    if (details.seekTime !== undefined) {
-      media.currentTime = details.seekTime;
+      navigator.mediaSession.setActionHandler('play', () => { media.play(); });
+      navigator.mediaSession.setActionHandler('pause', () => { media.pause(); });
+      navigator.mediaSession.setActionHandler('stop', () => {
+        stopBtn.click();
+      });
+      navigator.mediaSession.setActionHandler('seekto', (details) => {
+        if (details.seekTime !== undefined) {
+          media.currentTime = details.seekTime;
+        }
+      });
     }
-  });
-}
 
-// Обновление положения ползунка на системном экране блокировки
-function updateMediaSessionPosition() {
-  if (!('mediaSession' in navigator) || !media.duration || !isFinite(media.duration)) return;
-  try {
-    navigator.mediaSession.setPositionState({
-      duration: media.duration,
-      playbackRate: media.playbackRate,
-      position: media.currentTime
-    });
-  } catch (e) {
-    // Игнорируем ошибки, если время вышло за пределы
-  }
-}
+    function updateMediaSessionPosition() {
+      if (!('mediaSession' in navigator) || !media.duration || !isFinite(media.duration)) return;
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: media.duration,
+          playbackRate: media.playbackRate,
+          position: media.currentTime
+        });
+      } catch (e) {}
+    }
 
-function loadMediaFile(file, savedStart = 0, savedEnd = null, savedCue = 0) {
-  if (objectUrl) URL.revokeObjectURL(objectUrl);
-  currentFile = file;
-  objectUrl = URL.createObjectURL(file);
+    function loadMediaFile(file, savedStart = 0, savedEnd = null, savedCue = 0) {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      currentFile = file;
+      objectUrl = URL.createObjectURL(file);
 
-  const isVideo = file.type.startsWith('video/') || /\.(mov|mp4|webm|m4v|avi)$/i.test(file.name);
-  const newType = isVideo ? 'video' : 'audio';
+      const isVideo = file.type.startsWith('video/') || /\.(mov|mp4|webm|m4v|avi)$/i.test(file.name);
+      const newType = isVideo ? 'video' : 'audio';
 
-  if (media.tagName.toLowerCase() !== newType) {
-    const newMedia = document.createElement(newType);
-    newMedia.id = 'media';
-    newMedia.controls = true;
-    newMedia.playsInline = true;
-    media.replaceWith(newMedia);
-    media = newMedia;
-  }
+      if (media.tagName.toLowerCase() !== newType) {
+        const newMedia = document.createElement(newType);
+        newMedia.id = 'media';
+        newMedia.controls = true;
+        newMedia.playsInline = true;
+        media.replaceWith(newMedia);
+        media = newMedia;
+      }
 
-  media.src = objectUrl;
-  media.volume = volumeBar.value;
-  media.addEventListener('loadedmetadata', () => onLoaded(savedStart, savedEnd, savedCue));
-  media.addEventListener('timeupdate', onTimeUpdate);
+      media.src = objectUrl;
+      if (volumeBar) media.volume = volumeBar.value;
+      media.addEventListener('loadedmetadata', () => onLoaded(savedStart, savedEnd, savedCue));
+      media.addEventListener('timeupdate', onTimeUpdate);
 
-  // Инициализируем системную сессию для фона
-  initMediaSession();
+      initMediaSession();
 
       extractOptions.style.display = 'flex';
       sizeInfo.textContent = `File: ${file.name} (${(file.size / 1048576).toFixed(1)} MB)`;
       
       saveCurrentSettings(); 
     }
-
 
     function onLoaded(savedStart, savedEnd, savedCue) {
       const d = media.duration;
@@ -690,33 +691,32 @@ function loadMediaFile(file, savedStart = 0, savedEnd = null, savedCue = 0) {
       saveMediaToDB(currentFile, startVal, endVal, cueTime);
     }
 
-function onTimeUpdate() {
-  if (!media.duration) return;
-  seekBar.value = media.currentTime;
+    function onTimeUpdate() {
+      if (!media.duration) return;
+      seekBar.value = media.currentTime;
 
-  const from = +start.value;
-  const to = +end.value;
+      const from = +start.value;
+      const to = +end.value;
 
-  // Проверка петли
-  if (isLoopActive && media.currentTime >= to) {
-    media.currentTime = from;
-    media.play();
-  }
+      if (isLoopActive && media.currentTime >= to) {
+        media.currentTime = from;
+        media.play();
+      }
 
-  playBtn.textContent = media.paused ? '▶ Play' : '⏸ Pause';
-
-  // Обновляем шкалу времени на шторке / заблокированном экране
-  updateMediaSessionPosition();
-}
+      playBtn.textContent = media.paused ? '▶ Play' : '⏸ Pause';
+      updateMediaSessionPosition();
+    }
 
     seekBar.oninput = () => {
       media.currentTime = seekBar.value;
     };
 
-    volumeBar.oninput = () => {
-      media.volume = volumeBar.value;
-      volValue.textContent = Math.round(volumeBar.value * 100) + '%';
-    };
+    if (volumeBar) {
+      volumeBar.oninput = () => {
+        media.volume = volumeBar.value;
+        volValue.textContent = Math.round(volumeBar.value * 100) + '%';
+      };
+    }
 
     function sync(fromSlider) {
       let a = +start.value, b = +end.value;
@@ -729,11 +729,9 @@ function onTimeUpdate() {
       saveCurrentSettings(); 
     }
 
-
     s.oninput = e.oninput = () => sync(true);
     start.onchange = end.onchange = () => sync(false);
 
-    // --- DJ CUE ЛОГИКА ---
     function handleCuePress(e) {
       e.preventDefault();
       if (!media.duration) return;
@@ -772,9 +770,8 @@ function onTimeUpdate() {
       else media.pause();
     };
 
-    // --- ИСПРАВЛЕННАЯ ЛОГИКА LOOP И STOP ---
     loopBtn.onclick = () => {
-      isLoopActive = !isLoopActive; // Переключатель режимов
+      isLoopActive = !isLoopActive;
       
       if (isLoopActive) {
         loopBtn.classList.add('active');
@@ -973,23 +970,6 @@ function onTimeUpdate() {
     logoBtn.addEventListener('touchstart', startPress);
     logoBtn.addEventListener('touchend', cancelPress);
     logoBtn.addEventListener('touchcancel', cancelPress);
-
-        const SETTINGS_PREFIX = 'mediaLoop_settings_';
-
-    function saveCurrentSettings() {
-      if (!currentFile) return;
-      const settings = {
-        fileName: currentFile.name,
-        start: start.value,
-        end: end.value,
-        s: s.value,
-        e: e.value,
-        cueTime: cueTime
-      };
-      localStorage.setItem('mediaLoop_lastFile', currentFile.name);
-      localStorage.setItem(SETTINGS_PREFIX + currentFile.name, JSON.stringify(settings));
-    }
-
   </script>
 </body>
 </html>
