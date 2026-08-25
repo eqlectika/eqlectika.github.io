@@ -18,6 +18,8 @@
       min-height: 100vh;
       padding: 16px;
       user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
     .media-wrapper {
       width: 100%;
@@ -140,27 +142,84 @@
       cursor: pointer;
       font-size: 18px;
       font-weight: 600;
+      transition: background 0.1s;
     }
+    .secondary-btn:active { background: #444; }
     .secondary-btn:disabled, .primary-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+
+    .time-control-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .time-buttons-row {
+      display: flex;
+      gap: 4px;
+      width: 100%;
+    }
+
+    .step-btn {
+      flex: 1;
+      height: 26px;
+      background: #25252c;
+      border: 1px solid #3a3a45;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-btn:hover { background: #353540; }
+    .step-btn:active { transform: scale(0.95); }
+    .step-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+
+    .triangle-left {
+      width: 0;
+      height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-right: 7px solid #aaa;
+    }
+    .step-btn:hover .triangle-left { border-right-color: #fff; }
+
+    .triangle-right {
+      width: 0;
+      height: 0;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      border-left: 7px solid #aaa;
+    }
+    .step-btn:hover .triangle-right { border-left-color: #fff; }
 
     input[type="file"] { display: none; }
 
     .times {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       align-items: center;
       font-size: 18px;
+      width: 100%;
+      justify-content: center;
+    }
+    .times input::-webkit-outer-spin-button,
+    .times input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
     }
     .times input {
-      width: 90px;
+      width: 84px;
       background: #222;
       border: 1px solid #444;
       color: #eee;
       padding: 10px;
       border-radius: 8px;
-      text-align: center;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: bold;
+      outline: none;
+      -moz-appearance: textfield;
+      text-align: center;
+      text-align-last: center;
     }
 
     .range-container {
@@ -227,6 +286,28 @@
       box-shadow: 0 0 10px rgba(0, 184, 148, 0.4);
     }
 
+    .cue-marker {
+      position: absolute;
+      top: -4px;
+      bottom: -4px;
+      width: 3px;
+      background: #fdcb6e;
+      z-index: 3;
+      pointer-events: none;
+      border-radius: 2px;
+      box-shadow: 0 0 8px #fdcb6e;
+      display: none;
+    }
+    .cue-marker::after {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: -4px;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 6px solid #fdcb6e;
+    }
+
     .range-slider-multi { z-index: 2; }
 
     #s::-webkit-slider-thumb { background: #00b894; }
@@ -236,9 +317,9 @@
 
     .extract-options {
       display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
       margin-top: 10px;
     }
     .format-selector {
@@ -329,16 +410,34 @@
     <div class="row">
       <label for="f" class="upload-label">Choose media</label>
       <input type="file" id="f" accept="video/*,audio/*,.mov,.mp4,.m4a,.mp3,.wav,.aac,.ogg,.flac">
-      
+    </div>
+
+    <div class="row">
       <div class="times">
-        <input type="number" id="start" value="0" step="0.01" min="0" disabled> –
-        <input type="number" id="end" value="0" step="0.01" min="0" disabled>
+        <div class="time-control-group">
+          <input type="number" id="start" value="0" step="0.01" min="0" disabled>
+          <div class="time-buttons-row">
+            <button class="step-btn" id="stepStartMinus" title=" -0.01s " disabled><div class="triangle-left"></div></button>
+            <button class="step-btn" id="stepStartPlus" title=" +0.01s " disabled><div class="triangle-right"></div></button>
+          </div>
+        </div>
+
+        –
+
+        <div class="time-control-group">
+          <input type="number" id="end" value="0" step="0.01" min="0" disabled>
+          <div class="time-buttons-row">
+            <button class="step-btn" id="stepEndMinus" title=" -0.01s " disabled><div class="triangle-left"></div></button>
+            <button class="step-btn" id="stepEndPlus" title=" +0.01s " disabled><div class="triangle-right"></div></button>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="range-container">
       <div class="range-track-bg"></div>
       <div class="range-highlight" id="rangeHighlight"></div>
+      <div class="cue-marker" id="cueMarker"></div>
       <input type="range" id="s" class="range-slider-multi" min="0" max="100" step="0.01" value="0" disabled>
       <input type="range" id="e" class="range-slider-multi" min="0" max="100" step="0.01" value="100" disabled>
     </div>
@@ -424,6 +523,7 @@
     const e = document.getElementById('e');
     const seekBar = document.getElementById('seekBar');
     const rangeHighlight = document.getElementById('rangeHighlight');
+    const cueMarker = document.getElementById('cueMarker');
     const cueBtn = document.getElementById('cueBtn');
     const playBtn = document.getElementById('playBtn');
     const loopBtn = document.getElementById('loopBtn');
@@ -437,6 +537,11 @@
     const statusText = document.getElementById('statusText');
     const sizeInfo = document.getElementById('sizeInfo');
     const logoBtn = document.getElementById('logoBtn');
+
+    const stepStartMinus = document.getElementById('stepStartMinus');
+    const stepStartPlus = document.getElementById('stepStartPlus');
+    const stepEndMinus = document.getElementById('stepEndMinus');
+    const stepEndPlus = document.getElementById('stepEndPlus');
     
     let media = document.getElementById('media');
     let isLoopActive = false;
@@ -455,6 +560,12 @@
       
       rangeHighlight.style.left = leftPercent + '%';
       rangeHighlight.style.width = widthPercent + '%';
+
+      if (media.duration && isFinite(media.duration)) {
+        const cuePercent = (cueTime / max) * 100;
+        cueMarker.style.left = cuePercent + '%';
+        cueMarker.style.display = 'block';
+      }
     }
 
     function saveCurrentSettings() {
@@ -486,6 +597,7 @@
             const cfg = JSON.parse(savedDataStr);
             
             [start, end, s, e].forEach(el => el.disabled = false);
+            [stepStartMinus, stepStartPlus, stepEndMinus, stepEndPlus].forEach(el => el.disabled = false);
             start.value = cfg.start || 0;
             end.value = cfg.end || 0;
             s.value = cfg.s || 0;
@@ -570,6 +682,7 @@
       if (!isFinite(d)) return;
 
       [start, end, s, e, seekBar, cueBtn, playBtn, loopBtn, stopBtn].forEach(el => el.disabled = false);
+      [stepStartMinus, stepStartPlus, stepEndMinus, stepEndPlus].forEach(el => el.disabled = false);
       
       start.max = end.max = s.max = e.max = seekBar.max = d;
       
@@ -582,9 +695,9 @@
       s.value = (savedS !== null && savedS <= d) ? savedS.toFixed(2) : startVal.toFixed(2);
       e.value = (savedE !== null && savedE <= d) ? savedE.toFixed(2) : endVal.toFixed(2);
 
+      cueTime = (savedCue !== undefined && savedCue <= d) ? savedCue : startVal;
       updateRangeHighlight();
 
-      cueTime = (savedCue !== undefined && savedCue <= d) ? savedCue : startVal;
       media.currentTime = cueTime;
       seekBar.value = cueTime;
 
@@ -639,7 +752,7 @@
         media.play();
       }
 
-      playBtn.textContent = media.paused ? '▶ Play' : 'Pause';
+      playBtn.textContent = media.paused ? 'Play' : 'Pause';
       updateMediaSessionPosition();
     }
 
@@ -650,7 +763,7 @@
     function sync(fromSlider) {
       let a = +start.value, b = +end.value;
       if (fromSlider) { a = +s.value; b = +e.value; }
-      if (a >= b) a = Math.max(0, b - 0.5);
+      if (a >= b) a = Math.max(0, b - 0.05);
       
       start.value = s.value = a.toFixed(2);
       end.value = e.value = b.toFixed(2);
@@ -662,7 +775,25 @@
     }
 
     s.oninput = e.oninput = () => sync(true);
+    start.oninput = end.oninput = () => sync(false);
     start.onchange = end.onchange = () => sync(false);
+
+    function adjustTime(inputElement, delta) {
+      if (!media.duration) return;
+      let val = parseFloat(inputElement.value) || 0;
+      val = Math.max(0, Math.min(media.duration, val + delta));
+      inputElement.value = val.toFixed(2);
+      
+      if (inputElement === start) s.value = inputElement.value;
+      if (inputElement === end) e.value = inputElement.value;
+      
+      sync(false);
+    }
+
+    stepStartMinus.onclick = () => adjustTime(start, -0.01);
+    stepStartPlus.onclick = () => adjustTime(start, 0.01);
+    stepEndMinus.onclick = () => adjustTime(end, -0.01);
+    stepEndPlus.onclick = () => adjustTime(end, 0.01);
 
     function handleCuePress(e) {
       e.preventDefault();
@@ -677,7 +808,9 @@
         media.currentTime = cueTime;
         media.play();
         cueBtn.classList.add('active');
+        updateRangeHighlight();
         if (currentFile) saveMediaToDB(currentFile, +start.value, +end.value, cueTime);
+        saveCurrentSettings();
       }
     }
 
@@ -866,6 +999,7 @@
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
     }
 
+    // --- ЛОГИКА ОБНОВЛЕНИЯ (HOLD TO UPDATE) ПО ЛОГОТИПУ ---
     let pressTimer = null;
 
     function startPress(e) {
@@ -879,7 +1013,7 @@
           const keys = await caches.keys();
           for (let key of keys) { await caches.delete(key); }
         }
-        alert('App update requested! Cache and Service Worker cleared. Reloading...');
+        alert('Updated!');
         window.location.reload(true);
       }, 1500);
     }
