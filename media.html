@@ -611,8 +611,31 @@ function openDB() {
     });
 
     f.onchange = () => {
-      if (f.files[0]) loadMediaFile(f.files[0]);
+      const file = f.files[0];
+      if (!file) return;
+
+      // Ищем сохраненные настройки для этого конкретного файла по его имени
+      const savedDataStr = localStorage.getItem(SETTINGS_PREFIX + file.name);
+      let savedStart = 0, savedEnd = null, savedCue = 0;
+
+      if (savedDataStr) {
+        try {
+          const cfg = JSON.parse(savedDataStr);
+          savedStart = parseFloat(cfg.start) || 0;
+          savedEnd = parseFloat(cfg.end) || null;
+          savedCue = parseFloat(cfg.cueTime) || savedStart;
+          
+          // Восстанавливаем положения ползунков диапазона сразу, если они есть
+          s.value = cfg.s || savedStart;
+          e.value = cfg.e || 100;
+        } catch (err) {
+          console.error('Ошибка чтения сохраненных настроек файла', err);
+        }
+      }
+
+      loadMediaFile(file, savedStart, savedEnd, savedCue);
     };
+
 
     function initMediaSession() {
       if (!('mediaSession' in navigator)) return;
@@ -687,19 +710,30 @@ function openDB() {
 
       [start, end, s, e, seekBar, cueBtn, playBtn, loopBtn, stopBtn].forEach(el => el.disabled = false);
       
+      // Обновляем максимальные значения для шкалы и ползунков
       start.max = end.max = s.max = e.max = seekBar.max = d;
       
-      const startVal = savedStart || 0;
+      const startVal = (savedStart !== undefined && savedStart <= d) ? savedStart : 0;
       const endVal = (savedEnd !== null && savedEnd <= d) ? savedEnd : d;
 
-      start.value = s.value = startVal.toFixed(2);
-      end.value = e.value = endVal.toFixed(2);
-      cueTime = savedCue || startVal;
+      start.value = startVal.toFixed(2);
+      end.value = endVal.toFixed(2);
+      
+      // Если ползунки multi-range (s и e) не были заданы извне, ставим их по дефолту под start/end
+      if (!s.value || +s.value > d) s.value = startVal.toFixed(2);
+      if (!e.value || +e.value > d || +e.value === 100) e.value = endVal.toFixed(2);
+
+      cueTime = (savedCue !== undefined && savedCue <= d) ? savedCue : startVal;
       media.currentTime = cueTime;
       seekBar.value = cueTime;
 
+      // Обновляем визуальную подсветку диапазона (если используется в вашем стилизованном multi-range)
+      if (typeof updateRangeHighlight === 'function') updateRangeHighlight();
+
       saveMediaToDB(currentFile, startVal, endVal, cueTime);
+      saveCurrentSettings();
     }
+
 
     function onTimeUpdate() {
       if (!media.duration) return;
