@@ -760,13 +760,20 @@
       media.currentTime = seekBar.value;
     };
 
-    function sync(fromSlider) {
+function sync(fromSlider) {
       let a = +start.value, b = +end.value;
-      if (fromSlider) { a = +s.value; b = +e.value; }
-      if (a >= b) a = Math.max(0, b - 0.05);
+      if (fromSlider) { 
+        a = +s.value; 
+        b = +e.value; 
+        if (a >= b) a = Math.max(0, b - 0.05);
+        start.value = a.toFixed(2);
+        end.value = b.toFixed(2);
+      } else {
+        if (a >= b) a = Math.max(0, b - 0.05);
+      }
       
-      start.value = s.value = a.toFixed(2);
-      end.value = e.value = b.toFixed(2);
+      s.value = a;
+      e.value = b;
 
       updateRangeHighlight();
 
@@ -775,8 +782,23 @@
     }
 
     s.oninput = e.oninput = () => sync(true);
-    start.oninput = end.oninput = () => sync(false);
-    start.onchange = end.onchange = () => sync(false);
+    
+    start.oninput = end.oninput = () => {
+      let a = parseFloat(start.value);
+      let b = parseFloat(end.value);
+      if (!isNaN(a)) s.value = a;
+      if (!isNaN(b)) e.value = b;
+      updateRangeHighlight();
+    };
+
+    start.onchange = end.onchange = () => {
+      let a = parseFloat(start.value) || 0;
+      let b = parseFloat(end.value) || 0;
+      if (a >= b) a = Math.max(0, b - 0.05);
+      start.value = a.toFixed(2);
+      end.value = b.toFixed(2);
+      sync(false);
+    };
 
     function adjustTime(inputElement, delta) {
       if (!media.duration) return;
