@@ -510,7 +510,7 @@
      <span class="logo-tip">Hold to update</span>
   </a>
 
-  <script>
+<script>
     const DB_NAME = 'MediaLoopDB';
     const STORE_NAME = 'mediaStore';
     const SETTINGS_PREFIX = 'mediaLoop_settings_';
@@ -584,6 +584,42 @@
     let currentFile = null;
     let objectUrl = null;
     let isCueHolding = false;
+
+    // Логика обновления приложения при удержании логотипа
+    let updateTimer = null;
+
+    function startPress(e) {
+      updateTimer = setTimeout(async () => {
+        if (e && e.preventDefault) e.preventDefault();
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (let reg of registrations) { await reg.unregister(); }
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          for (let key of keys) { await caches.delete(key); }
+        }
+        localStorage.clear();
+        alert('Updated!');
+        window.location.reload(true);
+      }, 1500);
+    }
+
+    function cancelPress() {
+      if (updateTimer) {
+        clearTimeout(updateTimer);
+        updateTimer = null;
+      }
+    }
+
+    if (logoBtn) {
+      logoBtn.addEventListener('mousedown', startPress);
+      logoBtn.addEventListener('mouseup', cancelPress);
+      logoBtn.addEventListener('mouseleave', cancelPress);
+      logoBtn.addEventListener('touchstart', startPress, {passive: true});
+      logoBtn.addEventListener('touchend', cancelPress);
+      logoBtn.addEventListener('touchcancel', cancelPress);
+    }
 
     function updateRangeHighlight() {
       const max = parseFloat(s.max) || 1;
@@ -716,7 +752,7 @@
       const d = media.duration;
       if (!isFinite(d)) return;
 
-[start, end, s, e, seekBar, cueBtn, playBtn, loopBtn, stopBtn, stepCueMinus, stepCuePlus].forEach(el => el.disabled = false);
+      [start, end, s, e, seekBar, cueBtn, playBtn, loopBtn, stopBtn, stepCueMinus, stepCuePlus].forEach(el => el.disabled = false);
       [stepStartMinus, stepStartPlus, stepEndMinus, stepEndPlus].forEach(el => el.disabled = false);
       
       start.max = end.max = s.max = e.max = seekBar.max = d;
@@ -795,7 +831,7 @@
       media.currentTime = seekBar.value;
     };
 
-function sync(fromSlider) {
+    function sync(fromSlider) {
       let a = +start.value, b = +end.value;
       if (fromSlider) { 
         a = +s.value; 
@@ -860,8 +896,8 @@ function sync(fromSlider) {
       saveCurrentSettings();
     }
 
-    stepCueMinus.onclick = () => adjustCueTime(-0.01);
-    stepCuePlus.onclick = () => adjustCueTime(0.01);
+    stepCueMinus.onclick = () => adjustCueTime(-0.1);
+    stepCuePlus.onclick = () => adjustCueTime(0.1);
 
     stepStartMinus.onclick = () => adjustTime(start, -0.01);
     stepStartPlus.onclick = () => adjustTime(start, 0.01);
@@ -1071,35 +1107,6 @@ function sync(fromSlider) {
       a.click();
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
     }
-
-    let pressTimer = null;
-
-    function startPress(e) {
-      pressTimer = setTimeout(async () => {
-        e.preventDefault();
-        if ('serviceWorker' in navigator) {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          for (let reg of registrations) { await reg.unregister(); }
-        }
-        if ('caches' in window) {
-          const keys = await caches.keys();
-          for (let key of keys) { await caches.delete(key); }
-        }
-        alert('Updated!');
-        window.location.reload(true);
-      }, 1500);
-    }
-
-    function cancelPress() {
-      if (pressTimer) clearTimeout(pressTimer);
-    }
-
-    logoBtn.addEventListener('mousedown', startPress);
-    logoBtn.addEventListener('mouseup', cancelPress);
-    logoBtn.addEventListener('mouseleave', cancelPress);
-    logoBtn.addEventListener('touchstart', startPress);
-    logoBtn.addEventListener('touchend', cancelPress);
-    logoBtn.addEventListener('touchcancel', cancelPress);
   </script>
 </body>
 </html>
