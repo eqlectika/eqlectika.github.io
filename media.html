@@ -156,32 +156,47 @@
     .secondary-btn:active { background: #444; }
     .secondary-btn:disabled, .primary-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
 
-    .time-control-group {
+.time-control-group {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
+      width: 82px; /* Увеличили общую ширину блока */
     }
     .time-buttons-row {
       display: flex;
-      gap: 4px;
+      gap: 6px;
       width: 100%;
     }
 
     .step-btn {
       flex: 1;
-      height: 26px;
+      height: 38px; /* Сделали кнопки выше и крупнее */
       background: #25252c;
       border: 1px solid #3a3a45;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
     }
+    
     .step-btn:hover { background: #353540; }
     .step-btn:active { transform: scale(0.95); }
     .step-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+
+    .cue-step-btn {
+      flex: 1;
+      height: 44px; 
+      background: #25252c;
+      border: 1px solid #3a3a45;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.1s;
+    }
 
     .triangle-left {
       width: 0;
@@ -451,13 +466,21 @@
       <input type="range" id="e" class="range-slider-multi" min="0" max="100" step="0.01" value="100" disabled>
     </div>
 
-    <div class="row">
-      <button id="cueBtn" class="primary-btn cue-btn" disabled>Cue</button>
+<div class="row">
       <button id="playBtn" class="primary-btn" disabled>Play</button>
       <button id="loopBtn" class="primary-btn loop-btn" disabled>Loop</button>
       <button id="stopBtn" class="secondary-btn stop-btn" disabled>Stop</button>
     </div>
 
+    <div class="row">
+      <div class="time-control-group" style="width: 120px;">
+        <button id="cueBtn" class="primary-btn cue-btn" style="width: 100%;" disabled>Cue</button>
+        <div class="time-buttons-row">
+          <button class="cue-step-btn" id="stepCueMinus" title=" -0.01s " disabled><div class="triangle-left"></div></button>
+          <button class="cue-step-btn" id="stepCuePlus" title=" +0.01s " disabled><div class="triangle-right"></div></button>
+        </div>
+      </div>
+    </div>
     <div class="extract-options" id="extractOptions" style="display:none;">
       <div class="format-selector">
         <label><input type="radio" name="format" value="wav" checked> <span>WAV</span></label>
@@ -551,6 +574,9 @@
     const stepStartPlus = document.getElementById('stepStartPlus');
     const stepEndMinus = document.getElementById('stepEndMinus');
     const stepEndPlus = document.getElementById('stepEndPlus');
+    
+    const stepCueMinus = document.getElementById('stepCueMinus');
+    const stepCuePlus = document.getElementById('stepCuePlus');
     
     let media = document.getElementById('media');
     let isLoopActive = false;
@@ -690,7 +716,7 @@
       const d = media.duration;
       if (!isFinite(d)) return;
 
-      [start, end, s, e, seekBar, cueBtn, playBtn, loopBtn, stopBtn].forEach(el => el.disabled = false);
+[start, end, s, e, seekBar, cueBtn, playBtn, loopBtn, stopBtn, stepCueMinus, stepCuePlus].forEach(el => el.disabled = false);
       [stepStartMinus, stepStartPlus, stepEndMinus, stepEndPlus].forEach(el => el.disabled = false);
       
       start.max = end.max = s.max = e.max = seekBar.max = d;
@@ -820,6 +846,22 @@ function sync(fromSlider) {
       
       sync(false);
     }
+
+    function adjustCueTime(delta) {
+      if (!media.duration) return;
+      cueTime = Math.max(0, Math.min(media.duration, cueTime + delta));
+      
+      media.currentTime = cueTime;
+      seekBar.value = cueTime;
+      
+      updateRangeHighlight();
+
+      if (currentFile) saveMediaToDB(currentFile, +start.value, +end.value, cueTime);
+      saveCurrentSettings();
+    }
+
+    stepCueMinus.onclick = () => adjustCueTime(-0.01);
+    stepCuePlus.onclick = () => adjustCueTime(0.01);
 
     stepStartMinus.onclick = () => adjustTime(start, -0.01);
     stepStartPlus.onclick = () => adjustTime(start, 0.01);
@@ -1030,7 +1072,6 @@ function sync(fromSlider) {
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
     }
 
-    // --- ЛОГИКА ОБНОВЛЕНИЯ (HOLD TO UPDATE) ПО ЛОГОТИПУ ---
     let pressTimer = null;
 
     function startPress(e) {
