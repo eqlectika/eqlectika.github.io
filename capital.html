@@ -801,102 +801,146 @@ const updateCrosshair = (e) => {
     window.addEventListener('touchend', clearCrosshair);
   },
   
-  afterDraw(chart) {
-    if (!chart.crosshair || !chart.crosshair.active) return;
-    
-    const { ctx, scales: { x, y: yPrice, yRSI } } = chart;
-    const { x: xPos, y: yPos } = chart.crosshair;
+afterDraw(chart) {
+  if (!chart.crosshair || !chart.crosshair.active) return;
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.strokeStyle = 'rgba(41, 98, 255, 0.8)';
-    ctx.lineWidth = 1;
-    ctx.moveTo(x.left, yPos); ctx.lineTo(x.right, yPos);
-    ctx.moveTo(xPos, yPrice.top); ctx.lineTo(xPos, yPrice.bottom);
-    ctx.stroke();
+  const { ctx, scales: { x, y: yPrice } } = chart;
+  const { x: xPos, y: yPos } = chart.crosshair;
 
-    if (yRSI) {
-      const pRectW = yRSI.width - 2;
-      const pRectH = 18;
-      const rectX = yRSI.left;
-      const rectY = yPos - (pRectH / 2);
-      
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(rectX, rectY, pRectW, pRectH);
-      
-      const rsiValue = yRSI.getValueForPixel(yPos);
-      const rsiText = Math.round(rsiValue).toString();
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '12px sans-serif';
-      ctx.textAlign = 'right';      
-      ctx.textBaseline = 'middle';   
-      ctx.fillText(rsiText, rectX + pRectW / 2, rectY + pRectH / 2);
+  ctx.save();
+
+  // Crosshair
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(41, 98, 255, 0.8)';
+  ctx.lineWidth = 1;
+  ctx.moveTo(x.left, yPos);
+  ctx.lineTo(x.right, yPos);
+  ctx.moveTo(xPos, yPrice.top);
+  ctx.lineTo(xPos, yPrice.bottom);
+  ctx.stroke();
+
+  // Плашка цены
+  const priceRectW = yPrice.width + 2;
+  const priceRectH = 18;
+  const priceRectX = chart.chartArea.right;
+  const priceRectY = yPos - (priceRectH / 2);
+
+  ctx.fillStyle = '#2962ff';
+  ctx.fillRect(priceRectX, priceRectY, priceRectW, priceRectH);
+
+  const price = yPrice.getValueForPixel(yPos);
+
+  function getDecimals(value) {
+    const absValue = Math.abs(value);
+    if (absValue === 0) return 0;
+    else if (absValue < 0.001) return 6;
+    else if (absValue < 0.01) return 5;
+    else if (absValue < 0.1) return 4;
+    else if (absValue < 1) return 3;
+    else if (absValue < 10) return 2;
+    else if (absValue < 100) return 1;
+    else return 0;
+  }
+
+  const decimals = getDecimals(price);
+  const priceText = price.toFixed(decimals);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '12px sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'right';
+
+  ctx.fillText(
+    priceText,
+    priceRectX + priceRectW - 2,
+    yPos
+  );
+
+  // Определяем свечу под crosshair
+  const index = Math.round(x.getValueForPixel(xPos));
+  const timestamp = candleTimes[index];
+
+  // Плашка времени
+  let timeText = '';
+
+  if (timestamp) {
+    const date = new Date(timestamp);
+    const tf = tfSelect.value;
+
+    if (tf === '1d' || tf === '1w' || tf === '1M') {
+      timeText =
+        `${date.getDate().toString().padStart(2, '0')}.` +
+        `${(date.getMonth() + 1).toString().padStart(2, '0')}.` +
+        `${date.getFullYear().toString().slice(-2)}`;
+    } else {
+      timeText =
+        `${date.getHours().toString().padStart(2, '0')}:` +
+        `${date.getMinutes().toString().padStart(2, '0')}`;
     }
+  }
 
-    // Плашка ровно по ширине шкалы Y
-    const priceRectW = yPrice.width + 2; 
-    const priceRectH = 18;
-    const priceRectX = chart.chartArea.right; 
-    const priceRectY = yPos - (priceRectH / 2);
-    
+  const tRectW = 54;
+  const tRectH = 18;
+  const tRectY = yPrice.top - 28;
+
+  ctx.fillStyle = '#2962ff';
+  ctx.fillRect(
+    xPos - (tRectW / 2),
+    tRectY,
+    tRectW,
+    tRectH
+  );
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  ctx.fillText(
+    timeText,
+    xPos,
+    tRectY + (tRectH / 2)
+  );
+
+  // Плашка объёма внизу вертикального crosshair
+  const volumeDataset = chart.data.datasets.find(
+    d => d.label === 'Volume'
+  );
+
+  const volume = volumeDataset?.data[index];
+
+  if (volume !== undefined && volume !== null) {
+
+    const volumeText = Number(volume).toLocaleString('en-US', {
+      maximumFractionDigits: 2
+    });
+
+    const vRectW = 80;
+    const vRectH = 18;
+    const vRectY = yPrice.bottom + 4 - 14;
+
     ctx.fillStyle = '#2962ff';
-    ctx.fillRect(priceRectX, priceRectY, priceRectW, priceRectH);
-    
-    const price = yPrice.getValueForPixel(yPos);
-    function getDecimals(value) {
-      const absValue = Math.abs(value);
-      if (absValue === 0) return 0;
-      else if (absValue < 0.001) return 6;
-      else if (absValue < 0.01) return 5;
-      else if (absValue < 0.1) return 4;
-      else if (absValue < 1) return 3;
-      else if (absValue < 10) return 2;
-      else if (absValue < 100) return 1;
-      else return 0;
-    }
-
-    const decimals = getDecimals(price);
-    const priceText = price.toFixed(decimals);   
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '12px sans-serif';
-    ctx.textBaseline = 'middle';   
-
-    // Выравнивание по правому краю шкалы без произвольных смещений (+18)
-    ctx.textAlign = 'right';
-    ctx.fillText(
-      priceText,
-      priceRectX + priceRectW - 2,
-      yPos
+    ctx.fillRect(
+      xPos - (vRectW / 2),
+      vRectY,
+      vRectW,
+      vRectH
     );
 
-    
-    const index = Math.round(x.getValueForPixel(xPos));
-    const timestamp = candleTimes[index];
-    
-    let timeText = '';
-    if (timestamp) {
-      const date = new Date(timestamp);
-      const tf = tfSelect.value;
-      
-      if (tf === '1d' || tf === '1w' || tf === '1M') {
-        timeText = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear().toString().slice(-2)}`;
-      } else {
-        timeText = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-      }
-    }
-
-    const tRectW = 54; 
-    ctx.fillStyle = '#2962ff';
-    ctx.fillRect(xPos - (tRectW / 2), yPrice.top - 28, tRectW, 18);
     ctx.fillStyle = '#ffffff';
     ctx.font = '12px sans-serif';
-    ctx.textAlign = 'center'; 
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(timeText, xPos, yPrice.top - 18);
-    
-    ctx.restore();
+
+    ctx.fillText(
+      volumeText,
+      xPos,
+      vRectY + (vRectH / 2)
+    );
   }
+
+  ctx.restore();
+}
 };
 
 const divConLinesPlugin = {
