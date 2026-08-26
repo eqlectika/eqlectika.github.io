@@ -11,24 +11,40 @@
   <style>
     html, body {
       overscroll-behavior: none; 
-      height: 100vh;
-      height: var(--app-height, 100vh);
+      min-height: 100vh;
+      min-height: var(--app-height, 100vh);
       margin: 0; padding: 0;
-      background-color: #000000; color: #fff; font-family: Arial, sans-serif;
-      overflow: hidden;
+      background-color: #000000; color: #fff; 
+      font-family: Arial, sans-serif;
       -webkit-user-select: none; user-select: none;
     }
 
-    #logoContainer {
-      position: absolute; 
-      top: calc(env(safe-area-inset-top, 0px) + 10px);
-      left: 50%; 
-      transform: translateX(-50%); 
-      z-index: 120;
-      transition: opacity 0.5s ease;
-      width: 100%; 
+    #scrollContainer {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      min-height: var(--app-height, 100vh);
       display: flex;
-      justify-content: center; 
+      flex-direction: column;
+      align-items: center;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      transition: transform 0.3s ease;
+    }
+
+    #logoContainer {
+      padding: calc(env(safe-area-inset-top, 0px) + 10px) 0 5px 0;
+      width: 100%;
+      max-width: 650px;
+      display: flex;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    body.is-reading #logoContainer {
+      opacity: 0 !important;
+      pointer-events: none !important;
     }
 
     #brandHeader {
@@ -39,75 +55,72 @@
       font-family: 'Cinzel', serif;
     }
 
-    #mainButtons {
-      position: relative;
-      z-index: 110;
-      display: none; 
-      flex-direction: column; 
-      align-items: center; 
-      gap: 5px; 
-    }
-
-    body.is-reading #logoContainer {
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-
     #inputContainer { 
-      position: fixed;
-      top: calc(env(safe-area-inset-top, 0px) + 95px);
-      left: 0;
-      flex-shrink: 0; 
-      padding: 0px 15px; 
-      z-index: 100; 
-      width: 100%; 
+      flex-shrink: 0;
+      padding: 10px 0 5px 0;
+      width: 100%;
+      max-width: 650px;
       display: flex; 
       flex-direction: column; 
       align-items: center; 
       box-sizing: border-box; 
-      transition: opacity 0.5s ease;
-      max-height: calc(100vh - env(safe-area-inset-top, 0px) - 100px);
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      transition: opacity 0.5s ease, max-height 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+      overflow: hidden;
     }
 
-    .footer-block { 
-      z-index: 120; width: 100%;
-      display: flex; flex-direction: column; align-items: center;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      padding-top: 20px;
-      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 10px);
-      pointer-events: none;
+    body.is-reading #inputContainer { 
+      opacity: 0 !important; 
+      pointer-events: none !important;
+      max-height: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
     }
 
-    #inputContainer, #settingsContainer, #mainButtons, button, .setting-btn, .toolbar {
-      pointer-events: auto !important;
+    #wordDisplay {
+      position: relative;
+      width: 100%;
+      max-width: 650px;
+      min-height: 100px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px 0;
+      transition: min-height 0.3s ease;
     }
 
-    #container {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      display: flex; justify-content: center; align-items: center;
-      z-index: 10;
-      perspective: 1000px;
-      pointer-events: none;
+    body.is-reading #wordDisplay {
+      min-height: 70vh;
     }
-    
-    .button-row { display: flex; align-items: center; gap: 5px; }
+
+    #wordDisplay:empty {
+      display: none;
+    }
+
+    body.is-reading #wordDisplay:empty {
+      display: flex;
+      min-height: 70vh;
+    }
 
     .word-layer {
-      position: fixed; top: 50%; left: 50%; 
+      position: absolute;
+      top: 50%;
+      left: 50%;
       transform: translate(-50%, -50%);
-      text-align: center; font-weight: 700; white-space: nowrap;
-      width: 100%; z-index: 60; pointer-events: none;
+      text-align: center; 
+      font-weight: 700; 
+      white-space: nowrap;
+      width: 90%;
+      max-width: 90%;
+      z-index: 60;
+      pointer-events: none;
       transition: border-bottom 0.3s ease;
+      text-align: center;
+      padding: 10px;
     }
 
     .word-enter { 
       opacity: 0; 
-      transform: translate(-50%, -50%) translateZ(500px); 
+      transform: translate(-50%, -50%) translateZ(500px) scale(0.8); 
       filter: blur(12px); 
     }
 
@@ -120,7 +133,7 @@
 
     .word-exit { 
       opacity: 0; 
-      transform: translate(-50%, -50%) scale(0);
+      transform: translate(-50%, -50%) scale(0.5);
       filter: blur(10px); 
       transition: transform calc(var(--speed, 600ms) * 0.3) ease-in, 
                   opacity calc(var(--speed, 600ms) * 0.5) linear, 
@@ -129,111 +142,140 @@
 
     .word-exit-long { 
       opacity: 0; 
-      transform: translate(-50%, -50%) scale(1);
+      transform: translate(-50%, -50%) scale(0.8);
       filter: blur(20px); 
       transition: transform calc(var(--speed, 600ms) * 0.6) cubic-bezier(0.1, 0.8, 0.2, 1), 
                   opacity calc(var(--speed, 600ms) * 1.0) linear, 
                   filter calc(var(--speed, 600ms) * 0.7) calc(var(--speed, 600ms) * 0.8) ease-in;
     }
 
-    body.is-reading .footer-block { 
-      position: fixed;
-      margin-top: 40px;
-      bottom: 0; 
-      height: auto; 
-      min-height: 50px; 
-      display: flex; 
-      flex-direction: column; 
-      justify-content: flex-end;
-      z-index: 200; 
-      padding-bottom: calc(env(safe-area-inset-bottom, 5px) + 15px);
-    }
-
-    body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none !important; }
-
-    /* Стили для слова на паузе - кликабельно */
     body.is-paused .word-layer {
       cursor: pointer !important;
       pointer-events: auto !important;
       border-bottom: 3px solid rgba(255, 215, 0, 0.5);
       padding-bottom: 8px;
-      transition: border-color 0.3s ease;
     }
 
-    body.is-paused .word-layer:hover {
-      border-color: rgba(255, 215, 0, 0.9);
-    }
-
-    #pauseHint {
+    #controls {
+      flex-shrink: 0;
+      width: 100%;
+      max-width: 650px;
       display: none;
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 11px;
-      margin-top: 6px;
-      text-align: center;
-      pointer-events: none;
-      letter-spacing: 0.5px;
-      font-family: Arial, sans-serif;
-      background: rgba(0,0,0,0.5);
-      padding: 4px 12px;
-      border-radius: 12px;
-      backdrop-filter: blur(4px);
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 0 calc(env(safe-area-inset-bottom, 5px) + 10px);
+      background: rgba(0,0,0,0.95);
+      transition: opacity 0.3s ease;
+    }
+
+    body.is-reading #controls {
+      background: rgba(0,0,0,0.7);
+    }
+
+    .button-row { 
+      display: flex; 
+      align-items: center; 
+      gap: 5px; 
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
     }
 
     button {
-      font-size: 14px; background: transparent; color: white;
-      border-radius: 25px; border: 2px solid rgba(255,255,255,0.38); 
-      padding: 10px 20px; cursor: pointer; touch-action: manipulation;
-      position: relative; z-index: 110;
+      font-size: 13px; 
+      background: transparent; 
+      color: white;
+      border-radius: 20px; 
+      border: 2px solid rgba(255,255,255,0.38); 
+      padding: 8px 16px; 
+      cursor: pointer; 
+      touch-action: manipulation;
+      min-height: 40px;
+      min-width: 60px;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
     }
 
-    #settingsContainer {
-      display: flex; flex-direction: column; align-items: center; gap: 0px; margin: 10px 0; z-index: 110;
+    #startBtn { 
+      background: #fff; 
+      color: #000; 
+      font-weight: bold; 
+      border: none; 
+      min-width: 80px; 
     }
 
-    .setting-btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: auto; min-width: 150px; border: 0px solid rgba(255, 255, 255, 0.0);
-      border-radius: 2px; padding: 8px 20px; font-size: 12px;
-      cursor: pointer; color: rgba(255, 255, 255, 0.62); background: transparent;
+    body.is-reading #startBtn, 
+    body.is-reading #prevBtn, 
+    body.is-reading #nextBtn, 
+    body.is-reading #slowerBtn, 
+    body.is-reading #fasterBtn { 
+      opacity: 0.6; 
+      background: transparent; 
+      color: #fff; 
+      border: 2px solid rgba(255,255,255,0.3); 
     }
 
-    body.is-reading #settingsContainer, body.is-reading #accelBtn { opacity: 0; pointer-events: none !important; }
-
-    #startBtn { background: #fff; color: #000; font-weight: bold; border: none; min-width: 90px; }
-
-    body.is-reading #startBtn, body.is-reading #prevBtn, body.is-reading #nextBtn, body.is-reading #slowerBtn, body.is-reading #fasterBtn { 
-      opacity: 0.38; background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.38); 
+    body.is-paused #startBtn { 
+      background: #fff; 
+      color: #000; 
+      opacity: 1; 
+      border: none;
     }
-
-    body.is-paused #startBtn { background: #fff; color: #000; opacity: 1; }
-    body.is-paused #slowerBtn, body.is-paused #fasterBtn { display: none !important; }
-    #prevBtn, #nextBtn { display: none; background: rgba(255,255,255,0.1); }
-    body.is-paused #prevBtn, body.is-paused #nextBtn { display: block; opacity: 1; border-color: #fff; }
+    
+    body.is-paused #slowerBtn, 
+    body.is-paused #fasterBtn { 
+      display: none !important; 
+    }
+    
+    #prevBtn, #nextBtn { 
+      display: none; 
+      background: rgba(255,255,255,0.1); 
+    }
+    
+    body.is-paused #prevBtn, 
+    body.is-paused #nextBtn { 
+      display: block; 
+      opacity: 1; 
+      border-color: #fff; 
+    }
 
     body.is-paused #editBtn { 
       display: block !important; 
       opacity: 1 !important; 
-      visibility: visible !important;
-      z-index: 210 !important;
+    }
+
+    #editBtn {
+      display: none;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(255, 255, 255, 1.0);
     }
 
     #accelBtn {
-      display: inline-flex; margin-top: 10px; border-radius: 0px; 
-      width: auto; min-width: 150px; border: 2px solid rgba(255, 255, 255, 0.38);
-      font-size: 11px; opacity: 1.0; color: #fff;
+      border: 2px solid rgba(255, 255, 255, 0.38);
+      font-size: 11px;
+      color: #fff;
+      background: transparent;
+      min-width: 150px;
     }
 
     #inputText {
       -webkit-user-select: text !important;
       user-select: text !important;
       pointer-events: auto !important;
-      width: 100%; max-width: 650px; min-height: 140px;
-      padding: 10px 14px; background: rgba(255,255,255,0.05); 
-      color: #fff; border: 2px solid rgba(255,255,255,0.38); 
-      border-radius: 0px; font-size: 16px; outline: none; 
-      box-sizing: border-box; display: block;
+      width: 100%; 
+      min-height: 120px;
+      padding: 10px 14px; 
+      background: rgba(255,255,255,0.05); 
+      color: #fff; 
+      border: 2px solid rgba(255,255,255,0.38); 
+      border-radius: 0px; 
+      font-size: 16px; 
+      outline: none; 
+      box-sizing: border-box; 
+      display: block;
       font-family: Arial, sans-serif;
-      height: 22vh;
+      height: 20vh;
       resize: none;
       overflow-y: auto;
       text-align: center;
@@ -246,22 +288,34 @@
     }
 
     .toolbar {
-      display: flex; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 650px; justify-content: center;
-    }
-    .toolbar-btn {
+      display: flex; 
+      gap: 10px; 
+      margin-bottom: 10px; 
       width: 100%; 
-      text-align: center;
-      font-size: 14px; padding: 10px 14px; border-radius: 0px; border: 1px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.1);
+      justify-content: center;
+      flex-wrap: wrap;
     }
+    
+    .toolbar-btn {
+      flex: 1;
+      padding: 10px 20px;
+      text-align: center;
+      font-size: 14px;
+      border-radius: 0px;
+      border: 1px solid rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.1);
+      min-height: 44px;
+      min-width: 80px;
+    }
+    
     #fileInput { display: none; }
 
-    /* Стиль для копированного уведомления */
     .toast {
       position: fixed;
-      bottom: 80px;
+      bottom: 20px;
       left: 50%;
       transform: translateX(-50%) translateY(20px);
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.9);
       color: #fff;
       padding: 8px 20px;
       border-radius: 20px;
@@ -270,58 +324,121 @@
       transition: all 0.4s ease;
       z-index: 999;
       pointer-events: none;
-      backdrop-filter: blur(8px);
       border: 1px solid rgba(255,255,255,0.1);
     }
+    
     .toast.show {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
+
+    #pauseHint {
+      display: none;
+      color: rgba(255, 215, 0, 0.6);
+      font-size: 11px;
+      margin: 2px 0;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+
+    @media (max-width: 480px) {
+      button {
+        font-size: 11px;
+        padding: 6px 12px;
+        min-height: 34px;
+        min-width: 50px;
+      }
+      
+      .word-layer {
+        font-size: 28px !important;
+      }
+      
+      #inputText {
+        min-height: 80px;
+        height: 15vh;
+        font-size: 14px;
+      }
+      
+      .toolbar-btn {
+        font-size: 12px;
+        padding: 8px 14px;
+        min-height: 36px;
+        min-width: 60px;
+      }
+      
+      body.is-reading #wordDisplay {
+        min-height: 60vh;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .button-row {
+        gap: 3px;
+      }
+      button {
+        font-size: 10px;
+        padding: 5px 10px;
+        min-height: 30px;
+        min-width: 44px;
+      }
+      .word-layer {
+        font-size: 22px !important;
+      }
+      
+      body.is-reading #wordDisplay {
+        min-height: 55vh;
+      }
+    }
+
+    #scrollContainer::-webkit-scrollbar {
+      width: 0;
+      background: transparent;
+    }
   </style>
 </head>
 <body>
-  <script src="pwa-init.js"></script>
 
+<div id="scrollContainer">
+  
   <div id="logoContainer">
     <div id="brandHeader">
       <a href="research.html" id="logoLink" style="text-decoration: none;">
-        <img src="logo.png" alt="Logo" style="max-width: 48px; opacity: 0.9;">
+        <img src="logo.png" alt="Logo" style="max-width: 42px; opacity: 0.9;">
       </a>
-      <h1 style="font-size: 14px; margin: 5px 0 0 0; font-weight: normal; letter-spacing: 1px; color: #fff;">
+      <h1 style="font-size: 13px; margin: 3px 0 0 0; font-weight: normal; letter-spacing: 1px; color: #fff;">
         Fast Reading Converter
       </h1>
     </div>
   </div>
 
-  <div id="container"></div>
-
-  <div class="footer-block">
-    <div id="inputContainer">
-      <div class="toolbar">
-        <button class="toolbar-btn" onclick="if(isReading) return; document.getElementById('fileInput').click()">Upload .txt</button>
-        <input type="file" id="fileInput" accept=".txt">
-      </div>
-      <textarea id="inputText" placeholder="Paste your text here or use the button above.
+  <div id="inputContainer">
+    <div class="toolbar">
+      <button class="toolbar-btn" onclick="if(isReading) return; document.getElementById('fileInput').click()">Upload .txt</button>
+      <input type="file" id="fileInput" accept=".txt">
+    </div>
+    <textarea id="inputText" placeholder="Paste your text here or use the button above.
  
 Click on any blank area of the screen to invert the colors."></textarea>
-    </div>
-    
-    <div id="mainButtons">
-      <button id="editBtn" style="display: none; background: rgba(255,255,255,0.1); border: 2px solid rgba(255, 255, 255, 1.0); z-index: 210; margin-bottom: 5px;">Edit</button>
-      <div class="button-row">
-        <button id="slowerBtn">Slower</button>
-        <button id="prevBtn">Back</button>
-        <button id="startBtn">Start</button>
-        <button id="nextBtn">Fore</button>
-        <button id="fasterBtn">Faster</button>
-      </div>
-      <div id="pauseHint">✦ Tap the word for definition via ChatGPT ✦</div>
-      <button id="accelBtn" class="setting-btn">Dynamic Accel: OFF</button>
-    </div>
   </div>
 
-  <!-- Toast уведомление -->
-  <div id="toast" class="toast">📋 Copied to clipboard</div>
+  <div id="wordDisplay"></div>
+
+  <div id="controls">
+    <button id="editBtn">Edit</button>
+    <div class="button-row">
+      <button id="slowerBtn">Slower</button>
+      <button id="prevBtn">Back</button>
+      <button id="startBtn">Start</button>
+      <button id="nextBtn">Fore</button>
+      <button id="fasterBtn">Faster</button>
+    </div>
+    <div id="pauseHint">Tap the word for definition via ChatGPT</div>
+    <button id="accelBtn">Dynamic Accel: OFF</button>
+  </div>
+
+</div>
+
+<div id="toast" class="toast">Copied to clipboard</div>
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -330,20 +447,21 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <script>
-    const container = document.getElementById('container');
+    const wordDisplay = document.getElementById('wordDisplay');
     const inputText = document.getElementById('inputText');
     const startBtn = document.getElementById('startBtn');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     const fasterBtn = document.getElementById('fasterBtn');
     const slowerBtn = document.getElementById('slowerBtn');
-
     const accelBtn = document.getElementById('accelBtn');
     const editBtn = document.getElementById('editBtn');
     const fileInput = document.getElementById('fileInput');
-    const logoLink = document.getElementById('logoLink');
     const pauseHint = document.getElementById('pauseHint');
     const toast = document.getElementById('toast');
+    const scrollContainer = document.getElementById('scrollContainer');
+    const controls = document.getElementById('controls');
+    const inputContainer = document.getElementById('inputContainer');
 
     const colors = ['#000000', '#2a0505', '#05052a', '#052a05', '#1a1a1a'];
     const textColors = ['#ffffff', '#ffeb3b', '#00ff00', '#ff4444', '#80cbc4', '#ffa726'];
@@ -359,11 +477,11 @@ if ('serviceWorker' in navigator) {
     let transitionInterval = null;
     let inversionLevel = inversionActive ? 100 : 0;
     let toastTimeout = null;
+    let scrollTimeout = null;
     
     document.body.style.backgroundColor = colors[colorIndex];
     inputText.value = localStorage.getItem('reading_text') || "";
 
-    // Функция показа Toast
     function showToast(message) {
         toast.textContent = message;
         toast.classList.add('show');
@@ -371,6 +489,22 @@ if ('serviceWorker' in navigator) {
         toastTimeout = setTimeout(() => {
             toast.classList.remove('show');
         }, 2000);
+    }
+
+    function scrollToBottom() {
+        if (scrollTimeout) cancelAnimationFrame(scrollTimeout);
+        scrollTimeout = requestAnimationFrame(() => {
+            // Прокручиваем до самого низа с учетом всех элементов
+            const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+            scrollContainer.scrollTop = maxScroll + 50;
+        });
+    }
+
+    function scrollToTop() {
+        if (scrollTimeout) cancelAnimationFrame(scrollTimeout);
+        scrollTimeout = requestAnimationFrame(() => {
+            scrollContainer.scrollTop = 0;
+        });
     }
 
     fileInput.addEventListener('change', function(e) {
@@ -390,13 +524,13 @@ if ('serviceWorker' in navigator) {
     });
 
     function updateFontSize(text, el) {
-        const maxWidth = window.innerWidth * 0.9;
-        const standardSize = 36;
+        const maxWidth = Math.min(window.innerWidth * 0.85, 600);
+        const standardSize = Math.min(36, window.innerWidth / 12);
         el.style.fontSize = standardSize + 'px';
         let currentWidth = text.length * (standardSize * 0.6); 
         if (currentWidth > maxWidth) {
             const reducedSize = (maxWidth / text.length) / 0.6;
-            el.style.fontSize = reducedSize + 'px';
+            el.style.fontSize = Math.max(12, reducedSize) + 'px';
         }
     }
 
@@ -423,7 +557,8 @@ if ('serviceWorker' in navigator) {
             e.target.tagName === 'TEXTAREA' || 
             e.target.closest('.toolbar') || 
             e.target.closest('#logoContainer') ||
-            e.target.closest('.word-layer')
+            e.target.closest('.word-layer') ||
+            e.target.closest('input')
         ) {
             return; 
         }
@@ -431,7 +566,7 @@ if ('serviceWorker' in navigator) {
     });
 
     function clearOldWord(isLongExit = false) {
-        const oldEl = container.querySelector('.word-active');
+        const oldEl = wordDisplay.querySelector('.word-active');
         if (oldEl) {
             const exitClass = isLongExit ? 'word-exit-long' : 'word-exit';
             oldEl.classList.replace('word-active', exitClass);
@@ -459,38 +594,35 @@ if ('serviceWorker' in navigator) {
             newEl.textContent = displayTxt;
             newEl.style.color = textColors[textColorIndex];
             updateFontSize(displayTxt, newEl);
-            container.appendChild(newEl);
-            requestAnimationFrame(() => setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20));
+            wordDisplay.appendChild(newEl);
             
-            // ========== НОВАЯ ФУНКЦИОНАЛЬНОСТЬ: КЛИК ПО СЛОВУ ==========
-            // Включаем кликабельность ТОЛЬКО если чтение на паузе
-            // (проверка будет внутри обработчика)
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    newEl.classList.replace('word-enter', 'word-active');
+                }, 20);
+            });
+            
             newEl.style.pointerEvents = 'auto';
             newEl.style.cursor = 'pointer';
             
             newEl.addEventListener('click', function(e) {
                 e.stopPropagation();
-                // Проверяем, что чтение на паузе
                 if (isPaused && isReading) {
                     const word = this.textContent;
                     const query = `What is the definition of the word "${word}" in the interface language?`;
                     
-                    // Копируем слово в буфер
                     navigator.clipboard.writeText(word).then(() => {
-                        showToast(`📋 "${word}" copied`);
+                        showToast(`"${word}" copied`);
                     }).catch(() => {
-                        // fallback
-                        showToast(`📋 "${word}" copied`);
+                        showToast(`"${word}" copied`);
                     });
                     
-                    // Открываем ChatGPT
                     window.open(
                         `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
                         '_blank'
                     );
                 }
             });
-            // ========================================================
         }
 
         let extraPause = 0; 
@@ -516,6 +648,9 @@ if ('serviceWorker' in navigator) {
 
         index++;
         timer = setTimeout(showNext, currentInterval + extraPause);
+        
+        // Прокручиваем вниз после добавления слова
+        scrollToBottom();
     }
 
     function stopReading() {
@@ -526,8 +661,10 @@ if ('serviceWorker' in navigator) {
         document.body.classList.remove('is-reading', 'is-paused');
         startBtn.textContent = 'Start';
         pauseHint.style.display = 'none';
-        container.innerHTML = '';
-        checkTextVisibility(); 
+        wordDisplay.innerHTML = '';
+        checkTextVisibility();
+        // Возвращаемся наверх при остановке чтения
+        scrollToTop();
     }
 
     accelBtn.onclick = (e) => {
@@ -549,19 +686,28 @@ if ('serviceWorker' in navigator) {
               .filter(w => w !== "")
               .map(w => w.replace(/_/g, ' '));
               
-            index = 0; isReading = true; isPaused = false;
+            index = 0; 
+            isReading = true; 
+            isPaused = false;
             document.body.classList.add('is-reading');
             document.body.classList.remove('is-paused');
             startBtn.textContent = 'Pause';
             pauseHint.style.display = 'none';
             requestWakeLock();
             showNext();
+            // Прокручиваем вниз при старте
+            scrollToBottom();
         } else {
             isPaused = !isPaused;
             document.body.classList.toggle('is-paused', isPaused);
             startBtn.textContent = isPaused ? 'Continue' : 'Pause';
             pauseHint.style.display = isPaused ? 'block' : 'none';
-            if (!isPaused) showNext(); else clearTimeout(timer);
+            if (!isPaused) {
+                showNext();
+                scrollToBottom();
+            } else {
+                clearTimeout(timer);
+            }
         }
     };
 
@@ -571,11 +717,15 @@ if ('serviceWorker' in navigator) {
         index = Math.max(0, index - 2); 
         clearOldWord();
         if (isPaused) {
-            const wasPaused = isPaused; isPaused = false;
-            showNext(); clearTimeout(timer); isPaused = wasPaused;
+            const wasPaused = isPaused; 
+            isPaused = false;
+            showNext(); 
+            clearTimeout(timer); 
+            isPaused = wasPaused;
         } else {
             showNext();
         }
+        scrollToBottom();
     };
 
     nextBtn.onclick = (e) => {
@@ -583,11 +733,15 @@ if ('serviceWorker' in navigator) {
         if (words.length === 0 || index >= words.length) return;
         clearOldWord();
         if (isPaused) {
-            const wasPaused = isPaused; isPaused = false;
-            showNext(); clearTimeout(timer); isPaused = wasPaused;
+            const wasPaused = isPaused; 
+            isPaused = false;
+            showNext(); 
+            clearTimeout(timer); 
+            isPaused = wasPaused;
         } else {
             showNext();
         }
+        scrollToBottom();
     };
 
     function syncCssSpeed() {
@@ -610,27 +764,48 @@ if ('serviceWorker' in navigator) {
 
     syncCssSpeed();
 
-    editBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); stopReading(); };
+    editBtn.onclick = (e) => { 
+        e.preventDefault(); 
+        e.stopPropagation(); 
+        stopReading(); 
+    };
 
-    document.getElementById('inputText').addEventListener('touchmove', (e) => { e.stopPropagation(); }, { passive: true });
+    inputText.addEventListener('touchmove', (e) => { 
+        e.stopPropagation(); 
+    }, { passive: true });
 
     async function requestWakeLock() {
-        try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch (err) { console.error(err); }
+        try { 
+            if ('wakeLock' in navigator) { 
+                wakeLock = await navigator.wakeLock.request('screen'); 
+            } 
+        } catch (err) { 
+            console.error(err); 
+        }
     }
-    function releaseWakeLock() { if (wakeLock !== null) { wakeLock.release(); wakeLock = null; } }
+    
+    function releaseWakeLock() { 
+        if (wakeLock !== null) { 
+            wakeLock.release(); 
+            wakeLock = null; 
+        } 
+    }
 
-    function resetHeight() { document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`); }
+    function resetHeight() { 
+        document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`); 
+    }
+    
     window.addEventListener('resize', resetHeight);
-    window.addEventListener('orientationchange', () => { setTimeout(resetHeight, 100); });
+    window.addEventListener('orientationchange', () => { 
+        setTimeout(resetHeight, 100); 
+    });
     resetHeight();
-
-    const mainButtonsBlock = document.getElementById('mainButtons');
 
     function checkTextVisibility() {
         if (inputText.value.trim().length > 0) {
-            mainButtonsBlock.style.display = 'flex'; 
+            controls.style.display = 'flex';
         } else {
-            mainButtonsBlock.style.display = 'none';  
+            controls.style.display = 'none';
         }
     }
 
