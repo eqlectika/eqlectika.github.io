@@ -16,29 +16,194 @@ body {
     transition: filter 0.5s ease;
 }
 
-        :root { --bg: #000; --text: #fff; --accent: #00ff00; --tension: #ffffff; --dim: #111; }
+        :root { --bg: #000; --text: #fff; --accent: #00ff00; --gate-color: #ff0000; --tension: #ffffff; --dim: #111; }
         * { box-sizing: border-box; font-family: 'Ubuntu', monospace; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); color: var(--text); overflow: auto; display: flex; flex-direction: column; }
-        .pane-wrap { position: relative; height: 100%; width: 100%; overflow: hidden; }
+        
+        /* Приглушение интерфейса */
+        .dimmed .pane-wrap,
+        .dimmed #db-tools,
+        .dimmed #index-row,
+        .dimmed .note,
+        .dimmed .logo-link,
+        .dimmed .db-btn:not(#cam-btn) {
+            opacity: 0.25;
+            transition: opacity 0.5s ease;
+        }
+        
+        /* Кнопки управления — более яркие */
+        .dimmed #control-hub .u-btn {
+            opacity: 0.6 !important;
+            color: #88ff88 !important;
+        }
+        
+        .dimmed #control-hub .u-btn#run-btn {
+            opacity: 1 !important;
+            color: #00ff00 !important;
+        }
+        
+        .dimmed #control-hub .u-btn#run-btn.stop-mode {
+            opacity: 0.6 !important;
+            color: #ff6666 !important;
+        }
+        
+        .dimmed #control-hub {
+            opacity: 1 !important;
+        }
+        .dimmed #flash-zone {
+            opacity: 1 !important;
+        }
+        .dimmed #word-stream {
+            opacity: 1 !important;
+        }
+        
+        /* Кнопка GATE — красная, приглушается во время потока */
+        #gate-btn {
+            background: #00ff00;
+            transition: opacity 0.5s ease, background 0.3s ease;
+        }
+        #gate-btn span {
+            color: #000;
+        }
+        #gate-btn.active {
+            background: #ff0000;
+        }
+        #gate-btn.active span {
+            color: #fff;
+        }
+        .dimmed #gate-btn {
+            opacity: 0.25 !important;
+        }
+        
+        /* CAM скрывается во время потока */
+        .dimmed #cam-btn-wrapper {
+            display: none !important;
+        }
+        
+        .pane-wrap { 
+            position: relative; 
+            height: 100%; 
+            width: 100%; 
+            overflow: hidden; 
+            transition: opacity 0.5s ease;
+            cursor: default;
+        }
+        /* Курсор-указатель для всего поля во время потока */
+        .dimmed .pane-wrap {
+            cursor: pointer;
+        }
+        
         .pane { border: none; padding-left: 10px; padding-right: 15px; font-size: 0.85rem; background: var(--bg); color: var(--text); outline: none; resize: none; width: 100%; height: 100%; }
         .pane-l { color: #fff; }
         #save-btn { position: absolute; bottom: 5px; right: 5px; background: var(--accent); color: #000; padding: 4px 10px; font-size: 0.6rem; font-weight: bold; cursor: pointer; display: none; z-index: 150; }
         #gateway { display: grid; grid-template-columns: 50% 50%; height: 45vh; width: 100%; position: relative; flex-shrink: 0; }
-        #flash-zone { height: 20vh; display: flex; visibility: hidden; flex-direction: column; justify-content: center; align-items: center; background: #050505; position: relative; flex-shrink: 0; }
+        #flash-zone { height: 20vh; display: flex; visibility: hidden; flex-direction: column; justify-content: center; align-items: center; background: #050505; position: relative; flex-shrink: 0; transition: opacity 0.5s ease; }
         #basement { flex-grow: 1; width: 100%; background: #000; display: flex; flex-direction: column; overflow-y: auto; min-height: 0; }
         #flash-zone.visible { visibility: visible; }
-        #gate-btn { position: absolute; left: 50%; top: 0; bottom: 0; width: 22px; transform: translateX(-50%); z-index: 200; cursor: pointer; background: var(--accent); display: flex; align-items: center; justify-content: center; }
+        #gate-btn { position: absolute; left: 50%; top: 0; bottom: 0; width: 22px; transform: translateX(-50%); z-index: 200; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.5s ease, background 0.3s ease; }
         #digText { padding-left: 20px; padding-right: 10px; color: #00ff00; }
         #word-stream { transition: none; opacity: 1; font-size: 2.8rem; font-weight: bold; text-align: center; cursor: pointer; width: 95%; color: var(--text); }
-        #gate-btn span { writing-mode: vertical-rl; text-orientation: upright; color: #000; font-weight: 900; font-size: 0.8rem; letter-spacing: 3px; }
-        #gate-btn.active { background: var(--tension); }
-        #control-hub { height: 40px; width: 100%; display: none; justify-content: space-around; align-items: center; background: #000; flex-shrink: 0; }
-        .u-btn { color: var(--accent); font-size: 0.7rem; cursor: pointer; font-weight: bold; }
-        #index-row { width: 100%; min-height: 25px; display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 0.8rem; letter-spacing: 12px; padding-left: 12px; font-weight: bold; background: #000; }
+        #gate-btn span { writing-mode: vertical-rl; text-orientation: upright; color: #000; font-weight: 900; font-size: 0.8rem; letter-spacing: 3px; transition: color 0.3s ease; }
+        
+        /* Control Hub — компактный и симметричный */
+        #control-hub { 
+            min-height: 36px; 
+            width: 100%; 
+            display: none; 
+            justify-content: center;
+            align-items: center; 
+            background: #000; 
+            flex-shrink: 0; 
+            transition: opacity 0.5s ease;
+            padding-top: 12px;
+            padding-bottom: 4px;
+            gap: 4px;
+        }
+        
+        .u-btn { 
+            color: var(--accent); 
+            font-size: 0.85rem; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: opacity 0.5s ease, color 0.3s ease;
+            padding: 4px 6px;
+            text-shadow: 0 0 10px rgba(0,255,0,0.3);
+            white-space: nowrap;
+            min-width: 30px;
+            text-align: center;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 28px;
+            line-height: 1;
+        }
+        
+        .u-btn.arrow {
+            font-size: 1.2rem;
+            padding: 2px 4px;
+            min-width: 28px;
+            height: 28px;
+            transform: translateY(-1px);
+        }
+        
+        #run-btn { 
+            font-size: 1.1rem !important; 
+            padding: 2px 14px; 
+            color: #00ff00 !important;
+            text-shadow: 0 0 20px rgba(0,255,0,0.5);
+            min-width: 60px;
+            flex-shrink: 0;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #run-btn.stop-mode { color: #ff4444 !important; text-shadow: 0 0 20px rgba(255,68,68,0.5); }
+        
+        /* Группы слева и справа */
+        .control-left, .control-right {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+            height: 28px;
+        }
+        
+        .control-left {
+            justify-content: flex-end;
+        }
+        
+        .control-right {
+            justify-content: flex-start;
+        }
+        
+        #index-row { width: 100%; min-height: 25px; display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 0.8rem; letter-spacing: 12px; padding-left: 12px; font-weight: bold; background: #000; transition: opacity 0.5s ease; }
         #monitor { min-height: 60px; width: 100%; position: relative; }
-        #db-tools { min-height: 45px; display: flex; justify-content: center; align-items: center; gap: 20px; padding: 5px; }
-        .db-btn { font-size: 0.7rem; color: var(--accent); cursor: pointer; border: 1px solid var(--accent); padding: 5px 10px; text-transform: uppercase; font-weight: bold; transition: 0.3s; display: flex;
+        #db-tools { min-height: 45px; display: flex; justify-content: center; align-items: center; gap: 20px; padding: 5px; transition: opacity 0.5s ease; }
+        .db-btn { font-size: 0.7rem; color: var(--accent); cursor: pointer; border: 1px solid var(--accent); padding: 5px 10px; text-transform: uppercase; font-weight: bold; transition: all 0.3s; display: flex;
   justify-content: center; align-items: center; }
+        .db-btn.active { background: var(--accent); color: #000; }
+        
+        /* Круглая кнопка CAM */
+        #cam-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.7rem;
+            border: 2px solid var(--accent);
+            transition: all 0.3s ease;
+        }
+        #cam-btn.active {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+        
         video { position: fixed; width: 1px; height: 1px; opacity: 0; }
     </style>
 </head>
@@ -46,10 +211,10 @@ body {
 
     <video id="video" autoplay playsinline muted></video>
     <div id="gateway">
-        <div class="pane-wrap">
+        <div class="pane-wrap" id="gateway-left" onclick="handleGatewayTap(event)">
             <textarea id="srcText" class="pane pane-l" placeholder="SOURCE" oninput="exportDB()"></textarea>
         </div>
-        <div class="pane-wrap">
+        <div class="pane-wrap" id="gateway-right" onclick="handleGatewayTap(event)">
             <textarea id="digText" style="text-align: left;" class="pane" placeholder="DIGEST" oninput="exportDB()"></textarea>
         </div>
 <div id="gate-btn" onclick="toggleSystem()"><span>ENTRY</span></div>
@@ -60,15 +225,25 @@ body {
         <div id="word-stream" onclick="captureWord()">READY</div>
     </div>
     <div id="control-hub">
-        <div class="u-btn" onclick="move(-1)">PREV</div>
-        <div class="u-btn" onclick="adjSpd(-50)">SLOWER</div>
+        <div class="control-left">
+            <div class="u-btn arrow" onclick="move(-1)">◀</div>
+            <div class="u-btn" onclick="adjSpd(-50)">SLOWER</div>
+        </div>
         <div class="u-btn" id="run-btn" onclick="toggleRun()">RUN</div>
-        <div class="u-btn" onclick="adjSpd(50)">FASTER</div>
-        <div class="u-btn" onclick="move(1)">NEXT</div>
+        <div class="control-right">
+            <div class="u-btn" onclick="adjSpd(50)">FASTER</div>
+            <div class="u-btn arrow" onclick="move(1)">▶</div>
+        </div>
     </div>
     <div id="basement">
         <div id="index-row">RQ:85</div>
         <div id="monitor"><canvas id="sparkChart"></canvas></div>
+        
+        <!-- Обёртка для CAM, чтобы скрывать -->
+        <div id="cam-btn-wrapper" style="display: flex; justify-content: center; padding: 5px 0 10px 0;">
+            <div class="db-btn" id="cam-btn" onclick="toggleCamera()">CAM</div>
+        </div>
+        
         <div id="db-tools" style="flex-direction: column; gap: 10px;">
 
                         <div style="display: flex; gap: 20px;">
@@ -83,9 +258,9 @@ body {
     <div id="info-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.98); z-index:2000; padding:25px; overflow-y:auto; font-size:0.75rem; color:var(--text); line-height:1.6;">
 <h2 style="color:var(--accent); letter-spacing: 2px;">NEURAL MATRIX PROTOCOL</h2>
 
-<p><strong style="color:var(--accent);">BIO-SYNC (Biometric Anchor):</strong> The system initiates a persistent camera stream to serve as a biometric anchor. It performs real-time optical motion analysis via a 50x50px sampling grid, mapping the operator’s physical kinetic state to the system’s readiness.</p>
+<p><strong style="color:var(--accent);">BIO-SYNC (Biometric Anchor):</strong> The system initiates a persistent camera stream to serve as a biometric anchor. It performs real-time optical motion analysis via a 50x50px sampling grid, mapping the operator's physical kinetic state to the system's readiness.</p>
 
-<p><strong style="color:var(--accent);">GATE (Buffer Initialization):</strong> Activates the processing environment. Loads source data into the active buffer and establishes the link between the BIO-SYNC channel and the system’s performance metrics.</p>
+<p><strong style="color:var(--accent);">GATE (Buffer Initialization):</strong> Activates the processing environment. Loads source data into the active buffer and establishes the link between the BIO-SYNC channel and the system's performance metrics.</p>
 
 <p><strong style="color:var(--accent);">FLASH CAPTURE (Perception):</strong> The stream displays rapid-fire text units. Clicking a word archives it to the DIGEST. A deduplication filter ensures data purity.</p>
 
@@ -94,6 +269,8 @@ body {
 <p><strong style="color:var(--accent);">RQ FLOW CHART (System State):</strong> A visual feedback mechanism. 
     <br>— <span style="color:var(--accent);">Green Trajectory:</span> Optimal kinetic synchronization and high cognitive engagement. 
     <br>— <span style="color:var(--tension);">Magenta Shift:</span> Static state detected. System readiness is dropping due to a loss of kinetic synchronization.</p>
+
+<p><strong style="color:var(--accent);">WORD DEFINITION (ChatGPT Integration):</strong> Tap any word in the stream to open ChatGPT with a request for its definition. The word is automatically copied to your clipboard. It is recommended to have ChatGPT installed or open in a separate tab for a seamless experience.</p>
 
 <h3 style="color:var(--accent); margin-top: 20px; font-size: 0.9rem;">PROTOCOL ARCHITECTURE:</h3>
 <ul style="padding-left: 20px; margin: 0; list-style-type: square;">
@@ -114,11 +291,24 @@ body {
     </div>
     <script>
         let isRunning = false, isPaused = true, words = [], currentIdx = 0, speed = 300, rq = 85, timer = null;
+        let cameraActive = false;
+        let cameraStream = null;
+        
         const chart = new Chart(document.getElementById('sparkChart').getContext('2d'), {
             type: 'line',
             data: { labels: Array(40).fill(''), datasets: [{ borderColor: '#ffffff', borderWidth: 3, data: Array(40).fill(85), pointRadius: 0, fill: false, tension: 0.4 }] },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { display: false, max: 100, min: 0 }, x: { display: false } }, plugins: { legend: { display: false } } }
         });
+
+        // Новая функция: тап по полю SOURCE/DIGEST возвращает в режим редактирования
+        function handleGatewayTap(event) {
+            // Если поток активен — закрываем его
+            if (isRunning) {
+                // Предотвращаем случайный клик по текстовому полю
+                event.stopPropagation();
+                toggleSystem();
+            }
+        }
 
 function toggleSystem() {
     const flash = document.getElementById('flash-zone');
@@ -130,33 +320,61 @@ function toggleSystem() {
         words = document.getElementById('srcText').value.split(/\s+/).filter(w => w.length > 0);
         if (words.length === 0) return alert("Введите текст в SOURCE");
         
-navigator.mediaDevices.getUserMedia({ 
-    video: { 
-        width: 640, 
-        height: 480,
-        // Попытка принудительного увеличения чувствительности:
-        exposureMode: 'manual',
-        exposureCompensation: 2.0, // Увеличение экспозиции (яркости)
-        frameRate: { ideal: 30 } 
-    } 
-}).then(s => { 
-    document.getElementById('video').srcObject = s; 
-    // Если камера поддерживает ручные настройки, применяем их:
-    const track = s.getVideoTracks()[0];
-    const capabilities = track.getCapabilities();
-    if (capabilities.exposureCompensation) {
-        track.applyConstraints({ advanced: [{ exposureCompensation: 2.0 }] });
-    }
-}).catch(e => console.error("Ошибка доступа к настройкам камеры:", e));
-
-        flash.classList.add('visible'); hub.style.display = 'flex'; btn.classList.add('active');
-        span.innerText = 'GATE'; // Теперь кнопка сигнализирует, что можно остановить
-        isRunning = true; currentIdx = 0; isPaused = true; update();
+        flash.classList.add('visible'); 
+        hub.style.display = 'flex'; 
+        btn.classList.add('active');
+        span.innerText = 'GATE';
+        isRunning = true; 
+        currentIdx = 0; 
+        isPaused = true; 
+        update();
+        
+        // Приглушаем интерфейс
+        document.body.classList.add('dimmed');
     } else {
-        isRunning = false; isPaused = true; clearTimeout(timer);
-        flash.classList.remove('visible'); hub.style.display = 'none'; btn.classList.remove('active');
-        span.innerText = 'ENTRY'; // Возвращаем исходное состояние
-        exportDB(); // Сохраняем при остановке
+        isRunning = false; 
+        isPaused = true; 
+        clearTimeout(timer);
+        flash.classList.remove('visible'); 
+        hub.style.display = 'none'; 
+        btn.classList.remove('active');
+        span.innerText = 'ENTRY';
+        exportDB();
+        
+        // Возвращаем яркость интерфейса
+        document.body.classList.remove('dimmed');
+    }
+}
+
+function toggleCamera() {
+    const btn = document.getElementById('cam-btn');
+    
+    if (!cameraActive) {
+        navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: 640, 
+                height: 480,
+                frameRate: { ideal: 30 } 
+            } 
+        }).then(s => {
+            cameraStream = s;
+            document.getElementById('video').srcObject = s;
+            cameraActive = true;
+            btn.classList.add('active');
+            btn.textContent = 'CAM';
+        }).catch(e => {
+            console.error("Ошибка доступа к камере:", e);
+            alert("Не удалось получить доступ к камере.");
+        });
+    } else {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+        document.getElementById('video').srcObject = null;
+        cameraActive = false;
+        btn.classList.remove('active');
+        btn.textContent = 'CAM';
     }
 }
 
@@ -166,8 +384,16 @@ navigator.mediaDevices.getUserMedia({
             if (!isRunning) return;
             if (isPaused && currentIdx >= words.length - 1) currentIdx = 0;
             isPaused = !isPaused;
-            document.getElementById('run-btn').innerText = isPaused ? 'RUN' : 'STOP';
-            document.getElementById('run-btn').style.color = isPaused ? '' : 'var(--tension)';
+            const runBtn = document.getElementById('run-btn');
+            runBtn.innerText = isPaused ? 'RUN' : 'STOP';
+            
+            // Управляем классом stop-mode для приглушения
+            if (!isPaused) {
+                runBtn.classList.add('stop-mode');
+            } else {
+                runBtn.classList.remove('stop-mode');
+            }
+            
             if (!isPaused) { update(); timer = setTimeout(loop, 60000 / (speed * (rq/100))); }
         }
 
@@ -189,7 +415,11 @@ navigator.mediaDevices.getUserMedia({
                     let extraPause = /[.!?—]/.test(rawTxt) ? 300 : (/[;,:]/.test(rawTxt) ? 150 : 0);
                     if (rawTxt.length > 13) extraPause += 500;
                     timer = setTimeout(loop, 60000 / (speed * (rq / 100)) + extraPause);
-                } else { isPaused = true; document.getElementById('run-btn').innerText = 'RUN'; }
+                } else { 
+                    isPaused = true; 
+                    document.getElementById('run-btn').innerText = 'RUN';
+                    document.getElementById('run-btn').classList.remove('stop-mode');
+                }
             }
         }
 
@@ -198,12 +428,25 @@ navigator.mediaDevices.getUserMedia({
 
         function captureWord() {
             if (!words[currentIdx]) return;
+            
             let raw = words[currentIdx].replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
             if (!raw) return;
+            
             const w = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+            
+            const query = `What is the definition of the word "${w}" in the interface language?`;
+            
+            navigator.clipboard.writeText(w).catch(() => {});
+            window.open(`https://chatgpt.com/?q=${encodeURIComponent(query)}`, '_blank');
+            
             const dig = document.getElementById('digText');
             if (dig.value.toLowerCase().includes(w.toLowerCase() + ':')) return;
-            dig.value += (dig.value.trim().length > 0 ? '\n' : '') + w + ': ';
+            
+            dig.value += (dig.value.trim().length > 0 ? '\n\n' : '') + w + ': ';
+            
+            dig.focus();
+            dig.setSelectionRange(dig.value.length, dig.value.length);
+            
             exportDB();
             checkDigest();
         }
@@ -215,7 +458,6 @@ function exportDB() {
     const src = document.getElementById('srcText').value;
     const dig = document.getElementById('digText').value;
 
-    // Убираем жесткий возврат при пустых полях
     const data = { src: src, dig: dig };
     localStorage.setItem('matrix_cache', JSON.stringify(data));
 }
@@ -248,37 +490,42 @@ function exportDB() {
 
         function toggleInfo() { const modal = document.getElementById('info-modal'); modal.style.display = modal.style.display === 'none' ? 'block' : 'none'; }
 
-// --- УЗКОФОКУСНЫЙ АНАЛИЗАТОР (Фокус на глаз) ---
+// --- АНАЛИЗАТОР ---
 const analyzerCanvas = document.createElement('canvas');
-analyzerCanvas.width = 50; 
-analyzerCanvas.height = 50;
+analyzerCanvas.width = 30; 
+analyzerCanvas.height = 30;
 const analyzerCtx = analyzerCanvas.getContext('2d', { willReadFrequently: true });
-// --- ЛОГАРИФМИЧЕСКИЙ АНАЛИЗАТОР (Тонкая настройка) ---
-// --- АДАПТИВНЫЙ АНАЛИЗАТОР ---
-// --- АДАПТИВНЫЙ АНАЛИЗАТОР (Версия 3) ---
 let lastImageData = null;
+let frameSkip = 0;
 
 setInterval(() => {
+    if (!cameraActive) {
+        rq = rq * 0.95 + 85 * 0.05;
+        chart.data.datasets[0].data.push(rq); 
+        chart.data.datasets[0].data.shift();
+        chart.update('none');
+        document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
+        return;
+    }
+    
     const video = document.getElementById('video');
     if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        analyzerCtx.drawImage(video, 0, 0, 50, 50);
-        const imgData = analyzerCtx.getImageData(15, 15, 20, 20);
+        frameSkip = (frameSkip + 1) % 2;
+        if (frameSkip !== 0) return;
+        
+        analyzerCtx.drawImage(video, 0, 0, 30, 30);
+        const imgData = analyzerCtx.getImageData(10, 10, 10, 10);
         const currentData = imgData.data;
         
         if (lastImageData) {
-            let maxDiff = 0; // Ищем не среднее, а МАКСИМАЛЬНОЕ изменение
+            let maxDiff = 0;
             for (let i = 0; i < currentData.length; i += 4) {
                 let d = Math.abs(currentData[i] - lastImageData[i]);
                 if (d > maxDiff) maxDiff = d;
             }
             
-            // Теперь реакция зависит от того, есть ли хоть одна зона движения
-            // 25 - порог срабатывания. Если RQ не падает, уменьшите до 15.
-            // 2 - коэффициент резкости падения RQ.
-            let motionActivity = Math.max(0, 100 - (maxDiff * 2)); 
-            
-            // Быстрая реакция (0.5) вместо инерционной (0.9)
-            rq = (rq * 0.5) + (motionActivity * 0.5); 
+            let motionActivity = Math.max(0, 100 - (maxDiff * 2.5)); 
+            rq = (rq * 0.6) + (motionActivity * 0.4); 
         }
         lastImageData = currentData;
     }
@@ -290,19 +537,17 @@ setInterval(() => {
     chart.data.datasets[0].borderColor = '#ffffff'; 
     chart.data.datasets[0].borderWidth = 3;
     document.getElementById('index-row').innerText = `RQ: ${Math.round(rq)}`;
-}, 100);
+}, 150);
 
 
 window.addEventListener('beforeunload', exportDB);
 
 
-// 2. Измененный блок инициализации
 window.addEventListener('DOMContentLoaded', () => {
     const cached = localStorage.getItem('matrix_cache');
     if (cached) {
         try {
             const data = JSON.parse(cached);
-            // requestAnimationFrame дает браузеру время полностью отрисовать поля
             requestAnimationFrame(() => {
                 document.getElementById('srcText').value = data.src || '';
                 document.getElementById('digText').value = data.dig || '';
