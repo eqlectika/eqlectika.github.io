@@ -53,7 +53,6 @@
       pointer-events: none !important;
     }
 
-    /* Изменено: теперь верхняя часть абсолютная/фиксированная с авто-высотой и прокруткой, если не влезает */
     #inputContainer { 
       position: fixed;
       top: calc(env(safe-area-inset-top, 0px) + 95px);
@@ -103,6 +102,7 @@
       transform: translate(-50%, -50%);
       text-align: center; font-weight: 700; white-space: nowrap;
       width: 100%; z-index: 60; pointer-events: none;
+      transition: border-bottom 0.3s ease;
     }
 
     .word-enter { 
@@ -150,6 +150,34 @@
     }
 
     body.is-reading #inputContainer { opacity: 0 !important; pointer-events: none !important; }
+
+    /* Стили для слова на паузе - кликабельно */
+    body.is-paused .word-layer {
+      cursor: pointer !important;
+      pointer-events: auto !important;
+      border-bottom: 3px solid rgba(255, 215, 0, 0.5);
+      padding-bottom: 8px;
+      transition: border-color 0.3s ease;
+    }
+
+    body.is-paused .word-layer:hover {
+      border-color: rgba(255, 215, 0, 0.9);
+    }
+
+    #pauseHint {
+      display: none;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 11px;
+      margin-top: 6px;
+      text-align: center;
+      pointer-events: none;
+      letter-spacing: 0.5px;
+      font-family: Arial, sans-serif;
+      background: rgba(0,0,0,0.5);
+      padding: 4px 12px;
+      border-radius: 12px;
+      backdrop-filter: blur(4px);
+    }
 
     button {
       font-size: 14px; background: transparent; color: white;
@@ -213,10 +241,9 @@
     }
     
     #inputText::placeholder {
-  color: #ccc; 
-  opacity: 1; 
-}
-
+      color: #ccc; 
+      opacity: 1; 
+    }
 
     .toolbar {
       display: flex; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 650px; justify-content: center;
@@ -227,6 +254,29 @@
       font-size: 14px; padding: 10px 14px; border-radius: 0px; border: 1px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.1);
     }
     #fileInput { display: none; }
+
+    /* Стиль для копированного уведомления */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      opacity: 0;
+      transition: all 0.4s ease;
+      z-index: 999;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -253,8 +303,7 @@
       </div>
       <textarea id="inputText" placeholder="Paste your text here or use the button above.
  
-Click on any blank area of ​​the screen to invert the colors.
- "></textarea>
+Click on any blank area of the screen to invert the colors."></textarea>
     </div>
     
     <div id="mainButtons">
@@ -266,9 +315,13 @@ Click on any blank area of ​​the screen to invert the colors.
         <button id="nextBtn">Fore</button>
         <button id="fasterBtn">Faster</button>
       </div>
+      <div id="pauseHint">✦ Tap the word for definition via ChatGPT ✦</div>
       <button id="accelBtn" class="setting-btn">Dynamic Accel: OFF</button>
     </div>
   </div>
+
+  <!-- Toast уведомление -->
+  <div id="toast" class="toast">📋 Copied to clipboard</div>
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -289,6 +342,8 @@ if ('serviceWorker' in navigator) {
     const editBtn = document.getElementById('editBtn');
     const fileInput = document.getElementById('fileInput');
     const logoLink = document.getElementById('logoLink');
+    const pauseHint = document.getElementById('pauseHint');
+    const toast = document.getElementById('toast');
 
     const colors = ['#000000', '#2a0505', '#05052a', '#052a05', '#1a1a1a'];
     const textColors = ['#ffffff', '#ffeb3b', '#00ff00', '#ff4444', '#80cbc4', '#ffa726'];
@@ -303,8 +358,20 @@ if ('serviceWorker' in navigator) {
     let inversionActive = localStorage.getItem('reading_inversionActive') === 'true';
     let transitionInterval = null;
     let inversionLevel = inversionActive ? 100 : 0;
+    let toastTimeout = null;
+    
     document.body.style.backgroundColor = colors[colorIndex];
     inputText.value = localStorage.getItem('reading_text') || "";
+
+    // Функция показа Toast
+    function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2000);
+    }
 
     fileInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
@@ -355,7 +422,8 @@ if ('serviceWorker' in navigator) {
             e.target.tagName === 'BUTTON' || 
             e.target.tagName === 'TEXTAREA' || 
             e.target.closest('.toolbar') || 
-            e.target.closest('#logoContainer')
+            e.target.closest('#logoContainer') ||
+            e.target.closest('.word-layer')
         ) {
             return; 
         }
@@ -393,6 +461,36 @@ if ('serviceWorker' in navigator) {
             updateFontSize(displayTxt, newEl);
             container.appendChild(newEl);
             requestAnimationFrame(() => setTimeout(() => newEl.classList.replace('word-enter', 'word-active'), 20));
+            
+            // ========== НОВАЯ ФУНКЦИОНАЛЬНОСТЬ: КЛИК ПО СЛОВУ ==========
+            // Включаем кликабельность ТОЛЬКО если чтение на паузе
+            // (проверка будет внутри обработчика)
+            newEl.style.pointerEvents = 'auto';
+            newEl.style.cursor = 'pointer';
+            
+            newEl.addEventListener('click', function(e) {
+                e.stopPropagation();
+                // Проверяем, что чтение на паузе
+                if (isPaused && isReading) {
+                    const word = this.textContent;
+                    const query = `What is the definition of the word "${word}" in the interface language?`;
+                    
+                    // Копируем слово в буфер
+                    navigator.clipboard.writeText(word).then(() => {
+                        showToast(`📋 "${word}" copied`);
+                    }).catch(() => {
+                        // fallback
+                        showToast(`📋 "${word}" copied`);
+                    });
+                    
+                    // Открываем ChatGPT
+                    window.open(
+                        `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
+                        '_blank'
+                    );
+                }
+            });
+            // ========================================================
         }
 
         let extraPause = 0; 
@@ -423,9 +521,11 @@ if ('serviceWorker' in navigator) {
     function stopReading() {
         releaseWakeLock();
         clearTimeout(timer);
-        isReading = false; isPaused = false;
+        isReading = false; 
+        isPaused = false;
         document.body.classList.remove('is-reading', 'is-paused');
         startBtn.textContent = 'Start';
+        pauseHint.style.display = 'none';
         container.innerHTML = '';
         checkTextVisibility(); 
     }
@@ -451,13 +551,16 @@ if ('serviceWorker' in navigator) {
               
             index = 0; isReading = true; isPaused = false;
             document.body.classList.add('is-reading');
+            document.body.classList.remove('is-paused');
             startBtn.textContent = 'Pause';
+            pauseHint.style.display = 'none';
             requestWakeLock();
             showNext();
         } else {
             isPaused = !isPaused;
             document.body.classList.toggle('is-paused', isPaused);
             startBtn.textContent = isPaused ? 'Continue' : 'Pause';
+            pauseHint.style.display = isPaused ? 'block' : 'none';
             if (!isPaused) showNext(); else clearTimeout(timer);
         }
     };
