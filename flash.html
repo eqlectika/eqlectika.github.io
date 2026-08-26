@@ -33,13 +33,14 @@
     }
 
     #logoContainer {
-      padding: calc(env(safe-area-inset-top, 0px) + 10px) 0 5px 0;
+      padding: calc(env(safe-area-inset-top, 0px) + 10px) 15px 5px 15px;
       width: 100%;
-      max-width: 650px;
+      max-width: 700px;
       display: flex;
       justify-content: center;
       flex-shrink: 0;
       transition: opacity 0.5s ease;
+      box-sizing: border-box;
     }
 
     body.is-reading #logoContainer {
@@ -53,13 +54,14 @@
       align-items: center; 
       text-align: center;
       font-family: 'Cinzel', serif;
+      width: 100%;
     }
 
     #inputContainer { 
       flex-shrink: 0;
-      padding: 10px 0 5px 0;
+      padding: 10px 15px 5px 15px;
       width: 100%;
-      max-width: 650px;
+      max-width: 700px;
       display: flex; 
       flex-direction: column; 
       align-items: center; 
@@ -79,12 +81,13 @@
     #wordDisplay {
       position: relative;
       width: 100%;
-      max-width: 650px;
+      max-width: 700px;
       min-height: 100px;
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 10px 0;
+      padding: 10px 15px;
+      box-sizing: border-box;
       transition: min-height 0.3s ease;
     }
 
@@ -159,14 +162,15 @@
     #controls {
       flex-shrink: 0;
       width: 100%;
-      max-width: 650px;
+      max-width: 700px;
       display: none;
       flex-direction: column;
       align-items: center;
       gap: 8px;
-      padding: 10px 0 calc(env(safe-area-inset-bottom, 5px) + 10px);
+      padding: 10px 15px calc(env(safe-area-inset-bottom, 5px) + 10px);
       background: rgba(0,0,0,0.95);
       transition: opacity 0.3s ease;
+      box-sizing: border-box;
     }
 
     body.is-reading #controls {
@@ -264,7 +268,7 @@
       user-select: text !important;
       pointer-events: auto !important;
       width: 100%; 
-      min-height: 120px;
+      min-height: 200px;
       padding: 10px 14px; 
       background: rgba(255,255,255,0.05); 
       color: #fff; 
@@ -275,7 +279,7 @@
       box-sizing: border-box; 
       display: block;
       font-family: Arial, sans-serif;
-      height: 20vh;
+      height: 50vh;
       resize: none;
       overflow-y: auto;
       text-align: center;
@@ -354,8 +358,8 @@
       }
       
       #inputText {
-        min-height: 80px;
-        height: 15vh;
+        min-height: 150px;
+        height: 40vh;
         font-size: 14px;
       }
       
@@ -385,6 +389,12 @@
         font-size: 22px !important;
       }
       
+      #inputText {
+        min-height: 120px;
+        height: 35vh;
+        font-size: 13px;
+      }
+      
       body.is-reading #wordDisplay {
         min-height: 55vh;
       }
@@ -405,7 +415,7 @@
       <a href="research.html" id="logoLink" style="text-decoration: none;">
         <img src="logo.png" alt="Logo" style="max-width: 42px; opacity: 0.9;">
       </a>
-      <h1 style="font-size: 13px; margin: 3px 0 0 0; font-weight: normal; letter-spacing: 1px; color: #fff;">
+      <h1 style="font-size: 13px; margin: 3px 0 0 0; font-weight: normal; letter-spacing: 1px; color: #fff; width: 100%; text-align: center;">
         Fast Reading Converter
       </h1>
     </div>
@@ -494,7 +504,6 @@ if ('serviceWorker' in navigator) {
     function scrollToBottom() {
         if (scrollTimeout) cancelAnimationFrame(scrollTimeout);
         scrollTimeout = requestAnimationFrame(() => {
-            // Прокручиваем до самого низа с учетом всех элементов
             const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
             scrollContainer.scrollTop = maxScroll + 50;
         });
@@ -649,7 +658,6 @@ if ('serviceWorker' in navigator) {
         index++;
         timer = setTimeout(showNext, currentInterval + extraPause);
         
-        // Прокручиваем вниз после добавления слова
         scrollToBottom();
     }
 
@@ -663,7 +671,6 @@ if ('serviceWorker' in navigator) {
         pauseHint.style.display = 'none';
         wordDisplay.innerHTML = '';
         checkTextVisibility();
-        // Возвращаемся наверх при остановке чтения
         scrollToTop();
     }
 
@@ -695,7 +702,6 @@ if ('serviceWorker' in navigator) {
             pauseHint.style.display = 'none';
             requestWakeLock();
             showNext();
-            // Прокручиваем вниз при старте
             scrollToBottom();
         } else {
             isPaused = !isPaused;
