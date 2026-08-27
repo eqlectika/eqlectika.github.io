@@ -29,7 +29,6 @@ const CORE_ASSETS = [
     './manifest-words.json',
     './manifest-jetpack.json',
     './manifest-media.json',
-    './manifest-fields.json',
     './manifest-paramount.json',
 
 
