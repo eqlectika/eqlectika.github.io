@@ -184,7 +184,7 @@
 
             border-radius: 7px;
 
-            background: #333;
+            background: #00f;
 
             color: white;
 
@@ -778,98 +778,43 @@
                ADD PANEL LEFT
                ========================= */
 
-            function addPanelLeft(resizer) {
+function addPanelLeft(resizer) {
+    updatePanelsList();
+    const allResizers = Array.from(document.querySelectorAll('.resizer'));
+    const index = allResizers.indexOf(resizer);
+    if (index === -1) return;
+    
+    const leftPanel = panels[index];
+    if (!leftPanel) return;
+    
+    const newPanel = createPanel('index.html');
+    
+    // Вставляем ПОСЛЕ левой панели (т.е. прямо перед разделителем)
+    panelsContainer.insertBefore(newPanel, resizer);
+    
+    updatePanelsList();
+    rebuildResizers();
+    initializePanelWidths();
+}
 
-                updatePanelsList();
-
-
-                const allResizers =
-                    Array.from(
-                        document.querySelectorAll(
-                            '.resizer'
-                        )
-                    );
-
-
-                const index =
-                    allResizers.indexOf(resizer);
-
-
-                if (index === -1) {
-                    return;
-                }
-
-
-                const targetPanel =
-                    panels[index];
-
-
-                const newPanel =
-                    createPanel(
-                        'index.html'
-                    );
-
-
-                panelsContainer.insertBefore(
-                    newPanel,
-                    targetPanel
-                );
-
-
-                rebuildResizers();
-
-                initializePanelWidths();
-
-            }
-
-
-            /* =========================
-               ADD PANEL RIGHT
-               ========================= */
-
-            function addPanelRight(resizer) {
-
-                updatePanelsList();
-
-
-                const allResizers =
-                    Array.from(
-                        document.querySelectorAll(
-                            '.resizer'
-                        )
-                    );
-
-
-                const index =
-                    allResizers.indexOf(resizer);
-
-
-                if (index === -1) {
-                    return;
-                }
-
-
-                const targetPanel =
-                    panels[index + 1];
-
-
-                const newPanel =
-                    createPanel(
-                        'index.html'
-                    );
-
-
-                panelsContainer.insertBefore(
-                    newPanel,
-                    targetPanel.nextSibling
-                );
-
-
-                rebuildResizers();
-
-                initializePanelWidths();
-
-            }
+function addPanelRight(resizer) {
+    updatePanelsList();
+    const allResizers = Array.from(document.querySelectorAll('.resizer'));
+    const index = allResizers.indexOf(resizer);
+    if (index === -1) return;
+    
+    const rightPanel = panels[index + 1]; // панель СПРАВА от разделителя
+    if (!rightPanel) return;
+    
+    const newPanel = createPanel('index.html');
+    
+    // Вставляем ПЕРЕД правой панелью (т.е. ПОСЛЕ левой)
+    panelsContainer.insertBefore(newPanel, rightPanel);
+    
+    updatePanelsList();
+    rebuildResizers();
+    initializePanelWidths();
+}
 
 
             /* =========================
