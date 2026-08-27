@@ -1,7 +1,6 @@
 const CACHE_NAME = 'polarity-vindex';
 
 const CORE_ASSETS = [
-    './',
     './index.html',
     './manifest-index.json',
 
