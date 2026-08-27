@@ -3,7 +3,6 @@ const CACHE_NAME = 'polarity-vfieldcapital';
 const CORE_ASSETS = [
     './',
     './index.html',
-    './manifest.json',
     './cross.html',
     './flash.html',
     './match.html',
@@ -15,7 +14,7 @@ const CORE_ASSETS = [
     './words.html',
     './jetpack.html',
     './media.html',
-    './fields.html',
+    './paramount.html',
     './manifest-cross.json',
     './manifest-flash.json',
     './manifest-match.json',
@@ -26,7 +25,8 @@ const CORE_ASSETS = [
     './manifest-words.json',
     './manifest-jetpack.json',
     './manifest-media.json',
-    './manifest-fields.json',
+    './manifest-index.json',
+    './manifest-paramount.json',
     './handle.png',
     './ladybug-icon-10.png',
     './handle-black.png',
@@ -39,6 +39,9 @@ const CORE_ASSETS = [
     './syntax.png',
     './words.png',
     './media.png',
+    './bitfufu.png',
+    './bybit.png',
+    './binance.PNG',
     './star.png'
 ];
 
