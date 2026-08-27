@@ -1,9 +1,9 @@
-const CACHE_NAME = 'polarity-vmediaagain';
+const CACHE_NAME = 'polarity-vindex';
 
 const CORE_ASSETS = [
     './',
     './index.html',
-    './manifest-index.json.json',
+    './manifest-index.json',
 
     './cross.html',
     './flash.html',
