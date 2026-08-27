@@ -10,6 +10,24 @@
 <title>Cross Notes | Meme Editor</title>
 
 <style>
+/* ——— СКРОЛЛ-БАРЫ МИНИМИЗИРОВАНЫ ——— */
+* {
+  scrollbar-width: thin;          /* Firefox */
+  scrollbar-color: transparent transparent; /* Firefox */
+}
+*::-webkit-scrollbar {
+  width: 4px;                    /* Safari/Chrome */
+  height: 4px;
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 body, html {
 margin: 0;
 padding: 0;
@@ -34,7 +52,6 @@ height: 100%;
 overflow: hidden;
 }
 
-/* Дефолтные стили: теперь t0 жирный (синтез), а t3 обычный */
 #t0 { 
   --default-bg: #ff8700; 
   --default-color: #000000; 
@@ -138,7 +155,7 @@ let isDragging = false;
 let dragStartTime = 0;
 let db;
 
-const designs = ['handle.png', 'handle-black.png', 'logo.png', 'fleurdelis.png', 'break.png' ];
+const designs = ['handle.png', 'handle-black.png', 'logo.png', 'fleurdelis.png', 'break.png', 'handle-cross-transparent.png' ];
 let currentDesign = parseInt(localStorage.getItem('q_handle_design') || '0');
 
 const fontsPool = [
@@ -200,8 +217,6 @@ function loadData() {
   container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
   updateHandleImage(currentDesign);
 
-  // Настройка координат для каждого t0-t3
-// ... внутри loadData()
 const imgPositions = [
   { top: 'auto', bottom: '10px', left: 'auto', right: '10px' }, // t0
   { top: 'auto', bottom: '10px', left: '10px', right: 'auto' }, // t1
@@ -218,7 +233,6 @@ textareas.forEach((ta, i) => {
   img.style.left = pos.left;
   img.style.right = pos.right;
 
-    // Дальше ваш код загрузки стилей
     if (localStorage.getItem(`q_b_${i}`)) {
       ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`));
       ta.style.setProperty('--color', localStorage.getItem(`q_c_${i}`));
@@ -400,7 +414,6 @@ if (item) { handleImageFile(item.getAsFile(), i, ta); }
       const c = prompt("Font color:", curColor); 
       if (c) { targetTa.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
       
-      // ИСПРАВЛЕНО: параметры картинки показываются только если она существует
       if (images[i].style.display === 'block') {
         const currentPos = localStorage.getItem(`q_pos_${i}`) || "bottom right";
         const pos = prompt("Image position:", currentPos);
