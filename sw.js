@@ -18,8 +18,6 @@ const CORE_ASSETS = [
     './media.html',
     './paramount.html',
 
-
-
     './manifest-cross.json',
     './manifest-flash.json',
     './manifest-match.json',
@@ -31,9 +29,6 @@ const CORE_ASSETS = [
     './manifest-jetpack.json',
     './manifest-media.json',
     './manifest-paramount.json',
-
-
-    
 
     './handle.png',
     './ladybug-icon-10.png',
@@ -99,6 +94,18 @@ self.addEventListener('fetch', event => {
 
     if (request.method !== 'GET') return;
 
+    // ===== ДОБАВЛЕННЫЙ БЛОК ДЛЯ КОРНЯ =====
+    const url = new URL(request.url);
+    if (url.pathname === '/' || url.pathname === '/index.html') {
+        event.respondWith(
+            caches.match('/').then(cached => {
+                return cached || fetch(request);
+            })
+        );
+        return;
+    }
+    // ===== КОНЕЦ ДОБАВЛЕННОГО БЛОКА =====
+
     event.respondWith(
         caches.match(request).then(cachedResponse => {
             if (cachedResponse) {
@@ -128,7 +135,7 @@ self.addEventListener('fetch', event => {
             });
         }).catch(() => {
             if (request.mode === 'navigate') {
-                return caches.match('./index.html');
+                return caches.match('/');
             }
 
             return Response.error();
