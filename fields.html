@@ -21,7 +21,6 @@
             background: #1e1e1e;
         }
 
-
         .panels {
             display: flex;
             width: 100vw;
@@ -46,44 +45,74 @@
             display: block;
         }
 
+        /* =========================
+           VERTICAL CONTROL AXIS
+           ========================= */
 
         .resizer {
             width: 6px;
             min-width: 6px;
             flex: 0 0 6px;
             background: #1e1e1e;
-            cursor: col-resize;
             position: relative;
             z-index: 10;
+            cursor: ns-resize;
             touch-action: none;
         }
 
-        .resizer::after {
+        /*
+         * Увеличенная зона попадания.
+         * Клик/тап по ней тоже считается.
+         */
+        .resizer::before {
             content: "";
             position: absolute;
             top: 0;
             bottom: 0;
-            left: -6px;
-            right: -6px;
+            left: -20px;
+            right: -20px;
+            z-index: 0;
         }
 
-        .resizer:hover,
+        /*
+         * Сам handle.
+         */
+        .resizer-handle {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+
+            width: 24px;
+            height: 24px;
+
+            transform: translate(-50%, -50%);
+
+            object-fit: contain;
+            user-select: none;
+            -webkit-user-drag: none;
+
+            pointer-events: none;
+            z-index: 2;
+        }
+
         .resizer.active {
             background: #3b82f6;
         }
 
-
         body.is-resizing {
             user-select: none;
-            cursor: col-resize !important;
         }
 
         body.is-resizing iframe {
             pointer-events: none;
         }
 
+        /* =========================
+           MOBILE
+           ========================= */
 
         @media (max-width: 768px) {
+
             .panels {
                 flex-direction: row;
                 overflow-x: auto;
@@ -109,7 +138,6 @@
             .resizer {
                 display: none;
             }
-
 
             .dots {
                 position: fixed;
@@ -148,7 +176,6 @@
                 background: rgba(255, 255, 255, 0.6);
             }
         }
-
 
         .dots {
             display: none;
@@ -189,40 +216,76 @@
             'cross.html'
         ];
 
-        const panelsContainer = document.getElementById('panels');
-        const dotsContainer = document.getElementById('dots');
+
+        const panelsContainer =
+            document.getElementById('panels');
+
+        const dotsContainer =
+            document.getElementById('dots');
 
 
         pages.forEach(page => {
-            const panel = document.createElement('div');
+
+            const panel =
+                document.createElement('div');
+
             panel.className = 'panel';
 
-            const iframe = document.createElement('iframe');
+
+            const iframe =
+                document.createElement('iframe');
+
             iframe.src = page;
             iframe.loading = 'lazy';
+
 
             panel.appendChild(iframe);
             panelsContainer.appendChild(panel);
         });
 
-        const panels = Array.from(
-            document.querySelectorAll('.panel')
-        );
 
-        const isMobile = window.innerWidth <= 768;
+        const panels =
+            Array.from(
+                document.querySelectorAll('.panel')
+            );
 
+
+        const isMobile =
+            window.innerWidth <= 768;
+
+
+        /* =====================================================
+           DESKTOP
+           ===================================================== */
 
         if (!isMobile) {
 
-
+            /*
+             * Создаём оси между полями.
+             */
             panels.forEach((panel, index) => {
 
                 if (index >= panels.length - 1) {
                     return;
                 }
 
-                const resizer = document.createElement('div');
+
+                const resizer =
+                    document.createElement('div');
+
                 resizer.className = 'resizer';
+
+
+                const handle =
+                    document.createElement('img');
+
+                handle.className = 'resizer-handle';
+                handle.src = 'handle.png';
+                handle.alt = '';
+
+
+                resizer.appendChild(handle);
+
 
                 panelsContainer.insertBefore(
                     resizer,
@@ -230,127 +293,181 @@
                 );
             });
 
-            const resizers = Array.from(
-                document.querySelectorAll('.resizer')
-            );
+
+            const resizers =
+                Array.from(
+                    document.querySelectorAll('.resizer')
+                );
 
 
+            /*
+             * Начальные равные ширины.
+             */
             function initializePanelWidths() {
 
                 const availableWidth =
                     panelsContainer.clientWidth -
-                    (resizers.length * 6);
+                    resizers.length * 6;
+
 
                 const width =
                     availableWidth / panels.length;
 
+
                 panels.forEach(panel => {
+
                     panel.style.flex = '0 0 auto';
-                    panel.style.width = `${width}px`;
+                    panel.style.width =
+                        `${width}px`;
+                });
+
+
+                /*
+                 * После изменения окна
+                 * handle снова в центре.
+                 */
+                resizers.forEach(resizer => {
+
+                    const handle =
+                        resizer.querySelector(
+                            '.resizer-handle'
+                        );
+
+                    handle.style.top = '50%';
                 });
             }
+
 
             initializePanelWidths();
 
 
-            resizers.forEach((resizer, resizerIndex) => {
+            /* =================================================
+               CONTROL FOR EACH AXIS
+               ================================================= */
 
-                let isResizing = false;
+            resizers.forEach(
+                (resizer, index) => {
 
-                let startX = 0;
+                    const prevPanel =
+                        panels[index];
 
-                let startPrevWidth = 0;
-                let startNextWidth = 0;
-
-                let prevPanel = null;
-                let nextPanel = null;
-
-                let animationFrame = null;
-                let pendingX = null;
+                    const nextPanel =
+                        panels[index + 1];
 
 
-                prevPanel = panels[resizerIndex];
-                nextPanel = panels[resizerIndex + 1];
-
-                if (!prevPanel || !nextPanel) {
-                    return;
-                }
-
-
-                function startResize(e) {
-
-                    e.preventDefault();
-
-                    isResizing = true;
-
-                    startX = e.clientX;
-
-                    startPrevWidth =
-                        prevPanel.getBoundingClientRect().width;
-
-                    startNextWidth =
-                        nextPanel.getBoundingClientRect().width;
-
-                    resizer.classList.add('active');
-                    document.body.classList.add('is-resizing');
-
-                    resizer.setPointerCapture?.(e.pointerId);
-                }
-
-
-                function moveResize(e) {
-
-                    if (!isResizing) {
+                    if (!prevPanel || !nextPanel) {
                         return;
                     }
 
-                    pendingX = e.clientX;
+
+                    let active = false;
+                    let animationFrame = null;
+                    let pendingY = null;
 
 
-                    if (animationFrame !== null) {
-                        return;
-                    }
+                    /*
+                     * Одна функция управляет всем:
+                     *
+                     * Y координата указателя
+                     *      ↓
+                     * положение handle
+                     *      ↓
+                     * ширина двух полей
+                     */
+                    function setPosition(clientY) {
 
-                    animationFrame = requestAnimationFrame(() => {
+                        const rect =
+                            resizer.getBoundingClientRect();
 
-                        animationFrame = null;
 
-                        if (!isResizing || pendingX === null) {
-                            return;
-                        }
+                        /*
+                         * Координата внутри оси:
+                         * 0 = верх
+                         * height = низ
+                         */
+                        let y =
+                            clientY - rect.top;
 
-                        const delta =
-                            pendingX - startX;
+
+                        /*
+                         * Учитываем половину handle,
+                         * чтобы он не выходил за ось.
+                         */
+                        const handleSize = 24;
+                        const halfHandle =
+                            handleSize / 2;
+
+
+                        y =
+                            Math.max(
+                                halfHandle,
+                                Math.min(
+                                    rect.height -
+                                    halfHandle,
+                                    y
+                                )
+                            );
+
+
+                        /*
+                         * Положение handle
+                         * непосредственно под указателем.
+                         */
+                        const percent =
+                            (y / rect.height) * 100;
+
+
+                        const handle =
+                            resizer.querySelector(
+                                '.resizer-handle'
+                            );
+
+
+                        handle.style.top =
+                            `${percent}%`;
+
+
+                        /*
+                         * Теперь эта же координата
+                         * определяет ширину полей.
+                         */
+                        const totalWidth =
+                            prevPanel.getBoundingClientRect().width +
+                            nextPanel.getBoundingClientRect().width;
+
 
                         const minWidth = 80;
 
 
+                        /*
+                         * Верх оси:
+                         * левое поле максимально широкое.
+                         *
+                         * Низ оси:
+                         * правое поле максимально широкое.
+                         */
+                        let ratio =
+                            1 -
+                            y / rect.height;
+
+
                         let newPrevWidth =
-                            startPrevWidth + delta;
+                            totalWidth * ratio;
 
 
                         newPrevWidth =
                             Math.max(
                                 minWidth,
-                                newPrevWidth
-                            );
-
-
-                        const maxPrevWidth =
-                            startPrevWidth +
-                            startNextWidth -
-                            minWidth;
-
-                        newPrevWidth =
-                            Math.min(
-                                maxPrevWidth,
-                                newPrevWidth
+                                Math.min(
+                                    totalWidth -
+                                    minWidth,
+                                    newPrevWidth
+                                )
                             );
 
 
                         const newNextWidth =
-                            startPrevWidth +
-                            startNextWidth -
+                            totalWidth -
                             newPrevWidth;
 
 
@@ -359,83 +476,197 @@
 
                         nextPanel.style.width =
                             `${newNextWidth}px`;
-                    });
-                }
-
-
-                function stopResize(e) {
-
-                    if (!isResizing) {
-                        return;
                     }
 
-                    isResizing = false;
 
-                    if (animationFrame !== null) {
-                        cancelAnimationFrame(animationFrame);
-                        animationFrame = null;
-                    }
+                    /*
+                     * Нажатие/касание.
+                     *
+                     * ВАЖНО:
+                     * handle сразу прыгает в точку
+                     * нажатия.
+                     */
+                    function pointerDown(e) {
 
-                    pendingX = null;
+                        e.preventDefault();
+                        e.stopPropagation();
 
-                    resizer.classList.remove('active');
-                    document.body.classList.remove('is-resizing');
 
-                    try {
-                        resizer.releasePointerCapture?.(
+                        active = true;
+
+                        pendingY = e.clientY;
+
+
+                        resizer.classList.add(
+                            'active'
+                        );
+
+                        document.body.classList.add(
+                            'is-resizing'
+                        );
+
+
+                        setPosition(e.clientY);
+
+
+                        resizer.setPointerCapture?.(
                             e.pointerId
                         );
-                    } catch (_) {}
-                }
-
-
-                resizer.addEventListener(
-                    'pointerdown',
-                    startResize
-                );
-
-                resizer.addEventListener(
-                    'pointermove',
-                    moveResize
-                );
-
-                resizer.addEventListener(
-                    'pointerup',
-                    stopResize
-                );
-
-                resizer.addEventListener(
-                    'pointercancel',
-                    stopResize
-                );
-
-                resizer.addEventListener(
-                    'lostpointercapture',
-                    stopResize
-                );
-            });
-
-
-            let resizeTimer = null;
-
-            window.addEventListener('resize', () => {
-
-                clearTimeout(resizeTimer);
-
-                resizeTimer = setTimeout(() => {
-
-                    if (!document.body.classList.contains('is-resizing')) {
-                        initializePanelWidths();
                     }
 
-                }, 100);
-            });
+
+                    /*
+                     * Пока палец или мышь движется —
+                     * handle следует за ними.
+                     */
+                    function pointerMove(e) {
+
+                        if (!active) {
+                            return;
+                        }
+
+
+                        pendingY = e.clientY;
+
+
+                        if (animationFrame !== null) {
+                            return;
+                        }
+
+
+                        animationFrame =
+                            requestAnimationFrame(() => {
+
+                                animationFrame = null;
+
+
+                                if (
+                                    !active ||
+                                    pendingY === null
+                                ) {
+                                    return;
+                                }
+
+
+                                setPosition(
+                                    pendingY
+                                );
+                            });
+                    }
+
+
+                    /*
+                     * Отпускание.
+                     */
+                    function pointerUp(e) {
+
+                        if (!active) {
+                            return;
+                        }
+
+
+                        active = false;
+                        pendingY = null;
+
+
+                        if (
+                            animationFrame !== null
+                        ) {
+                            cancelAnimationFrame(
+                                animationFrame
+                            );
+
+                            animationFrame = null;
+                        }
+
+
+                        resizer.classList.remove(
+                            'active'
+                        );
+
+                        document.body.classList.remove(
+                            'is-resizing'
+                        );
+
+
+                        try {
+
+                            resizer.releasePointerCapture?.(
+                                e.pointerId
+                            );
+
+                        } catch (_) {}
+                    }
+
+
+                    resizer.addEventListener(
+                        'pointerdown',
+                        pointerDown
+                    );
+
+                    resizer.addEventListener(
+                        'pointermove',
+                        pointerMove
+                    );
+
+                    resizer.addEventListener(
+                        'pointerup',
+                        pointerUp
+                    );
+
+                    resizer.addEventListener(
+                        'pointercancel',
+                        pointerUp
+                    );
+
+                    resizer.addEventListener(
+                        'lostpointercapture',
+                        pointerUp
+                    );
+                }
+            );
+
+
+            /*
+             * Resize окна.
+             */
+            let resizeTimer = null;
+
+
+            window.addEventListener(
+                'resize',
+                () => {
+
+                    clearTimeout(resizeTimer);
+
+
+                    resizeTimer =
+                        setTimeout(() => {
+
+                            if (
+                                !document.body
+                                    .classList
+                                    .contains(
+                                        'is-resizing'
+                                    )
+                            ) {
+                                initializePanelWidths();
+                            }
+
+                        }, 100);
+                }
+            );
         }
 
+
+        /* =====================================================
+           MOBILE
+           ===================================================== */
 
         if (isMobile) {
 
             dotsContainer.style.display = 'flex';
+
 
             pages.forEach((_, index) => {
 
@@ -444,20 +675,28 @@
 
                 dot.dataset.index = index;
 
+
                 if (index === 0) {
                     dot.classList.add('active');
                 }
 
-                dot.addEventListener('click', () => {
 
-                    const panel = panels[index];
+                dot.addEventListener(
+                    'click',
+                    () => {
 
-                    panel.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'nearest',
-                        inline: 'start'
-                    });
-                });
+                        const panel =
+                            panels[index];
+
+
+                        panel.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'nearest',
+                            inline: 'start'
+                        });
+                    }
+                );
+
 
                 dotsContainer.appendChild(dot);
             });
@@ -473,21 +712,31 @@
                                 return;
                             }
 
+
                             const index =
-                                panels.indexOf(entry.target);
+                                panels.indexOf(
+                                    entry.target
+                                );
+
 
                             if (index === -1) {
                                 return;
                             }
 
+
                             document
-                                .querySelectorAll('.dots button')
-                                .forEach((dot, i) => {
-                                    dot.classList.toggle(
-                                        'active',
-                                        i === index
-                                    );
-                                });
+                                .querySelectorAll(
+                                    '.dots button'
+                                )
+                                .forEach(
+                                    (dot, i) => {
+
+                                        dot.classList.toggle(
+                                            'active',
+                                            i === index
+                                        );
+                                    }
+                                );
                         });
                     },
                     {
@@ -496,10 +745,12 @@
                     }
                 );
 
+
             panels.forEach(panel => {
                 observer.observe(panel);
             });
         }
+
     </script>
 
 </body>
