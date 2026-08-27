@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Адаптивные поля</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest-fields.json">
+    <title>Fields</title>
     <style>
         * {
             margin: 0;
@@ -11,369 +13,264 @@
             box-sizing: border-box;
         }
 
+        html,
         body {
-            font-family: system-ui, -apple-system, sans-serif;
-            background: #f5f7fa;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 20px;
-            padding: 30px 24px;
-            max-width: 1400px;
             width: 100%;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
-        }
-
-        h2 {
-            font-size: 1.2rem;
-            font-weight: 500;
-            color: #1e293b;
-            margin-bottom: 24px;
-            text-align: center;
-        }
-
-        /* Сетка по умолчанию: 1 колонка (смартфон) */
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 16px;
-        }
-
-        /* Поле ввода с изменяемой шириной */
-        .field-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 4px 12px 4px 16px;
-            border: 1px solid #e2e8f0;
-            transition: border-color 0.2s;
-        }
-
-        .field-wrapper:focus-within {
-            border-color: #3b82f6;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-        }
-
-        .field-wrapper label {
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: #475569;
-            white-space: nowrap;
-            min-width: 20px;
-        }
-
-        .field-wrapper input {
-            flex: 1;
-            min-width: 0;
-            padding: 14px 0;
-            border: none;
-            background: transparent;
-            font-size: 1rem;
-            outline: none;
-            color: #0f172a;
-            width: 100%;
-        }
-
-        .field-wrapper input::placeholder {
-            color: #94a3b8;
-        }
-
-        /* Ручка изменения ширины */
-        .resize-handle {
-            width: 16px;
             height: 100%;
-            min-height: 44px;
+            overflow: hidden;
+            background: #1e1e1e;
+        }
+
+        /* Контейнер */
+        .panels {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            background: #1e1e1e;
+        }
+
+        /* Каждая панель */
+        .panel {
+            flex: 1;
+            min-width: 50px;
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Разделитель */
+        .resizer {
+            width: 6px;
+            background: #1e1e1e;
             cursor: col-resize;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #94a3b8;
-            user-select: none;
             flex-shrink: 0;
-            padding: 4px 0;
+            position: relative;
+            z-index: 10;
         }
 
-        .resize-handle::before {
-            content: "⋮";
-            font-size: 1.2rem;
-            line-height: 1;
-            letter-spacing: -2px;
-            opacity: 0.5;
-            transition: opacity 0.2s;
+        .resizer:hover {
+            background: #3b82f6;
         }
 
-        .field-wrapper:hover .resize-handle::before {
-            opacity: 1;
-        }
+        /* === МОБИЛЬНАЯ ВЕРСИЯ: одно окно === */
+        @media (max-width: 768px) {
+            .panels {
+                flex-direction: row;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                -webkit-overflow-scrolling: touch;
+            }
 
-        /* Планшет / маленький ноутбук — 3 колонки */
-        @media (min-width: 600px) {
-            .grid {
-                grid-template-columns: repeat(3, 1fr);
+            .panel {
+                flex: 0 0 100vw;
+                min-width: 100vw;
+                height: 100vh;
+                scroll-snap-align: start;
+                background: white;
+            }
+
+            .resizer {
+                display: none;
+            }
+
+            /* Индикатор страниц */
+            .dots {
+                position: fixed;
+                bottom: 24px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                gap: 8px;
+                z-index: 100;
+                background: rgba(0, 0, 0, 0.6);
+                padding: 8px 14px;
+                border-radius: 30px;
+                backdrop-filter: blur(8px);
+            }
+
+            .dots button {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                border: none;
+                background: rgba(255, 255, 255, 0.3);
+                cursor: pointer;
+                padding: 0;
+                transition: 0.2s;
+                flex-shrink: 0;
+            }
+
+            .dots button.active {
+                background: white;
+                transform: scale(1.3);
+            }
+
+            .dots button:hover {
+                background: rgba(255, 255, 255, 0.6);
             }
         }
 
-        /* Широкий экран — 5 колонок */
-        @media (min-width: 1024px) {
-            .grid {
-                grid-template-columns: repeat(5, 1fr);
+        /* Десктоп: скрываем точки */
+        .dots {
+            display: none;
+        }
+
+        @media (min-width: 769px) {
+            .dots {
+                display: none !important;
             }
-        }
-
-        /* Демо-информация */
-        .info {
-            margin-top: 24px;
-            padding-top: 18px;
-            border-top: 1px solid #eef2f6;
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 8px;
-            font-size: 0.8rem;
-            color: #64748b;
-        }
-
-        .info span {
-            background: #f1f5f9;
-            padding: 4px 12px;
-            border-radius: 20px;
-        }
-
-        .info .hint {
-            background: transparent;
-            padding: 0;
         }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <h2>↕️ Поля с изменяемой шириной</h2>
-
-    <div class="grid" id="grid">
-        <!-- Поля будут добавлены через JS -->
+    <div class="panels" id="panels">
+        <!-- Панели создаются скриптом -->
     </div>
 
-    <div class="info">
-        <span>📱 1 колонка</span>
-        <span>💻 3 колонки</span>
-        <span>🖥️ 5 колонок</span>
-        <span class="hint">🖱️ Тяните ⋮ вправо/влево</span>
-    </div>
-</div>
+    <!-- Индикатор для мобильных -->
+    <div class="dots" id="dots"></div>
 
-<script>
-    (function() {
-        const grid = document.getElementById('grid');
-        const totalFields = 10; // достаточно для заполнения всех рядов
+    <script>
+        const pages = [
+            'index.html',
+            'match.html',
+            'capital.html',
+            'flash.html',
+            'cross.html'
+        ];
 
-        // Создаём поля
-        for (let i = 1; i <= totalFields; i++) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'field-wrapper';
+        const panelsContainer = document.getElementById('panels');
+        const dotsContainer = document.getElementById('dots');
 
-            const label = document.createElement('label');
-            label.textContent = i;
-            label.htmlFor = `field-${i}`;
+        // Создаём панели
+        pages.forEach((page) => {
+            const panel = document.createElement('div');
+            panel.className = 'panel';
 
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.id = `field-${i}`;
-            input.placeholder = `Поле ${i}`;
+            const iframe = document.createElement('iframe');
+            iframe.src = page;
+            iframe.loading = 'lazy';
+            panel.appendChild(iframe);
 
-            const handle = document.createElement('div');
-            handle.className = 'resize-handle';
-            handle.setAttribute('role', 'separator');
-            handle.setAttribute('aria-label', 'Изменить ширину');
+            panelsContainer.appendChild(panel);
+        });
 
-            wrapper.appendChild(label);
-            wrapper.appendChild(input);
-            wrapper.appendChild(handle);
-            grid.appendChild(wrapper);
+        // === Десктоп: разделители ===
+        const panels = document.querySelectorAll('.panel');
+        const isMobile = window.innerWidth <= 768;
 
-            // === Логика ресайза ===
-            let isResizing = false;
-            let startX = 0;
-            let startWidth = 0;
-            let nextWrapper = null;
-
-            function getNextWrapper(el) {
-                const sibling = el.nextElementSibling;
-                if (sibling && sibling.classList.contains('field-wrapper')) {
-                    return sibling;
+        if (!isMobile) {
+            panels.forEach((panel, index) => {
+                if (index < panels.length - 1) {
+                    const resizer = document.createElement('div');
+                    resizer.className = 'resizer';
+                    panelsContainer.insertBefore(resizer, panel.nextSibling);
                 }
-                return null;
-            }
-
-            function onMouseDown(e) {
-                const wrapper = this.parentElement;
-                const next = getNextWrapper(wrapper);
-                if (!next) return; // нельзя ресайзить последний
-
-                isResizing = true;
-                startX = e.clientX;
-                startWidth = wrapper.getBoundingClientRect().width;
-                nextWrapper = next;
-
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
-
-                e.preventDefault();
-                // Стили для визуальной обратной связи
-                document.body.style.cursor = 'col-resize';
-                document.body.style.userSelect = 'none';
-            }
-
-            function onMouseMove(e) {
-                if (!isResizing || !nextWrapper) return;
-
-                const delta = e.clientX - startX;
-                const containerWidth = grid.getBoundingClientRect().width;
-                const gap = 16; // из CSS
-                const colCount = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
-
-                // Получаем все поля в текущем ряду
-                const wrappers = [...grid.querySelectorAll('.field-wrapper')];
-                const idx = wrappers.indexOf(this.parentElement);
-                if (idx === -1) return;
-
-                // Определяем границы ряда (по колонкам)
-                const rowStart = Math.floor(idx / colCount) * colCount;
-                const rowEnd = Math.min(rowStart + colCount, wrappers.length);
-                const rowWrappers = wrappers.slice(rowStart, rowEnd);
-
-                // Ресайзим только если есть следующий в том же ряду
-                const nextIdx = idx + 1;
-                if (nextIdx >= rowEnd) return;
-
-                const currentWrapper = wrappers[idx];
-                const nextWrapperEl = wrappers[nextIdx];
-
-                const currentRect = currentWrapper.getBoundingClientRect();
-                const nextRect = nextWrapperEl.getBoundingClientRect();
-
-                // Минимальная ширина — 60px
-                const minWidth = 60;
-                const maxNextWidth = nextRect.width - 20; // нельзя сжать соседа в 0
-
-                let newWidth = Math.max(minWidth, currentRect.width + delta);
-                // Ограничиваем, чтобы сосед не стал меньше minWidth
-                const nextNewWidth = nextRect.width - (newWidth - currentRect.width);
-                if (nextNewWidth < minWidth) {
-                    newWidth = currentRect.width + (nextRect.width - minWidth);
-                }
-
-                // Применяем ширину явно через flex или grid — проще через style.flex
-                // Используем flex-basis для гибкости
-                const totalRowWidth = rowWrappers.reduce((sum, w) => sum + w.getBoundingClientRect().width, 0);
-                const gapTotal = (rowWrappers.length - 1) * gap;
-                const available = containerWidth - gapTotal;
-
-                // Устанавливаем flex-значения пропорционально
-                const currentFlex = newWidth / available;
-                const nextFlex = (nextRect.width - (newWidth - currentRect.width)) / available;
-
-                currentWrapper.style.flex = `${currentFlex} 1 0`;
-                nextWrapperEl.style.flex = `${nextFlex} 1 0`;
-
-                // Для корректной работы в grid используем min-width
-                currentWrapper.style.minWidth = newWidth + 'px';
-                nextWrapperEl.style.minWidth = Math.max(minWidth, nextRect.width - (newWidth - currentRect.width)) + 'px';
-            }
-
-            function onMouseUp() {
-                isResizing = false;
-                nextWrapper = null;
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-                document.body.style.cursor = '';
-                document.body.style.userSelect = '';
-            }
-
-            // Вешаем событие на ручку
-            handle.addEventListener('mousedown', onMouseDown);
-
-            // Touch support для мобильных
-            handle.addEventListener('touchstart', (e) => {
-                const touch = e.touches[0];
-                const wrapper = handle.parentElement;
-                const next = getNextWrapper(wrapper);
-                if (!next) return;
-
-                isResizing = true;
-                startX = touch.clientX;
-                startWidth = wrapper.getBoundingClientRect().width;
-                nextWrapper = next;
-
-                document.addEventListener('touchmove', onTouchMove);
-                document.addEventListener('touchend', onTouchEnd);
-
-                e.preventDefault();
             });
 
-            function onTouchMove(e) {
-                if (!isResizing || !nextWrapper) return;
-                const touch = e.touches[0];
-                const delta = touch.clientX - startX;
-                // Аналогичная логика (упрощённо)
-                const wrappers = [...grid.querySelectorAll('.field-wrapper')];
-                const idx = wrappers.indexOf(handle.parentElement);
-                if (idx === -1) return;
+            // Логика ресайза
+            const resizers = document.querySelectorAll('.resizer');
+            resizers.forEach((resizer) => {
+                let isResizing = false;
+                let startX = 0;
+                let prevPanel = null;
+                let nextPanel = null;
 
-                const colCount = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
-                const rowStart = Math.floor(idx / colCount) * colCount;
-                const rowEnd = Math.min(rowStart + colCount, wrappers.length);
-                if (idx + 1 >= rowEnd) return;
+                resizer.addEventListener('mousedown', (e) => {
+                    startResize(e.clientX);
+                });
 
-                const currentWrapper = wrappers[idx];
-                const nextWrapperEl = wrappers[idx + 1];
-                const currentRect = currentWrapper.getBoundingClientRect();
-                const nextRect = nextWrapperEl.getBoundingClientRect();
+                function startResize(clientX) {
+                    const parent = resizer.parentElement;
+                    const children = parent.querySelectorAll('.panel');
+                    const index = Array.from(parent.children).indexOf(resizer);
 
-                const minWidth = 60;
-                let newWidth = Math.max(minWidth, currentRect.width + delta);
-                const nextNewWidth = nextRect.width - (newWidth - currentRect.width);
-                if (nextNewWidth < minWidth) {
-                    newWidth = currentRect.width + (nextRect.width - minWidth);
+                    prevPanel = children[index];
+                    nextPanel = children[index + 1];
+
+                    if (!prevPanel || !nextPanel) return;
+
+                    isResizing = true;
+                    startX = clientX;
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+
+                    document.body.style.userSelect = 'none';
+                    document.body.style.cursor = 'col-resize';
                 }
 
-                const containerWidth = grid.getBoundingClientRect().width;
-                const gap = 16;
-                const rowWrappers = wrappers.slice(rowStart, rowEnd);
-                const totalRowWidth = rowWrappers.reduce((sum, w) => sum + w.getBoundingClientRect().width, 0);
-                const gapTotal = (rowWrappers.length - 1) * gap;
-                const available = containerWidth - gapTotal;
+                function onMouseMove(e) {
+                    if (!isResizing) return;
+                    const rect = panelsContainer.getBoundingClientRect();
+                    const pos = e.clientX - rect.left;
 
-                currentWrapper.style.flex = `${newWidth / available} 1 0`;
-                nextWrapperEl.style.flex = `${(nextRect.width - (newWidth - currentRect.width)) / available} 1 0`;
-                currentWrapper.style.minWidth = newWidth + 'px';
-                nextWrapperEl.style.minWidth = Math.max(minWidth, nextRect.width - (newWidth - currentRect.width)) + 'px';
-            }
+                    const prevRect = prevPanel.getBoundingClientRect();
+                    const nextRect = nextPanel.getBoundingClientRect();
 
-            function onTouchEnd() {
-                isResizing = false;
-                nextWrapper = null;
-                document.removeEventListener('touchmove', onTouchMove);
-                document.removeEventListener('touchend', onTouchEnd);
-            }
+                    const prevStart = prevRect.left - rect.left;
+                    const totalSize = prevRect.width + nextRect.width;
+
+                    const minSize = 80;
+                    let newPrevSize = Math.max(minSize, Math.min(totalSize - minSize, pos - prevStart));
+
+                    const prevFlex = newPrevSize / totalSize;
+                    const nextFlex = 1 - prevFlex;
+
+                    prevPanel.style.flex = prevFlex;
+                    nextPanel.style.flex = nextFlex;
+                }
+
+                function onMouseUp() {
+                    isResizing = false;
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    document.body.style.userSelect = '';
+                    document.body.style.cursor = '';
+                }
+            });
         }
 
-        // Небольшой фикс: при загрузке убираем избыточные flex, чтобы grid управлял
-        // Но для ресайза нам нужны flex-свойства, оставляем как есть
-        // Добавим начальные min-width для всех
-        document.querySelectorAll('.field-wrapper').forEach(w => {
-            w.style.minWidth = '60px';
-        });
-    })();
-</script>
+        // === Мобильные: точки-индикаторы ===
+        if (isMobile) {
+            const dotsContainer = document.getElementById('dots');
+            dotsContainer.style.display = 'flex';
+
+            pages.forEach((_, index) => {
+                const dot = document.createElement('button');
+                dot.dataset.index = index;
+                if (index === 0) dot.classList.add('active');
+
+                dot.addEventListener('click', () => {
+                    const panel = panels[index];
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+                });
+
+                dotsContainer.appendChild(dot);
+            });
+
+            // Подсветка активной точки при скролле
+            let scrollTimeout;
+            panelsContainer.addEventListener('scroll', () => {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    const scrollLeft = panelsContainer.scrollLeft;
+                    const panelWidth = panelsContainer.clientWidth;
+                    const currentIndex = Math.round(scrollLeft / panelWidth);
+
+                    document.querySelectorAll('.dots button').forEach((dot, i) => {
+                        dot.classList.toggle('active', i === currentIndex);
+                    });
+                }, 100);
+            });
+        }
+    </script>
 </body>
 </html>
