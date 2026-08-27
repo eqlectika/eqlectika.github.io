@@ -1,10 +1,9 @@
-const CACHE_NAME = 'polarity-vmediaagain';
+const CACHE_NAME = 'polarity-vfieldcapital';
 
 const CORE_ASSETS = [
     './',
     './index.html',
     './manifest.json',
-
     './cross.html',
     './flash.html',
     './match.html',
@@ -17,9 +16,6 @@ const CORE_ASSETS = [
     './jetpack.html',
     './media.html',
     './fields.html',
-
-
-
     './manifest-cross.json',
     './manifest-flash.json',
     './manifest-match.json',
@@ -31,9 +27,6 @@ const CORE_ASSETS = [
     './manifest-jetpack.json',
     './manifest-media.json',
     './manifest-fields.json',
-
-    
-
     './handle.png',
     './ladybug-icon-10.png',
     './handle-black.png',
@@ -56,7 +49,6 @@ self.addEventListener('install', event => {
                 CORE_ASSETS.map(async url => {
                     try {
                         const response = await fetch(url, { cache: 'no-cache' });
-
                         if (response.ok) {
                             await cache.put(url, response);
                         }
@@ -93,7 +85,6 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
     const request = event.request;
-
     if (request.method !== 'GET') return;
 
     event.respondWith(
@@ -101,33 +92,22 @@ self.addEventListener('fetch', event => {
             if (cachedResponse) {
                 return cachedResponse;
             }
-
             return fetch(request).then(response => {
-                if (!response) {
-                    return response;
-                }
-
+                if (!response) return response;
                 if (response.ok || response.type === 'opaque') {
                     const copy = response.clone();
-
                     caches.open(CACHE_NAME).then(cache => {
                         cache.put(request, copy).catch(error => {
-                            console.warn(
-                                '[SW] Could not cache:',
-                                request.url,
-                                error
-                            );
+                            console.warn('[SW] Could not cache:', request.url, error);
                         });
                     });
                 }
-
                 return response;
             });
         }).catch(() => {
             if (request.mode === 'navigate') {
                 return caches.match('./index.html');
             }
-
             return Response.error();
         })
     );
@@ -136,5 +116,13 @@ self.addEventListener('fetch', event => {
 self.addEventListener('message', event => {
     if (event.data && event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
+    }
+    
+    if (event.data && event.data.type === 'CHECK_VERSION') {
+        if (event.ports && event.ports.length) {
+            event.ports[0].postMessage({
+                version: CACHE_NAME
+            });
+        }
     }
 });
