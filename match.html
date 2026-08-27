@@ -1,506 +1,634 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <link rel="manifest" href="manifest-fields.json" />
-    <title>Fields</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest-match.json">
+<title>Trust Fibonacci | Beauty and the best</title>
+<link rel="icon" type="image/png" href="florence.png">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.cdnfonts.com/css/copperplate-gothic-std" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+body { background-color: #00002f; color: #fff; max-width: 768px; font-size: 16px; font-family: 'Copperplate Gothic Std', sans-serif;  padding: 0; margin: 0 auto; box-sizing: border-box; }
+#versus { width: 100%; margin: 3em 0; }
+.versus-wrapper { display: flex; gap: 10px; padding: 10px; justify-content: center; }
+.versus_column { flex: 1; min-width: 0; cursor: pointer; }
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+.versus_thumbwrapper { 
+    position: relative; 
+    border: 3px solid #444; 
+    background-color: #333; 
+    aspect-ratio: 1/1; 
+    box-sizing: border-box;
+}
+.versus_thumbwrapper img { 
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+}
 
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #1e1e1e;
-        }
+.ranking-container { padding: 0 20px; margin: 10px 0 10px 0;}
+.ranking-title { font-family: 'Cinzel'; font-size: 18px; color: #aaa; text-align: center; border-bottom: 1px solid #222; padding-bottom: 10px; margin: 0 0 0 0; }
+.ranking-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #222; cursor: pointer; }
+.ranking-img { width: 40px; height: 40px; object-fit: cover; margin-right: 12px; border: 1px solid #444; background: #222; }
+.ranking-info { flex-grow: 1; display: flex; font-weight: bold; justify-content: space-between; align-items: center; }
+.item-details { display: none; padding: 10px; background: #00002f; border-bottom: 1px solid #222; font-size: 16px; color: #ccc; }
 
+.external-link { 
+color: #448aff; 
+text-decoration: none; 
+display: block; 
+margin: 30px 0 0 0; 
+font-weight: bold; 
+}
 
-        .panels {
-            display: flex;
-            width: 100vw;
-            height: 100vh;
-            background: #1e1e1e;
-            overflow: hidden;
-        }
+.admin-panel { 
+    padding: 15px; 
+    margin-bottom: 40px; 
+    font-family: 'Cinzel', serif; 
+    background: #333; 
+    
+    display: flex;
+    flex-direction: column;
+    gap: 15px; 
+}
 
-        .panel {
-            flex: 1 1 0;
-            min-width: 80px;
-            width: 0;
-            background: white;
-            position: relative;
-            overflow: hidden;
-        }
+.admin-input { 
+    width: 100%; 
+    padding: 12px; 
+    font-family: 'Copperplate Gothic Std', serif; 
+    margin-bottom: 0; 
+    background: #000; 
+    border: 1px solid #777; 
+    font-size: 16px;
+    color: #fff; 
+    box-sizing: border-box; 
+}
 
-        .panel iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-        }
-
-
-        .resizer {
-            width: 6px;
-            min-width: 6px;
-            flex: 0 0 6px;
-            background: #1e1e1e;
-            cursor: col-resize;
-            position: relative;
-            z-index: 10;
-            touch-action: none;
-        }
-
-        .resizer::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: -6px;
-            right: -6px;
-        }
-
-        .resizer:hover,
-        .resizer.active {
-            background: #3b82f6;
-        }
-
-
-        body.is-resizing {
-            user-select: none;
-            cursor: col-resize !important;
-        }
-
-        body.is-resizing iframe {
-            pointer-events: none;
-        }
-
-
-        @media (max-width: 768px) {
-            .panels {
-                flex-direction: row;
-                overflow-x: auto;
-                overflow-y: hidden;
-                scroll-snap-type: x mandatory;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: none;
-            }
-
-            .panels::-webkit-scrollbar {
-                display: none;
-            }
-
-            .panel {
-                flex: 0 0 100vw;
-                width: 100vw;
-                min-width: 100vw;
-                height: 100vh;
-                scroll-snap-align: start;
-                background: white;
-            }
-
-            .resizer {
-                display: none;
-            }
+.file-label {
+    font-family: 'Copperplate Gothic Std', serif; 
+    display: inline-block;
+    padding: 12px 18px;
+    background: #000;
+    color: #fff;
+    text-align: left;
+    box-sizing: border-box;
+    cursor: pointer;
+    margin: 0; 
+    border: 2px solid #fff;
+    align-self: flex-start; /* <-- Вот это вернет ей нормальную длину по размеру текста */
+}
 
 
-            .dots {
-                position: fixed;
-                bottom: 24px;
-                left: 50%;
-                transform: translateX(-50%);
-                display: flex;
-                gap: 8px;
-                z-index: 100;
-                background: rgba(0, 0, 0, 0.6);
-                padding: 8px 14px;
-                border-radius: 30px;
-                backdrop-filter: blur(8px);
-            }
 
-            .dots button {
-                width: 10px;
-                height: 10px;
-                border-radius: 50%;
-                border: none;
-                background: rgba(255, 255, 255, 0.3);
-                cursor: pointer;
-                padding: 0;
-                transition:
-                    background 0.2s ease,
-                    transform 0.2s ease;
-                flex-shrink: 0;
-            }
-
-            .dots button.active {
-                background: white;
-                transform: scale(1.3);
-            }
-
-            .dots button:hover {
-                background: rgba(255, 255, 255, 0.6);
-            }
-        }
+.admin-btn { 
+    width: 100%; 
+    padding: 16px; 
+    background: #fff; 
+    font-family: 'Copperplate Gothic Std', serif; 
+    color: #000; 
+    border: none; 
+    margin: 0; /* Убираем старый отступ */
+    font-weight: bold; 
+    cursor: pointer; 
+    text-transform: uppercase; 
+    font-size: 18px;
+}
 
 
-        .dots {
-            display: none;
-        }
+.edit-btn {
+    background: #448aff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin-right: 10px;
+    text-transform: uppercase; 
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+}
+.edit-btn:hover { background: #2979ff; }
 
-        @media (min-width: 769px) {
-            .dots {
-                display: none !important;
-            }
-        }
-    </style>
+.delete-btn {
+    background: #ff4444;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    text-transform: uppercase; 
+    font-size: 12px;
+    font-weight: bold;
+}
+.delete-btn:hover { background: #cc0000; }
+
+textarea.admin-input {
+    font-family: 'Copperplate Gothic Std', serif; 
+    height: 150px;
+    resize: vertical;
+}
+#new-img-file { 
+display: none; 
+font-family: 'Playfair Display', serif; 
+}
+
+.main-header {
+    text-align: center;
+    padding: 20px 7px 10px 10px;
+}
+.main-header h1 {
+    font-family: Cinzel;
+    font-size: 18px;
+    margin: 0;
+    letter-spacing: 2px;
+}
+.main-header p {
+    color: #888;
+    font-size: 14px;
+}
+#header-logo {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0; 
+    object-fit: contain;
+}
+
+#fields-logo {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0; 
+    object-fit: contain;
+}
+
+#collapsible-content {
+    text-align: center; 
+    margin: 0 auto 10px auto; 
+    max-width: 90%; 
+    word-wrap: break-word;
+    font-family: 'Lato';
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+#collapsible-content.expanded {
+    max-height: 2000px; /* Запас по высоте, больший чем содержимое блока */
+    opacity: 1;
+}
+
+
+.progress-fill {
+  width: 21%;
+  height: 8px;
+  background: #fff;
+  transition: width 400ms cubic-bezier(0.25, 1, 0.5, 1); 
+}
+
+.progress-fill.boosted {
+  width: 34%; 
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2979ff #00001f; 
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px; 
+}
+
+::-webkit-scrollbar-track {
+  background: #00001f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2979ff; 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #448aff;
+}
+
+.block-wrapper {
+    max-width: 700px;        
+    margin: 30px auto;       
+    box-sizing: border-box;  
+
+.block-content {
+    font-family: 'Cinzel', serif;
+    text-align: center;      
+}
+</style>
 </head>
-
 <body>
+<div class="block-wrapper">
+    <div class="block-content">
+        <a href="match.html" style="display: inline-block; margin-bottom: 0px;"><img src="fleurdelis.png" alt="Fleur de lis" class="no-invert" style="height: 64px; width: auto; display: block;"></a>
+        <h2 style="font-family: 'Cinzel', serif; margin-top: 4px; font-weight: bold;">
+            <a href="match.html"  style="color: inherit; letter-spacing: 1.5px; text-decoration: none;">Trust Fibonacci</a>
+        </h2>
+        <p style="letter-spacing: 3px; font-size: 12px; margin-top: -20px; color: #fff; font-family: 'Cinzel', serif;">Virtual tools for endlessly improving life</p>
 
-    <div class="panels" id="panels"></div>
+    </div>
+</div>
+<div id="versus">
+    <div class="ranking-title">Pick Important</div>
+    <div class="versus-wrapper">
+        <div class="versus_column" id="item-left" onclick="vote('left')">
+            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+            <h3 class="title" style="font-size: 16px; text-align:center"></h3>
+        </div>
+        <div class="versus_column" id="item-right" onclick="vote('right')">
+            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+            <h3 class="title" style="font-size: 16px; text-align:center"></h3>
+        </div>
+    </div>
+</div>
+<div class="ranking-container">
+    <div class="ranking-title">Local Ranking</div>
+    <div id="ranking-list"></div>
+</div>
+<div class="admin-panel">
+    <div class="ranking-title" style="margin: 15px 0 0 0; border-bottom: none;">Admin Panel</div>
+    <input type="text" id="new-title" class="admin-input" placeholder="Item Title">
+    <textarea id="new-desc" class="admin-input" placeholder="Description"></textarea>
+    <input type="url" id="new-url" class="admin-input" placeholder="External URL (optional)">
+    <label for="new-img-file" class="file-label" id="file-label-text">Select image</label>
+    <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)">
+    <button class="admin-btn" style="margin: 15px 0 0 0;" onclick="saveOrAddItem()">Add Item</button>
+</div>
 
-    <div class="dots" id="dots"></div>
+<div id="collapsible-content" style="color: #fff; margin: 10px auto;">
+<p>This interface is just a template. I've used a few of my sketch projects to show how ranking works, but you can use it for your own priorities.</p>
+<p>Only you can see, add, rank, edit, or delete items on this page.</p>   
+<p>
+        ⚠️
+    </p>
+<p style="margin-top: -12px;">
+        Clearing browser cache will reset to default. To protect your data, add page to your Home Screen via the browser menu and use that shortcut to launch.
+    </p>
+    <p>•••</p>
+<p>Feel free to contact<br>
+<a href="https://t.me/eugenebox"  id="author-link" style="text-decoration: none; color: #66ccff;">@eugenebox</a>
+</p>
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center;" class="main-header">
+<a href="research.html" id="header-link" style="display: flex; justify-content: center; align-items: center; margin: 10px auto -10px auto;">
+    <img src="logo.png" id="header-logo">
+</a>
+<h2 style="font-weight: bold; margin-bottom: auto;">
+<a href="research.html" style="text-decoration: none; font-size: 22px; font-family: 'Roboto Condensed'; color: white; position: relative;">Made in Space</a>
+</h2>
+    <p style="color: #ccc; font-size: 14px; letter-spacing: 3px; font-family: 'Roboto Condensed'; margin: 0 0 30px 0; position: relative;">Linguistic architecture research workspace</p>
+</div>
+</div>
 
-    <script>
+<div style="margin: 0 0 70px 0; text-align: center;">
+    <button id="toggle-btn" style="display: inline-block; background: none; border: none; color: #fff; font-family: 'Cinzel'; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0;">
+        <span id="toggle-text">About</span>
+    </button>
+</div>
 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
-                .then(registration => {
-                    console.log('✅ Service Worker зарегистрирован:', registration);
-                })
-                .catch(error => {
-                    console.log('❌ Ошибка регистрации SW:', error);
-                });
-        }
+<div id="frameToHide" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 0 -10px 0;>
+<a href="fields.html">
+    <img src="circle-handle.png" id="fields-logo">
+</a>
+<h2 style="margin-bottom: 40px;">
+<a href="fields.html" style="text-decoration: none; font-size: 18px; font-family: serif; color: white; position: relative;">Fields</a>
+</h2>
+</div>
 
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+}
+</script>
+    
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.error('SW_REG_FAIL', err));
+  });
+}
 
-        const pages = [
-            'match.html',
-            'index.html',
-            'capital.html',
-            'flash.html',
-            'cross.html'
-        ];
+const defaultItems = [
+    { 
+        id: 1, 
+        title: "Capital", 
+        description: "A fast cryptocurrency trading dashboard that tracks live market prices, calculates trends across multiple timeframes simultaneously, spots price patterns and shifts in data, and lets you view everything smoothly on interactive charts.", 
+        externalUrl: "capital.html", 
+        img: "capital.png", 
+        rating: 1500 
+    },
+    { 
+        id: 2, 
+        title: "Paramount", 
+        description: "A lightweight, decentralized platform for real-time content ranking via Elo voting.", 
+        externalUrl: "index.html", 
+        img: "star.png", 
+        rating: 1500 
+    },
+    { 
+        id: 3, 
+        title: "Cross", 
+        description: "An interactive workspace split into four flexible sections that let you edit text and images at the same time. You can easily resize all sections together by dragging the center point, change colors and fonts, and use it comfortably on any screens.", 
+        externalUrl: "cross.html", 
+        img: "cross.png", 
+        rating: 1500 
+    },
+    { 
+        id: 4, 
+        title: "Gist", 
+        description: "An inverted-gravity 3D space flight simulator. The player navigates an inside-out planet featuring dynamic procedural fractal geometry (bismuth-like structures, arches, bridges) rendered via custom shaders. Fly to the center to return to this page.", 
+        externalUrl: "life.html", 
+        img: "wing.png", 
+        rating: 1500 
+    },
+    { 
+        id: 5, 
+        title: "Flash", 
+        description: "A fast reading app that flashes words one by one on the screen. It automatically slows down at punctuation marks like commas and periods, speeds up naturally as you read further, keeps your screen awake, and lets you open your own text files to read offline.", 
+        externalUrl: "flash.html", 
+        img: "flash-blur.png", 
+        rating: 1500 
+    },
+    { 
+        id: 6, 
+        title: "Reader", 
+        description: "Simple fb2 reader. Load file via Menu. Tap words to change color.", 
+        externalUrl: "book.html", 
+        img: "book.png", 
+        rating: 1500 
+    },
+    { 
+        id: 7, 
+        title: "Moon", 
+        description: "Solar system model. Tap the moon and spin it around the Earth. Scale space.", 
+        externalUrl: "clock.html", 
+        img: "clock.png", 
+        rating: 1500 
+    },
+    { 
+        id: 8, 
+        title: "Spark", 
+        description: "Interactive self-calibration interface designed to transform systemic internal noise into clear, actionable focus. The protocol provides real-time visual tracking of your physiological, emotional, and cognitive states.", 
+        externalUrl: "spark.html", 
+        img: "spark.png", 
+        rating: 1500 
+    },
+    { 
+        id: 9, 
+        title: "Words", 
+        description: "Type a word and clarify the definition with a simple tap via ChatGPT.", 
+        externalUrl: "words.html", 
+        img: "words.png", 
+        rating: 1500 
+    },
+    { 
+        id: 10, 
+        title: "Matrix", 
+        description: "A comprehensive stream text analyzer with Digest field and ChatGPT support for word definitions.", 
+        externalUrl: "matrix.html", 
+        img: "matrix-v5.png", 
+        rating: 1500 
+    }
+];
 
-        const panelsContainer = document.getElementById('panels');
-        const dotsContainer = document.getElementById('dots');
+let savedItems = localStorage.getItem('versus_items');
+let items = savedItems ? JSON.parse(savedItems) : defaultItems;
 
+let currentPair = [];
+let editingId = null;
 
-        pages.forEach(page => {
-            const panel = document.createElement('div');
-            panel.className = 'panel';
+function editItem(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
 
-            const iframe = document.createElement('iframe');
-            iframe.src = page;
-            iframe.loading = 'lazy';
+    $('#new-title').val(item.title);
+    $('#new-desc').val(item.description);
+    $('#new-url').val(item.externalUrl);
+    $('#file-label-text').text("Keep current image or select new");
 
-            panel.appendChild(iframe);
-            panelsContainer.appendChild(panel);
-        });
+    editingId = id;
+    $('.admin-btn').text('Save Changes');
+    $('.admin-panel')[0].scrollIntoView({ behavior: 'smooth' });
+}
 
-        const panels = Array.from(
-            document.querySelectorAll('.panel')
-        );
+async function saveOrAddItem() {
+    const title = $('#new-title').val().trim();
+    const desc = $('#new-desc').val().trim();
+    const url = $('#new-url').val().trim();
+    const file = $('#new-img-file')[0].files[0];
 
-        const isMobile = window.innerWidth <= 768;
+    if (!title) return;
 
-
-        if (!isMobile) {
-
-
-            panels.forEach((panel, index) => {
-
-                if (index >= panels.length - 1) {
-                    return;
-                }
-
-                const resizer = document.createElement('div');
-                resizer.className = 'resizer';
-
-                panelsContainer.insertBefore(
-                    resizer,
-                    panel.nextSibling
-                );
-            });
-
-            const resizers = Array.from(
-                document.querySelectorAll('.resizer')
-            );
-
-
-            function initializePanelWidths() {
-
-                const availableWidth =
-                    panelsContainer.clientWidth -
-                    (resizers.length * 6);
-
-                const width =
-                    availableWidth / panels.length;
-
-                panels.forEach(panel => {
-                    panel.style.flex = '0 0 auto';
-                    panel.style.width = `${width}px`;
-                });
+    let imgData = "";
+    if (editingId !== null) {
+        const item = items.find(i => i.id === editingId);
+        if (item) {
+            item.title = title;
+            item.description = desc;
+            item.externalUrl = url;
+            if (file) {
+                item.img = await compressImage(file);
             }
-
-            initializePanelWidths();
-
-
-            resizers.forEach((resizer, resizerIndex) => {
-
-                let isResizing = false;
-
-                let startX = 0;
-
-                let startPrevWidth = 0;
-                let startNextWidth = 0;
-
-                let prevPanel = null;
-                let nextPanel = null;
-
-                let animationFrame = null;
-                let pendingX = null;
-
-
-                prevPanel = panels[resizerIndex];
-                nextPanel = panels[resizerIndex + 1];
-
-                if (!prevPanel || !nextPanel) {
-                    return;
-                }
-
-
-                function startResize(e) {
-
-                    e.preventDefault();
-
-                    isResizing = true;
-
-                    startX = e.clientX;
-
-                    startPrevWidth =
-                        prevPanel.getBoundingClientRect().width;
-
-                    startNextWidth =
-                        nextPanel.getBoundingClientRect().width;
-
-                    resizer.classList.add('active');
-                    document.body.classList.add('is-resizing');
-
-                    resizer.setPointerCapture?.(e.pointerId);
-                }
-
-
-                function moveResize(e) {
-
-                    if (!isResizing) {
-                        return;
-                    }
-
-                    pendingX = e.clientX;
-
-
-                    if (animationFrame !== null) {
-                        return;
-                    }
-
-                    animationFrame = requestAnimationFrame(() => {
-
-                        animationFrame = null;
-
-                        if (!isResizing || pendingX === null) {
-                            return;
-                        }
-
-                        const delta =
-                            pendingX - startX;
-
-                        const minWidth = 80;
-
-
-                        let newPrevWidth =
-                            startPrevWidth + delta;
-
-
-                        newPrevWidth =
-                            Math.max(
-                                minWidth,
-                                newPrevWidth
-                            );
-
-
-                        const maxPrevWidth =
-                            startPrevWidth +
-                            startNextWidth -
-                            minWidth;
-
-                        newPrevWidth =
-                            Math.min(
-                                maxPrevWidth,
-                                newPrevWidth
-                            );
-
-
-                        const newNextWidth =
-                            startPrevWidth +
-                            startNextWidth -
-                            newPrevWidth;
-
-
-                        prevPanel.style.width =
-                            `${newPrevWidth}px`;
-
-                        nextPanel.style.width =
-                            `${newNextWidth}px`;
-                    });
-                }
-
-
-                function stopResize(e) {
-
-                    if (!isResizing) {
-                        return;
-                    }
-
-                    isResizing = false;
-
-                    if (animationFrame !== null) {
-                        cancelAnimationFrame(animationFrame);
-                        animationFrame = null;
-                    }
-
-                    pendingX = null;
-
-                    resizer.classList.remove('active');
-                    document.body.classList.remove('is-resizing');
-
-                    try {
-                        resizer.releasePointerCapture?.(
-                            e.pointerId
-                        );
-                    } catch (_) {}
-                }
-
-
-                resizer.addEventListener(
-                    'pointerdown',
-                    startResize
-                );
-
-                resizer.addEventListener(
-                    'pointermove',
-                    moveResize
-                );
-
-                resizer.addEventListener(
-                    'pointerup',
-                    stopResize
-                );
-
-                resizer.addEventListener(
-                    'pointercancel',
-                    stopResize
-                );
-
-                resizer.addEventListener(
-                    'lostpointercapture',
-                    stopResize
-                );
-            });
-
-
-            let resizeTimer = null;
-
-            window.addEventListener('resize', () => {
-
-                clearTimeout(resizeTimer);
-
-                resizeTimer = setTimeout(() => {
-
-                    if (!document.body.classList.contains('is-resizing')) {
-                        initializePanelWidths();
-                    }
-
-                }, 100);
-            });
         }
-
-
-        if (isMobile) {
-
-            dotsContainer.style.display = 'flex';
-
-            pages.forEach((_, index) => {
-
-                const dot =
-                    document.createElement('button');
-
-                dot.dataset.index = index;
-
-                if (index === 0) {
-                    dot.classList.add('active');
-                }
-
-                dot.addEventListener('click', () => {
-
-                    const panel = panels[index];
-
-                    panel.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'nearest',
-                        inline: 'start'
-                    });
-                });
-
-                dotsContainer.appendChild(dot);
-            });
-
-
-            const observer =
-                new IntersectionObserver(
-                    entries => {
-
-                        entries.forEach(entry => {
-
-                            if (!entry.isIntersecting) {
-                                return;
-                            }
-
-                            const index =
-                                panels.indexOf(entry.target);
-
-                            if (index === -1) {
-                                return;
-                            }
-
-                            document
-                                .querySelectorAll('.dots button')
-                                .forEach((dot, i) => {
-                                    dot.classList.toggle(
-                                        'active',
-                                        i === index
-                                    );
-                                });
-                        });
-                    },
-                    {
-                        root: panelsContainer,
-                        threshold: 0.6
-                    }
-                );
-
-            panels.forEach(panel => {
-                observer.observe(panel);
-            });
+        editingId = null;
+        $('.admin-btn').text('Add Item');
+    } else {
+        if (file) {
+            imgData = await compressImage(file);
         }
-    </script>
+        items.push({ id: Date.now(), title, description: desc, externalUrl: url, img: imgData, rating: 1500 });
+    }
 
+    save();
+    
+    $('#new-title, #new-desc, #new-url, #new-img-file').val('');
+    $('#file-label-text').text("Select image");
+    
+    if (items.length >= 2 && currentPair.length === 0) nextPair();
+}
+
+function updateLabel(input) {
+    const fileName = input.files[0] ? input.files[0].name : "Select image";
+    document.getElementById('file-label-text').innerText = fileName;
+}
+
+function save() {
+    localStorage.setItem('versus_items', JSON.stringify(items));
+    updateRankingList();
+}
+
+async function compressImage(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxWidth = 800;
+                let width = img.width, height = img.height;
+                if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.8));
+            };
+        };
+    });
+}
+
+function toggleDetails(id) { $(`#details-${id}`).slideToggle(200); }
+
+function updateRankingList() {
+    const sorted = [...items].sort((a, b) => b.rating - a.rating);
+    let html = '';
+    sorted.forEach((item, index) => {
+        const imgTag = item.img ? `<img src="${item.img}" class="ranking-img">` : `<div class="ranking-img" style="display:inline-block;"></div>`;
+        html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
+            ${imgTag}
+            <div class="ranking-info"><span>${index + 1}. ${item.title}</span>${Math.round(item.rating)}</div>
+        </div>
+        <div id="details-${item.id}" class="item-details">
+            <button class="edit-btn" onclick="event.stopPropagation(); editItem(${item.id})">Edit Item</button>
+            <button class="delete-btn" onclick="event.stopPropagation(); deleteItem(${item.id})">Delete Item</button>
+            ${item.externalUrl ? `<a href="${item.externalUrl}" class="external-link">Visit Link →</a>` : ''}
+            <p>${item.description || 'No description.'}</p>
+        </div>`;
+    });
+    $('#ranking-list').html(html);
+}
+
+function nextPair() {
+    if (items.length < 2) return;
+    let i1 = Math.floor(Math.random() * items.length), i2;
+    do { i2 = Math.floor(Math.random() * items.length); } while (i1 === i2);
+    currentPair = [i1, i2];
+    
+    if (items[i1].img) {
+        $('#item-left img').attr('src', items[i1].img).show();
+    } else {
+        $('#item-left img').attr('src', '').hide();
+    }
+    $('#item-left .title').text(items[i1].title);
+
+    if (items[i2].img) {
+        $('#item-right img').attr('src', items[i2].img).show();
+    } else {
+        $('#item-right img').attr('src', '').hide();
+    }
+    $('#item-right .title').text(items[i2].title);
+}
+
+function vote(side) {
+    if (items.length < 2) return;
+    const winIdx = side === 'left' ? currentPair[0] : currentPair[1];
+    const loseIdx = side === 'left' ? currentPair[1] : currentPair[0];
+    const rW = items[winIdx].rating, rL = items[loseIdx].rating;
+    const expW = 1 / (1 + Math.pow(10, (rL - rW) / 400));
+    const change = 32 * (1 - expW);
+    items[winIdx].rating += change; items[loseIdx].rating -= change;
+    save();
+    $('#versus').animate({ opacity: 0 }, 100, function() { nextPair(); $(this).animate({ opacity: 1 }, 100); });
+}
+
+function deleteItem(id) {
+    if (confirm("Are you sure to delete this item?")) {
+        items = items.filter(item => item.id !== id);
+        save();
+        if (items.length < 2) {
+            currentPair = [];
+            $('#item-left img, #item-right img').attr('src', '');
+            $('#item-left .title, #item-right .title').text('');
+        } else {
+            nextPair();
+        }
+    }
+}
+
+updateRankingList();
+nextPair();
+
+const bar = document.getElementById('happiness-bar');
+
+if (bar) {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          bar.classList.add('boosted');
+        }, 2000);
+        
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 }); 
+
+  observer.observe(bar);
+} 
+
+const $toggleBtn = $('#toggle-btn');
+const $content = $('#collapsible-content');
+const $toggleText = $('#toggle-text');
+
+
+const savedState = localStorage.getItem('blockState');
+if (savedState === 'expanded') {
+    $content.addClass('expanded'); 
+    $toggleText.text('Hide');
+} else {
+    $content.removeClass('expanded'); 
+    $toggleText.text('About');
+}
+
+$toggleBtn.on('click', function() {
+    if (!$content.hasClass('expanded')) {
+
+        $content.addClass('expanded');
+        $toggleText.text('Hide');
+        localStorage.setItem('blockState', 'expanded');
+
+        setTimeout(() => {
+
+            const toggleBtnRect = $toggleBtn[0].getBoundingClientRect();
+            const absoluteBtnBottom = window.pageYOffset + toggleBtnRect.bottom;
+            
+
+            const targetScroll = absoluteBtnBottom - window.innerHeight + 70; // 20px небольшой комфортный отступ
+
+            window.scrollTo({
+                top: Math.max(0, targetScroll),
+                behavior: 'smooth'
+            });
+        }, 300);
+
+
+    } else {
+
+        $content.removeClass('expanded');
+        $toggleText.text('About');
+        localStorage.setItem('blockState', 'collapsed');
+    }
+});
+
+    if (window.parent !== window) {
+        document.querySelector('#frameToHide').remove();
+    }
+
+
+</script>
 </body>
 </html>
