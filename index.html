@@ -842,16 +842,17 @@ function addPanelLeft(resizer) {
     const leftPanel = panels[index];
     if (!leftPanel) return;
     
-    const newPanel = createPanel('match.html');
+    const url = prompt('Введите URL для новой панели:');
+    if (!url) return;
     
-    // Вставляем ПОСЛЕ левой панели (т.е. прямо перед разделителем)
+    const newPanel = createPanel(url);
+    
     panelsContainer.insertBefore(newPanel, resizer);
     
     updatePanelsList();
     rebuildResizers();
     initializePanelWidths();
     savePanelsState();
-
 }
 
 function addPanelRight(resizer) {
@@ -860,19 +861,20 @@ function addPanelRight(resizer) {
     const index = allResizers.indexOf(resizer);
     if (index === -1) return;
     
-    const rightPanel = panels[index + 1]; // панель СПРАВА от разделителя
+    const rightPanel = panels[index + 1];
     if (!rightPanel) return;
     
-    const newPanel = createPanel('match.html');
+    const url = prompt('Введите URL для новой панели:');
+    if (!url) return;
     
-    // Вставляем ПЕРЕД правой панелью (т.е. ПОСЛЕ левой)
+    const newPanel = createPanel(url);
+    
     panelsContainer.insertBefore(newPanel, rightPanel);
     
     updatePanelsList();
     rebuildResizers();
     initializePanelWidths();
     savePanelsState();
-
 }
 
 
