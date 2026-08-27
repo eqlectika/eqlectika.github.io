@@ -543,8 +543,30 @@ if ('serviceWorker' in navigator) {
     const RETURN_DELAY = 10000; 
     let y = 0;
 
-    window.addEventListener('touchstart', e => y = window.scrollY ? -1 : e.touches[0].clientY);
-    window.addEventListener('touchend', e => { if(y >= 0 && e.changedTouches[0].clientY - y > 150) location.reload(); });
+function refreshSite() {
+    if (typeof connect === 'function') connect();
+    if (typeof getFutures === 'function') getFutures();
+    if (typeof updateAllFundingRates === 'function') updateAllFundingRates();
+}
+
+let startY = 0;
+document.addEventListener('touchstart', function(e) {
+    startY = window.scrollY ? -1 : e.touches[0].clientY;
+});
+document.addEventListener('touchend', function(e) {
+    if (startY >= 0 && e.changedTouches[0].clientY - startY > 150) {
+        refreshSite();
+    }
+});
+
+const header = document.querySelector('#page-content > div:first-child');
+if (header) {
+    header.style.cursor = 'pointer'; 
+    header.addEventListener('click', function(e) {
+        if (e.target.closest('a')) return;
+        refreshSite();
+    });
+}
 
     const pairSelect = document.getElementById("pair");
     const tfSelect = document.getElementById("tf");
