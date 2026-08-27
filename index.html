@@ -450,13 +450,17 @@
            INITIAL PANELS
            ========================= */
 
-        pages.forEach(page => {
-
-            panelsContainer.appendChild(
-                createPanel(page)
-            );
-
-        });
+        if (!restorePanelsState()) {
+            pages.forEach(page => {
+                panelsContainer.appendChild(createPanel(page));
+            });
+            updatePanelsList();
+            if (!isMobile) {
+                rebuildResizers();
+                initializePanelWidths();
+            }
+            savePanelsState();
+        }
 
 
         /* =========================
@@ -475,7 +479,46 @@
 
         updatePanelsList();
 
+        /* =========================
+           СОХРАНЕНИЕ СОСТОЯНИЯ ПАНЕЛЕЙ
+           ========================= */
 
+        function savePanelsState() {
+            updatePanelsList();
+            const panelUrls = panels.map(panel => {
+                const iframe = panel.querySelector('iframe');
+                return iframe ? iframe.src : null;
+            }).filter(src => src !== null);
+            localStorage.setItem('panelsState', JSON.stringify(panelUrls));
+        }
+
+        function restorePanelsState() {
+            const saved = localStorage.getItem('panelsState');
+            if (!saved) return false;
+            
+            try {
+                const panelUrls = JSON.parse(saved);
+                if (!panelUrls || panelUrls.length === 0) return false;
+                
+                panelsContainer.innerHTML = '';
+                
+                panelUrls.forEach(url => {
+                    const page = url.split('/').pop() || url;
+                    panelsContainer.appendChild(createPanel(page));
+                });
+                
+                updatePanelsList();
+                
+                if (!isMobile) {
+                    rebuildResizers();
+                    initializePanelWidths();
+                }
+                
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
         /* =====================================================
            DESKTOP
            ===================================================== */
@@ -795,6 +838,8 @@ function addPanelLeft(resizer) {
     updatePanelsList();
     rebuildResizers();
     initializePanelWidths();
+    savePanelsState(); // ← ДОБАВИТЬ
+
 }
 
 function addPanelRight(resizer) {
@@ -814,6 +859,8 @@ function addPanelRight(resizer) {
     updatePanelsList();
     rebuildResizers();
     initializePanelWidths();
+    savePanelsState(); // ← ДОБАВИТЬ
+
 }
 
 
@@ -857,6 +904,8 @@ function addPanelRight(resizer) {
                 rebuildResizers();
 
                 initializePanelWidths();
+                    savePanelsState(); // ← ДОБАВИТЬ
+
 
             }
 
@@ -901,6 +950,8 @@ function addPanelRight(resizer) {
                 rebuildResizers();
 
                 initializePanelWidths();
+                    savePanelsState(); // ← ДОБАВИТЬ
+
 
             }
 
