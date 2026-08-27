@@ -458,23 +458,6 @@
 
 
         /* =========================
-           INITIAL PANELS
-           ========================= */
-
-        if (!restorePanelsState()) {
-            pages.forEach(page => {
-                panelsContainer.appendChild(createPanel(page));
-            });
-            updatePanelsList();
-            if (!isMobile) {
-                rebuildResizers();
-                initializePanelWidths();
-            }
-            savePanelsState();
-        }
-
-
-        /* =========================
            GET PANELS
            ========================= */
 
@@ -487,8 +470,6 @@
 
         }
 
-
-        updatePanelsList();
 
         /* =========================
            СОХРАНЕНИЕ СОСТОЯНИЯ ПАНЕЛЕЙ
@@ -530,6 +511,26 @@
                 return false;
             }
         }
+
+        /* =========================
+           ОБРАБОТЧИК СООБЩЕНИЙ ОТ IFRAME
+           ========================= */
+
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'URL_CHANGED') {
+                const iframes = document.querySelectorAll('iframe');
+                iframes.forEach(iframe => {
+                    try {
+                        if (iframe.contentWindow === event.source) {
+                            iframe.src = event.data.url;
+                            savePanelsState();
+                        }
+                    } catch (e) {}
+                });
+            }
+        });
+
+
         /* =====================================================
            DESKTOP
            ===================================================== */
@@ -849,7 +850,7 @@ function addPanelLeft(resizer) {
     updatePanelsList();
     rebuildResizers();
     initializePanelWidths();
-    savePanelsState(); // ← ДОБАВИТЬ
+    savePanelsState();
 
 }
 
@@ -870,7 +871,7 @@ function addPanelRight(resizer) {
     updatePanelsList();
     rebuildResizers();
     initializePanelWidths();
-    savePanelsState(); // ← ДОБАВИТЬ
+    savePanelsState();
 
 }
 
@@ -915,7 +916,7 @@ function addPanelRight(resizer) {
                 rebuildResizers();
 
                 initializePanelWidths();
-                    savePanelsState(); // ← ДОБАВИТЬ
+                    savePanelsState();
 
 
             }
@@ -961,7 +962,7 @@ function addPanelRight(resizer) {
                 rebuildResizers();
 
                 initializePanelWidths();
-                    savePanelsState(); // ← ДОБАВИТЬ
+                    savePanelsState();
 
 
             }
@@ -1657,6 +1658,23 @@ function addPanelRight(resizer) {
                 }
             );
 
+        }
+
+
+        /* =========================
+           INITIAL PANELS - В САМОМ КОНЦЕ
+           ========================= */
+
+        if (!restorePanelsState()) {
+            pages.forEach(page => {
+                panelsContainer.appendChild(createPanel(page));
+            });
+            updatePanelsList();
+            if (!isMobile) {
+                rebuildResizers();
+                initializePanelWidths();
+            }
+            savePanelsState();
         }
 
 
