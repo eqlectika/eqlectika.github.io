@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="manifest" href="manifest-fields.json" />
     <title>Fields</title>
+
     <style>
         * {
             margin: 0;
@@ -20,18 +21,19 @@
             background: #1e1e1e;
         }
 
-        /* Контейнер */
+
         .panels {
             display: flex;
             width: 100vw;
             height: 100vh;
             background: #1e1e1e;
+            overflow: hidden;
         }
 
-        /* Каждая панель */
         .panel {
-            flex: 1;
-            min-width: 50px;
+            flex: 1 1 0;
+            min-width: 80px;
+            width: 0;
             background: white;
             position: relative;
             overflow: hidden;
@@ -44,31 +46,60 @@
             display: block;
         }
 
-        /* Разделитель */
+
         .resizer {
             width: 6px;
+            min-width: 6px;
+            flex: 0 0 6px;
             background: #1e1e1e;
             cursor: col-resize;
-            flex-shrink: 0;
             position: relative;
             z-index: 10;
+            touch-action: none;
         }
 
-        .resizer:hover {
+        .resizer::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: -6px;
+            right: -6px;
+        }
+
+        .resizer:hover,
+        .resizer.active {
             background: #3b82f6;
         }
 
-        /* === МОБИЛЬНАЯ ВЕРСИЯ: одно окно === */
+
+        body.is-resizing {
+            user-select: none;
+            cursor: col-resize !important;
+        }
+
+        body.is-resizing iframe {
+            pointer-events: none;
+        }
+
+
         @media (max-width: 768px) {
             .panels {
                 flex-direction: row;
                 overflow-x: auto;
+                overflow-y: hidden;
                 scroll-snap-type: x mandatory;
                 -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+
+            .panels::-webkit-scrollbar {
+                display: none;
             }
 
             .panel {
                 flex: 0 0 100vw;
+                width: 100vw;
                 min-width: 100vw;
                 height: 100vh;
                 scroll-snap-align: start;
@@ -79,7 +110,7 @@
                 display: none;
             }
 
-            /* Индикатор страниц */
+
             .dots {
                 position: fixed;
                 bottom: 24px;
@@ -102,7 +133,9 @@
                 background: rgba(255, 255, 255, 0.3);
                 cursor: pointer;
                 padding: 0;
-                transition: 0.2s;
+                transition:
+                    background 0.2s ease,
+                    transform 0.2s ease;
                 flex-shrink: 0;
             }
 
@@ -116,7 +149,7 @@
             }
         }
 
-        /* Десктоп: скрываем точки */
+
         .dots {
             display: none;
         }
@@ -128,16 +161,15 @@
         }
     </style>
 </head>
-<body>
-    <div class="panels" id="panels">
-        <!-- Панели создаются скриптом -->
-    </div>
 
-    <!-- Индикатор для мобильных -->
+<body>
+
+    <div class="panels" id="panels"></div>
+
     <div class="dots" id="dots"></div>
 
     <script>
-        // === РЕГИСТРАЦИЯ SERVICE WORKER ===
+
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js')
                 .then(registration => {
@@ -147,6 +179,7 @@
                     console.log('❌ Ошибка регистрации SW:', error);
                 });
         }
+
 
         const pages = [
             'match.html',
@@ -159,128 +192,315 @@
         const panelsContainer = document.getElementById('panels');
         const dotsContainer = document.getElementById('dots');
 
-        // Создаём панели
-        pages.forEach((page) => {
+
+        pages.forEach(page => {
             const panel = document.createElement('div');
             panel.className = 'panel';
 
             const iframe = document.createElement('iframe');
             iframe.src = page;
             iframe.loading = 'lazy';
-            panel.appendChild(iframe);
 
+            panel.appendChild(iframe);
             panelsContainer.appendChild(panel);
         });
 
-        // === Десктоп: разделители ===
-        const panels = document.querySelectorAll('.panel');
+        const panels = Array.from(
+            document.querySelectorAll('.panel')
+        );
+
         const isMobile = window.innerWidth <= 768;
 
+
         if (!isMobile) {
+
+
             panels.forEach((panel, index) => {
-                if (index < panels.length - 1) {
-                    const resizer = document.createElement('div');
-                    resizer.className = 'resizer';
-                    panelsContainer.insertBefore(resizer, panel.nextSibling);
+
+                if (index >= panels.length - 1) {
+                    return;
                 }
+
+                const resizer = document.createElement('div');
+                resizer.className = 'resizer';
+
+                panelsContainer.insertBefore(
+                    resizer,
+                    panel.nextSibling
+                );
             });
 
-            // Логика ресайза
-            const resizers = document.querySelectorAll('.resizer');
-            resizers.forEach((resizer) => {
+            const resizers = Array.from(
+                document.querySelectorAll('.resizer')
+            );
+
+
+            function initializePanelWidths() {
+
+                const availableWidth =
+                    panelsContainer.clientWidth -
+                    (resizers.length * 6);
+
+                const width =
+                    availableWidth / panels.length;
+
+                panels.forEach(panel => {
+                    panel.style.flex = '0 0 auto';
+                    panel.style.width = `${width}px`;
+                });
+            }
+
+            initializePanelWidths();
+
+
+            resizers.forEach((resizer, resizerIndex) => {
+
                 let isResizing = false;
+
                 let startX = 0;
+
+                let startPrevWidth = 0;
+                let startNextWidth = 0;
+
                 let prevPanel = null;
                 let nextPanel = null;
 
-                resizer.addEventListener('mousedown', (e) => {
-                    startResize(e.clientX);
-                });
+                let animationFrame = null;
+                let pendingX = null;
 
-                function startResize(clientX) {
-                    const parent = resizer.parentElement;
-                    const children = parent.querySelectorAll('.panel');
-                    const index = Array.from(parent.children).indexOf(resizer);
 
-                    prevPanel = children[index];
-                    nextPanel = children[index + 1];
+                prevPanel = panels[resizerIndex];
+                nextPanel = panels[resizerIndex + 1];
 
-                    if (!prevPanel || !nextPanel) return;
+                if (!prevPanel || !nextPanel) {
+                    return;
+                }
+
+
+                function startResize(e) {
+
+                    e.preventDefault();
 
                     isResizing = true;
-                    startX = clientX;
 
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
+                    startX = e.clientX;
 
-                    document.body.style.userSelect = 'none';
-                    document.body.style.cursor = 'col-resize';
+                    startPrevWidth =
+                        prevPanel.getBoundingClientRect().width;
+
+                    startNextWidth =
+                        nextPanel.getBoundingClientRect().width;
+
+                    resizer.classList.add('active');
+                    document.body.classList.add('is-resizing');
+
+                    resizer.setPointerCapture?.(e.pointerId);
                 }
 
-                function onMouseMove(e) {
-                    if (!isResizing) return;
-                    const rect = panelsContainer.getBoundingClientRect();
-                    const pos = e.clientX - rect.left;
 
-                    const prevRect = prevPanel.getBoundingClientRect();
-                    const nextRect = nextPanel.getBoundingClientRect();
+                function moveResize(e) {
 
-                    const prevStart = prevRect.left - rect.left;
-                    const totalSize = prevRect.width + nextRect.width;
+                    if (!isResizing) {
+                        return;
+                    }
 
-                    const minSize = 80;
-                    let newPrevSize = Math.max(minSize, Math.min(totalSize - minSize, pos - prevStart));
+                    pendingX = e.clientX;
 
-                    const prevFlex = newPrevSize / totalSize;
-                    const nextFlex = 1 - prevFlex;
 
-                    prevPanel.style.flex = prevFlex;
-                    nextPanel.style.flex = nextFlex;
+                    if (animationFrame !== null) {
+                        return;
+                    }
+
+                    animationFrame = requestAnimationFrame(() => {
+
+                        animationFrame = null;
+
+                        if (!isResizing || pendingX === null) {
+                            return;
+                        }
+
+                        const delta =
+                            pendingX - startX;
+
+                        const minWidth = 80;
+
+
+                        let newPrevWidth =
+                            startPrevWidth + delta;
+
+
+                        newPrevWidth =
+                            Math.max(
+                                minWidth,
+                                newPrevWidth
+                            );
+
+
+                        const maxPrevWidth =
+                            startPrevWidth +
+                            startNextWidth -
+                            minWidth;
+
+                        newPrevWidth =
+                            Math.min(
+                                maxPrevWidth,
+                                newPrevWidth
+                            );
+
+
+                        const newNextWidth =
+                            startPrevWidth +
+                            startNextWidth -
+                            newPrevWidth;
+
+
+                        prevPanel.style.width =
+                            `${newPrevWidth}px`;
+
+                        nextPanel.style.width =
+                            `${newNextWidth}px`;
+                    });
                 }
 
-                function onMouseUp() {
+
+                function stopResize(e) {
+
+                    if (!isResizing) {
+                        return;
+                    }
+
                     isResizing = false;
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
-                    document.body.style.userSelect = '';
-                    document.body.style.cursor = '';
+
+                    if (animationFrame !== null) {
+                        cancelAnimationFrame(animationFrame);
+                        animationFrame = null;
+                    }
+
+                    pendingX = null;
+
+                    resizer.classList.remove('active');
+                    document.body.classList.remove('is-resizing');
+
+                    try {
+                        resizer.releasePointerCapture?.(
+                            e.pointerId
+                        );
+                    } catch (_) {}
                 }
+
+
+                resizer.addEventListener(
+                    'pointerdown',
+                    startResize
+                );
+
+                resizer.addEventListener(
+                    'pointermove',
+                    moveResize
+                );
+
+                resizer.addEventListener(
+                    'pointerup',
+                    stopResize
+                );
+
+                resizer.addEventListener(
+                    'pointercancel',
+                    stopResize
+                );
+
+                resizer.addEventListener(
+                    'lostpointercapture',
+                    stopResize
+                );
+            });
+
+
+            let resizeTimer = null;
+
+            window.addEventListener('resize', () => {
+
+                clearTimeout(resizeTimer);
+
+                resizeTimer = setTimeout(() => {
+
+                    if (!document.body.classList.contains('is-resizing')) {
+                        initializePanelWidths();
+                    }
+
+                }, 100);
             });
         }
 
-        // === Мобильные: точки-индикаторы ===
+
         if (isMobile) {
-            const dotsContainer = document.getElementById('dots');
+
             dotsContainer.style.display = 'flex';
 
             pages.forEach((_, index) => {
-                const dot = document.createElement('button');
+
+                const dot =
+                    document.createElement('button');
+
                 dot.dataset.index = index;
-                if (index === 0) dot.classList.add('active');
+
+                if (index === 0) {
+                    dot.classList.add('active');
+                }
 
                 dot.addEventListener('click', () => {
+
                     const panel = panels[index];
-                    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+
+                    panel.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'start'
+                    });
                 });
 
                 dotsContainer.appendChild(dot);
             });
 
-            // Подсветка активной точки при скролле
-            let scrollTimeout;
-            panelsContainer.addEventListener('scroll', () => {
-                clearTimeout(scrollTimeout);
-                scrollTimeout = setTimeout(() => {
-                    const scrollLeft = panelsContainer.scrollLeft;
-                    const panelWidth = panelsContainer.clientWidth;
-                    const currentIndex = Math.round(scrollLeft / panelWidth);
 
-                    document.querySelectorAll('.dots button').forEach((dot, i) => {
-                        dot.classList.toggle('active', i === currentIndex);
-                    });
-                }, 100);
+            const observer =
+                new IntersectionObserver(
+                    entries => {
+
+                        entries.forEach(entry => {
+
+                            if (!entry.isIntersecting) {
+                                return;
+                            }
+
+                            const index =
+                                panels.indexOf(entry.target);
+
+                            if (index === -1) {
+                                return;
+                            }
+
+                            document
+                                .querySelectorAll('.dots button')
+                                .forEach((dot, i) => {
+                                    dot.classList.toggle(
+                                        'active',
+                                        i === index
+                                    );
+                                });
+                        });
+                    },
+                    {
+                        root: panelsContainer,
+                        threshold: 0.6
+                    }
+                );
+
+            panels.forEach(panel => {
+                observer.observe(panel);
             });
         }
     </script>
+
 </body>
 </html>
