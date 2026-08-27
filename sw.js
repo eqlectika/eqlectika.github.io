@@ -1,6 +1,7 @@
 const CACHE_NAME = 'polarity-vindex';
 
 const CORE_ASSETS = [
+    '/',
     './index.html',
     './manifest-index.json',
 
@@ -40,7 +41,6 @@ const CORE_ASSETS = [
     './logo.png',
     './fleurdelis.png',
     './break.png',
-    './onlyyou.png',
     './spark.png',
     './clock.PNG',
     './syntax.png',
