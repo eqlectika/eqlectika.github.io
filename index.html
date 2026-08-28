@@ -293,6 +293,7 @@
             const iframe = document.createElement('iframe');
             iframe.src = page;
             iframe.loading = 'lazy';
+            iframe.setAttribute('allow', 'fullscreen');
 
             iframe.addEventListener('load', function() {
                 try {
@@ -363,19 +364,41 @@
             }
         }
 
-        window.addEventListener('message', function(event) {
-            if (event.data && event.data.type === 'URL_CHANGED') {
-                const iframes = document.querySelectorAll('iframe');
-                iframes.forEach(iframe => {
-                    try {
-                        if (iframe.contentWindow === event.source) {
-                            iframe.src = event.data.url;
-                            savePanelsState();
-                        }
-                    } catch (e) {}
-                });
+window.addEventListener('message', function(event) {
+    if (!event.data) return;
+
+    // Обработка запроса на полноэкранный режим из iframe
+    if (event.data.type === 'TOGGLE_FULLSCREEN') {
+        const iframes = document.querySelectorAll('iframe');
+        iframes.forEach(iframe => {
+            if (iframe.contentWindow === event.source) {
+                const panel = iframe.closest('.panel');
+                if (panel) {
+                    if (!document.fullscreenElement) {
+                        panel.requestFullscreen().catch(err => {
+                            console.error("Error attempting to enable fullscreen:", err);
+                        });
+                    } else {
+                        document.exitFullscreen();
+                    }
+                }
             }
         });
+    }
+
+    // Ваш существующий обработчик URL_CHANGED
+    if (event.data.type === 'URL_CHANGED') {
+        const iframes = document.querySelectorAll('iframe');
+        iframes.forEach(iframe => {
+            try {
+                if (iframe.contentWindow === event.source) {
+                    iframe.src = event.data.url;
+                    savePanelsState();
+                }
+            } catch (e) {}
+        });
+    }
+});
 
         if (!isMobile) {
             function createResizer() {
