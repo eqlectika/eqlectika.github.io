@@ -16,6 +16,62 @@ html, body {
     -webkit-user-select: none;
     background-color: #0a0a12;
 }
+
+#helpButton {
+    position: fixed !important;
+    bottom: 30px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 99999 !important;
+    padding: 8px 12px !important;
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    border: none !important;
+    font-family: monospace !important;
+    font-size: 14px !important;
+    cursor: pointer !important;
+}
+
+#helpButton:hover {
+    color: #ffffff;
+}
+
+#helpBox {
+    position: fixed;
+    bottom: 170px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 7000;
+    padding: 10px 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.8);
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    display: none;
+    text-align: center;
+    white-space: nowrap;
+}
+
+#refreshButton {
+    position: fixed;
+    bottom: 300px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 7000;
+    padding: 8px 16px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    border: none;
+    font-family: monospace;
+    font-size: 14px;
+    cursor: pointer;
+    display: none; /* Появляется после выхода из полноэкранного режима */
+}
+
+#refreshButton:hover {
+    color: #ffffff;
+}
 canvas { 
     display: block; 
     position: absolute;
@@ -111,6 +167,9 @@ canvas {
 </style>
 </head>
 <body>
+    <button id="helpButton">Help</button>
+<div id="helpBox">Find out way out in the center of the Inside-Out Planet</div>
+<button id="refreshButton" onclick="location.reload()">Refresh</button>
     <button id="startButton">FULL SCREEN</button>
 
     <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
@@ -737,6 +796,29 @@ if (isColliding) {
 }
 
     animate();
+
+    const helpButton = document.getElementById('helpButton');
+const helpBox = document.getElementById('helpBox');
+
+helpButton.addEventListener('click', () => {
+    if (helpBox.style.display === 'none' || helpBox.style.display === '') {
+        helpBox.style.display = 'block';
+        helpButton.textContent = 'Collapse';
+    } else {
+        helpBox.style.display = 'none';
+        helpButton.textContent = 'Help';
+    }
+});
+
+const refreshButton = document.getElementById('refreshButton');
+
+document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+        refreshButton.style.display = 'block';
+    } else {
+        refreshButton.style.display = 'none';
+    }
+});
 </script>
 </body>
 </html>
