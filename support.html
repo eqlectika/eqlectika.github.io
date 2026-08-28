@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <title>Trust Fibonacci</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+background: linear-gradient(0deg, #000000 0%, #1a2954 100%);            color: #ffffff;
+            font-family: serif, monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 480px;
+            width: 90%;
+            padding: 24px 16px;
+            text-align: center;
+        }
+
+        .header-block {
+            margin-bottom: 70px;
+        }
+
+        .header-block img {
+            height: 64px;
+            width: auto;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .header-block h2 {
+            font-family: 'Cinzel', serif;
+            margin-top: 4px;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .header-block h2 a {
+            color: inherit;
+            letter-spacing: 1.5px;
+            text-decoration: none;
+        }
+
+        .header-block p.subtitle {
+            letter-spacing: 3px;
+            font-size: 11px;
+            margin-top: 4px;
+            color: #fff;
+            font-family: 'Cinzel', serif;
+            text-transform: uppercase;
+        }
+
+        .content-text {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #d1d5db;
+            margin-bottom: 24px;
+        }
+
+        .address-box {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-family: monospace;
+            font-size: 14px;
+            color: #60a5fa;
+            word-break: break-all;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 16px;
+        }
+
+        .address-box:hover {
+            background: rgba(59, 130, 246, 0.08);
+            color: #93c5fd;
+        }
+
+        .btn-copy {
+            width: 100%;
+            padding: 12px;
+            background: #3b82f6;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.1s ease;
+            touch-action: manipulation;
+        }
+
+        .btn-copy:active {
+            transform: scale(0.98);
+            background: #2563eb;
+        }
+
+        .toast {
+            margin-top: 12px;
+            font-size: 16px;
+            color: #10b981;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            height: 18px;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-block">
+            <a href="index.html" style="display: inline-block; margin-bottom: 0px;"><img src="fleurdelis.png" alt="Fleur de lis" class="no-invert"></a>
+            <h2>
+                <a href="index.html">Trust Fibonacci</a>
+            </h2>
+            <p class="subtitle">Virtual tools for endlessly improving life</p>
+        </div>
+
+        <div class="content-text">
+            If you appreciate the interface of the homepage that brought you here and you would like to support development using ETH (ERC20), please use the address below:
+        </div>
+        
+        <div class="address-box" id="addressBox" title="Click to copy">
+            0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8
+        </div>
+
+        <button class="btn-copy" id="copyBtn">Click to copy</button>
+        <div class="toast" id="toast">Address copied to clipboard!</div>
+    </div>
+
+    <script>
+        const ethAddress = "0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8";
+        const addressBox = document.getElementById("addressBox");
+        const copyBtn = document.getElementById("copyBtn");
+        const toast = document.getElementById("toast");
+
+        function copyAddress() {
+            navigator.clipboard.writeText(ethAddress).then(() => {
+                toast.classList.add("show");
+                copyBtn.textContent = "Copied!";
+                setTimeout(() => {
+                    toast.classList.remove("show");
+                    copyBtn.textContent = "Click to copy";
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
+        addressBox.addEventListener("click", copyAddress);
+        copyBtn.addEventListener("click", copyAddress);
+    </script>
+
+</body>
+</html>
