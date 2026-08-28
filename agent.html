@@ -513,448 +513,568 @@
     </div>
 </div>
 
-<!-- ===== APP ===== -->
-<div class="app" id="app">
-    <!-- Header -->
-    <div class="header">
-        <div class="logo-small">
-            <img src="fleurdelis.png" alt="Fleur-de-lis" id="headerLogo">
-            <h1>AI Agent</h1>
-            <span class="badge" id="modelBadge">Gemini</span>
-        </div>
-        <div class="header-controls">
-            <div class="user-info">
-                <div class="avatar" id="userAvatar">👤</div>
-                <span id="userNameDisplay">User</span>
+    <!-- ===== APP ===== -->
+    <div class="app" id="app">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-small">
+                <img src="fleurdelis.png" alt="Fleur-de-lis" id="headerLogo">
+                <h1>AI Agent</h1>
+                <span class="badge" id="modelBadge">Gemini</span>
             </div>
-            <button class="btn btn-danger" id="logoutBtn">🚪 Logout</button>
-            <button class="btn btn-danger" id="clearBtn">🗑 Clear</button>
-            <button class="btn btn-success" id="refreshRepoBtn" title="Refresh repository content">🔄 Repo</button>
+            <div class="header-controls">
+                <div class="user-info">
+                    <div class="avatar" id="userAvatar">👤</div>
+                    <span id="userNameDisplay">User</span>
+                </div>
+                <button class="btn btn-danger" id="logoutBtn">🚪 Logout</button>
+                <button class="btn btn-danger" id="clearBtn">🗑 Clear</button>
+                <button class="btn btn-success" id="refreshRepoBtn" title="Refresh repository content">🔄 Repo</button>
+            </div>
+        </div>
+
+        <!-- Model Bar -->
+        <div class="model-bar">
+            <select id="modelSelect">
+                <option value="gemini">🧠 Gemini</option>
+                <option value="deepseek">🧠 DeepSeek</option>
+                <option value="both">🔀 Gemini + DeepSeek</option>
+            </select>
+            <span class="model-status" id="modelStatus">🟢 Online</span>
+            <span class="repo-info" id="repoInfo">📚 Loading repository...</span>
+            <span style="font-size:0.65rem; color:#5a6a8a;" id="tokenDisplay">Tokens: 0</span>
+        </div>
+
+        <!-- Chat -->
+        <div class="chat-area" id="chatArea">
+            <div class="welcome">
+                <h3>🤖 Welcome to AI Agent!</h3>
+                <p>Select a model: <b>Gemini</b>, <b>DeepSeek</b>, or <b>both</b> simultaneously.</p>
+                <p style="font-size:0.8rem; color:#5a6a8a; margin-top:0.3rem;">
+                    💡 Gemini key from <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#6d8cff;">Google AI Studio</a><br>
+                    💡 DeepSeek key from <a href="https://openrouter.ai/keys" target="_blank" style="color:#6d8cff;">OpenRouter</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div class="input-area">
+            <textarea id="userInput" rows="1" placeholder="Type your message..." maxlength="4000"></textarea>
+            <button class="btn btn-primary" id="sendBtn">✉ Send</button>
+        </div>
+
+        <!-- Status -->
+        <div class="status-bar">
+            <div class="status-indicator">
+                <span class="dot dot-green" id="statusDot"></span>
+                <span id="statusText">Ready</span>
+            </div>
+            <div>
+                <span id="connectionStatus">🔗 Connected</span>
+            </div>
         </div>
     </div>
 
-    <!-- Model Bar -->
-    <div class="model-bar">
-        <select id="modelSelect">
-            <option value="gemini">🧠 Gemini</option>
-            <option value="deepseek">🧠 DeepSeek</option>
-            <option value="both">🔀 Gemini + DeepSeek</option>
-        </select>
-        <span class="model-status" id="modelStatus">🟢 Online</span>
-        <span class="repo-info" id="repoInfo">📚 No repository loaded</span>
-        <span style="font-size:0.65rem; color:#5a6a8a;" id="tokenDisplay">Tokens: 0</span>
-    </div>
+    <script>
+        // ============================================================
+        //  AI AGENT · Gemini + DeepSeek + Repository Integration
+        //  Works from file:// without Firebase
+        // ============================================================
 
-    <!-- Chat -->
-    <div class="chat-area" id="chatArea">
-        <div class="welcome">
-            <h3>🤖 Welcome to AI Agent!</h3>
-            <p>Select a model: <b>Gemini</b>, <b>DeepSeek</b>, or <b>both</b> simultaneously.</p>
-            <p style="font-size:0.8rem; color:#5a6a8a; margin-top:0.3rem;">
-                💡 Gemini key from <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#6d8cff;">Google AI Studio</a><br>
-                💡 DeepSeek key from <a href="https://openrouter.ai/keys" target="_blank" style="color:#6d8cff;">OpenRouter</a>
-            </p>
-        </div>
-    </div>
+        // ---------- CONSTANTS ----------
+        const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+        const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
 
-    <!-- Input -->
-    <div class="input-area">
-        <textarea id="userInput" rows="1" placeholder="Type your message..." maxlength="4000"></textarea>
-        <button class="btn btn-primary" id="sendBtn">✉ Send</button>
-    </div>
+        // ---------- STATE ----------
+        const state = {
+            apiKeys: { gemini: '', deepseek: '' },
+            model: 'gemini',
+            messages: [],
+            isProcessing: false,
+            totalTokens: 0,
+            isLoggedIn: false,
+            repoUrl: 'https://eqlectika.github.io',
+            repoContent: '',
+            repoFiles: [],
+            repoLoaded: false,
+        };
 
-    <!-- Status -->
-    <div class="status-bar">
-        <div class="status-indicator">
-            <span class="dot dot-green" id="statusDot"></span>
-            <span id="statusText">Ready</span>
-        </div>
-        <div>
-            <span id="connectionStatus">🔗 Connected</span>
-        </div>
-    </div>
-</div>
+        // ---------- DOM ----------
+        const loginOverlay = document.getElementById('loginOverlay');
+        const app = document.getElementById('app');
+        const loginError = document.getElementById('loginError');
+        const loginBtn = document.getElementById('loginBtn');
+        const geminiKeyInput = document.getElementById('geminiKey');
+        const deepseekKeyInput = document.getElementById('deepseekKey');
+        const loginModelSelect = document.getElementById('loginModel');
+        const repoUrlInput = document.getElementById('repoUrl');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const refreshRepoBtn = document.getElementById('refreshRepoBtn');
 
-<script>
-// ============================================================
-//  AI AGENT · Gemini + DeepSeek + Repository Integration
-//  Works from file:// without Firebase
-// ============================================================
+        const chatArea = document.getElementById('chatArea');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const modelSelect = document.getElementById('modelSelect');
+        const modelStatus = document.getElementById('modelStatus');
+        const modelBadge = document.getElementById('modelBadge');
+        const userNameDisplay = document.getElementById('userNameDisplay');
+        const userAvatar = document.getElementById('userAvatar');
+        const tokenDisplay = document.getElementById('tokenDisplay');
+        const statusText = document.getElementById('statusText');
+        const statusDot = document.getElementById('statusDot');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const repoInfo = document.getElementById('repoInfo');
 
-// ---------- CONSTANTS ----------
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+        // ---------- HELPER FUNCTIONS ----------
+        function addMessage(role, content, type = 'agent', model = '') {
+            const welcome = chatArea.querySelector('.welcome');
+            if (welcome) welcome.remove();
 
-// ---------- STATE ----------
-const state = {
-    apiKeys: { gemini: '', deepseek: '' },
-    model: 'gemini',
-    messages: [],
-    isProcessing: false,
-    totalTokens: 0,
-    isLoggedIn: false,
-    repoUrl: '',
-    repoContent: '',
-    repoFiles: [],
-    repoLoaded: false,
-};
+            const div = document.createElement('div');
+            div.className = `message message-${type}`;
+            if (model === 'gemini') div.classList.add('gemini');
+            if (model === 'deepseek') div.classList.add('deepseek');
 
-// ---------- DOM ----------
-const loginOverlay = document.getElementById('loginOverlay');
-const app = document.getElementById('app');
-const loginError = document.getElementById('loginError');
-const loginBtn = document.getElementById('loginBtn');
-const geminiKeyInput = document.getElementById('geminiKey');
-const deepseekKeyInput = document.getElementById('deepseekKey');
-const loginModelSelect = document.getElementById('loginModel');
-const repoUrlInput = document.getElementById('repoUrl');
-const logoutBtn = document.getElementById('logoutBtn');
-const refreshRepoBtn = document.getElementById('refreshRepoBtn');
+            const time = new Date().toLocaleTimeString();
+            const modelLabel = model ? ` [${model}]` : '';
+            div.innerHTML = `
+                        <div class="role">${role}${modelLabel}</div>
+                        <div class="content">${content}</div>
+                        <div class="time">${time}</div>
+                    `;
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            return div;
+        }
 
-const chatArea = document.getElementById('chatArea');
-const userInput = document.getElementById('userInput');
-const sendBtn = document.getElementById('sendBtn');
-const clearBtn = document.getElementById('clearBtn');
-const modelSelect = document.getElementById('modelSelect');
-const modelStatus = document.getElementById('modelStatus');
-const modelBadge = document.getElementById('modelBadge');
-const userNameDisplay = document.getElementById('userNameDisplay');
-const userAvatar = document.getElementById('userAvatar');
-const tokenDisplay = document.getElementById('tokenDisplay');
-const statusText = document.getElementById('statusText');
-const statusDot = document.getElementById('statusDot');
-const connectionStatus = document.getElementById('connectionStatus');
-const repoInfo = document.getElementById('repoInfo');
+        function addSystemMessage(content) {
+            const div = document.createElement('div');
+            div.className = 'message message-system';
+            div.innerHTML = `<div class="content">${content}</div>`;
+            chatArea.appendChild(div);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
 
-// ---------- HELPER FUNCTIONS ----------
-function addMessage(role, content, type = 'agent', model = '') {
-    const welcome = chatArea.querySelector('.welcome');
-    if (welcome) welcome.remove();
+        function setStatus(text, type = 'ready') {
+            statusText.textContent = text;
+            statusDot.className = `dot dot-${type}`;
+        }
 
-    const div = document.createElement('div');
-    div.className = `message message-${type}`;
-    if (model === 'gemini') div.classList.add('gemini');
-    if (model === 'deepseek') div.classList.add('deepseek');
-    
-    const time = new Date().toLocaleTimeString();
-    const modelLabel = model ? ` [${model}]` : '';
-    div.innerHTML = `
-        <div class="role">${role}${modelLabel}</div>
-        <div class="content">${content}</div>
-        <div class="time">${time}</div>
-    `;
-    chatArea.appendChild(div);
-    chatArea.scrollTop = chatArea.scrollHeight;
-    return div;
-}
+        function getModelName(value) {
+            const names = {
+                'gemini': 'Gemini',
+                'deepseek': 'DeepSeek',
+                'both': 'Gemini + DeepSeek'
+            };
+            return names[value] || value;
+        }
 
-function addSystemMessage(content) {
-    const div = document.createElement('div');
-    div.className = 'message message-system';
-    div.innerHTML = `<div class="content">${content}</div>`;
-    chatArea.appendChild(div);
-    chatArea.scrollTop = chatArea.scrollHeight;
-}
+        function updateRepoInfo() {
+            if (state.repoLoaded && state.repoUrl) {
+                repoInfo.innerHTML =
+                    `📚 <a href="${state.repoUrl}" target="_blank" style="color:#6d8cff;">${state.repoUrl.replace('https://', '')}</a> (${state.repoFiles.length} pages)`;
+            } else if (state.repoUrl) {
+                repoInfo.textContent = `📚 Loading...`;
+            } else {
+                repoInfo.textContent = `📚 No repository loaded`;
+            }
+        }
 
-function setStatus(text, type = 'ready') {
-    statusText.textContent = text;
-    statusDot.className = `dot dot-${type}`;
-}
+        // ---------- REPOSITORY LOADER ----------
+        async function loadRepositoryContent(url) {
+            try {
+                const response = await fetch(url, {
+                    headers: { 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' }
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                doc.querySelectorAll('script, style, noscript').forEach(el => el.remove());
+                const text = (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+                return text.substring(0, 3000);
+            } catch (error) {
+                console.warn('Could not load repository:', error);
+                return null;
+            }
+        }
 
-function getModelName(value) {
-    const names = {
-        'gemini': 'Gemini',
-        'deepseek': 'DeepSeek',
-        'both': 'Gemini + DeepSeek'
-    };
-    return names[value] || value;
-}
+        async function loadRepositoryStructure(url) {
+            try {
+                const githubUrl = url.replace('https://eqlectika.github.io',
+                    'https://api.github.com/repos/eqlectika/eqlectika.github.io/contents');
+                const response = await fetch(githubUrl, {
+                    headers: { 'Accept': 'application/vnd.github.v3+json' }
+                });
+                if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
+                const data = await response.json();
+                return data
+                    .filter(item => item.type === 'file' && item.name.endsWith('.html'))
+                    .map(item => ({
+                        name: item.name,
+                        path: item.path,
+                        url: `https://eqlectika.github.io/${item.path}`
+                    }));
+            } catch (error) {
+                console.warn('Could not load repository structure:', error);
+                return null;
+            }
+        }
 
-function updateRepoInfo() {
-    if (state.repoLoaded && state.repoUrl) {
-        repoInfo.innerHTML = `📚 <a href="${state.repoUrl}" target="_blank" style="color:#6d8cff;">${state.repoUrl.replace('https://', '')}</a> (${state.repoFiles.length} pages)`;
-    } else if (state.repoUrl) {
-        repoInfo.textContent = `📚 Loading...`;
-    } else {
-        repoInfo.textContent = `📚 No repository loaded`;
-    }
-}
+        async function loadRepository(repoUrl) {
+            if (!repoUrl) return;
 
-// ---------- REPOSITORY LOADER ----------
-async function loadRepositoryContent(url) {
-    try {
-        const response = await fetch(url, {
-            headers: { 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' }
+            addSystemMessage(`📚 Loading repository: ${repoUrl}...`);
+            state.repoLoaded = false;
+            updateRepoInfo();
+
+            try {
+                const [content, files] = await Promise.all([
+                    loadRepositoryContent(repoUrl),
+                    loadRepositoryStructure(repoUrl)
+                ]);
+
+                if (content) {
+                    state.repoContent = content;
+                    state.repoLoaded = true;
+                    addSystemMessage(`✅ Repository loaded (${content.length} characters)`);
+                }
+
+                if (files && files.length > 0) {
+                    state.repoFiles = files;
+                    addSystemMessage(`📁 Found ${files.length} pages in repository`);
+                }
+
+                updateRepoInfo();
+
+            } catch (error) {
+                addSystemMessage(`⚠️ Could not load repository: ${error.message}`);
+            }
+        }
+
+        // ---------- API CALLS ----------
+        async function callGemini(messages, apiKey) {
+            if (!apiKey) throw new Error('❌ Gemini API key not found');
+
+            let prompt = '';
+            for (const msg of messages) {
+                prompt += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
+            }
+
+            const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`Gemini error: ${response.status} - ${error}`);
+            }
+
+            const data = await response.json();
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || '⚠️ No response from Gemini';
+        }
+
+        async function callDeepSeek(messages, apiKey) {
+            if (!apiKey) throw new Error('❌ DeepSeek API key not found');
+
+            const response = await fetch(OPENROUTER_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                    'HTTP-Referer': window.location.origin,
+                    'X-Title': 'AI Agent',
+                },
+                body: JSON.stringify({
+                    model: 'deepseek/deepseek-chat',
+                    messages: messages,
+                    temperature: 0.7,
+                    max_tokens: 2048,
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(`DeepSeek error: ${response.status} - ${error}`);
+            }
+
+            const data = await response.json();
+            return data.choices?.[0]?.message?.content || '⚠️ No response from DeepSeek';
+        }
+
+        // ---------- SEND MESSAGE ----------
+        async function sendMessage() {
+            if (state.isProcessing || !state.isLoggedIn) return;
+
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            addMessage('👤 You', text, 'user');
+            userInput.value = '';
+            userInput.style.height = 'auto';
+
+            state.isProcessing = true;
+            sendBtn.disabled = true;
+            setStatus('Generating...', 'yellow');
+
+            const model = modelSelect.value;
+
+            try {
+                // Build system prompt with repository context
+                let systemPrompt = 'You are a helpful AI assistant. Answer in the same language as the user.';
+
+                if (state.repoContent) {
+                    systemPrompt += `
+
+                                You have access to the following repository content for context:
+                                ${state.repoContent}
+
+                                When relevant, reference content from this repository and provide links to specific pages.
+                                The repository URL is: ${state.repoUrl || 'https://eqlectika.github.io'}
+
+                                If the user asks about projects, pages, or content from the repository, search your context and provide helpful answers with links.
+                                `;
+                }
+
+                if (state.repoFiles && state.repoFiles.length > 0) {
+                    systemPrompt += `
+
+                                Available pages in the repository:
+                                ${state.repoFiles.map(f => `- ${f.name}: ${f.url}`).join('\n')}
+
+                                When referencing content, ALWAYS provide the full URL to the specific page.
+                                `;
+                }
+
+                const apiMessages = [
+                    { role: 'system', content: systemPrompt },
+                    ...state.messages.map(m => ({
+                        role: m.role === 'user' ? 'user' : 'assistant',
+                        content: m.content
+                    })),
+                    { role: 'user', content: text }
+                ];
+
+                if (model === 'gemini') {
+                    const thinkingMsg = addMessage('🤖 Gemini', '⏳ Generating response...', 'agent', 'Gemini');
+                    const reply = await callGemini(apiMessages, state.apiKeys.gemini);
+                    thinkingMsg.querySelector('.content').textContent = reply;
+                    thinkingMsg.querySelector('.role').textContent = '🤖 Gemini';
+                    state.messages.push({ role: 'user', content: text });
+                    state.messages.push({ role: 'assistant', content: reply });
+                } else if (model === 'deepseek') {
+                    const thinkingMsg = addMessage('🤖 DeepSeek', '⏳ Generating response...', 'agent', 'DeepSeek');
+                    const reply = await callDeepSeek(apiMessages, state.apiKeys.deepseek);
+                    thinkingMsg.querySelector('.content').textContent = reply;
+                    thinkingMsg.querySelector('.role').textContent = '🤖 DeepSeek';
+                    state.messages.push({ role: 'user', content: text });
+                    state.messages.push({ role: 'assistant', content: reply });
+                } else if (model === 'both') {
+                    const msg1 = addMessage('🤖 Gemini', '⏳ Generating...', 'agent', 'Gemini');
+                    const msg2 = addMessage('🤖 DeepSeek', '⏳ Generating...', 'agent', 'DeepSeek');
+
+                    const [geminiReply, deepseekReply] = await Promise.all([
+                        callGemini(apiMessages, state.apiKeys.gemini).catch(e => `❌ Gemini: ${e.message}`),
+                        callDeepSeek(apiMessages, state.apiKeys.deepseek).catch(e => `❌ DeepSeek: ${e.message}`)
+                    ]);
+
+                    msg1.querySelector('.content').textContent = geminiReply;
+                    msg1.querySelector('.role').textContent = '🤖 Gemini';
+                    msg2.querySelector('.content').textContent = deepseekReply;
+                    msg2.querySelector('.role').textContent = '🤖 DeepSeek';
+
+                    state.messages.push({ role: 'user', content: text });
+                    state.messages.push({ role: 'assistant',
+                    content: `Gemini: ${geminiReply}\n\nDeepSeek: ${deepseekReply}` });
+                }
+
+                state.totalTokens += text.length / 4;
+                tokenDisplay.textContent = `Tokens: ${Math.round(state.totalTokens)}`;
+                setStatus('Ready', 'green');
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('⚠️ Error', `❌ ${error.message}`, 'error');
+                setStatus('Error', 'red');
+            }
+
+            state.isProcessing = false;
+            sendBtn.disabled = false;
+            userInput.focus();
+        }
+
+        // ---------- CLEAR ----------
+        function clearChat() {
+            chatArea.innerHTML = `
+                        <div class="welcome">
+                            <h3>🤖 Chat cleared</h3>
+                            <p>Send a message to continue.</p>
+                        </div>
+                    `;
+            state.messages = [];
+            state.totalTokens = 0;
+            tokenDisplay.textContent = 'Tokens: 0';
+            setStatus('Ready', 'green');
+        }
+
+        // ---------- LOGOUT ----------
+        function logout() {
+            state.isLoggedIn = false;
+            loginOverlay.classList.remove('hidden');
+            app.classList.remove('visible');
+            chatArea.innerHTML = `
+                        <div class="welcome">
+                            <h3>👋 Goodbye</h3>
+                            <p>Log in again to continue.</p>
+                        </div>
+                    `;
+        }
+
+        // ---------- LOGIN ----------
+        async function login() {
+            const geminiKey = geminiKeyInput.value.trim();
+            const deepseekKey = deepseekKeyInput.value.trim();
+            const model = loginModelSelect.value;
+            let repoUrl = repoUrlInput.value.trim();
+
+            // Если URL не введён — используем по умолчанию
+            if (!repoUrl) {
+                repoUrl = 'https://eqlectika.github.io';
+                repoUrlInput.value = repoUrl;
+            }
+
+            if (!geminiKey && !deepseekKey) {
+                loginError.textContent = '❌ Enter at least one API key';
+                return;
+            }
+
+            if (model === 'both' && (!geminiKey || !deepseekKey)) {
+                loginError.textContent = '❌ Both keys required for "both" mode';
+                return;
+            }
+
+            if ((model === 'gemini' || model === 'both') && !geminiKey) {
+                loginError.textContent = '❌ Gemini key required for Gemini';
+                return;
+            }
+
+            if ((model === 'deepseek' || model === 'both') && !deepseekKey) {
+                loginError.textContent = '❌ DeepSeek key required for DeepSeek';
+                return;
+            }
+
+            state.apiKeys.gemini = geminiKey;
+            state.apiKeys.deepseek = deepseekKey;
+            state.model = model;
+            state.isLoggedIn = true;
+            state.repoUrl = repoUrl;
+
+            localStorage.setItem('gemini_api_key', geminiKey);
+            localStorage.setItem('deepseek_api_key', deepseekKey);
+            localStorage.setItem('ai_model', model);
+            localStorage.setItem('repo_url', repoUrl);
+
+            loginOverlay.classList.add('hidden');
+            app.classList.add('visible');
+
+            modelSelect.value = model;
+            modelBadge.textContent = getModelName(model);
+            connectionStatus.textContent = '🔗 Connected';
+            setStatus('Ready', 'green');
+            userInput.disabled = false;
+            sendBtn.disabled = false;
+            userInput.focus();
+
+            userNameDisplay.textContent = 'User';
+            userAvatar.textContent = '👤';
+
+            addSystemMessage(`✅ Welcome!`);
+            addSystemMessage(`🧠 Model: ${getModelName(model)}`);
+            addSystemMessage(`📌 Gemini: ${geminiKey ? '✅' : '❌'} | DeepSeek: ${deepseekKey ? '✅' : '❌'}`);
+
+            // Загружаем репозиторий
+            if (repoUrl) {
+                await loadRepository(repoUrl);
+            }
+        }
+
+        // ---------- REFRESH REPOSITORY ----------
+        async function refreshRepository() {
+            if (state.repoUrl) {
+                addSystemMessage(`🔄 Refreshing repository...`);
+                await loadRepository(state.repoUrl);
+            } else {
+                addSystemMessage(`⚠️ No repository URL set`);
+            }
+        }
+
+        // ---------- EVENT LISTENERS ----------
+        loginBtn.addEventListener('click', login);
+
+        geminiKeyInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+        deepseekKeyInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const html = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        doc.querySelectorAll('script, style, noscript').forEach(el => el.remove());
-        const text = (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
-        return text.substring(0, 3000);
-    } catch (error) {
-        console.warn('Could not load repository:', error);
-        return null;
-    }
-}
 
-async function loadRepositoryStructure(url) {
-    try {
-        const githubUrl = url.replace('https://eqlectika.github.io', 'https://api.github.com/repos/eqlectika/eqlectika.github.io/contents');
-        const response = await fetch(githubUrl, {
-            headers: { 'Accept': 'application/vnd.github.v3+json' }
+        userInput.addEventListener('input', () => {
+            userInput.style.height = 'auto';
+            userInput.style.height = Math.min(userInput.scrollHeight, 150) + 'px';
         });
-        if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
-        const data = await response.json();
-        return data
-            .filter(item => item.type === 'file' && item.name.endsWith('.html'))
-            .map(item => ({
-                name: item.name,
-                path: item.path,
-                url: `https://eqlectika.github.io/${item.path}`
-            }));
-    } catch (error) {
-        console.warn('Could not load repository structure:', error);
-        return null;
-    }
-}
 
-async function loadRepository(repoUrl) {
-    if (!repoUrl) return;
-    
-    addSystemMessage(`📚 Loading repository: ${repoUrl}...`);
-    state.repoLoaded = false;
-    updateRepoInfo();
-    
-    try {
-        const [content, files] = await Promise.all([
-            loadRepositoryContent(repoUrl),
-            loadRepositoryStructure(repoUrl)
-        ]);
-        
-        if (content) {
-            state.repoContent = content;
-            state.repoLoaded = true;
-            addSystemMessage(`✅ Repository loaded (${content.length} characters)`);
-        }
-        
-        if (files && files.length > 0) {
-            state.repoFiles = files;
-            addSystemMessage(`📁 Found ${files.length} pages in repository`);
-        }
-        
-        updateRepoInfo();
-        
-    } catch (error) {
-        addSystemMessage(`⚠️ Could not load repository: ${error.message}`);
-    }
-}
+        clearBtn.addEventListener('click', clearChat);
+        logoutBtn.addEventListener('click', logout);
+        refreshRepoBtn.addEventListener('click', refreshRepository);
 
-// ---------- API CALLS ----------
-async function callGemini(messages, apiKey) {
-    if (!apiKey) throw new Error('❌ Gemini API key not found');
+        modelSelect.addEventListener('change', () => {
+            const val = modelSelect.value;
+            modelBadge.textContent = getModelName(val);
+            addSystemMessage(`🔄 Model changed: ${getModelName(val)}`);
+        });
 
-    let prompt = '';
-    for (const msg of messages) {
-        prompt += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
-    }
+        // ---------- SESSION RESTORE ----------
+        const savedGemini = localStorage.getItem('gemini_api_key');
+        const savedDeepSeek = localStorage.getItem('deepseek_api_key');
+        const savedModel = localStorage.getItem('ai_model') || 'gemini';
+        const savedRepo = localStorage.getItem('repo_url') || 'https://eqlectika.github.io';
 
-    const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-        })
-    });
-
-    if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Gemini error: ${response.status} - ${error}`);
-    }
-
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '⚠️ No response from Gemini';
-}
-
-async function callDeepSeek(messages, apiKey) {
-    if (!apiKey) throw new Error('❌ DeepSeek API key not found');
-
-    const response = await fetch(OPENROUTER_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-            'HTTP-Referer': window.location.origin,
-            'X-Title': 'AI Agent',
-        },
-        body: JSON.stringify({
-            model: 'deepseek/deepseek-chat',
-            messages: messages,
-            temperature: 0.7,
-            max_tokens: 2048,
-        })
-    });
-
-    if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`DeepSeek error: ${response.status} - ${error}`);
-    }
-
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || '⚠️ No response from DeepSeek';
-}
-
-// ---------- SEND MESSAGE ----------
-async function sendMessage() {
-    if (state.isProcessing || !state.isLoggedIn) return;
-
-    const text = userInput.value.trim();
-    if (!text) return;
-
-    addMessage('👤 You', text, 'user');
-    userInput.value = '';
-    userInput.style.height = 'auto';
-
-    state.isProcessing = true;
-    sendBtn.disabled = true;
-    setStatus('Generating...', 'yellow');
-
-    const model = modelSelect.value;
-
-    try {
-        // Build system prompt with repository context
-        let systemPrompt = 'You are a helpful AI assistant. Answer in the same language as the user.';
-
-        if (state.repoContent) {
-            systemPrompt += `
-
-You have access to the following repository content for context:
-${state.repoContent}
-
-When relevant, reference content from this repository and provide links to specific pages.
-The repository URL is: ${state.repoUrl || 'https://eqlectika.github.io'}
-
-If the user asks about projects, pages, or content from the repository, search your context and provide helpful answers with links.
-`;
+        if (savedGemini || savedDeepSeek) {
+            geminiKeyInput.value = savedGemini || '';
+            deepseekKeyInput.value = savedDeepSeek || '';
+            loginModelSelect.value = savedModel;
+            repoUrlInput.value = savedRepo;
+            login();
+        } else {
+            // Если нет ключей, но показываем репозиторий по умолчанию
+            repoUrlInput.value = savedRepo;
         }
 
-        if (state.repoFiles && state.repoFiles.length > 0) {
-            systemPrompt += `
+        // Если есть iframe — скрываем Fields и Contact
+        if (window.self !== window.top) {
+            const fields = document.querySelector('a[href="index.html"]');
+            if (fields) fields.style.display = 'none';
 
-Available pages in the repository:
-${state.repoFiles.map(f => `- ${f.name}: ${f.url}`).join('\n')}
-
-When referencing content, ALWAYS provide the full URL to the specific page.
-`;
+            const contact = document.querySelector('a[href="https://t.me/eugenebox"]');
+            if (contact) contact.style.display = 'none';
         }
 
-        const apiMessages = [
-            { role: 'system', content: systemPrompt },
-            ...state.messages.map(m => ({
-                role: m.role === 'user' ? 'user' : 'assistant',
-                content: m.content
-            })),
-            { role: 'user', content: text }
-        ];
+        console.log('🤖 AI Agent started!');
+        console.log('🔑 Enter API keys for Gemini and/or DeepSeek');
+        console.log('📚 Repository auto-loaded: https://eqlectika.github.io');
+        console.log('💡 Works from file:// without Firebase!');
+    </script>
 
-        if (model === 'gemini') {
-            const thinkingMsg = addMessage('🤖 Gemini', '⏳ Generating response...', 'agent', 'Gemini');
-            const reply = await callGemini(apiMessages, state.apiKeys.gemini);
-            thinkingMsg.querySelector('.content').textContent = reply;
-            thinkingMsg.querySelector('.role').textContent = '🤖 Gemini';
-            state.messages.push({ role: 'user', content: text });
-            state.messages.push({ role: 'assistant', content: reply });
-        } 
-        else if (model === 'deepseek') {
-            const thinkingMsg = addMessage('🤖 DeepSeek', '⏳ Generating response...', 'agent', 'DeepSeek');
-            const reply = await callDeepSeek(apiMessages, state.apiKeys.deepseek);
-            thinkingMsg.querySelector('.content').textContent = reply;
-            thinkingMsg.querySelector('.role').textContent = '🤖 DeepSeek';
-            state.messages.push({ role: 'user', content: text });
-            state.messages.push({ role: 'assistant', content: reply });
-        } 
-        else if (model === 'both') {
-            const msg1 = addMessage('🤖 Gemini', '⏳ Generating...', 'agent', 'Gemini');
-            const msg2 = addMessage('🤖 DeepSeek', '⏳ Generating...', 'agent', 'DeepSeek');
-
-            const [geminiReply, deepseekReply] = await Promise.all([
-                callGemini(apiMessages, state.apiKeys.gemini).catch(e => `❌ Gemini: ${e.message}`),
-                callDeepSeek(apiMessages, state.apiKeys.deepseek).catch(e => `❌ DeepSeek: ${e.message}`)
-            ]);
-
-            msg1.querySelector('.content').textContent = geminiReply;
-            msg1.querySelector('.role').textContent = '🤖 Gemini';
-            msg2.querySelector('.content').textContent = deepseekReply;
-            msg2.querySelector('.role').textContent = '🤖 DeepSeek';
-
-            state.messages.push({ role: 'user', content: text });
-            state.messages.push({ role: 'assistant', content: `Gemini: ${geminiReply}\n\nDeepSeek: ${deepseekReply}` });
-        }
-
-        state.totalTokens += text.length / 4;
-        tokenDisplay.textContent = `Tokens: ${Math.round(state.totalTokens)}`;
-        setStatus('Ready', 'green');
-
-    } catch (error) {
-        console.error('Error:', error);
-        addMessage('⚠️ Error', `❌ ${error.message}`, 'error');
-        setStatus('Error', 'red');
-    }
-
-    state.isProcessing = false;
-    sendBtn.disabled = false;
-    userInput.focus();
-}
-
-// ---------- CLEAR ----------
-function clearChat() {
-    chatArea.innerHTML = `
-        <div class="welcome">
-            <h3>🤖 Chat cleared</h3>
-            <p>Send a message to continue.</p>
-        </div>
-    `;
-    state.messages = [];
-    state.totalTokens = 0;
-    tokenDisplay.textContent = 'Tokens: 0';
-    setStatus('Ready', 'green');
-}
-
-// ---------- LOGOUT ----------
-function logout() {
-    state.isLoggedIn = false;
-    loginOverlay.classList.remove('hidden');
-    app.classList.remove('visible');
-    chatArea.innerHTML = `
-        <div class="welcome">
-            <h3>👋 Goodbye</h3>
-            <p>Log in again to continue.</p>
-        </div>
-    `;
-}
-
-// ---------- LOGIN ----------
-async function login() {
-    const geminiKey = geminiKeyInput.value.trim();
-    const deepseekKey = deepseekKeyInput.value.trim();
-    const model = loginModelSelect.value;
-    const repoUrl = repoUrlInput.value.trim();
-
-    if (!geminiKey && !deepseekKey) {
-        loginError.textContent = '❌ Enter at least one API key';
-        return;
-    }
-
-    if (model === 'both' && (!geminiKey || !deepseekKey)) {
-        loginError.textContent = '❌ Both keys required for "both" mode';
-        return;
-    }
-
-    if ((model === 'gemini' || model === 'both') && !geminiKey) {
-        loginError.textContent = '❌ Gemini key required for Gemini';
-        return;
-    }
-
-    if ((model === 'deepseek' || model === 'both') && !deepseek
+</body>
+</html>
