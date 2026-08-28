@@ -2,14 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="manifest" href="manifest-index.json" />
     <title>Fields</title>
-
     <style>
-
         * {
             margin: 0;
             padding: 0;
@@ -23,11 +19,6 @@
             overflow: hidden;
             background: #1e1e1e;
         }
-
-
-        /* =========================
-           PANELS
-           ========================= */
 
         .panels {
             display: flex;
@@ -53,73 +44,44 @@
             display: block;
         }
 
-
-        /* =========================
-           RESIZER
-           ========================= */
-
         .resizer {
             width: 6px;
             min-width: 6px;
             flex: 0 0 6px;
-
             background: #1e1e1e;
-
             position: relative;
             z-index: 100;
-
             cursor: ns-resize;
             touch-action: none;
         }
 
-
-        /* Увеличенная зона касания */
-
         .resizer::before {
             content: "";
-
             position: absolute;
-
             top: 0;
             bottom: 0;
-
             left: -20px;
             right: -20px;
-
             z-index: 0;
         }
 
-
-        /* =========================
-           HANDLE
-           ========================= */
-
         .resizer-handle {
             position: absolute;
-
             left: 50%;
             top: 50%;
-
             width: 24px;
             height: 24px;
-
             transform: translate(-50%, -50%);
-
             object-fit: contain;
-
             user-select: none;
             -webkit-user-drag: none;
-
             pointer-events: none;
-
             z-index: 2;
         }
-
 
         .resizer.active {
             background: #3b82f6;
         }
-
 
         body.is-resizing {
             user-select: none;
@@ -129,314 +91,208 @@
             pointer-events: none;
         }
 
-
-        /* =========================
-           HANDLE MENU
-           ========================= */
-
         .handle-menu {
-
             position: absolute;
-
             left: 50%;
             top: 50%;
-
             transform: translate(-50%, -50%);
-
             display: none;
-
             flex-direction: column;
-
             gap: 5px;
-
             padding: 6px;
-
             background: rgba(20, 20, 20, 0.96);
-
             border-radius: 10px;
-
-            box-shadow:
-                0 8px 30px rgba(0, 0, 0, 0.45);
-
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
             z-index: 1000;
-
             touch-action: manipulation;
         }
-
 
         .handle-menu.open {
             display: flex;
         }
-
 
         .menu-row {
             display: flex;
             gap: 5px;
         }
 
-
         .handle-menu button {
-
             width: 38px;
             height: 34px;
-
             border: none;
-
             border-radius: 7px;
-
             background: #00f;
-
             color: white;
-
             font-size: 19px;
-
             cursor: pointer;
-
             touch-action: manipulation;
         }
-
 
         .handle-menu button:active {
             transform: scale(0.92);
             background: #555;
         }
 
-
         .menu-label {
-
             color: #aaa;
-
             font-family: sans-serif;
-
             font-size: 9px;
-
             text-align: center;
-
             padding-bottom: 2px;
         }
 
+        .panel-controllers {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 10px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 8px 16px;
+            border-radius: 30px;
+            backdrop-filter: blur(8px);
+        }
 
-        /* =========================
-           MOBILE
-           ========================= */
+        .panel-controllers button {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: #00f;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .panel-controllers button:active {
+            transform: scale(0.9);
+        }
 
         @media (max-width: 768px) {
-
             .panels {
                 flex-direction: row;
-
                 overflow-x: auto;
                 overflow-y: hidden;
-
                 scroll-snap-type: x mandatory;
-
                 -webkit-overflow-scrolling: touch;
-
                 scrollbar-width: none;
             }
-
 
             .panels::-webkit-scrollbar {
                 display: none;
             }
 
-
             .panel {
                 flex: 0 0 100vw;
-
                 width: 100vw;
                 min-width: 100vw;
-
                 height: 100vh;
-
                 scroll-snap-align: start;
-
                 background: white;
             }
-
 
             .resizer {
                 display: none;
             }
 
-
             .dots {
-
                 position: fixed;
-
                 bottom: 24px;
-
                 left: 50%;
-
                 transform: translateX(-50%);
-
                 display: flex;
-
                 gap: 8px;
-
                 z-index: 100;
-
                 background: rgba(0, 0, 0, 0.6);
-
                 padding: 8px 14px;
-
                 border-radius: 30px;
-
                 backdrop-filter: blur(8px);
             }
 
-
             .dots button {
-
                 width: 10px;
                 height: 10px;
-
                 border-radius: 50%;
-
                 border: none;
-
-                background:
-                    rgba(255, 255, 255, 0.3);
-
+                background: rgba(255, 255, 255, 0.3);
                 cursor: pointer;
-
                 padding: 0;
-
-                transition:
-                    background 0.2s ease,
-                    transform 0.2s ease;
-
+                transition: background 0.2s ease, transform 0.2s ease;
                 flex-shrink: 0;
             }
 
-
             .dots button.active {
-
                 background: white;
-
                 transform: scale(1.3);
             }
 
-
             .dots button:hover {
-
-                background:
-                    rgba(255, 255, 255, 0.6);
+                background: rgba(255, 255, 255, 0.6);
             }
         }
-
 
         .dots {
             display: none;
         }
 
-
         @media (min-width: 769px) {
-
             .dots {
                 display: none !important;
             }
         }
-
     </style>
 </head>
-
-
 <body>
 
-
-    <div
-        class="panels"
-        id="panels">
+    <div class="panels" id="panels"></div>
+    <div class="dots" id="dots"></div>
+    <div class="panel-controllers" id="panelControllers">
+        <button id="mobileRemoveBtn">−</button>
+        <button id="mobileAddBtn">+</button>
     </div>
-
-
-    <div
-        class="dots"
-        id="dots">
-    </div>
-
 
     <script>
-
-
-        /* =========================
-           SERVICE WORKER
-           ========================= */
-
         if ('serviceWorker' in navigator) {
-
             navigator.serviceWorker
                 .register('/sw.js')
                 .then(registration => {
-
-                    console.log(
-                        '✅ Service Worker зарегистрирован:',
-                        registration
-                    );
-
+                    console.log('✅ Service Worker зарегистрирован:', registration);
                 })
                 .catch(error => {
-
-                    console.log(
-                        '❌ Ошибка регистрации SW:',
-                        error
-                    );
-
+                    console.log('❌ Ошибка регистрации SW:', error);
                 });
-
         }
 
-
-        /* =========================
-           PAGES
-           ========================= */
-
         const pages = [
-
             'match.html',
             'paramount.html',
             'capital.html',
             'flash.html',
             'cross.html'
-
         ];
 
+        const panelsContainer = document.getElementById('panels');
+        const dotsContainer = document.getElementById('dots');
+        const panelControllers = document.getElementById('panelControllers');
+        const mobileAddBtn = document.getElementById('mobileAddBtn');
+        const mobileRemoveBtn = document.getElementById('mobileRemoveBtn');
 
-        const panelsContainer =
-            document.getElementById('panels');
-
-
-        const dotsContainer =
-            document.getElementById('dots');
-
-
-        const isMobile =
-            window.innerWidth <= 768;
-
-
+        const isMobile = window.innerWidth <= 768;
         let panels = [];
 
-
-        /* =========================
-           CREATE PANEL
-           ========================= */
-
         function createPanel(page) {
-
-            const panel =
-                document.createElement('div');
-
+            const panel = document.createElement('div');
             panel.className = 'panel';
 
-
-            const iframe =
-                document.createElement('iframe');
-
+            const iframe = document.createElement('iframe');
             iframe.src = page;
-
             iframe.loading = 'lazy';
-
 
             iframe.addEventListener('load', function() {
                 try {
@@ -448,32 +304,25 @@
                 } catch (e) {}
             });
 
-
             panel.appendChild(iframe);
-
-
             return panel;
-
         }
-
-
-        /* =========================
-           GET PANELS
-           ========================= */
 
         function updatePanelsList() {
-
-            panels =
-                Array.from(
-                    document.querySelectorAll('.panel')
-                );
-
+            panels = Array.from(document.querySelectorAll('.panel'));
+            updateMobileControllersVisibility();
         }
 
-
-        /* =========================
-           СОХРАНЕНИЕ СОСТОЯНИЯ ПАНЕЛЕЙ
-           ========================= */
+        function updateMobileControllersVisibility() {
+            if (!isMobile) return;
+            if (panels.length > 1) {
+                panelControllers.style.display = 'flex';
+                dotsContainer.style.display = 'none';
+            } else {
+                panelControllers.style.display = 'none';
+                dotsContainer.style.display = 'none';
+            }
+        }
 
         function savePanelsState() {
             updatePanelsList();
@@ -504,6 +353,8 @@
                 if (!isMobile) {
                     rebuildResizers();
                     initializePanelWidths();
+                } else {
+                    rebuildDots();
                 }
                 
                 return true;
@@ -511,10 +362,6 @@
                 return false;
             }
         }
-
-        /* =========================
-           ОБРАБОТЧИК СООБЩЕНИЙ ОТ IFRAME
-           ========================= */
 
         window.addEventListener('message', function(event) {
             if (event.data && event.data.type === 'URL_CHANGED') {
@@ -530,1158 +377,440 @@
             }
         });
 
-
-        /* =====================================================
-           DESKTOP
-           ===================================================== */
-
         if (!isMobile) {
-
-
-            /* =========================
-               CREATE RESIZER
-               ========================= */
-
             function createResizer() {
+                const resizer = document.createElement('div');
+                resizer.className = 'resizer';
 
-                const resizer =
-                    document.createElement('div');
-
-                resizer.className =
-                    'resizer';
-
-
-                /* HANDLE */
-
-                const handle =
-                    document.createElement('img');
-
-                handle.className =
-                    'resizer-handle';
-
-                handle.src =
-                    'handle.png';
-
-                handle.alt =
-                    '';
-
-
+                const handle = document.createElement('img');
+                handle.className = 'resizer-handle';
+                handle.src = 'handle.png';
+                handle.alt = '';
                 resizer.appendChild(handle);
 
+                const menu = document.createElement('div');
+                menu.className = 'handle-menu';
 
-                /* MENU */
-
-                const menu =
-                    document.createElement('div');
-
-                menu.className =
-                    'handle-menu';
-
-
-                const label =
-                    document.createElement('div');
-
-                label.className =
-                    'menu-label';
-
-                label.textContent =
-                    'FIELD';
-
-
+                const label = document.createElement('div');
+                label.className = 'menu-label';
+                label.textContent = 'FIELD';
                 menu.appendChild(label);
 
-
-                /* ROW 1 */
-
-                const row1 =
-                    document.createElement('div');
-
-                row1.className =
-                    'menu-row';
-
-
-                const addLeft =
-                    document.createElement('button');
-
-                addLeft.textContent =
-                    '+';
-
-                const addRight =
-                    document.createElement('button');
-
-                addRight.textContent =
-                    '+';
-
+                const row1 = document.createElement('div');
+                row1.className = 'menu-row';
+                const addLeft = document.createElement('button');
+                addLeft.textContent = '+';
+                const addRight = document.createElement('button');
+                addRight.textContent = '+';
                 row1.appendChild(addLeft);
                 row1.appendChild(addRight);
 
-
-                /* ROW 2 */
-
-                const row2 =
-                    document.createElement('div');
-
-                row2.className =
-                    'menu-row';
-
-
-                const removeLeft =
-                    document.createElement('button');
-
-                removeLeft.textContent =
-                    '−';
-
-                const removeRight =
-                    document.createElement('button');
-
-                removeRight.textContent =
-                    '−';
-
+                const row2 = document.createElement('div');
+                row2.className = 'menu-row';
+                const removeLeft = document.createElement('button');
+                removeLeft.textContent = '−';
+                const removeRight = document.createElement('button');
+                removeRight.textContent = '−';
                 row2.appendChild(removeLeft);
                 row2.appendChild(removeRight);
 
-
                 menu.appendChild(row1);
                 menu.appendChild(row2);
-
-
                 resizer.appendChild(menu);
 
+                addLeft.addEventListener('pointerdown', e => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    addPanelLeft(resizer);
+                });
 
-                /* =========================
-                   ADD LEFT
-                   ========================= */
+                addRight.addEventListener('pointerdown', e => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    addPanelRight(resizer);
+                });
 
-                addLeft.addEventListener(
-                    'pointerdown',
-                    e => {
+                removeLeft.addEventListener('pointerdown', e => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    removePanelLeft(resizer);
+                });
 
-                        e.stopPropagation();
-                        e.preventDefault();
-
-                        addPanelLeft(resizer);
-
-                    }
-                );
-
-
-                /* =========================
-                   ADD RIGHT
-                   ========================= */
-
-                addRight.addEventListener(
-                    'pointerdown',
-                    e => {
-
-                        e.stopPropagation();
-                        e.preventDefault();
-
-                        addPanelRight(resizer);
-
-                    }
-                );
-
-
-                /* =========================
-                   REMOVE LEFT
-                   ========================= */
-
-                removeLeft.addEventListener(
-                    'pointerdown',
-                    e => {
-
-                        e.stopPropagation();
-                        e.preventDefault();
-
-                        removePanelLeft(resizer);
-
-                    }
-                );
-
-
-                /* =========================
-                   REMOVE RIGHT
-                   ========================= */
-
-                removeRight.addEventListener(
-                    'pointerdown',
-                    e => {
-
-                        e.stopPropagation();
-                        e.preventDefault();
-
-                        removePanelRight(resizer);
-
-                    }
-                );
-
+                removeRight.addEventListener('pointerdown', e => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    removePanelRight(resizer);
+                });
 
                 return resizer;
-
             }
-
-
-            /* =========================
-               BUILD RESIZERS
-               ========================= */
 
             function rebuildResizers() {
-
-                document
-                    .querySelectorAll('.resizer')
-                    .forEach(resizer => {
-
-                        resizer.remove();
-
-                    });
-
+                document.querySelectorAll('.resizer').forEach(resizer => {
+                    resizer.remove();
+                });
 
                 updatePanelsList();
 
-
-                panels.forEach(
-                    (panel, index) => {
-
-                        if (
-                            index >=
-                            panels.length - 1
-                        ) {
-                            return;
-                        }
-
-
-                        const resizer =
-                            createResizer();
-
-
-                        panelsContainer.insertBefore(
-                            resizer,
-                            panel.nextSibling
-                        );
-
+                panels.forEach((panel, index) => {
+                    if (index >= panels.length - 1) {
+                        return;
                     }
-                );
-
+                    const resizer = createResizer();
+                    panelsContainer.insertBefore(resizer, panel.nextSibling);
+                });
 
                 setupResizers();
-
             }
-
-
-            /* =========================
-               INITIAL WIDTHS
-               ========================= */
 
             function initializePanelWidths() {
-
                 updatePanelsList();
-
-
-                const resizers =
-                    Array.from(
-                        document.querySelectorAll(
-                            '.resizer'
-                        )
-                    );
-
-
-                const availableWidth =
-
-                    panelsContainer.clientWidth -
-
-                    resizers.length * 6;
-
-
-                const width =
-
-                    availableWidth /
-
-                    panels.length;
-
+                const resizers = Array.from(document.querySelectorAll('.resizer'));
+                const availableWidth = panelsContainer.clientWidth - resizers.length * 6;
+                const width = availableWidth / panels.length;
 
                 panels.forEach(panel => {
-
-                    panel.style.flex =
-                        '0 0 auto';
-
-                    panel.style.width =
-                        `${width}px`;
-
+                    panel.style.flex = '0 0 auto';
+                    panel.style.width = `${width}px`;
                 });
-
 
                 resizers.forEach(resizer => {
-
-                    const handle =
-                        resizer.querySelector(
-                            '.resizer-handle'
-                        );
-
+                    const handle = resizer.querySelector('.resizer-handle');
                     if (handle) {
-
-                        handle.style.top =
-                            '50%';
-
+                        handle.style.top = '50%';
                     }
-
                 });
-
             }
 
+            function addPanelLeft(resizer) {
+                updatePanelsList();
+                const allResizers = Array.from(document.querySelectorAll('.resizer'));
+                const index = allResizers.indexOf(resizer);
+                if (index === -1) return;
+                
+                const leftPanel = panels[index];
+                if (!leftPanel) return;
+                
+                const url = prompt('Введите URL для новой панели:');
+                if (!url) return;
+                
+                const newPanel = createPanel(url);
+                panelsContainer.insertBefore(newPanel, resizer);
+                
+                updatePanelsList();
+                rebuildResizers();
+                initializePanelWidths();
+                savePanelsState();
+            }
 
-            /* =========================
-               ADD PANEL LEFT
-               ========================= */
-
-function addPanelLeft(resizer) {
-    updatePanelsList();
-    const allResizers = Array.from(document.querySelectorAll('.resizer'));
-    const index = allResizers.indexOf(resizer);
-    if (index === -1) return;
-    
-    const leftPanel = panels[index];
-    if (!leftPanel) return;
-    
-    const url = prompt('Введите URL для новой панели:');
-    if (!url) return;
-    
-    const newPanel = createPanel(url);
-    
-    panelsContainer.insertBefore(newPanel, resizer);
-    
-    updatePanelsList();
-    rebuildResizers();
-    initializePanelWidths();
-    savePanelsState();
-}
-
-function addPanelRight(resizer) {
-    updatePanelsList();
-    const allResizers = Array.from(document.querySelectorAll('.resizer'));
-    const index = allResizers.indexOf(resizer);
-    if (index === -1) return;
-    
-    const rightPanel = panels[index + 1];
-    if (!rightPanel) return;
-    
-    const url = prompt('Введите URL для новой панели:');
-    if (!url) return;
-    
-    const newPanel = createPanel(url);
-    
-    panelsContainer.insertBefore(newPanel, rightPanel);
-    
-    updatePanelsList();
-    rebuildResizers();
-    initializePanelWidths();
-    savePanelsState();
-}
-
-
-            /* =========================
-               REMOVE PANEL LEFT
-               ========================= */
+            function addPanelRight(resizer) {
+                updatePanelsList();
+                const allResizers = Array.from(document.querySelectorAll('.resizer'));
+                const index = allResizers.indexOf(resizer);
+                if (index === -1) return;
+                
+                const rightPanel = panels[index + 1];
+                if (!rightPanel) return;
+                
+                const url = prompt('Введите URL для новой панели:');
+                if (!url) return;
+                
+                const newPanel = createPanel(url);
+                panelsContainer.insertBefore(newPanel, rightPanel);
+                
+                updatePanelsList();
+                rebuildResizers();
+                initializePanelWidths();
+                savePanelsState();
+            }
 
             function removePanelLeft(resizer) {
-
                 updatePanelsList();
+                if (panels.length <= 1) return;
 
-
-                if (panels.length <= 1) {
-                    return;
-                }
-
-
-                const allResizers =
-                    Array.from(
-                        document.querySelectorAll(
-                            '.resizer'
-                        )
-                    );
-
-
-                const index =
-                    allResizers.indexOf(resizer);
-
-
-                if (
-                    index < 0 ||
-                    !panels[index]
-                ) {
-                    return;
-                }
-
+                const allResizers = Array.from(document.querySelectorAll('.resizer'));
+                const index = allResizers.indexOf(resizer);
+                if (index < 0 || !panels[index]) return;
 
                 panels[index].remove();
-
-
                 rebuildResizers();
-
                 initializePanelWidths();
-                    savePanelsState();
-
-
+                savePanelsState();
             }
-
-
-            /* =========================
-               REMOVE PANEL RIGHT
-               ========================= */
 
             function removePanelRight(resizer) {
-
                 updatePanelsList();
+                if (panels.length <= 1) return;
 
-
-                if (panels.length <= 1) {
-                    return;
-                }
-
-
-                const allResizers =
-                    Array.from(
-                        document.querySelectorAll(
-                            '.resizer'
-                        )
-                    );
-
-
-                const index =
-                    allResizers.indexOf(resizer);
-
-
-                if (
-                    index < 0 ||
-                    !panels[index + 1]
-                ) {
-                    return;
-                }
-
+                const allResizers = Array.from(document.querySelectorAll('.resizer'));
+                const index = allResizers.indexOf(resizer);
+                if (index < 0 || !panels[index + 1]) return;
 
                 panels[index + 1].remove();
-
-
                 rebuildResizers();
-
                 initializePanelWidths();
-                    savePanelsState();
-
-
+                savePanelsState();
             }
 
-
-            /* =========================
-               CLOSE MENUS
-               ========================= */
-
-            function closeAllMenus(
-                except = null
-            ) {
-
-                document
-                    .querySelectorAll(
-                        '.handle-menu'
-                    )
-                    .forEach(menu => {
-
-                        if (
-                            menu !== except
-                        ) {
-
-                            menu.classList.remove(
-                                'open'
-                            );
-
-                        }
-
-                    });
-
+            function closeAllMenus(except = null) {
+                document.querySelectorAll('.handle-menu').forEach(menu => {
+                    if (menu !== except) {
+                        menu.classList.remove('open');
+                    }
+                });
             }
-
-
-            /* =========================
-               RESIZER CONTROL
-               ========================= */
 
             function setupResizers() {
-
-                const resizers =
-                    Array.from(
-                        document.querySelectorAll(
-                            '.resizer'
-                        )
-                    );
-
-
-                resizers.forEach(
-                    (resizer, index) => {
-
-
-                        const prevPanel =
-                            panels[index];
-
-
-                        const nextPanel =
-                            panels[index + 1];
-
-
-                        if (
-                            !prevPanel ||
-                            !nextPanel
-                        ) {
-                            return;
-                        }
-
-
-                        let active =
-                            false;
-
-
-                        let moved =
-                            false;
-
-
-                        let startX =
-                            0;
-
-
-                        let startY =
-                            0;
-
-
-                        let animationFrame =
-                            null;
-
-
-                        let pendingY =
-                            null;
-
-
-                        /* =========================
-                           SET POSITION
-                           ========================= */
-
-                        function setPosition(
-                            clientY
-                        ) {
-
-                            const rect =
-                                resizer
-                                .getBoundingClientRect();
-
-
-                            let y =
-                                clientY -
-                                rect.top;
-
-
-                            const handleSize =
-                                24;
-
-
-                            const halfHandle =
-                                handleSize / 2;
-
-
-                            y =
-                                Math.max(
-                                    halfHandle,
-                                    Math.min(
-                                        rect.height -
-                                        halfHandle,
-                                        y
-                                    )
-                                );
-
-
-                            const percent =
-
-                                (
-                                    y /
-                                    rect.height
-                                ) * 100;
-
-
-                            const handle =
-                                resizer.querySelector(
-                                    '.resizer-handle'
-                                );
-
-
-                            handle.style.top =
-                                `${percent}%`;
-
-
-                            const totalWidth =
-
-                                prevPanel
-                                .getBoundingClientRect()
-                                .width
-
-                                +
-
-                                nextPanel
-                                .getBoundingClientRect()
-                                .width;
-
-
-                            const minWidth =
-                                80;
-
-
-                            let ratio =
-
-                                1 -
-
-                                y /
-                                rect.height;
-
-
-                            let newPrevWidth =
-
-                                totalWidth *
-                                ratio;
-
-
-                            newPrevWidth =
-
-                                Math.max(
-                                    minWidth,
-
-                                    Math.min(
-                                        totalWidth -
-                                        minWidth,
-
-                                        newPrevWidth
-                                    )
-                                );
-
-
-                            const newNextWidth =
-
-                                totalWidth -
-
-                                newPrevWidth;
-
-
-                            prevPanel.style.width =
-
-                                `${newPrevWidth}px`;
-
-
-                            nextPanel.style.width =
-
-                                `${newNextWidth}px`;
-
-                        }
-
-
-                        /* =========================
-                           POINTER DOWN
-                           ========================= */
-
-                        function pointerDown(e) {
-
-                            if (
-                                e.target.closest(
-                                    '.handle-menu'
-                                )
-                            ) {
-                                return;
-                            }
-
-
-                            e.preventDefault();
-
-
-                            active =
-                                true;
-
-
-                            moved =
-                                false;
-
-
-                            startX =
-                                e.clientX;
-
-
-                            startY =
-                                e.clientY;
-
-
-                            pendingY =
-                                e.clientY;
-
-
-                            resizer.classList.add(
-                                'active'
-                            );
-
-
-                            document.body.classList.add(
-                                'is-resizing'
-                            );
-
-
-                            resizer
-                                .setPointerCapture?.(
-                                    e.pointerId
-                                );
-
-                        }
-
-
-                        /* =========================
-                           POINTER MOVE
-                           ========================= */
-
-                        function pointerMove(e) {
-
-                            if (!active) {
-                                return;
-                            }
-
-
-                            const deltaX =
-
-                                Math.abs(
-                                    e.clientX -
-                                    startX
-                                );
-
-
-                            const deltaY =
-
-                                Math.abs(
-                                    e.clientY -
-                                    startY
-                                );
-
-
-                            if (
-                                deltaX > 6 ||
-                                deltaY > 6
-                            ) {
-
-                                moved =
-                                    true;
-
-
-                                closeAllMenus();
-
-                            }
-
-
-                            if (!moved) {
-                                return;
-                            }
-
-
-                            pendingY =
-                                e.clientY;
-
-
-                            if (
-                                animationFrame !==
-                                null
-                            ) {
-                                return;
-                            }
-
-
-                            animationFrame =
-
-                                requestAnimationFrame(
-                                    () => {
-
-                                        animationFrame =
-                                            null;
-
-
-                                        if (
-                                            !active ||
-                                            pendingY ===
-                                            null
-                                        ) {
-                                            return;
-                                        }
-
-
-                                        setPosition(
-                                            pendingY
-                                        );
-
-                                    }
-                                );
-
-                        }
-
-
-                        /* =========================
-                           POINTER UP
-                           ========================= */
-
-                        function pointerUp(e) {
-
-                            if (!active) {
-                                return;
-                            }
-
-
-                            active =
-                                false;
-
-
-                            pendingY =
-                                null;
-
-
-                            if (
-                                animationFrame !==
-                                null
-                            ) {
-
-                                cancelAnimationFrame(
-                                    animationFrame
-                                );
-
-
-                                animationFrame =
-                                    null;
-
-                            }
-
-
-                            resizer.classList.remove(
-                                'active'
-                            );
-
-
-                            document.body.classList.remove(
-                                'is-resizing'
-                            );
-
-
-                            try {
-
-                                resizer
-                                    .releasePointerCapture?.(
-                                        e.pointerId
-                                    );
-
-                            } catch (_) {}
-
-
-                            /*
-                             * Одиночный тап:
-                             * открываем меню.
-                             */
-
-                            if (!moved) {
-
-                                const menu =
-                                    resizer.querySelector(
-                                        '.handle-menu'
-                                    );
-
-
-                                const isOpen =
-                                    menu.classList.contains(
-                                        'open'
-                                    );
-
-
-                                closeAllMenus(
-                                    isOpen
-                                        ? null
-                                        : menu
-                                );
-
-
-                                menu.classList.toggle(
-                                    'open',
-                                    !isOpen
-                                );
-
-                            }
-
-                        }
-
-
-                        resizer.addEventListener(
-                            'pointerdown',
-                            pointerDown
-                        );
-
-
-                        resizer.addEventListener(
-                            'pointermove',
-                            pointerMove
-                        );
-
-
-                        resizer.addEventListener(
-                            'pointerup',
-                            pointerUp
-                        );
-
-
-                        resizer.addEventListener(
-                            'pointercancel',
-                            pointerUp
-                        );
-
-
-                        resizer.addEventListener(
-                            'lostpointercapture',
-                            pointerUp
-                        );
-
+                const resizers = Array.from(document.querySelectorAll('.resizer'));
+
+                resizers.forEach((resizer, index) => {
+                    const prevPanel = panels[index];
+                    const nextPanel = panels[index + 1];
+
+                    if (!prevPanel || !nextPanel) return;
+
+                    let active = false;
+                    let moved = false;
+                    let startX = 0;
+                    let startY = 0;
+                    let animationFrame = null;
+                    let pendingY = null;
+
+                    function setPosition(clientY) {
+                        const rect = resizer.getBoundingClientRect();
+                        let y = clientY - rect.top;
+                        const handleSize = 24;
+                        const halfHandle = handleSize / 2;
+
+                        y = Math.max(halfHandle, Math.min(rect.height - halfHandle, y));
+
+                        const percent = (y / rect.height) * 100;
+                        const handle = resizer.querySelector('.resizer-handle');
+                        handle.style.top = `${percent}%`;
+
+                        const totalWidth = prevPanel.getBoundingClientRect().width + nextPanel.getBoundingClientRect().width;
+                        const minWidth = 80;
+                        let ratio = 1 - y / rect.height;
+                        let newPrevWidth = totalWidth * ratio;
+
+                        newPrevWidth = Math.max(minWidth, Math.min(totalWidth - minWidth, newPrevWidth));
+                        const newNextWidth = totalWidth - newPrevWidth;
+
+                        prevPanel.style.width = `${newPrevWidth}px`;
+                        nextPanel.style.width = `${newNextWidth}px`;
                     }
-                );
 
+                    function pointerDown(e) {
+                        if (e.target.closest('.handle-menu')) return;
+                        e.preventDefault();
+                        active = true;
+                        moved = false;
+                        startX = e.clientX;
+                        startY = e.clientY;
+                        pendingY = e.clientY;
+
+                        resizer.classList.add('active');
+                        document.body.classList.add('is-resizing');
+                        resizer.setPointerCapture?.(e.pointerId);
+                    }
+
+                    function pointerMove(e) {
+                        if (!active) return;
+                        const deltaX = Math.abs(e.clientX - startX);
+                        const deltaY = Math.abs(e.clientY - startY);
+
+                        if (deltaX > 6 || deltaY > 6) {
+                            moved = true;
+                            closeAllMenus();
+                        }
+
+                        if (!moved) return;
+                        pendingY = e.clientY;
+
+                        if (animationFrame !== null) return;
+
+                        animationFrame = requestAnimationFrame(() => {
+                            animationFrame = null;
+                            if (!active || pendingY === null) return;
+                            setPosition(pendingY);
+                        });
+                    }
+
+                    function pointerUp(e) {
+                        if (!active) return;
+                        active = false;
+                        pendingY = null;
+
+                        if (animationFrame !== null) {
+                            cancelAnimationFrame(animationFrame);
+                            animationFrame = null;
+                        }
+
+                        resizer.classList.remove('active');
+                        document.body.classList.remove('is-resizing');
+
+                        try {
+                            resizer.releasePointerCapture?.(e.pointerId);
+                        } catch (_) {}
+
+                        if (!moved) {
+                            const menu = resizer.querySelector('.handle-menu');
+                            const isOpen = menu.classList.contains('open');
+                            closeAllMenus(isOpen ? null : menu);
+                            menu.classList.toggle('open', !isOpen);
+                        }
+                    }
+
+                    resizer.addEventListener('pointerdown', pointerDown);
+                    resizer.addEventListener('pointermove', pointerMove);
+                    resizer.addEventListener('pointerup', pointerUp);
+                    resizer.addEventListener('pointercancel', pointerUp);
+                    resizer.addEventListener('lostpointercapture', pointerUp);
+                });
             }
 
-
-            /* =========================
-               INITIAL BUILD
-               ========================= */
-
             rebuildResizers();
-
             initializePanelWidths();
 
+            document.addEventListener('pointerdown', e => {
+                if (!e.target.closest('.resizer')) {
+                    closeAllMenus();
+                }
+            });
 
-            /* =========================
-               CLICK OUTSIDE
-               ========================= */
-
-            document.addEventListener(
-                'pointerdown',
-                e => {
-
-                    if (
-                        !e.target.closest(
-                            '.resizer'
-                        )
-                    ) {
-
-                        closeAllMenus();
-
+            let resizeTimer = null;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (!document.body.classList.contains('is-resizing')) {
+                        initializePanelWidths();
                     }
-
-                }
-            );
-
-
-            /* =========================
-               WINDOW RESIZE
-               ========================= */
-
-            let resizeTimer =
-                null;
-
-
-            window.addEventListener(
-                'resize',
-                () => {
-
-                    clearTimeout(
-                        resizeTimer
-                    );
-
-
-                    resizeTimer =
-
-                        setTimeout(
-                            () => {
-
-                                if (
-                                    !document.body
-                                    .classList
-                                    .contains(
-                                        'is-resizing'
-                                    )
-                                ) {
-
-                                    initializePanelWidths();
-
-                                }
-
-                            },
-                            100
-                        );
-
-                }
-            );
-
+                }, 100);
+            });
         }
-
-
-        /* =====================================================
-           MOBILE
-           ===================================================== */
 
         if (isMobile) {
+            function rebuildDots() {
+                dotsContainer.innerHTML = '';
+                updatePanelsList();
 
+                if (panels.length <= 1) {
+                    dotsContainer.style.display = 'none';
+                    return;
+                }
 
-            dotsContainer.style.display =
-                'flex';
+                dotsContainer.style.display = 'flex';
 
-
-            pages.forEach(
-                (_, index) => {
-
-
-                    const dot =
-                        document.createElement(
-                            'button'
-                        );
-
-
-                    dot.dataset.index =
-                        index;
-
+                panels.forEach((_, index) => {
+                    const dot = document.createElement('button');
+                    dot.dataset.index = index;
 
                     if (index === 0) {
-
-                        dot.classList.add(
-                            'active'
-                        );
-
+                        dot.classList.add('active');
                     }
 
+                    dot.addEventListener('click', () => {
+                        updatePanelsList();
+                        const panel = panels[index];
+                        if (!panel) return;
 
-                    dot.addEventListener(
-                        'click',
-                        () => {
+                        panel.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'nearest',
+                            inline: 'start'
+                        });
+                    });
 
+                    dotsContainer.appendChild(dot);
+                });
 
-                            updatePanelsList();
+                const observer = new IntersectionObserver(entries => {
+                    entries.forEach(entry => {
+                        if (!entry.isIntersecting) return;
+                        updatePanelsList();
+                        const index = panels.indexOf(entry.target);
+                        if (index === -1) return;
 
+                        document.querySelectorAll('.dots button').forEach((dot, i) => {
+                            dot.classList.toggle('active', i === index);
+                        });
+                    });
+                }, {
+                    root: panelsContainer,
+                    threshold: 0.6
+                });
 
-                            const panel =
-                                panels[index];
+                panels.forEach(panel => {
+                    observer.observe(panel);
+                });
+            }
 
+            mobileAddBtn.addEventListener('click', () => {
+                const url = prompt('Введите URL для новой панели:');
+                if (!url) return;
 
-                            if (!panel) {
-                                return;
-                            }
+                const newPanel = createPanel(url);
+                panelsContainer.appendChild(newPanel);
+                updatePanelsList();
+                rebuildDots();
+                savePanelsState();
 
+                newPanel.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'start'
+                });
+            });
 
-                            panel.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'nearest',
-                                inline: 'start'
-                            });
+            mobileRemoveBtn.addEventListener('click', () => {
+                updatePanelsList();
+                if (panels.length <= 1) return;
 
-                        }
-                    );
+                let scrollLeft = panelsContainer.scrollLeft;
+                let panelWidth = panelsContainer.clientWidth;
+                let currentIndex = Math.round(scrollLeft / panelWidth);
 
-
-                    dotsContainer.appendChild(
-                        dot
-                    );
-
+                if (currentIndex >= panels.length) {
+                    currentIndex = panels.length - 1;
                 }
-            );
 
+                panels[currentIndex].remove();
+                updatePanelsList();
+                rebuildDots();
+                savePanelsState();
 
-            const observer =
-                new IntersectionObserver(
-                    entries => {
-
-
-                        entries.forEach(
-                            entry => {
-
-
-                                if (
-                                    !entry.isIntersecting
-                                ) {
-                                    return;
-                                }
-
-
-                                updatePanelsList();
-
-
-                                const index =
-
-                                    panels.indexOf(
-                                        entry.target
-                                    );
-
-
-                                if (
-                                    index === -1
-                                ) {
-                                    return;
-                                }
-
-
-                                document
-                                    .querySelectorAll(
-                                        '.dots button'
-                                    )
-                                    .forEach(
-                                        (dot, i) => {
-
-                                            dot.classList.toggle(
-                                                'active',
-                                                i === index
-                                            );
-
-                                        }
-                                    );
-
-                            }
-                        );
-
-                    },
-                    {
-                        root:
-                            panelsContainer,
-
-                        threshold:
-                            0.6
-                    }
-                );
-
-
-            panels.forEach(
-                panel => {
-
-                    observer.observe(
-                        panel
-                    );
-
+                let newTargetIndex = Math.max(0, currentIndex - 1);
+                if (panels[newTargetIndex]) {
+                    panels[newTargetIndex].scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'start'
+                    });
                 }
-            );
-
+            });
         }
 
-
-        /* =========================
-           INITIAL PANELS - В САМОМ КОНЦЕ
-           ========================= */
-
         if (!restorePanelsState()) {
-            pages.forEach(page => {
-                panelsContainer.appendChild(createPanel(page));
-            });
+            if (isMobile) {
+                panelsContainer.appendChild(createPanel(pages[0]));
+            } else {
+                pages.forEach(page => {
+                    panelsContainer.appendChild(createPanel(page));
+                });
+            }
             updatePanelsList();
             if (!isMobile) {
                 rebuildResizers();
                 initializePanelWidths();
+            } else {
+                rebuildDots();
             }
             savePanelsState();
+        } else {
+            if (isMobile) {
+                rebuildDots();
+            }
         }
-
-
     </script>
-
-
 </body>
 </html>
