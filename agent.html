@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+ · Gemini + DeepSeek</title>
+  <link href="https://fonts.cdnfonts.com/css/copperplate-gothic-std" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0b0e1a;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: #e8edf5;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        /* ========== LOGIN ========== */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 14, 26, 0.96);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(12px);
+            transition: opacity 0.5s;
+        }
+        .login-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .login-box {
+            background: #141a2b;
+            padding: 2.5rem 3rem;
+            max-width: 520px;
+            width: 100%;
+        }
+        .login-box .logo {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        .login-box .logo img {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            object-fit: contain;
+            padding: 8px;
+
+        }
+        .login-box h2 {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+        }
+        .login-box .subtitle {
+            text-align: center;
+            color: #7a8aaa;
+            font-size: 0.9rem;
+            margin-bottom: 1.8rem;
+        }
+        .login-box label {
+            display: block;
+            font-size: 0.8rem;
+            color: #8a9ad0;
+            margin-bottom: 0.3rem;
+            margin-top: 1rem;
+        }
+        .login-box input, .login-box select {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border-radius: 30px;
+            border: 1px solid #2f3b5a;
+            background: #1a223b;
+            color: #e8edf5;
+            font-size: 0.95rem;
+            outline: none;
+            transition: 0.2s;
+        }
+        .login-box input:focus, .login-box select:focus {
+            border-color: #6d8cff;
+            box-shadow: 0 0 0 3px rgba(109, 140, 255, 0.2);
+        }
+        .login-box .btn-login {
+            width: 100%;
+            padding: 0.9rem;
+            margin-top: 1.8rem;
+            border-radius: 30px;
+            border: none;
+            background: linear-gradient(135deg, #3d5bd9, #5f7cf0);
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .login-box .btn-login:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(61, 91, 217, 0.4);
+        }
+        .login-box .btn-login:disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .login-box .hint {
+            font-size: 0.7rem;
+            color: #5a6a8a;
+            margin-top: 1rem;
+            text-align: center;
+            line-height: 1.6;
+        }
+        .login-box .hint a {
+            color: #6d8cff;
+            text-decoration: none;
+        }
+        .login-box .hint a:hover {
+            text-decoration: underline;
+        }
+        .login-box .error-msg {
+            color: #ff6b6b;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            text-align: center;
+            min-height: 1.5rem;
+        }
+        .login-box .divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #5a6a8a;
+            font-size: 0.8rem;
+            margin: 1.2rem 0;
+        }
+        .login-box .divider::before,
+        .login-box .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #2a3450;
+        }
+
+        /* ========== APP ========== */
+        .app {
+            max-width: 1200px;
+            width: 100%;
+            height: 95vh;
+            background: #141a2b;
+            border: none;
+            border-radius: 2rem;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+        }
+        .app.visible {
+            display: flex;
+        }
+
+        .header {
+            padding: 0.8rem 1.5rem;
+            border-bottom: 1px solid #202a47;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            align-items: center;
+            background: #10162b;
+        }
+        .header .logo-small {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .header .logo-small img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: contain;
+            background: #1a223b;
+            padding: 4px;
+            border: 1px solid #2a3450;
+        }
+        .header h1 {
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+        .header .badge {
+            font-size: 0.6rem;
+            background: #2b7a4b;
+            padding: 0.15rem 0.6rem;
+            border-radius: 20px;
+            color: #a0e0b0;
+        }
+        .header-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-left: auto;
+            align-items: center;
+        }
+        .header-controls .user-info {
+            font-size: 0.8rem;
+            color: #7a8aaa;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .header-controls .user-info .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #3d5bd9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .btn {
+            background: #2a3457;
+            border: none;
+            color: #d3defa;
+            padding: 0.4rem 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            border: 1px solid #3d4b73;
+        }
+        .btn:hover {
+            transform: scale(1.02);
+            filter: brightness(1.15);
+        }
+        .btn-danger {
+            background: #a03a4a;
+            border-color: #c54b5e;
+        }
+        .btn-primary {
+            background: #3d5bd9;
+            border-color: #5f7cf0;
+        }
+        .btn:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .model-bar {
+            background: #1a1f35;
+            padding: 0.5rem 1.2rem;
+            border-bottom: 1px solid #202a47;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            align-items: center;
+        }
+        .model-bar select {
+            background: #1e253b;
+            border: 1px solid #2f3b5a;
+            color: #e8edf5;
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            outline: none;
+            cursor: pointer;
+        }
+        .model-bar select:focus {
+            border-color: #6d8cff;
+        }
+        .model-bar .model-status {
+            font-size: 0.75rem;
+            color: #3ea06a;
+        }
+        .model-bar .model-status.offline {
+            color: #c54b5e;
+        }
+
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            background: #0f1425;
+        }
+        .chat-area .welcome {
+            text-align: center;
+            padding: 2rem 0;
+            color: #5a6a8a;
+        }
+        .chat-area .welcome h3 {
+            font-size: 1.4rem;
+            color: #8a9ad0;
+            margin-bottom: 0.5rem;
+        }
+        .message {
+            max-width: 80%;
+            padding: 0.8rem 1.2rem;
+            border-radius: 1.2rem;
+            animation: fadeIn 0.3s ease;
+            word-wrap: break-word;
+            line-height: 1.6;
+        }
+        .message-user {
+            align-self: flex-end;
+            background: #1a2a5a;
+            border: 1px solid #2a407a;
+        }
+        .message-agent {
+            align-self: flex-start;
+            background: #1a223b;
+            border: 1px solid #2d395e;
+        }
+        .message-agent.gemini {
+            border-left: 3px solid #4a8af4;
+        }
+        .message-agent.deepseek {
+            border-left: 3px solid #4af4a8;
+        }
+        .message-system {
+            align-self: center;
+            background: #2a1a3a;
+            border: 1px solid #4a2a5a;
+            font-size: 0.8rem;
+            color: #b8a0d0;
+            max-width: 90%;
+        }
+        .message-error {
+            align-self: center;
+            background: #3a1a2a;
+            border: 1px solid #5a2a3a;
+            color: #ff8a8a;
+        }
+        .message .role {
+            font-size: 0.65rem;
+            opacity: 0.6;
+            margin-bottom: 0.2rem;
+        }
+        .message .content {
+            white-space: pre-wrap;
+        }
+        .message .time {
+            font-size: 0.6rem;
+            opacity: 0.4;
+            margin-top: 0.3rem;
+            text-align: right;
+        }
+
+        .input-area {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #202a47;
+            background: #10162b;
+            display: flex;
+            gap: 0.8rem;
+            align-items: flex-end;
+        }
+        .input-area textarea {
+            flex: 1;
+            resize: none;
+            padding: 0.7rem 1rem;
+            border-radius: 20px;
+            min-height: 50px;
+            max-height: 150px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            background: #1a223b;
+            border: 1px solid #2f3b5a;
+            color: #e8edf5;
+            outline: none;
+            font-family: inherit;
+        }
+        .input-area textarea:focus {
+            border-color: #6d8cff;
+        }
+        .input-area .btn {
+            padding: 0.7rem 1.5rem;
+            height: 50px;
+        }
+
+        .status-bar {
+            padding: 0.3rem 1.5rem;
+            background: #0a0f1f;
+            border-top: 1px solid #1a2340;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: #5a6a8a;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+        .status-bar .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .dot-green { background: #3ea06a; }
+        .dot-yellow { background: #dba044; animation: pulse 0.8s infinite; }
+        .dot-red { background: #c54b5e; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        @media (max-width: 680px) {
+            .login-box { padding: 1.5rem; }
+            .header { flex-direction: column; align-items: stretch; }
+            .header-controls { margin-left: 0; }
+            .message { max-width: 95%; }
+            .input-area { flex-direction: column; }
+            .input-area .btn { width: 100%; }
+            .model-bar { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== LOGIN OVERLAY ===== -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <div class="logo">
+            <a href="research.html">
+<img src="fleurdelis.png" alt="Fleur-de-lis" id="loginLogo">
+</a>
+        </div> 
+        <h2 style="font-family: 'Cinzel', sans-serif">AI Agent</h2>
+        <div style="font-family: 'Copperplate Gothic Std', sans-serif" class="subtitle">Enter your API keys to access AI models</div>
+
+        <label for="geminiKey" style="font-size: 1rem; font-family: monospace">Gemini API Key</label>
+        <input style="font-family: monospace" type="password" id="geminiKey" placeholder="Enter Gemini API key...">
+        <div style="font-family: 'Copperplate Gothic Std', serif; color:#5a6a8a; margin-top:0.2rem;">
+            <a href="https://aistudio.google.com/apikey" target="_blank" style="text-decoration: none; color:#6d8cff;">Get it from Google AI Studio</a>
+        </div>
+
+        <label style="font-size: 1rem; font-family: monospace" for="deepseekKey">DeepSeek API Key (OpenRouter)</label>
+        <input style="font-family: monospace"type="password" id="deepseekKey" placeholder="Enter DeepSeek API key...">
+        <div style="font-family: 'Copperplate Gothic Std', serif; color:#5a6a8a; margin-top:0.2rem;">
+            <a href="https://openrouter.ai/keys" target="_blank" style="text-decoration: none; color:#6d8cff;">Get it from OpenRouter</a>
+        </div>
+
+        <label style="font-family: monospace" for="loginModel">Select Model</label>
+        <select style="font-family: monospace" id="loginModel">
+            <option value="gemini">Gemini (Google)</option>
+            <option value="deepseek">DeepSeek</option>
+            <option value="both">Gemini + DeepSeek (compare)</option>
+        </select>
+
+        <div class="error-msg" id="loginError"></div>
+
+        <button class="btn-login" id="loginBtn">🚀 Start</button>
+
+    </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="app" id="app">
+    <!-- Header -->
+    <div class="header">
+        <div class="logo-small">
+            <img src="fleurdelis.png" alt="Fleur-de-lis" id="headerLogo">
+            <h1>AI Agent</h1>
+            <span class="badge" id="modelBadge">Gemini</span>
+        </div>
+        <div class="header-controls">
+            <div class="user-info">
+                <div class="avatar" id="userAvatar">👤</div>
+                <span id="userNameDisplay">User</span>
+            </div>
+            <button class="btn btn-danger" id="logoutBtn">🚪 Logout</button>
+            <button class="btn btn-danger" id="clearBtn">🗑 Clear</button>
+        </div>
+    </div>
+
+    <!-- Model Bar -->
+    <div class="model-bar">
+        <select id="modelSelect">
+            <option value="gemini">Gemini</option>
+            <option value="deepseek">DeepSeek</option>
+            <option value="both">Gemini + DeepSeek</option>
+        </select>
+        <span class="model-status" id="modelStatus">🟢 Online</span>
+        <span style="font-size:0.7rem; color:#5a6a8a; margin-left:auto;" id="tokenDisplay">Tokens: 0</span>
+    </div>
+
+    <!-- Chat -->
+    <div class="chat-area" id="chatArea">
+        <div class="welcome">
+            <h3>🤖 Welcome to AI Agent!</h3>
+            <p>Select a model: <b>Gemini</b>, <b>DeepSeek</b>, or <b>both</b> simultaneously.</p>
+            <p style="font-size:0.8rem; color:#5a6a8a; margin-top:0.5rem;">
+                💡 Gemini key from <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#6d8cff;">Google AI Studio</a><br>
+                💡 DeepSeek key from <a href="https://openrouter.ai/keys" target="_blank" style="color:#6d8cff;">OpenRouter</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+        <textarea id="userInput" rows="1" placeholder="Type your message..." maxlength="4000"></textarea>
+        <button class="btn btn-primary" id="sendBtn">✉ Send</button>
+    </div>
+
+    <!-- Status -->
+    <div class="status-bar">
+        <div class="status-indicator">
+            <span class="dot dot-green" id="statusDot"></span>
+            <span id="statusText">Ready</span>
+        </div>
+        <div>
+            <span id="connectionStatus">🔗 Connected</span>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+//  AI AGENT · Gemini + DeepSeek
+//  Manual API key entry only (works from file://)
+//  English UI with Fleur-de-lis logo
+// ============================================================
+
+// ---------- CONSTANTS ----------
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+
+// ---------- STATE ----------
+const state = {
+    apiKeys: { gemini: '', deepseek: '' },
+    model: 'gemini',
+    messages: [],
+    isProcessing: false,
+    totalTokens: 0,
+    isLoggedIn: false,
+};
+
+// ---------- DOM ----------
+const loginOverlay = document.getElementById('loginOverlay');
+const app = document.getElementById('app');
+const loginError = document.getElementById('loginError');
+const loginBtn = document.getElementById('loginBtn');
+const geminiKeyInput = document.getElementById('geminiKey');
+const deepseekKeyInput = document.getElementById('deepseekKey');
+const loginModelSelect = document.getElementById('loginModel');
+const logoutBtn = document.getElementById('logoutBtn');
+
+const chatArea = document.getElementById('chatArea');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const clearBtn = document.getElementById('clearBtn');
+const modelSelect = document.getElementById('modelSelect');
+const modelStatus = document.getElementById('modelStatus');
+const modelBadge = document.getElementById('modelBadge');
+const userNameDisplay = document.getElementById('userNameDisplay');
+const userAvatar = document.getElementById('userAvatar');
+const tokenDisplay = document.getElementById('tokenDisplay');
+const statusText = document.getElementById('statusText');
+const statusDot = document.getElementById('statusDot');
+const connectionStatus = document.getElementById('connectionStatus');
+
+// ---------- HELPER FUNCTIONS ----------
+function addMessage(role, content, type = 'agent', model = '') {
+    const welcome = chatArea.querySelector('.welcome');
+    if (welcome) welcome.remove();
+
+    const div = document.createElement('div');
+    div.className = `message message-${type}`;
+    if (model === 'gemini') div.classList.add('gemini');
+    if (model === 'deepseek') div.classList.add('deepseek');
+    
+    const time = new Date().toLocaleTimeString();
+    const modelLabel = model ? ` [${model}]` : '';
+    div.innerHTML = `
+        <div class="role">${role}${modelLabel}</div>
+        <div class="content">${content}</div>
+        <div class="time">${time}</div>
+    `;
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+    return div;
+}
+
+function addSystemMessage(content) {
+    const div = document.createElement('div');
+    div.className = 'message message-system';
+    div.innerHTML = `<div class="content">${content}</div>`;
+    chatArea.appendChild(div);
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function setStatus(text, type = 'ready') {
+    statusText.textContent = text;
+    statusDot.className = `dot dot-${type}`;
+}
+
+function getModelName(value) {
+    const names = {
+        'gemini': 'Gemini',
+        'deepseek': 'DeepSeek',
+        'both': 'Gemini + DeepSeek'
+    };
+    return names[value] || value;
+}
+
+// ---------- API CALLS ----------
+async function callGemini(messages, apiKey) {
+    if (!apiKey) throw new Error('❌ Gemini API key not found');
+
+    let prompt = '';
+    for (const msg of messages) {
+        prompt += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
+    }
+
+    const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+        })
+    });
+
+    if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Gemini error: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '⚠️ No response from Gemini';
+}
+
+async function callDeepSeek(messages, apiKey) {
+    if (!apiKey) throw new Error('❌ DeepSeek API key not found');
+
+    const response = await fetch(OPENROUTER_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'AI Agent',
+        },
+        body: JSON.stringify({
+            model: 'deepseek/deepseek-chat',
+            messages: messages,
+            temperature: 0.7,
+            max_tokens: 2048,
+        })
+    });
+
+    if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`DeepSeek error: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || '⚠️ No response from DeepSeek';
+}
+
+// ---------- SEND MESSAGE ----------
+async function sendMessage() {
+    if (state.isProcessing || !state.isLoggedIn) return;
+
+    const text = userInput.value.trim();
+    if (!text) return;
+
+    addMessage('👤 You', text, 'user');
+    userInput.value = '';
+    userInput.style.height = 'auto';
+
+    state.isProcessing = true;
+    sendBtn.disabled = true;
+    setStatus('Generating...', 'yellow');
+
+    const model = modelSelect.value;
+
+    try {
+        const apiMessages = [
+            { role: 'system', content: 'You are a helpful AI assistant. Answer in the same language as the user.' },
+            ...state.messages.map(m => ({
+                role: m.role === 'user' ? 'user' : 'assistant',
+                content: m.content
+            })),
+            { role: 'user', content: text }
+        ];
+
+        if (model === 'gemini') {
+            const thinkingMsg = addMessage('🤖 Gemini', '⏳ Generating response...', 'agent', 'Gemini');
+            const reply = await callGemini(apiMessages, state.apiKeys.gemini);
+            thinkingMsg.querySelector('.content').textContent = reply;
+            thinkingMsg.querySelector('.role').textContent = '🤖 Gemini';
+            state.messages.push({ role: 'user', content: text });
+            state.messages.push({ role: 'assistant', content: reply });
+        } 
+        else if (model === 'deepseek') {
+            const thinkingMsg = addMessage('🤖 DeepSeek', '⏳ Generating response...', 'agent', 'DeepSeek');
+            const reply = await callDeepSeek(apiMessages, state.apiKeys.deepseek);
+            thinkingMsg.querySelector('.content').textContent = reply;
+            thinkingMsg.querySelector('.role').textContent = '🤖 DeepSeek';
+            state.messages.push({ role: 'user', content: text });
+            state.messages.push({ role: 'assistant', content: reply });
+        } 
+        else if (model === 'both') {
+            const msg1 = addMessage('🤖 Gemini', '⏳ Generating...', 'agent', 'Gemini');
+            const msg2 = addMessage('🤖 DeepSeek', '⏳ Generating...', 'agent', 'DeepSeek');
+
+            const [geminiReply, deepseekReply] = await Promise.all([
+                callGemini(apiMessages, state.apiKeys.gemini).catch(e => `❌ Gemini: ${e.message}`),
+                callDeepSeek(apiMessages, state.apiKeys.deepseek).catch(e => `❌ DeepSeek: ${e.message}`)
+            ]);
+
+            msg1.querySelector('.content').textContent = geminiReply;
+            msg1.querySelector('.role').textContent = '🤖 Gemini';
+            msg2.querySelector('.content').textContent = deepseekReply;
+            msg2.querySelector('.role').textContent = '🤖 DeepSeek';
+
+            state.messages.push({ role: 'user', content: text });
+            state.messages.push({ role: 'assistant', content: `Gemini: ${geminiReply}\n\nDeepSeek: ${deepseekReply}` });
+        }
+
+        state.totalTokens += text.length / 4;
+        tokenDisplay.textContent = `Tokens: ${Math.round(state.totalTokens)}`;
+        setStatus('Ready', 'green');
+
+    } catch (error) {
+        console.error('Error:', error);
+        addMessage('⚠️ Error', `❌ ${error.message}`, 'error');
+        setStatus('Error', 'red');
+    }
+
+    state.isProcessing = false;
+    sendBtn.disabled = false;
+    userInput.focus();
+}
+
+// ---------- CLEAR ----------
+function clearChat() {
+    chatArea.innerHTML = `
+        <div class="welcome">
+            <h3>🤖 Chat cleared</h3>
+            <p>Send a message to continue.</p>
+        </div>
+    `;
+    state.messages = [];
+    state.totalTokens = 0;
+    tokenDisplay.textContent = 'Tokens: 0';
+    setStatus('Ready', 'green');
+}
+
+// ---------- LOGOUT ----------
+function logout() {
+    state.isLoggedIn = false;
+    loginOverlay.classList.remove('hidden');
+    app.classList.remove('visible');
+    chatArea.innerHTML = `
+        <div class="welcome">
+            <h3>👋 Goodbye</h3>
+            <p>Log in again to continue.</p>
+        </div>
+    `;
+}
+
+// ---------- LOGIN ----------
+function login() {
+    const geminiKey = geminiKeyInput.value.trim();
+    const deepseekKey = deepseekKeyInput.value.trim();
+    const model = loginModelSelect.value;
+
+    if (!geminiKey && !deepseekKey) {
+        loginError.textContent = '❌ Enter at least one API key';
+        return;
+    }
+
+    if (model === 'both' && (!geminiKey || !deepseekKey)) {
+        loginError.textContent = '❌ Both keys required for "both" mode';
+        return;
+    }
+
+    if ((model === 'gemini' || model === 'both') && !geminiKey) {
+        loginError.textContent = '❌ Gemini key required for Gemini';
+        return;
+    }
+
+    if ((model === 'deepseek' || model === 'both') && !deepseekKey) {
+        loginError.textContent = '❌ DeepSeek key required for DeepSeek';
+        return;
+    }
+
+    state.apiKeys.gemini = geminiKey;
+    state.apiKeys.deepseek = deepseekKey;
+    state.model = model;
+    state.isLoggedIn = true;
+
+    localStorage.setItem('gemini_api_key', geminiKey);
+    localStorage.setItem('deepseek_api_key', deepseekKey);
+    localStorage.setItem('ai_model', model);
+
+    loginOverlay.classList.add('hidden');
+    app.classList.add('visible');
+
+    modelSelect.value = model;
+    modelBadge.textContent = getModelName(model);
+    connectionStatus.textContent = '🔗 Connected';
+    setStatus('Ready', 'green');
+    userInput.disabled = false;
+    sendBtn.disabled = false;
+    userInput.focus();
+
+    userNameDisplay.textContent = 'User';
+    userAvatar.textContent = '👤';
+
+    addSystemMessage(`✅ Welcome!`);
+    addSystemMessage(`🧠 Model: ${getModelName(model)}`);
+    addSystemMessage(`📌 Gemini: ${geminiKey ? '✅' : '❌'} | DeepSeek: ${deepseekKey ? '✅' : '❌'}`);
+}
+
+// ---------- EVENT LISTENERS ----------
+loginBtn.addEventListener('click', login);
+
+geminiKeyInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+deepseekKeyInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+
+sendBtn.addEventListener('click', sendMessage);
+
+userInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+userInput.addEventListener('input', () => {
+    userInput.style.height = 'auto';
+    userInput.style.height = Math.min(userInput.scrollHeight, 150) + 'px';
+});
+
+clearBtn.addEventListener('click', clearChat);
+logoutBtn.addEventListener('click', logout);
+
+modelSelect.addEventListener('change', () => {
+    const val = modelSelect.value;
+    modelBadge.textContent = getModelName(val);
+    addSystemMessage(`🔄 Model changed: ${getModelName(val)}`);
+});
+
+// ---------- SESSION RESTORE ----------
+const savedGemini = localStorage.getItem('gemini_api_key');
+const savedDeepSeek = localStorage.getItem('deepseek_api_key');
+const savedModel = localStorage.getItem('ai_model') || 'gemini';
+
+if (savedGemini || savedDeepSeek) {
+    geminiKeyInput.value = savedGemini || '';
+    deepseekKeyInput.value = savedDeepSeek || '';
+    loginModelSelect.value = savedModel;
+    login();
+}
+
+console.log('🤖 AI Agent started!');
+console.log('🔑 Enter API keys for Gemini and/or DeepSeek');
+console.log('💡 Works from file:// without Firebase!');
+</script>
+</body>
+</html>
