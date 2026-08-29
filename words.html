@@ -25,13 +25,18 @@
             background-color: #121212;
             font-family: 'Roboto Condensed', sans-serif;
             transition: background-color 0.5s ease;
+            overflow: hidden;
         }
 
         .container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            height: 100vh;
             padding: 10px;
         }
 
@@ -338,6 +343,15 @@ cell.addEventListener('pointerleave', (event) => {
 
         applyTheme(themes[0]);
         updateLayout();
+
+        if (window.visualViewport) {
+            const handleResize = () => {
+                mainContainer.style.height = `${window.visualViewport.height}px`;
+                mainContainer.style.top = `${window.visualViewport.offsetTop}px`;
+            };
+            window.visualViewport.addEventListener('resize', handleResize);
+            window.visualViewport.addEventListener('scroll', handleResize);
+        }
     </script>
 </body>
 </html>
