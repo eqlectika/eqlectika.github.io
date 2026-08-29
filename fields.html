@@ -249,7 +249,7 @@ body {
                     console.log('✅ Service Worker зарегистрирован:', registration);
                 })
                 .catch(error => {
-                    console.log('❌ Ошибка регистрации SW:', error);
+                    console.log('Error service worker registration:', error);
                 });
         }
 
@@ -260,6 +260,34 @@ body {
             'flash.html',
             'cross.html'
         ];
+
+if (window.self !== window.top) {
+    document.body.innerHTML = `
+        <div style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #1e1e1e;
+            color: white;
+            font-family: sans-serif;
+            font-size: 24px;
+            text-align: center;
+            padding: 20px;
+        ">
+            <div>
+                <p>Open Fields inside own</p>
+                <p style="font-size: 16px; opacity: 0.6; margin-top: 20px;">
+                    <a href="fields.html" style="color: #3b82f6; text-decoration: none;">
+                        Open in new tab →
+                    </a>
+                </p>
+            </div>
+        </div>
+    `;
+    // Останавливаем выполнение остального кода
+    throw new Error('fields.html cannot be opened in iframe');
+}
 
         const panelsContainer = document.getElementById('panels');
         const dotsContainer = document.getElementById('dots');
