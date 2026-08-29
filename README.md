@@ -3,7 +3,7 @@
 >Obviously, the exchange of information, from cave paintings, is evolving through a virtual interface into a new measurable hyperspace based on an immutable ledger.
 Between these two extremes lies a gradient encompassing an infinite variety of phenomenal conventions and degrees of freedom.
 Over time, each of us will learn to create and transmit our own virtual worlds into neural networks.
-I create unique websites, tools, and applications for continuously improving life. <a style="text-decoration: none; color: #0097ff;" href="resume.html">Yevgeniy Korobka</a>
+I create unique websites, tools, and applications for continuously improving life. [Yevgeniy Korobka](https://eqlectika.github.io/resume.hgml)
 
 ## The Concept of Project Eqlectika: Semantic Field Core & Building an Outside-in Planets Network
 
