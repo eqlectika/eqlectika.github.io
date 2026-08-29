@@ -128,8 +128,8 @@ You can test the mechanics and explore the inverted world directly in your brows
   * **Mobile Optimization:** Full touch-event support (`touch-action: none/auto`), responsive layouts, and PWA manifest integration for seamless mobile installation.
 
 #
-### Meme Battle | Breakthrough Engine
-**[Meme Battle — Breakthrough Engine](https://eqlectika.github.io/breakthrough.html)**
+### Paramount | Breakthrough Engine
+**[Paramount — Breakthrough Engine](https://eqlectika.github.io/paramount.html)**
 
 * **Tech Stack & Concept:** P2P decentralized meme ranking and evaluation platform built on a direct device-to-device network architecture via lightweight brokers, bypassing central servers entirely.
 * **Core Philosophy & Concept:**
