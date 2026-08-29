@@ -182,13 +182,13 @@ body {
             display: none;
         }
 
-@media (max-width: 1024px) {
+@media (orientation: portrait) and (min-width: 768px) {
     .panels, .panel-controllers, .dots, .resizer {
         display: none !important;
     }
     
     body::before {
-        content: "This interface is only available on Desktop";
+        content: "This interface only available in desktop or landscape tablet mode";
         display: flex;
         align-items: center;
         justify-content: center;
@@ -198,6 +198,37 @@ body {
         font-family: sans-serif;
         text-align: center;
         padding: 20px;
+        font-size: 24px;
+    }
+}
+
+@media (orientation: landscape) and (min-width: 768px) {
+    body::before {
+        display: none !important;
+    }
+    
+    .panels {
+        display: flex !important;
+    }
+}
+
+@media (max-width: 767px) {
+    body::before {
+        display: none !important;
+    }
+    
+    .panels {
+        display: flex !important;
+    }
+}
+
+@media (min-width: 1025px) {
+    body::before {
+        display: none !important;
+    }
+    
+    .panels {
+        display: flex !important;
     }
 }
 
@@ -213,8 +244,6 @@ body {
     </div>
 
     <script>
-
-
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker
@@ -241,7 +270,51 @@ body {
         const mobileAddBtn = document.getElementById('mobileAddBtn');
         const mobileRemoveBtn = document.getElementById('mobileRemoveBtn');
 
-        const isMobile = window.innerWidth <= 768;
+        function isMobileDevice() {
+            const isTablet = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchstart' in document.documentElement;
+            
+            if (isTablet && window.matchMedia('(orientation: landscape)').matches) {
+                return false;
+            }
+            
+            return window.innerWidth <= 768 || isTablet;
+        }
+
+        function isTabletDevice() {
+            return /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchstart' in document.documentElement;
+        }
+
+        const isMobile = isMobileDevice();
+
+        window.addEventListener('resize', function() {
+            const landscape = window.innerWidth > window.innerHeight;
+            const isTablet = isTabletDevice();
+            
+            if (isTablet && !landscape) {
+                document.querySelector('.panels').style.display = 'none';
+                document.querySelector('.panel-controllers').style.display = 'none';
+                document.querySelector('.dots').style.display = 'none';
+                document.querySelectorAll('.resizer').forEach(r => r.style.display = 'none');
+            } 
+            else if (isTablet && landscape) {
+                document.querySelector('.panels').style.display = 'flex';
+                document.querySelector('.panel-controllers').style.display = 'flex';
+                document.querySelector('.dots').style.display = 'flex';
+                document.querySelectorAll('.resizer').forEach(r => r.style.display = 'flex');
+            }
+        });
+
+        window.addEventListener('orientationchange', function() {
+            setTimeout(function() {
+                const isTablet = isTabletDevice();
+                const landscape = window.innerWidth > window.innerHeight;
+                
+                if (isTablet && landscape) {
+                    location.reload();
+                }
+            }, 300);
+        });
+
         let panels = [];
 
         function createPanel(page) {
@@ -273,7 +346,7 @@ body {
         }
 
         function updateMobileControllersVisibility() {
-            if (!isMobile) return;
+            if (!isMobileDevice()) return; // Исправлено!
             if (panels.length > 1) {
                 panelControllers.style.display = 'flex';
                 dotsContainer.style.display = 'none';
@@ -309,7 +382,7 @@ body {
                 
                 updatePanelsList();
                 
-                if (!isMobile) {
+                if (!isMobileDevice()) {
                     rebuildResizers();
                     initializePanelWidths();
                 } else {
@@ -322,43 +395,41 @@ body {
             }
         }
 
-window.addEventListener('message', function(event) {
-    if (!event.data) return;
+        window.addEventListener('message', function(event) {
+            if (!event.data) return;
 
-    // Обработка запроса на полноэкранный режим из iframe
-    if (event.data.type === 'TOGGLE_FULLSCREEN') {
-        const iframes = document.querySelectorAll('iframe');
-        iframes.forEach(iframe => {
-            if (iframe.contentWindow === event.source) {
-                const panel = iframe.closest('.panel');
-                if (panel) {
-                    if (!document.fullscreenElement) {
-                        panel.requestFullscreen().catch(err => {
-                            console.error("Error attempting to enable fullscreen:", err);
-                        });
-                    } else {
-                        document.exitFullscreen();
+            if (event.data.type === 'TOGGLE_FULLSCREEN') {
+                const iframes = document.querySelectorAll('iframe');
+                iframes.forEach(iframe => {
+                    if (iframe.contentWindow === event.source) {
+                        const panel = iframe.closest('.panel');
+                        if (panel) {
+                            if (!document.fullscreenElement) {
+                                panel.requestFullscreen().catch(err => {
+                                    console.error("Error attempting to enable fullscreen:", err);
+                                });
+                            } else {
+                                document.exitFullscreen();
+                            }
+                        }
                     }
-                }
+                });
+            }
+
+            if (event.data.type === 'URL_CHANGED') {
+                const iframes = document.querySelectorAll('iframe');
+                iframes.forEach(iframe => {
+                    try {
+                        if (iframe.contentWindow === event.source) {
+                            iframe.src = event.data.url;
+                            savePanelsState();
+                        }
+                    } catch (e) {}
+                });
             }
         });
-    }
 
-    // Ваш существующий обработчик URL_CHANGED
-    if (event.data.type === 'URL_CHANGED') {
-        const iframes = document.querySelectorAll('iframe');
-        iframes.forEach(iframe => {
-            try {
-                if (iframe.contentWindow === event.source) {
-                    iframe.src = event.data.url;
-                    savePanelsState();
-                }
-            } catch (e) {}
-        });
-    }
-});
-
-        if (!isMobile) {
+        if (!isMobileDevice()) {
             function createResizer() {
                 const resizer = document.createElement('div');
                 resizer.className = 'resizer';
@@ -472,8 +543,8 @@ window.addEventListener('message', function(event) {
                 const leftPanel = panels[index];
                 if (!leftPanel) return;
                 
-const url = prompt('Enter the URL for the new panel:', 'match.html');
-if (!url) return;
+                const url = prompt('Enter the URL for the new panel:', 'index.html');
+                if (!url) return;
                 
                 const newPanel = createPanel(url);
                 panelsContainer.insertBefore(newPanel, resizer);
@@ -493,8 +564,8 @@ if (!url) return;
                 const rightPanel = panels[index + 1];
                 if (!rightPanel) return;
                 
-const url = prompt('Enter the URL for the new panel:', 'match.html');
-if (!url) return
+                const url = prompt('Enter the URL for the new panel:', 'match.html');
+                if (!url) return;
                 
                 const newPanel = createPanel(url);
                 panelsContainer.insertBefore(newPanel, rightPanel);
@@ -670,7 +741,7 @@ if (!url) return
             });
         }
 
-        if (isMobile) {
+        if (isMobileDevice()) {
             function rebuildDots() {
                 dotsContainer.innerHTML = '';
                 updatePanelsList();
@@ -727,8 +798,8 @@ if (!url) return
             }
 
             mobileAddBtn.addEventListener('click', () => {
-const url = prompt('Enter the URL for the new panel:', 'match.html');
-if (!url) return
+                const url = prompt('Enter the URL for the new panel:', 'match.html');
+                if (!url) return;
 
                 const newPanel = createPanel(url);
                 panelsContainer.appendChild(newPanel);
@@ -772,7 +843,7 @@ if (!url) return
         }
 
         if (!restorePanelsState()) {
-            if (isMobile) {
+            if (isMobileDevice()) {
                 panelsContainer.appendChild(createPanel(pages[0]));
             } else {
                 pages.forEach(page => {
@@ -780,7 +851,7 @@ if (!url) return
                 });
             }
             updatePanelsList();
-            if (!isMobile) {
+            if (!isMobileDevice()) {
                 rebuildResizers();
                 initializePanelWidths();
             } else {
@@ -788,7 +859,7 @@ if (!url) return
             }
             savePanelsState();
         } else {
-            if (isMobile) {
+            if (isMobileDevice()) {
                 rebuildDots();
             }
         }
