@@ -267,15 +267,13 @@ body {
         const mobileAddBtn = document.getElementById('mobileAddBtn');
         const mobileRemoveBtn = document.getElementById('mobileRemoveBtn');
 
-        function isMobileDevice() {
-            const isTablet = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchstart' in document.documentElement;
-            
-            if (isTablet && window.matchMedia('(orientation: landscape)').matches) {
-                return false;
-            }
-            
-            return window.innerWidth <= 768 || isTablet;
-        }
+function isMobileDevice() {
+    // iPad всегда считаем десктопом
+    const isTablet = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchstart' in document.documentElement;
+    if (isTablet) return false;
+    
+    return window.innerWidth <= 768;
+}
 
         function isTabletDevice() {
             return /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchstart' in document.documentElement;
