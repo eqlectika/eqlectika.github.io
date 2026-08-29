@@ -14,20 +14,22 @@
 
         html, body {
             width: 100%;
-            height: 100%;
-background: linear-gradient(0deg, #000000 0%, #1a2954 100%);            color: #ffffff;
+            min-height: 100vh;
+            background: linear-gradient(0deg, #000000 0%, #1a2954 100%);
+            color: #ffffff;
             font-family: sans-serif;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
             -webkit-font-smoothing: antialiased;
+            padding: 0px;
+            padding-bottom: 80px;
         }
 
         .container {
-            max-width: 480px;
-            width: 90%;
-            padding: 24px 16px;
+            max-width: 100%;
+            width: 100%;
+            padding: 24px 20px;
             text-align: center;
         }
 
@@ -69,6 +71,9 @@ background: linear-gradient(0deg, #000000 0%, #1a2954 100%);            color: #
             line-height: 1.6;
             color: #d1d5db;
             margin-bottom: 24px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .address-box {
@@ -82,6 +87,9 @@ background: linear-gradient(0deg, #000000 0%, #1a2954 100%);            color: #
             cursor: pointer;
             transition: all 0.2s ease;
             margin-bottom: 16px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .address-box:hover {
@@ -89,36 +97,33 @@ background: linear-gradient(0deg, #000000 0%, #1a2954 100%);            color: #
             color: #93c5fd;
         }
 
-        .btn-copy {
-            width: 100%;
-            padding: 12px;
-            background: #3b82f6;
-            color: #ffffff;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 500;
+        /* НОВЫЙ СТИЛЬ ДЛЯ ПОДСКАЗКИ */
+        .hint {
+            max-width: 600px;
+            margin: 0 auto;
+            font-size: 14px;
+            color: #9ca3af;
             cursor: pointer;
-            transition: background 0.2s ease, transform 0.1s ease;
-            touch-action: manipulation;
+            transition: all 0.3s ease;
+            padding: 8px 0;
+            user-select: none;
+            min-height: 32px; /* чтобы не прыгал контент */
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .btn-copy:active {
-            transform: scale(0.98);
-            background: #2563eb;
+        .hint:hover {
+            color: #d1d5db;
         }
 
-        .toast {
-            margin-top: 12px;
-            font-size: 16px;
+        .hint.copied {
             color: #10b981;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            height: 18px;
         }
 
-        .toast.show {
-            opacity: 1;
+        /* Убираем старый toast */
+        .toast {
+            display: none;
         }
     </style>
 </head>
@@ -141,31 +146,58 @@ background: linear-gradient(0deg, #000000 0%, #1a2954 100%);            color: #
             0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8
         </div>
 
-        <button class="btn-copy" id="copyBtn">Click to copy</button>
-        <div class="toast" id="toast">Address copied to clipboard!</div>
+        <!-- НОВАЯ ПОДСКАЗКА ВМЕСТО КНОПКИ -->
+        <div class="hint" id="hint">Click to copy address</div>
+        
+        <!-- Скрытый toast -->
+        <div class="toast" id="toast"></div>
     </div>
 
     <script>
         const ethAddress = "0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8";
         const addressBox = document.getElementById("addressBox");
-        const copyBtn = document.getElementById("copyBtn");
-        const toast = document.getElementById("toast");
+        const hint = document.getElementById("hint");
+        let timeoutId = null;
 
         function copyAddress() {
             navigator.clipboard.writeText(ethAddress).then(() => {
-                toast.classList.add("show");
-                copyBtn.textContent = "Copied!";
-                setTimeout(() => {
-                    toast.classList.remove("show");
-                    copyBtn.textContent = "Click to copy";
+                // Меняем текст на уведомление
+                hint.textContent = "Address copied!";
+                hint.classList.add("copied");
+                
+                // Убираем предыдущий таймер, если есть
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                }
+                
+                // Через 2 секунды возвращаем подсказку
+                timeoutId = setTimeout(() => {
+                    hint.textContent = "📋 Click to copy address";
+                    hint.classList.remove("copied");
+                    timeoutId = null;
                 }, 2000);
             }).catch(err => {
                 console.error('Failed to copy: ', err);
+                hint.textContent = "❌ Failed to copy";
+                hint.style.color = "#ef4444";
+                
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                }
+                
+                timeoutId = setTimeout(() => {
+                    hint.textContent = "📋 Click to copy address";
+                    hint.style.color = "#9ca3af";
+                    timeoutId = null;
+                }, 2000);
             });
         }
 
+        // Клик по адресу
         addressBox.addEventListener("click", copyAddress);
-        copyBtn.addEventListener("click", copyAddress);
+        
+        // Клик по подсказке
+        hint.addEventListener("click", copyAddress);
     </script>
 
 </body>
