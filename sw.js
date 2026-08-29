@@ -1,4 +1,4 @@
-const CACHE_NAME = 'polarity-vindex';
+const CACHE_NAME = 'version-fields';
 
 const CORE_ASSETS = [
     '/',
