@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-flash';
+const CACHE_NAME = 'version-fields';
 
 const CORE_ASSETS = [
     '/',
