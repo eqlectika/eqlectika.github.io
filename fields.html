@@ -307,6 +307,9 @@ body {
     </div>
 
     <script>
+        // Удаляем блокировку для мобильных устройств
+        // const isMobile = window.innerWidth <= 1024 ... - ЭТО БЫЛО ПРОБЛЕМОЙ!
+
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker
                 .register('/sw.js')
@@ -332,7 +335,8 @@ body {
         const mobileAddBtn = document.getElementById('mobileAddBtn');
         const mobileRemoveBtn = document.getElementById('mobileRemoveBtn');
 
-        let isMobile = window.innerWidth <= 768;
+        // Определяем мобильное устройство по ширине экрана
+        const isMobile = window.innerWidth <= 768;
         let panels = [];
 
         function createPanel(page) {
@@ -929,20 +933,14 @@ body {
             // Обновляем при изменении ориентации
             window.addEventListener('orientationchange', function() {
                 setTimeout(() => {
-                    isMobile = window.innerWidth <= 768;
-                    if (!isMobile) {
-                        // Если стало десктопом - перезагружаем
-                        location.reload();
+                    // Обновляем отображение контроллеров
+                    updateMobileControllersVisibility();
+                    const isPortrait = window.innerHeight > window.innerWidth;
+                    if (isPortrait) {
+                        rebuildDots();
                     } else {
-                        // Обновляем отображение контроллеров
-                        updateMobileControllersVisibility();
-                        const isPortrait = window.innerHeight > window.innerWidth;
-                        if (isPortrait) {
-                            rebuildDots();
-                        } else {
-                            dotsContainer.style.display = 'none';
-                            panelControllers.style.display = 'none';
-                        }
+                        dotsContainer.style.display = 'none';
+                        panelControllers.style.display = 'none';
                     }
                 }, 300);
             });
