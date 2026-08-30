@@ -32,12 +32,13 @@ body {
 
         .panel {
             flex: 1 1 0;
+            min-width: 80px;
             width: 0;
             background: white;
             position: relative;
             overflow: hidden;
-    height: 100%;
-    height: 100dvh;
+            height: 100%;
+            height: 100dvh;
         }
 
         .panel iframe {
@@ -179,87 +180,118 @@ body {
 
         .dots {
             display: none;
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            gap: 8px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 12px;
+            border-radius: 20px;
+            backdrop-filter: blur(8px);
         }
 
-/* Мобильные устройства в портретной ориентации - одна панель */
+        .dots button {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .dots button.active {
+            background: white;
+            width: 20px;
+            border-radius: 5px;
+        }
+
+/* Мобильные устройства в портретной ориентации - одна панель, свайп */
 @media (orientation: portrait) and (max-width: 768px) {
     .panels {
         overflow-x: auto !important;
         scroll-snap-type: x mandatory !important;
         -webkit-overflow-scrolling: touch;
         scroll-behavior: smooth;
+        display: flex !important;
     }
     
     .panel {
         flex: 0 0 100% !important;
         scroll-snap-align: start !important;
         min-width: 100% !important;
+        width: 100% !important;
     }
     
-    .resizer, .panel-controllers, .dots {
+    .resizer {
         display: none !important;
+    }
+    
+    .dots {
+        display: flex !important;
+    }
+    
+    .panel-controllers {
+        display: flex !important;
+        bottom: 140px !important;
     }
 }
 
-/* Мобильные устройства в ландшафтной ориентации - две панели */
+/* Мобильные устройства в ландшафтной ориентации - все панели видны */
 @media (orientation: landscape) and (max-width: 768px) {
     .panels {
-        overflow-x: auto !important;
-        scroll-snap-type: x mandatory !important;
-        -webkit-overflow-scrolling: touch;
-        scroll-behavior: smooth;
-    }
-    
-    .panel {
-        flex: 0 0 50% !important;
-        scroll-snap-align: start !important;
-        min-width: 50% !important;
-    }
-    
-    .resizer, .panel-controllers, .dots {
-        display: none !important;
-    }
-}
-
-@media (orientation: landscape) and (min-width: 768px) {
-    body::before {
-        display: none !important;
-    }
-    
-    .panels {
-        display: flex !important;
         overflow: hidden !important;
         scroll-snap-type: none !important;
+        display: flex !important;
     }
     
     .panel {
         flex: 1 1 0 !important;
         scroll-snap-align: none !important;
-        min-width: 0 !important;
+        min-width: 80px !important;
+        width: auto !important;
     }
     
     .resizer {
         display: flex !important;
     }
-}
-
-@media (max-width: 767px) {
-    body::before {
+    
+    .dots {
         display: none !important;
     }
     
-    .panels {
-        display: flex !important;
+    .panel-controllers {
+        display: none !important;
     }
 }
 
-@media (min-width: 1025px) {
-    body::before {
+/* Планшеты и десктопы */
+@media (min-width: 769px) {
+    .panels {
+        overflow: hidden !important;
+        scroll-snap-type: none !important;
+        display: flex !important;
+    }
+    
+    .panel {
+        flex: 1 1 0 !important;
+        scroll-snap-align: none !important;
+        min-width: 80px !important;
+        width: auto !important;
+    }
+    
+    .resizer {
+        display: flex !important;
+    }
+    
+    .dots {
         display: none !important;
     }
     
-    .panels {
-        display: flex !important;
+    .panel-controllers {
+        display: none !important;
     }
 }
 
@@ -275,7 +307,6 @@ body {
     </div>
 
     <script>
-
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker
                 .register('/sw.js')
@@ -283,13 +314,13 @@ body {
                     console.log('✅ Service Worker зарегистрирован:', registration);
                 })
                 .catch(error => {
-                    console.log('Error service worker registration:', error);
+                    console.log('❌ Ошибка регистрации SW:', error);
                 });
         }
 
         const pages = [
             'paramount.html',
-            'clock.html',
+            'match.html',
             'capital.html',
             'flash.html',
             'cross.html'
@@ -301,49 +332,7 @@ body {
         const mobileAddBtn = document.getElementById('mobileAddBtn');
         const mobileRemoveBtn = document.getElementById('mobileRemoveBtn');
 
-function isMobileDevice() {
-    // iPad всегда считаем десктопом
-    const isTablet = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchstart' in document.documentElement;
-    if (isTablet) return false;
-    
-    return window.innerWidth <= 768;
-}
-
-        function isTabletDevice() {
-            return /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchstart' in document.documentElement;
-        }
-
-        const isMobile = isMobileDevice();
-
-        window.addEventListener('resize', function() {
-            const landscape = window.innerWidth > window.innerHeight;
-            const isTablet = isTabletDevice();
-            
-            if (isTablet && !landscape) {
-                document.querySelector('.panels').style.display = 'none';
-                document.querySelector('.panel-controllers').style.display = 'none';
-                document.querySelector('.dots').style.display = 'none';
-                document.querySelectorAll('.resizer').forEach(r => r.style.display = 'none');
-            } 
-            else if (isTablet && landscape) {
-                document.querySelector('.panels').style.display = 'flex';
-                document.querySelector('.panel-controllers').style.display = 'flex';
-                document.querySelector('.dots').style.display = 'flex';
-                document.querySelectorAll('.resizer').forEach(r => r.style.display = 'flex');
-            }
-        });
-
-        window.addEventListener('orientationchange', function() {
-            setTimeout(function() {
-                const isTablet = isTabletDevice();
-                const landscape = window.innerWidth > window.innerHeight;
-                
-                if (isTablet && landscape) {
-                    location.reload();
-                }
-            }, 300);
-        });
-
+        let isMobile = window.innerWidth <= 768;
         let panels = [];
 
         function createPanel(page) {
@@ -375,10 +364,17 @@ function isMobileDevice() {
         }
 
         function updateMobileControllersVisibility() {
-            if (!isMobileDevice()) return;
-            if (panels.length > 1) {
-                panelControllers.style.display = 'flex';
-                dotsContainer.style.display = 'none';
+            const isPortrait = window.innerHeight > window.innerWidth;
+            const isMobileDevice = window.innerWidth <= 768;
+            
+            if (isMobileDevice && isPortrait) {
+                if (panels.length > 1) {
+                    panelControllers.style.display = 'flex';
+                    dotsContainer.style.display = 'flex';
+                } else {
+                    panelControllers.style.display = 'flex';
+                    dotsContainer.style.display = 'none';
+                }
             } else {
                 panelControllers.style.display = 'none';
                 dotsContainer.style.display = 'none';
@@ -411,7 +407,7 @@ function isMobileDevice() {
                 
                 updatePanelsList();
                 
-                if (!isMobileDevice()) {
+                if (!isMobile) {
                     rebuildResizers();
                     initializePanelWidths();
                 } else {
@@ -458,7 +454,8 @@ function isMobileDevice() {
             }
         });
 
-        if (!isMobileDevice()) {
+        // Десктопная логика
+        if (!isMobile) {
             function createResizer() {
                 const resizer = document.createElement('div');
                 resizer.className = 'resizer';
@@ -572,7 +569,7 @@ function isMobileDevice() {
                 const leftPanel = panels[index];
                 if (!leftPanel) return;
                 
-                const url = prompt('Enter the URL for the new panel:', 'index.html');
+                const url = prompt('Enter the URL for the new panel:', 'match.html');
                 if (!url) return;
                 
                 const newPanel = createPanel(url);
@@ -770,8 +767,9 @@ function isMobileDevice() {
             });
         }
 
-        if (isMobileDevice()) {
-            // Добавляем поддержку свайпов
+        // Мобильная логика с поддержкой свайпов
+        if (isMobile) {
+            // Поддержка свайпов для переключения панелей
             let touchStartX = 0;
             let touchStartY = 0;
             let isSwiping = false;
@@ -788,10 +786,8 @@ function isMobileDevice() {
                 const deltaX = e.touches[0].clientX - touchStartX;
                 const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
                 
-                // Определяем, что это горизонтальный свайп
                 if (Math.abs(deltaX) > 20 && deltaY < 30) {
                     isSwiping = true;
-                    // Блокируем вертикальную прокрутку
                     e.preventDefault();
                 }
             }, { passive: false });
@@ -802,13 +798,11 @@ function isMobileDevice() {
                 const deltaX = e.changedTouches[0].clientX - touchStartX;
                 const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
                 
-                // Свайп должен быть достаточно длинным и горизонтальным
                 if (Math.abs(deltaX) < 50 || deltaY > 30) return;
                 
                 updatePanelsList();
                 if (panels.length <= 1) return;
                 
-                // Определяем текущую видимую панель
                 const scrollLeft = panelsContainer.scrollLeft;
                 const panelWidth = panelsContainer.clientWidth;
                 const currentIndex = Math.round(scrollLeft / panelWidth);
@@ -816,10 +810,8 @@ function isMobileDevice() {
                 let newIndex = currentIndex;
                 
                 if (deltaX < 0) {
-                    // Свайп влево - следующая панель
                     newIndex = Math.min(currentIndex + 1, panels.length - 1);
                 } else {
-                    // Свайп вправо - предыдущая панель
                     newIndex = Math.max(currentIndex - 1, 0);
                 }
                 
@@ -836,7 +828,9 @@ function isMobileDevice() {
                 dotsContainer.innerHTML = '';
                 updatePanelsList();
 
-                if (panels.length <= 1) {
+                const isPortrait = window.innerHeight > window.innerWidth;
+                
+                if (panels.length <= 1 || !isPortrait) {
                     dotsContainer.style.display = 'none';
                     return;
                 }
@@ -866,6 +860,7 @@ function isMobileDevice() {
                     dotsContainer.appendChild(dot);
                 });
 
+                // Наблюдатель за видимыми панелями
                 const observer = new IntersectionObserver(entries => {
                     entries.forEach(entry => {
                         if (!entry.isIntersecting) return;
@@ -930,10 +925,32 @@ function isMobileDevice() {
                     });
                 }
             });
+
+            // Обновляем при изменении ориентации
+            window.addEventListener('orientationchange', function() {
+                setTimeout(() => {
+                    isMobile = window.innerWidth <= 768;
+                    if (!isMobile) {
+                        // Если стало десктопом - перезагружаем
+                        location.reload();
+                    } else {
+                        // Обновляем отображение контроллеров
+                        updateMobileControllersVisibility();
+                        const isPortrait = window.innerHeight > window.innerWidth;
+                        if (isPortrait) {
+                            rebuildDots();
+                        } else {
+                            dotsContainer.style.display = 'none';
+                            panelControllers.style.display = 'none';
+                        }
+                    }
+                }, 300);
+            });
         }
 
+        // Инициализация
         if (!restorePanelsState()) {
-            if (isMobileDevice()) {
+            if (isMobile) {
                 panelsContainer.appendChild(createPanel(pages[0]));
             } else {
                 pages.forEach(page => {
@@ -941,7 +958,7 @@ function isMobileDevice() {
                 });
             }
             updatePanelsList();
-            if (!isMobileDevice()) {
+            if (!isMobile) {
                 rebuildResizers();
                 initializePanelWidths();
             } else {
@@ -949,7 +966,7 @@ function isMobileDevice() {
             }
             savePanelsState();
         } else {
-            if (isMobileDevice()) {
+            if (isMobile) {
                 rebuildDots();
             }
         }
