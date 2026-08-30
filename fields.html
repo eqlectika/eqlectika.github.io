@@ -146,36 +146,7 @@ body {
         }
 
         .panel-controllers {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
             display: none;
-            gap: 10px;
-            z-index: 100;
-            background: rgba(0, 0, 0, 0.75);
-            padding: 8px 16px;
-            border-radius: 30px;
-            backdrop-filter: blur(8px);
-        }
-
-        .panel-controllers button {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border: none;
-            background: #00f;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .panel-controllers button:active {
-            transform: scale(0.9);
         }
 
         .dots {
@@ -208,7 +179,7 @@ body {
             border-radius: 5px;
         }
 
-/* Мобильные устройства в портретной ориентации - одна панель, свайп */
+/* Режим свайпа (портрет на маленьких экранах) */
 @media (orientation: portrait) and (max-width: 768px) {
     .panels {
         overflow-x: auto !important;
@@ -232,15 +203,10 @@ body {
     .dots {
         display: flex !important;
     }
-    
-    .panel-controllers {
-        display: flex !important;
-        bottom: 140px !important;
-    }
 }
 
-/* Мобильные устройства в ландшафтной ориентации - все панели видны */
-@media (orientation: landscape) and (max-width: 768px) {
+/* Режим всех панелей (ландшафт на маленьких ИЛИ любые большие экраны) */
+@media (orientation: landscape), (min-width: 769px) {
     .panels {
         overflow: hidden !important;
         scroll-snap-type: none !important;
@@ -259,38 +225,6 @@ body {
     }
     
     .dots {
-        display: none !important;
-    }
-    
-    .panel-controllers {
-        display: none !important;
-    }
-}
-
-/* Планшеты и десктопы */
-@media (min-width: 769px) {
-    .panels {
-        overflow: hidden !important;
-        scroll-snap-type: none !important;
-        display: flex !important;
-    }
-    
-    .panel {
-        flex: 1 1 0 !important;
-        scroll-snap-align: none !important;
-        min-width: 80px !important;
-        width: auto !important;
-    }
-    
-    .resizer {
-        display: flex !important;
-    }
-    
-    .dots {
-        display: none !important;
-    }
-    
-    .panel-controllers {
         display: none !important;
     }
 }
@@ -301,15 +235,8 @@ body {
 
     <div class="panels" id="panels"></div>
     <div class="dots" id="dots"></div>
-    <div class="panel-controllers" id="panelControllers">
-        <button id="mobileRemoveBtn">−</button>
-        <button id="mobileAddBtn">+</button>
-    </div>
 
     <script>
-        // Удаляем блокировку для мобильных устройств
-        // const isMobile = window.innerWidth <= 1024 ... - ЭТО БЫЛО ПРОБЛЕМОЙ!
-
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker
                 .register('/sw.js')
@@ -331,12 +258,7 @@ body {
 
         const panelsContainer = document.getElementById('panels');
         const dotsContainer = document.getElementById('dots');
-        const panelControllers = document.getElementById('panelControllers');
-        const mobileAddBtn = document.getElementById('mobileAddBtn');
-        const mobileRemoveBtn = document.getElementById('mobileRemoveBtn');
 
-        // Определяем мобильное устройство по ширине экрана
-        const isMobile = window.innerWidth <= 768;
         let panels = [];
 
         function createPanel(page) {
@@ -364,25 +286,6 @@ body {
 
         function updatePanelsList() {
             panels = Array.from(document.querySelectorAll('.panel'));
-            updateMobileControllersVisibility();
-        }
-
-        function updateMobileControllersVisibility() {
-            const isPortrait = window.innerHeight > window.innerWidth;
-            const isMobileDevice = window.innerWidth <= 768;
-            
-            if (isMobileDevice && isPortrait) {
-                if (panels.length > 1) {
-                    panelControllers.style.display = 'flex';
-                    dotsContainer.style.display = 'flex';
-                } else {
-                    panelControllers.style.display = 'flex';
-                    dotsContainer.style.display = 'none';
-                }
-            } else {
-                panelControllers.style.display = 'none';
-                dotsContainer.style.display = 'none';
-            }
         }
 
         function savePanelsState() {
@@ -410,13 +313,9 @@ body {
                 });
                 
                 updatePanelsList();
-                
-                if (!isMobile) {
-                    rebuildResizers();
-                    initializePanelWidths();
-                } else {
-                    rebuildDots();
-                }
+                rebuildResizers();
+                initializePanelWidths();
+                rebuildDots();
                 
                 return true;
             } catch (e) {
@@ -458,516 +357,482 @@ body {
             }
         });
 
-        // Десктопная логика
-        if (!isMobile) {
-            function createResizer() {
-                const resizer = document.createElement('div');
-                resizer.className = 'resizer';
+        // Функции для работы с ресайзерами (всегда доступны)
+        function createResizer() {
+            const resizer = document.createElement('div');
+            resizer.className = 'resizer';
 
-                const handle = document.createElement('img');
-                handle.className = 'resizer-handle';
-                handle.src = 'paw.png';
-                handle.alt = '';
-                resizer.appendChild(handle);
+            const handle = document.createElement('img');
+            handle.className = 'resizer-handle';
+            handle.src = 'paw.png';
+            handle.alt = '';
+            resizer.appendChild(handle);
 
-                const menu = document.createElement('div');
-                menu.className = 'handle-menu';
+            const menu = document.createElement('div');
+            menu.className = 'handle-menu';
 
-                const label = document.createElement('div');
-                label.className = 'menu-label';
-                label.textContent = 'FIELD';
-                menu.appendChild(label);
+            const label = document.createElement('div');
+            label.className = 'menu-label';
+            label.textContent = 'FIELD';
+            menu.appendChild(label);
 
-                const row1 = document.createElement('div');
-                row1.className = 'menu-row';
-                const addLeft = document.createElement('button');
-                addLeft.textContent = '+';
-                const addRight = document.createElement('button');
-                addRight.textContent = '+';
-                row1.appendChild(addLeft);
-                row1.appendChild(addRight);
+            const row1 = document.createElement('div');
+            row1.className = 'menu-row';
+            const addLeft = document.createElement('button');
+            addLeft.textContent = '+';
+            const addRight = document.createElement('button');
+            addRight.textContent = '+';
+            row1.appendChild(addLeft);
+            row1.appendChild(addRight);
 
-                const row2 = document.createElement('div');
-                row2.className = 'menu-row';
-                const removeLeft = document.createElement('button');
-                removeLeft.textContent = '−';
-                const removeRight = document.createElement('button');
-                removeRight.textContent = '−';
-                row2.appendChild(removeLeft);
-                row2.appendChild(removeRight);
+            const row2 = document.createElement('div');
+            row2.className = 'menu-row';
+            const removeLeft = document.createElement('button');
+            removeLeft.textContent = '−';
+            const removeRight = document.createElement('button');
+            removeRight.textContent = '−';
+            row2.appendChild(removeLeft);
+            row2.appendChild(removeRight);
 
-                menu.appendChild(row1);
-                menu.appendChild(row2);
-                resizer.appendChild(menu);
+            menu.appendChild(row1);
+            menu.appendChild(row2);
+            resizer.appendChild(menu);
 
-                addLeft.addEventListener('pointerdown', e => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    addPanelLeft(resizer);
-                });
-
-                addRight.addEventListener('pointerdown', e => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    addPanelRight(resizer);
-                });
-
-                removeLeft.addEventListener('pointerdown', e => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    removePanelLeft(resizer);
-                });
-
-                removeRight.addEventListener('pointerdown', e => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    removePanelRight(resizer);
-                });
-
-                return resizer;
-            }
-
-            function rebuildResizers() {
-                document.querySelectorAll('.resizer').forEach(resizer => {
-                    resizer.remove();
-                });
-
-                updatePanelsList();
-
-                panels.forEach((panel, index) => {
-                    if (index >= panels.length - 1) {
-                        return;
-                    }
-                    const resizer = createResizer();
-                    panelsContainer.insertBefore(resizer, panel.nextSibling);
-                });
-
-                setupResizers();
-            }
-
-            function initializePanelWidths() {
-                updatePanelsList();
-                const resizers = Array.from(document.querySelectorAll('.resizer'));
-                const availableWidth = panelsContainer.clientWidth - resizers.length * 6;
-                const width = availableWidth / panels.length;
-
-                panels.forEach(panel => {
-                    panel.style.flex = '0 0 auto';
-                    panel.style.width = `${width}px`;
-                });
-
-                resizers.forEach(resizer => {
-                    const handle = resizer.querySelector('.resizer-handle');
-                    if (handle) {
-                        handle.style.top = '50%';
-                    }
-                });
-            }
-
-            function addPanelLeft(resizer) {
-                updatePanelsList();
-                const allResizers = Array.from(document.querySelectorAll('.resizer'));
-                const index = allResizers.indexOf(resizer);
-                if (index === -1) return;
-                
-                const leftPanel = panels[index];
-                if (!leftPanel) return;
-                
-                const url = prompt('Enter the URL for the new panel:', 'match.html');
-                if (!url) return;
-                
-                const newPanel = createPanel(url);
-                panelsContainer.insertBefore(newPanel, resizer);
-                
-                updatePanelsList();
-                rebuildResizers();
-                initializePanelWidths();
-                savePanelsState();
-            }
-
-            function addPanelRight(resizer) {
-                updatePanelsList();
-                const allResizers = Array.from(document.querySelectorAll('.resizer'));
-                const index = allResizers.indexOf(resizer);
-                if (index === -1) return;
-                
-                const rightPanel = panels[index + 1];
-                if (!rightPanel) return;
-                
-                const url = prompt('Enter the URL for the new panel:', 'match.html');
-                if (!url) return;
-                
-                const newPanel = createPanel(url);
-                panelsContainer.insertBefore(newPanel, rightPanel);
-                
-                updatePanelsList();
-                rebuildResizers();
-                initializePanelWidths();
-                savePanelsState();
-            }
-
-            function removePanelLeft(resizer) {
-                updatePanelsList();
-                if (panels.length <= 1) return;
-
-                const allResizers = Array.from(document.querySelectorAll('.resizer'));
-                const index = allResizers.indexOf(resizer);
-                if (index < 0 || !panels[index]) return;
-
-                panels[index].remove();
-                rebuildResizers();
-                initializePanelWidths();
-                savePanelsState();
-            }
-
-            function removePanelRight(resizer) {
-                updatePanelsList();
-                if (panels.length <= 1) return;
-
-                const allResizers = Array.from(document.querySelectorAll('.resizer'));
-                const index = allResizers.indexOf(resizer);
-                if (index < 0 || !panels[index + 1]) return;
-
-                panels[index + 1].remove();
-                rebuildResizers();
-                initializePanelWidths();
-                savePanelsState();
-            }
-
-            function closeAllMenus(except = null) {
-                document.querySelectorAll('.handle-menu').forEach(menu => {
-                    if (menu !== except) {
-                        menu.classList.remove('open');
-                    }
-                });
-            }
-
-            function setupResizers() {
-                const resizers = Array.from(document.querySelectorAll('.resizer'));
-
-                resizers.forEach((resizer, index) => {
-                    const prevPanel = panels[index];
-                    const nextPanel = panels[index + 1];
-
-                    if (!prevPanel || !nextPanel) return;
-
-                    let active = false;
-                    let moved = false;
-                    let startX = 0;
-                    let startY = 0;
-                    let animationFrame = null;
-                    let pendingY = null;
-
-                    function setPosition(clientY) {
-                        const rect = resizer.getBoundingClientRect();
-                        let y = clientY - rect.top;
-                        const handleSize = 24;
-                        const halfHandle = handleSize / 2;
-
-                        y = Math.max(halfHandle, Math.min(rect.height - halfHandle, y));
-
-                        const percent = (y / rect.height) * 100;
-                        const handle = resizer.querySelector('.resizer-handle');
-                        handle.style.top = `${percent}%`;
-
-                        const totalWidth = prevPanel.getBoundingClientRect().width + nextPanel.getBoundingClientRect().width;
-                        const minWidth = 80;
-                        let ratio = 1 - y / rect.height;
-                        let newPrevWidth = totalWidth * ratio;
-
-                        newPrevWidth = Math.max(minWidth, Math.min(totalWidth - minWidth, newPrevWidth));
-                        const newNextWidth = totalWidth - newPrevWidth;
-
-                        prevPanel.style.width = `${newPrevWidth}px`;
-                        nextPanel.style.width = `${newNextWidth}px`;
-                    }
-
-                    function pointerDown(e) {
-                        if (e.target.closest('.handle-menu')) return;
-                        e.preventDefault();
-                        active = true;
-                        moved = false;
-                        startX = e.clientX;
-                        startY = e.clientY;
-                        pendingY = e.clientY;
-
-                        resizer.classList.add('active');
-                        document.body.classList.add('is-resizing');
-                        resizer.setPointerCapture?.(e.pointerId);
-                    }
-
-                    function pointerMove(e) {
-                        if (!active) return;
-                        const deltaX = Math.abs(e.clientX - startX);
-                        const deltaY = Math.abs(e.clientY - startY);
-
-                        if (deltaX > 6 || deltaY > 6) {
-                            moved = true;
-                            closeAllMenus();
-                        }
-
-                        if (!moved) return;
-                        pendingY = e.clientY;
-
-                        if (animationFrame !== null) return;
-
-                        animationFrame = requestAnimationFrame(() => {
-                            animationFrame = null;
-                            if (!active || pendingY === null) return;
-                            setPosition(pendingY);
-                        });
-                    }
-
-                    function pointerUp(e) {
-                        if (!active) return;
-                        active = false;
-                        pendingY = null;
-
-                        if (animationFrame !== null) {
-                            cancelAnimationFrame(animationFrame);
-                            animationFrame = null;
-                        }
-
-                        resizer.classList.remove('active');
-                        document.body.classList.remove('is-resizing');
-
-                        try {
-                            resizer.releasePointerCapture?.(e.pointerId);
-                        } catch (_) {}
-
-                        if (!moved) {
-                            const menu = resizer.querySelector('.handle-menu');
-                            const isOpen = menu.classList.contains('open');
-                            closeAllMenus(isOpen ? null : menu);
-                            menu.classList.toggle('open', !isOpen);
-                        }
-                    }
-
-                    resizer.addEventListener('pointerdown', pointerDown);
-                    resizer.addEventListener('pointermove', pointerMove);
-                    resizer.addEventListener('pointerup', pointerUp);
-                    resizer.addEventListener('pointercancel', pointerUp);
-                    resizer.addEventListener('lostpointercapture', pointerUp);
-                });
-            }
-
-            rebuildResizers();
-            initializePanelWidths();
-
-            document.addEventListener('pointerdown', e => {
-                if (!e.target.closest('.resizer')) {
-                    closeAllMenus();
-                }
+            addLeft.addEventListener('pointerdown', e => {
+                e.stopPropagation();
+                e.preventDefault();
+                addPanelLeft(resizer);
             });
 
-            let resizeTimer = null;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(() => {
-                    if (!document.body.classList.contains('is-resizing')) {
-                        initializePanelWidths();
-                    }
-                }, 100);
+            addRight.addEventListener('pointerdown', e => {
+                e.stopPropagation();
+                e.preventDefault();
+                addPanelRight(resizer);
+            });
+
+            removeLeft.addEventListener('pointerdown', e => {
+                e.stopPropagation();
+                e.preventDefault();
+                removePanelLeft(resizer);
+            });
+
+            removeRight.addEventListener('pointerdown', e => {
+                e.stopPropagation();
+                e.preventDefault();
+                removePanelRight(resizer);
+            });
+
+            return resizer;
+        }
+
+        function rebuildResizers() {
+            document.querySelectorAll('.resizer').forEach(resizer => {
+                resizer.remove();
+            });
+
+            updatePanelsList();
+
+            panels.forEach((panel, index) => {
+                if (index >= panels.length - 1) {
+                    return;
+                }
+                const resizer = createResizer();
+                panelsContainer.insertBefore(resizer, panel.nextSibling);
+            });
+
+            setupResizers();
+        }
+
+        function initializePanelWidths() {
+            updatePanelsList();
+            const resizers = Array.from(document.querySelectorAll('.resizer'));
+            const availableWidth = panelsContainer.clientWidth - resizers.length * 6;
+            const width = availableWidth / panels.length;
+
+            panels.forEach(panel => {
+                panel.style.flex = '0 0 auto';
+                panel.style.width = `${width}px`;
+            });
+
+            resizers.forEach(resizer => {
+                const handle = resizer.querySelector('.resizer-handle');
+                if (handle) {
+                    handle.style.top = '50%';
+                }
             });
         }
 
-        // Мобильная логика с поддержкой свайпов
-        if (isMobile) {
-            // Поддержка свайпов для переключения панелей
-            let touchStartX = 0;
-            let touchStartY = 0;
-            let isSwiping = false;
+        function addPanelLeft(resizer) {
+            updatePanelsList();
+            const allResizers = Array.from(document.querySelectorAll('.resizer'));
+            const index = allResizers.indexOf(resizer);
+            if (index === -1) return;
+            
+            const leftPanel = panels[index];
+            if (!leftPanel) return;
+            
+            const url = prompt('Enter the URL for the new panel:', 'match.html');
+            if (!url) return;
+            
+            const newPanel = createPanel(url);
+            panelsContainer.insertBefore(newPanel, resizer);
+            
+            updatePanelsList();
+            rebuildResizers();
+            initializePanelWidths();
+            savePanelsState();
+        }
 
-            panelsContainer.addEventListener('touchstart', function(e) {
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-                isSwiping = false;
-            }, { passive: true });
+        function addPanelRight(resizer) {
+            updatePanelsList();
+            const allResizers = Array.from(document.querySelectorAll('.resizer'));
+            const index = allResizers.indexOf(resizer);
+            if (index === -1) return;
+            
+            const rightPanel = panels[index + 1];
+            if (!rightPanel) return;
+            
+            const url = prompt('Enter the URL for the new panel:', 'match.html');
+            if (!url) return;
+            
+            const newPanel = createPanel(url);
+            panelsContainer.insertBefore(newPanel, rightPanel);
+            
+            updatePanelsList();
+            rebuildResizers();
+            initializePanelWidths();
+            savePanelsState();
+        }
 
-            panelsContainer.addEventListener('touchmove', function(e) {
-                if (e.touches.length !== 1) return;
-                
-                const deltaX = e.touches[0].clientX - touchStartX;
-                const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
-                
-                if (Math.abs(deltaX) > 20 && deltaY < 30) {
-                    isSwiping = true;
+        function removePanelLeft(resizer) {
+            updatePanelsList();
+            if (panels.length <= 1) return;
+
+            const allResizers = Array.from(document.querySelectorAll('.resizer'));
+            const index = allResizers.indexOf(resizer);
+            if (index < 0 || !panels[index]) return;
+
+            panels[index].remove();
+            rebuildResizers();
+            initializePanelWidths();
+            savePanelsState();
+        }
+
+        function removePanelRight(resizer) {
+            updatePanelsList();
+            if (panels.length <= 1) return;
+
+            const allResizers = Array.from(document.querySelectorAll('.resizer'));
+            const index = allResizers.indexOf(resizer);
+            if (index < 0 || !panels[index + 1]) return;
+
+            panels[index + 1].remove();
+            rebuildResizers();
+            initializePanelWidths();
+            savePanelsState();
+        }
+
+        function closeAllMenus(except = null) {
+            document.querySelectorAll('.handle-menu').forEach(menu => {
+                if (menu !== except) {
+                    menu.classList.remove('open');
+                }
+            });
+        }
+
+        function setupResizers() {
+            const resizers = Array.from(document.querySelectorAll('.resizer'));
+
+            resizers.forEach((resizer, index) => {
+                const prevPanel = panels[index];
+                const nextPanel = panels[index + 1];
+
+                if (!prevPanel || !nextPanel) return;
+
+                let active = false;
+                let moved = false;
+                let startX = 0;
+                let startY = 0;
+                let animationFrame = null;
+                let pendingY = null;
+
+                function setPosition(clientY) {
+                    const rect = resizer.getBoundingClientRect();
+                    let y = clientY - rect.top;
+                    const handleSize = 24;
+                    const halfHandle = handleSize / 2;
+
+                    y = Math.max(halfHandle, Math.min(rect.height - halfHandle, y));
+
+                    const percent = (y / rect.height) * 100;
+                    const handle = resizer.querySelector('.resizer-handle');
+                    handle.style.top = `${percent}%`;
+
+                    const totalWidth = prevPanel.getBoundingClientRect().width + nextPanel.getBoundingClientRect().width;
+                    const minWidth = 80;
+                    let ratio = 1 - y / rect.height;
+                    let newPrevWidth = totalWidth * ratio;
+
+                    newPrevWidth = Math.max(minWidth, Math.min(totalWidth - minWidth, newPrevWidth));
+                    const newNextWidth = totalWidth - newPrevWidth;
+
+                    prevPanel.style.width = `${newPrevWidth}px`;
+                    nextPanel.style.width = `${newNextWidth}px`;
+                }
+
+                function pointerDown(e) {
+                    if (e.target.closest('.handle-menu')) return;
                     e.preventDefault();
-                }
-            }, { passive: false });
+                    active = true;
+                    moved = false;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    pendingY = e.clientY;
 
-            panelsContainer.addEventListener('touchend', function(e) {
-                if (!isSwiping) return;
-                
-                const deltaX = e.changedTouches[0].clientX - touchStartX;
-                const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
-                
-                if (Math.abs(deltaX) < 50 || deltaY > 30) return;
-                
-                updatePanelsList();
-                if (panels.length <= 1) return;
-                
-                const scrollLeft = panelsContainer.scrollLeft;
-                const panelWidth = panelsContainer.clientWidth;
-                const currentIndex = Math.round(scrollLeft / panelWidth);
-                
-                let newIndex = currentIndex;
-                
-                if (deltaX < 0) {
-                    newIndex = Math.min(currentIndex + 1, panels.length - 1);
-                } else {
-                    newIndex = Math.max(currentIndex - 1, 0);
+                    resizer.classList.add('active');
+                    document.body.classList.add('is-resizing');
+                    resizer.setPointerCapture?.(e.pointerId);
                 }
-                
-                if (newIndex !== currentIndex && panels[newIndex]) {
-                    panels[newIndex].scrollIntoView({
+
+                function pointerMove(e) {
+                    if (!active) return;
+                    const deltaX = Math.abs(e.clientX - startX);
+                    const deltaY = Math.abs(e.clientY - startY);
+
+                    if (deltaX > 6 || deltaY > 6) {
+                        moved = true;
+                        closeAllMenus();
+                    }
+
+                    if (!moved) return;
+                    pendingY = e.clientY;
+
+                    if (animationFrame !== null) return;
+
+                    animationFrame = requestAnimationFrame(() => {
+                        animationFrame = null;
+                        if (!active || pendingY === null) return;
+                        setPosition(pendingY);
+                    });
+                }
+
+                function pointerUp(e) {
+                    if (!active) return;
+                    active = false;
+                    pendingY = null;
+
+                    if (animationFrame !== null) {
+                        cancelAnimationFrame(animationFrame);
+                        animationFrame = null;
+                    }
+
+                    resizer.classList.remove('active');
+                    document.body.classList.remove('is-resizing');
+
+                    try {
+                        resizer.releasePointerCapture?.(e.pointerId);
+                    } catch (_) {}
+
+                    if (!moved) {
+                        const menu = resizer.querySelector('.handle-menu');
+                        const isOpen = menu.classList.contains('open');
+                        closeAllMenus(isOpen ? null : menu);
+                        menu.classList.toggle('open', !isOpen);
+                    }
+                }
+
+                resizer.addEventListener('pointerdown', pointerDown);
+                resizer.addEventListener('pointermove', pointerMove);
+                resizer.addEventListener('pointerup', pointerUp);
+                resizer.addEventListener('pointercancel', pointerUp);
+                resizer.addEventListener('lostpointercapture', pointerUp);
+            });
+        }
+
+        // Функции для точек навигации (свайп-режим)
+        function rebuildDots() {
+            dotsContainer.innerHTML = '';
+            updatePanelsList();
+
+            if (panels.length <= 1) {
+                dotsContainer.style.display = 'none';
+                return;
+            }
+
+            const isPortraitSwipeMode = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
+            
+            if (!isPortraitSwipeMode) {
+                dotsContainer.style.display = 'none';
+                return;
+            }
+
+            dotsContainer.style.display = 'flex';
+
+            panels.forEach((_, index) => {
+                const dot = document.createElement('button');
+                dot.dataset.index = index;
+
+                if (index === 0) {
+                    dot.classList.add('active');
+                }
+
+                dot.addEventListener('click', () => {
+                    updatePanelsList();
+                    const panel = panels[index];
+                    if (!panel) return;
+
+                    panel.scrollIntoView({
                         behavior: 'smooth',
                         block: 'nearest',
                         inline: 'start'
                     });
-                }
-            }, { passive: true });
+                });
 
-            function rebuildDots() {
-                dotsContainer.innerHTML = '';
-                updatePanelsList();
+                dotsContainer.appendChild(dot);
+            });
 
-                const isPortrait = window.innerHeight > window.innerWidth;
-                
-                if (panels.length <= 1 || !isPortrait) {
-                    dotsContainer.style.display = 'none';
-                    return;
-                }
+            // Наблюдатель за видимыми панелями
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting) return;
+                    updatePanelsList();
+                    const index = panels.indexOf(entry.target);
+                    if (index === -1) return;
 
-                dotsContainer.style.display = 'flex';
-
-                panels.forEach((_, index) => {
-                    const dot = document.createElement('button');
-                    dot.dataset.index = index;
-
-                    if (index === 0) {
-                        dot.classList.add('active');
-                    }
-
-                    dot.addEventListener('click', () => {
-                        updatePanelsList();
-                        const panel = panels[index];
-                        if (!panel) return;
-
-                        panel.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'nearest',
-                            inline: 'start'
-                        });
+                    document.querySelectorAll('.dots button').forEach((dot, i) => {
+                        dot.classList.toggle('active', i === index);
                     });
-
-                    dotsContainer.appendChild(dot);
                 });
+            }, {
+                root: panelsContainer,
+                threshold: 0.6
+            });
 
-                // Наблюдатель за видимыми панелями
-                const observer = new IntersectionObserver(entries => {
-                    entries.forEach(entry => {
-                        if (!entry.isIntersecting) return;
-                        updatePanelsList();
-                        const index = panels.indexOf(entry.target);
-                        if (index === -1) return;
+            panels.forEach(panel => {
+                observer.observe(panel);
+            });
+        }
 
-                        document.querySelectorAll('.dots button').forEach((dot, i) => {
-                            dot.classList.toggle('active', i === index);
-                        });
-                    });
-                }, {
-                    root: panelsContainer,
-                    threshold: 0.6
-                });
+        // Поддержка свайпов для переключения панелей
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let isSwiping = false;
 
-                panels.forEach(panel => {
-                    observer.observe(panel);
-                });
+        panelsContainer.addEventListener('touchstart', function(e) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            isSwiping = false;
+        }, { passive: true });
+
+        panelsContainer.addEventListener('touchmove', function(e) {
+            if (e.touches.length !== 1) return;
+            
+            const deltaX = e.touches[0].clientX - touchStartX;
+            const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
+            
+            // Проверяем, что мы в режиме свайпа (портрет на маленьких экранах)
+            const isSwipeMode = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
+            if (!isSwipeMode) return;
+            
+            if (Math.abs(deltaX) > 20 && deltaY < 30) {
+                isSwiping = true;
+                e.preventDefault();
             }
+        }, { passive: false });
 
-            mobileAddBtn.addEventListener('click', () => {
-                const url = prompt('Enter the URL for the new panel:', 'match.html');
-                if (!url) return;
-
-                const newPanel = createPanel(url);
-                panelsContainer.appendChild(newPanel);
-                updatePanelsList();
-                rebuildDots();
-                savePanelsState();
-
-                newPanel.scrollIntoView({
+        panelsContainer.addEventListener('touchend', function(e) {
+            if (!isSwiping) return;
+            
+            const deltaX = e.changedTouches[0].clientX - touchStartX;
+            const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
+            
+            if (Math.abs(deltaX) < 50 || deltaY > 30) return;
+            
+            updatePanelsList();
+            if (panels.length <= 1) return;
+            
+            const scrollLeft = panelsContainer.scrollLeft;
+            const panelWidth = panelsContainer.clientWidth;
+            const currentIndex = Math.round(scrollLeft / panelWidth);
+            
+            let newIndex = currentIndex;
+            
+            if (deltaX < 0) {
+                newIndex = Math.min(currentIndex + 1, panels.length - 1);
+            } else {
+                newIndex = Math.max(currentIndex - 1, 0);
+            }
+            
+            if (newIndex !== currentIndex && panels[newIndex]) {
+                panels[newIndex].scrollIntoView({
                     behavior: 'smooth',
                     block: 'nearest',
                     inline: 'start'
                 });
-            });
+            }
+        }, { passive: true });
 
-            mobileRemoveBtn.addEventListener('click', () => {
-                updatePanelsList();
-                if (panels.length <= 1) return;
-
-                let scrollLeft = panelsContainer.scrollLeft;
-                let panelWidth = panelsContainer.clientWidth;
-                let currentIndex = Math.round(scrollLeft / panelWidth);
-
-                if (currentIndex >= panels.length) {
-                    currentIndex = panels.length - 1;
-                }
-
-                panels[currentIndex].remove();
-                updatePanelsList();
+        // Следим за изменением ориентации и размера окна
+        function handleOrientationChange() {
+            const isSwipeMode = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
+            
+            if (isSwipeMode) {
+                // Включаем режим свайпа
+                panelsContainer.style.overflowX = 'auto';
+                panelsContainer.style.scrollSnapType = 'x mandatory';
                 rebuildDots();
-                savePanelsState();
-
-                let newTargetIndex = Math.max(0, currentIndex - 1);
-                if (panels[newTargetIndex]) {
-                    panels[newTargetIndex].scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'nearest',
-                        inline: 'start'
-                    });
-                }
-            });
-
-            // Обновляем при изменении ориентации
-            window.addEventListener('orientationchange', function() {
+            } else {
+                // Включаем режим всех панелей
+                panelsContainer.style.overflowX = 'hidden';
+                panelsContainer.style.scrollSnapType = 'none';
+                dotsContainer.style.display = 'none';
+                
+                // Пересчитываем ширины панелей
                 setTimeout(() => {
-                    // Обновляем отображение контроллеров
-                    updateMobileControllersVisibility();
-                    const isPortrait = window.innerHeight > window.innerWidth;
-                    if (isPortrait) {
-                        rebuildDots();
-                    } else {
-                        dotsContainer.style.display = 'none';
-                        panelControllers.style.display = 'none';
-                    }
-                }, 300);
-            });
+                    initializePanelWidths();
+                }, 100);
+            }
         }
+
+        window.addEventListener('resize', handleOrientationChange);
+        window.addEventListener('orientationchange', function() {
+            setTimeout(handleOrientationChange, 300);
+        });
 
         // Инициализация
         if (!restorePanelsState()) {
-            if (isMobile) {
-                panelsContainer.appendChild(createPanel(pages[0]));
-            } else {
-                pages.forEach(page => {
-                    panelsContainer.appendChild(createPanel(page));
-                });
-            }
+            // Создаём ВСЕ панели всегда
+            pages.forEach(page => {
+                panelsContainer.appendChild(createPanel(page));
+            });
+            
             updatePanelsList();
-            if (!isMobile) {
-                rebuildResizers();
-                initializePanelWidths();
-            } else {
-                rebuildDots();
-            }
+            rebuildResizers();
+            initializePanelWidths();
+            rebuildDots();
             savePanelsState();
-        } else {
-            if (isMobile) {
-                rebuildDots();
-            }
         }
+
+        // Закрываем меню при клике вне ресайзера
+        document.addEventListener('pointerdown', e => {
+            if (!e.target.closest('.resizer')) {
+                closeAllMenus();
+            }
+        });
+
+        // Пересчёт ширины при ресайзе
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (!document.body.classList.contains('is-resizing')) {
+                    const isSwipeMode = window.innerWidth <= 768 && window.innerHeight > window.innerWidth;
+                    if (!isSwipeMode) {
+                        initializePanelWidths();
+                    }
+                }
+            }, 100);
+        });
     </script>
 </body>
 </html>
