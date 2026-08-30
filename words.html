@@ -292,20 +292,27 @@ cell.addEventListener('pointerleave', (event) => {
 
             displayContainer.appendChild(fragment);
 
-            requestAnimationFrame(() => {
-                const containerHeight = displayContainer.clientHeight;
-                const contentHeight = displayContainer.scrollHeight;
+requestAnimationFrame(() => {
+    const maxSize = 40;
+    const minSize = 8;
+    let size = maxSize;
 
-                if (contentHeight > containerHeight && containerHeight > 0) {
-                    const currentSize = 40;
-                    const ratio = containerHeight / contentHeight;
-                    const newSize = Math.max(8, Math.floor(currentSize * ratio * 0.9));
-                    
-                    tempCells.forEach(cell => {
-                        cell.style.fontSize = `${newSize}px`;
-                    });
-                }
-            });
+    function applySize(value) {
+        tempCells.forEach(cell => {
+            cell.style.fontSize = `${value}px`;
+        });
+    }
+
+    applySize(size);
+
+    while (
+        displayContainer.scrollHeight > displayContainer.clientHeight &&
+        size > minSize
+    ) {
+        size -= 1;
+        applySize(size);
+    }
+});
         }
 
         document.body.addEventListener('click', (event) => {
