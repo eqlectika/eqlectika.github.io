@@ -185,6 +185,8 @@ body {
     .panels {
         overflow-x: auto !important;
         scroll-snap-type: x mandatory !important;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
     }
     
     .panel {
@@ -736,6 +738,67 @@ function isMobileDevice() {
         }
 
         if (isMobileDevice()) {
+            // Добавляем поддержку свайпов
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let isSwiping = false;
+
+            panelsContainer.addEventListener('touchstart', function(e) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                isSwiping = false;
+            }, { passive: true });
+
+            panelsContainer.addEventListener('touchmove', function(e) {
+                if (e.touches.length !== 1) return;
+                
+                const deltaX = e.touches[0].clientX - touchStartX;
+                const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
+                
+                // Определяем, что это горизонтальный свайп
+                if (Math.abs(deltaX) > 20 && deltaY < 30) {
+                    isSwiping = true;
+                    // Блокируем вертикальную прокрутку
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            panelsContainer.addEventListener('touchend', function(e) {
+                if (!isSwiping) return;
+                
+                const deltaX = e.changedTouches[0].clientX - touchStartX;
+                const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
+                
+                // Свайп должен быть достаточно длинным и горизонтальным
+                if (Math.abs(deltaX) < 50 || deltaY > 30) return;
+                
+                updatePanelsList();
+                if (panels.length <= 1) return;
+                
+                // Определяем текущую видимую панель
+                const scrollLeft = panelsContainer.scrollLeft;
+                const panelWidth = panelsContainer.clientWidth;
+                const currentIndex = Math.round(scrollLeft / panelWidth);
+                
+                let newIndex = currentIndex;
+                
+                if (deltaX < 0) {
+                    // Свайп влево - следующая панель
+                    newIndex = Math.min(currentIndex + 1, panels.length - 1);
+                } else {
+                    // Свайп вправо - предыдущая панель
+                    newIndex = Math.max(currentIndex - 1, 0);
+                }
+                
+                if (newIndex !== currentIndex && panels[newIndex]) {
+                    panels[newIndex].scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'start'
+                    });
+                }
+            }, { passive: true });
+
             function rebuildDots() {
                 dotsContainer.innerHTML = '';
                 updatePanelsList();
