@@ -19,6 +19,36 @@
       -webkit-user-select: none; user-select: none;
     }
 
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+      transition: background 0.3s ease;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    ::-webkit-scrollbar-thumb:active {
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.05);
+    }
+
+
     #scrollContainer {
       position: relative;
       width: 100%;
@@ -30,6 +60,25 @@
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       transition: transform 0.3s ease;
+      
+      scrollbar-width: thin;
+    }
+
+    #scrollContainer::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    #scrollContainer::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #scrollContainer::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+    }
+
+    #scrollContainer::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.4);
     }
 
     #logoContainer {
@@ -159,32 +208,33 @@
       padding-bottom: 8px;
     }
 
-#controls {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  max-width: 700px;
-  margin: 0 auto;
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 15px calc(env(safe-area-inset-bottom, 5px) + 10px);
-  background: rgba(0,0,0,0.95);
-  transition: opacity 0.3s ease;
-  box-sizing: border-box;
-  z-index: 100;
-}
+    #controls {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 15px calc(env(safe-area-inset-bottom, 5px) + 10px);
+      background: rgba(0,0,0,0.95);
+      transition: opacity 0.3s ease;
+      box-sizing: border-box;
+      z-index: 100;
+    }
 
-body.is-reading #controls {
-  background: rgba(0,0,0,0.7);
-}
+    body.is-reading #controls {
+      background: rgba(0,0,0,0.7);
+    }
 
     .button-row { 
       display: flex; 
       align-items: center; 
+      margin-bottom: 20px;
       gap: 5px; 
       flex-wrap: wrap;
       justify-content: center;
@@ -218,7 +268,7 @@ body.is-reading #controls {
       opacity: 0.5; 
       background: transparent; 
       color: #fff; 
-      border: 2px solid #ff4444 !important; /* Красная рамка для кнопки Pause во время чтения */
+      border: 2px solid #ff4444 !important;
     }
 
     body.is-reading #prevBtn, 
@@ -299,7 +349,25 @@ body.is-reading #controls {
       text-align: center;
       touch-action: pan-y !important;
     }
-    
+
+    #inputText::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #inputText::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+    }
+
+    #inputText::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+    }
+
+    #inputText::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+
     #inputText::placeholder {
       color: #ccc; 
       opacity: 1; 
@@ -412,8 +480,20 @@ body.is-reading #controls {
     }
 
     #scrollContainer::-webkit-scrollbar {
-      width: 0;
+      width: 3px;
+    }
+
+    #scrollContainer::-webkit-scrollbar-track {
       background: transparent;
+    }
+
+    #scrollContainer::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+    }
+
+    #scrollContainer::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
     }
   </style>
 </head>
@@ -469,370 +549,491 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <script>
-    const wordDisplay = document.getElementById('wordDisplay');
-    const inputText = document.getElementById('inputText');
-    const startBtn = document.getElementById('startBtn');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const fasterBtn = document.getElementById('fasterBtn');
-    const slowerBtn = document.getElementById('slowerBtn');
-    const accelBtn = document.getElementById('accelBtn');
-    const editBtn = document.getElementById('editBtn');
-    const fileInput = document.getElementById('fileInput');
-    const pauseHint = document.getElementById('pauseHint');
-    const toast = document.getElementById('toast');
-    const scrollContainer = document.getElementById('scrollContainer');
-    const controls = document.getElementById('controls');
-    const inputContainer = document.getElementById('inputContainer');
+const wordDisplay = document.getElementById('wordDisplay');
+const inputText = document.getElementById('inputText');
+const startBtn = document.getElementById('startBtn');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const fasterBtn = document.getElementById('fasterBtn');
+const slowerBtn = document.getElementById('slowerBtn');
+const accelBtn = document.getElementById('accelBtn');
+const editBtn = document.getElementById('editBtn');
+const fileInput = document.getElementById('fileInput');
+const pauseHint = document.getElementById('pauseHint');
+const toast = document.getElementById('toast');
+const scrollContainer = document.getElementById('scrollContainer');
+const controls = document.getElementById('controls');
+const inputContainer = document.getElementById('inputContainer');
 
-    const colors = ['#000000', '#2a0505', '#05052a', '#052a05', '#1a1a1a'];
-    const textColors = ['#ffffff', '#ffeb3b', '#00ff00', '#ff4444', '#80cbc4', '#ffa726'];
-    
-    let colorIndex = parseInt(localStorage.getItem('reading_colorIndex')) || 0;
-    let textColorIndex = parseInt(localStorage.getItem('reading_textColorIndex')) || 0;
-    let wakeLock = null;
-    
-    let words = [], index = 0, timer = null, isPaused = false, isReading = false;
-    let interval = parseInt(localStorage.getItem('reading_interval')) || 600;
-    let isDynamicAccel = false;
-    let inversionActive = localStorage.getItem('reading_inversionActive') === 'true';
-    let transitionInterval = null;
-    let inversionLevel = inversionActive ? 100 : 0;
-    let toastTimeout = null;
-    let scrollTimeout = null;
-    
-    document.body.style.backgroundColor = colors[colorIndex];
-    inputText.value = localStorage.getItem('reading_text') || "";
+const colors = ['#000000', '#2a0505', '#05052a', '#052a05', '#1a1a1a'];
+const textColors = ['#ffffff', '#ffeb3b', '#00ff00', '#ff4444', '#80cbc4', '#ffa726'];
 
-    function showToast(message) {
-        toast.textContent = message;
-        toast.classList.add('show');
-        if (toastTimeout) clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => {
-            toast.classList.remove('show');
-        }, 2000);
-    }
+let colorIndex = parseInt(localStorage.getItem('reading_colorIndex')) || 0;
+let textColorIndex = parseInt(localStorage.getItem('reading_textColorIndex')) || 0;
+let wakeLock = null;
 
-    function scrollToBottom() {
-        if (scrollTimeout) cancelAnimationFrame(scrollTimeout);
-        scrollTimeout = requestAnimationFrame(() => {
-            const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
-            scrollContainer.scrollTop = maxScroll + 50;
-        });
-    }
+let words = [], index = 0, timer = null, isPaused = false, isReading = false;
+let interval = parseInt(localStorage.getItem('reading_interval')) || 600;
+let isDynamicAccel = false;
+let inversionActive = localStorage.getItem('reading_inversionActive') === 'true';
+let transitionInterval = null;
+let inversionLevel = inversionActive ? 100 : 0;
+let toastTimeout = null;
+let scrollTimeout = null;
 
-    function scrollToTop() {
-        if (scrollTimeout) cancelAnimationFrame(scrollTimeout);
-        scrollTimeout = requestAnimationFrame(() => {
-            scrollContainer.scrollTop = 0;
-        });
-    }
+document.body.style.backgroundColor = colors[colorIndex];
+inputText.value = localStorage.getItem('reading_text') || "";
 
-    fileInput.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
+function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+    }, 2000);
+}
+
+function scrollToBottom() {
+    if (scrollTimeout) cancelAnimationFrame(scrollTimeout);
+    scrollTimeout = requestAnimationFrame(() => {
+        const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+        scrollContainer.scrollTop = maxScroll + 50;
+    });
+}
+
+function scrollToTop() {
+    if (scrollTimeout) cancelAnimationFrame(scrollTimeout);
+    scrollTimeout = requestAnimationFrame(() => {
+        scrollContainer.scrollTop = 0;
+    });
+}
+
+fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
         inputText.value = evt.target.result;
         localStorage.setItem('reading_text', evt.target.result);
-      };
-      reader.readAsText(file);
-    });
-
-    inputText.addEventListener('input', () => {
-        localStorage.setItem('reading_text', inputText.value);
-        checkTextVisibility();
-    });
-
-    function updateFontSize(text, el) {
-        const maxWidth = Math.min(window.innerWidth * 0.85, 600);
-        const standardSize = Math.min(36, window.innerWidth / 12);
-        el.style.fontSize = standardSize + 'px';
-        let currentWidth = text.length * (standardSize * 0.6); 
-        if (currentWidth > maxWidth) {
-            const reducedSize = (maxWidth / text.length) / 0.6;
-            el.style.fontSize = Math.max(12, reducedSize) + 'px';
-        }
-    }
-
-    function applyInversionFilter() {
-        document.documentElement.style.filter = `invert(${inversionLevel}%)`;
-    }
-    applyInversionFilter();
-
-    function toggleInversion() {
-        if (transitionInterval) clearInterval(transitionInterval);
-        inversionActive = !inversionActive;
-        localStorage.setItem('reading_inversionActive', inversionActive);
-        const target = inversionActive ? 100 : 0;
-        transitionInterval = setInterval(() => {
-            if (inversionLevel === target) { clearInterval(transitionInterval); return; }
-            inversionLevel += (inversionActive ? 5 : -5);
-            applyInversionFilter();
-        }, 15);
-    }
-
-    document.body.addEventListener('click', (e) => {
-        if (
-            e.target.tagName === 'BUTTON' || 
-            e.target.tagName === 'TEXTAREA' || 
-            e.target.closest('.toolbar') || 
-            e.target.closest('#logoContainer') ||
-            e.target.closest('.word-layer') ||
-            e.target.closest('input')
-        ) {
-            return; 
-        }
-        toggleInversion();
-    });
-
-    function clearOldWord(isLongExit = false) {
-        const oldEl = wordDisplay.querySelector('.word-active');
-        if (oldEl) {
-            const exitClass = isLongExit ? 'word-exit-long' : 'word-exit';
-            oldEl.classList.replace('word-active', exitClass);
-            const deleteTimeout = isLongExit ? (interval * 0.6) : (interval * 0.3);
-            setTimeout(() => oldEl.remove(), deleteTimeout);
-        }
-    }
-
-    function showNext() {
-        if (index >= words.length || isPaused || !isReading) {
-            if (index >= words.length) stopReading();
-            return;
-        }
-
-        let rawTxt = words[index];
-        let displayTxt = rawTxt;
-        let isLongHold = displayTxt.includes('/');
-        if (isLongHold) displayTxt = displayTxt.replace(/\//g, '');
-
-        clearOldWord(isLongHold);
-
-        if (displayTxt !== " " && !displayTxt.includes('|')) {
-            const newEl = document.createElement('div');
-            newEl.className = 'word-layer word-enter';
-            newEl.textContent = displayTxt;
-            newEl.style.color = textColors[textColorIndex];
-            updateFontSize(displayTxt, newEl);
-            wordDisplay.appendChild(newEl);
-            
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    newEl.classList.replace('word-enter', 'word-active');
-                }, 20);
-            });
-            
-            newEl.style.pointerEvents = 'auto';
-            newEl.style.cursor = 'pointer';
-            
-            newEl.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (isPaused && isReading) {
-                    const word = this.textContent;
-                    const query = `What is the definition of the word "${word}" in the interface language?`;
-                    
-                    navigator.clipboard.writeText(word).then(() => {
-                        showToast(`"${word}" copied`);
-                    }).catch(() => {
-                        showToast(`"${word}" copied`);
-                    });
-                    
-                    window.open(
-                        `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
-                        '_blank'
-                    );
-                }
-            });
-        }
-
-        let extraPause = 0; 
-        if (/[;,]/.test(rawTxt)) extraPause = 150;        
-        else if (/:/.test(rawTxt)) extraPause = 150;
-        else if (/[.!?—]/.test(rawTxt)) extraPause = 300; 
-        
-        if (rawTxt.length > 13) extraPause += 500;          
-        if (isLongHold) extraPause += 200;
-
-        let currentInterval = interval;
-        if (isDynamicAccel && words.length > 1) {
-            let progress = index / (words.length - 1);
-            const phi = 0.618; 
-            const intensity = 0.382; 
-            let factor = progress <= phi 
-                ? (1 - (progress / phi) * intensity) 
-                : ((1 - intensity) + ((progress - phi) / (1 - phi)) * intensity);
-            currentInterval = interval * factor;
-        }
-
-        document.documentElement.style.setProperty('--speed', currentInterval + 'ms');
-
-        index++;
-        timer = setTimeout(showNext, currentInterval + extraPause);
-        
-        scrollToBottom();
-    }
-
-    function stopReading() {
-        releaseWakeLock();
-        clearTimeout(timer);
-        isReading = false; 
-        isPaused = false;
-        document.body.classList.remove('is-reading', 'is-paused');
-        startBtn.textContent = 'Start';
-        pauseHint.style.display = 'none';
-        wordDisplay.innerHTML = '';
-        checkTextVisibility();
-        scrollToTop();
-    }
-
-    accelBtn.onclick = (e) => {
-        e.stopPropagation();
-        isDynamicAccel = !isDynamicAccel;
-        accelBtn.textContent = `Dynamic Accel: ${isDynamicAccel ? 'ON' : 'OFF'}`;
     };
+    reader.readAsText(file);
+});
 
-    startBtn.onclick = (e) => {
-        e.stopPropagation();
-        if (!isReading) {
-            const text = inputText.value.trim();
-            if (!text) return;
-            localStorage.setItem('reading_text', text);
-            
-            words = text
-              .replace(/([,;:.!?])(?!\s|$)/g, '$1 ')
-              .split(/\s+/)
-              .filter(w => w !== "")
-              .map(w => w.replace(/_/g, ' '));
-              
-            index = 0; 
-            isReading = true; 
-            isPaused = false;
-            document.body.classList.add('is-reading');
-            document.body.classList.remove('is-paused');
-            accelBtn.style.display = 'none'; 
-            startBtn.textContent = 'Pause';
-            pauseHint.style.display = 'none';
-            requestWakeLock();
+inputText.addEventListener('input', () => {
+    localStorage.setItem('reading_text', inputText.value);
+    checkTextVisibility();
+});
+
+function updateFontSize(text, el) {
+    const maxWidth = Math.min(window.innerWidth * 0.85, 600);
+    const standardSize = Math.min(36, window.innerWidth / 12);
+    el.style.fontSize = standardSize + 'px';
+    let currentWidth = text.length * (standardSize * 0.6);
+    if (currentWidth > maxWidth) {
+        const reducedSize = (maxWidth / text.length) / 0.6;
+        el.style.fontSize = Math.max(12, reducedSize) + 'px';
+    }
+}
+
+function applyInversionFilter() {
+    document.documentElement.style.filter = `invert(${inversionLevel}%)`;
+}
+applyInversionFilter();
+
+function toggleInversion() {
+    if (transitionInterval) clearInterval(transitionInterval);
+    inversionActive = !inversionActive;
+    localStorage.setItem('reading_inversionActive', inversionActive);
+    const target = inversionActive ? 100 : 0;
+    transitionInterval = setInterval(() => {
+        if (inversionLevel === target) { clearInterval(transitionInterval); return; }
+        inversionLevel += (inversionActive ? 5 : -5);
+        applyInversionFilter();
+    }, 15);
+}
+
+document.body.addEventListener('click', (e) => {
+    if (
+        e.target.tagName === 'BUTTON' ||
+        e.target.tagName === 'TEXTAREA' ||
+        e.target.closest('.toolbar') ||
+        e.target.closest('#logoContainer') ||
+        e.target.closest('.word-layer') ||
+        e.target.closest('input')
+    ) {
+        return;
+    }
+    toggleInversion();
+});
+
+function clearOldWord(isLongExit = false) {
+    const oldEl = wordDisplay.querySelector('.word-active');
+    if (oldEl) {
+        const exitClass = isLongExit ? 'word-exit-long' : 'word-exit';
+        oldEl.classList.replace('word-active', exitClass);
+        const deleteTimeout = isLongExit ? (interval * 0.6) : (interval * 0.3);
+        setTimeout(() => oldEl.remove(), deleteTimeout);
+    }
+}
+
+function startWithDelay() {
+    const msgEl = document.createElement('div');
+    msgEl.className = 'word-layer word-enter';
+    msgEl.textContent = 'Ready...';
+    msgEl.style.color = '#ffeb3b';
+    msgEl.style.fontSize = '48px';
+    wordDisplay.appendChild(msgEl);
+    
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            msgEl.classList.replace('word-enter', 'word-active');
+        }, 20);
+    });
+    
+    setTimeout(() => {
+        msgEl.remove();
+        showNext();
+    }, 2000);
+}
+
+function getSentenceProgress(words, currentIndex) {
+    let sentenceStart = 0;
+    let sentenceEnd = words.length - 1;
+    
+    for (let i = currentIndex; i >= 0; i--) {
+        if (words[i] === 'SENTENCE_START') {
+            sentenceStart = i + 1;
+            break;
+        }
+        if (i === 0) sentenceStart = 0;
+    }
+    
+    for (let i = currentIndex; i < words.length; i++) {
+        if (words[i] === 'SENTENCE_START') {
+            sentenceEnd = i - 1;
+            break;
+        }
+        if (i === words.length - 1) sentenceEnd = words.length - 1;
+    }
+    
+    const positionInSentence = currentIndex - sentenceStart;
+    const sentenceLength = sentenceEnd - sentenceStart + 1;
+    const progress = sentenceLength > 0 ? positionInSentence / sentenceLength : 0.5;
+    
+    return {
+        progress: progress,
+        sentenceLength: sentenceLength,
+        positionInSentence: positionInSentence
+    };
+}
+
+function splitTextIntoSentences(text) {
+    const protectedText = text
+        .replace(/\b(Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc|e g|i e|No|Fig|cf|al|Inc|Corp|Ltd|Co)\s*\./gi, '$1.')
+        .replace(/\b([A-Z])\./g, '$1.');
+    
+    const sentences = protectedText
+        .split(/(?<=[.!?])\s+/)
+        .filter(s => s.trim().length > 0);
+    
+    let allWords = [];
+    
+    sentences.forEach((sentence, index) => {
+        const cleanSentence = sentence.trim();
+        if (cleanSentence === '') return;
+        
+        const wordsInSentence = cleanSentence
+            .replace(/([,;:.!?])(?!\s|$)/g, '$1 ')
+            .split(/\s+/)
+            .filter(w => w !== "");
+        
+        if (index > 0 && wordsInSentence.length > 0) {
+            allWords.push('SENTENCE_START');
+        }
+        
+        allWords = allWords.concat(wordsInSentence);
+    });
+    
+    return {
+        words: allWords,
+        totalSentences: sentences.length
+    };
+}
+
+  function getWordComplexity(word) {
+    const len = word.length;
+    const cleanWord = word.replace(/[^a-zA-Zа-яА-Я]/g, ''); // убираем знаки препинания
+    const cleanLen = cleanWord.length;
+    
+    let complexity = 1.0;
+    
+    if (cleanLen > 12) complexity = 1.4;
+    else if (cleanLen > 9) complexity = 1.2;
+    else if (cleanLen > 6) complexity = 1.05;
+    else if (cleanLen < 3) complexity = 0.7;
+    
+    const rareLetters = /[qzxwj]/i; // редкие буквы в английском
+    if (rareLetters.test(word)) complexity *= 1.1;
+    
+    return complexity;
+}
+  
+function showNext() {
+    if (index >= words.length || isPaused || !isReading) {
+        if (index >= words.length) stopReading();
+        return;
+    }
+
+    let rawTxt = words[index];
+    let displayTxt = rawTxt;
+    let isLongHold = displayTxt.includes('/');
+    if (isLongHold) displayTxt = displayTxt.replace(/\//g, '');
+
+    clearOldWord(isLongHold);
+
+    if (displayTxt !== " " && !displayTxt.includes('|')) {
+        const newEl = document.createElement('div');
+        newEl.className = 'word-layer word-enter';
+        newEl.textContent = displayTxt;
+        newEl.style.color = textColors[textColorIndex];
+        updateFontSize(displayTxt, newEl);
+        wordDisplay.appendChild(newEl);
+
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                newEl.classList.replace('word-enter', 'word-active');
+            }, 20);
+        });
+
+        newEl.style.pointerEvents = 'auto';
+        newEl.style.cursor = 'pointer';
+
+        newEl.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (isPaused && isReading) {
+                const word = this.textContent;
+                const query = `What is the definition of the word "${word}" in the interface language?`;
+
+                navigator.clipboard.writeText(word).then(() => {
+                    showToast(`"${word}" copied`);
+                }).catch(() => {
+                    showToast(`"${word}" copied`);
+                });
+
+                window.open(
+                    `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
+                    '_blank'
+                );
+            }
+        });
+    }
+
+    let extraPause = 0;
+    if (/[;,]/.test(rawTxt)) extraPause = 150;
+    else if (/:/.test(rawTxt)) extraPause = 150;
+    else if (/[.!?—]/.test(rawTxt)) extraPause = 300;
+
+    if (rawTxt.length > 13) extraPause += 500;
+    if (isLongHold) extraPause += 200;
+
+    let currentInterval = interval;
+
+if (isDynamicAccel && words.length > 1) {
+    const sentenceInfo = getSentenceProgress(words, index);
+    const progress = sentenceInfo.progress;
+    
+    const minSpeed = 0.3;
+    const maxSpeed = 0.7;
+    
+    let speedFactor = 1 - 4 * Math.pow(progress - 0.5, 2);
+    speedFactor = Math.max(minSpeed, Math.min(maxSpeed, speedFactor));
+    
+    const complexity = getWordComplexity(words[index]);
+    speedFactor *= complexity;
+    
+    if (sentenceInfo.sentenceLength > 15) {
+        speedFactor *= 0.9; // Длинные - быстрее
+    } else if (sentenceInfo.sentenceLength < 5) {
+        speedFactor *= 1.1; // Короткие - медленнее
+    }
+    
+    currentInterval = interval * Math.max(0.3, Math.min(1.2, speedFactor));
+}
+
+    document.documentElement.style.setProperty('--speed', currentInterval + 'ms');
+
+    index++;
+    timer = setTimeout(showNext, currentInterval + extraPause);
+
+    scrollToBottom();
+}
+
+function stopReading() {
+    releaseWakeLock();
+    clearTimeout(timer);
+    isReading = false;
+    isPaused = false;
+    document.body.classList.remove('is-reading', 'is-paused');
+    startBtn.textContent = 'Start';
+    pauseHint.style.display = 'none';
+    wordDisplay.innerHTML = '';
+    accelBtn.style.display = 'block'; // ← ВОЗВРАЩАЕМ КНОПКУ
+    checkTextVisibility();
+    scrollToTop();
+}
+
+accelBtn.onclick = (e) => {
+    e.stopPropagation();
+    isDynamicAccel = !isDynamicAccel;
+    accelBtn.textContent = `Dynamic Accel: ${isDynamicAccel ? 'ON' : 'OFF'}`;
+};
+
+startBtn.onclick = (e) => {
+    e.stopPropagation();
+    if (!isReading) {
+        const text = inputText.value.trim();
+        if (!text) return;
+        localStorage.setItem('reading_text', text);
+
+        const result = splitTextIntoSentences(text);
+        words = result.words;
+
+        index = 0;
+        isReading = true;
+        isPaused = false;
+        document.body.classList.add('is-reading');
+        document.body.classList.remove('is-paused');
+        accelBtn.style.display = 'none';
+        startBtn.textContent = 'Pause';
+        pauseHint.style.display = 'none';
+        requestWakeLock();
+        
+        startWithDelay();
+        scrollToBottom();
+    } else {
+        isPaused = !isPaused;
+        document.body.classList.toggle('is-paused', isPaused);
+        startBtn.textContent = isPaused ? 'Continue' : 'Pause';
+        pauseHint.style.display = isPaused ? 'block' : 'none';
+
+        if (isPaused) {
+            accelBtn.style.display = 'block';
+        } else {
+            accelBtn.style.display = 'none';
+        }
+
+        if (!isPaused) {
             showNext();
             scrollToBottom();
         } else {
-            isPaused = !isPaused;
-            document.body.classList.toggle('is-paused', isPaused);
-            startBtn.textContent = isPaused ? 'Continue' : 'Pause';
-            pauseHint.style.display = isPaused ? 'block' : 'none';
-            if (!isPaused) {
-                showNext();
-                scrollToBottom();
-            } else {
-                clearTimeout(timer);
-            }
+            clearTimeout(timer);
         }
-    };
-
-    prevBtn.onclick = (e) => {
-        e.stopPropagation();
-        if (words.length === 0) return;
-        index = Math.max(0, index - 2); 
-        clearOldWord();
-        if (isPaused) {
-            const wasPaused = isPaused; 
-            isPaused = false;
-            showNext(); 
-            clearTimeout(timer); 
-            isPaused = wasPaused;
-        } else {
-            showNext();
-        }
-        scrollToBottom();
-    };
-
-    nextBtn.onclick = (e) => {
-        e.stopPropagation();
-        if (words.length === 0 || index >= words.length) return;
-        clearOldWord();
-        if (isPaused) {
-            const wasPaused = isPaused; 
-            isPaused = false;
-            showNext(); 
-            clearTimeout(timer); 
-            isPaused = wasPaused;
-        } else {
-            showNext();
-        }
-        scrollToBottom();
-    };
-
-    function syncCssSpeed() {
-        document.documentElement.style.setProperty('--speed', interval + 'ms');
     }
+};
 
-    fasterBtn.onclick = (e) => { 
-        e.stopPropagation(); 
-        interval = Math.max(50, interval - 50); 
-        localStorage.setItem('reading_interval', interval); 
-        syncCssSpeed(); 
-    };
-    
-    slowerBtn.onclick = (e) => { 
-        e.stopPropagation(); 
-        interval += 50; 
-        localStorage.setItem('reading_interval', interval); 
-        syncCssSpeed(); 
-    };
+prevBtn.onclick = (e) => {
+    e.stopPropagation();
+    if (words.length === 0) return;
+    index = Math.max(0, index - 2);
+    clearOldWord();
+    if (isPaused) {
+        const wasPaused = isPaused;
+        isPaused = false;
+        showNext();
+        clearTimeout(timer);
+        isPaused = wasPaused;
+    } else {
+        showNext();
+    }
+    scrollToBottom();
+};
 
+nextBtn.onclick = (e) => {
+    e.stopPropagation();
+    if (words.length === 0 || index >= words.length) return;
+    clearOldWord();
+    if (isPaused) {
+        const wasPaused = isPaused;
+        isPaused = false;
+        showNext();
+        clearTimeout(timer);
+        isPaused = wasPaused;
+    } else {
+        showNext();
+    }
+    scrollToBottom();
+};
+
+function syncCssSpeed() {
+    document.documentElement.style.setProperty('--speed', interval + 'ms');
+}
+
+fasterBtn.onclick = (e) => {
+    e.stopPropagation();
+    interval = Math.max(50, interval - 50);
+    localStorage.setItem('reading_interval', interval);
     syncCssSpeed();
+};
 
-    editBtn.onclick = (e) => { 
-        e.preventDefault(); 
-        e.stopPropagation(); 
-        stopReading(); 
-    };
+slowerBtn.onclick = (e) => {
+    e.stopPropagation();
+    interval += 50;
+    localStorage.setItem('reading_interval', interval);
+    syncCssSpeed();
+};
 
-    inputText.addEventListener('touchmove', (e) => { 
-        e.stopPropagation(); 
-    }, { passive: true });
+syncCssSpeed();
 
-    async function requestWakeLock() {
-        try { 
-            if ('wakeLock' in navigator) { 
-                wakeLock = await navigator.wakeLock.request('screen'); 
-            } 
-        } catch (err) { 
-            console.error(err); 
+editBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    stopReading();
+};
+
+inputText.addEventListener('touchmove', (e) => {
+    e.stopPropagation();
+}, { passive: true });
+
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
         }
+    } catch (err) {
+        console.error(err);
     }
-    
-    function releaseWakeLock() { 
-        if (wakeLock !== null) { 
-            wakeLock.release(); 
-            wakeLock = null; 
-        } 
-    }
+}
 
-    function resetHeight() { 
-        document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`); 
+function releaseWakeLock() {
+    if (wakeLock !== null) {
+        wakeLock.release();
+        wakeLock = null;
     }
-    
-    window.addEventListener('resize', resetHeight);
-    window.addEventListener('orientationchange', () => { 
-        setTimeout(resetHeight, 100); 
-    });
-    resetHeight();
+}
 
-    function checkTextVisibility() {
-        if (inputText.value.trim().length > 0) {
-            controls.style.display = 'flex';
-        } else {
-            controls.style.display = 'none';
-        }
+function resetHeight() {
+    document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+}
+
+window.addEventListener('resize', resetHeight);
+window.addEventListener('orientationchange', () => {
+    setTimeout(resetHeight, 100);
+});
+resetHeight();
+
+function checkTextVisibility() {
+    if (inputText.value.trim().length > 0) {
+        controls.style.display = 'flex';
+    } else {
+        controls.style.display = 'none';
     }
+}
 
-    checkTextVisibility();
-    inputText.addEventListener('input', checkTextVisibility);
-    fileInput.addEventListener('change', () => {
-        setTimeout(checkTextVisibility, 50);
-    });
+checkTextVisibility();
+inputText.addEventListener('input', checkTextVisibility);
+fileInput.addEventListener('change', () => {
+    setTimeout(checkTextVisibility, 50);
+});
 </script> 
 </body>
 </html>
