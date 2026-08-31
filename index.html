@@ -708,33 +708,65 @@ $toggleBtn.on('click', function() {
     }
 });
 
-// ===== ФУНКЦИЯ ОБНОВЛЕНИЯ ПРИ СКРОЛЛЕ ВНИЗ НА 40px ОТ ВЕРХА =====
+// ===== ФУНКЦИЯ ОБНОВЛЕНИЯ ПРИ СКРОЛЛЕ ВНИЗ НА 40px ОТ ВЕРХА (PWA-совместимая) =====
 let refreshTriggered = false;
 let wasAtTop = true;
+let refreshTimeout = null;
+
+function performRefresh() {
+    // Очищаем кеш Service Worker перед перезагрузкой
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+                registration.unregister();
+            }
+        }).then(function() {
+            // Очищаем кеш браузера
+            if (window.caches) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                });
+            }
+            // Принудительная перезагрузка без кеша
+            window.location.reload(true);
+        });
+    } else {
+        // Обычный браузер
+        window.location.reload(true);
+    }
+}
 
 $(window).on('scroll', function() {
     const scrollTop = $(window).scrollTop();
     
-    // Проверяем: скролл вниз (scrollTop > 0) И достигли 40px И ранее не было триггера
     if (scrollTop >= 40 && !refreshTriggered && wasAtTop) {
         refreshTriggered = true;
         wasAtTop = false;
         
-        // Обновление всего кода - перезагружаем страницу
-        location.reload();
+        // Небольшая задержка для корректной работы в PWA
+        clearTimeout(refreshTimeout);
+        refreshTimeout = setTimeout(performRefresh, 100);
     }
     
-    // Запоминаем, что мы уже ушли от верха
     if (scrollTop > 0) {
         wasAtTop = false;
     }
     
-    // Если вернулись на самый верх, сбрасываем флаг для возможности повторного триггера
     if (scrollTop === 0) {
         wasAtTop = true;
         refreshTriggered = false;
     }
 });
+
+// Альтернативный метод для PWA - обновление через location.href с параметром
+function performRefreshAlt() {
+    // Добавляем timestamp к URL для принудительного обновления
+    const url = new URL(window.location.href);
+    url.searchParams.set('refresh', Date.now());
+    window.location.href = url.toString();
+}
 </script>
 <script>
 if (window.self !== window.top) {
