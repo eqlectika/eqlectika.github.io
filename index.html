@@ -707,6 +707,34 @@ $toggleBtn.on('click', function() {
         localStorage.setItem('blockState', 'collapsed');
     }
 });
+
+// ===== ФУНКЦИЯ ОБНОВЛЕНИЯ ПРИ СКРОЛЛЕ ВНИЗ НА 40px ОТ ВЕРХА =====
+let refreshTriggered = false;
+let wasAtTop = true;
+
+$(window).on('scroll', function() {
+    const scrollTop = $(window).scrollTop();
+    
+    // Проверяем: скролл вниз (scrollTop > 0) И достигли 40px И ранее не было триггера
+    if (scrollTop >= 40 && !refreshTriggered && wasAtTop) {
+        refreshTriggered = true;
+        wasAtTop = false;
+        
+        // Обновление всего кода - перезагружаем страницу
+        location.reload();
+    }
+    
+    // Запоминаем, что мы уже ушли от верха
+    if (scrollTop > 0) {
+        wasAtTop = false;
+    }
+    
+    // Если вернулись на самый верх, сбрасываем флаг для возможности повторного триггера
+    if (scrollTop === 0) {
+        wasAtTop = true;
+        refreshTriggered = false;
+    }
+});
 </script>
 <script>
 if (window.self !== window.top) {
