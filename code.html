@@ -1,27 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head> 
+  <!-- МАКСИМАЛЬНЫЙ ЗАПРЕТ КЕШИРОВАНИЯ -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0, proxy-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="-1">
+  <meta http-equiv="Cache" content="no-cache">
+  
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
   <meta name="description" content="Simple Code Editor" />
-<link rel="manifest" href="manifest.json">
-    <title>Code Viewer</title>
+  <link rel="manifest" href="manifest.json">
+  <title>Code Viewer</title>
+  
   <style>
-html, body {
-  height: 100%;
-  margin: 0;
-  overflow: hidden;
-}
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
 
-
-
-body {
-  display: flex; 
-  flex-direction: row;
-  font-family: Arial, sans-serif; 
-  background-color: black; 
-  color: white; 
-  height: 100%;
+    body {
+      display: flex; 
+      flex-direction: row;
+      font-family: Arial, sans-serif; 
+      background-color: black; 
+      color: white; 
+      height: 100%;
       position: relative;
       -webkit-user-select: none;
       -moz-user-select: none;
@@ -31,8 +36,25 @@ body {
       -webkit-tap-highlight-color: transparent;
     }
 
-    #editorContainer { flex: 38; display: flex; position: relative; background-color: black; min-width: 0; overscroll-behavior: contain; }
-    #preview { flex: 62; border: none; background-color: #333333; overflow: auto; min-width: 0; overscroll-behavior: contain; }
+    #editorContainer { 
+      flex: 38; 
+      display: flex; 
+      position: relative; 
+      background-color: black; 
+      min-width: 0; 
+      overscroll-behavior: contain; 
+    }
+    
+    #preview { 
+      flex: 62; 
+      border: none; 
+      background-color: #333333; 
+      overflow: auto; 
+      min-width: 0; 
+      overscroll-behavior: contain; 
+    }
+
+
     
     #controlPanel { 
       flex: 1 0 auto; 
@@ -51,54 +73,128 @@ body {
     }
 
     #lineNumbering {
-      width: 40px; padding: 10px 5px; text-align: right; font-family: monospace;
-      font-size: 14px; line-height: 1.2; color: #666; background-color: #111;
-      user-select: none; white-space: pre; overflow: hidden; box-sizing: border-box; flex-shrink: 0;
+      width: 40px; 
+      padding: 10px 5px; 
+      text-align: right; 
+      font-family: monospace;
+      font-size: 14px; 
+      line-height: 1.2; 
+      color: #666; 
+      background-color: #111;
+      user-select: none; 
+      white-space: pre; 
+      overflow: hidden; 
+      box-sizing: border-box; 
+      flex-shrink: 0;
     }
 
     #editor {
-      flex: 1; padding: 10px; border: none; resize: none; font-family: monospace;
-      font-size: 14px; line-height: 1.2; background-color: black; color: white; 
-      outline: none; caret-color: white; position: relative; box-sizing: border-box; 
-      overflow: auto; white-space: pre; min-width: 0;
+      flex: 1; 
+      padding: 10px; 
+      border: none; 
+      resize: none; 
+      font-family: monospace;
+      font-size: 14px; 
+      line-height: 1.2; 
+      background-color: black; 
+      color: white; 
+      outline: none; 
+      caret-color: white; 
+      position: relative; 
+      box-sizing: border-box; 
+      overflow: auto; 
+      white-space: pre; 
+      min-width: 0;
     }
 
     #searchField {
-      padding: 5px; font-size: 14px; border: 1px solid #555; background-color: #333333;
-      color: white; height: 35px; box-sizing: border-box; border-radius: 5px; width: 100px }
+      padding: 5px; 
+      font-size: 14px; 
+      border: 1px solid #555; 
+      background-color: #333333;
+      color: white; 
+      height: 35px; 
+      box-sizing: border-box; 
+      border-radius: 5px; 
+      width: 100px;
+    }
 
-#prevMatchButton, #nextMatchButton {
-  width: 40px; 
-  height: 40px; 
-  background-color: #333333; 
+    #prevMatchButton, #nextMatchButton {
+      width: 40px; 
+      height: 40px; 
+      background-color: #333333; 
+      color: white;
+      border: none; 
+      cursor: pointer; 
+      font-size: 18px; 
+      border-radius: 5px; 
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .searchButtons {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+    }
+
+#fileFormat {
+  font-size: 14px;
+  width: 100px;
+  height: 35px;
+  background-color: #333333;
   color: white;
-  border: none; 
-  cursor: pointer; 
-  font-size: 18px; 
-  border-radius: 5px; 
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: 1px solid #555;
+  border-radius: 5px;
+  text-align: center;
+  text-align-last: center;
+  cursor: pointer;
+  padding: 0 10px;
+  
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 
-.searchButtons {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
+#fileFormat option {
+  text-align: center;
+  background-color: #333333;
+  color: white;
 }
 
-    #fileFormat { font-size: 14px; width: 100px; height: 35px; }
+#fileFormat::-ms-expand {
+  display: none;
+}
+    
     #saveButton {
-      width: 80px; height: 40px; background-color: #007bff; color: white;
-      border: none; cursor: pointer; font-size: 14px; border-radius: 5px;
+      width: 80px; 
+      height: 40px; 
+      background-color: #007bff; 
+      color: white;
+      border: none; 
+      cursor: pointer; 
+      font-size: 14px; 
+      border-radius: 5px;
     }
 
     @media (orientation: portrait) {
-      body { flex-direction: column; }
-      #editorContainer { flex: 40; min-height: 0; }
-      #preview { flex: 50; min-height: 0; }
-      #controlPanel { border-left: none; border-top: 1px solid #222; }
+      body { 
+        flex-direction: column; 
+      }
+      #editorContainer { 
+        flex: 40; 
+        min-height: 0; 
+      }
+      #preview { 
+        flex: 50; 
+        min-height: 0; 
+      }
+      #controlPanel { 
+        border-left: none; 
+        border-top: 1px solid #222; 
+      }
       #controlPanel > div {
         flex-direction: row; 
         justify-content: space-evenly; 
@@ -107,12 +203,80 @@ body {
         width: 100%;
         flex-wrap: wrap;
       }
-      #searchField { width: 100px; flex-grow: 1; }
+      #searchField { 
+        width: 100px; 
+        flex-grow: 1; 
+      }
     }
+
+    #editor::-webkit-scrollbar,
+    #lineNumbering::-webkit-scrollbar {
+      width: 8px;
+    }
+    #editor::-webkit-scrollbar-track,
+    #lineNumbering::-webkit-scrollbar-track {
+      background: #111;
+    }
+    #editor::-webkit-scrollbar-thumb,
+    #lineNumbering::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 4px;
+    }
+    #editor::-webkit-scrollbar-thumb:hover,
+    #lineNumbering::-webkit-scrollbar-thumb:hover {
+      background: #666;
+    }
+
+    #saveStatus {
+      color: #4CAF50;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.8);
+      padding: 5px 10px;
+      border-radius: 5px;
+      pointer-events: none;
+    }
+    #saveStatus.show {
+      opacity: 1;
+    }
+
+#fileFormat {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 35px;
+  cursor: pointer;
+}
+
+#fileFormat::-ms-expand {
+  display: none;
+}
+
+#fileFormat:hover {
+  border-color: #007bff;
+}
+
+#fileFormat:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
   </style>
 </head>
 <body>
-<script src="pwa-init.js"></script>
+
+  <div id="saveStatus">✅ Сохранено</div>
+
+  <script src="pwa-init.js"></script>
+  
   <div id="editorContainer">
     <div id="lineNumbering">1</div>
     <textarea id="editor" placeholder="Type your code here..."></textarea>
@@ -123,10 +287,10 @@ body {
   <div id="controlPanel">
     <div>
       <input type="text" id="searchField" placeholder="Search">
-<div class="searchButtons">
-  <button id="prevMatchButton" title="Previous Match">▲</button>
-  <button id="nextMatchButton" title="Next Match">▼</button>
-</div>
+      <div class="searchButtons">
+        <button id="prevMatchButton" title="Previous Match">▲</button>
+        <button id="nextMatchButton" title="Next Match">▼</button>
+      </div>
       
       <select id="fileFormat">
         <option value="html">HTML</option>
@@ -145,43 +309,116 @@ body {
   </div>
 
   <script>
+    if ('serviceWorker' in navigator) {
+        // Удаляем все Service Worker
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(registration => {
+                registration.unregister();
+                console.log('❌ Service Worker удален');
+            });
+        });
+        
+        navigator.serviceWorker.register = function() {
+            console.warn('❌ Регистрация Service Worker запрещена');
+            return Promise.reject('Service Worker отключен');
+        };
+    }
+
     const editor = document.getElementById("editor");
-    const preview = document.getElementById("preview");
+    let preview = document.getElementById("preview");
     const saveButton = document.getElementById("saveButton");
     const fileFormat = document.getElementById("fileFormat");
     const searchField = document.getElementById("searchField");
     const prevMatchButton = document.getElementById("prevMatchButton");
     const nextMatchButton = document.getElementById("nextMatchButton");
     const lineNumbering = document.getElementById("lineNumbering");
+    const saveStatus = document.getElementById("saveStatus");
+    
     let searchMatches = [];
     let currentMatchIndex = -1;
     let currentSearchTerm = "";
+    let updateTimeout = null;
+    let saveStatusTimeout = null;
+    
     const mimeTypes = {
-      html: "text/html", json: "application/json", txt: "text/plain",
-      js: "application/javascript", css: "text/css",
+        html: "text/html", 
+        json: "application/json", 
+        txt: "text/plain",
+        js: "application/javascript", 
+        css: "text/css",
     };
+
+    function showSaveStatus() {
+        saveStatus.classList.add('show');
+        clearTimeout(saveStatusTimeout);
+        saveStatusTimeout = setTimeout(() => {
+            saveStatus.classList.remove('show');
+        }, 1500);
+    }
+
+    function saveToLocalStorage() {
+        try {
+            localStorage.setItem('editorContent', editor.value);
+            localStorage.setItem('editorFormat', fileFormat.value);
+            showSaveStatus();
+        } catch(e) {
+            console.warn('Не удалось сохранить в localStorage:', e);
+        }
+    }
+
+    function loadFromLocalStorage() {
+        try {
+            const saved = localStorage.getItem('editorContent');
+            if (saved) {
+                editor.value = saved;
+                const format = localStorage.getItem('editorFormat');
+                if (format) fileFormat.value = format;
+                return true;
+            }
+        } catch(e) {
+            console.warn('Не удалось загрузить из localStorage:', e);
+        }
+        return false;
+    }
 
     function updateLineNumbers() {
         const lines = editor.value.split('\n');
         lineNumbering.textContent = Array.from({ length: lines.length }, (_, i) => i + 1).join('\n');
     }
 
-    editor.addEventListener('input', () => {
-        preview.srcdoc = editor.value;
+    function updatePreview() {
+        const content = editor.value;
+        
+        const encoded = encodeURIComponent(content);
+        preview.src = 'data:text/html;charset=utf-8,' + encoded;
+        
+        
         updateLineNumbers();
-    });
+        console.log('🔄 Preview обновлен (кеш отключен)');
+    }
 
-    editor.addEventListener('scroll', () => { lineNumbering.scrollTop = editor.scrollTop; });
-    updateLineNumbers();
-
-    saveButton.addEventListener("click", () => {
-      const format = fileFormat.value;
-      const blob = new Blob([editor.value], { type: mimeTypes[format] || "text/plain" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `code.${format}`;
-      a.click();
-    });
+    function forceRefreshPreview() {
+        try {
+            const oldStyles = preview.style.cssText;
+            const oldClass = preview.className;
+            
+            const parent = preview.parentNode;
+            const newPreview = document.createElement('iframe');
+            newPreview.id = 'preview';
+            newPreview.title = 'Preview';
+            newPreview.style.cssText = oldStyles;
+            newPreview.className = oldClass;
+            
+            parent.replaceChild(newPreview, preview);
+            preview = document.getElementById('preview');
+            
+            updatePreview();
+            console.log('🔄 Iframe пересоздан');
+        } catch(e) {
+            console.warn('Ошибка при пересоздании iframe:', e);
+            updatePreview();
+        }
+    }
 
     function highlightMatch(index) {
         if (index === -1 || searchMatches.length === 0) return;
@@ -196,7 +433,11 @@ body {
 
     function startSearch(searchText) {
         const trimmed = searchText.trim();
-        if (trimmed === "") { searchMatches = []; currentSearchTerm = ""; return; }
+        if (trimmed === "") { 
+            searchMatches = []; 
+            currentSearchTerm = ""; 
+            return; 
+        }
         
         searchMatches = [];
         currentSearchTerm = trimmed;
@@ -215,48 +456,131 @@ body {
         }
     }
 
-    searchField.addEventListener("keydown", (e) => { if (e.key === "Enter") startSearch(searchField.value); });
+    function stopGlobalScroll(e) {
+        if (e.target !== editor) {
+            e.preventDefault();
+        }
+    }
+
+    
+    window.addEventListener('load', () => {
+        if (window.performance) {
+            window.performance.navigation && (window.performance.navigation.type = 0);
+        }
+        
+        const hasSaved = loadFromLocalStorage();
+        if (!hasSaved) {
+            editor.value = '<h1>Hello World!</h1>\n<p>Start coding...</p>';
+        }
+        
+        setTimeout(() => {
+            forceRefreshPreview();
+        }, 50);
+        
+        setTimeout(() => {
+            forceRefreshPreview();
+        }, 1000);
+        
+        updateLineNumbers();
+        console.log('✅ Редактор загружен');
+        console.log('🔄 Кеширование полностью отключено');
+        console.log('📌 Нажмите Ctrl+Shift+R для принудительного обновления preview');
+    });
+
+    editor.addEventListener('input', () => {
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+            updatePreview();
+            saveToLocalStorage();
+        }, 100);
+    });
+
+    editor.addEventListener('focus', () => {
+        updatePreview();
+    });
+
+    editor.addEventListener('scroll', () => { 
+        lineNumbering.scrollTop = editor.scrollTop; 
+    });
+
+    saveButton.addEventListener("click", () => {
+        const format = fileFormat.value;
+        const blob = new Blob([editor.value], { type: mimeTypes[format] || "text/plain" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `code.${format}`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showSaveStatus();
+        console.log('💾 Файл сохранен');
+    });
+
+    // Поиск
+    searchField.addEventListener("keydown", (e) => { 
+        if (e.key === "Enter") startSearch(searchField.value); 
+    });
+    
     nextMatchButton.addEventListener("click", () => {
         if (searchField.value !== currentSearchTerm) startSearch(searchField.value);
-        else if (searchMatches.length) { currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length; highlightMatch(currentMatchIndex); }
+        else if (searchMatches.length) { 
+            currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length; 
+            highlightMatch(currentMatchIndex); 
+        }
     });
+    
     prevMatchButton.addEventListener("click", () => {
         if (searchField.value !== currentSearchTerm) startSearch(searchField.value);
-        else if (searchMatches.length) { currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length; highlightMatch(currentMatchIndex); }
+        else if (searchMatches.length) { 
+            currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length; 
+            highlightMatch(currentMatchIndex); 
+        }
     });
-document.addEventListener('selectionchange', () => {
-  if (document.activeElement === editor) {
-    const rect = editor.getBoundingClientRect();
-    const cursor = window.getSelection(); 
-  }
-});
 
-editor.addEventListener('touchmove', (e) => {
-  const touchY = e.touches[0].clientY;
-  const rect = editor.getBoundingClientRect();
-  if (touchY > rect.top + 20 && touchY < rect.bottom - 20) {
-    e.stopPropagation(); 
-  }
-}, { passive: false });
+    editor.addEventListener('touchmove', (e) => {
+        const touchY = e.touches[0].clientY;
+        const rect = editor.getBoundingClientRect();
+        if (touchY > rect.top + 20 && touchY < rect.bottom - 20) {
+            e.stopPropagation(); 
+        }
+    }, { passive: false });
 
+    editor.addEventListener('pointerdown', () => {
+        window.addEventListener('wheel', stopGlobalScroll, { passive: false });
+        window.addEventListener('touchmove', stopGlobalScroll, { passive: false });
+    });
 
+    window.addEventListener('pointerup', () => {
+        window.removeEventListener('wheel', stopGlobalScroll);
+        window.removeEventListener('touchmove', stopGlobalScroll);
+    });
 
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+Shift+R - принудительное обновление preview
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'r') {
+            e.preventDefault();
+            forceRefreshPreview();
+            console.log('🔄 Принудительное обновление');
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            saveButton.click();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            searchField.focus();
+            searchField.select();
+        }
+    });
 
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            updatePreview();
+        }, 300);
+    });
 
-editor.addEventListener('pointerdown', () => {
-  window.addEventListener('wheel', stopGlobalScroll, { passive: false });
-  window.addEventListener('touchmove', stopGlobalScroll, { passive: false });
-});
-
-window.addEventListener('pointerup', () => {
-  window.removeEventListener('wheel', stopGlobalScroll);
-  window.removeEventListener('touchmove', stopGlobalScroll);
-});
-
-
-
-
-
+    console.log('✅ Все системы готовы!');
   </script>
 </body>
 </html>
