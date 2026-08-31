@@ -38,6 +38,7 @@
             overflow: hidden;
             height: 100%;
             height: 100dvh;
+            min-width: 50px;
         }
 
         .panel iframe {
@@ -124,7 +125,7 @@
             height: 34px;
             border: none;
             border-radius: 7px;
-            background: #00f;
+            background: #3b82f6;
             color: white;
             font-size: 19px;
             cursor: pointer;
@@ -149,7 +150,7 @@
             bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
-            display: none;
+            display: flex;
             gap: 10px;
             z-index: 100;
             background: rgba(0, 0, 0, 0.75);
@@ -163,7 +164,7 @@
             height: 36px;
             border-radius: 50%;
             border: none;
-            background: #00f;
+            background: #3b82f6;
             color: white;
             font-size: 20px;
             cursor: pointer;
@@ -171,6 +172,7 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
         }
 
         .panel-controllers button:active {
@@ -182,93 +184,16 @@
         }
 
         /* ============================================
-                   ВСЕ МЕДИА-ЗАПРОСЫ
-                   ============================================ */
+           МЕДИА-ЗАПРОСЫ
+           ============================================ */
 
-        /* 1. ДЕСКТОП (ширина > 1024px) */
-        @media (min-width: 1025px) {
-            .panels {
-                display: flex !important;
-                overflow: hidden !important;
-                scroll-snap-type: none !important;
-            }
-            
-            .panel {
-                flex: 1 1 0 !important;
-                min-width: 0 !important;
-                width: auto !important;
-                scroll-snap-align: none !important;
-            }
-            
-            .resizer {
-                display: flex !important;
-                flex: 0 0 6px !important;
-            }
-            
-            .panel-controllers,
-            .dots {
-                display: none !important;
-            }
-        }
-
-        /* 2. ПЛАНШЕТЫ В ПОРТРЕТЕ (iPad) */
-        @media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
-            .panels {
-                display: flex !important;
-                overflow: hidden !important;
-                scroll-snap-type: none !important;
-            }
-            
-            .panel {
-                flex: 1 1 0 !important;
-                min-width: 0 !important;
-                width: auto !important;
-                scroll-snap-align: none !important;
-            }
-            
-            .resizer {
-                display: flex !important;
-                flex: 0 0 6px !important;
-            }
-            
-            .panel-controllers,
-            .dots {
-                display: none !important;
-            }
-        }
-
-        /* 3. ПЛАНШЕТЫ В ЛАНДШАФТЕ (iPad) */
-        @media (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
-            .panels {
-                display: flex !important;
-                overflow: hidden !important;
-                scroll-snap-type: none !important;
-            }
-            
-            .panel {
-                flex: 1 1 0 !important;
-                min-width: 0 !important;
-                width: auto !important;
-                scroll-snap-align: none !important;
-            }
-            
-            .resizer {
-                display: flex !important;
-                flex: 0 0 6px !important;
-            }
-            
-            .panel-controllers,
-            .dots {
-                display: none !important;
-            }
-        }
-
-        /* 4. IPHONE В ПОРТРЕТЕ (карусель) */
-        @media (max-width: 768px) and (orientation: portrait) {
+        /* ТЕЛЕФОНЫ - карусель */
+        @media (max-width: 768px) {
             .panels {
                 overflow-x: auto !important;
+                overflow-y: hidden !important;
                 scroll-snap-type: x mandatory !important;
-                display: flex !important;
+                -webkit-overflow-scrolling: touch;
             }
             
             .panel {
@@ -308,6 +233,7 @@
                 background: rgba(255,255,255,0.2);
                 cursor: pointer;
                 padding: 0;
+                transition: all 0.3s;
             }
             
             .dots button.active {
@@ -318,34 +244,32 @@
             }
         }
 
-        /* 5. IPHONE В ЛАНДШАФТЕ (как десктоп) */
-        @media (max-width: 768px) and (orientation: landscape) {
+        /* ПЛАНШЕТЫ И ДЕСКТОП */
+        @media (min-width: 769px) {
             .panels {
-                display: flex !important;
                 overflow: hidden !important;
-                scroll-snap-type: none !important;
             }
             
             .panel {
                 flex: 1 1 0 !important;
-                min-width: 0 !important;
-                width: auto !important;
-                scroll-snap-align: none !important;
+                min-width: 80px !important;
             }
             
             .resizer {
                 display: flex !important;
-                flex: 0 0 6px !important;
             }
             
-            .panel-controllers,
+            .panel-controllers {
+                display: flex !important;
+            }
+            
             .dots {
                 display: none !important;
             }
         }
 
-        /* 6. МАЛЕНЬКИЕ ТЕЛЕФОНЫ В ПОРТРЕТЕ */
-        @media (max-width: 480px) and (orientation: portrait) {
+        /* МАЛЕНЬКИЕ ТЕЛЕФОНЫ */
+        @media (max-width: 480px) {
             .panel-controllers {
                 bottom: 16px;
                 padding: 6px 12px;
@@ -390,7 +314,7 @@
         const removeBtn = document.getElementById('mobileRemoveBtn');
 
         // ============================================
-        // ФУНКЦИИ СОЗДАНИЯ ЭЛЕМЕНТОВ
+        // ФУНКЦИИ СОЗДАНИЯ
         // ============================================
 
         function createPanel(url) {
@@ -456,7 +380,7 @@
             menu.appendChild(row2);
             resizer.appendChild(menu);
 
-            // Обработчики для кнопок меню
+            // Обработчики
             addLeft.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
                 e.preventDefault();
@@ -505,7 +429,7 @@
         }
 
         // ============================================
-        // ФУНКЦИИ ДОБАВЛЕНИЯ/УДАЛЕНИЯ
+        // ДОБАВЛЕНИЕ/УДАЛЕНИЕ
         // ============================================
 
         function addPanelLeft(resizer) {
@@ -518,13 +442,9 @@
             const url = prompt('Enter URL for new panel:', 'index.html');
             if (!url) return;
             
-            // Создаем новую панель
             const newPanel = createPanel(url);
-            
-            // Вставляем перед ресайзером
             panelsContainer.insertBefore(newPanel, resizer);
             
-            // Создаем новый ресайзер перед новой панелью
             const newResizer = createResizer();
             panelsContainer.insertBefore(newResizer, newPanel);
             
@@ -542,13 +462,9 @@
             const url = prompt('Enter URL for new panel:', 'index.html');
             if (!url) return;
             
-            // Создаем новую панель
             const newPanel = createPanel(url);
-            
-            // Вставляем перед правой панелью
             panelsContainer.insertBefore(newPanel, panels[index + 1]);
             
-            // Создаем новый ресайзер перед новой панелью
             const newResizer = createResizer();
             panelsContainer.insertBefore(newResizer, newPanel);
             
@@ -563,10 +479,8 @@
             
             if (index === -1 || !panels[index] || panels.length <= 1) return;
             
-            // Удаляем панель слева от ресайзера
             panels[index].remove();
             
-            // Удаляем ресайзер слева от этой панели (если есть)
             if (index > 0 && allResizers[index - 1]) {
                 allResizers[index - 1].remove();
             }
@@ -582,10 +496,7 @@
             
             if (index === -1 || !panels[index + 1] || panels.length <= 1) return;
             
-            // Удаляем панель справа от ресайзера
             panels[index + 1].remove();
-            
-            // Удаляем сам ресайзер
             resizer.remove();
             
             updateUI();
@@ -593,12 +504,11 @@
         }
 
         // ============================================
-        // ФУНКЦИИ ОБНОВЛЕНИЯ UI
+        // ОБНОВЛЕНИЕ UI
         // ============================================
 
         function updateUI() {
             updateDots();
-            updatePanelWidths();
             setupResizers();
         }
 
@@ -619,7 +529,7 @@
                 dotsContainer.appendChild(dot);
             });
             
-            // Обновляем активные точки при скролле
+            // Наблюдатель за скроллом
             const observer = new IntersectionObserver(entries => {
                 entries.forEach(entry => {
                     if (!entry.isIntersecting) return;
@@ -639,26 +549,11 @@
             panels.forEach(panel => observer.observe(panel));
         }
 
-        function updatePanelWidths() {
-            const panels = document.querySelectorAll('.panel');
-            const resizers = document.querySelectorAll('.resizer');
-            const containerWidth = panelsContainer.clientWidth;
-            const resizerWidth = 6;
-            const totalResizerWidth = resizers.length * resizerWidth;
-            const availableWidth = containerWidth - totalResizerWidth;
-            const panelWidth = availableWidth / panels.length;
-            
-            panels.forEach(panel => {
-                panel.style.flex = '0 0 auto';
-                panel.style.width = `${panelWidth}px`;
-            });
-        }
-
         function setupResizers() {
             const resizers = document.querySelectorAll('.resizer');
             
             resizers.forEach((resizer) => {
-                // Удаляем старые обработчики
+                // Клонируем для удаления старых обработчиков
                 const newResizer = resizer.cloneNode(true);
                 resizer.parentNode.replaceChild(newResizer, resizer);
                 
@@ -698,7 +593,9 @@
                     newPrevWidth = Math.max(minWidth, Math.min(totalWidth - minWidth, newPrevWidth));
                     const newNextWidth = totalWidth - newPrevWidth;
                     
+                    prevPanel.style.flex = '0 0 auto';
                     prevPanel.style.width = `${newPrevWidth}px`;
+                    nextPanel.style.flex = '0 0 auto';
                     nextPanel.style.width = `${newNextWidth}px`;
                 }
                 
@@ -780,7 +677,7 @@
         }
 
         // ============================================
-        // СОХРАНЕНИЕ И ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ
+        // СОХРАНЕНИЕ И ВОССТАНОВЛЕНИЕ
         // ============================================
 
         function saveState() {
@@ -827,7 +724,7 @@
         // ============================================
 
         function initDefaultPanels() {
-            const defaultPages = ['paramount.html', 'jetpack.html', 'capital.html', 'flash.html', 'cross.html'];
+            const defaultPages = ['paramount.html', 'capital.html', 'flash.html', 'cross.html'];
             defaultPages.forEach((page, index) => {
                 const panel = createPanel(page);
                 panelsContainer.appendChild(panel);
@@ -841,13 +738,12 @@
             saveState();
         }
 
-        // Восстанавливаем состояние или создаем дефолтное
         if (!restoreState()) {
             initDefaultPanels();
         }
 
         // ============================================
-        // ОБРАБОТЧИКИ ДЛЯ МОБИЛЬНЫХ КНОПОК
+        // ОБРАБОТЧИКИ КНОПОК
         // ============================================
 
         if (addBtn) {
@@ -855,18 +751,15 @@
                 const url = prompt('Enter URL for new panel:', 'index.html');
                 if (!url) return;
                 
-                // Добавляем в конец
                 const newPanel = createPanel(url);
                 panelsContainer.appendChild(newPanel);
                 
-                // Добавляем ресайзер перед новой панелью
                 const newResizer = createResizer();
                 panelsContainer.insertBefore(newResizer, newPanel);
                 
                 updateUI();
                 saveState();
                 
-                // Скроллим к новой панели
                 setTimeout(() => {
                     newPanel.scrollIntoView({
                         behavior: 'smooth',
@@ -882,11 +775,9 @@
                 const panels = document.querySelectorAll('.panel');
                 if (panels.length <= 1) return;
                 
-                // Удаляем последнюю панель
                 const lastPanel = panels[panels.length - 1];
                 lastPanel.remove();
                 
-                // Удаляем последний ресайзер
                 const resizers = document.querySelectorAll('.resizer');
                 if (resizers.length > 0) {
                     resizers[resizers.length - 1].remove();
@@ -898,7 +789,7 @@
         }
 
         // ============================================
-        // ОБРАБОТКА СООБЩЕНИЙ ОТ IFRAME
+        // ОБРАБОТКА СООБЩЕНИЙ
         // ============================================
 
         window.addEventListener('message', function(event) {
@@ -934,21 +825,7 @@
         });
 
         // ============================================
-        // ОБРАБОТКА ИЗМЕНЕНИЯ РАЗМЕРА
-        // ============================================
-
-        let resizeTimer = null;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                if (!document.body.classList.contains('is-resizing')) {
-                    updatePanelWidths();
-                }
-            }, 100);
-        });
-
-        // ============================================
-        // ЗАКРЫТИЕ МЕНЮ ПРИ КЛИКЕ ВНЕ
+        // ЗАКРЫТИЕ МЕНЮ
         // ============================================
 
         document.addEventListener('pointerdown', e => {
@@ -957,7 +834,7 @@
             }
         });
 
-        console.log('✅ Fields app initialized');
+        console.log('✅ Fields initialized');
         console.log(`📊 ${document.querySelectorAll('.panel').length} panels loaded`);
     </script>
 </body>
