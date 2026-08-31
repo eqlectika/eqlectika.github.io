@@ -157,6 +157,53 @@ html {
 .ranking-title { font-family: 'Cinzel', serif; font-size: 20px !important; text-align: center; border-bottom: 1px solid #222; padding-bottom: 10px; margin-bottom: 20px; color: #ff00cc; }
 .ranking-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #222; cursor: pointer; }
 .ranking-img { width: 40px; height: 40px; object-fit: cover; margin-right: 12px; border: 1px solid #444; }
+
+.text-thumbnail {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.text-thumbnail > div {
+    background: #111;
+    color: #afff00;
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 12px 15px;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    word-wrap: break-word;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 10;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.ranking-img.text-preview {
+    background: #111;
+    color: #afff00;
+    font-family: monospace;
+    font-size: 8px;
+    padding: 4px 3px;
+    text-align: left;
+    overflow: hidden;
+    word-wrap: break-word;
+    line-height: 1.2;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: 40px;
+    height: 40px;
+    box-sizing: border-box;
+}
+    
 .ranking-info { flex-grow: 1; display: flex; justify-content: space-between; align-items: center; }
 .item-details { 
     display: none; 
@@ -699,7 +746,30 @@ a { color: #448aff; text-decoration: none; }
 </script>
 
 <script>
-
+function createTextThumbnail(text) {
+    if (!text) return '';
+    return `<div style="
+        background: #111;
+        color: #afff00;
+        font-family: monospace;
+        font-size: 13px;
+        line-height: 1.4;
+        padding: 12px 15px;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        text-align: left;
+        word-wrap: break-word;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 10;
+        -webkit-box-orient: vertical;
+        text-overflow: ellipsis;
+        align-items: flex-start;
+        justify-content: flex-start;
+    ">${text}</div>`;
+}
+    
 const logArea = document.getElementById('logArea');
 const statusToggle = document.getElementById('statusToggle');
 const logContainer = document.getElementById('logContainer');
@@ -1113,7 +1183,7 @@ if (items.length === 0) {
             title: 'Voice',
             description: '"Your time is limited, so don\'t waste it living someone else\'s life. Don\'t be trapped by dogma — which is living with the results of other people\'s thinking. Don\'t let the noise of others\' opinions drown out your inner voice. And most important, have the courage to follow your heart and intuition."',
             externalUrl: 'https://www.bitfufu.com/en/activity/invitee?inviteCode=UQQ9QB',
-            img: 'apple.jpg',
+            img: '',
             rating: 1520
         },
     ];
@@ -1540,8 +1610,35 @@ function updateRankingList() {
             deliveryStatusHtml = `<div style="color: #00ffcc; margin-bottom: 10px;">Delivered to: ${deliveredCount} ${peerLabel}</div>`;
         }
         
+        // ЕСТЬ ли картинка?
+        const hasImage = item.img && item.img.length > 0;
+        let thumbnailHtml;
+        if (hasImage) {
+            thumbnailHtml = `<img src="${item.img}" class="ranking-img" onerror="this.style.display='none'">`;
+        } else {
+            // Весь текст, помещается в 40x40 с переносом строк
+            const text = item.description || item.title;
+            thumbnailHtml = `<div class="ranking-img text-preview" style="
+                overflow: hidden;
+                word-wrap: break-word;
+                font-size: 7px;
+                padding: 4px 3px;
+                background: #111;
+                color: #afff00;
+                font-family: monospace;
+                text-align: left;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: flex-start;
+                justify-content: flex-start;
+                box-sizing: border-box;
+                line-height: 1.2;
+            ">${text}</div>`;
+        }
+        
         html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
-            <img src="${item.img}" class="ranking-img">
+            ${thumbnailHtml}
             <div class="ranking-info">
                 <p class="title" style="text-align: left; font-size: 16px; margin: 0;">${index + 1}. ${item.title}</p>
                 <span>${Math.round(item.rating)}</span>
@@ -1568,10 +1665,27 @@ function nextPair() {
     let i1 = Math.floor(Math.random() * items.length), i2;
     do { i2 = Math.floor(Math.random() * items.length); } while (i1 === i2);
     currentPair = [i1, i2];
-    $('#item-left img').attr('src', items[i1].img);
-    $('#item-left .title').text(items[i1].title);
-    $('#item-right img').attr('src', items[i2].img);
-    $('#item-right .title').text(items[i2].title);
+    
+    function setThumbnail(index, side) {
+        const item = items[index];
+        const wrapper = $(`#item-${side} .versus_thumbwrapper`);
+        const img = wrapper.find('img');
+        const title = $(`#item-${side} .title`);
+        
+        title.text(item.title);
+        wrapper.find('.text-thumbnail').remove();
+        
+        if (item.img && item.img.length > 0) {
+            img.attr('src', item.img).show();
+        } else {
+            img.hide();
+            const textHtml = createTextThumbnail(item.description || item.title);
+            wrapper.append(`<div class="text-thumbnail">${textHtml}</div>`);
+        }
+    }
+    
+    setThumbnail(i1, 'left');
+    setThumbnail(i2, 'right');
 }
 
 function vote(side) {
