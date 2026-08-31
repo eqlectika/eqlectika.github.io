@@ -120,6 +120,7 @@
             font-size: 19px;
             cursor: pointer;
             touch-action: manipulation;
+            pointer-events: auto;
         }
 
         .handle-menu button:active {
@@ -166,7 +167,6 @@
             border-radius: 4px;
         }
 
-        /* ТЕЛЕФОНЫ - карусель */
         @media (max-width: 768px) {
             .panels {
                 overflow-x: auto !important;
@@ -191,7 +191,6 @@
             }
         }
 
-        /* ПЛАНШЕТЫ И ДЕСКТОП */
         @media (min-width: 769px) {
             .panels {
                 overflow: hidden !important;
@@ -212,7 +211,6 @@
             }
         }
 
-        /* МАЛЕНЬКИЕ ТЕЛЕФОНЫ */
         @media (max-width: 480px) {
             .dots {
                 bottom: 70px;
@@ -238,10 +236,6 @@
 
         const panelsContainer = document.getElementById('panels');
         const dotsContainer = document.getElementById('dots');
-
-        // ============================================
-        // ФУНКЦИИ СОЗДАНИЯ
-        // ============================================
 
         function createPanel(url) {
             const panel = document.createElement('div');
@@ -306,27 +300,29 @@
             menu.appendChild(row2);
             resizer.appendChild(menu);
 
-            // ============================================
-            // КНОПКИ НА РАЗДЕЛИТЕЛЯХ - РАБОТАЮТ!
-            // ============================================
-            addLeft.addEventListener('click', (e) => {
+            // КНОПКИ РАБОТАЮТ
+            addLeft.addEventListener('click', function(e) {
                 e.stopPropagation();
                 addPanelLeft(resizer);
+                closeAllMenus();
             });
 
-            addRight.addEventListener('click', (e) => {
+            addRight.addEventListener('click', function(e) {
                 e.stopPropagation();
                 addPanelRight(resizer);
+                closeAllMenus();
             });
 
-            removeLeft.addEventListener('click', (e) => {
+            removeLeft.addEventListener('click', function(e) {
                 e.stopPropagation();
                 removePanelLeft(resizer);
+                closeAllMenus();
             });
 
-            removeRight.addEventListener('click', (e) => {
+            removeRight.addEventListener('click', function(e) {
                 e.stopPropagation();
                 removePanelRight(resizer);
+                closeAllMenus();
             });
 
             return resizer;
@@ -351,10 +347,6 @@
             
             return dot;
         }
-
-        // ============================================
-        // ДОБАВЛЕНИЕ/УДАЛЕНИЕ
-        // ============================================
 
         function addPanelLeft(resizer) {
             const allResizers = Array.from(document.querySelectorAll('.resizer'));
@@ -427,10 +419,6 @@
             saveState();
         }
 
-        // ============================================
-        // ОБНОВЛЕНИЕ UI
-        // ============================================
-
         function updateUI() {
             updateDots();
             setupResizers();
@@ -476,8 +464,7 @@
             const resizers = document.querySelectorAll('.resizer');
             
             resizers.forEach((resizer) => {
-                const newResizer = resizer.cloneNode(true);
-                resizer.parentNode.replaceChild(newResizer, resizer);
+                const menu = resizer.querySelector('.handle-menu');
                 
                 let active = false;
                 let moved = false;
@@ -488,7 +475,7 @@
                 
                 const panels = document.querySelectorAll('.panel');
                 const allResizers = Array.from(document.querySelectorAll('.resizer'));
-                const index = allResizers.indexOf(newResizer);
+                const index = allResizers.indexOf(resizer);
                 
                 if (index === -1 || !panels[index] || !panels[index + 1]) return;
                 
@@ -496,7 +483,7 @@
                 const nextPanel = panels[index + 1];
                 
                 function setPosition(clientX) {
-                    const rect = newResizer.getBoundingClientRect();
+                    const rect = resizer.getBoundingClientRect();
                     let x = clientX - rect.left;
                     const handleSize = 24;
                     const halfHandle = handleSize / 2;
@@ -504,7 +491,7 @@
                     x = Math.max(halfHandle, Math.min(rect.width - halfHandle, x));
                     
                     const percent = (x / rect.width) * 100;
-                    const handle = newResizer.querySelector('.resizer-handle');
+                    const handle = resizer.querySelector('.resizer-handle');
                     handle.style.left = `${percent}%`;
                     
                     const totalWidth = prevPanel.getBoundingClientRect().width + nextPanel.getBoundingClientRect().width;
@@ -530,9 +517,9 @@
                     startY = e.clientY;
                     pendingX = e.clientX;
                     
-                    newResizer.classList.add('active');
+                    resizer.classList.add('active');
                     document.body.classList.add('is-resizing');
-                    newResizer.setPointerCapture?.(e.pointerId);
+                    resizer.setPointerCapture?.(e.pointerId);
                 }
                 
                 function pointerMove(e) {
@@ -567,26 +554,26 @@
                         animationFrame = null;
                     }
                     
-                    newResizer.classList.remove('active');
+                    resizer.classList.remove('active');
                     document.body.classList.remove('is-resizing');
                     
                     try {
-                        newResizer.releasePointerCapture?.(e.pointerId);
+                        resizer.releasePointerCapture?.(e.pointerId);
                     } catch (_) {}
                     
-                    if (!moved) {
-                        const menu = newResizer.querySelector('.handle-menu');
+                    // Если не двигали - открываем меню
+                    if (!moved && menu) {
                         const isOpen = menu.classList.contains('open');
                         closeAllMenus(isOpen ? null : menu);
                         menu.classList.toggle('open', !isOpen);
                     }
                 }
                 
-                newResizer.addEventListener('pointerdown', pointerDown);
-                newResizer.addEventListener('pointermove', pointerMove);
-                newResizer.addEventListener('pointerup', pointerUp);
-                newResizer.addEventListener('pointercancel', pointerUp);
-                newResizer.addEventListener('lostpointercapture', pointerUp);
+                resizer.addEventListener('pointerdown', pointerDown);
+                resizer.addEventListener('pointermove', pointerMove);
+                resizer.addEventListener('pointerup', pointerUp);
+                resizer.addEventListener('pointercancel', pointerUp);
+                resizer.addEventListener('lostpointercapture', pointerUp);
             });
         }
 
@@ -597,10 +584,6 @@
                 }
             });
         }
-
-        // ============================================
-        // СОХРАНЕНИЕ И ВОССТАНОВЛЕНИЕ
-        // ============================================
 
         function saveState() {
             const panels = document.querySelectorAll('.panel');
@@ -641,10 +624,6 @@
             }
         }
 
-        // ============================================
-        // ИНИЦИАЛИЗАЦИЯ
-        // ============================================
-
         function initDefaultPanels() {
             const defaultPages = ['paramount.html', 'capital.html', 'flash.html', 'cross.html'];
             defaultPages.forEach((page, index) => {
@@ -663,10 +642,6 @@
         if (!restoreState()) {
             initDefaultPanels();
         }
-
-        // ============================================
-        // ОБРАБОТКА СООБЩЕНИЙ
-        // ============================================
 
         window.addEventListener('message', function(event) {
             if (!event.data) return;
@@ -699,10 +674,6 @@
                 });
             }
         });
-
-        // ============================================
-        // ЗАКРЫТИЕ МЕНЮ
-        // ============================================
 
         document.addEventListener('pointerdown', e => {
             if (!e.target.closest('.resizer')) {
