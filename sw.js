@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-indexupdate';
+const CACHE_NAME = 'version-flash';
 
 const CORE_ASSETS = [
 
