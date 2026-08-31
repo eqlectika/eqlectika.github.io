@@ -27,6 +27,10 @@ body { background-color: #00002f; color: #fff; max-width: 768px; font-size: 16px
     background-color: #333; 
     aspect-ratio: 1/1; 
     box-sizing: border-box;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    overflow: hidden;
 }
 .versus_thumbwrapper img { 
     position: absolute;
@@ -35,11 +39,63 @@ body { background-color: #00002f; color: #fff; max-width: 768px; font-size: 16px
     height: 100%; 
     object-fit: cover; 
 }
+.versus_thumbwrapper .fallback-text {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    color: #fff;
+    text-align: left;
+    padding: 12px;
+    word-wrap: break-word;
+    max-width: 100%;
+    line-height: 1.1;
+    text-shadow: 0 0 20px rgba(0,0,0,0.8);
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    overflow: hidden;
+}
 
 .ranking-container { padding: 0 20px; margin: 10px 0 10px 0;}
 .ranking-title { font-family: 'Cinzel'; font-size: 18px; color: #aaa; text-align: center; border-bottom: 1px solid #222; padding-bottom: 10px; margin: 0 0 0 0; }
 .ranking-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #222; cursor: pointer; }
-.ranking-img { width: 40px; height: 40px; object-fit: cover; margin-right: 12px; border: 1px solid #444; background: #222; }
+.ranking-img { 
+    width: 40px; 
+    height: 40px; 
+    margin-right: 12px; 
+    border: 1px solid #444; 
+    background: #222; 
+    display: flex; 
+    align-items: center; 
+    justify-content: flex-start; 
+    font-family: 'Cinzel', serif; 
+    font-size: 10px; 
+    color: #aaa; 
+    flex-shrink: 0;
+    overflow: hidden;
+    padding: 2px;
+    box-sizing: border-box;
+}
+.ranking-img img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+    display: block; 
+}
+.ranking-img .fallback-text-small {
+    font-size: 9px;
+    text-align: left;
+    line-height: 1.1;
+    word-wrap: break-word;
+    padding: 2px;
+    max-width: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    display: block;
+    width: 100%;
+}
 .ranking-info { flex-grow: 1; display: flex; font-weight: bold; justify-content: space-between; align-items: center; }
 .item-details { display: none; padding: 10px; background: #00002f; border-bottom: 1px solid #222; font-size: 16px; color: #ccc; }
 
@@ -85,7 +141,7 @@ font-weight: bold;
     cursor: pointer;
     margin: 0; 
     border: 2px solid #fff;
-    align-self: flex-start; /* <-- Вот это вернет ей нормальную длину по размеру текста */
+    align-self: flex-start;
 }
 
 
@@ -97,7 +153,7 @@ font-weight: bold;
     font-family: 'Copperplate Gothic Std', serif; 
     color: #000; 
     border: none; 
-    margin: 0; /* Убираем старый отступ */
+    margin: 0;
     font-weight: bold; 
     cursor: pointer; 
     text-transform: uppercase; 
@@ -181,7 +237,7 @@ font-family: 'Playfair Display', serif;
 }
 
 #collapsible-content.expanded {
-    max-height: 2000px; /* Запас по высоте, больший чем содержимое блока */
+    max-height: 2000px;
     opacity: 1;
 }
 
@@ -246,11 +302,11 @@ font-family: 'Playfair Display', serif;
     <div class="ranking-title">Pick Important</div>
     <div class="versus-wrapper">
         <div class="versus_column" id="item-left" onclick="vote('left')">
-            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+            <div class="versus_thumbwrapper"><img src="" alt=""><span class="fallback-text" style="display:none;"></span></div>
             <h3 class="title" style="font-size: 16px; text-align:center"></h3>
         </div>
         <div class="versus_column" id="item-right" onclick="vote('right')">
-            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+            <div class="versus_thumbwrapper"><img src="" alt=""><span class="fallback-text" style="display:none;"></span></div>
             <h3 class="title" style="font-size: 16px; text-align:center"></h3>
         </div>
     </div>
@@ -412,6 +468,34 @@ let items = savedItems ? JSON.parse(savedItems) : defaultItems;
 let currentPair = [];
 let editingId = null;
 
+function getFallbackText(item, maxWords = 8) {
+    if (!item) return '?';
+    if (!item.description || item.description.trim() === '') {
+        return (item.title || '?')[0].toUpperCase();
+    }
+    const words = item.description.trim().split(/\s+/);
+    const selectedWords = words.slice(0, maxWords);
+    let text = selectedWords.join(' ');
+    if (words.length > maxWords) {
+        text += '…';
+    }
+    return text;
+}
+
+function renderThumbnail(container, item) {
+    const wrapper = container.find('.versus_thumbwrapper');
+    const img = wrapper.find('img');
+    const fallback = wrapper.find('.fallback-text');
+    
+    if (item.img && item.img !== '') {
+        img.attr('src', item.img).show();
+        fallback.hide();
+    } else {
+        img.hide();
+        fallback.text(getFallbackText(item, 8)).show();
+    }
+}
+
 function editItem(id) {
     const item = items.find(i => i.id === id);
     if (!item) return;
@@ -499,9 +583,15 @@ function updateRankingList() {
     const sorted = [...items].sort((a, b) => b.rating - a.rating);
     let html = '';
     sorted.forEach((item, index) => {
-        const imgTag = item.img ? `<img src="${item.img}" class="ranking-img">` : `<div class="ranking-img" style="display:inline-block;"></div>`;
+        let imgHtml = '';
+        if (item.img && item.img !== '') {
+            imgHtml = `<img src="${item.img}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+        } else {
+            const fallbackText = getFallbackText(item, 4);
+            imgHtml = `<span class="fallback-text-small">${fallbackText}</span>`;
+        }
         html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
-            ${imgTag}
+            <div class="ranking-img">${imgHtml}</div>
             <div class="ranking-info"><span>${index + 1}. ${item.title}</span>${Math.round(item.rating)}</div>
         </div>
         <div id="details-${item.id}" class="item-details">
@@ -520,18 +610,10 @@ function nextPair() {
     do { i2 = Math.floor(Math.random() * items.length); } while (i1 === i2);
     currentPair = [i1, i2];
     
-    if (items[i1].img) {
-        $('#item-left img').attr('src', items[i1].img).show();
-    } else {
-        $('#item-left img').attr('src', '').hide();
-    }
+    renderThumbnail($('#item-left'), items[i1]);
     $('#item-left .title').text(items[i1].title);
 
-    if (items[i2].img) {
-        $('#item-right img').attr('src', items[i2].img).show();
-    } else {
-        $('#item-right img').attr('src', '').hide();
-    }
+    renderThumbnail($('#item-right'), items[i2]);
     $('#item-right .title').text(items[i2].title);
 }
 
@@ -609,7 +691,7 @@ $toggleBtn.on('click', function() {
             const absoluteBtnBottom = window.pageYOffset + toggleBtnRect.bottom;
             
 
-            const targetScroll = absoluteBtnBottom - window.innerHeight + 70; // 20px небольшой комфортный отступ
+            const targetScroll = absoluteBtnBottom - window.innerHeight + 70;
 
             window.scrollTo({
                 top: Math.max(0, targetScroll),
