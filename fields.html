@@ -59,16 +59,6 @@
             touch-action: none;
         }
 
-        .resizer::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: -20px;
-            right: -20px;
-            z-index: 0;
-        }
-
         .resizer-handle {
             position: absolute;
             left: 50%;
@@ -108,7 +98,6 @@
             border-radius: 10px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
             z-index: 1000;
-            touch-action: manipulation;
         }
 
         .handle-menu.open {
@@ -129,7 +118,6 @@
             color: white;
             font-size: 19px;
             cursor: pointer;
-            touch-action: manipulation;
         }
 
         .handle-menu button:active {
@@ -172,7 +160,6 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            transition: transform 0.1s;
         }
 
         .panel-controllers button:active {
@@ -180,13 +167,40 @@
         }
 
         .dots {
-            display: none;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 0;
+            position: fixed;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+        }
+
+        .dots button {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .dots button.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            width: 16px;
+            border-radius: 4px;
         }
 
         /* ============================================
-           МЕДИА-ЗАПРОСЫ
+           ВСЕ МЕДИА-ЗАПРОСЫ - ТОЛЬКО ДЛЯ КАРУСЕЛИ
            ============================================ */
-
+        
         /* ТЕЛЕФОНЫ - карусель */
         @media (max-width: 768px) {
             .panels {
@@ -206,45 +220,9 @@
             .resizer {
                 display: none !important;
             }
-            
-            .panel-controllers {
-                display: flex !important;
-            }
-            
-            .dots {
-                display: flex !important;
-                justify-content: center;
-                gap: 8px;
-                padding: 10px 0;
-                position: fixed;
-                bottom: 80px;
-                left: 0;
-                right: 0;
-                z-index: 50;
-                background: rgba(0, 0, 0, 0.3);
-                backdrop-filter: blur(4px);
-            }
-            
-            .dots button {
-                width: 10px;
-                height: 10px;
-                border-radius: 50%;
-                border: 1px solid rgba(255,255,255,0.3);
-                background: rgba(255,255,255,0.2);
-                cursor: pointer;
-                padding: 0;
-                transition: all 0.3s;
-            }
-            
-            .dots button.active {
-                background: #3b82f6;
-                border-color: #3b82f6;
-                width: 16px;
-                border-radius: 4px;
-            }
         }
 
-        /* ПЛАНШЕТЫ И ДЕСКТОП */
+        /* ПЛАНШЕТЫ И ДЕСКТОП - панели рядом */
         @media (min-width: 769px) {
             .panels {
                 overflow: hidden !important;
@@ -253,13 +231,10 @@
             .panel {
                 flex: 1 1 0 !important;
                 min-width: 80px !important;
+                width: auto !important;
             }
             
             .resizer {
-                display: flex !important;
-            }
-            
-            .panel-controllers {
                 display: flex !important;
             }
             
@@ -314,7 +289,7 @@
         const removeBtn = document.getElementById('mobileRemoveBtn');
 
         // ============================================
-        // ФУНКЦИИ СОЗДАНИЯ
+        // СОЗДАНИЕ ЭЛЕМЕНТОВ
         // ============================================
 
         function createPanel(url) {
@@ -380,28 +355,23 @@
             menu.appendChild(row2);
             resizer.appendChild(menu);
 
-            // Обработчики
-            addLeft.addEventListener('pointerdown', (e) => {
+            addLeft.addEventListener('click', (e) => {
                 e.stopPropagation();
-                e.preventDefault();
                 addPanelLeft(resizer);
             });
 
-            addRight.addEventListener('pointerdown', (e) => {
+            addRight.addEventListener('click', (e) => {
                 e.stopPropagation();
-                e.preventDefault();
                 addPanelRight(resizer);
             });
 
-            removeLeft.addEventListener('pointerdown', (e) => {
+            removeLeft.addEventListener('click', (e) => {
                 e.stopPropagation();
-                e.preventDefault();
                 removePanelLeft(resizer);
             });
 
-            removeRight.addEventListener('pointerdown', (e) => {
+            removeRight.addEventListener('click', (e) => {
                 e.stopPropagation();
-                e.preventDefault();
                 removePanelRight(resizer);
             });
 
@@ -529,7 +499,6 @@
                 dotsContainer.appendChild(dot);
             });
             
-            // Наблюдатель за скроллом
             const observer = new IntersectionObserver(entries => {
                 entries.forEach(entry => {
                     if (!entry.isIntersecting) return;
@@ -553,7 +522,6 @@
             const resizers = document.querySelectorAll('.resizer');
             
             resizers.forEach((resizer) => {
-                // Клонируем для удаления старых обработчиков
                 const newResizer = resizer.cloneNode(true);
                 resizer.parentNode.replaceChild(newResizer, resizer);
                 
@@ -677,7 +645,7 @@
         }
 
         // ============================================
-        // СОХРАНЕНИЕ И ВОССТАНОВЛЕНИЕ
+        // СОХРАНЕНИЕ
         // ============================================
 
         function saveState() {
@@ -743,7 +711,7 @@
         }
 
         // ============================================
-        // ОБРАБОТЧИКИ КНОПОК
+        // КНОПКИ
         // ============================================
 
         if (addBtn) {
@@ -789,7 +757,7 @@
         }
 
         // ============================================
-        // ОБРАБОТКА СООБЩЕНИЙ
+        // СООБЩЕНИЯ
         // ============================================
 
         window.addEventListener('message', function(event) {
@@ -823,10 +791,6 @@
                 });
             }
         });
-
-        // ============================================
-        // ЗАКРЫТИЕ МЕНЮ
-        // ============================================
 
         document.addEventListener('pointerdown', e => {
             if (!e.target.closest('.resizer')) {
