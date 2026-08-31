@@ -19,7 +19,7 @@ const CORE_ASSETS = [
     './jetpack.html',
     './media.html',
     './paramount.html',
-    './fields.html',
+
     './cube.html',
     './life.html',
     './bismuth.html',
@@ -36,7 +36,7 @@ const CORE_ASSETS = [
     './manifest-jetpack.json',
     './manifest-media.json',
     './manifest-paramount.json',
-    './manifest-fields.json',
+
     './manifest-cube.json',
     './manifest-life.json',
     './manifest-bismuth.json',
