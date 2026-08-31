@@ -468,7 +468,7 @@ let items = savedItems ? JSON.parse(savedItems) : defaultItems;
 let currentPair = [];
 let editingId = null;
 
-function getFallbackText(item, maxWords = 8) {
+function getFallbackText(item, maxWords = 9999) {
     if (!item) return '?';
     if (!item.description || item.description.trim() === '') {
         return (item.title || '?')[0].toUpperCase();
@@ -492,7 +492,7 @@ function renderThumbnail(container, item) {
         fallback.hide();
     } else {
         img.hide();
-        fallback.text(getFallbackText(item, 21)).show();
+        fallback.text(getFallbackText(item)).show();
     }
 }
 
@@ -587,7 +587,7 @@ function updateRankingList() {
         if (item.img && item.img !== '') {
             imgHtml = `<img src="${item.img}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
         } else {
-            const fallbackText = getFallbackText(item, 4);
+            const fallbackText = getFallbackText(item);
             imgHtml = `<span class="fallback-text-small">${fallbackText}</span>`;
         }
         html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
