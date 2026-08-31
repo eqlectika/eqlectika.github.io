@@ -786,6 +786,17 @@ function showNext() {
 
     let rawTxt = words[index];
     let displayTxt = rawTxt;
+    
+    // ===== ПРОПУСК МАРКЕРОВ =====
+    // Убираем пробелы и проверяем
+    const cleanTxt = displayTxt.trim();
+    if (cleanTxt === 'SENTENCE_START' || cleanTxt.includes('SENTENCE_START')) {
+        index++;
+        setTimeout(showNext, 10);
+        return;
+    }
+    // ===== КОНЕЦ =====
+
     let isLongHold = displayTxt.includes('/');
     if (isLongHold) displayTxt = displayTxt.replace(/\//g, '');
 
@@ -838,27 +849,27 @@ function showNext() {
 
     let currentInterval = interval;
 
-if (isDynamicAccel && words.length > 1) {
-    const sentenceInfo = getSentenceProgress(words, index);
-    const progress = sentenceInfo.progress;
-    
-    const minSpeed = 0.3;
-    const maxSpeed = 0.7;
-    
-    let speedFactor = 1 - 4 * Math.pow(progress - 0.5, 2);
-    speedFactor = Math.max(minSpeed, Math.min(maxSpeed, speedFactor));
-    
-    const complexity = getWordComplexity(words[index]);
-    speedFactor *= complexity;
-    
-    if (sentenceInfo.sentenceLength > 15) {
-        speedFactor *= 0.9; // Длинные - быстрее
-    } else if (sentenceInfo.sentenceLength < 5) {
-        speedFactor *= 1.1; // Короткие - медленнее
+    if (isDynamicAccel && words.length > 1) {
+        const sentenceInfo = getSentenceProgress(words, index);
+        const progress = sentenceInfo.progress;
+        
+        const minSpeed = 0.3;
+        const maxSpeed = 0.7;
+        
+        let speedFactor = 1 - 4 * Math.pow(progress - 0.5, 2);
+        speedFactor = Math.max(minSpeed, Math.min(maxSpeed, speedFactor));
+        
+        const complexity = getWordComplexity(words[index]);
+        speedFactor *= complexity;
+        
+        if (sentenceInfo.sentenceLength > 15) {
+            speedFactor *= 0.9;
+        } else if (sentenceInfo.sentenceLength < 5) {
+            speedFactor *= 1.1;
+        }
+        
+        currentInterval = interval * Math.max(0.3, Math.min(1.2, speedFactor));
     }
-    
-    currentInterval = interval * Math.max(0.3, Math.min(1.2, speedFactor));
-}
 
     document.documentElement.style.setProperty('--speed', currentInterval + 'ms');
 
