@@ -1,9 +1,9 @@
 const CACHE_NAME = 'version-indexupdate';
 
 const CORE_ASSETS = [
-    '/',
-    './index.html',
-    './manifest-index.json',
+
+
+
 
     './cross.html',
     './flash.html',
