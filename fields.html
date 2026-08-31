@@ -98,6 +98,7 @@
             border-radius: 10px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
             z-index: 1000;
+            touch-action: manipulation;
         }
 
         .handle-menu.open {
@@ -118,6 +119,7 @@
             color: white;
             font-size: 19px;
             cursor: pointer;
+            touch-action: manipulation;
         }
 
         .handle-menu button:active {
@@ -133,41 +135,8 @@
             padding-bottom: 2px;
         }
 
-        .panel-controllers {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            z-index: 100;
-            background: rgba(0, 0, 0, 0.75);
-            padding: 8px 16px;
-            border-radius: 30px;
-            backdrop-filter: blur(8px);
-        }
-
-        .panel-controllers button {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border: none;
-            background: #3b82f6;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .panel-controllers button:active {
-            transform: scale(0.9);
-        }
-
         .dots {
-            display: flex;
+            display: none;
             justify-content: center;
             gap: 8px;
             padding: 10px 0;
@@ -197,10 +166,6 @@
             border-radius: 4px;
         }
 
-        /* ============================================
-           ВСЕ МЕДИА-ЗАПРОСЫ - ТОЛЬКО ДЛЯ КАРУСЕЛИ
-           ============================================ */
-        
         /* ТЕЛЕФОНЫ - карусель */
         @media (max-width: 768px) {
             .panels {
@@ -220,9 +185,13 @@
             .resizer {
                 display: none !important;
             }
+            
+            .dots {
+                display: flex !important;
+            }
         }
 
-        /* ПЛАНШЕТЫ И ДЕСКТОП - панели рядом */
+        /* ПЛАНШЕТЫ И ДЕСКТОП */
         @media (min-width: 769px) {
             .panels {
                 overflow: hidden !important;
@@ -245,18 +214,6 @@
 
         /* МАЛЕНЬКИЕ ТЕЛЕФОНЫ */
         @media (max-width: 480px) {
-            .panel-controllers {
-                bottom: 16px;
-                padding: 6px 12px;
-                gap: 8px;
-            }
-            
-            .panel-controllers button {
-                width: 32px;
-                height: 32px;
-                font-size: 16px;
-            }
-            
             .dots {
                 bottom: 70px;
                 gap: 6px;
@@ -273,10 +230,6 @@
 
     <div class="panels" id="panels"></div>
     <div class="dots" id="dots"></div>
-    <div class="panel-controllers" id="panelControllers">
-        <button id="mobileRemoveBtn">−</button>
-        <button id="mobileAddBtn">+</button>
-    </div>
 
     <script>
         if ('serviceWorker' in navigator) {
@@ -285,11 +238,9 @@
 
         const panelsContainer = document.getElementById('panels');
         const dotsContainer = document.getElementById('dots');
-        const addBtn = document.getElementById('mobileAddBtn');
-        const removeBtn = document.getElementById('mobileRemoveBtn');
 
         // ============================================
-        // СОЗДАНИЕ ЭЛЕМЕНТОВ
+        // ФУНКЦИИ СОЗДАНИЯ
         // ============================================
 
         function createPanel(url) {
@@ -355,6 +306,9 @@
             menu.appendChild(row2);
             resizer.appendChild(menu);
 
+            // ============================================
+            // КНОПКИ НА РАЗДЕЛИТЕЛЯХ - РАБОТАЮТ!
+            // ============================================
             addLeft.addEventListener('click', (e) => {
                 e.stopPropagation();
                 addPanelLeft(resizer);
@@ -645,7 +599,7 @@
         }
 
         // ============================================
-        // СОХРАНЕНИЕ
+        // СОХРАНЕНИЕ И ВОССТАНОВЛЕНИЕ
         // ============================================
 
         function saveState() {
@@ -711,53 +665,7 @@
         }
 
         // ============================================
-        // КНОПКИ
-        // ============================================
-
-        if (addBtn) {
-            addBtn.addEventListener('click', () => {
-                const url = prompt('Enter URL for new panel:', 'index.html');
-                if (!url) return;
-                
-                const newPanel = createPanel(url);
-                panelsContainer.appendChild(newPanel);
-                
-                const newResizer = createResizer();
-                panelsContainer.insertBefore(newResizer, newPanel);
-                
-                updateUI();
-                saveState();
-                
-                setTimeout(() => {
-                    newPanel.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'nearest',
-                        inline: 'start'
-                    });
-                }, 100);
-            });
-        }
-
-        if (removeBtn) {
-            removeBtn.addEventListener('click', () => {
-                const panels = document.querySelectorAll('.panel');
-                if (panels.length <= 1) return;
-                
-                const lastPanel = panels[panels.length - 1];
-                lastPanel.remove();
-                
-                const resizers = document.querySelectorAll('.resizer');
-                if (resizers.length > 0) {
-                    resizers[resizers.length - 1].remove();
-                }
-                
-                updateUI();
-                saveState();
-            });
-        }
-
-        // ============================================
-        // СООБЩЕНИЯ
+        // ОБРАБОТКА СООБЩЕНИЙ
         // ============================================
 
         window.addEventListener('message', function(event) {
@@ -791,6 +699,10 @@
                 });
             }
         });
+
+        // ============================================
+        // ЗАКРЫТИЕ МЕНЮ
+        // ============================================
 
         document.addEventListener('pointerdown', e => {
             if (!e.target.closest('.resizer')) {
