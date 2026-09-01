@@ -181,8 +181,11 @@
             display: none;
         }
 
+        /* ============================================
+                   ВСЕ МЕДИА-ЗАПРОСЫ
+                   ============================================ */
 
-
+        /* 1. ДЕСКТОП (ширина > 1024px) */
         @media (min-width: 1025px) {
             .panels {
                 display: flex !important;
@@ -208,6 +211,7 @@
             }
         }
 
+        /* 2. ПЛАНШЕТЫ В ПОРТРЕТЕ (iPad) */
         @media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
             .panels {
                 display: flex !important;
@@ -233,6 +237,7 @@
             }
         }
 
+        /* 3. ПЛАНШЕТЫ В ЛАНДШАФТЕ (iPad) */
         @media (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
             .panels {
                 display: flex !important;
@@ -258,6 +263,7 @@
             }
         }
 
+        /* 4. IPHONE В ПОРТРЕТЕ (карусель) */
         @media (max-width: 768px) and (orientation: portrait) {
             .panels {
                 overflow-x: auto !important;
@@ -312,6 +318,7 @@
             }
         }
 
+        /* 5. IPHONE В ЛАНДШАФТЕ (как десктоп) */
         @media (max-width: 768px) and (orientation: landscape) {
             .panels {
                 display: flex !important;
@@ -337,6 +344,7 @@
             }
         }
 
+        /* 6. МАЛЕНЬКИЕ ТЕЛЕФОНЫ В ПОРТРЕТЕ */
         @media (max-width: 480px) and (orientation: portrait) {
             .panel-controllers {
                 bottom: 16px;
@@ -381,7 +389,9 @@
         const addBtn = document.getElementById('mobileAddBtn');
         const removeBtn = document.getElementById('mobileRemoveBtn');
 
-
+        // ============================================
+        // ФУНКЦИИ СОЗДАНИЯ ЭЛЕМЕНТОВ
+        // ============================================
 
         function createPanel(url) {
             const panel = document.createElement('div');
@@ -494,6 +504,9 @@
             return dot;
         }
 
+        // ============================================
+        // ФУНКЦИИ ДОБАВЛЕНИЯ/УДАЛЕНИЯ
+        // ============================================
 
         function addPanelLeft(resizer) {
             const allResizers = Array.from(document.querySelectorAll('.resizer'));
@@ -505,10 +518,13 @@
             const url = prompt('Enter URL for new panel:', 'index.html');
             if (!url) return;
             
+            // Создаем новую панель
             const newPanel = createPanel(url);
             
+            // Вставляем перед ресайзером
             panelsContainer.insertBefore(newPanel, resizer);
             
+            // Создаем новый ресайзер перед новой панелью
             const newResizer = createResizer();
             panelsContainer.insertBefore(newResizer, newPanel);
             
@@ -526,10 +542,13 @@
             const url = prompt('Enter URL for new panel:', 'index.html');
             if (!url) return;
             
+            // Создаем новую панель
             const newPanel = createPanel(url);
             
+            // Вставляем перед правой панелью
             panelsContainer.insertBefore(newPanel, panels[index + 1]);
             
+            // Создаем новый ресайзер перед новой панелью
             const newResizer = createResizer();
             panelsContainer.insertBefore(newResizer, newPanel);
             
@@ -544,8 +563,10 @@
             
             if (index === -1 || !panels[index] || panels.length <= 1) return;
             
+            // Удаляем панель слева от ресайзера
             panels[index].remove();
             
+            // Удаляем ресайзер слева от этой панели (если есть)
             if (index > 0 && allResizers[index - 1]) {
                 allResizers[index - 1].remove();
             }
@@ -561,15 +582,19 @@
             
             if (index === -1 || !panels[index + 1] || panels.length <= 1) return;
             
+            // Удаляем панель справа от ресайзера
             panels[index + 1].remove();
             
+            // Удаляем сам ресайзер
             resizer.remove();
             
             updateUI();
             saveState();
         }
 
-
+        // ============================================
+        // ФУНКЦИИ ОБНОВЛЕНИЯ UI
+        // ============================================
 
         function updateUI() {
             updateDots();
@@ -594,6 +619,7 @@
                 dotsContainer.appendChild(dot);
             });
             
+            // Обновляем активные точки при скролле
             const observer = new IntersectionObserver(entries => {
                 entries.forEach(entry => {
                     if (!entry.isIntersecting) return;
@@ -632,6 +658,7 @@
             const resizers = document.querySelectorAll('.resizer');
             
             resizers.forEach((resizer) => {
+                // Удаляем старые обработчики
                 const newResizer = resizer.cloneNode(true);
                 resizer.parentNode.replaceChild(newResizer, resizer);
                 
@@ -752,6 +779,9 @@
             });
         }
 
+        // ============================================
+        // СОХРАНЕНИЕ И ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ
+        // ============================================
 
         function saveState() {
             const panels = document.querySelectorAll('.panel');
@@ -791,7 +821,10 @@
                 return false;
             }
         }
-=
+
+        // ============================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // ============================================
 
         function initDefaultPanels() {
             const defaultPages = ['paramount.html', 'jetpack.html', 'capital.html', 'flash.html', 'cross.html'];
@@ -808,26 +841,32 @@
             saveState();
         }
 
+        // Восстанавливаем состояние или создаем дефолтное
         if (!restoreState()) {
             initDefaultPanels();
         }
 
-
+        // ============================================
+        // ОБРАБОТЧИКИ ДЛЯ МОБИЛЬНЫХ КНОПОК
+        // ============================================
 
         if (addBtn) {
             addBtn.addEventListener('click', () => {
                 const url = prompt('Enter URL for new panel:', 'index.html');
                 if (!url) return;
                 
+                // Добавляем в конец
                 const newPanel = createPanel(url);
                 panelsContainer.appendChild(newPanel);
                 
+                // Добавляем ресайзер перед новой панелью
                 const newResizer = createResizer();
                 panelsContainer.insertBefore(newResizer, newPanel);
                 
                 updateUI();
                 saveState();
                 
+                // Скроллим к новой панели
                 setTimeout(() => {
                     newPanel.scrollIntoView({
                         behavior: 'smooth',
@@ -843,9 +882,11 @@
                 const panels = document.querySelectorAll('.panel');
                 if (panels.length <= 1) return;
                 
+                // Удаляем последнюю панель
                 const lastPanel = panels[panels.length - 1];
                 lastPanel.remove();
                 
+                // Удаляем последний ресайзер
                 const resizers = document.querySelectorAll('.resizer');
                 if (resizers.length > 0) {
                     resizers[resizers.length - 1].remove();
@@ -856,6 +897,9 @@
             });
         }
 
+        // ============================================
+        // ОБРАБОТКА СООБЩЕНИЙ ОТ IFRAME
+        // ============================================
 
         window.addEventListener('message', function(event) {
             if (!event.data) return;
@@ -889,7 +933,9 @@
             }
         });
 
-
+        // ============================================
+        // ОБРАБОТКА ИЗМЕНЕНИЯ РАЗМЕРА
+        // ============================================
 
         let resizeTimer = null;
         window.addEventListener('resize', () => {
@@ -901,7 +947,9 @@
             }, 100);
         });
 
-
+        // ============================================
+        // ЗАКРЫТИЕ МЕНЮ ПРИ КЛИКЕ ВНЕ
+        // ============================================
 
         document.addEventListener('pointerdown', e => {
             if (!e.target.closest('.resizer')) {
