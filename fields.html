@@ -38,7 +38,6 @@
             overflow: hidden;
             height: 100%;
             height: 100dvh;
-            min-width: 50px;
         }
 
         .panel iframe {
@@ -57,6 +56,16 @@
             z-index: 100;
             cursor: col-resize;
             touch-action: none;
+        }
+
+        .resizer::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: -20px;
+            right: -20px;
+            z-index: 0;
         }
 
         .resizer-handle {
@@ -115,12 +124,11 @@
             height: 34px;
             border: none;
             border-radius: 7px;
-            background: #3b82f6;
+            background: #00f;
             color: white;
             font-size: 19px;
             cursor: pointer;
             touch-action: manipulation;
-            pointer-events: auto;
         }
 
         .handle-menu button:active {
@@ -136,43 +144,125 @@
             padding-bottom: 2px;
         }
 
+        .panel-controllers {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 10px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 8px 16px;
+            border-radius: 30px;
+            backdrop-filter: blur(8px);
+        }
+
+        .panel-controllers button {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: #00f;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .panel-controllers button:active {
+            transform: scale(0.9);
+        }
+
         .dots {
             display: none;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 0;
-            position: fixed;
-            bottom: 80px;
-            left: 0;
-            right: 0;
-            z-index: 50;
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(4px);
         }
 
-        .dots button {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            border: 1px solid rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.2);
-            cursor: pointer;
-            padding: 0;
+
+
+        @media (min-width: 1025px) {
+            .panels {
+                display: flex !important;
+                overflow: hidden !important;
+                scroll-snap-type: none !important;
+            }
+            
+            .panel {
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
+                width: auto !important;
+                scroll-snap-align: none !important;
+            }
+            
+            .resizer {
+                display: flex !important;
+                flex: 0 0 6px !important;
+            }
+            
+            .panel-controllers,
+            .dots {
+                display: none !important;
+            }
         }
 
-        .dots button.active {
-            background: #3b82f6;
-            border-color: #3b82f6;
-            width: 16px;
-            border-radius: 4px;
+        @media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
+            .panels {
+                display: flex !important;
+                overflow: hidden !important;
+                scroll-snap-type: none !important;
+            }
+            
+            .panel {
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
+                width: auto !important;
+                scroll-snap-align: none !important;
+            }
+            
+            .resizer {
+                display: flex !important;
+                flex: 0 0 6px !important;
+            }
+            
+            .panel-controllers,
+            .dots {
+                display: none !important;
+            }
         }
 
-        @media (max-width: 768px) {
+        @media (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
+            .panels {
+                display: flex !important;
+                overflow: hidden !important;
+                scroll-snap-type: none !important;
+            }
+            
+            .panel {
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
+                width: auto !important;
+                scroll-snap-align: none !important;
+            }
+            
+            .resizer {
+                display: flex !important;
+                flex: 0 0 6px !important;
+            }
+            
+            .panel-controllers,
+            .dots {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 768px) and (orientation: portrait) {
             .panels {
                 overflow-x: auto !important;
-                overflow-y: hidden !important;
                 scroll-snap-type: x mandatory !important;
-                -webkit-overflow-scrolling: touch;
+                display: flex !important;
             }
             
             .panel {
@@ -186,32 +276,80 @@
                 display: none !important;
             }
             
+            .panel-controllers {
+                display: flex !important;
+            }
+            
             .dots {
                 display: flex !important;
+                justify-content: center;
+                gap: 8px;
+                padding: 10px 0;
+                position: fixed;
+                bottom: 80px;
+                left: 0;
+                right: 0;
+                z-index: 50;
+                background: rgba(0, 0, 0, 0.3);
+                backdrop-filter: blur(4px);
+            }
+            
+            .dots button {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                border: 1px solid rgba(255,255,255,0.3);
+                background: rgba(255,255,255,0.2);
+                cursor: pointer;
+                padding: 0;
+            }
+            
+            .dots button.active {
+                background: #3b82f6;
+                border-color: #3b82f6;
+                width: 16px;
+                border-radius: 4px;
             }
         }
 
-        @media (min-width: 769px) {
+        @media (max-width: 768px) and (orientation: landscape) {
             .panels {
+                display: flex !important;
                 overflow: hidden !important;
+                scroll-snap-type: none !important;
             }
             
             .panel {
                 flex: 1 1 0 !important;
-                min-width: 80px !important;
+                min-width: 0 !important;
                 width: auto !important;
+                scroll-snap-align: none !important;
             }
             
             .resizer {
                 display: flex !important;
+                flex: 0 0 6px !important;
             }
             
+            .panel-controllers,
             .dots {
                 display: none !important;
             }
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 480px) and (orientation: portrait) {
+            .panel-controllers {
+                bottom: 16px;
+                padding: 6px 12px;
+                gap: 8px;
+            }
+            
+            .panel-controllers button {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+            
             .dots {
                 bottom: 70px;
                 gap: 6px;
@@ -228,6 +366,10 @@
 
     <div class="panels" id="panels"></div>
     <div class="dots" id="dots"></div>
+    <div class="panel-controllers" id="panelControllers">
+        <button id="mobileRemoveBtn">−</button>
+        <button id="mobileAddBtn">+</button>
+    </div>
 
     <script>
         if ('serviceWorker' in navigator) {
@@ -236,6 +378,10 @@
 
         const panelsContainer = document.getElementById('panels');
         const dotsContainer = document.getElementById('dots');
+        const addBtn = document.getElementById('mobileAddBtn');
+        const removeBtn = document.getElementById('mobileRemoveBtn');
+
+
 
         function createPanel(url) {
             const panel = document.createElement('div');
@@ -300,29 +446,29 @@
             menu.appendChild(row2);
             resizer.appendChild(menu);
 
-            // КНОПКИ РАБОТАЮТ
-            addLeft.addEventListener('click', function(e) {
+            // Обработчики для кнопок меню
+            addLeft.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 addPanelLeft(resizer);
-                closeAllMenus();
             });
 
-            addRight.addEventListener('click', function(e) {
+            addRight.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 addPanelRight(resizer);
-                closeAllMenus();
             });
 
-            removeLeft.addEventListener('click', function(e) {
+            removeLeft.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 removePanelLeft(resizer);
-                closeAllMenus();
             });
 
-            removeRight.addEventListener('click', function(e) {
+            removeRight.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 removePanelRight(resizer);
-                closeAllMenus();
             });
 
             return resizer;
@@ -348,6 +494,7 @@
             return dot;
         }
 
+
         function addPanelLeft(resizer) {
             const allResizers = Array.from(document.querySelectorAll('.resizer'));
             const index = allResizers.indexOf(resizer);
@@ -359,6 +506,7 @@
             if (!url) return;
             
             const newPanel = createPanel(url);
+            
             panelsContainer.insertBefore(newPanel, resizer);
             
             const newResizer = createResizer();
@@ -379,6 +527,7 @@
             if (!url) return;
             
             const newPanel = createPanel(url);
+            
             panelsContainer.insertBefore(newPanel, panels[index + 1]);
             
             const newResizer = createResizer();
@@ -413,14 +562,18 @@
             if (index === -1 || !panels[index + 1] || panels.length <= 1) return;
             
             panels[index + 1].remove();
+            
             resizer.remove();
             
             updateUI();
             saveState();
         }
 
+
+
         function updateUI() {
             updateDots();
+            updatePanelWidths();
             setupResizers();
         }
 
@@ -460,11 +613,27 @@
             panels.forEach(panel => observer.observe(panel));
         }
 
+        function updatePanelWidths() {
+            const panels = document.querySelectorAll('.panel');
+            const resizers = document.querySelectorAll('.resizer');
+            const containerWidth = panelsContainer.clientWidth;
+            const resizerWidth = 6;
+            const totalResizerWidth = resizers.length * resizerWidth;
+            const availableWidth = containerWidth - totalResizerWidth;
+            const panelWidth = availableWidth / panels.length;
+            
+            panels.forEach(panel => {
+                panel.style.flex = '0 0 auto';
+                panel.style.width = `${panelWidth}px`;
+            });
+        }
+
         function setupResizers() {
             const resizers = document.querySelectorAll('.resizer');
             
             resizers.forEach((resizer) => {
-                const menu = resizer.querySelector('.handle-menu');
+                const newResizer = resizer.cloneNode(true);
+                resizer.parentNode.replaceChild(newResizer, resizer);
                 
                 let active = false;
                 let moved = false;
@@ -475,7 +644,7 @@
                 
                 const panels = document.querySelectorAll('.panel');
                 const allResizers = Array.from(document.querySelectorAll('.resizer'));
-                const index = allResizers.indexOf(resizer);
+                const index = allResizers.indexOf(newResizer);
                 
                 if (index === -1 || !panels[index] || !panels[index + 1]) return;
                 
@@ -483,7 +652,7 @@
                 const nextPanel = panels[index + 1];
                 
                 function setPosition(clientX) {
-                    const rect = resizer.getBoundingClientRect();
+                    const rect = newResizer.getBoundingClientRect();
                     let x = clientX - rect.left;
                     const handleSize = 24;
                     const halfHandle = handleSize / 2;
@@ -491,7 +660,7 @@
                     x = Math.max(halfHandle, Math.min(rect.width - halfHandle, x));
                     
                     const percent = (x / rect.width) * 100;
-                    const handle = resizer.querySelector('.resizer-handle');
+                    const handle = newResizer.querySelector('.resizer-handle');
                     handle.style.left = `${percent}%`;
                     
                     const totalWidth = prevPanel.getBoundingClientRect().width + nextPanel.getBoundingClientRect().width;
@@ -502,9 +671,7 @@
                     newPrevWidth = Math.max(minWidth, Math.min(totalWidth - minWidth, newPrevWidth));
                     const newNextWidth = totalWidth - newPrevWidth;
                     
-                    prevPanel.style.flex = '0 0 auto';
                     prevPanel.style.width = `${newPrevWidth}px`;
-                    nextPanel.style.flex = '0 0 auto';
                     nextPanel.style.width = `${newNextWidth}px`;
                 }
                 
@@ -517,9 +684,9 @@
                     startY = e.clientY;
                     pendingX = e.clientX;
                     
-                    resizer.classList.add('active');
+                    newResizer.classList.add('active');
                     document.body.classList.add('is-resizing');
-                    resizer.setPointerCapture?.(e.pointerId);
+                    newResizer.setPointerCapture?.(e.pointerId);
                 }
                 
                 function pointerMove(e) {
@@ -554,26 +721,26 @@
                         animationFrame = null;
                     }
                     
-                    resizer.classList.remove('active');
+                    newResizer.classList.remove('active');
                     document.body.classList.remove('is-resizing');
                     
                     try {
-                        resizer.releasePointerCapture?.(e.pointerId);
+                        newResizer.releasePointerCapture?.(e.pointerId);
                     } catch (_) {}
                     
-                    // Если не двигали - открываем меню
-                    if (!moved && menu) {
+                    if (!moved) {
+                        const menu = newResizer.querySelector('.handle-menu');
                         const isOpen = menu.classList.contains('open');
                         closeAllMenus(isOpen ? null : menu);
                         menu.classList.toggle('open', !isOpen);
                     }
                 }
                 
-                resizer.addEventListener('pointerdown', pointerDown);
-                resizer.addEventListener('pointermove', pointerMove);
-                resizer.addEventListener('pointerup', pointerUp);
-                resizer.addEventListener('pointercancel', pointerUp);
-                resizer.addEventListener('lostpointercapture', pointerUp);
+                newResizer.addEventListener('pointerdown', pointerDown);
+                newResizer.addEventListener('pointermove', pointerMove);
+                newResizer.addEventListener('pointerup', pointerUp);
+                newResizer.addEventListener('pointercancel', pointerUp);
+                newResizer.addEventListener('lostpointercapture', pointerUp);
             });
         }
 
@@ -584,6 +751,7 @@
                 }
             });
         }
+
 
         function saveState() {
             const panels = document.querySelectorAll('.panel');
@@ -623,9 +791,10 @@
                 return false;
             }
         }
+=
 
         function initDefaultPanels() {
-            const defaultPages = ['paramount.html', 'capital.html', 'flash.html', 'cross.html'];
+            const defaultPages = ['paramount.html', 'jetpack.html', 'capital.html', 'flash.html', 'cross.html'];
             defaultPages.forEach((page, index) => {
                 const panel = createPanel(page);
                 panelsContainer.appendChild(panel);
@@ -642,6 +811,51 @@
         if (!restoreState()) {
             initDefaultPanels();
         }
+
+
+
+        if (addBtn) {
+            addBtn.addEventListener('click', () => {
+                const url = prompt('Enter URL for new panel:', 'index.html');
+                if (!url) return;
+                
+                const newPanel = createPanel(url);
+                panelsContainer.appendChild(newPanel);
+                
+                const newResizer = createResizer();
+                panelsContainer.insertBefore(newResizer, newPanel);
+                
+                updateUI();
+                saveState();
+                
+                setTimeout(() => {
+                    newPanel.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'start'
+                    });
+                }, 100);
+            });
+        }
+
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                const panels = document.querySelectorAll('.panel');
+                if (panels.length <= 1) return;
+                
+                const lastPanel = panels[panels.length - 1];
+                lastPanel.remove();
+                
+                const resizers = document.querySelectorAll('.resizer');
+                if (resizers.length > 0) {
+                    resizers[resizers.length - 1].remove();
+                }
+                
+                updateUI();
+                saveState();
+            });
+        }
+
 
         window.addEventListener('message', function(event) {
             if (!event.data) return;
@@ -675,13 +889,27 @@
             }
         });
 
+
+
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (!document.body.classList.contains('is-resizing')) {
+                    updatePanelWidths();
+                }
+            }, 100);
+        });
+
+
+
         document.addEventListener('pointerdown', e => {
             if (!e.target.closest('.resizer')) {
                 closeAllMenus();
             }
         });
 
-        console.log('✅ Fields initialized');
+        console.log('✅ Fields app initialized');
         console.log(`📊 ${document.querySelectorAll('.panel').length} panels loaded`);
     </script>
 </body>
