@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-fieldsagain';
+const CACHE_NAME = 'version-link';
 
 const CORE_ASSETS = [
 
