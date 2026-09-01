@@ -12,23 +12,23 @@
             box-sizing: border-box;
         }
 
-        html,
-        body {
-            width: 100%;
-            height: 100%;
-            height: 100dvh;
-            overflow: hidden;
-            background: #1e1e1e;
-        }
+html,
+body {
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    background: #1e1e1e;
+}
 
-        .panels {
-            display: flex;
-            width: 100vw;
-            height: 100%;
-            height: 100dvh;
-            background: #1e1e1e;
-            overflow: hidden;
-        }
+.panels {
+    display: flex;
+    width: 100vw;
+    height: 100%;
+    height: 100dvh;
+    background: #1e1e1e;
+    overflow: hidden;
+}
 
         .panel {
             flex: 1 1 0;
@@ -36,8 +36,8 @@
             background: white;
             position: relative;
             overflow: hidden;
-            height: 100%;
-            height: 100dvh;
+    height: 100%;
+    height: 100dvh;
         }
 
         .panel iframe {
@@ -54,7 +54,7 @@
             background: #1e1e1e;
             position: relative;
             z-index: 100;
-            cursor: col-resize;
+            cursor: ns-resize;
             touch-action: none;
         }
 
@@ -181,193 +181,76 @@
             display: none;
         }
 
-        /* ============================================
-                   ВСЕ МЕДИА-ЗАПРОСЫ
-                   ============================================ */
+@media (orientation: portrait) and (max-width: 768px) {
+    .panels {
+        overflow-x: auto !important;
+        scroll-snap-type: x mandatory !important;
+    }
+    
+    .panel {
+        flex: 0 0 100% !important;
+        scroll-snap-align: start !important;
+        min-width: 100% !important;
+    }
+    
+    .resizer, .panel-controllers, .dots {
+        display: none !important;
+    }
+}
 
-        /* 1. ДЕСКТОП (ширина > 1024px) */
-        @media (min-width: 1025px) {
-            .panels {
-                display: flex !important;
-                overflow: hidden !important;
-                scroll-snap-type: none !important;
-            }
-            
-            .panel {
-                flex: 1 1 0 !important;
-                min-width: 0 !important;
-                width: auto !important;
-                scroll-snap-align: none !important;
-            }
-            
-            .resizer {
-                display: flex !important;
-                flex: 0 0 6px !important;
-            }
-            
-            .panel-controllers,
-            .dots {
-                display: none !important;
-            }
-        }
+@media (orientation: landscape) and (min-width: 768px) {
+    body::before {
+        display: none !important;
+    }
+    
+    .panels {
+        display: flex !important;
+    }
+}
 
-        /* 2. ПЛАНШЕТЫ В ПОРТРЕТЕ (iPad) */
-        @media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
-            .panels {
-                display: flex !important;
-                overflow: hidden !important;
-                scroll-snap-type: none !important;
-            }
-            
-            .panel {
-                flex: 1 1 0 !important;
-                min-width: 0 !important;
-                width: auto !important;
-                scroll-snap-align: none !important;
-            }
-            
-            .resizer {
-                display: flex !important;
-                flex: 0 0 6px !important;
-            }
-            
-            .panel-controllers,
-            .dots {
-                display: none !important;
-            }
-        }
+@media (max-width: 767px) {
+    body::before {
+        display: none !important;
+    }
+    
+    .panels {
+        display: flex !important;
+    }
+}
 
-        /* 3. ПЛАНШЕТЫ В ЛАНДШАФТЕ (iPad) */
-        @media (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
-            .panels {
-                display: flex !important;
-                overflow: hidden !important;
-                scroll-snap-type: none !important;
-            }
-            
-            .panel {
-                flex: 1 1 0 !important;
-                min-width: 0 !important;
-                width: auto !important;
-                scroll-snap-align: none !important;
-            }
-            
-            .resizer {
-                display: flex !important;
-                flex: 0 0 6px !important;
-            }
-            
-            .panel-controllers,
-            .dots {
-                display: none !important;
-            }
-        }
-
-        /* 4. IPHONE В ПОРТРЕТЕ (карусель) */
-        @media (max-width: 768px) and (orientation: portrait) {
-            .panels {
-                overflow-x: auto !important;
-                scroll-snap-type: x mandatory !important;
-                display: flex !important;
-            }
-            
-            .panel {
-                flex: 0 0 100% !important;
-                scroll-snap-align: start !important;
-                min-width: 100% !important;
-                width: 100% !important;
-            }
-            
-            .resizer {
-                display: none !important;
-            }
-            
-            .panel-controllers {
-                display: flex !important;
-            }
-            
-            .dots {
-                display: flex !important;
-                justify-content: center;
-                gap: 8px;
-                padding: 10px 0;
-                position: fixed;
-                bottom: 80px;
-                left: 0;
-                right: 0;
-                z-index: 50;
-                background: rgba(0, 0, 0, 0.3);
-                backdrop-filter: blur(4px);
-            }
-            
-            .dots button {
-                width: 10px;
-                height: 10px;
-                border-radius: 50%;
-                border: 1px solid rgba(255,255,255,0.3);
-                background: rgba(255,255,255,0.2);
-                cursor: pointer;
-                padding: 0;
-            }
-            
-            .dots button.active {
-                background: #3b82f6;
-                border-color: #3b82f6;
-                width: 16px;
-                border-radius: 4px;
-            }
-        }
-
-        /* 5. IPHONE В ЛАНДШАФТЕ (как десктоп) */
-        @media (max-width: 768px) and (orientation: landscape) {
-            .panels {
-                display: flex !important;
-                overflow: hidden !important;
-                scroll-snap-type: none !important;
-            }
-            
-            .panel {
-                flex: 1 1 0 !important;
-                min-width: 0 !important;
-                width: auto !important;
-                scroll-snap-align: none !important;
-            }
-            
-            .resizer {
-                display: flex !important;
-                flex: 0 0 6px !important;
-            }
-            
-            .panel-controllers,
-            .dots {
-                display: none !important;
-            }
-        }
-
-        /* 6. МАЛЕНЬКИЕ ТЕЛЕФОНЫ В ПОРТРЕТЕ */
-        @media (max-width: 480px) and (orientation: portrait) {
-            .panel-controllers {
-                bottom: 16px;
-                padding: 6px 12px;
-                gap: 8px;
-            }
-            
-            .panel-controllers button {
-                width: 32px;
-                height: 32px;
-                font-size: 16px;
-            }
-            
-            .dots {
-                bottom: 70px;
-                gap: 6px;
-            }
-            
-            .dots button {
-                width: 8px;
-                height: 8px;
-            }
-        }
+@media (min-width: 1025px) {
+    body::before {
+        display: none !important;
+    }
+    
+    .panels {
+        display: flex !important;
+    }
+}
+@media (max-width: 768px) and (orientation: landscape) {
+    .panels {
+        display: flex !important;
+        overflow: hidden !important;
+        scroll-snap-type: none !important;
+        flex-wrap: nowrap !important;
+    }
+    
+    .panel {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        width: auto !important;
+        scroll-snap-align: none !important;
+    }
+    
+    .resizer {
+        display: flex !important;
+        flex: 0 0 6px !important;
+    }
+    
+    .panel-controllers, .dots {
+        display: none !important;
+    }
+}
     </style>
 </head>
 <body>
@@ -380,526 +263,159 @@
     </div>
 
     <script>
+
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js');
+            navigator.serviceWorker
+                .register('/sw.js')
+                .then(registration => {
+                    console.log('✅ Service Worker зарегистрирован:', registration);
+                })
+                .catch(error => {
+                    console.log('Error service worker registration:', error);
+                });
         }
+
+        const pages = [
+            'paramount.html',
+            'jetpack.html',
+            'capital.html',
+            'flash.html',
+            'cross.html'
+        ];
 
         const panelsContainer = document.getElementById('panels');
         const dotsContainer = document.getElementById('dots');
-        const addBtn = document.getElementById('mobileAddBtn');
-        const removeBtn = document.getElementById('mobileRemoveBtn');
+        const panelControllers = document.getElementById('panelControllers');
+        const mobileAddBtn = document.getElementById('mobileAddBtn');
+        const mobileRemoveBtn = document.getElementById('mobileRemoveBtn');
 
-        // ============================================
-        // ФУНКЦИИ СОЗДАНИЯ ЭЛЕМЕНТОВ
-        // ============================================
+function isMobileDevice() {
+    const isTablet = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchstart' in document.documentElement;
+    if (isTablet) return false;
+    
+    const isLandscape = window.innerWidth > window.innerHeight;
+    
+    if (isLandscape && window.innerWidth < 768) {
+        return false; 
+    }
+    
+    return window.innerWidth <= 768;
+}
 
-        function createPanel(url) {
+        function isTabletDevice() {
+            return /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchstart' in document.documentElement;
+        }
+
+        const isMobile = isMobileDevice();
+
+        window.addEventListener('resize', function() {
+            const landscape = window.innerWidth > window.innerHeight;
+            const isTablet = isTabletDevice();
+            
+            if (isTablet && !landscape) {
+                document.querySelector('.panels').style.display = 'none';
+                document.querySelector('.panel-controllers').style.display = 'none';
+                document.querySelector('.dots').style.display = 'none';
+                document.querySelectorAll('.resizer').forEach(r => r.style.display = 'none');
+            } 
+            else if (isTablet && landscape) {
+                document.querySelector('.panels').style.display = 'flex';
+                document.querySelector('.panel-controllers').style.display = 'flex';
+                document.querySelector('.dots').style.display = 'flex';
+                document.querySelectorAll('.resizer').forEach(r => r.style.display = 'flex');
+            }
+        });
+
+        window.addEventListener('orientationchange', function() {
+            setTimeout(function() {
+                const isTablet = isTabletDevice();
+                const landscape = window.innerWidth > window.innerHeight;
+                
+                if (isTablet && landscape) {
+                    location.reload();
+                }
+            }, 300);
+        });
+
+        let panels = [];
+
+        function createPanel(page) {
             const panel = document.createElement('div');
             panel.className = 'panel';
-            
+
             const iframe = document.createElement('iframe');
-            iframe.src = url;
+            iframe.src = page;
             iframe.loading = 'lazy';
             iframe.setAttribute('allow', 'fullscreen');
-            
+
             iframe.addEventListener('load', function() {
                 try {
                     const currentUrl = this.contentWindow.location.href;
                     if (this.src !== currentUrl) {
                         this.src = currentUrl;
-                        saveState();
+                        savePanelsState();
                     }
                 } catch (e) {}
             });
-            
+
             panel.appendChild(iframe);
             return panel;
         }
 
-        function createResizer() {
-            const resizer = document.createElement('div');
-            resizer.className = 'resizer';
-
-            const handle = document.createElement('img');
-            handle.className = 'resizer-handle';
-            handle.src = 'paw.png';
-            handle.alt = '';
-            resizer.appendChild(handle);
-
-            const menu = document.createElement('div');
-            menu.className = 'handle-menu';
-
-            const label = document.createElement('div');
-            label.className = 'menu-label';
-            label.textContent = 'FIELD';
-            menu.appendChild(label);
-
-            const row1 = document.createElement('div');
-            row1.className = 'menu-row';
-            const addLeft = document.createElement('button');
-            addLeft.textContent = '+';
-            const addRight = document.createElement('button');
-            addRight.textContent = '+';
-            row1.appendChild(addLeft);
-            row1.appendChild(addRight);
-
-            const row2 = document.createElement('div');
-            row2.className = 'menu-row';
-            const removeLeft = document.createElement('button');
-            removeLeft.textContent = '−';
-            const removeRight = document.createElement('button');
-            removeRight.textContent = '−';
-            row2.appendChild(removeLeft);
-            row2.appendChild(removeRight);
-
-            menu.appendChild(row1);
-            menu.appendChild(row2);
-            resizer.appendChild(menu);
-
-            // Обработчики для кнопок меню
-            addLeft.addEventListener('pointerdown', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                addPanelLeft(resizer);
-            });
-
-            addRight.addEventListener('pointerdown', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                addPanelRight(resizer);
-            });
-
-            removeLeft.addEventListener('pointerdown', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                removePanelLeft(resizer);
-            });
-
-            removeRight.addEventListener('pointerdown', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                removePanelRight(resizer);
-            });
-
-            return resizer;
+        function updatePanelsList() {
+            panels = Array.from(document.querySelectorAll('.panel'));
+            updateMobileControllersVisibility();
         }
 
-        function createDot(index, isActive = false) {
-            const dot = document.createElement('button');
-            dot.dataset.index = index;
-            if (isActive) dot.classList.add('active');
-            
-            dot.addEventListener('click', () => {
-                const panels = document.querySelectorAll('.panel');
-                const panel = panels[index];
-                if (!panel) return;
-                
-                panel.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'start'
-                });
-            });
-            
-            return dot;
-        }
-
-        // ============================================
-        // ФУНКЦИИ ДОБАВЛЕНИЯ/УДАЛЕНИЯ
-        // ============================================
-
-        function addPanelLeft(resizer) {
-            const allResizers = Array.from(document.querySelectorAll('.resizer'));
-            const index = allResizers.indexOf(resizer);
-            const panels = document.querySelectorAll('.panel');
-            
-            if (index === -1 || !panels[index]) return;
-            
-            const url = prompt('Enter URL for new panel:', 'index.html');
-            if (!url) return;
-            
-            // Создаем новую панель
-            const newPanel = createPanel(url);
-            
-            // Вставляем перед ресайзером
-            panelsContainer.insertBefore(newPanel, resizer);
-            
-            // Создаем новый ресайзер перед новой панелью
-            const newResizer = createResizer();
-            panelsContainer.insertBefore(newResizer, newPanel);
-            
-            updateUI();
-            saveState();
-        }
-
-        function addPanelRight(resizer) {
-            const allResizers = Array.from(document.querySelectorAll('.resizer'));
-            const index = allResizers.indexOf(resizer);
-            const panels = document.querySelectorAll('.panel');
-            
-            if (index === -1 || !panels[index + 1]) return;
-            
-            const url = prompt('Enter URL for new panel:', 'index.html');
-            if (!url) return;
-            
-            // Создаем новую панель
-            const newPanel = createPanel(url);
-            
-            // Вставляем перед правой панелью
-            panelsContainer.insertBefore(newPanel, panels[index + 1]);
-            
-            // Создаем новый ресайзер перед новой панелью
-            const newResizer = createResizer();
-            panelsContainer.insertBefore(newResizer, newPanel);
-            
-            updateUI();
-            saveState();
-        }
-
-        function removePanelLeft(resizer) {
-            const allResizers = Array.from(document.querySelectorAll('.resizer'));
-            const index = allResizers.indexOf(resizer);
-            const panels = document.querySelectorAll('.panel');
-            
-            if (index === -1 || !panels[index] || panels.length <= 1) return;
-            
-            // Удаляем панель слева от ресайзера
-            panels[index].remove();
-            
-            // Удаляем ресайзер слева от этой панели (если есть)
-            if (index > 0 && allResizers[index - 1]) {
-                allResizers[index - 1].remove();
-            }
-            
-            updateUI();
-            saveState();
-        }
-
-        function removePanelRight(resizer) {
-            const allResizers = Array.from(document.querySelectorAll('.resizer'));
-            const index = allResizers.indexOf(resizer);
-            const panels = document.querySelectorAll('.panel');
-            
-            if (index === -1 || !panels[index + 1] || panels.length <= 1) return;
-            
-            // Удаляем панель справа от ресайзера
-            panels[index + 1].remove();
-            
-            // Удаляем сам ресайзер
-            resizer.remove();
-            
-            updateUI();
-            saveState();
-        }
-
-        // ============================================
-        // ФУНКЦИИ ОБНОВЛЕНИЯ UI
-        // ============================================
-
-        function updateUI() {
-            updateDots();
-            updatePanelWidths();
-            setupResizers();
-        }
-
-        function updateDots() {
-            const panels = document.querySelectorAll('.panel');
-            dotsContainer.innerHTML = '';
-            
-            if (panels.length <= 1) {
+        function updateMobileControllersVisibility() {
+            if (!isMobileDevice()) return; // Исправлено!
+            if (panels.length > 1) {
+                panelControllers.style.display = 'flex';
                 dotsContainer.style.display = 'none';
-                return;
+            } else {
+                panelControllers.style.display = 'none';
+                dotsContainer.style.display = 'none';
             }
-            
-            dotsContainer.style.display = 'flex';
-            
-            panels.forEach((panel, index) => {
-                const isActive = index === 0;
-                const dot = createDot(index, isActive);
-                dotsContainer.appendChild(dot);
-            });
-            
-            // Обновляем активные точки при скролле
-            const observer = new IntersectionObserver(entries => {
-                entries.forEach(entry => {
-                    if (!entry.isIntersecting) return;
-                    const panels = document.querySelectorAll('.panel');
-                    const index = Array.from(panels).indexOf(entry.target);
-                    if (index === -1) return;
-                    
-                    document.querySelectorAll('.dots button').forEach((dot, i) => {
-                        dot.classList.toggle('active', i === index);
-                    });
-                });
-            }, {
-                root: panelsContainer,
-                threshold: 0.6
-            });
-            
-            panels.forEach(panel => observer.observe(panel));
         }
 
-        function updatePanelWidths() {
-            const panels = document.querySelectorAll('.panel');
-            const resizers = document.querySelectorAll('.resizer');
-            const containerWidth = panelsContainer.clientWidth;
-            const resizerWidth = 6;
-            const totalResizerWidth = resizers.length * resizerWidth;
-            const availableWidth = containerWidth - totalResizerWidth;
-            const panelWidth = availableWidth / panels.length;
-            
-            panels.forEach(panel => {
-                panel.style.flex = '0 0 auto';
-                panel.style.width = `${panelWidth}px`;
-            });
-        }
-
-        function setupResizers() {
-            const resizers = document.querySelectorAll('.resizer');
-            
-            resizers.forEach((resizer) => {
-                // Удаляем старые обработчики
-                const newResizer = resizer.cloneNode(true);
-                resizer.parentNode.replaceChild(newResizer, resizer);
-                
-                let active = false;
-                let moved = false;
-                let startX = 0;
-                let startY = 0;
-                let animationFrame = null;
-                let pendingX = null;
-                
-                const panels = document.querySelectorAll('.panel');
-                const allResizers = Array.from(document.querySelectorAll('.resizer'));
-                const index = allResizers.indexOf(newResizer);
-                
-                if (index === -1 || !panels[index] || !panels[index + 1]) return;
-                
-                const prevPanel = panels[index];
-                const nextPanel = panels[index + 1];
-                
-                function setPosition(clientX) {
-                    const rect = newResizer.getBoundingClientRect();
-                    let x = clientX - rect.left;
-                    const handleSize = 24;
-                    const halfHandle = handleSize / 2;
-                    
-                    x = Math.max(halfHandle, Math.min(rect.width - halfHandle, x));
-                    
-                    const percent = (x / rect.width) * 100;
-                    const handle = newResizer.querySelector('.resizer-handle');
-                    handle.style.left = `${percent}%`;
-                    
-                    const totalWidth = prevPanel.getBoundingClientRect().width + nextPanel.getBoundingClientRect().width;
-                    const minWidth = 80;
-                    let ratio = x / rect.width;
-                    let newPrevWidth = totalWidth * ratio;
-                    
-                    newPrevWidth = Math.max(minWidth, Math.min(totalWidth - minWidth, newPrevWidth));
-                    const newNextWidth = totalWidth - newPrevWidth;
-                    
-                    prevPanel.style.width = `${newPrevWidth}px`;
-                    nextPanel.style.width = `${newNextWidth}px`;
-                }
-                
-                function pointerDown(e) {
-                    if (e.target.closest('.handle-menu')) return;
-                    e.preventDefault();
-                    active = true;
-                    moved = false;
-                    startX = e.clientX;
-                    startY = e.clientY;
-                    pendingX = e.clientX;
-                    
-                    newResizer.classList.add('active');
-                    document.body.classList.add('is-resizing');
-                    newResizer.setPointerCapture?.(e.pointerId);
-                }
-                
-                function pointerMove(e) {
-                    if (!active) return;
-                    const deltaX = Math.abs(e.clientX - startX);
-                    const deltaY = Math.abs(e.clientY - startY);
-                    
-                    if (deltaX > 6 || deltaY > 6) {
-                        moved = true;
-                        closeAllMenus();
-                    }
-                    
-                    if (!moved) return;
-                    pendingX = e.clientX;
-                    
-                    if (animationFrame !== null) return;
-                    
-                    animationFrame = requestAnimationFrame(() => {
-                        animationFrame = null;
-                        if (!active || pendingX === null) return;
-                        setPosition(pendingX);
-                    });
-                }
-                
-                function pointerUp(e) {
-                    if (!active) return;
-                    active = false;
-                    pendingX = null;
-                    
-                    if (animationFrame !== null) {
-                        cancelAnimationFrame(animationFrame);
-                        animationFrame = null;
-                    }
-                    
-                    newResizer.classList.remove('active');
-                    document.body.classList.remove('is-resizing');
-                    
-                    try {
-                        newResizer.releasePointerCapture?.(e.pointerId);
-                    } catch (_) {}
-                    
-                    if (!moved) {
-                        const menu = newResizer.querySelector('.handle-menu');
-                        const isOpen = menu.classList.contains('open');
-                        closeAllMenus(isOpen ? null : menu);
-                        menu.classList.toggle('open', !isOpen);
-                    }
-                }
-                
-                newResizer.addEventListener('pointerdown', pointerDown);
-                newResizer.addEventListener('pointermove', pointerMove);
-                newResizer.addEventListener('pointerup', pointerUp);
-                newResizer.addEventListener('pointercancel', pointerUp);
-                newResizer.addEventListener('lostpointercapture', pointerUp);
-            });
-        }
-
-        function closeAllMenus(except = null) {
-            document.querySelectorAll('.handle-menu').forEach(menu => {
-                if (menu !== except) {
-                    menu.classList.remove('open');
-                }
-            });
-        }
-
-        // ============================================
-        // СОХРАНЕНИЕ И ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ
-        // ============================================
-
-        function saveState() {
-            const panels = document.querySelectorAll('.panel');
-            const urls = [];
-            panels.forEach(panel => {
+        function savePanelsState() {
+            updatePanelsList();
+            const panelUrls = panels.map(panel => {
                 const iframe = panel.querySelector('iframe');
-                if (iframe) {
-                    urls.push(iframe.src);
-                }
-            });
-            localStorage.setItem('panelsState', JSON.stringify(urls));
+                return iframe ? iframe.src : null;
+            }).filter(src => src !== null);
+            localStorage.setItem('panelsState', JSON.stringify(panelUrls));
         }
 
-        function restoreState() {
+        function restorePanelsState() {
             const saved = localStorage.getItem('panelsState');
             if (!saved) return false;
             
             try {
-                const urls = JSON.parse(saved);
-                if (!urls || urls.length === 0) return false;
+                const panelUrls = JSON.parse(saved);
+                if (!panelUrls || panelUrls.length === 0) return false;
                 
                 panelsContainer.innerHTML = '';
                 
-                urls.forEach((url, index) => {
-                    const panel = createPanel(url);
-                    panelsContainer.appendChild(panel);
-                    
-                    if (index < urls.length - 1) {
-                        const resizer = createResizer();
-                        panelsContainer.appendChild(resizer);
-                    }
+                panelUrls.forEach(url => {
+                    const page = url.split('/').pop() || url;
+                    panelsContainer.appendChild(createPanel(page));
                 });
                 
-                updateUI();
+                updatePanelsList();
+                
+                if (!isMobileDevice()) {
+                    rebuildResizers();
+                    initializePanelWidths();
+                } else {
+                    rebuildDots();
+                }
+                
                 return true;
             } catch (e) {
                 return false;
             }
         }
-
-        // ============================================
-        // ИНИЦИАЛИЗАЦИЯ
-        // ============================================
-
-        function initDefaultPanels() {
-            const defaultPages = ['paramount.html', 'jetpack.html', 'capital.html', 'flash.html', 'cross.html'];
-            defaultPages.forEach((page, index) => {
-                const panel = createPanel(page);
-                panelsContainer.appendChild(panel);
-                
-                if (index < defaultPages.length - 1) {
-                    const resizer = createResizer();
-                    panelsContainer.appendChild(resizer);
-                }
-            });
-            updateUI();
-            saveState();
-        }
-
-        // Восстанавливаем состояние или создаем дефолтное
-        if (!restoreState()) {
-            initDefaultPanels();
-        }
-
-        // ============================================
-        // ОБРАБОТЧИКИ ДЛЯ МОБИЛЬНЫХ КНОПОК
-        // ============================================
-
-        if (addBtn) {
-            addBtn.addEventListener('click', () => {
-                const url = prompt('Enter URL for new panel:', 'index.html');
-                if (!url) return;
-                
-                // Добавляем в конец
-                const newPanel = createPanel(url);
-                panelsContainer.appendChild(newPanel);
-                
-                // Добавляем ресайзер перед новой панелью
-                const newResizer = createResizer();
-                panelsContainer.insertBefore(newResizer, newPanel);
-                
-                updateUI();
-                saveState();
-                
-                // Скроллим к новой панели
-                setTimeout(() => {
-                    newPanel.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'nearest',
-                        inline: 'start'
-                    });
-                }, 100);
-            });
-        }
-
-        if (removeBtn) {
-            removeBtn.addEventListener('click', () => {
-                const panels = document.querySelectorAll('.panel');
-                if (panels.length <= 1) return;
-                
-                // Удаляем последнюю панель
-                const lastPanel = panels[panels.length - 1];
-                lastPanel.remove();
-                
-                // Удаляем последний ресайзер
-                const resizers = document.querySelectorAll('.resizer');
-                if (resizers.length > 0) {
-                    resizers[resizers.length - 1].remove();
-                }
-                
-                updateUI();
-                saveState();
-            });
-        }
-
-        // ============================================
-        // ОБРАБОТКА СООБЩЕНИЙ ОТ IFRAME
-        // ============================================
 
         window.addEventListener('message', function(event) {
             if (!event.data) return;
@@ -911,7 +427,9 @@
                         const panel = iframe.closest('.panel');
                         if (panel) {
                             if (!document.fullscreenElement) {
-                                panel.requestFullscreen().catch(() => {});
+                                panel.requestFullscreen().catch(err => {
+                                    console.error("Error attempting to enable fullscreen:", err);
+                                });
                             } else {
                                 document.exitFullscreen();
                             }
@@ -926,39 +444,447 @@
                     try {
                         if (iframe.contentWindow === event.source) {
                             iframe.src = event.data.url;
-                            saveState();
+                            savePanelsState();
                         }
                     } catch (e) {}
                 });
             }
         });
 
-        // ============================================
-        // ОБРАБОТКА ИЗМЕНЕНИЯ РАЗМЕРА
-        // ============================================
+        if (!isMobileDevice()) {
+            function createResizer() {
+                const resizer = document.createElement('div');
+                resizer.className = 'resizer';
 
-        let resizeTimer = null;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                if (!document.body.classList.contains('is-resizing')) {
-                    updatePanelWidths();
-                }
-            }, 100);
-        });
+                const handle = document.createElement('img');
+                handle.className = 'resizer-handle';
+                handle.src = 'paw.png';
+                handle.alt = '';
+                resizer.appendChild(handle);
 
-        // ============================================
-        // ЗАКРЫТИЕ МЕНЮ ПРИ КЛИКЕ ВНЕ
-        // ============================================
+                const menu = document.createElement('div');
+                menu.className = 'handle-menu';
 
-        document.addEventListener('pointerdown', e => {
-            if (!e.target.closest('.resizer')) {
-                closeAllMenus();
+                const label = document.createElement('div');
+                label.className = 'menu-label';
+                label.textContent = 'FIELD';
+                menu.appendChild(label);
+
+                const row1 = document.createElement('div');
+                row1.className = 'menu-row';
+                const addLeft = document.createElement('button');
+                addLeft.textContent = '+';
+                const addRight = document.createElement('button');
+                addRight.textContent = '+';
+                row1.appendChild(addLeft);
+                row1.appendChild(addRight);
+
+                const row2 = document.createElement('div');
+                row2.className = 'menu-row';
+                const removeLeft = document.createElement('button');
+                removeLeft.textContent = '−';
+                const removeRight = document.createElement('button');
+                removeRight.textContent = '−';
+                row2.appendChild(removeLeft);
+                row2.appendChild(removeRight);
+
+                menu.appendChild(row1);
+                menu.appendChild(row2);
+                resizer.appendChild(menu);
+
+                addLeft.addEventListener('pointerdown', e => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    addPanelLeft(resizer);
+                });
+
+                addRight.addEventListener('pointerdown', e => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    addPanelRight(resizer);
+                });
+
+                removeLeft.addEventListener('pointerdown', e => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    removePanelLeft(resizer);
+                });
+
+                removeRight.addEventListener('pointerdown', e => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    removePanelRight(resizer);
+                });
+
+                return resizer;
             }
-        });
 
-        console.log('✅ Fields app initialized');
-        console.log(`📊 ${document.querySelectorAll('.panel').length} panels loaded`);
+            function rebuildResizers() {
+                document.querySelectorAll('.resizer').forEach(resizer => {
+                    resizer.remove();
+                });
+
+                updatePanelsList();
+
+                panels.forEach((panel, index) => {
+                    if (index >= panels.length - 1) {
+                        return;
+                    }
+                    const resizer = createResizer();
+                    panelsContainer.insertBefore(resizer, panel.nextSibling);
+                });
+
+                setupResizers();
+            }
+
+            function initializePanelWidths() {
+                updatePanelsList();
+                const resizers = Array.from(document.querySelectorAll('.resizer'));
+                const availableWidth = panelsContainer.clientWidth - resizers.length * 6;
+                const width = availableWidth / panels.length;
+
+                panels.forEach(panel => {
+                    panel.style.flex = '0 0 auto';
+                    panel.style.width = `${width}px`;
+                });
+
+                resizers.forEach(resizer => {
+                    const handle = resizer.querySelector('.resizer-handle');
+                    if (handle) {
+                        handle.style.top = '50%';
+                    }
+                });
+            }
+
+            function addPanelLeft(resizer) {
+                updatePanelsList();
+                const allResizers = Array.from(document.querySelectorAll('.resizer'));
+                const index = allResizers.indexOf(resizer);
+                if (index === -1) return;
+                
+                const leftPanel = panels[index];
+                if (!leftPanel) return;
+                
+                const url = prompt('Enter the URL for the new panel:', 'index.html');
+                if (!url) return;
+                
+                const newPanel = createPanel(url);
+                panelsContainer.insertBefore(newPanel, resizer);
+                
+                updatePanelsList();
+                rebuildResizers();
+                initializePanelWidths();
+                savePanelsState();
+            }
+
+            function addPanelRight(resizer) {
+                updatePanelsList();
+                const allResizers = Array.from(document.querySelectorAll('.resizer'));
+                const index = allResizers.indexOf(resizer);
+                if (index === -1) return;
+                
+                const rightPanel = panels[index + 1];
+                if (!rightPanel) return;
+                
+                const url = prompt('Enter the URL for the new panel:', 'match.html');
+                if (!url) return;
+                
+                const newPanel = createPanel(url);
+                panelsContainer.insertBefore(newPanel, rightPanel);
+                
+                updatePanelsList();
+                rebuildResizers();
+                initializePanelWidths();
+                savePanelsState();
+            }
+
+            function removePanelLeft(resizer) {
+                updatePanelsList();
+                if (panels.length <= 1) return;
+
+                const allResizers = Array.from(document.querySelectorAll('.resizer'));
+                const index = allResizers.indexOf(resizer);
+                if (index < 0 || !panels[index]) return;
+
+                panels[index].remove();
+                rebuildResizers();
+                initializePanelWidths();
+                savePanelsState();
+            }
+
+            function removePanelRight(resizer) {
+                updatePanelsList();
+                if (panels.length <= 1) return;
+
+                const allResizers = Array.from(document.querySelectorAll('.resizer'));
+                const index = allResizers.indexOf(resizer);
+                if (index < 0 || !panels[index + 1]) return;
+
+                panels[index + 1].remove();
+                rebuildResizers();
+                initializePanelWidths();
+                savePanelsState();
+            }
+
+            function closeAllMenus(except = null) {
+                document.querySelectorAll('.handle-menu').forEach(menu => {
+                    if (menu !== except) {
+                        menu.classList.remove('open');
+                    }
+                });
+            }
+
+            function setupResizers() {
+                const resizers = Array.from(document.querySelectorAll('.resizer'));
+
+                resizers.forEach((resizer, index) => {
+                    const prevPanel = panels[index];
+                    const nextPanel = panels[index + 1];
+
+                    if (!prevPanel || !nextPanel) return;
+
+                    let active = false;
+                    let moved = false;
+                    let startX = 0;
+                    let startY = 0;
+                    let animationFrame = null;
+                    let pendingY = null;
+
+                    function setPosition(clientY) {
+                        const rect = resizer.getBoundingClientRect();
+                        let y = clientY - rect.top;
+                        const handleSize = 24;
+                        const halfHandle = handleSize / 2;
+
+                        y = Math.max(halfHandle, Math.min(rect.height - halfHandle, y));
+
+                        const percent = (y / rect.height) * 100;
+                        const handle = resizer.querySelector('.resizer-handle');
+                        handle.style.top = `${percent}%`;
+
+                        const totalWidth = prevPanel.getBoundingClientRect().width + nextPanel.getBoundingClientRect().width;
+                        const minWidth = 80;
+                        let ratio = 1 - y / rect.height;
+                        let newPrevWidth = totalWidth * ratio;
+
+                        newPrevWidth = Math.max(minWidth, Math.min(totalWidth - minWidth, newPrevWidth));
+                        const newNextWidth = totalWidth - newPrevWidth;
+
+                        prevPanel.style.width = `${newPrevWidth}px`;
+                        nextPanel.style.width = `${newNextWidth}px`;
+                    }
+
+                    function pointerDown(e) {
+                        if (e.target.closest('.handle-menu')) return;
+                        e.preventDefault();
+                        active = true;
+                        moved = false;
+                        startX = e.clientX;
+                        startY = e.clientY;
+                        pendingY = e.clientY;
+
+                        resizer.classList.add('active');
+                        document.body.classList.add('is-resizing');
+                        resizer.setPointerCapture?.(e.pointerId);
+                    }
+
+                    function pointerMove(e) {
+                        if (!active) return;
+                        const deltaX = Math.abs(e.clientX - startX);
+                        const deltaY = Math.abs(e.clientY - startY);
+
+                        if (deltaX > 6 || deltaY > 6) {
+                            moved = true;
+                            closeAllMenus();
+                        }
+
+                        if (!moved) return;
+                        pendingY = e.clientY;
+
+                        if (animationFrame !== null) return;
+
+                        animationFrame = requestAnimationFrame(() => {
+                            animationFrame = null;
+                            if (!active || pendingY === null) return;
+                            setPosition(pendingY);
+                        });
+                    }
+
+                    function pointerUp(e) {
+                        if (!active) return;
+                        active = false;
+                        pendingY = null;
+
+                        if (animationFrame !== null) {
+                            cancelAnimationFrame(animationFrame);
+                            animationFrame = null;
+                        }
+
+                        resizer.classList.remove('active');
+                        document.body.classList.remove('is-resizing');
+
+                        try {
+                            resizer.releasePointerCapture?.(e.pointerId);
+                        } catch (_) {}
+
+                        if (!moved) {
+                            const menu = resizer.querySelector('.handle-menu');
+                            const isOpen = menu.classList.contains('open');
+                            closeAllMenus(isOpen ? null : menu);
+                            menu.classList.toggle('open', !isOpen);
+                        }
+                    }
+
+                    resizer.addEventListener('pointerdown', pointerDown);
+                    resizer.addEventListener('pointermove', pointerMove);
+                    resizer.addEventListener('pointerup', pointerUp);
+                    resizer.addEventListener('pointercancel', pointerUp);
+                    resizer.addEventListener('lostpointercapture', pointerUp);
+                });
+            }
+
+            rebuildResizers();
+            initializePanelWidths();
+
+            document.addEventListener('pointerdown', e => {
+                if (!e.target.closest('.resizer')) {
+                    closeAllMenus();
+                }
+            });
+
+            let resizeTimer = null;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (!document.body.classList.contains('is-resizing')) {
+                        initializePanelWidths();
+                    }
+                }, 100);
+            });
+        }
+
+        if (isMobileDevice()) {
+            function rebuildDots() {
+                dotsContainer.innerHTML = '';
+                updatePanelsList();
+
+                if (panels.length <= 1) {
+                    dotsContainer.style.display = 'none';
+                    return;
+                }
+
+                dotsContainer.style.display = 'flex';
+
+                panels.forEach((_, index) => {
+                    const dot = document.createElement('button');
+                    dot.dataset.index = index;
+
+                    if (index === 0) {
+                        dot.classList.add('active');
+                    }
+
+                    dot.addEventListener('click', () => {
+                        updatePanelsList();
+                        const panel = panels[index];
+                        if (!panel) return;
+
+                        panel.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'nearest',
+                            inline: 'start'
+                        });
+                    });
+
+                    dotsContainer.appendChild(dot);
+                });
+
+                const observer = new IntersectionObserver(entries => {
+                    entries.forEach(entry => {
+                        if (!entry.isIntersecting) return;
+                        updatePanelsList();
+                        const index = panels.indexOf(entry.target);
+                        if (index === -1) return;
+
+                        document.querySelectorAll('.dots button').forEach((dot, i) => {
+                            dot.classList.toggle('active', i === index);
+                        });
+                    });
+                }, {
+                    root: panelsContainer,
+                    threshold: 0.6
+                });
+
+                panels.forEach(panel => {
+                    observer.observe(panel);
+                });
+            }
+
+            mobileAddBtn.addEventListener('click', () => {
+                const url = prompt('Enter the URL for the new panel:', 'match.html');
+                if (!url) return;
+
+                const newPanel = createPanel(url);
+                panelsContainer.appendChild(newPanel);
+                updatePanelsList();
+                rebuildDots();
+                savePanelsState();
+
+                newPanel.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'start'
+                });
+            });
+
+            mobileRemoveBtn.addEventListener('click', () => {
+                updatePanelsList();
+                if (panels.length <= 1) return;
+
+                let scrollLeft = panelsContainer.scrollLeft;
+                let panelWidth = panelsContainer.clientWidth;
+                let currentIndex = Math.round(scrollLeft / panelWidth);
+
+                if (currentIndex >= panels.length) {
+                    currentIndex = panels.length - 1;
+                }
+
+                panels[currentIndex].remove();
+                updatePanelsList();
+                rebuildDots();
+                savePanelsState();
+
+                let newTargetIndex = Math.max(0, currentIndex - 1);
+                if (panels[newTargetIndex]) {
+                    panels[newTargetIndex].scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'start'
+                    });
+                }
+            });
+        }
+
+        if (!restorePanelsState()) {
+            if (isMobileDevice()) {
+                panelsContainer.appendChild(createPanel(pages[0]));
+            } else {
+                pages.forEach(page => {
+                    panelsContainer.appendChild(createPanel(page));
+                });
+            }
+            updatePanelsList();
+            if (!isMobileDevice()) {
+                rebuildResizers();
+                initializePanelWidths();
+            } else {
+                rebuildDots();
+            }
+            savePanelsState();
+        } else {
+            if (isMobileDevice()) {
+                rebuildDots();
+            }
+        }
     </script>
 </body>
 </html>
