@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" href="/loop.png">
-<meta property="og:image" content="/words.jpg">
-<meta property="og:image:width" content="1280">
-<meta property="og:image:height" content="1091">
+    <meta property="og:image" content="/words.jpg">
+    <meta property="og:image:width" content="1280">
+    <meta property="og:image:height" content="1091">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Word Mosaic | Tap word for Definition</title>
+    <title>Word Mosaic | Tap word for Definition</title>
     <link rel="manifest" href="manifest-words.json">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
     <style>
@@ -22,17 +22,24 @@
         html, body {
             width: 100%;
             height: 100%;
+            margin: 0;
+            padding: 0;
             background-color: #121212;
             font-family: 'Roboto Condensed', sans-serif;
             transition: background-color 0.5s ease;
+            overflow: hidden;
         }
 
         .container {
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            height: 100vh;
+            height: 100%;
+            width: 100%;
             padding: 10px;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
         .words-wrapper {
@@ -45,55 +52,53 @@
             gap: 6px 8px;
             padding: 10px;
             overflow-y: auto;
-            cursor: default;
+            cursor: text;
             touch-action: pan-y;
+            outline: none;
+            min-height: 0;
         }
 
-.footer-panel {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    flex-shrink: 0;
-    z-index: 10;
-    padding-top: 5px;
-    padding-bottom: 15px;
-}
+        .footer-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            flex-shrink: 0;
+            z-index: 10;
+            padding-top: 5px;
+            padding-bottom: 15px;
+            background-color: transparent;
+            max-height: 50vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
 
-.word-cell {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    white-space: nowrap;
-    background: transparent;
-    border: none;
-    padding: 2px 4px;
-    line-height: 1;
-    opacity: 0.95;
-    transition: color 0.5s ease;
-}
+        .word-cell {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            white-space: nowrap;
+            background: transparent;
+            border: none;
+            padding: 2px 4px;
+            line-height: 1;
+            opacity: 0.95;
+            transition: color 0.5s ease;
+        }
 
-#word-input {
-    width: 100%;
-    max-width: 500px;
-    padding: 10px 18px;
-    font-family: 'Roboto Condensed', sans-serif;
-    font-size: 16px;
-    outline: none;
-    margin: 0 0 10px 0;
-    transition: all 0.3s;
-    user-select: text;
-    border: 1px solid #999;
-    -webkit-user-select: text;
-}
+        .typing-cell {
+            opacity: 0.6;
+            border-bottom: 2px solid currentColor;
+        }
 
         .logo-link {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             height: 34px;
+            margin-top: 5px;
         }
 
         .logo-link img {
@@ -102,92 +107,110 @@
             display: block;
         }
 
-        #word-input::placeholder {
-            color: var(--placeholder-color, #fff);
-            opacity: 1;
-        }
-        
         .note {
-    width: 100%;
-    max-width: 500px;
-    text-align: center;
-    margin-top: 4px;
-    font-family: sans-serif;
-    font-size: 18px;
-}
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            margin-top: 4px;
+            font-family: sans-serif;
+            font-size: 18px;
+        }
 
-.note-toggle {
-    cursor: pointer;
-    color: #999;
-    user-select: none;
-    -webkit-user-select: none;
-}
+        .note-toggle {
+            cursor: pointer;
+            color: #999;
+            user-select: none;
+            -webkit-user-select: none;
+        }
 
-.note-text {
-    display: none;
-    margin-top: 6px;
-    padding: 0 10px;
-    color: #fff;
-    line-height: 1.3;
-}
+        .note-text {
+            display: none;
+            margin-top: 6px;
+            padding: 0 10px;
+            color: #fff;
+            line-height: 1.3;
+            text-align: center;
+        }
 
-.note.open .note-text {
-    display: block;
-}
+        .note.open .note-text {
+            display: block;
+        }
 
-.note-text p {
-    margin-bottom: 10px; 
-}
+        .note-text p {
+            margin-bottom: 10px; 
+        }
 
+        .note-text p:last-child {
+            margin-bottom: 0;
+        }
 
-.note-text p:last-child {
-    margin-bottom: 0;
-}
+        .theme-command {
+            cursor: pointer;
+            color: #4da6ff;
+            margin: 10px 0;
+            display: inline-block;
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+        }
 
+        /* Скрытый инпут для вызова клавиатуры на мобильных устройствах */
+        #hidden-input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            height: 0;
+            width: 0;
+        }
     </style>
 </head>
 <body>
 
     <div class="container" id="main-container">
-        <div class="words-wrapper" id="words-wrapper"></div>
+        <div class="words-wrapper" id="words-wrapper" tabindex="0"></div>
+        <input type="text" id="hidden-input" autocomplete="off" autocapitalize="off" spellcheck="false">
 
-<div class="footer-panel">
-    <input type="text" id="word-input" placeholder="Enter word(s) and press Enter..." autofocus>
-
-    <div class="note" id="note">
-        <div class="note-toggle" id="note-toggle"><strong>Help</strong></div>
-        <div class="note-text">
-<p>A short tap on a word opens ChatGPT to clarify the word definition.</p>
-<p>Operating system or AI may retain a previous word for reasons beyond this app’s control.</p>
-<p>Currently selected word will be copied to the clipboard anytime, so you can paste it instead if an older word appears in the request.</p>
-    <a href="index.html" class="logo-link">
-        <img src="fleurdelis.png">
-    </a>
+        <div class="footer-panel" id="footer-panel">
+            <div class="note" id="note">
+                <div class="note-toggle" id="note-toggle"><strong>Help</strong></div>
+                <div class="note-text" id="note-text">
+                    <p>A short tap on a word opens ChatGPT to clarify the word definition.</p>
+                    <p>Operating system or AI may retain a previous word for reasons beyond this app’s control.</p>
+                    <p>Currently selected word will be copied to the clipboard anytime, so you can paste it instead if an older word appears in the request.</p>
+                    <div class="theme-command" id="theme-command">Change Theme</div>
+                    <div style="text-align: center;">
+                        <a href="index.html" class="logo-link">
+                            <img src="fleurdelis.png" alt="Logo">
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
     </div>
 
     <script>
-        const inputField = document.getElementById('word-input');
         const displayContainer = document.getElementById('words-wrapper');
         const mainContainer = document.getElementById('main-container');
-const note = document.getElementById('note');
-const noteToggle = document.getElementById('note-toggle');
+        const hiddenInput = document.getElementById('hidden-input');
+        const note = document.getElementById('note');
+        const noteToggle = document.getElementById('note-toggle');
+        const noteText = document.getElementById('note-text');
+        const themeCommand = document.getElementById('theme-command');
 
-noteToggle.addEventListener('click', (event) => {
-    event.stopPropagation();
-    note.classList.toggle('open');
+        noteToggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            note.classList.toggle('open');
 
-    noteToggle.querySelector('strong').textContent =
-        note.classList.contains('open') ? 'Collapse' : 'Help';
-});
+            const isOpen = note.classList.contains('open');
+            noteToggle.querySelector('strong').textContent = isOpen ? 'Collapse' : 'Help';
+        });
 
-note.querySelector('.note-text').addEventListener('click', (event) => {
-    event.stopPropagation();
-    note.classList.remove('open');
-});
+        noteText.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+
         let wordsList = [];
+        let currentTyping = '';
 
         // Загружаем сохраненные слова из Local Storage при запуске
         const savedWords = localStorage.getItem('mosaic_words');
@@ -199,28 +222,24 @@ note.querySelector('.note-text').addEventListener('click', (event) => {
             }
         }
 
-const themes = [
-    { bg: '#121212', inputBg: '#212121', inputColor: '#FFFFFF', inputBorder: '#999' },
-    { bg: '#000033', inputBg: '#0D47A1', inputColor: '#FFFFFF', inputBorder: '#999' },
-    { bg: '#1a3300', inputBg: '#1B5E20', inputColor: '#FFFFFF', inputBorder: '#999' },
-    { bg: '#2b1a33', inputBg: '#4A148C', inputColor: '#FFFFFF', inputBorder: '#999' }
-];
+        const themes = [
+            { bg: '#121212' },
+            { bg: '#000033' },
+            { bg: '#1a3300' },
+            { bg: '#2b1a33' }
+        ];
 
         let currentThemeIndex = 0;
 
-function applyTheme(theme) {
-    document.body.style.backgroundColor = theme.bg; // Добавьте эту строку
-    mainContainer.style.backgroundColor = theme.bg;
-    inputField.style.backgroundColor = theme.inputBg;
-    inputField.style.color = theme.inputColor;
-    inputField.style.setProperty('--placeholder-color', theme.inputBorder);
+        function applyTheme(theme) {
+            document.body.style.backgroundColor = theme.bg;
+            mainContainer.style.backgroundColor = theme.bg;
 
-    const cells = document.querySelectorAll('.word-cell');
-    cells.forEach((cell, index) => {
-        cell.style.color = getPastelTextColor(index);
-    });
-}
-
+            const cells = document.querySelectorAll('.word-cell');
+            cells.forEach((cell, index) => {
+                cell.style.color = getPastelTextColor(index);
+            });
+        }
 
         function getPastelTextColor(index) {
             const hue = (index * 53 + currentThemeIndex * 70) % 360;
@@ -230,61 +249,66 @@ function applyTheme(theme) {
         function updateLayout() {
             displayContainer.innerHTML = '';
             
-            if (wordsList.length === 0) return;
+            if (wordsList.length === 0 && !currentTyping) return;
 
             const fragment = document.createDocumentFragment();
+            const allItems = [...wordsList];
+            if (currentTyping) {
+                allItems.push(currentTyping);
+            }
 
-            const tempCells = wordsList.map((word, index) => {
+            const tempCells = allItems.map((word, index) => {
                 const cell = document.createElement('div');
                 cell.className = 'word-cell';
+                if (index >= wordsList.length) {
+                    cell.classList.add('typing-cell');
+                }
                 cell.textContent = word;
                 cell.style.color = getPastelTextColor(index);
                 cell.style.fontSize = '40px';
 
-let pressTimer;
-let pressStartTime = 0;
-let longPressTriggered = false;
+                if (index < wordsList.length) {
+                    let pressTimer;
+                    let pressStartTime = 0;
+                    let longPressTriggered = false;
 
-cell.addEventListener('pointerdown', (event) => {
-    event.stopPropagation();
-    pressStartTime = Date.now();
-    longPressTriggered = false;
+                    cell.addEventListener('pointerdown', (event) => {
+                        event.stopPropagation();
+                        pressStartTime = Date.now();
+                        longPressTriggered = false;
 
-    pressTimer = setTimeout(() => {
-        longPressTriggered = true;
+                        pressTimer = setTimeout(() => {
+                            longPressTriggered = true;
 
-        wordsList.splice(index, 1);
-        localStorage.setItem('mosaic_words', JSON.stringify(wordsList));
-        updateLayout();
-    }, 600);
-});
+                            wordsList.splice(index, 1);
+                            localStorage.setItem('mosaic_words', JSON.stringify(wordsList));
+                            updateLayout();
+                        }, 600);
+                    });
 
-cell.addEventListener('pointerup', (event) => {
-    event.stopPropagation();
+                    cell.addEventListener('pointerup', (event) => {
+                        event.stopPropagation();
 
-    const pressDuration = Date.now() - pressStartTime;
-    clearTimeout(pressTimer);
+                        const pressDuration = Date.now() - pressStartTime;
+                        clearTimeout(pressTimer);
 
-if (pressDuration < 600 && !longPressTriggered) {
-    const query = `What is the definition of the word "${word}" in the interface language?`;
+                        if (pressDuration < 600 && !longPressTriggered) {
+                            const query = `What is the definition of the word "${word}" in the interface language?`;
 
-    navigator.clipboard.writeText(word).catch(() => {});
+                            navigator.clipboard.writeText(word).catch(() => {});
 
-    window.open(
-        `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
-        '_blank'
-    );
-}
-});
+                            window.open(
+                                `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
+                                '_blank'
+                            );
+                        }
+                    });
 
-cell.addEventListener('pointercancel', (event) => {
-    event.stopPropagation();
-    clearTimeout(pressTimer);
-});
-
-cell.addEventListener('pointerleave', (event) => {
-    event.stopPropagation();
-});
+                    cell.addEventListener('pointercancel', (event) => {
+                        event.stopPropagation();
+                        clearTimeout(pressTimer);
+                    });
+                }
                 
                 fragment.appendChild(cell);
                 return cell;
@@ -292,55 +316,72 @@ cell.addEventListener('pointerleave', (event) => {
 
             displayContainer.appendChild(fragment);
 
-requestAnimationFrame(() => {
-    const maxSize = 40;
-    const minSize = 8;
-    let size = maxSize;
+            requestAnimationFrame(() => {
+                const maxSize = 40;
+                const minSize = 8;
+                let size = maxSize;
 
-    function applySize(value) {
-        tempCells.forEach(cell => {
-            cell.style.fontSize = `${value}px`;
-        });
-    }
+                function applySize(value) {
+                    tempCells.forEach(cell => {
+                        cell.style.fontSize = `${value}px`;
+                    });
+                }
 
-    applySize(size);
+                applySize(size);
 
-    while (
-        displayContainer.scrollHeight > displayContainer.clientHeight &&
-        size > minSize
-    ) {
-        size -= 1;
-        applySize(size);
-    }
-});
+                while (
+                    displayContainer.scrollHeight > displayContainer.clientHeight &&
+                    size > minSize
+                ) {
+                    size -= 1;
+                    applySize(size);
+                }
+            });
         }
 
-        document.body.addEventListener('click', (event) => {
-            if (
-                event.target === inputField ||
-                event.target.closest('#word-input') ||
-                event.target.closest('.logo-link') ||
-                event.target.closest('.word-cell')
-            ) return;
-
+        // Смена темы и автоматическое сворачивание Help
+        themeCommand.addEventListener('click', (event) => {
+            event.stopPropagation();
             currentThemeIndex = (currentThemeIndex + 1) % themes.length;
             applyTheme(themes[currentThemeIndex]);
             updateLayout();
+
+            // Сворачиваем Help
+            note.classList.remove('open');
+            noteToggle.querySelector('strong').textContent = 'Help';
         });
 
-        inputField.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                const text = inputField.value.trim();
-                if (text) {
-                    const newWords = text.split(/\s+/).filter(w => w.length > 0);
+        // Клик по мозаике активирует фокус и вызывает клавиатуру на телефонах
+        displayContainer.addEventListener('click', () => {
+            hiddenInput.focus();
+        });
+
+        // Обработка ввода только через keydown для предотвращения дублирования символов
+        hiddenInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                if (currentTyping.trim()) {
+                    const newWords = currentTyping.trim().split(/\s+/).filter(w => w.length > 0);
                     if (newWords.length > 0) {
                         wordsList = wordsList.concat(newWords);
                         localStorage.setItem('mosaic_words', JSON.stringify(wordsList));
-                        inputField.value = '';
+                        currentTyping = '';
                         updateLayout();
                     }
                 }
+            } else if (event.key === 'Backspace') {
+                event.preventDefault();
+                currentTyping = currentTyping.slice(0, -1);
+                updateLayout();
+            } else if (event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey) {
+                currentTyping += event.key;
+                updateLayout();
             }
+        });
+
+        // Очищаем инпут на случай любых сторонних срабатываний
+        hiddenInput.addEventListener('input', () => {
+            hiddenInput.value = '';
         });
 
         applyTheme(themes[0]);
