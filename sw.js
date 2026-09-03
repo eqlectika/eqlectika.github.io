@@ -1,4 +1,5 @@
-const CACHE_NAME = 'version-refresh';
+const CACHE_NAME = 'version-refresh-v1'; // Меняйте суффикс (v1, v2), когда нужно выкатить важное обновление вне очереди
+const REFRESH_INTERVAL = 7 * 24 * 60 * 60 * 1000; // 7 дней в миллисекундах
 
 const CORE_ASSETS = [
     '/',
@@ -55,9 +56,15 @@ const CORE_ASSETS = [
 ];
 
 self.addEventListener('install', event => {
-    self.skipWaiting();
+    // Убираем безусловный skipWaiting(), чтобы новый воркер не активировался сразу тайком
     event.waitUntil(
         caches.open(CACHE_NAME).then(async cache => {
+            // Сохраняем метку времени установки в кэш, если её там еще нет
+            const existingTime = await cache.match('__install_timestamp');
+            if (!existingTime) {
+                await cache.put('__install_timestamp', new Response(Date.now().toString()));
+            }
+
             await Promise.all(
                 CORE_ASSETS.map(async url => {
                     try {
@@ -76,20 +83,40 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
     event.waitUntil(
-        caches.keys().then(keys =>
-            Promise.all(
-                keys
-                    .filter(key => key !== CACHE_NAME)
-                    .map(key => caches.delete(key))
-            )
-        ).then(() => {
+        caches.keys().then(async keys => {
+            // Проверяем, прошло ли 7 дней с момента установки текущего активного кэша
+            let shouldUpdate = false;
+            
+            for (const key of keys) {
+                if (key === CACHE_NAME) continue;
+                const oldCache = await caches.open(key);
+                const timeResponse = await oldCache.match('__install_timestamp');
+                if (timeResponse) {
+                    const installTime = parseInt(await timeResponse.text(), 10);
+                    if (Date.now() - installTime > REFRESH_INTERVAL) {
+                        shouldUpdate = true; // Прошло больше недели — разрешаем обновление
+                    }
+                } else {
+                    shouldUpdate = true; // Если метки не было, разрешаем
+                }
+            }
+
+            // Если прошло меньше недели, старый кэш не удаляем и клиентам обновление не шлем
+            if (!shouldUpdate && keys.includes(CACHE_NAME)) {
+                return;
+            }
+
+            // Удаляем старые кэши
+            await Promise.all(
+                keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+            );
+
             self.clients.claim();
-            return self.clients.matchAll().then(clients => {
-                clients.forEach(client => {
-                    client.postMessage({
-                        type: 'SW_ACTIVATED',
-                        version: CACHE_NAME
-                    });
+            const clients = await self.clients.matchAll();
+            clients.forEach(client => {
+                client.postMessage({
+                    type: 'SW_ACTIVATED',
+                    version: CACHE_NAME
                 });
             });
         })
@@ -113,6 +140,8 @@ self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(request).then(cachedResponse => {
             if (cachedResponse) {
+                // Игнорируем внутреннюю служебную метку времени при запросах страниц
+                if (request.url.includes('__install_timestamp')) return cachedResponse;
                 return cachedResponse;
             }
             return fetch(request).then(response => {
