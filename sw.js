@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-happiness'; 
+const CACHE_NAME = 'version-popup'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
