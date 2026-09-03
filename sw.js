@@ -1,12 +1,9 @@
-const CACHE_NAME = 'version-demo';
+const CACHE_NAME = 'version-refresh-v1';
 
 const CORE_ASSETS = [
-
-'/',
-'./index.html',
-'./manifest-index.html',
-
-
+    '/',
+    './index.html',
+    './manifest-index.json',
     './cross.html',
     './flash.html',
     './match.html',
@@ -21,10 +18,7 @@ const CORE_ASSETS = [
     './paramount.html',
     './fields.html',
     './cube.html',
-    './life.html',
     './bismuth.html',
-    './syntax.html',
-
     './manifest-cross.json',
     './manifest-flash.json',
     './manifest-match.json',
@@ -38,10 +32,7 @@ const CORE_ASSETS = [
     './manifest-paramount.json',
     './manifest-fields.json',
     './manifest-cube.json',
-    './manifest-life.json',
     './manifest-bismuth.json',
-    './manifest-syntax.json',
-
     './handle.png',
     './ladybug-icon-10.png',
     './handle-black.png',
@@ -61,17 +52,16 @@ const CORE_ASSETS = [
     './bitfufu.png',
     './binance.PNG',
     './star.png'
-
 ];
 
 self.addEventListener('install', event => {
+    self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then(async cache => {
             await Promise.all(
                 CORE_ASSETS.map(async url => {
                     try {
                         const response = await fetch(url, { cache: 'no-cache' });
-
                         if (response.ok) {
                             await cache.put(url, response);
                         }
@@ -80,7 +70,7 @@ self.addEventListener('install', event => {
                     }
                 })
             );
-        }).then(() => self.skipWaiting())
+        })
     );
 });
 
@@ -108,10 +98,8 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
     const request = event.request;
-
     if (request.method !== 'GET') return;
 
-    // ===== ДОБАВЛЕННЫЙ БЛОК ДЛЯ КОРНЯ =====
     const url = new URL(request.url);
     if (url.pathname === '/' || url.pathname === '/index.html') {
         event.respondWith(
@@ -121,40 +109,30 @@ self.addEventListener('fetch', event => {
         );
         return;
     }
-    // ===== КОНЕЦ ДОБАВЛЕННОГО БЛОКА =====
 
     event.respondWith(
         caches.match(request).then(cachedResponse => {
             if (cachedResponse) {
                 return cachedResponse;
             }
-
             return fetch(request).then(response => {
                 if (!response) {
                     return response;
                 }
-
                 if (response.ok || response.type === 'opaque') {
                     const copy = response.clone();
-
                     caches.open(CACHE_NAME).then(cache => {
                         cache.put(request, copy).catch(error => {
-                            console.warn(
-                                '[SW] Could not cache:',
-                                request.url,
-                                error
-                            );
+                            console.warn('[SW] Could not cache:', request.url, error);
                         });
                     });
                 }
-
                 return response;
             });
         }).catch(() => {
             if (request.mode === 'navigate') {
                 return caches.match('/');
             }
-
             return Response.error();
         })
     );
