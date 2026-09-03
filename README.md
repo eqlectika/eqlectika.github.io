@@ -6,6 +6,7 @@ Over time, each of us will learn to create and transmit our own virtual worlds i
 I create unique websites, tools, and applications for continuously improving life.
 >
 >If you have any ideas on how to use or apply these developments to your website, please contact.
+>
 >[Yevgeniy Korobka](https://eqlectika.github.io/resume.html)
 
 ## The Concept of Project Eqlectika: Semantic Field Core & Building an Outside-in Planets Network
