@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="manifest" href="manifest-spark.json">
   <title>Vital Spark Calibration</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --main-font: monospace; --bg-color: #000; --time-color: #8493d6; --breath-color: #ffffff;
       --pulse-color: #ff1493; --emotion-color: #ff5252; --energy-color: #ff9800; --focus-color: #ffeb3b;
       --creativity-color: #00ff00; --vision-color: #0000ff; --hearing-color: #9c27b0; --smell-color: #00bcd4;
-      --dopamine-color: #ff00ff; --boomerang-color: #ff4500; --load-color: #adff2f;
+      --dopamine-color: #ff00ff; --boomerang-color: #ff4500; --problem-color: #ff3333; --load-color: #adff2f;
       --tension-color: #cccccc; --light-gray: #aaaaaa;
     }
     
@@ -47,34 +48,22 @@ user-select: none;
     button.ui-btn { background: #111; color: var(--white); border: 1px solid #fff; padding: 8px 12px; font-family: var(--main-font); cursor: pointer; font-size: 11px; }
     
     #savedDataView { 
-      position: relative; /* Это выведет его из влияния margin других элементов */
+      position: relative; 
       background: #0a0a0a; color: var(--creativity-color); font-size: 11px; 
       margin-top: 10px; max-height: 300px; overflow-y: auto; 
       white-space: pre-wrap; font-family: var(--main-font); display: none;
     }
 .buttons { 
   margin-top: 20px; 
-  padding-bottom: 50px; /* Пустое пространство ВНУТРИ блока кнопок */
+  padding-bottom: 50px; 
   display: flex; 
   gap: 10px; 
 }
 #savedDataView { 
-  margin-top: -30px; /* Компенсирует лишнее расстояние, если нужно */
+  margin-top: -30px; 
 }
     footer { margin-top: auto; padding: 40px 0 20px; }
 
-.butterfly-shadow {
-  position: fixed;
-  width: 50px;
-  height: 50px;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.15;
-  filter: blur(4px);
-  background: radial-gradient(circle, #fff 20%, transparent 70%); 
-  clip-path: polygon(50% 50%, 0% 0%, 30% 50%, 0% 100%, 50% 50%, 100% 100%, 70% 50%, 100% 0%);
-  transition: transform 0.1s linear;
-}
 #priority-container{
     margin-top:20px;
     border:1px solid currentColor;
@@ -91,20 +80,17 @@ user-select: none;
 
 .indicator-wrapper {
     display: flex;
-    justify-content: flex-end; /* Всегда прижимаем всё вправо */
+    justify-content: flex-end;
     width: 140px; 
-    font-family: monospace; /* Гарантируем моноширину */
+    font-family: monospace;
 }
 
-/* Добавляем класс для индикаторов, чтобы они всегда занимали фиксированное место */
 .pv-text {
     text-align: right;
     width: 100%;
     display: inline-block;
 }
 
-
-/* Настройка самих индикаторов для соблюдения моноширинности */
 .priority-row span[id^="pv-"] {
     letter-spacing: 2px;
     white-space: pre;
@@ -117,44 +103,39 @@ user-select: none;
 }
 
 #header-link {
-            z-index: 1000;
-            display: flex;
-
-            align-items: left;
-            padding: 6px;
-
+    z-index: 1000;
+    display: flex;
+    align-items: left;
+    padding: 6px;
 }
- </style>
+  </style>
 </head>
 <body>
 <script src="pwa-init.js"></script>
 <div class="header-container">
-
 <div>
   <h2 id="spark-trigger" style="margin: 0; cursor: pointer; transition: opacity 0.3s;" onclick="toggleMetamorphosis()">Vital Spark Calibration</h2>
   <p style="margin: 4px 0 0;">Keep calm and carry on</p>
 </div>
-
 </div>
 
 <details class="protocol-details" style="color: inherit;">
   <summary style="color: inherit;">Help mindset [?]</summary>
   <div class="protocol-content" style="padding: 0 0 10px 15px; color: inherit;">
-    <p style="color: inherit;"><strong>To be or not to be?</strong> — Time and again, everyone plunges into these extremes. Can it be otherwise? The point is also that these extremes have no clear boundaries: between them stretches space with myriad phenomenal conventions and degrees of freedom. And determining one's position is often simply necessary.</p>
+    <p style="color: inherit;">To be or not to be? — Time and again, everyone plunges into these extremes. Can it be otherwise? The point is also that these extremes have no clear boundaries: between them stretches space with myriad phenomenal conventions and degrees of freedom. And determining one's position is often simply necessary.</p>
+    <p style="color: inherit;">Interactive self-calibration interface designed to transform systemic internal noise into clear, actionable focus.</p>
+    <p><strong style="color: inherit;">Key Features & Mechanics:</strong></p>
 
-    <p style="color: inherit;">Interactive self-calibration interface designed to transform systemic internal noise into clear, actionable focus. The protocol provides real-time visual tracking of your physiological, emotional, and cognitive states.</p>
-<p><strong style="color: inherit;">Key Features & Mechanics:</strong></p>
-
-    <p style="color: inherit;">14-Axis State Tracking: Comprehensive evaluation of your current state across physiological markers, cognitive bandwidth, and sensory clarity.
-  </p>
-    <p style="color: inherit;">State Index (R<sub>q</sub>)</strong> — A real-time calculated equilibrium score that determines your mental state—ranging from Systemic Noise (high noise/unreal) to Absolute Clarity (action ready).
-  </p>
-    <p strong style="color: inherit;">Priority Vector Matrix</strong> — Dynamic directional indicators (▲/▼) that immediately surface your current physiological requirements across 4 core vectors: Recovery, Hydration, Energy, and Activation.
-  </p>
-    <p strong style="color: inherit;">Logic Framework</strong> — Subjective assessment integrates a 5-stage conceptual cycle to track how hidden risks and external incentives shift your internal perception.
-  </p>
-    <p strong style="color: inherit;">Local Archive</strong> — Keeps a persistent historical log of your state cycles via local storage, complete with quick reset capabilities and interface invert metamorphosis by tap on header.
-  </p>
+    <p style="color: inherit;"><strong>15-Axis State Tracking</strong> — Comprehensive evaluation of your current state across physiological markers, cognitive bandwidth, and sensory clarity.
+    </p>
+    <p style="color: inherit;"><strong>State Index (R<sub>q</sub>)</strong> — A real-time calculated equilibrium score that determines your mental state—ranging from Systemic Noise (high noise/unreal) to Absolute Clarity (action ready).
+    </p>
+    <p strong style="color: inherit;"><strong>Priority Vector Matrix</strong> — Dynamic directional indicators (▲/▼) that immediately surface your current physiological requirements across 4 core vectors: Recovery, Hydration, Energy, and Activation.
+    </p>
+    <p strong style="color: inherit;"><strong>Logic Framework</strong> — Subjective assessment integrates a 5-stage conceptual cycle to track how hidden risks and external incentives shift your internal perception.
+    </p>
+    <p strong style="color: inherit;"><strong>Local Archive</strong> — Keeps a persistent historical log of your state cycles via local storage, complete with quick reset capabilities and interface invert metamorphosis by tap on header.
+    </p>
     </div>
 </details>
 
@@ -173,6 +154,7 @@ user-select: none;
   <div class="select-group"><label for="vision" style="color: var(--vision-color);">Vision</label><select id="vision" onchange="log('vision')"><option selected disabled>—</option><option value="1">Blurred</option><option value="2">Dim</option><option value="3">Normal</option><option value="4">Clear</option><option value="5">Vivid</option></select></div>
   <div class="select-group"><label for="hearing" style="color: var(--hearing-color);">Hearing</label><select id="hearing" onchange="log('hearing')"><option selected disabled>—</option><option value="1">Muffled</option><option value="2">Weak</option><option value="3">Normal</option><option value="4">Detailed</option><option value="5">Acute</option></select></div>
   <div class="select-group"><label for="smell" style="color: var(--smell-color);">Smell</label><select id="smell" onchange="log('smell')"><option selected disabled>—</option><option value="1">None</option><option value="2">Faint</option><option value="3">Normal</option><option value="4">Sharp</option><option value="5">Sensitive</option></select></div>
+  <div class="select-group"><label for="problem" style="color: var(--problem-color);">Problem</label><select id="problem" onchange="log('problem')"><option selected disabled>—</option><option value="1">Attack</option><option value="2">Ignore</option><option value="3">Avoid</option><option value="4">Run Away</option><option value="5">Surrender</option></select></div>
 </div>
 
 <div id="risk-container">
@@ -181,39 +163,34 @@ user-select: none;
   <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 5px;"><span id="unreal-indicator"><strong>◀ Weak</strong></span><span id="real-indicator"><strong>Power ▶</strong></span></div>
   <p id="risk-advice" style="font-size: 10px; margin-top: 8px;">Calibrate metrics...</p>
 </div>
-
+<div style="font-size: 12px; margin: 30px 0 -5px 0;">
+  Disclaimer: These insights are for reference only. Always trust your inner guidance and intuition.
+</div>
 <div id="priority-container">
-  <div style="margin-bottom:12px;font-size:12px;">
+  <div style="margin-bottom:12px; font-size:12px;">
     <strong>Priority Vector</strong>
   </div>
-
   <div class="priority-row">
     <span>Recovery (Rest)</span>
     <div class="indicator-wrapper"><span id="pv-recovery"></span></div>
   </div>
-
   <div class="priority-row">
     <span>Hydration (Water)</span>
     <div class="indicator-wrapper"><span id="pv-hydration"></span></div>
   </div>
-
   <div class="priority-row">
     <span>Energy (Proteins)</span>
     <div class="indicator-wrapper"><span id="pv-energy"></span></div>
   </div>
-
   <div class="priority-row">
     <span>Activation (Vitamins)</span>
     <div class="indicator-wrapper"><span id="pv-activation"></span></div>
   </div>
 </div>
 
+
 <div class="chart-container"><canvas id="chart"></canvas></div>
 
-      <a href="index.html" id="header-link" style="margin: 10px 0;">
-        <img src="fleurdelis.png" style="height: 42px; width: auto;">
-      </a>
-      
 <div class="buttons">
   <button class="ui-btn" onclick="toggleData()">Archive</button>
   <button class="ui-btn" onclick="if(confirm('Reset?')) { localStorage.clear(); location.reload(); }">Reset</button>
@@ -221,26 +198,34 @@ user-select: none;
 
 <pre id="savedDataView"></pre>
 
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin: 20px 0 120px 0;">
+  <a href="index.html" id="header-link" style="margin-bottom: 15px; display: inline-block;">
+    <img src="fleurdelis.png" id="butterfly-logo" style="height: 48px; width: auto;">
+  </a>
+  <h2 style="font-family: 'Cinzel', serif; font-weight: bold; margin: 0 0 0 0;">
+    <a href="index.html" class="cinzel-text" style="color: inherit; letter-spacing: 1.5px; text-decoration: none; transition: color 0.4s;">Trust Fibonacci</a>
+  </h2>
+  <p class="cinzel-text" style="letter-spacing: 3px; margin: 0; font-size: 12px; font-family: 'Cinzel', serif; transition: color 0.4s;">Virtual tools for endlessly improving life</p>
+</div>
 
 <script>
-
-  const rows = ['time', 'breath', 'pulse', 'emotion', 'dopamine', 'load', 'tension', 'energy', 'focus', 'creativity', 'vision', 'hearing', 'smell', 'boomerang'];
+  const rows = ['time', 'breath', 'pulse', 'emotion', 'dopamine', 'load', 'tension', 'energy', 'focus', 'creativity', 'vision', 'hearing', 'smell', 'boomerang', 'problem'];
   const colors = {
     time: '#8493d6', breath: '#ffffff', pulse: '#ff1493', emotion: '#ff5252', dopamine: '#ff00ff',
     load: '#adff2f', tension: '#cccccc', energy: '#ff9800', focus: '#ffeb3b', creativity: '#00ff00',
-    vision: '#0000ff', hearing: '#9c27b0', smell: '#00bcd4', boomerang: '#ff4500'
+    vision: '#0000ff', hearing: '#9c27b0', smell: '#00bcd4', boomerang: '#ff4500', problem: '#ff3333'
   };
   const categoryNames = {
     time: 'Time', breath: 'Breath', pulse: 'Pulse', emotion: 'Emotions', dopamine: 'Anticipation',
     load: 'Load', tension: 'Tension', energy: 'Energy', focus: 'Focus', creativity: 'Creativity',
-    vision: 'Vision', hearing: 'Hearing', smell: 'Smell', boomerang: 'Boomerang'
+    vision: 'Vision', hearing: 'Hearing', smell: 'Smell', boomerang: 'Boomerang', problem: 'Problem'
   };
   
 function getCurrentValues() {
   const state = {};
   rows.forEach(key => {
     const ds = chart.data.datasets[rows.indexOf(key)];
-    let lastValidValue = 3; // Возвращаем 3 как точку покоя
+    let lastValidValue = 3; 
     for (let i = ds.data.length - 1; i >= 0; i--) {
       if (ds.data[i] != null) {
         lastValidValue = ds.data[i];
@@ -252,14 +237,8 @@ function getCurrentValues() {
   return state;
 }
 
-
-
 function renderVector(score){
-  // Временно выводим число в консоль, чтобы увидеть, что именно считает программа
-  console.log("Vector Score:", score);
-  
   score = Math.max(-5, Math.min(5, Math.round(score)));
-
   if (score > 0) {
       return "█".repeat(score) + "░".repeat(5 - score) + " ▲ ";
   }
@@ -268,8 +247,6 @@ function renderVector(score){
   }
   return "█████ ●●";
 }
-
-
 
 const RecoveryWeights = {
     energy: 1.4,
@@ -285,9 +262,7 @@ function updatePriorityVector() {
     const hasData = chart.data.labels.length > 0;
     if (!hasData) return;
 
-    // Единая логика: (3 - x). 
-    // Если x=1 (дефицит), результат = 2 (положительный) -> Стрелка ▲ (Добавить)
-    // Если x=5 (избыток), результат = -2 (отрицательный) -> Стрелка ▼ (Убавить)
+    const problemFactor = (s.problem - 3) * 0.5;
 
     const recovery = (
         (3 - s.energy) * RecoveryWeights.energy +
@@ -295,12 +270,13 @@ function updatePriorityVector() {
         (3 - s.creativity) * RecoveryWeights.creativity +
         (3 - s.load) * RecoveryWeights.load +
         (3 - s.tension) * RecoveryWeights.tension +
-        (3 - s.pulse) * RecoveryWeights.pulse
+        (3 - s.pulse) * RecoveryWeights.pulse +
+        problemFactor
     ) / 2;
 
     const hydration = (3 - s.energy) + (3 - s.vision) + (3 - s.focus) + (3 - s.pulse);
-    const energy = (3 - s.energy) + (3 - s.creativity) + (3 - s.focus) + (3 - s.pulse);
-    const activation = (3 - s.focus) + (3 - s.energy) + (3 - s.pulse) + (3 - s.emotion);
+    const energy = (3 - s.energy) + (3 - s.creativity) + (3 - s.focus) + (3 - s.pulse) + problemFactor;
+    const activation = (3 - s.focus) + (3 - s.energy) + (3 - s.pulse) + (3 - s.emotion) - problemFactor;
 
     document.getElementById("pv-recovery").textContent = renderVector(recovery);
     document.getElementById("pv-hydration").textContent = renderVector(hydration);
@@ -308,41 +284,35 @@ function updatePriorityVector() {
     document.getElementById("pv-activation").textContent = renderVector(activation);
 }
 
-
-
-
   const STORAGE_KEY = "vital_spark_bio_v1";
   const ctx = document.getElementById('chart').getContext('2d');
   const chart = new Chart(ctx, {
     type: 'line',
-data: { 
-    labels: [], 
-    datasets: rows.map(key => {
-        // Базовые настройки
-        let settings = { 
-            label: categoryNames[key], 
-            data: [], 
-            borderColor: colors[key], 
-            borderWidth: 2, 
-            pointRadius: 2, 
-            fill: false, 
-            tension: 0.3 
-        };
-
-        // ЕСЛИ ЭТО BOOMERANG — ДОБАВЛЯЕМ ПУНКТИР
-        if (key === 'boomerang') {
-            settings.borderDash = [5, 5]; // [длина штриха, расстояние между ними]
-        }
-
-        return settings;
-    }) 
-},    
+    data: { 
+        labels: [], 
+        datasets: rows.map(key => {
+            let settings = { 
+                label: categoryNames[key], 
+                data: [], 
+                borderColor: colors[key], 
+                borderWidth: 2, 
+                pointRadius: 2, 
+                fill: false, 
+                tension: 0.3 
+            };
+            if (key === 'boomerang') {
+                settings.borderDash = [5, 5];
+            }
+            if (key === 'problem') {
+                settings.borderDash = [2, 2];
+            }
+            return settings;
+        }) 
+    },     
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { min: 0.8, max: 5.2, display: false }, x: { display: false } } }
   });
 
   let inversionActive = false;
-  let transitionInterval = null;
-  let inversionLevel = 0; 
 
 function updateButterflyShadow() {
     const now = new Date();
@@ -350,11 +320,7 @@ function updateButterflyShadow() {
     const m = now.getMinutes();
     const s = now.getSeconds();
     
-    // Вычисляем общее количество секунд в 12-часовом цикле
     const totalSeconds = h * 3600 + m * 60 + s;
-    
-    // Полный круг 2*PI, делим на 43200 секунд (12 часов)
-    // - Math.PI / 2 обеспечивает старт с верхней точки (12:00)
     const angle = (totalSeconds / 43200) * 2 * Math.PI - (Math.PI / 2);
     
     const dist = 7;  
@@ -368,12 +334,6 @@ function updateButterflyShadow() {
     }
 }
 
-
-
-
-
-
-
   function log(key) {
   const val = +document.getElementById(key).value;
   let col = chart.data.labels.length;
@@ -385,7 +345,6 @@ function updateButterflyShadow() {
   updateRiskIndicator();
   updatePriorityVector();
 }
-
 
   function calculateRiskQuine() {
     const data = chart.data.datasets; 
@@ -429,10 +388,6 @@ function updateRiskIndicator() {
   }
 }
 
-
-
-
-
   function saveToStorage() {
   const score = calculateRiskQuine();
   let verdict = (score < 0.45) ? "SYSTEMIC NOISE - High." : (score < 0.75) ? "SURFACE CALM." : "CLARITY - Absolute.";
@@ -470,27 +425,8 @@ function toggleData() {
   }
 }
 
-
-function makeWordsClickable() {
-    const container = document.querySelector('.protocol-content');
-    const walk = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
-    let node;
-    const nodesToReplace = [];
-    while(node = walk.nextNode()) if (node.textContent.trim().length > 0) nodesToReplace.push(node);
-    nodesToReplace.forEach(textNode => {
-      const span = document.createElement('span');
-      span.innerHTML = textNode.textContent.split(/(\s+)/).map(part => {
-        if (part.trim().length === 0) return part;
-        return `<span class="clickable-word" style="transition: color 0.3s; cursor: pointer;">${part}</span>`;
-      }).join('');
-      textNode.parentNode.replaceChild(span, textNode);
-    });
-  }
-
 function toggleMetamorphosis() {
   inversionActive = !inversionActive;
-  
-  // Устанавливаем цвета в зависимости от состояния
   const bg = inversionActive ? '#ffffff' : '#000000';
   const txt = inversionActive ? '#000000' : '#ffffff';
   const border = inversionActive ? '#555555' : '#aaaaaa';
@@ -498,53 +434,37 @@ function toggleMetamorphosis() {
   document.documentElement.style.setProperty('--bg-color', bg);
   document.body.style.color = txt;
   
-  // Принудительное обновление стилей для элементов, которые "не слушаются"
   document.querySelectorAll('select, .ui-btn, .protocol-content').forEach(el => {
     el.style.backgroundColor = bg;
     el.style.color = txt;
     el.style.borderColor = border;
   });
 
-  // Инверсия для заголовков (сохраняет их исходные CSS-цвета, но инвертирует яркость)
-  document.querySelectorAll('label').forEach(el => {
-    el.style.filter = inversionActive ? 'invert(1)' : 'none';
+  document.querySelectorAll('.cinzel-text').forEach(el => {
+    el.style.color = inversionActive ? '#000000' : '#ffffff';
   });
 
-  // Инверсия для savedDataView
   const sdv = document.getElementById('savedDataView');
   if (sdv) {
     sdv.style.filter = inversionActive ? 'invert(1)' : 'none';
     sdv.style.borderColor = border;
   }
 
-  // ВОЗВРАЩАЕМ ИНВЕРСИЮ ДЛЯ ЛИНИЙ ГРАФИКА
   const canvas = document.getElementById('chart');
   if (canvas) {
     canvas.style.filter = inversionActive ? 'invert(1)' : 'none';
   }
   
-  // Убираем фильтр с body, чтобы избежать проблем с рендерингом самой страницы
   document.body.style.filter = 'none';
 }
 
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('clickable-word')) {
-    e.target.style.color = (e.target.style.color === 'var(--creativity-color)') ? 'inherit' : 'var(--creativity-color)';
-  }
-}, true);
-
 window.addEventListener("DOMContentLoaded", () => {
   loadFromStorage();
-  makeWordsClickable();
   setTimeout(updateRiskIndicator, 100);
   setTimeout(updatePriorityVector, 100);
   updateButterflyShadow();
   setInterval(updateButterflyShadow, 1000);
 });
-
-
-
- 
 </script>
 </body>
 </html>
