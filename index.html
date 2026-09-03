@@ -751,26 +751,22 @@ $toggleBtn.on('click', function() {
         localStorage.setItem('blockState', 'collapsed');
     }
 });
+    
 document.getElementById('force-update-btn').addEventListener('click', async () => {
-    if (confirm("Update to the latest version?")) {
-        try {
-            if ('serviceWorker' in navigator) {
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                for (let reg of registrations) {
-                    await reg.unregister();
-                }
-            }
-            if ('caches' in window) {
-                const cacheNames = await caches.keys();
-                for (let name of cacheNames) {
-                    await caches.delete(name);
-                }
-            }
-        } catch (e) {
-            console.error('Update clearing error:', e);
-        } finally {
-            window.location.reload(true);
+    try {
+        if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
         }
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.map(reg => reg.unregister()));
+        }
+    } catch (e) {
+        console.error('Update clearing error:', e);
+    } finally {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.location.href = cleanUrl + '?v=' + Date.now();
     }
 });
 
