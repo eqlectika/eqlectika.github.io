@@ -366,8 +366,11 @@ display: none;
 
 </div>
 
-<div style="margin: 0 0 70px 0; text-align: center;">
-    <button id="toggle-btn" style="display: inline-block; background: none; border: none; color: #fff; font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0;">
+<div style="margin: 0 0 70px 0; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px;">
+    <button id="force-update-btn" style="background: none; border: none; color: #448aff; font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0;">
+        Update
+    </button>
+    <button id="toggle-btn" style="background: none; border: none; color: #fff; font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0;">
         <span id="toggle-text">About</span>
     </button>
 </div>
@@ -759,7 +762,28 @@ $toggleBtn.on('click', function() {
         localStorage.setItem('blockState', 'collapsed');
     }
 });
-
+document.getElementById('force-update-btn').addEventListener('click', async () => {
+    if (confirm("Update to the latest version?")) {
+        try {
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let reg of registrations) {
+                    await reg.unregister();
+                }
+            }
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                for (let name of cacheNames) {
+                    await caches.delete(name);
+                }
+            }
+        } catch (e) {
+            console.error('Update clearing error:', e);
+        } finally {
+            window.location.reload(true);
+        }
+    }
+});
 </script>
 <script>
 if (window.self !== window.top) {
