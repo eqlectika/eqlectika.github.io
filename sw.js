@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-match'; 
+const CACHE_NAME = 'version-invertion'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
