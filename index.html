@@ -356,20 +356,18 @@ display: none;
 <p>
         ⚠️
     </p>
-<p style="margin-top: -12px;">
-        Clearing browser cache will reset to default</p>
+<p style="margin-top: -12px;">Clearing browser cache will reset to default</p>
 <p>To protect your data, add page to your Home Screen via the browser menu and use that shortcut to launch</p>
 <p>Updates happen automatically every week</p>
 <p>Perhaps you have an idea on how to apply these developments to your website or application</p>
 <p>Feel free to reach out</p>
 
-
-</div>
-
-<div style="margin: 0 0 70px 0; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px;">
     <button id="force-update-btn" style="background: none; border: none; color: #9ACD32; font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0;">
         Update
     </button>
+</div>
+
+<div style="margin: 0 0 50px 0; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px;">
     <button id="toggle-btn" style="background: none; border: none; color: #fff; font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: bold; cursor: pointer; padding: 0;">
         <span id="toggle-text">About</span>
     </button>
@@ -741,15 +739,11 @@ $toggleBtn.on('click', function() {
         localStorage.setItem('blockState', 'expanded');
 
         setTimeout(() => {
-
-            const toggleBtnRect = $toggleBtn[0].getBoundingClientRect();
-            const absoluteBtnBottom = window.pageYOffset + toggleBtnRect.bottom;
-            
-
-            const targetScroll = absoluteBtnBottom - window.innerHeight + 70;
+            const contentRect = $content[0].getBoundingClientRect();
+            const absoluteContentTop = window.pageYOffset + contentRect.top;
 
             window.scrollTo({
-                top: Math.max(0, targetScroll),
+                top: Math.max(0, absoluteContentTop - 20), 
                 behavior: 'smooth'
             });
         }, 300);
