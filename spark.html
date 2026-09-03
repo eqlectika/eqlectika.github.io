@@ -191,9 +191,11 @@ user-select: none;
 
 <div class="chart-container"><canvas id="chart"></canvas></div>
 
-<div class="buttons">
+<div class="buttons" style="display: flex; gap: 10px;">
   <button class="ui-btn" onclick="toggleData()">Archive</button>
   <button class="ui-btn" onclick="if(confirm('Reset?')) { localStorage.clear(); location.reload(); }">Reset</button>
+  <button class="ui-btn" onclick="forceAppUpdate()" style="color: var(--creativity-color); border-color: var(--creativity-color);">Update</button>
+
 </div>
 
 <pre id="savedDataView"></pre>
@@ -412,6 +414,29 @@ function loadFromStorage() {
     last.data.forEach((d, i) => { if(chart.data.datasets[i]) chart.data.datasets[i].data = d; }); 
     chart.update(); 
   } catch(e) { console.error("Data restoration failed"); } 
+}
+
+async function forceAppUpdate() {
+    if (confirm("Update to the latest version?")) {
+        try {
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let reg of registrations) {
+                    await reg.unregister();
+                }
+            }
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                for (let name of cacheNames) {
+                    await caches.delete(name);
+                }
+            }
+        } catch (e) {
+            console.error('Update clearing error:', e);
+        } finally {
+            window.location.reload(true);
+        }
+    }
 }
 
 function toggleData() {
