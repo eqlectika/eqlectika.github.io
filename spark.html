@@ -108,6 +108,11 @@ user-select: none;
     align-items: left;
     padding: 6px;
 }
+.progress-fill {
+    height: 6px;
+    background: #ffffff;
+    transition: width 0.4s ease;
+}
   </style>
 </head>
 <body>
@@ -209,7 +214,12 @@ user-select: none;
   </h2>
   <p class="cinzel-text" style="letter-spacing: 3px; margin: 0; font-size: 12px; font-family: 'Cinzel', serif; transition: color 0.4s;">Virtual tools for endlessly improving life</p>
 </div>
-
+<div style="margin: 0 0 80px 0; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+  <p style="margin: 15px 0 3px 0; color: #fff; font-size: 12px;">Happiness loading… Please wait.</p>
+  <div style="width: 160px; background: #444; overflow: hidden;">
+    <div id="happiness-bar" class="progress-fill" style="width: 34%;"></div>
+  </div>
+</div>
 <script>
   const rows = ['time', 'breath', 'pulse', 'emotion', 'dopamine', 'load', 'tension', 'energy', 'focus', 'creativity', 'vision', 'hearing', 'smell', 'boomerang', 'problem'];
   const colors = {
@@ -439,6 +449,39 @@ async function forceAppUpdate() {
     }
 }
 
+  const bar = document.getElementById('happiness-bar');
+
+if (bar) {
+  let currentProgress = 34; 
+  const maxTarget = 88;     
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        scheduleNextStep();
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 }); 
+
+  observer.observe(bar);
+
+  function scheduleNextStep() {
+    if (currentProgress < maxTarget) {
+      const remaining = maxTarget - currentProgress;
+      
+      const stepSize = Math.floor(Math.random() * Math.min(remaining, 7)) + 1;
+      currentProgress = Math.min(currentProgress + stepSize, maxTarget);
+      
+      bar.style.width = currentProgress + '%';
+
+      const randomDelay = Math.floor(Math.random() * (2200 - 150 + 1)) + 150;
+      
+      setTimeout(scheduleNextStep, randomDelay);
+    }
+  }
+}
+  
 function toggleData() {
   const pre = document.getElementById("savedDataView");
   if (pre.style.display === "none" || pre.style.display === "") {
