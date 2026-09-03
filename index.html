@@ -753,57 +753,6 @@ $toggleBtn.on('click', function() {
     }
 });
 
-let refreshTriggered = false;
-let wasAtTop = true;
-let refreshTimeout = null;
-
-function performRefresh() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for(let registration of registrations) {
-                registration.unregister();
-            }
-        }).then(function() {
-            if (window.caches) {
-                caches.keys().then(function(names) {
-                    for (let name of names) {
-                        caches.delete(name);
-                    }
-                });
-            }
-            window.location.reload(true);
-        });
-    } else {
-        window.location.reload(true);
-    }
-}
-
-$(window).on('scroll', function() {
-    const scrollTop = $(window).scrollTop();
-    
-    if (scrollTop >= 40 && !refreshTriggered && wasAtTop) {
-        refreshTriggered = true;
-        wasAtTop = false;
-        
-        clearTimeout(refreshTimeout);
-        refreshTimeout = setTimeout(performRefresh, 100);
-    }
-    
-    if (scrollTop > 0) {
-        wasAtTop = false;
-    }
-    
-    if (scrollTop === 0) {
-        wasAtTop = true;
-        refreshTriggered = false;
-    }
-});
-
-function performRefreshAlt() {
-    const url = new URL(window.location.href);
-    url.searchParams.set('refresh', Date.now());
-    window.location.href = url.toString();
-}
 </script>
 <script>
 if (window.self !== window.top) {
