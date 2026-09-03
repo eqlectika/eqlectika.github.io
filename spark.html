@@ -14,6 +14,7 @@
       --creativity-color: #00ff00; --vision-color: #0000ff; --hearing-color: #9c27b0; --smell-color: #00bcd4;
       --dopamine-color: #ff00ff; --boomerang-color: #ff4500; --problem-color: #ff3333; --load-color: #adff2f;
       --tension-color: #cccccc; --light-gray: #aaaaaa;
+      --text-color: #ffffff; --bar-bg: #444444; /* <-- ВОТ ЭТО ДОБАВИТЬ */
     }
     
 .invert-element {
@@ -215,11 +216,12 @@ user-select: none;
   <p class="cinzel-text" style="letter-spacing: 3px; margin: 0; font-size: 12px; font-family: 'Cinzel', serif; transition: color 0.4s;">Virtual tools for endlessly improving life</p>
 </div>
 <div style="margin: 0 0 80px 0; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-  <p style="margin: 15px 0 3px 0; color: #fff; font-size: 12px;">Happiness loading… Please wait.</p>
-  <div style="width: 160px; background: #444; overflow: hidden;">
-    <div id="happiness-bar" class="progress-fill" style="width: 34%;"></div>
+  <p id="happiness-text" style="margin: 15px 0 3px 0; color: var(--text-color); font-size: 12px;">Happiness loading… Please wait.</p>
+  <div id="happiness-track" style="width: 160px; background: var(--bar-bg); overflow: hidden;">
+    <div id="happiness-bar" class="progress-fill" style="width: 34%; background: var(--text-color);"></div>
   </div>
 </div>
+
 <script>
   const rows = ['time', 'breath', 'pulse', 'emotion', 'dopamine', 'load', 'tension', 'energy', 'focus', 'creativity', 'vision', 'hearing', 'smell', 'boomerang', 'problem'];
   const colors = {
@@ -500,6 +502,9 @@ function toggleMetamorphosis() {
   const border = inversionActive ? '#555555' : '#aaaaaa';
 
   document.documentElement.style.setProperty('--bg-color', bg);
+  document.documentElement.style.setProperty('--text-color', txt);
+  document.documentElement.style.setProperty('--bar-bg', inversionActive ? '#cccccc' : '#444444');
+  
   document.body.style.color = txt;
   
   document.querySelectorAll('select, .ui-btn, .protocol-content').forEach(el => {
@@ -525,6 +530,7 @@ function toggleMetamorphosis() {
   
   document.body.style.filter = 'none';
 }
+
 
 window.addEventListener("DOMContentLoaded", () => {
   loadFromStorage();
