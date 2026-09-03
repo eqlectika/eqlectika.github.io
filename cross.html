@@ -16,7 +16,7 @@
   scrollbar-color: transparent transparent; /* Firefox */
 }
 *::-webkit-scrollbar {
-  width: 4px;                    /* Safari/Chrome */
+  width: 4px;                   /* Safari/Chrome */
   height: 4px;
   background: transparent;
 }
@@ -95,7 +95,6 @@ white-space: pre-wrap;
   opacity: 0.7;
 }
 
-
 .handle {
 position: absolute;
 top: var(--y, 50%);
@@ -128,6 +127,24 @@ pointer-events: none;
 transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+/* КРУПНЫЕ И ЭСТЕТИЧНЫЕ ЭЛЕМЕНТЫ МЕНЮ НАСТРОЕК */
+#settings-modal select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: #333 !important;
+  color: #fff !important;
+  border: 1px solid #555 !important;
+  padding: 12px 16px !important;
+  font-size: 16px !important;
+  border-radius: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  cursor: pointer;
+}
+#settings-modal select::-ms-expand {
+  display: none;
+}
 </style>
 </head>
 <body>
@@ -137,6 +154,57 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 <div class="editor-wrapper"><div class="editor" id="t2" contenteditable="true" data-placeholder="1. Type or paste text and image here. &#10;2. Move Handle (crosshair) to resize Fields. &#10;3. Tap Handle to change design. &#10;4. Very long tap Field to format and delete image. &#10;5. Long tap Handle to level up."></div><img class="img-preview"></div>
 <div class="editor-wrapper"><div class="editor" id="t3" contenteditable="true" data-placeholder="1. Type or paste text and image here. &#10;2. Move Handle (crosshair) to resize Fields. &#10;3. Tap Handle to change design. &#10;4. Very long tap Field to format and delete image. &#10;5. Long tap Handle to level up."></div><img class="img-preview"></div>
 <a href="#" class="handle" id="handle" draggable="false"><img src="handle.png" alt="Logo" draggable="false"></a>
+</div>
+
+<!-- Мобильное меню настроек поля (увеличенные размеры) -->
+<div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:#222; color:#fff; padding:24px; border-radius:16px; width:85%; max-width:360px; font-family:sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+    <h3 style="margin-top:0; margin-bottom:20px; font-size:20px; text-align:center; font-weight:bold;">Field Settings</h3>
+    
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font:</label>
+    <select id="setting-font" style="margin-bottom:16px;">
+      <option value='"Luckiest Guy", Arial, sans-serif'>Luckiest Guy</option>
+      <option value='Copperplate, "Copperplate Gothic Bold", sans-serif'>Copperplate</option>
+      <option value='"American Typewriter", Courier, monospace'>Typewriter</option>
+      <option value='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'>System UI</option>
+    </select>
+
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font Size:</label>
+    <select id="setting-size" style="margin-bottom:16px;">
+      <option value="14px">Small (14px)</option>
+      <option value="18px">Normal (18px)</option>
+      <option value="24px">Large (24px)</option>
+      <option value="32px">Extra Large (32px)</option>
+    </select>
+
+    <div style="display:flex; gap:12px; margin-bottom:16px;">
+      <div style="flex:1;">
+        <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Background:</label>
+<input type="color" id="setting-bg" style="width:100%; height:50px; border:none; border-radius:6px; cursor:pointer; background:none;">      </div>
+      <div style="flex:1;">
+        <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Text Color:</label>
+<input type="color" id="setting-color" style="width:100%; height:50px; border:none; border-radius:6px; cursor:pointer; background:none;">      </div>
+    </div>
+
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Image Position:</label>
+    <select id="setting-pos" style="margin-bottom:20px;">
+      <option value="bottom right">Bottom Right</option>
+      <option value="bottom left">Bottom Left</option>
+      <option value="top right">Top Right</option>
+      <option value="top left">Top Left</option>
+    </select>
+
+    <div id="image-action-container" style="margin-bottom:20px; display:none;">
+      <label style="display:flex; align-items:center; font-size:16px; cursor:pointer; color:#ff758f; padding:4px 0;">
+        <input type="checkbox" id="setting-del-img" style="width:20px; height:20px; margin-right:10px; accent-color:#ff758f; cursor:pointer;"> Delete image
+      </label>
+    </div>
+
+    <div style="display:flex; gap:12px;">
+      <button id="setting-cancel" style="flex:1; padding:12px; border:none; border-radius:8px; background:#444; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Cancel</button>
+      <button id="setting-save" style="flex:1; padding:12px; border:none; border-radius:8px; background:#ff8700; color:#000; font-size:16px; font-weight:bold; cursor:pointer;">Save</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -180,28 +248,28 @@ const magicPalettes = [
 
 const dbRequest = indexedDB.open("QuadEditorDB", 3);
 dbRequest.onupgradeneeded = e => {
-db = e.target.result;
-if(!db.objectStoreNames.contains("texts")) db.createObjectStore("texts", { keyPath: "id" });
+  db = e.target.result;
+  if(!db.objectStoreNames.contains("texts")) db.createObjectStore("texts", { keyPath: "id" });
 };
 dbRequest.onsuccess = e => { db = e.target.result; loadData(); };
 
 async function saveToDB(id, content, img = null, clearImg = false) {
-return new Promise((resolve) => {
-const tx = db.transaction("texts", "readwrite");
-const store = tx.objectStore("texts");
-const req = store.get(id); 
-req.onsuccess = () => {
-const data = req.result || { id };
-data.content = content;
-if (clearImg) {
-delete data.img;
-} else if (img) { 
-data.img = img; 
-}
-store.put(data);
-tx.oncomplete = () => resolve();
-};
-});
+  return new Promise((resolve) => {
+    const tx = db.transaction("texts", "readwrite");
+    const store = tx.objectStore("texts");
+    const req = store.get(id); 
+    req.onsuccess = () => {
+      const data = req.result || { id };
+      data.content = content;
+      if (clearImg) {
+        delete data.img;
+      } else if (img) { 
+        data.img = img; 
+      }
+      store.put(data);
+      tx.oncomplete = () => resolve();
+    };
+  });
 }
 
 function updateHandleImage(index) {
@@ -217,21 +285,21 @@ function loadData() {
   container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
   updateHandleImage(currentDesign);
 
-const imgPositions = [
-  { top: 'auto', bottom: '10px', left: 'auto', right: '10px' }, // t0
-  { top: 'auto', bottom: '10px', left: '10px', right: 'auto' }, // t1
-  { top: '10px', bottom: 'auto', left: 'auto', right: '10px' }, // t2
-  { top: '10px', bottom: 'auto', left: '10px', right: 'auto' }  // t3
-];
+  const imgPositions = [
+    { top: 'auto', bottom: '10px', left: 'auto', right: '10px' },
+    { top: 'auto', bottom: '10px', left: '10px', right: 'auto' },
+    { top: '10px', bottom: 'auto', left: 'auto', right: '10px' },
+    { top: '10px', bottom: 'auto', left: '10px', right: 'auto' }
+  ];
 
-textareas.forEach((ta, i) => {
-  const pos = imgPositions[i];
-  const img = images[i];
-  
-  img.style.top = pos.top;
-  img.style.bottom = pos.bottom;
-  img.style.left = pos.left;
-  img.style.right = pos.right;
+  textareas.forEach((ta, i) => {
+    const pos = imgPositions[i];
+    const img = images[i];
+    
+    img.style.top = pos.top;
+    img.style.bottom = pos.bottom;
+    img.style.left = pos.left;
+    img.style.right = pos.right;
 
     if (localStorage.getItem(`q_b_${i}`)) {
       ta.style.setProperty('--bg', localStorage.getItem(`q_b_${i}`));
@@ -267,8 +335,7 @@ handle.addEventListener('pointerdown', (e) => {
   handleLongPressTimer = setTimeout(() => {
     if (isDragging) {
       isDragging = false;
-window.location.href = 'index.html'
-
+      window.location.href = 'index.html';
     }
   }, 1000);
 });
@@ -298,158 +365,173 @@ window.addEventListener('pointermove', (e) => {
 });
 
 window.addEventListener('pointerup', (e) => {
-clearTimeout(handleLongPressTimer);
-if (!isDragging) return;
-const duration = Date.now() - dragStartTime;
-isDragging = false;
+  clearTimeout(handleLongPressTimer);
+  if (!isDragging) return;
+  const duration = Date.now() - dragStartTime;
+  isDragging = false;
 
-if (duration < 250) {
-  currentDesign = (currentDesign + 1) % designs.length;
-  localStorage.setItem('q_handle_design', currentDesign);
-  updateHandleImage(currentDesign);
+  if (duration < 250) {
+    currentDesign = (currentDesign + 1) % designs.length;
+    localStorage.setItem('q_handle_design', currentDesign);
+    updateHandleImage(currentDesign);
 
-  const randomHue = Math.floor(Math.random() * 360);
-  
-  if (currentDesign === 3) {
-    handle.style.filter = `drop-shadow(0 4px 4px rgba(0,0,0,0.5)) drop-shadow(0 4px 4px rgba(255,255,255,0.3))`;
-  } else {
-    const randomDegrees = Math.floor(Math.random() * 4) * 90;
-    handle.querySelector('img').style.transform = `rotate(${randomDegrees}deg)`;
-    handle.style.filter = `hue-rotate(${randomHue}deg) drop-shadow(0 6px 6px rgba(255,255,255,0.4))`;
-  }
-
-  const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
-  
-  textareas.forEach((ta, i) => {
-    const randomFont = fontsPool[Math.floor(Math.random() * fontsPool.length)];
-    ta.style.setProperty('--fn', randomFont);
-    localStorage.setItem(`q_f_${i}`, randomFont);
+    const randomHue = Math.floor(Math.random() * 360);
     
-    ta.style.setProperty('--bg', palette.bg[i]);
-    ta.style.setProperty('--color', palette.co[i]);
-    localStorage.setItem(`q_b_${i}`, palette.bg[i]);
-    localStorage.setItem(`q_c_${i}`, palette.co[i]);
-  });
+    if (currentDesign === 3) {
+      handle.style.filter = `drop-shadow(0 4px 4px rgba(0,0,0,0.5)) drop-shadow(0 4px 4px rgba(255,255,255,0.3))`;
+    } else {
+      const randomDegrees = Math.floor(Math.random() * 4) * 90;
+      handle.querySelector('img').style.transform = `rotate(${randomDegrees}deg)`;
+      handle.style.filter = `hue-rotate(${randomHue}deg) drop-shadow(0 6px 6px rgba(255,255,255,0.4))`;
+    }
 
-}
+    const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
+    
+    textareas.forEach((ta, i) => {
+      const randomFont = fontsPool[Math.floor(Math.random() * fontsPool.length)];
+      ta.style.setProperty('--fn', randomFont);
+      localStorage.setItem(`q_f_${i}`, randomFont);
+      
+      ta.style.setProperty('--bg', palette.bg[i]);
+      ta.style.setProperty('--color', palette.co[i]);
+      localStorage.setItem(`q_b_${i}`, palette.bg[i]);
+      localStorage.setItem(`q_c_${i}`, palette.co[i]);
+    });
+  }
 });
 
 handle.addEventListener('touchstart', (e) => {
-if (e.cancelable) e.preventDefault();
+  if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
 handle.addEventListener('click', (e) => e.preventDefault());
 handle.addEventListener('contextmenu', (e) => e.preventDefault());
 
 function handleImageFile(file, index, ta) {
-const reader = new FileReader();
-reader.onload = (ev) => {
-images[index].src = ev.target.result;
-images[index].style.display = 'block';
-saveToDB(index, ta.innerHTML, ev.target.result);
-
-};
-reader.readAsDataURL(file);
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    images[index].src = ev.target.result;
+    images[index].style.display = 'block';
+    saveToDB(index, ta.innerHTML, ev.target.result);
+  };
+  reader.readAsDataURL(file);
 }
+
+// Элементы модального окна
+const modal = document.getElementById('settings-modal');
+const selFont = document.getElementById('setting-font');
+const selSize = document.getElementById('setting-size');
+const inpBg = document.getElementById('setting-bg');
+const inpColor = document.getElementById('setting-color');
+const selPos = document.getElementById('setting-pos');
+const chkDelImg = document.getElementById('setting-del-img');
+const imgActionContainer = document.getElementById('image-action-container');
+const btnSave = document.getElementById('setting-save');
+const btnCancel = document.getElementById('setting-cancel');
+
+let activeIndex = null;
+let textareaLongPressTimer;
 
 textareas.forEach((ta, i) => {
-ta.addEventListener('input', () => {
-if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
-ta.innerHTML = '';
-}
-saveToDB(i, ta.innerHTML);
+  ta.addEventListener('input', () => {
+    if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
+      ta.innerHTML = '';
+    }
+    saveToDB(i, ta.innerHTML);
+  });
 
+  ta.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
+    if (item) {
+      handleImageFile(item.getAsFile(), i, ta);
+    } else {
+      const text = e.clipboardData.getData('text/plain');
+      document.execCommand('insertText', false, text);
+    }
+  });
 
-});
+  ta.addEventListener('dragover', (e) => { e.preventDefault(); });
 
-ta.addEventListener('paste', (e) => {
-e.preventDefault();
-const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
-if (item) {
-handleImageFile(item.getAsFile(), i, ta);
-} else {
-const text = e.clipboardData.getData('text/plain');
-document.execCommand('insertText', false, text);
+  ta.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = Array.from(e.dataTransfer.files).find(x => x.type.indexOf('image') !== -1);
+      if (file) { handleImageFile(file, i, ta); }
+    } else {
+      const item = Array.from(e.dataTransfer.items).find(x => x.type.indexOf('image') !== -1);
+      if (item) { handleImageFile(item.getAsFile(), i, ta); }
+    }
+  });
 
-}
-});
-
-ta.addEventListener('dragover', (e) => { e.preventDefault(); });
-
-ta.addEventListener('drop', (e) => {
-e.preventDefault();
-if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-const file = Array.from(e.dataTransfer.files).find(x => x.type.indexOf('image') !== -1);
-if (file) { handleImageFile(file, i, ta); }
-} else {
-const item = Array.from(e.dataTransfer.items).find(x => x.type.indexOf('image') !== -1);
-if (item) { handleImageFile(item.getAsFile(), i, ta); }
-}
-});
-
-  let textareaLongPressTimer;
-  
-  const startLongPress = (e) => {
-    const targetTa = e.currentTarget;
+  const startLongPress = () => {
+    activeIndex = i;
     textareaLongPressTimer = setTimeout(() => {
-      targetTa.blur();
+      ta.blur();
 
-      const curFont = localStorage.getItem(`q_f_${i}`) || "sans-serif";
-      const curBg = localStorage.getItem(`q_b_${i}`) || getComputedStyle(targetTa).getPropertyValue('--default-bg').trim();
-      const curColor = localStorage.getItem(`q_c_${i}`) || getComputedStyle(targetTa).getPropertyValue('--default-color').trim();
-      const curSize = localStorage.getItem(`q_s_${i}`) || "18px";
+      selFont.value = localStorage.getItem(`q_f_${i}`) || selFont.options[0].value;
+      selSize.value = localStorage.getItem(`q_s_${i}`) || '18px';
+      inpBg.value = localStorage.getItem(`q_b_${i}`) || getComputedStyle(ta).getPropertyValue('--default-bg').trim();
+      inpColor.value = localStorage.getItem(`q_c_${i}`) || getComputedStyle(ta).getPropertyValue('--default-color').trim();
+      selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
 
-      const newFont = prompt("Font:", curFont);
-      if (newFont !== null) {
-        targetTa.style.setProperty('--fn', newFont);
-        localStorage.setItem(`q_f_${i}`, newFont);
-      }
-
-      const s = prompt("Size:", curSize);
-      if (s) { targetTa.style.fontSize = s; localStorage.setItem(`q_s_${i}`, s); }
-      
-      const b = prompt("Background color:", curBg);
-      if (b) { targetTa.style.setProperty('--bg', b); localStorage.setItem(`q_b_${i}`, b); }
-      
-      const c = prompt("Font color:", curColor); 
-      if (c) { targetTa.style.setProperty('--color', c); localStorage.setItem(`q_c_${i}`, c); }
-      
       if (images[i].style.display === 'block') {
-        const currentPos = localStorage.getItem(`q_pos_${i}`) || "bottom right";
-        const pos = prompt("Image position:", currentPos);
-        if (pos) {
-          localStorage.setItem(`q_pos_${i}`, pos);
-          const [v, h] = pos.split(' ');
-          images[i].style.top = v === 'top' ? '10px' : 'auto';
-          images[i].style.bottom = v === 'bottom' ? '10px' : 'auto';
-          images[i].style.left = h === 'left' ? '10px' : 'auto';
-          images[i].style.right = h === 'right' ? '10px' : 'auto';
-        }
-        
-        const delImg = prompt("Delete image?", "no");
-        if (delImg && delImg.toLowerCase() === 'yes') {
-          images[i].removeAttribute('src');
-          images[i].style.display = 'none';
-          localStorage.removeItem(`q_pos_${i}`);
-          saveToDB(i, targetTa.innerHTML, null, true);
-
-        }
+        imgActionContainer.style.display = 'block';
+        chkDelImg.checked = false;
+      } else {
+        imgActionContainer.style.display = 'none';
       }
-    }, 5000);
+
+      modal.style.display = 'flex';
+    }, 1500);
   };
-
-
 
   const stopLongPress = () => clearTimeout(textareaLongPressTimer);
 
-  ta.addEventListener('touchstart', startLongPress);
-  ta.addEventListener('touchend', stopLongPress);
   ta.addEventListener('mousedown', startLongPress);
   ta.addEventListener('mouseup', stopLongPress);
   ta.addEventListener('mouseleave', stopLongPress);
+  ta.addEventListener('touchstart', startLongPress, {passive: true});
+  ta.addEventListener('touchend', stopLongPress);
 });
 
+btnSave.onclick = () => {
+  if (activeIndex === null) return;
+  const targetTa = textareas[activeIndex];
 
+  targetTa.style.setProperty('--fn', selFont.value);
+  localStorage.setItem(`q_f_${activeIndex}`, selFont.value);
+
+  targetTa.style.fontSize = selSize.value;
+  localStorage.setItem(`q_s_${activeIndex}`, selSize.value);
+
+  targetTa.style.setProperty('--bg', inpBg.value);
+  localStorage.setItem(`q_b_${activeIndex}`, inpBg.value);
+  targetTa.style.setProperty('--color', inpColor.value);
+  localStorage.setItem(`q_c_${activeIndex}`, inpColor.value);
+
+  localStorage.setItem(`q_pos_${activeIndex}`, selPos.value);
+  const [v, h] = selPos.value.split(' ');
+  images[activeIndex].style.top = v === 'top' ? '10px' : 'auto';
+  images[activeIndex].style.bottom = v === 'bottom' ? '10px' : 'auto';
+  images[activeIndex].style.left = h === 'left' ? '10px' : 'auto';
+  images[activeIndex].style.right = h === 'right' ? '10px' : 'auto';
+
+  if (chkDelImg.checked) {
+    images[activeIndex].removeAttribute('src');
+    images[activeIndex].style.display = 'none';
+    localStorage.removeItem(`q_pos_${activeIndex}`);
+    saveToDB(activeIndex, targetTa.innerHTML, null, true);
+  }
+
+  modal.style.display = 'none';
+  activeIndex = null;
+};
+
+btnCancel.onclick = () => {
+  modal.style.display = 'none';
+  activeIndex = null;
+};
 </script>
 </body>
 </html>
