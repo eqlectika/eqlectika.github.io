@@ -1,6 +1,4 @@
-const CACHE_NAME = 'version-background'; 
-const REFRESH_INTERVAL = 7 * 24 * 60 * 60 * 1000; 
-
+const CACHE_NAME = 'version-spark'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
@@ -57,63 +55,25 @@ const CORE_ASSETS = [
 
 self.addEventListener('install', event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(async cache => {
-            const existingTime = await cache.match('__install_timestamp');
-            if (!existingTime) {
-                await cache.put('__install_timestamp', new Response(Date.now().toString()));
-            }
-
-            await Promise.all(
-                CORE_ASSETS.map(async url => {
-                    try {
-                        const response = await fetch(url, { cache: 'no-cache' });
-                        if (response.ok) {
-                            await cache.put(url, response);
-                        }
-                    } catch (error) {
-                        console.warn('[SW] Core asset skipped:', url, error);
-                    }
-                })
-            );
+        caches.open(CACHE_NAME).then(cache => {
+            return cache.addAll(CORE_ASSETS);
         })
     );
+    self.skipWaiting(); 
 });
 
 self.addEventListener('activate', event => {
     event.waitUntil(
-        caches.keys().then(async keys => {
-            let shouldUpdate = false;
-            
-            for (const key of keys) {
-                if (key === CACHE_NAME) continue;
-                const oldCache = await caches.open(key);
-                const timeResponse = await oldCache.match('__install_timestamp');
-                if (timeResponse) {
-                    const installTime = parseInt(await timeResponse.text(), 10);
-                    if (Date.now() - installTime > REFRESH_INTERVAL) {
-                        shouldUpdate = true; 
+        caches.keys().then(keys => {
+            return Promise.all(
+                keys.map(key => {
+                    if (key !== CACHE_NAME) {
+                        return caches.delete(key);
                     }
-                } else {
-                    shouldUpdate = true; 
-                }
-            }
-
-            if (!shouldUpdate && keys.includes(CACHE_NAME)) {
-                return;
-            }
-
-            await Promise.all(
-                keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+                })
             );
-
+        }).then(() => {
             self.clients.claim();
-            const clients = await self.clients.matchAll();
-            clients.forEach(client => {
-                client.postMessage({
-                    type: 'SW_ACTIVATED',
-                    version: CACHE_NAME
-                });
-            });
         })
     );
 });
@@ -122,34 +82,19 @@ self.addEventListener('fetch', event => {
     const request = event.request;
     if (request.method !== 'GET') return;
 
-    const url = new URL(request.url);
-    if (url.pathname === '/' || url.pathname === '/index.html') {
-        event.respondWith(
-            caches.match('/').then(cached => {
-                return cached || fetch(request);
-            })
-        );
-        return;
-    }
-
     event.respondWith(
         caches.match(request).then(cachedResponse => {
             if (cachedResponse) {
-                if (request.url.includes('__install_timestamp')) return cachedResponse;
                 return cachedResponse;
             }
             return fetch(request).then(response => {
-                if (!response) {
+                if (!response || response.status !== 200 || response.type === 'error') {
                     return response;
                 }
-                if (response.ok || response.type === 'opaque') {
-                    const copy = response.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(request, copy).catch(error => {
-                            console.warn('[SW] Could not cache:', request.url, error);
-                        });
-                    });
-                }
+                const copy = response.clone();
+                caches.open(CACHE_NAME).then(cache => {
+                    cache.put(request, copy);
+                });
                 return response;
             });
         }).catch(() => {
