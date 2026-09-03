@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-refresh-v1';
+const CACHE_NAME = 'version-refresh';
 
 const CORE_ASSETS = [
     '/',
