@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-paramount'; 
+const CACHE_NAME = 'version-match'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
