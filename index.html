@@ -273,16 +273,11 @@ display: none;
     opacity: 1;
 }
 
-
 .progress-fill {
   width: 21%;
   height: 8px;
   background: #fff;
-  transition: width 400ms cubic-bezier(0.25, 1, 0.5, 1); 
-}
-
-.progress-fill.boosted {
-  width: 34%; 
+  transition: width 200ms ease-out; 
 }
 
 * {
@@ -384,8 +379,8 @@ display: none;
     </div>
 <div style="margin: 0 0 80px 0; display: flex; flex-direction: column; align-items: center; gap: 4px;">
   <p style="margin: 15px 0 3px 0; color: #fff; font-size: 12px;">Happiness loading… Please wait.</p>
-  <div style="width: 160px; background: #444; overflow: hidden;">
-    <div id="happiness-bar" class="progress-fill" style="width: 34%;"></div>
+<div style="width: 160px; background: #444; overflow: hidden;">
+    <div id="happiness-bar" class="progress-fill" style="width: 21%;"></div>
   </div>
 </div>
 <script>
@@ -487,7 +482,7 @@ const defaultItems = [
     { 
         id: 12, 
         title: "Jetpack", 
-        description: "Simple flght simulator.", 
+        description: "Simple flght simulator: Use the left side of the screen up and down or the spacebar on the keyboard (double to accelerate) to throttle; and the right side of the screen in all directions or the arrow keys to tilt.", 
         externalUrl: "jetpack.html", 
         img: "ladybug-icon-10.png", 
         rating: 1500 
@@ -689,20 +684,33 @@ nextPair();
 const bar = document.getElementById('happiness-bar');
 
 if (bar) {
+  let currentProgress = 21; // Стартовое значение
+  const maxTarget = 34;     // Конечное значение
+
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        setTimeout(() => {
-          bar.classList.add('boosted');
-        }, 2000);
-        
+        setTimeout(scheduleNextStep, 1000); // Запуск через 1 сек после появления
         observer.unobserve(entry.target);
       }
     });
   }, { threshold: 0.5 }); 
 
   observer.observe(bar);
-} 
+
+  function scheduleNextStep() {
+    if (currentProgress < maxTarget) {
+      const remaining = maxTarget - currentProgress;
+      const stepSize = Math.floor(Math.random() * Math.min(remaining, 3)) + 1;
+      currentProgress = Math.min(currentProgress + stepSize, maxTarget);
+      
+      bar.style.width = currentProgress + '%'; 
+
+      const randomDelay = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
+      setTimeout(scheduleNextStep, randomDelay);
+    }
+  }
+}
 
 const $toggleBtn = $('#toggle-btn');
 const $content = $('#collapsible-content');
