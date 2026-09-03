@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-refresh-v1'; 
+const CACHE_NAME = 'version-background'; 
 const REFRESH_INTERVAL = 7 * 24 * 60 * 60 * 1000; 
 
 const CORE_ASSETS = [
