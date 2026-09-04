@@ -27,24 +27,28 @@
         html, body {
             width: 100%;
             height: 100%;
-            height: 100dvh;
+            position: fixed; /* Жестко фиксируем документ, исключая любые смещения шапки */
+            overflow: hidden;
             background-color: #121212;
             font-family: 'Roboto Condensed', sans-serif;
             transition: background-color 0.5s ease;
-            overflow: hidden; /* Блокируем прокрутку всей страницы целиком */
         }
 
         .container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             display: flex;
             flex-direction: column;
-            height: 100%;
             padding: 10px;
-            position: relative;
-            box-sizing: border-box;
+            overflow: hidden;
         }
 
+        /* Нижний слой (интерфейс со словами) — стоит на месте */
         .words-wrapper {
-            flex-grow: 1;
+            flex: 1;
             width: 100%;
             position: relative;
             display: flex;
@@ -52,14 +56,15 @@
             align-content: flex-start;
             gap: 6px 8px;
             padding: 10px;
-            padding-bottom: 90px; /* Оставляем запас снизу, чтобы последние слова не прятались под панель */
+            padding-bottom: 120px; /* Запас снизу, чтобы слова не прятались под плавающую панель */
             overflow-y: auto;
             cursor: default;
             touch-action: pan-y;
         }
 
+        /* Верхний слой: панель с инпутом плавает поверх интерфейса и двигается с клавиатурой */
         .footer-panel {
-            position: fixed; /* Фиксируем панель внизу экрана поверх всего интерфейса */
+            position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
@@ -68,15 +73,12 @@
             align-items: center;
             gap: 10px;
             width: 100%;
-            background: inherit; /* Панель перенимает текущий фон темы */
+            background: inherit;
             z-index: 100;
             padding: 10px 10px 15px 10px;
             box-sizing: border-box;
-            box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.1); /* Небольшая тень для отделения от контента */
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.2);
         }
-
-
-
 
         .word-cell {
             display: inline-flex;
@@ -160,7 +162,6 @@
             margin-bottom: 0;
         }
     </style>
-
 </head>
 <body>
 
@@ -225,14 +226,13 @@
         ];
 
         let currentThemeIndex = 0;
-        let isDarkTheme = false; // Состояние текущей темы
+        let isDarkTheme = false;
+        let placeholderColor = '#888';
 
         function applyRandomThemeAndFont() {
-            // 1. Случайный выбор шрифта
             const randomFont = fonts[Math.floor(Math.random() * fonts.length)];
             document.body.style.fontFamily = randomFont;
 
-            // 2. Случайный выбор: будет тема темной или светлой (50 на 50)
             isDarkTheme = Math.random() < 0.5;
 
             const randomHue = Math.floor(Math.random() * 360);
@@ -242,50 +242,45 @@
                 bg = `hsl(${randomHue}, 40%, 10%)`;
                 inputBg = `hsl(${randomHue}, 30%, 16%)`;
                 inputColor = '#FFFFFF';
-                inputBorder = '#AAAAAA';     // <--- Сделали рамку светлее и заметнее
+                inputBorder = '#AAAAAA';
                 toggleColor = '#AAAAAA';
                 textColor = '#DDDDDD';
-                placeholderColor = '#DDDDDD'; // <--- Сделали подсказку яркой
+                placeholderColor = '#DDDDDD';
             } else {
-                // Светлый тон фона
                 bg = `hsl(${randomHue}, 50%, 94%)`;
                 inputBg = '#FFFFFF';
                 inputColor = '#111111';
-                inputBorder = '#333333';     // <--- Сделали рамку темной и контрастной
+                inputBorder = '#333333';
                 toggleColor = '#555555';
                 textColor = '#222222';
-                placeholderColor = '#555555'; // <--- Сделали подсказку темной и четкой
+                placeholderColor = '#555555';
             }
 
-
-            // Применяем цвета к элементам
             document.body.style.backgroundColor = bg;
             mainContainer.style.backgroundColor = bg;
             
             inputField.style.backgroundColor = inputBg;
             inputField.style.color = inputColor;
             inputField.style.borderColor = inputBorder;
-            inputField.style.setProperty('--placeholder-color', inputBorder);
+            inputField.style.setProperty('--placeholder-color', placeholderColor);
 
             noteToggle.style.color = toggleColor;
             noteText.style.color = textColor;
 
             currentThemeIndex = (currentThemeIndex + 1) % fonts.length;
 
-            // Обновляем цвета слов с учетом текущей яркости фона
             const cells = document.querySelectorAll('.word-cell');
             cells.forEach((cell, index) => {
                 cell.style.color = getWordTextColor(index);
             });
         }
 
-        // Генерация цветов для слов: пастельные (светлые) для темного фона, глубокие для светлого
         function getWordTextColor(index) {
             const hue = (index * 53 + currentThemeIndex * 70) % 360;
             if (isDarkTheme) {
-                return `hsl(${hue}, 65%, 80%)`; // Светлые/неоновые оттенки для темного фона
+                return `hsl(${hue}, 65%, 80%)`;
             } else {
-                return `hsl(${hue}, 70%, 35%)`; // Насыщенные темные оттенки для светлого фона
+                return `hsl(${hue}, 70%, 35%)`;
             }
         }
 
@@ -401,10 +396,8 @@
             }
         });
 
-        // Инициализация при старте
         applyRandomThemeAndFont();
         updateLayout();
     </script>
-
 </body>
 </html>
