@@ -1367,9 +1367,6 @@ else if (packet.type === 'ACTIVITY') {
     const ts = packet.ts || Date.now();
     if (!activityHistory[type]) activityHistory[type] = [];
     
- //   const recent = activityHistory[type].slice(-5);
- //   if (recent.some(t => Math.abs(t - ts) < 400)) return;
-
     activityHistory[type].push(ts);
     saveActivityHistory();
     updateActivityChart();
@@ -1456,6 +1453,18 @@ async function addItem() {
     const desc = $('#new-desc').val().trim();
     const url = $('#new-url').val().trim();
     const file = $('#new-img-file')[0].files[0];
+    
+    if (editingId !== null) {
+        const item = items.find(i => i.id === editingId);
+        if (!item) {
+            alert('Meme not found!');
+            return;
+        }
+        if (item.sender !== myId) {
+            alert('❌ You are not the author of this meme! Only the author can edit it.');
+            return;
+        }
+    }
     
     if (!title) return alert('Enter title!');
 
@@ -1608,13 +1617,11 @@ function updateRankingList() {
             deliveryStatusHtml = `<div style="color: #00ffcc; margin-bottom: 10px;">Delivered to: ${deliveredCount} ${peerLabel}</div>`;
         }
         
-        // ЕСТЬ ли картинка?
         const hasImage = item.img && item.img.length > 0;
         let thumbnailHtml;
         if (hasImage) {
             thumbnailHtml = `<img src="${item.img}" class="ranking-img" onerror="this.style.display='none'">`;
         } else {
-            // Весь текст, помещается в 40x40 с переносом строк
             const text = item.description || item.title;
             thumbnailHtml = `<div class="ranking-img text-preview" style="
                 overflow: hidden;
@@ -1635,17 +1642,18 @@ function updateRankingList() {
             ">${text}</div>`;
         }
         
-        html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
-            ${thumbnailHtml}
-            <div class="ranking-info">
-                <p class="title" style="text-align: left; font-size: 16px; margin: 0;">${index + 1}. ${item.title}</p>
-                <span>${Math.round(item.rating)}</span>
-            </div> 
-        </div>
+       html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
+    ${thumbnailHtml}
+    <div class="ranking-info">
+        <p class="title" style="text-align: left; font-size: 16px; margin: 0;">${index + 1}. ${item.title}</p>
+        ${item.sender !== 'System-Genesis' ? `<span style="color: #666; font-size: 11px; margin-left: 8px;">by ${item.sender}</span>` : ''}
+        <span>${Math.round(item.rating)}</span>
+    </div> 
+</div>
         <div id="details-${item.id}" class="item-details">
             ${deliveryStatusHtml}
-            <button class="edit-btn" onclick="event.stopPropagation(); editItem('${item.id}')">Edit and/or Re-inject Meme (free)</button>
-            ${item.externalUrl ? `<a href="${item.externalUrl}" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
+${item.sender === myId ? `<button class="edit-btn" onclick="event.stopPropagation(); editItem('${item.id}')">Edit and/or Re-inject Meme (free)</button>` : `<span style="color: #666; font-size: 12px;">by ${item.sender}</span>`}
+${item.externalUrl ? `<a href="${item.externalUrl}" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
             <p>${item.description || 'No description.'}</p>
             <button class="admin-btn" type="button" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
         </div>`;
@@ -1725,9 +1733,8 @@ function vote(side) {
     const isConnectedToBroker = (typeof client !== 'undefined' && client.connected);
 
     if (isConnectedToBroker) {
-        // Уникальный ID голоса, чтобы отличить свое действие от чужого
         const voteId = 'vote-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-        winItem.lastVoteId = voteId; // Помечаем элемент
+        winItem.lastVoteId = voteId; 
 
         client.publish(TOPIC, JSON.stringify({
             type: 'VOTE',
