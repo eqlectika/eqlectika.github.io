@@ -197,14 +197,38 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       <option value="32px">Extra Large (32px)</option>
     </select>
 
-    <div style="display:flex; gap:12px; margin-bottom:16px;">
-      <div style="flex:1;">
-        <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Background:</label>
-<input type="color" id="setting-bg" style="width:100%; height:50px; border:none; border-radius:6px; cursor:pointer; background:none;">      </div>
-      <div style="flex:1;">
-        <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Text Color:</label>
-<input type="color" id="setting-color" style="width:100%; height:50px; border:none; border-radius:6px; cursor:pointer; background:none;">      </div>
-    </div>
+<div style="display:flex; gap:12px; margin-bottom:16px;">
+  <div style="flex:1;">
+    <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Background:</label>
+    <button id="bg-picker-btn" style="width:100%; height:56px; border-radius:8px; background:#ff8700; cursor:pointer; border:2px solid #555; padding:0;">
+      <span style="color:#fff; font-size:14px;">Choose Color</span>
+    </button>
+    <input type="color" id="setting-bg" style="display:none;">
+  </div>
+  <div style="flex:1;">
+    <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Text Color:</label>
+    <button id="color-picker-btn" style="width:100%; height:56px; border-radius:8px; background:#000000; cursor:pointer; border:2px solid #555; padding:0;">
+      <span style="color:#fff; font-size:14px;">Choose Color</span>
+    </button>
+    <input type="color" id="setting-color" style="display:none;">
+  </div>
+</div>
+
+<script>
+document.getElementById('bg-picker-btn').onclick = () => {
+  document.getElementById('setting-bg').click();
+};
+document.getElementById('color-picker-btn').onclick = () => {
+  document.getElementById('setting-color').click();
+};
+
+document.getElementById('setting-bg').oninput = function() {
+  document.getElementById('bg-picker-btn').style.background = this.value;
+};
+document.getElementById('setting-color').oninput = function() {
+  document.getElementById('color-picker-btn').style.background = this.value;
+};
+</script>
 
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Image Position:</label>
     <select id="setting-pos" style="margin-bottom:20px;">
