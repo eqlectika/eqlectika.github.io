@@ -24,29 +24,30 @@
             -webkit-user-select: none;
         }
 
-html, body {
-    width: 100%;
-    height: 100%;
-    /* Используем dvh для правильной работы с мобильной клавиатурой */
-    height: 100dvh; 
-    background-color: #121212;
-    font-family: 'Roboto Condensed', sans-serif;
-    transition: background-color 0.5s ease;
-    overflow: hidden; /* Запрещаем скролл всей страницы целиком */
-}
+        html, body {
+            width: 100%;
+            height: 100%;
+            position: fixed; /* Жестко фиксируем документ от прокрутки всей страницы */
+            overflow: hidden;
+            background-color: #121212;
+            font-family: 'Roboto Condensed', sans-serif;
+            transition: background-color 0.5s ease;
+        }
 
-.container {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%; /* Занимает всю доступную высоту родителя */
-    padding: 10px;
-    box-sizing: border-box;
-}
-
+        .container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+        }
 
         .words-wrapper {
-            flex-grow: 1;
+            flex: 1; /* Занимает всё доступное пространство между верхом и панелью */
             width: 100%;
             position: relative;
             display: flex;
@@ -54,22 +55,24 @@ html, body {
             align-content: flex-start;
             gap: 6px 8px;
             padding: 10px;
-            overflow-y: auto;
+            overflow-y: auto; /* Скроллится только сетка слов, если их много */
             cursor: default;
             touch-action: pan-y;
+            min-height: 0; /* Важно для корректного сжатия во флекс-контейнере */
         }
 
-.footer-panel {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    flex-shrink: 0;
-    z-index: 10;
-    padding-top: 5px;
-    padding-bottom: max(15px, env(safe-area-inset-bottom));
-}
+        .footer-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            flex-shrink: 0; /* Панель никогда не сжимается */
+            z-index: 10;
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }
+
 
 
         .word-cell {
