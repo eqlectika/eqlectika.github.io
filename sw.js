@@ -1,5 +1,8 @@
 const CACHE_NAME = 'version-paramount'; 
 const CORE_ASSETS = [
+    '/essence/',
+    '/essence/index.html',
+    '/essence/manifest.json',
     '/',
     './index.html',
     './manifest-index.json',
