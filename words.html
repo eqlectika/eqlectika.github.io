@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <link rel="icon" type="image/png" href="/loop.png">
-<meta property="og:image" content="/words.jpg">
-<meta property="og:image:width" content="1280">
-<meta property="og:image:height" content="1091">
+    <meta property="og:image" content="/words.jpg">
+    <meta property="og:image:width" content="1280">
+    <meta property="og:image:height" content="1091">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Word Mosaic | Tap word for Definition</title>
+    <title>Word Mosaic | Tap word for Definition</title>
     <link rel="manifest" href="manifest-words.json">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+
     <style>
         * {
             box-sizing: border-box;
@@ -22,9 +27,7 @@
         html, body {
             width: 100%;
             height: 100%;
-            background-color: #121212;
-            font-family: 'Roboto Condensed', sans-serif;
-            transition: background-color 0.5s ease;
+            transition: background-color 0.5s ease, color 0.5s ease;
         }
 
         .container {
@@ -49,46 +52,44 @@
             touch-action: pan-y;
         }
 
-.footer-panel {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    flex-shrink: 0;
-    z-index: 10;
-    padding-top: 5px;
-    padding-bottom: 15px;
-}
+        .footer-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            flex-shrink: 0;
+            z-index: 10;
+            padding-top: 5px;
+            padding-bottom: 15px;
+        }
 
-.word-cell {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    white-space: nowrap;
-    background: transparent;
-    border: none;
-    padding: 2px 4px;
-    line-height: 0.7;
-    opacity: 0.95;
-    transition: color 0.5s ease;
-}
+        .word-cell {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            white-space: nowrap;
+            background: transparent;
+            border: none;
+            padding: 2px 4px;
+            line-height: 0.7;
+            opacity: 0.95;
+            transition: color 0.5s ease;
+        }
 
-#word-input {
-    width: 100%;
-    max-width: 500px;
-    padding: 12px 12px;
-    font-family: 'Roboto Condensed', sans-serif;
-    font-size: 18px;
-    outline: none;
-    margin: 0 0 10px 0;
-    transition: all 0.3s;
-    user-select: text;
-    border: 1px solid #999;
-    border-radius: 12px;
-    -webkit-user-select: text;
-}
+        #word-input {
+            width: 100%;
+            max-width: 500px;
+            padding: 12px 12px;
+            font-size: 18px;
+            outline: none;
+            margin: 0 0 10px 0;
+            transition: all 0.3s;
+            user-select: text;
+            border-radius: 12px;
+            -webkit-user-select: text;
+        }
 
         .logo-link {
             display: inline-flex;
@@ -105,93 +106,93 @@
         }
 
         #word-input::placeholder {
-            color: var(--placeholder-color, #fff);
+            color: var(--placeholder-color, #888);
             opacity: 1;
         }
         
         .note {
-    width: 100%;
-    max-width: 500px;
-    text-align: center;
-    margin-top: 4px;
-    font-family: sans-serif;
-    font-size: 18px;
-}
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            margin-top: 4px;
+            font-family: sans-serif;
+            font-size: 18px;
+        }
 
-.note-toggle {
-    cursor: pointer;
-    color: #999;
-    user-select: none;
-    -webkit-user-select: none;
-}
+        .note-toggle {
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: color 0.3s;
+        }
 
-.note-text {
-    display: none;
-    margin-top: 6px;
-    padding: 0 10px;
-    color: #fff;
-    line-height: 1.3;
-}
+        .note-text {
+            display: none;
+            margin-top: 6px;
+            padding: 0 10px;
+            line-height: 1.3;
+            transition: color 0.3s;
+        }
 
-.note.open .note-text {
-    display: block;
-}
+        .note.open .note-text {
+            display: block;
+        }
 
-.note-text p {
-    margin-bottom: 10px; 
-}
+        .note-text p {
+            margin-bottom: 10px; 
+        }
 
-
-.note-text p:last-child {
-    margin-bottom: 0;
-}
-
+        .note-text p:last-child {
+            margin-bottom: 0;
+        }
     </style>
+
 </head>
 <body>
 
     <div class="container" id="main-container">
         <div class="words-wrapper" id="words-wrapper"></div>
 
-<div class="footer-panel">
-    <input type="text" id="word-input" placeholder="Enter word(s) and press Enter..." autofocus>
+        <div class="footer-panel">
+            <input type="text" id="word-input" placeholder="Enter word(s) and press Enter..." autofocus>
 
-    <div class="note" id="note">
-        <div class="note-toggle" id="note-toggle"><strong>Help</strong></div>
-        <div class="note-text">
-<p>A short tap on a word on screen opens ChatGPT request to clarify the word definition.</p>
-<p>Operating system or AI may retain a previous word for reasons beyond this app’s control.</p>
-<p>Currently selected word will be copied to the clipboard anytime, so you can paste it instead if an older word appears in the request.</p>
-    <a href="index.html" class="logo-link">
-        <img src="fleurdelis.png">
-    </a>
+            <div class="note" id="note">
+                <div class="note-toggle" id="note-toggle"><strong>Help</strong></div>
+                <div class="note-text">
+                    <p>A short tap on a word on screen opens ChatGPT request to clarify the word definition.</p>
+                    <p>Operating system or AI may retain a previous word for reasons beyond this app’s control.</p>
+                    <p>Currently selected word will be copied to the clipboard anytime, so you can paste it instead if an older word appears in the request.</p>
+                    <a href="index.html" class="logo-link">
+                        <img src="fleurdelis.png">
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
     </div>
 
     <script>
         const inputField = document.getElementById('word-input');
         const displayContainer = document.getElementById('words-wrapper');
         const mainContainer = document.getElementById('main-container');
-const note = document.getElementById('note');
-const noteToggle = document.getElementById('note-toggle');
+        const note = document.getElementById('note');
+        const noteToggle = document.getElementById('note-toggle');
+        const noteText = note.querySelector('.note-text');
 
-noteToggle.addEventListener('click', (event) => {
-    event.stopPropagation();
-    note.classList.toggle('open');
+        noteToggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            note.classList.toggle('open');
 
-    noteToggle.querySelector('strong').textContent =
-        note.classList.contains('open') ? 'Close' : 'Help';
-});
+            noteToggle.querySelector('strong').textContent =
+                note.classList.contains('open') ? 'Close' : 'Help';
+        });
 
-note.querySelector('.note-text').addEventListener('click', (event) => {
-    event.stopPropagation();
-    note.classList.remove('open');
-});
+        noteText.addEventListener('click', (event) => {
+            event.stopPropagation();
+            note.classList.remove('open');
+        });
+
         let wordsList = [];
 
-        // Загружаем сохраненные слова из Local Storage при запуске
         const savedWords = localStorage.getItem('mosaic_words');
         if (savedWords) {
             try {
@@ -201,32 +202,75 @@ note.querySelector('.note-text').addEventListener('click', (event) => {
             }
         }
 
-const themes = [
-    { bg: '#121212', inputBg: '#212121', inputColor: '#FFFFFF', inputBorder: '#999' },
-    { bg: '#000033', inputBg: '#0D47A1', inputColor: '#FFFFFF', inputBorder: '#999' },
-    { bg: '#1a3300', inputBg: '#1B5E20', inputColor: '#FFFFFF', inputBorder: '#999' },
-    { bg: '#2b1a33', inputBg: '#4A148C', inputColor: '#FFFFFF', inputBorder: '#999' }
-];
+        const fonts = [
+            "'Playfair Display', serif",
+            "'Roboto Condensed', sans-serif",
+            "'Lato', sans-serif",
+            "'Roboto', sans-serif",
+            "'Unbounded', sans-serif"
+        ];
 
         let currentThemeIndex = 0;
+        let isDarkTheme = false; // Состояние текущей темы
 
-function applyTheme(theme) {
-    document.body.style.backgroundColor = theme.bg; // Добавьте эту строку
-    mainContainer.style.backgroundColor = theme.bg;
-    inputField.style.backgroundColor = theme.inputBg;
-    inputField.style.color = theme.inputColor;
-    inputField.style.setProperty('--placeholder-color', theme.inputBorder);
+        function applyRandomThemeAndFont() {
+            // 1. Случайный выбор шрифта
+            const randomFont = fonts[Math.floor(Math.random() * fonts.length)];
+            document.body.style.fontFamily = randomFont;
 
-    const cells = document.querySelectorAll('.word-cell');
-    cells.forEach((cell, index) => {
-        cell.style.color = getPastelTextColor(index);
-    });
-}
+            // 2. Случайный выбор: будет тема темной или светлой (50 на 50)
+            isDarkTheme = Math.random() < 0.5;
 
+            const randomHue = Math.floor(Math.random() * 360);
+            let bg, inputBg, inputColor, inputBorder, toggleColor, textColor;
 
-        function getPastelTextColor(index) {
+            if (isDarkTheme) {
+                // Тёмный тон фона (глубокий, насыщенный)
+                bg = `hsl(${randomHue}, 40%, 10%)`;
+                inputBg = `hsl(${randomHue}, 30%, 16%)`;
+                inputColor = '#FFFFFF';
+                inputBorder = '#555555';
+                toggleColor = '#AAAAAA';
+                textColor = '#DDDDDD';
+            } else {
+                // Светлый тон фона (пастельный, мягкий)
+                bg = `hsl(${randomHue}, 50%, 94%)`;
+                inputBg = '#FFFFFF';
+                inputColor = '#111111';
+                inputBorder = '#CCCCCC';
+                toggleColor = '#555555';
+                textColor = '#222222';
+            }
+
+            // Применяем цвета к элементам
+            document.body.style.backgroundColor = bg;
+            mainContainer.style.backgroundColor = bg;
+            
+            inputField.style.backgroundColor = inputBg;
+            inputField.style.color = inputColor;
+            inputField.style.borderColor = inputBorder;
+            inputField.style.setProperty('--placeholder-color', inputBorder);
+
+            noteToggle.style.color = toggleColor;
+            noteText.style.color = textColor;
+
+            currentThemeIndex = (currentThemeIndex + 1) % fonts.length;
+
+            // Обновляем цвета слов с учетом текущей яркости фона
+            const cells = document.querySelectorAll('.word-cell');
+            cells.forEach((cell, index) => {
+                cell.style.color = getWordTextColor(index);
+            });
+        }
+
+        // Генерация цветов для слов: пастельные (светлые) для темного фона, глубокие для светлого
+        function getWordTextColor(index) {
             const hue = (index * 53 + currentThemeIndex * 70) % 360;
-            return `hsl(${hue}, 65%, 80%)`;
+            if (isDarkTheme) {
+                return `hsl(${hue}, 65%, 80%)`; // Светлые/неоновые оттенки для темного фона
+            } else {
+                return `hsl(${hue}, 70%, 35%)`; // Насыщенные темные оттенки для светлого фона
+            }
         }
 
         function updateLayout() {
@@ -240,53 +284,49 @@ function applyTheme(theme) {
                 const cell = document.createElement('div');
                 cell.className = 'word-cell';
                 cell.textContent = word;
-                cell.style.color = getPastelTextColor(index);
+                cell.style.color = getWordTextColor(index);
                 cell.style.fontSize = '40px';
 
-let pressTimer;
-let pressStartTime = 0;
-let longPressTriggered = false;
+                let pressTimer;
+                let pressStartTime = 0;
+                let longPressTriggered = false;
 
-cell.addEventListener('pointerdown', (event) => {
-    event.stopPropagation();
-    pressStartTime = Date.now();
-    longPressTriggered = false;
+                cell.addEventListener('pointerdown', (event) => {
+                    event.stopPropagation();
+                    pressStartTime = Date.now();
+                    longPressTriggered = false;
 
-    pressTimer = setTimeout(() => {
-        longPressTriggered = true;
+                    pressTimer = setTimeout(() => {
+                        longPressTriggered = true;
+                        wordsList.splice(index, 1);
+                        localStorage.setItem('mosaic_words', JSON.stringify(wordsList));
+                        updateLayout();
+                    }, 600);
+                });
 
-        wordsList.splice(index, 1);
-        localStorage.setItem('mosaic_words', JSON.stringify(wordsList));
-        updateLayout();
-    }, 600);
-});
+                cell.addEventListener('pointerup', (event) => {
+                    event.stopPropagation();
+                    const pressDuration = Date.now() - pressStartTime;
+                    clearTimeout(pressTimer);
 
-cell.addEventListener('pointerup', (event) => {
-    event.stopPropagation();
+                    if (pressDuration < 600 && !longPressTriggered) {
+                        const query = `What is the definition of the word "${word}" in the interface language?`;
+                        navigator.clipboard.writeText(word).catch(() => {});
+                        window.open(
+                            `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
+                            '_blank'
+                        );
+                    }
+                });
 
-    const pressDuration = Date.now() - pressStartTime;
-    clearTimeout(pressTimer);
+                cell.addEventListener('pointercancel', (event) => {
+                    event.stopPropagation();
+                    clearTimeout(pressTimer);
+                });
 
-if (pressDuration < 600 && !longPressTriggered) {
-    const query = `What is the definition of the word "${word}" in the interface language?`;
-
-    navigator.clipboard.writeText(word).catch(() => {});
-
-    window.open(
-        `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
-        '_blank'
-    );
-}
-});
-
-cell.addEventListener('pointercancel', (event) => {
-    event.stopPropagation();
-    clearTimeout(pressTimer);
-});
-
-cell.addEventListener('pointerleave', (event) => {
-    event.stopPropagation();
-});
+                cell.addEventListener('pointerleave', (event) => {
+                    event.stopPropagation();
+                });
                 
                 fragment.appendChild(cell);
                 return cell;
@@ -294,29 +334,30 @@ cell.addEventListener('pointerleave', (event) => {
 
             displayContainer.appendChild(fragment);
 
-requestAnimationFrame(() => {
-    const maxSize = 40;
-    const minSize = 8;
-    let size = maxSize;
+            requestAnimationFrame(() => {
+                const maxSize = 40;
+                const minSize = 8;
+                let size = maxSize;
 
-    function applySize(value) {
-        tempCells.forEach(cell => {
-            cell.style.fontSize = `${value}px`;
-        });
-    }
+                function applySize(value) {
+                    tempCells.forEach(cell => {
+                        cell.style.fontSize = `${value}px`;
+                    });
+                }
 
-    applySize(size);
+                applySize(size);
 
-    while (
-        displayContainer.scrollHeight > displayContainer.clientHeight &&
-        size > minSize
-    ) {
-        size -= 1;
-        applySize(size);
-    }
-});
+                while (
+                    displayContainer.scrollHeight > displayContainer.clientHeight &&
+                    size > minSize
+                ) {
+                    size -= 1;
+                    applySize(size);
+                }
+            });
         }
 
+        document.body.style.cursor = 'pointer';
         document.body.addEventListener('click', (event) => {
             if (
                 event.target === inputField ||
@@ -325,8 +366,7 @@ requestAnimationFrame(() => {
                 event.target.closest('.word-cell')
             ) return;
 
-            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
-            applyTheme(themes[currentThemeIndex]);
+            applyRandomThemeAndFont();
             updateLayout();
         });
 
@@ -345,8 +385,10 @@ requestAnimationFrame(() => {
             }
         });
 
-        applyTheme(themes[0]);
+        // Инициализация при старте
+        applyRandomThemeAndFont();
         updateLayout();
     </script>
+
 </body>
 </html>
