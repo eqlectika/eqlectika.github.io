@@ -17,6 +17,9 @@ const CORE_ASSETS = [
     './fields.html',
     './cube.html',
     './bismuth.html',
+    './essence.html',
+    
+    './manifest-essence.json',
     './manifest-cross.json',
     './manifest-flash.json',
     './manifest-match.json',
