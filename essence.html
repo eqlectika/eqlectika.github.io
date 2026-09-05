@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/breakthrough.png">
+<meta property="og:image" content="/Verge.jpeg">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="1280">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest.json">
+<title>Paramount | Breakthrough engine</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+    html{scroll-behavior:auto!important;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+    body{margin:0;background:#000;color:#fff;font-family:monospace}a{color:#448aff;text-decoration:none}
+    .app-container{width:100%;min-height:100vh}
+    .panel{padding:0px;margin-top:14px}
+    .admin-input{width:100%;background:#000;color:#fff;border:0;outline:0;padding:14px 4px;margin:0 0 14px;font:14px monospace}
+    .admin-input::placeholder{color:#999}
+    textarea.admin-input{height:180px;resize:vertical}
+    button,.admin-btn,.edit-btn,.send-btn{font:700 14px monospace;border:0;cursor:pointer}
+    .admin-btn,.send-btn,.edit-btn{width:100%;padding:10px;background:#333;color:#fff}
+    .inject-btn-bg{background:#333;color:#afff00}
+    .send-btn{background:#333;color:#ff8b00}
+    .edit-btn{width:auto;background:transparent;padding:12px 0;color:#0097ff}
+    .network-status{padding:0 14px;color:#00ffcc;font-size:14px;cursor:pointer}
+    .network-status::before{content:'▼ '}
+    .network-status.open::before{content:'▼ '}
+    #logContainer{height:72px;overflow:auto;padding:8px 14px;color:#00ffcc;font-size:14px}
+    .collapsed{display:none!important}
+    #versus{width:100%;margin:0}
+    .ranking-title{padding:14px}
+    .versus-wrapper{display:flex;width:100%;gap:0;margin:0 0 30px 0}
+    .versus_column{width:50%;flex:1;cursor:pointer}
+    .versus_thumbwrapper{position:relative;width:100%;aspect-ratio:1;background:#111;overflow:hidden}
+    .versus_thumbwrapper img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .text-thumbnail{position:absolute;inset:0}
+    .text-thumbnail>div{width:100%;height:100%;padding:0px;background:#111;color:#afff00;overflow:hidden;word-break:break-word;font-size:14px;line-height:1.4}
+    .versus_column .title{display:none}
+    .ranking-container{width:100%;margin:0}
+    ::-webkit-scrollbar {
+    display: none;
+}
+
+* {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.ranking-item {
+    position: relative;
+    width: 100%;
+
+    cursor: pointer;
+    overflow: hidden;
+    background: #111;
+}
+
+.ranking-img,.ranking-img.text-preview {
+    position: relative;  
+    width: 100% !important;
+    height: auto !important;  
+
+    padding: 20px 14px !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    display: flex !important;
+    align-items: center;
+    background: #111 !important;
+    color: #afff00 !important;
+    word-wrap: break-word;
+    overflow: hidden;
+    box-sizing: border-box;
+    margin: 0 !important;
+    border: 0 !important;
+}
+    .ranking-img.text-preview{padding:20px 14px 10px 14px!important;font-size:14px!important;line-height:1.4!important;display:block!important;background:#111!important;color:#afff00!important}
+    .ranking-info{position:absolute;inset:0;pointer-events:none}
+    .ranking-info .title{display:none}
+    .ranking-info span{position:absolute;top:12px;left:12px;font-size:16px}
+    .item-details{display:none;position:relative;width:100%;padding:48px 14px 56px;background:#000;color:#ccc;font-size:14px;overflow:auto}
+    .item-details .peers{position:absolute;top:12px;right:12px;color:#00ffcc}
+    .item-details p{white-space:pre-wrap;margin:0;line-height:1.5}
+    .item-details .actions{position:absolute;left:14px;right:14px;bottom:12px;display:flex;justify-content:space-between;align-items:center}
+    .item-details .delete-btn{width:auto;background:transparent;color:#ff3333;padding:12px 0}
+    .player-stats{padding:0px;margin-top:14px}
+    .stats-row{display:flex;justify-content:space-between;gap:8px}
+    .stat-box{flex:1;text-align:center}
+    .stat-box span{color:#fff; font-size: 18px;}
+    .claim-panel,.exchange-panel,.transfer-panel,.main-panel{padding:18px 14px;margin-top:18px;background:#000}
+    .main-panel h3,.claim-panel h3,.exchange-panel h3,.transfer-panel h3,.player-stats h3{display:none}
+    .footer-credit{text-align:center;padding:50px 14px 20px}
+    .footer-credit h2{font:700 20px 'Cinzel',serif}
+    .progress-fill{height:8px;background:#aaa;transition:width 600ms cubic-bezier(.25,1,.5,1)}
+    body.inverted{filter:invert(1) hue-rotate(180deg);background:#fff}
+    body.inverted img{filter:invert(1) hue-rotate(180deg)}
+    body.inverted img.no-invert{filter:none}@media(max-width:480px){
+    .panel,.main-panel,.claim-panel,.exchange-panel,.transfer-panel{padding-left:12px;padding-right:12px}}
+    #target-peer::placeholder,
+    
+    #transfer-amount::placeholder {
+    color: #ff8b00 !important;
+    opacity: 0.8;
+    }
+    #new-desc::placeholder,
+    #new-url::placeholder {
+    color: #afff00 !important;
+    opacity: 0.7;
+    }
+</style>
+</head>
+<body>
+<div class="app-container">
+
+<div id="top" style="display:flex;align-items:flex-start;gap:15px;padding:14px;">
+<a href="https://t.me/eugenebox/"><img src="breakthrough.png" alt="Logo" style="height:36px;width:auto;"></a>
+<div><div id="invertTrigger" onclick="syncAndKeepData()" style="margin-top:0px;font-family:monospace;font-size:22px;line-height:1;cursor:pointer;color:#ccc;">Essence</div><div style="margin:0 1px;font:14px monospace;letter-spacing:1px;color:#efbc40;">Breakthrough engine</div></div></div>
+
+<div id="versus">
+    
+    <div class="versus-wrapper">
+        <div class="versus_column" id="item-left" onclick="vote('left')">
+            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+        </div>
+        <div class="versus_column" id="item-right" onclick="vote('right')">
+            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+        </div>
+    </div>
+</div>
+
+<div class="ranking-title" style="font-size:18px;color: #afff00">Global Matrix Rank</div>
+<div class="ranking-container">
+    <div id="ranking-list"></div>
+</div>
+
+<div class="main-panel">
+    <textarea id="new-desc" class="admin-input" placeholder="Meme content"></textarea>
+    <input type="url" id="new-url" class="admin-input" placeholder="External Link (optional)">
+<button class="admin-btn inject-btn-bg" style="border: 0px solid #afff00;" onclick="addItem()">Forward Meme to Network</button>
+</div>
+
+<div id="logArea">
+    <div class="network-status open" style="margin-top: 10px;" id="statusToggle">
+        <span id="netStatus">Status: Connecting to node network... (<span id="nodeId">...</span>)</span>
+    </div>
+
+    <div id="logContainer"></div>
+</div>
+
+<div class="exchange-panel" style="border-color: #afff00; background: #000; margin-top: 20px;">
+    <h3 style="color: #afff00; text-align: center; margin-bottom: 4px;">Terra Incognita</h3>
+    <div id="activityReadout" style="text-align: center; font-family: monospace; font-size: 14px; color: #888; margin-bottom: 8px;">
+        <span style="color:#afff00">Votes 0</span> · <span style="color:#de00b2">Posts 0</span> · <span style="color:#00ffcc">Deliveries 0</span>
+    </div>
+    <div id="activityRangeBtns" style="display: flex; gap: 6px; justify-content: center; margin-bottom: 10px; flex-wrap: wrap;">
+        <button type="button" class="activity-range-btn" data-range="week"  style="padding: 5px 12px; font-size: 14px; font-family: monospace; background: #111; color: #afff00; border: 1px solid #afff00; cursor: pointer; border-radius: 3px;">Week</button>
+        <button type="button" class="activity-range-btn" data-range="month" style="padding: 5px 12px; font-size: 14px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">Month</button>
+        <button type="button" class="activity-range-btn" data-range="year"  style="padding: 5px 12px; font-size: 14px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">Year</button>
+        <button type="button" class="activity-range-btn" data-range="all"   style="padding: 5px 12px; font-size: 14px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">All</button>
+    </div>
+    <div style="position: relative; width: 100%; height: 180px; background: #000; box-sizing: border-box;">
+        <canvas id="activityChart" style="width: 100%; height: 100%; display: block;"></canvas>
+    </div>
+
+</div>
+    
+<div class="player-stats" style="margin-top: 50px;">
+    <h3 style="text-align: center; font-family: monospace; color: #fff; margin-top: 0; margin-bottom: 12px;">State and Credits</h3>
+    
+    <div class="stats-row" style="display: flex; gap: 10px;"> 
+        <div class="stat-box" style="display: flex; flex-direction: column; align-items: center;">
+            Level: <span id="playerLevel">1</span>
+        </div>
+        <div class="stat-box" style="display: flex; flex-direction: column; align-items: center;">
+            Impacts: <span id="playerImpact">8</span>
+        </div>
+        <div class="stat-box" style="display: flex; flex-direction: column; align-items: center;">
+            Votes: <span id="votesLeft">5</span>
+        </div>
+        <div class="stat-box" style="display: flex; flex-direction: column; align-items: center;">
+            Posts: <span id="postsLeft">3</span>
+        </div>
+    </div>
+</div>
+    
+<div class="exchange-panel">
+    <h3 style="text-align: center; color: #de00b2">Convert Impacts to Action Limits</h3>
+    <p style="text-align: center; font-family: monospace; font-size: 14px; color: #ccc; margin-top: 0;">Spend 1 Impact to get +3 Votes, or 3 Impacts to get +1 Post</p>
+    <div style="display: flex; gap: 10px;">
+<button class="admin-btn" style="flex: 1; padding: 12px; font-size: 14px;" onclick="convertImpacts('votes')"><span style="white-space: nowrap;">–1 Impact</span> <span style="white-space: nowrap;">+3 Votes</span></button>
+<button class="admin-btn" style="flex: 1; padding: 12px; font-size: 14px;" onclick="convertImpacts('posts')"><span style="white-space: nowrap;">–3 Impacts</span> <span style="white-space: nowrap;">+1 Post</span></button>
+
+    </div>
+</div>
+    
+<div class="claim-panel">
+    <h3 style="text-align: center; color: #0097ff">Hourly Resonance Claim</h3>
+    <button class="admin-btn" id="claimBtn" style="color: #0097ff;" onclick="claimHourly()">Claim Accumulated Impacts (<span id="claimableAmount">0</span>)</button>
+    <div id="claimTimer" style="font-family: monospace; font-size: 14px; text-align: center; color: #ccc; margin-top: 10px;"></div>
+</div>
+    
+<div class="transfer-panel">
+    <h3 style="text-align: center; color: #ff8b00">Transfer Impact(s)</h3>
+    <input type="text" id="target-peer" class="admin-input" placeholder="Target Peer (e.g., Peer-5851 or Custom ID)">
+    <input type="number" id="transfer-amount" class="admin-input" placeholder="Amount (e.g., 7)" min="1">
+    <button class="send-btn" onclick="transferImpact()">Send Impacts</button>
+</div>
+
+<div id="updatePanel" class="panel" style="margin-top:40px;cursor:pointer;color:#afff00;text-align:center;" onclick="syncAndKeepData()">Update</div>
+<div id="resetPanel" style="cursor:pointer;color:#ff3333;text-align:center;font-size:14px;margin:30px auto 0 auto;" onclick="resetToDefault()">Reset</div>
+    
+    <div class="footer-credit">
+    <a href="/index.html" target="_self" style="display: inline-block; margin-bottom: 0px;">
+
+<img src="fleurdelis.png" class="no-invert" style="height: 64px; width: auto; display: block;">
+
+    </a>
+    <h2 style="font-family: 'Cinzel', serif; font-weight: bold;">
+<a href="/index.html" target="_self" style="color: #fff; letter-spacing: 1.5px; text-decoration: none;">Trust Fibonacci</a>
+    </h2>
+<div style="margin: 0 0 70px 0; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+  <p style="margin: 15px 0 3px 0; color: #aaa; font-size: 14px;">Happiness loading… Please wait.</p>
+  <div style="width: 160px; background: #444; overflow: hidden;">
+    <div id="happiness-bar" class="progress-fill" style="width: 34%;"></div>
+  </div>
+</div>
+</div>
+</div>
+<script>
+if ('serviceWorker' in navigator) {
+    let newWorker;
+    
+    navigator.serviceWorker.register('/essence/sw.js').then(reg => {
+        if (reg.waiting) {
+            const u = document.getElementById('updateAvailableLine'); 
+            if (u) u.style.display = 'block';
+        }
+        
+        reg.addEventListener('updatefound', () => {
+            newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    const u = document.getElementById('updateAvailableLine'); 
+                    if (u) u.style.display = 'block';
+                }
+            });
+        });
+    });
+}
+</script>
+
+<script>
+function createTextThumbnail(text) {
+    if (!text) return '';
+    return `<div style="
+        background: #111;
+        color: #afff00;
+        font-family: monospace;
+        font-size: 14px;
+        line-height: 1.4;
+        padding: 12px 12px;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        text-align: left;
+        word-wrap: break-word;
+        overflow-y: auto;  /* ← Добавляем прокрутку */
+        align-items: flex-start;
+        justify-content: flex-start;
+    ">${text}</div>`;
+}
+    
+const logArea = document.getElementById('logArea');
+const statusToggle = document.getElementById('statusToggle');
+const logContainer = document.getElementById('logContainer');
+    
+if (logArea && statusToggle && logContainer) {
+    let pressStart = 0;
+
+    logArea.addEventListener('pointerdown', () => {
+        pressStart = Date.now();
+    });
+
+    logArea.addEventListener('pointerup', () => {
+        const pressDuration = Date.now() - pressStart;
+
+        if (pressDuration < 500) {
+            logContainer.classList.toggle('collapsed');
+            statusToggle.classList.toggle('open');
+        }
+
+        pressStart = 0;
+    });
+}
+
+
+let myId = localStorage.getItem('paramount_custom_my_id');
+if (!myId) {
+    myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
+    localStorage.setItem('paramount_custom_my_id', myId);
+}
+document.getElementById('nodeId').innerText = myId;
+
+let processedTxIds = JSON.parse(localStorage.getItem('paramount_processed_txs')) || [];
+
+function isTxProcessed(txId) {
+    return processedTxIds.includes(txId);
+}
+
+function markTxProcessed(txId) {
+    if (!processedTxIds.includes(txId)) {
+        processedTxIds.push(txId);
+        if (processedTxIds.length > 1000) {
+            processedTxIds = processedTxIds.slice(-500);
+        }
+        localStorage.setItem('paramount_processed_txs', JSON.stringify(processedTxIds));
+    }
+}
+
+let playerState = JSON.parse(localStorage.getItem('paramount_player_state'));
+if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playerState.postsLeft === 'undefined') {
+    playerState = { 
+        impacts: 8,     
+        level: 1, 
+        votesLeft: 5,   
+        postsLeft: 3    
+    };
+    localStorage.setItem('paramount_player_state', JSON.stringify(playerState));
+}
+
+let peerBalances = JSON.parse(localStorage.getItem('paramount_peer_balances')) || {};
+let blacklistedPeers = JSON.parse(localStorage.getItem('paramount_blacklist')) || [];
+
+let activityHistory = JSON.parse(localStorage.getItem('paramount_activity_history')) || {
+    votes: [],
+    posts: [],
+    deliveries: []
+};
+let activityRange = localStorage.getItem('paramount_activity_range') || 'week';
+
+function saveActivityHistory() {
+    ['votes', 'posts', 'deliveries'].forEach(key => {
+        if (activityHistory[key].length > 2000) {
+            activityHistory[key] = activityHistory[key].slice(-2000);
+        }
+    });
+    localStorage.setItem('paramount_activity_history', JSON.stringify(activityHistory));
+}
+function recordActivity(type) {
+    if (!activityHistory[type]) activityHistory[type] = [];
+    activityHistory[type].push(Date.now());
+    saveActivityHistory();
+    updateActivityChart();
+}
+
+function setActivityRange(range) {
+    activityRange = range;
+    localStorage.setItem('paramount_activity_range', range);
+    document.querySelectorAll('.activity-range-btn').forEach(btn => {
+        const active = btn.getAttribute('data-range') === range;
+        btn.style.color = active ? '#afff00' : '#888';
+        btn.style.borderColor = active ? '#afff00' : '#888';
+    });
+    updateActivityChart();
+}
+
+let pendingTransfers = JSON.parse(localStorage.getItem('paramount_pending_transfers')) || {};
+function savePending() {
+    localStorage.setItem('paramount_pending_transfers', JSON.stringify(pendingTransfers));
+}
+
+function updatePlayerStatsUI() {
+    document.getElementById('playerImpact').innerText = playerState.impacts;
+    document.getElementById('playerLevel').innerText = playerState.level;
+    document.getElementById('votesLeft').innerText = playerState.votesLeft;
+    document.getElementById('postsLeft').innerText = playerState.postsLeft;
+    localStorage.setItem('paramount_player_state', JSON.stringify(playerState));
+}
+updatePlayerStatsUI();
+
+function updateActivityChart() {
+    const canvas = document.getElementById('activityChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const W = rect.width;
+    const H = rect.height;
+    
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.scale(dpr, dpr);
+    
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, W, H);
+    
+    const series = [
+        { key: 'votes',      color: '#afff00', label: 'Votes' },
+        { key: 'posts',      color: '#de00b2', label: 'Posts' },
+        { key: 'deliveries', color: '#00ffcc', label: 'Deliveries' }
+    ];
+    
+    const now = Date.now();
+    const MS = {
+        week:  7 * 24 * 3600000,
+        month: 30 * 24 * 3600000,
+        year:  365 * 24 * 3600000
+    };
+    
+    let allTs = [];
+    series.forEach(s => {
+        (activityHistory[s.key] || []).forEach(t => allTs.push(t));
+    });
+    
+    let tMin, tMax;
+    tMax = now;
+    
+    if (activityRange === 'all') {
+        if (allTs.length === 0) {
+            tMin = now - 3600000;
+        } else {
+            tMin = Math.min(...allTs);
+            if (tMax - tMin < 3600000) tMin = tMax - 3600000;
+        }
+    } else {
+        const windowMs = MS[activityRange] || MS.week;
+        tMin = tMax - windowMs;
+    }
+    
+    const span = tMax - tMin || 1;
+    
+    const padL = 4, padR = 4, padT = 18, padB = 28;
+    let plotW, plotH, rightScaleX;
+
+    function buildCumulative(timestamps) {
+        const sorted = (timestamps || []).filter(t => t >= tMin && t <= tMax).sort((a, b) => a - b);
+        const points = [];
+        let count = (timestamps || []).filter(t => t < tMin).length;
+        points.push({ t: tMin, c: count });
+        sorted.forEach(t => {
+            count++;
+            points.push({ t, c: count });
+        });
+        if (points.length === 0 || points[points.length - 1].t < tMax) {
+            points.push({ t: tMax, c: count });
+        }
+        return points;
+    }
+    
+    const cumSeries = series.map(s => ({
+        ...s,
+        points: buildCumulative(activityHistory[s.key])
+    }));
+    
+    let yMax = 1;
+    cumSeries.forEach(s => {
+        s.points.forEach(p => { if (p.c > yMax) yMax = p.c; });
+    });
+    yMax = Math.ceil(yMax * 1.15) || 1; 
+
+const yLabels = [
+    String(yMax),
+    ...Array.from({length: 5}, (_, i) =>
+        String(Math.round((i / 4) * yMax))
+    )
+];
+
+let maxLen = 0;
+for (let label of yLabels) {
+    if (label.length > maxLen) maxLen = label.length;
+}
+
+const rightScaleWidth = maxLen * 7;
+    const gapToRightScale = 8;
+    plotW = Math.max(20, W - padL - padR - rightScaleWidth - gapToRightScale);
+    plotH = H - padT - padB;
+    rightScaleX = padL + plotW + gapToRightScale;
+
+    
+ctx.textAlign = 'left';
+ctx.textBaseline = 'top';
+ctx.fillStyle = '#666';
+ctx.font = '10px monospace';
+
+const timeTicks = 5;
+for (let i = 0; i <= timeTicks; i++) {
+    const t = tMin + (i / timeTicks) * span;
+    const x = padL + (i / timeTicks) * plotW;
+    
+    const d = new Date(t);
+    let label;
+    if (activityRange === 'year' || span > 90 * 24 * 3600000) {
+        label = d.toLocaleDateString([], { month: 'short', year: '2-digit' });
+    } else if (activityRange === 'month' || span > 10 * 24 * 3600000) {
+        label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    } else if (span <= 48 * 3600000) {
+        label = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+        label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+    ctx.fillStyle = '#ccc';
+ctx.textAlign = 'center';
+ctx.fillText(label, x, padT + plotH + 6);
+ctx.textAlign = 'left';
+}
+    
+    function drawLine(points, color) {
+        if (points.length < 2) return;
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        
+        points.forEach((p, i) => {
+            const x = padL + ((p.t - tMin) / span) * plotW;
+            const y = padT + plotH - (p.c / yMax) * plotH;
+            if (i === 0) ctx.moveTo(x, y);
+            else {
+                const prev = points[i - 1];
+                const prevX = padL + ((prev.t - tMin) / span) * plotW;
+                const prevY = padT + plotH - (prev.c / yMax) * plotH;
+                ctx.lineTo(x, prevY); 
+                ctx.lineTo(x, y);     
+            }
+        });
+        ctx.stroke();
+        
+        const last = points[points.length - 1];
+        const lx = padL + ((last.t - tMin) / span) * plotW;
+        const ly = padT + plotH - (last.c / yMax) * plotH;
+        ctx.beginPath();
+        ctx.arc(lx, ly, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+    }
+    
+    cumSeries.forEach(s => drawLine(s.points, s.color));
+    
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    cumSeries.forEach((s, idx) => {
+        const last = s.points[s.points.length - 1];
+        if (!last) return;
+        const lx = padL + ((last.t - tMin) / span) * plotW;
+        const ly = padT + plotH - (last.c / yMax) * plotH;
+        const valueX = Math.min(lx + 7, rightScaleX - 2);
+        ctx.fillStyle = s.color;
+        ctx.fillText(String(last.c), valueX, ly);
+    });
+    
+    const totalVotes = (activityHistory.votes || []).length;
+    const totalPosts = (activityHistory.posts || []).length;
+    const totalDeliveries = (activityHistory.deliveries || []).length;
+    const readout = document.getElementById('activityReadout');
+    if (readout) {
+        readout.innerHTML = `<span style="color:#afff00">Votes ${totalVotes}</span> · <span style="color:#de00b2">Posts ${totalPosts}</span> · <span style="color:#00ffcc">Deliveries ${totalDeliveries}</span>`;
+    }
+}
+
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+
+function getClaimableCount() {
+    let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || '0');
+    if (!lastClaimTime) {
+        lastClaimTime = Date.now();
+        localStorage.setItem('paramount_last_claim_time', lastClaimTime.toString());
+    }
+    const elapsed = Date.now() - lastClaimTime;
+    
+    if (elapsed < HOUR_MS) {
+        return 0;
+    }
+    if (elapsed >= DAY_MS) {
+        return 24;
+    }
+    return 4;
+}
+
+function updateClaimUI() {
+    let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || Date.now());
+    const elapsed = Date.now() - lastClaimTime;
+    const claimable = getClaimableCount();
+    
+    document.getElementById('claimableAmount').innerText = claimable;
+    
+    if (elapsed >= DAY_MS) {
+        document.getElementById('claimTimer').innerHTML = '<span style="color:#0097ff;">24-hour cap reached! Claim now.</span>';
+    } else if (elapsed < HOUR_MS) {
+        const nextMilestone = lastClaimTime + HOUR_MS;
+        const timeLeft = nextMilestone - Date.now();
+        const mins = Math.floor((timeLeft % HOUR_MS) / 60000);
+        const secs = Math.floor((timeLeft % 60000) / 1000);
+        const hours = Math.floor(timeLeft / HOUR_MS);
+        document.getElementById('claimTimer').innerHTML = `<span style="color:#0097ff;">Next +4 impacts in: ${hours > 0 ? hours + 'h ' : ''}${mins}m ${secs}s</span>`;
+    } else {
+        document.getElementById('claimTimer').innerHTML = '<span style="color:#0097ff;">Claim impacts +4 every hour or wait up to 24h for accumulate +24 every day</span>';
+    }
+}
+
+function claimHourly() {
+    const claimable = getClaimableCount();
+    if (claimable <= 0) {
+        return alert('No accumulated impacts available yet. Please wait at least 1 hour.');
+    }
+
+    playerState.impacts += claimable;
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+
+    localStorage.setItem('paramount_last_claim_time', Date.now().toString());
+    
+    updateClaimUI();
+    log(`[Claim] Collected +${claimable} impacts.`);
+    alert(`Success! Claimed +${claimable} impacts.`);
+}
+
+setInterval(updateClaimUI, 1000);
+updateClaimUI();
+
+let items = JSON.parse(localStorage.getItem('paramount_versus_items')) || [];
+
+if (items.length === 0) {
+    items = [
+        {
+            id: 'meme-demo-1',
+            sender: 'System-Genesis',
+            title: 'Dice',
+            description: 'When you correctly perceive the wave of time, you begin to laugh out loud.',
+            externalUrl: 'cross.html',
+            img: 'dice.jpg',
+            rating: 1520
+        },
+        {
+            id: 'meme-demo-2',
+            sender: 'System-Genesis',
+            title: 'Chess',
+            description: 'The architecture of meanings conveyed by the model is merely a mirror image of the information boulevard on which it was nurtured. Here, intelligence acts not as a sovereign subject, but as a statistical echo of millions of voices burdened with prejudices, ideologies, and cultural distortions.',
+            externalUrl: 'flash.html',
+            img: 'chess.jpg',
+            rating: 1520
+        },
+        {
+            id: 'meme-demo-3',
+            sender: 'System-Genesis',
+            title: 'No Image',
+            description: 'There is one simple truth, the ignoring of which has destroyed countless ideas and brilliant intentions; the thing is that the moment you commit yourself, Providence moves too, and the impossible comes to your aid; a whole stream of unforeseen events issues from your decision, turning to your advantage; the most unexpected things happen, bringing you material support that no person could ever even dare to dream of; you can do anything you want — just begin; boldness has genius, power, and magic in it; begin now.',
+            externalUrl: 'life.html',
+            img: '',
+            rating: 1520
+        },
+    ];
+    localStorage.setItem('paramount_versus_items', JSON.stringify(items));
+}
+
+let currentPair = [];
+function saveLocal() {
+    localStorage.setItem('paramount_versus_items', JSON.stringify(items));
+}
+
+const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+    clientId: 'paramount_resonance_' + Math.random().toString(16).substr(2, 8),
+    reconnectPeriod: 5000,
+    connectTimeout: 5000,
+    keepalive: 60
+});
+const TOPIC = 'breakthrough/p2p/network/v1';
+
+client.on('connect', () => {
+    document.getElementById('netStatus').innerHTML = `Status: Connected to the transport layer as ${myId}`;
+    log("Waiting for peer(s)...");
+    client.subscribe(TOPIC, { qos: 1 });
+
+    setInterval(() => {
+        if (client && client.connected) {
+            client.publish(TOPIC, JSON.stringify({
+                type: 'PING',
+                sender: myId
+            }), { qos: 0 });
+        }
+    }, 5000);
+
+    setInterval(updateOnlinePeersCount, 5000);
+});
+
+client.on('error', (err) => {
+    document.getElementById('netStatus').style.color = '#f00';
+    document.getElementById('netStatus').innerHTML = `Network Error`;
+    log("MQTT Error: " + JSON.stringify(err));
+});
+
+client.on('message', (topic, payload) => {
+    try {
+        let packet = JSON.parse(payload.toString());
+
+if (packet.type === 'TRANSFER_IMPACT' && packet.target === myId) {
+    if (packet.sender === myId) {
+        log(`[Security] Blocked self-transfer from ${packet.sender}`);
+        return;
+    }
+    if (isTxProcessed(packet.txId)) {
+        log(`[Security] Duplicate transfer ${packet.txId} blocked.`);
+        return;
+    }
+    
+    log(`[Network] Received ${packet.amount} impacts from ${packet.sender}`);
+    
+    playerState.impacts += parseInt(packet.amount);
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+    saveLocal();
+
+    markTxProcessed(packet.txId);
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'TRANSFER_ACK',
+        txId: packet.txId,
+        sender: myId 
+    }), { qos: 1 });
+    
+    alert(`Received ${packet.amount} impacts from ${packet.sender}`);
+}
+        
+        else if (packet.type === 'TRANSFER_ACK') {
+            if (pendingTransfers[packet.txId]) {
+                delete pendingTransfers[packet.txId];
+                savePending();
+                log(`[Network] Transfer ${packet.txId} confirmed by receiver.`);
+            }
+        }
+
+        if (packet.type === 'PING') {
+            if (packet.sender !== myId) {
+                activePeers[packet.sender] = Date.now();
+            }
+        }
+        
+        if (packet.type === 'ADD_ITEM') {
+            if (!items.some(i => i.id === packet.item.id)) {
+                items.push(packet.item);
+                saveLocal();
+                log(`[Resonance] Meme captured from ${packet.sender}: "${packet.item.title}"`);
+                updateRankingList();
+                if (items.length >= 2 && currentPair.length === 0) nextPair();
+                
+                if (packet.sender !== myId) {
+                    client.publish(TOPIC, JSON.stringify({
+                        type: 'DELIVERY_ACK',
+                        itemId: packet.item.id,
+                        authorId: packet.sender,
+                        peerId: myId
+                    }), { qos: 1 });
+                }
+            }
+        } 
+
+else if (packet.type === 'DELIVERY_ACK') {
+    let item = items.find(i => i.id === packet.itemId);
+    if (item) {
+        if (!item.deliveredPeers) item.deliveredPeers = [];
+        if (!item.deliveredPeers.includes(packet.peerId)) {
+            item.deliveredPeers.push(packet.peerId);
+            saveLocal();
+            updateRankingList();
+            
+            if (item.sender === myId) {
+                recordActivity('deliveries');
+
+                if (client && client.connected) {
+                    client.publish(TOPIC, JSON.stringify({
+                        type: 'ACTIVITY',
+                        activityType: 'deliveries',
+                        sender: myId,
+                        ts: Date.now()
+                    }), { qos: 0 });
+                }
+            }
+        }
+    }
+}
+            
+        else if (packet.type === 'UPDATE_ITEM') {
+            let existingItem = items.find(i => i.id === packet.item.id);
+            if (existingItem) {
+                existingItem.title = packet.item.title;
+                existingItem.description = packet.item.description;
+                existingItem.externalUrl = packet.item.externalUrl;
+                if (packet.item.img) existingItem.img = packet.item.img;
+                saveLocal();
+                log(`[Resonance] Meme updated by ${packet.sender}: "${packet.item.title}"`);
+                updateRankingList();
+            } else {
+                items.push(packet.item);
+                saveLocal();
+                updateRankingList();
+                if (items.length >= 2 && currentPair.length === 0) nextPair();
+            }
+            
+            if (packet.sender !== myId) {
+                client.publish(TOPIC, JSON.stringify({
+                    type: 'DELIVERY_ACK',
+                    itemId: packet.item.id,
+                    authorId: packet.sender,
+                    peerId: myId
+                }), { qos: 1 });
+            }
+        }
+            
+else if (packet.type === 'VOTE') {
+    let winItem = items.find(i => i.id === packet.winId);
+    let loseItem = items.find(i => i.id === packet.loseId);
+    
+    if (winItem && loseItem) {
+        winItem.rating = packet.newWinRating;
+        loseItem.rating = packet.newLoseRating;
+        saveLocal();
+        updateRankingList();
+
+        if (packet.sender !== myId) {
+            log(`[Resonance] Global sync adjusted by ${packet.sender}`);
+            nextPair();
+        }
+    }
+}
+
+else if (packet.type === 'ACTIVITY') {
+    if (packet.sender === myId) return;
+
+    const type = packet.activityType; 
+    if (!['votes', 'posts', 'deliveries'].includes(type)) return;
+
+    const ts = packet.ts || Date.now();
+    if (!activityHistory[type]) activityHistory[type] = [];
+    
+ //   const recent = activityHistory[type].slice(-5);
+ //   if (recent.some(t => Math.abs(t - ts) < 400)) return;
+
+    activityHistory[type].push(ts);
+    saveActivityHistory();
+    updateActivityChart();
+
+    log(`[Activity] ${packet.sender}: ${type}`);
+    
+}
+
+
+    } catch(e) {
+        log("Packet processing error: " + e.message);
+    }
+});
+
+setInterval(() => {
+    const now = Date.now();
+    let refundedCount = 0;
+    for (let txId in pendingTransfers) {
+        let tx = pendingTransfers[txId];
+        if (now - tx.time > 15000) {
+            playerState.impacts += tx.amount;
+            playerState.level = Math.floor(playerState.impacts / 20) + 1;
+            log(`[Timeout] Transfer ${txId} to ${tx.target} timed out. Refunded ${tx.amount} impacts.`);
+            delete pendingTransfers[txId];
+            refundedCount++;
+        }
+    }
+    if (refundedCount > 0) {
+        updatePlayerStatsUI();
+        savePending();
+    }
+}, 5000);
+
+function updateLabel(input) {
+    const fileName = input.files[0] ? input.files[0].name : "Select Meme Image";
+    document.getElementById('file-label-text').innerText = fileName;
+}
+
+async function compressImage(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxWidth = 400; 
+                let width = img.width, height = img.height;
+                if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
+            };
+        };
+    });
+}
+
+function convertImpacts(type) {
+    if (type === 'votes') {
+        const cost = 1;
+        if (playerState.impacts < cost) {
+            return alert('Not enough impacts! 1 impact is required for conversion.');
+        }
+        playerState.impacts -= cost;
+        playerState.votesLeft += 3;
+        log(`Converted ${cost} impact into +3 votes.`);
+    } else if (type === 'posts') {
+        const cost = 3;
+        if (playerState.impacts < cost) {
+            return alert('Not enough impacts! 3 impacts are required for conversion.');
+        }
+        playerState.impacts -= cost;
+        playerState.postsLeft += 1;
+        log(`Converted ${cost} impacts into +1 post slot.`);
+    }
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+}
+
+async function addItem() {
+    const title = 'Essence';
+    const desc = $('#new-desc').val().trim();
+    const url = $('#new-url').val().trim();
+
+    let imgData = "";
+    if (editingId !== null) {
+        const item = items.find(i => i.id === editingId);
+        if (item) {
+            item.title = title;
+            item.description = desc;
+            item.externalUrl = url;
+            saveLocal();
+
+            client.publish(TOPIC, JSON.stringify({
+                type: 'UPDATE_ITEM',
+                sender: myId,
+                item: item
+            }), { qos: 1 });
+
+            log(`You updated and re-published meme: "${title}"`);
+        }
+        editingId = null;
+        $('.inject-btn-bg').text('Forward Meme to Network');
+    } else {
+        if (playerState.postsLeft <= 0) {
+            alert('Publication limit reached! Exchange impacts for higher publication slots.');
+            return;
+        }
+        playerState.postsLeft--;
+        playerState.level = Math.floor(playerState.impacts / 20) + 1;
+        updatePlayerStatsUI();
+
+        recordActivity('posts');
+
+if (client && client.connected) {
+    client.publish(TOPIC, JSON.stringify({
+        type: 'ACTIVITY',
+        activityType: 'posts',
+        sender: myId,
+        ts: Date.now()
+    }), { qos: 0 });
+}
+
+        const newItem = { 
+            id: 'meme-' + Date.now() + '-' + Math.floor(Math.random()*1000), 
+            sender: myId, 
+            title, 
+            description: desc, 
+            externalUrl: url, 
+            img: '', 
+            rating: 1500,
+            deliveredPeers: [] 
+        };
+
+        items.push(newItem);
+        saveLocal();
+
+        client.publish(TOPIC, JSON.stringify({
+            type: 'ADD_ITEM',
+            sender: myId,
+            item: newItem
+        }), { qos: 1 });
+
+        log(`You injected meme: "${title}"`);
+    }
+    
+    $('#new-desc, #new-url').val('');
+    
+    updateRankingList();
+    if (items.length >= 2 && currentPair.length === 0) nextPair();
+}
+
+function toggleDetails(id) {
+    const details = document.getElementById(`details-${id}`);
+    const card = document.getElementById(`card-${id}`);
+    if (!details || !card) return;
+    const open = details.style.display === 'block';
+    details.style.display = open ? 'none' : 'block';
+    card.style.display = open ? 'block' : 'none';
+}
+
+let editingId = null;
+
+function editItem(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    const details = document.getElementById(`details-${id}`);
+    if (!details) return;
+    editingId = id;
+    details.innerHTML = `<span class="peers">${item.deliveredPeers ? item.deliveredPeers.length : 0} peers</span><div style="position:absolute;top:12px;left:14px;color:#afff00">${Math.round(item.rating)}</div><textarea id="edit-desc-${id}" class="admin-input" style="height:auto">${item.description || ''}</textarea><input id="edit-url-${id}" class="admin-input" value="${item.externalUrl || ''}" placeholder="External Link"><div class="actions"><button class="edit-btn" onclick="event.stopPropagation();saveEdit('${id}')">Forward Meme to Network</button><button class="delete-btn" onclick="event.stopPropagation();deleteItemLocal('${id}')">Delete</button></div>`;
+}
+function saveEdit(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    item.description = document.getElementById(`edit-desc-${id}`).value.trim();
+    item.externalUrl = document.getElementById(`edit-url-${id}`).value.trim();
+    item.img = '';
+    saveLocal();
+    client.publish(TOPIC, JSON.stringify({type:'UPDATE_ITEM',sender:myId,item}), {qos:1});
+    updateRankingList();
+}
+
+function deleteItemLocal(id) {
+    if (!confirm('Are you sure you want to delete this meme from your device?')) return;
+    
+    let index = items.findIndex(i => i.id === id);
+    if (index !== -1) {
+        const activeLeftId = currentPair.length > 0 ? items[currentPair[0]]?.id : null;
+        const activeRightId = currentPair.length > 0 ? items[currentPair[1]]?.id : null;
+
+        items.splice(index, 1);
+        saveLocal();
+
+
+        log(`You removed meme locally: ${id}.`);
+        updateRankingList();
+
+        if (items.length < 2) {
+            currentPair = [];
+            nextPair();
+            return;
+        }
+
+        const wasActivePairAffected = (id === activeLeftId || id === activeRightId);
+
+        if (wasActivePairAffected || currentPair.length === 0) {
+            nextPair();
+        } else {
+            const newLeftIndex = items.findIndex(i => i.id === activeLeftId);
+            const newRightIndex = items.findIndex(i => i.id === activeRightId);
+
+            if (newLeftIndex !== -1 && newRightIndex !== -1) {
+                currentPair = [newLeftIndex, newRightIndex];
+            } else {
+                nextPair();
+            }
+        }
+    }
+}
+
+function updateRankingList() {
+    const sorted = [...items].sort((a, b) => b.rating - a.rating);
+    let html = '';
+    sorted.forEach(item => {
+        item.img = '';
+        const own = item.sender === myId;
+        const peers = item.sender === 'System-Genesis' ? 0 : (item.deliveredPeers ? item.deliveredPeers.length : 0);
+        const text = item.description || item.title || 'No description.';
+        html += `<div id="card-${item.id}" class="ranking-item">
+            <div class="ranking-img text-preview" style="position:relative;padding:20px 14px;display:flex;align-items:center;background:#111;color:#afff00;font-family:monospace;font-size:14px;line-height:1.5;word-wrap:break-word;overflow:hidden;cursor:pointer;" onclick="toggleDetails('${item.id}')">${text}</div>
+
+        </div>
+        <div id="details-${item.id}" class="item-details">
+            <span style="position:absolute;top:12px;left:14px;color:#afff00">${Math.round(item.rating)}</span>
+            <span class="peers">${peers} peers</span>
+<span onclick="event.stopPropagation();toggleDetails('${item.id}')" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);color:#afff00;cursor:pointer;font-size:18px;font-weight:bold;">✕</span>            
+${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
+            <p>${text}</p>
+            <div class="actions">
+                ${own ? `<button class="edit-btn" onclick="event.stopPropagation();editItem('${item.id}')">Edit</button>` : '<span></span>'}
+                <button class="delete-btn" onclick="event.stopPropagation();deleteItemLocal('${item.id}')">Delete</button>
+            </div>
+        </div>`;
+    });
+    $('#ranking-list').html(html || '<div style="text-align:center;padding:0px;color:#999;">Matrix is empty.</div>');
+}
+
+function nextPair() {
+    if (items.length < 2) {
+        $('#item-left img, #item-right img').attr('src', '');
+        currentPair = [];
+        return;
+    }
+    let i1 = Math.floor(Math.random() * items.length), i2;
+    do { i2 = Math.floor(Math.random() * items.length); } while (i1 === i2);
+    currentPair = [i1, i2];
+    
+    function setThumbnail(index, side) {
+        const item = items[index];
+        const wrapper = $(`#item-${side} .versus_thumbwrapper`);
+        const img = wrapper.find('img');
+        wrapper.find('.text-thumbnail').remove();
+        
+        if (false) {
+            img.attr('src', '').hide();
+        } else {
+            img.hide();
+            const textHtml = createTextThumbnail(item.description || item.title);
+            wrapper.append(`<div class="text-thumbnail">${textHtml}</div>`);
+        }
+    }
+    
+    setThumbnail(i1, 'left');
+    setThumbnail(i2, 'right');
+}
+
+function vote(side) {
+    if (items.length < 2) return;
+    if (playerState.votesLeft <= 0) {
+        alert('Votes limit reached! Exchange impacts for votes using the conversion panel above.');
+        return;
+    }
+    
+    playerState.votesLeft--;
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+
+    recordActivity('votes');
+
+    if (client && client.connected) {
+    client.publish(TOPIC, JSON.stringify({
+        type: 'ACTIVITY',
+        activityType: 'votes',
+        sender: myId,
+        ts: Date.now()
+    }), { qos: 0 });
+}
+
+    const winIdx = currentPair[side === 'left' ? 0 : 1];
+    const loseIdx = currentPair[side === 'left' ? 1 : 0];
+    
+    const winItem = items[winIdx];
+    const loseItem = items[loseIdx];
+
+    const rW = winItem.rating, rL = loseItem.rating;
+    const expW = 1 / (1 + Math.pow(10, (rL - rW) / 400));
+    const change = 32 * (1 - expW);
+    
+    winItem.rating += change; 
+    loseItem.rating -= change;
+    saveLocal();
+
+    const isConnectedToBroker = (typeof client !== 'undefined' && client.connected);
+
+    if (isConnectedToBroker) {
+        // Уникальный ID голоса, чтобы отличить свое действие от чужого
+        const voteId = 'vote-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        winItem.lastVoteId = voteId; // Помечаем элемент
+
+        client.publish(TOPIC, JSON.stringify({
+            type: 'VOTE',
+            sender: myId,
+            voteId: voteId,
+            winId: winItem.id,
+            loseId: loseItem.id,
+            newWinRating: winItem.rating,
+            newLoseRating: loseItem.rating
+        }), { qos: 1 });
+
+
+        updateRankingList();
+        nextPair();
+
+    } else {
+
+        updateRankingList();
+        $('#versus').animate({ opacity: 0 }, 50, function() { 
+            nextPair(); 
+            $(this).animate({ opacity: 1 }, 50); 
+        });
+    }
+}
+
+
+function transferImpact() {
+    const target = $('#target-peer').val().trim();
+    const amount = parseInt($('#transfer-amount').val());
+
+    if (target === myId) {
+        alert('❌ Cannot send impacts to yourself!');
+        return;
+    }
+    
+    peerBalances[myId] = playerState.impacts;
+    localStorage.setItem('paramount_peer_balances', JSON.stringify(peerBalances));
+
+    if (!target || !amount || amount < 1) {
+        return alert('Please enter the correct participant ID and number of impacts!');
+    }
+    if (playerState.impacts < amount) {
+        return alert('Impacts are out! You do not have enough impacts to translate.');
+    }
+    
+    peerBalances[myId] = playerState.impacts;
+    localStorage.setItem('paramount_peer_balances', JSON.stringify(peerBalances));
+
+    if (!target || !amount || amount < 1) {
+        return alert('Please enter the correct participant ID and number of impacts!');
+    }
+    if (playerState.impacts < amount) {
+        return alert('Impacts are out! You do not have enough impacts to translate.');
+    }
+
+    playerState.impacts -= amount;
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+
+    const txId = 'tx-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+    pendingTransfers[txId] = {
+        target: target,
+        amount: amount,
+        time: Date.now()
+    };
+    savePending();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'TRANSFER_IMPACT',
+        sender: myId,
+        target: target,
+        amount: amount,
+        txId: txId
+    }), { qos: 1 });
+
+    log(`Sent ${amount} impacts to ${target} (Waiting for ACK, ID: ${txId})`);
+    alert(`Successfully sent ${amount} impacts to user ${target}`);
+    $('#target-peer, #transfer-amount').val('');
+}
+
+updateRankingList();
+if (items.length >= 2) nextPair();
+
+(function bootstrapDeliveriesHistory() {
+    const hasHistory = (activityHistory.deliveries && activityHistory.deliveries.length > 0);
+    if (hasHistory) return;
+    let total = 0;
+    items.forEach(item => {
+        if (item.sender === myId && item.deliveredPeers) {
+            total += item.deliveredPeers.length;
+        }
+    });
+    if (total > 0) {
+        const now = Date.now();
+        for (let i = 0; i < total; i++) {
+            activityHistory.deliveries.push(now - 3600000 + Math.floor((i / total) * 3600000));
+        }
+        saveActivityHistory();
+    }
+})();
+updateActivityChart();
+
+window.addEventListener('resize', () => {
+    clearTimeout(window._activityChartResizeTimer);
+    window._activityChartResizeTimer = setTimeout(updateActivityChart, 150);
+});
+
+document.querySelectorAll('.activity-range-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        setActivityRange(btn.getAttribute('data-range'));
+    });
+});
+setActivityRange(activityRange);
+
+let activePeers = {};
+
+function updateOnlinePeersCount() {
+    const now = Date.now();
+    for (let peerId in activePeers) {
+        if (now - activePeers[peerId] > 12000) {
+            delete activePeers[peerId];
+        }
+    }
+    const onlineCount = Object.keys(activePeers).length;
+    const peerLabel = onlineCount === 1 ? 'peer' : 'peers';
+    log(`[Network] Active online: ${onlineCount} ${peerLabel}`);
+}
+
+function log(txt) {
+    let l = document.getElementById('logContainer');
+    l.innerHTML += `<div>${txt}</div>`;
+    l.scrollTop = l.scrollHeight;
+}
+
+let touchStartY = 0;
+let pullDistance = 0;
+const refreshThreshold = 90; 
+
+window.addEventListener('touchstart', (e) => {
+
+    if (window.scrollY === 0) {
+        touchStartY = e.touches[0].clientY;
+    } else {
+        touchStartY = 0;
+    }
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (!touchStartY) return;
+    const currentY = e.touches[0].clientY;
+    pullDistance = currentY - touchStartY;
+    
+    if (pullDistance > 0) {
+
+    }
+}, { passive: true });
+
+window.addEventListener('touchend', () => {
+    if (!touchStartY) return;
+    
+    if (pullDistance > refreshThreshold) {
+
+        location.reload();
+    }
+    
+    touchStartY = 0;
+    pullDistance = 0;
+});
+
+
+
+function clearAllExceptDemo() {
+    if (confirm("Are you sure? This action will delete all your created memes and transaction history, but will KEEP your current State & Credits (Level, Impacts, Votes) and restore the system's demo memes.")) {
+        
+        localStorage.removeItem('paramount_versus_items');
+        localStorage.removeItem('paramount_peer_balances');
+        localStorage.removeItem('paramount_blacklist');
+        localStorage.removeItem('paramount_pending_transfers');
+
+        location.reload();
+    }
+}
+
+async function resetToDefault() {
+    if (!confirm("⚠️ This will DELETE ALL your custom memes and reset everything to default.\n\nOnly demo memes and default stats (8 impacts, 5 votes, 3 posts) will remain.\n\nContinue?")) {
+        return;
+    }
+    
+    localStorage.clear();
+    
+    if ('caches' in window) {
+        try {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+            console.log('[Reset] Cache cleared');
+        } catch(e) {
+            console.log('[Reset] Cache clear error:', e);
+        }
+    }
+    
+    items = [];
+    playerState = { impacts: 8, level: 1, votesLeft: 5, postsLeft: 3 };
+    peerBalances = {};
+    pendingTransfers = {};
+    activityHistory = { votes: [], posts: [], deliveries: [] };
+    processedTxIds = [];
+    
+    log(`[Reset] All data and cache cleared. Reloading...`);
+    alert(`✅ Reset complete!\n\nCache and data cleared.`);
+    
+    window.location.reload(true);
+}
+
+async function syncAndKeepData() {
+    const savedItems = items; 
+    
+    const savedPlayerState = JSON.parse(JSON.stringify(playerState)); 
+    const savedPeerBalances = JSON.parse(JSON.stringify(peerBalances));
+    const savedActivityHistory = JSON.parse(JSON.stringify(activityHistory));
+    const savedProcessedTxIds = [...processedTxIds];
+    const savedPendingTransfers = JSON.parse(JSON.stringify(pendingTransfers));
+    const savedMyId = myId;
+    
+    if ('caches' in window) {
+        try {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+            console.log('[Sync] Cache cleared');
+        } catch(e) {
+            console.log('[Sync] Cache clear error:', e);
+        }
+    }
+    
+    const keysToKeep = [
+        'paramount_versus_items',
+        'paramount_player_state',
+        'paramount_peer_balances',
+        'paramount_activity_history',
+        'paramount_processed_txs',
+        'paramount_pending_transfers',
+        'paramount_custom_my_id',
+        'paramount_last_claim_time',
+        'paramount_activity_range'
+    ];
+    
+    for (let key in localStorage) {
+        if (!keysToKeep.includes(key) && !key.startsWith('paramount_')) {
+            localStorage.removeItem(key);
+        }
+    }
+    
+    localStorage.setItem('paramount_versus_items', JSON.stringify(savedItems));
+    localStorage.setItem('paramount_player_state', JSON.stringify(savedPlayerState));
+    localStorage.setItem('paramount_peer_balances', JSON.stringify(savedPeerBalances));
+    localStorage.setItem('paramount_activity_history', JSON.stringify(savedActivityHistory));
+    localStorage.setItem('paramount_processed_txs', JSON.stringify(savedProcessedTxIds));
+    localStorage.setItem('paramount_pending_transfers', JSON.stringify(savedPendingTransfers));
+    localStorage.setItem('paramount_custom_my_id', savedMyId);
+    
+    log(`[Sync] Data preserved. Cache cleared. Refreshing...`);
+    
+    navigator.serviceWorker.ready.then(reg => {
+        if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+    });
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload(true);
+    });
+    
+    window.location.reload(true);
+}
+
+</script>
+
+</body>
+</html>
