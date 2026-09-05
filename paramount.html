@@ -105,7 +105,6 @@ html {
     font-size: 14px; 
     font-family: monospace; 
     color: #00ffcc; 
-    margin-bottom: 5px; 
 }
 
 .player-stats {
@@ -114,6 +113,7 @@ html {
     padding: 12px;
     font-family: monospace;
     font-size: 14px;
+    margin: 20px 0;
 }
 
 .player-stats .stats-row {
@@ -384,8 +384,7 @@ body.inverted img.no-invert {
     font-size: 14px; 
     font-family: monospace; 
     color: #00ffcc; 
-    margin-bottom: 10px; 
-    height: 80px;
+    height: 100px;
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -514,7 +513,26 @@ a { color: #448aff; text-decoration: none; }
   </div>
 </div>
 
-<div id="disclaimerToggle" style="margin-top: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+<div id="versus">
+    <div class="ranking-title" style="color: #afff00">Choose one</div>
+    <div class="versus-wrapper">
+        <div class="versus_column" id="item-left" onclick="vote('left')">
+            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+            <h3 class="title" style="text-align: center; font-size: 16px;"></h3>
+        </div>
+        <div class="versus_column" id="item-right" onclick="vote('right')">
+            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+            <h3 class="title" style="text-align: center; font-size: 16px;"></h3>
+        </div>
+    </div>
+</div>
+
+<div class="ranking-container">
+    <div class="ranking-title" style="color: #afff00">Global Matrix Rank</div>
+    <div id="ranking-list"></div>
+</div>
+
+<div id="disclaimerToggle" style="margin: 20px 0 20px 0; cursor: pointer; display: flex; align-items: center; gap: 12px;">
     <span>
         <strong>Disclaimer</strong><span id="aboutLabel" style="color: #fff;"> & About</span>
     </span>
@@ -566,7 +584,6 @@ a { color: #448aff; text-decoration: none; }
     
     <p>The mechanics of impact transmission and collision detection are based on trust between clients in an open network without cryptographic guarantees of transaction authenticity and allow packet interception or forgery.</p>
 
-
 <div id="aboutToggle"><strong>About</strong></div>
 <div id="aboutContent" class="collapsed">
     <p>Resonance Match: Tap one meme to elevate its ranking, or other to drop opponent.</p>
@@ -587,33 +604,6 @@ a { color: #448aff; text-decoration: none; }
 </div>
 </div>
 
-<div id="logArea">
-    <div class="network-status open" style="margin-top: 10px;" id="statusToggle">
-        <span id="netStatus">Status: Connecting to node network... (<span id="nodeId">...</span>)</span>
-    </div>
-
-    <div id="logContainer"></div>
-</div>
-
-<div id="versus">
-    <div class="ranking-title" style="color: #afff00">Resonance Match</div>
-    <div class="versus-wrapper">
-        <div class="versus_column" id="item-left" onclick="vote('left')">
-            <div class="versus_thumbwrapper"><img src="" alt=""></div>
-            <h3 class="title" style="text-align: center; font-size: 16px;"></h3>
-        </div>
-        <div class="versus_column" id="item-right" onclick="vote('right')">
-            <div class="versus_thumbwrapper"><img src="" alt=""></div>
-            <h3 class="title" style="text-align: center; font-size: 16px;"></h3>
-        </div>
-    </div>
-</div>
-
-<div class="ranking-container">
-    <div class="ranking-title" style="color: #afff00">Global Matrix Rank</div>
-    <div id="ranking-list"></div>
-</div>
-
 <div class="main-panel">
     <h3 style="color: #afff00; text-align: center;">Broadcast</h3>
     <input type="text" id="new-title" class="admin-input" placeholder="Meme Title">
@@ -622,10 +612,17 @@ a { color: #448aff; text-decoration: none; }
     <label for="new-img-file" class="file-label" id="file-label-text">Select Meme Image</label>
     <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)">
 <button class="admin-btn inject-btn-bg" style="border: 2px solid #afff00;" onclick="addItem()">Inject Meme to Network</button>
-
 </div>
 
-<div class="exchange-panel" style="border-color: #afff00; background: #000; margin-top: 40px;">
+<div id="logArea">
+    <div class="network-status open" style="margin: 20px 0 5px 0;" id="statusToggle">
+        <span id="netStatus">Status: Connecting to node network... (<span id="nodeId">...</span>)</span>
+    </div>
+
+    <div id="logContainer"></div>
+</div>
+
+<div class="exchange-panel" style="border-color: #afff00; background: #000;">
     <h3 style="color: #afff00; text-align: center; margin-bottom: 4px;">Terra Incognita</h3>
     <div id="activityReadout" style="text-align: center; font-family: monospace; font-size: 12px; color: #888; margin-bottom: 8px;">
         <span style="color:#afff00">Votes 0</span> · <span style="color:#de00b2">Posts 0</span> · <span style="color:#00ffcc">Deliveries 0</span>
@@ -643,7 +640,7 @@ a { color: #448aff; text-decoration: none; }
 </div>
 
 <div class="player-stats">
-    <h3 style="text-align: center; font-family: sans-serif; color: #fff; margin-top: 0; margin-bottom: 12px;">State and Credits</h3>
+    <h3 style="text-align: center; font-family: sans-serif; color: #fff; margin-top: 0px; margin-bottom: 12px;">State and Credits</h3>
     
     <div class="stats-row" style="display: flex; gap: 10px;"> 
         <div class="stat-box" style="display: flex; flex-direction: column; align-items: center;">
