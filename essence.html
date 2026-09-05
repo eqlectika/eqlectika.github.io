@@ -25,7 +25,7 @@
     padding: 0 16px;
     min-height: 100vh;
 }    .panel{padding:0px;margin-top:14px}
-    .admin-input{width:100%;background:#000;color:#fff;border:0;outline:0;padding:14px 4px;margin:0 0 14px;font:14px monospace}
+    .admin-input{width:100%;background:#000;color:#fff;border:0;outline:0;padding:14px 0;margin:0 0 14px;font:14px monospace}
     .admin-input::placeholder{color:#999}
     textarea.admin-input{height:180px;resize:vertical}
     button,.admin-btn,.edit-btn,.send-btn{font:700 14px monospace;border:0;cursor:pointer}
@@ -65,21 +65,19 @@
     background: #111;
 }
 
-.ranking-img,.ranking-img.text-preview {
-    position: relative;  
-    width: 100% !important;
-    height: auto !important;  
-
-    padding: 20px 14px !important;
+.ranking-img.text-preview {
+    max-height: 106px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    padding: 16px 14px !important;
     font-size: 14px !important;
     line-height: 1.5 !important;
-    display: flex !important;
-    align-items: center;
+    display: block !important;
     background: #111 !important;
     color: #afff00 !important;
-    word-wrap: break-word;
-    overflow: hidden;
-    box-sizing: border-box;
+    word-wrap: break-word !important;
+    box-sizing: border-box !important;
     margin: 0 !important;
     border: 0 !important;
 }
@@ -122,7 +120,7 @@
 <div class="app-container">
 
 <div id="top" style="display:flex;align-items:flex-start;gap:15px;padding:14px;">
-<a href="https://t.me/eugenebox/"><img src="breakthrough.png" alt="Logo" style="height:36px;width:auto;"></a>
+<a href="index.html"><img src="breakthrough.png" alt="Logo" style="height:36px;width:auto;"></a>
 <div><div id="invertTrigger" onclick="syncAndKeepData()" style="margin-top:0px;font-family:monospace;font-size:22px;line-height:1;cursor:pointer;color:#ccc;">Essence</div><div style="margin:0 1px;font:14px monospace;letter-spacing:1px;color:#efbc40;">Breakthrough engine</div></div></div>
 
 <div id="versus">
@@ -218,22 +216,30 @@
 <div id="updatePanel" class="panel" style="margin-top:40px;cursor:pointer;color:#afff00;text-align:center;" onclick="syncAndKeepData()">Update</div>
 <div id="resetPanel" style="cursor:pointer;color:#ff3333;text-align:center;font-size:14px;margin:30px auto 0 auto;" onclick="resetToDefault()">Reset</div>
     
-    <div class="footer-credit">
-    <a href="/index.html" target="_self" style="display: inline-block; margin-bottom: 0px;">
-
-<img src="fleurdelis.png" class="no-invert" style="height: 64px; width: auto; display: block;">
-
-    </a>
-    <h2 style="font-family: 'Cinzel', serif; font-weight: bold;">
-<a href="/index.html" target="_self" style="color: #fff; letter-spacing: 1.5px; text-decoration: none;">Trust Fibonacci</a>
+<div class="footer-credit">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 50px;">
+        <a href="paramount.html">
+            <img src="star.png" class="no-invert" style="height: 42px; width: auto; display: block;">
+        </a>
+        <a href="index.html">
+            <img src="fleurdelis.png" class="no-invert" style="height: 64px; width: auto; display: block;">
+        </a>
+    </div>
+    
+    <h2 style="font-family: 'Cinzel', serif; font-weight: bold; margin: 20px 0 5px 0;">
+        <a href="index.html" target="_blank" style="color: #fff; letter-spacing: 1.5px; text-decoration: none;">Trust Fibonacci</a>
     </h2>
-<div style="margin: 0 0 70px 0; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-  <p style="margin: 15px 0 3px 0; color: #aaa; font-size: 14px;">Happiness loading… Please wait.</p>
-  <div style="width: 160px; background: #444; overflow: hidden;">
-    <div id="happiness-bar" class="progress-fill" style="width: 34%;"></div>
-  </div>
-</div>
-</div>
+    
+    <p style="letter-spacing: 3px; font-size: 12px; color: #fff; font-family: 'Cinzel', serif; margin: 0 0 20px 0;">
+        Virtual tools for endlessly improving life
+    </p>
+    
+    <div style="margin: 0 0 40px 0; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <p style="margin: 15px 0 3px 0; color: #aaa; font-size: 12px;">Happiness loading… Please wait.</p>
+        <div style="width: 160px; background: #444; overflow: hidden;">
+            <div id="happiness-bar" class="progress-fill" style="width: 34%;"></div>
+        </div>
+    </div>
 </div>
 <script>
 if ('serviceWorker' in navigator) {
@@ -1076,17 +1082,18 @@ function updateRankingList() {
         item.img = '';
         const own = item.sender === myId;
         const peers = item.sender === 'System-Genesis' ? 0 : (item.deliveredPeers ? item.deliveredPeers.length : 0);
-        const text = item.description || item.title || 'No description.';
+        const rating = Math.round(item.rating);
+        const description = item.description || item.title || 'No description.';
+        const text = `<span style="color: #fff;">${rating}</span> <span style="color: #afff00;">${description}</span>`;
         html += `<div id="card-${item.id}" class="ranking-item">
             <div class="ranking-img text-preview" style="position:relative;padding:20px 14px;display:flex;align-items:center;background:#111;color:#afff00;font-family:monospace;font-size:14px;line-height:1.5;word-wrap:break-word;overflow:hidden;cursor:pointer;" onclick="toggleDetails('${item.id}')">${text}</div>
-
         </div>
         <div id="details-${item.id}" class="item-details">
-            <span style="position:absolute;top:12px;left:14px;color:#afff00">${Math.round(item.rating)}</span>
+            <span style="position:absolute;top:12px;left:14px;color:#afff00">${rating}</span>
             <span class="peers">${peers} peers</span>
-<span onclick="event.stopPropagation();toggleDetails('${item.id}')" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);color:#afff00;cursor:pointer;font-size:18px;font-weight:bold;">✕</span>            
-${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
-            <p>${text}</p>
+            <span onclick="event.stopPropagation();toggleDetails('${item.id}')" style="position:absolute;top:12px;left:50%;transform:translateX(-50%);color:#afff00;cursor:pointer;font-size:18px;font-weight:bold;">✕</span>            
+            ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
+            <p>${item.description || item.title || 'No description.'}</p>
             <div class="actions">
                 ${own ? `<button class="edit-btn" onclick="event.stopPropagation();editItem('${item.id}')">Edit</button>` : '<span></span>'}
                 <button class="delete-btn" onclick="event.stopPropagation();deleteItemLocal('${item.id}')">Delete</button>
