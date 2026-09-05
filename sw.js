@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-paramount'; 
+const CACHE_NAME = 'version-essence'; 
 const CORE_ASSETS = [
     '/essence/',
     '/essence/index.html',
