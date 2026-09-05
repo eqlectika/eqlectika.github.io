@@ -625,7 +625,24 @@ a { color: #448aff; text-decoration: none; }
 
 </div>
 
-<div class="player-stats" style="margin-top: 50px;">
+<div class="exchange-panel" style="border-color: #afff00; background: #000; margin-top: 40px;">
+    <h3 style="color: #afff00; text-align: center; margin-bottom: 4px;">Terra Incognita</h3>
+    <div id="activityReadout" style="text-align: center; font-family: monospace; font-size: 12px; color: #888; margin-bottom: 8px;">
+        <span style="color:#afff00">Votes 0</span> · <span style="color:#de00b2">Posts 0</span> · <span style="color:#00ffcc">Deliveries 0</span>
+    </div>
+    <div id="activityRangeBtns" style="display: flex; gap: 6px; justify-content: center; margin-bottom: 10px; flex-wrap: wrap;">
+        <button type="button" class="activity-range-btn" data-range="week"  style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #afff00; border: 1px solid #afff00; cursor: pointer; border-radius: 3px;">Week</button>
+        <button type="button" class="activity-range-btn" data-range="month" style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">Month</button>
+        <button type="button" class="activity-range-btn" data-range="year"  style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">Year</button>
+        <button type="button" class="activity-range-btn" data-range="all"   style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">All</button>
+    </div>
+    <div style="position: relative; width: 100%; height: 180px; background: #000; box-sizing: border-box;">
+        <canvas id="activityChart" style="width: 100%; height: 100%; display: block;"></canvas>
+    </div>
+
+</div>
+
+<div class="player-stats">
     <h3 style="text-align: center; font-family: sans-serif; color: #fff; margin-top: 0; margin-bottom: 12px;">State and Credits</h3>
     
     <div class="stats-row" style="display: flex; gap: 10px;"> 
@@ -650,15 +667,7 @@ a { color: #448aff; text-decoration: none; }
     <div style="display: flex; gap: 10px;">
 <button class="admin-btn" style="flex: 1; padding: 12px; font-size: 14px;" onclick="convertImpacts('votes')"><span style="white-space: nowrap;">–1 Impact</span> <span style="white-space: nowrap;">+3 Votes</span></button>
 <button class="admin-btn" style="flex: 1; padding: 12px; font-size: 14px;" onclick="convertImpacts('posts')"><span style="white-space: nowrap;">–3 Impacts</span> <span style="white-space: nowrap;">+1 Post</span></button>
-
     </div>
-</div>
-
-<div class="transfer-panel">
-    <h3 style="text-align: center; color: #ff8b00">Transfer Impact(s)</h3>
-    <input type="text" id="target-peer" class="admin-input" placeholder="Target Peer (e.g., Peer-5851 or Custom ID)">
-    <input type="number" id="transfer-amount" class="admin-input" placeholder="Amount (e.g., 7)" min="1">
-    <button class="send-btn" onclick="transferImpact()">Send Impacts</button>
 </div>
 
 <div class="claim-panel">
@@ -667,21 +676,11 @@ a { color: #448aff; text-decoration: none; }
     <div id="claimTimer" style="font-family: monospace; font-size: 14px; text-align: center; color: #ccc; margin-top: 10px;"></div>
 </div>
 
-<div class="exchange-panel" style="border-color: #afff00; background: #000; margin-top: 20px;">
-    <h3 style="color: #afff00; text-align: center; margin-bottom: 4px;">Terra Incognita</h3>
-    <div id="activityReadout" style="text-align: center; font-family: monospace; font-size: 12px; color: #888; margin-bottom: 8px;">
-        <span style="color:#afff00">Votes 0</span> · <span style="color:#de00b2">Posts 0</span> · <span style="color:#00ffcc">Deliveries 0</span>
-    </div>
-    <div id="activityRangeBtns" style="display: flex; gap: 6px; justify-content: center; margin-bottom: 10px; flex-wrap: wrap;">
-        <button type="button" class="activity-range-btn" data-range="week"  style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #afff00; border: 1px solid #afff00; cursor: pointer; border-radius: 3px;">Week</button>
-        <button type="button" class="activity-range-btn" data-range="month" style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">Month</button>
-        <button type="button" class="activity-range-btn" data-range="year"  style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">Year</button>
-        <button type="button" class="activity-range-btn" data-range="all"   style="padding: 5px 12px; font-size: 12px; font-family: monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">All</button>
-    </div>
-    <div style="position: relative; width: 100%; height: 180px; background: #000; box-sizing: border-box;">
-        <canvas id="activityChart" style="width: 100%; height: 100%; display: block;"></canvas>
-    </div>
-
+<div class="transfer-panel">
+    <h3 style="text-align: center; color: #ff8b00">Transfer Impact(s)</h3>
+    <input type="text" id="target-peer" class="admin-input" placeholder="Target Peer (e.g., Peer-5851 or Custom ID)">
+    <input type="number" id="transfer-amount" class="admin-input" placeholder="Amount (e.g., 7)" min="1">
+    <button class="send-btn" onclick="transferImpact()">Send Impacts</button>
 </div>
 
 <div class="exchange-panel" style="border-color: #ccc; background: #000; margin-top: 20px;">
