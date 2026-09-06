@@ -67,32 +67,30 @@ overflow: hidden;
 #t3 { --default-bg: #000080; --default-color: #FFD54F; }
 
 .editor {
-  width: 100%;
-  height: 100%;
-  background: var(--bg, var(--default-bg));
-  color: var(--color, var(--default-color));
-  box-sizing: border-box;
-  padding: 15px;
-  font-size: 18px;
-  outline: none;
-  touch-action: auto;
-  
-  /* Жестко отключаем выделение везде по умолчанию */
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none; 
-  
-  overflow-y: auto;
-  font-family: var(--fn, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
-  white-space: pre-wrap;
+width: 100%;
+height: 100%;
+background: var(--bg, var(--default-bg));
+color: var(--color, var(--default-color));
+box-sizing: border-box;
+padding: 15px;
+font-size: 18px;
+outline: none;
+touch-action: auto;
+/* Разрешаем текст и выделение двойным тапом/ползунками, но отключаем системное всплывающее меню */
+-webkit-user-select: text;
+user-select: text;
+-webkit-touch-callout: none; 
+overflow-y: auto;
+font-family: var(--fn, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+white-space: pre-wrap;
 }
 
-/* Разрешаем выделение и работу с текстом ТОЛЬКО когда поле находится в фокусе (когда вы туда кликнули и пишете) */
-.editor:focus {
-  -webkit-user-select: text;
-  user-select: text;
+.editor:empty::before {
+content: attr(data-placeholder);
+pointer-events: none;
+display: block;
+white-space: pre-wrap;
 }
-
 
 .img-preview {
   position: absolute;
@@ -195,20 +193,22 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 .format-btn:active {
   background: #555;
 }
-
 #settings-modal {
+  height: 100dvh !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  touch-action: auto !important;
   box-sizing: border-box;
+  padding: 12px;
 }
-
 
 #settings-modal > div {
   max-height: calc(100dvh - 24px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y !important;
   box-sizing: border-box;
 }
-
-
 </style>
 </head>
 <body>
@@ -423,11 +423,7 @@ function loadData() {
   textareas.forEach((ta, i) => {
     const pos = imgPositions[i];
     const img = images[i];
-
-  ta.addEventListener('selectstart', (e) => {
-    e.preventDefault();
-  });
-
+    
     img.style.top = pos.top;
     img.style.bottom = pos.bottom;
     img.style.left = pos.left;
@@ -644,17 +640,9 @@ textareas.forEach((ta, i) => {
         imgActionContainer.style.display = 'none';
       }
 
-      const modalContent = modal.querySelector('div');
-      if (modalContent) {
-        modalContent.scrollTo({ top: 0, behavior: 'instant' });
-      }
-
-
-
       modal.style.display = 'flex';
     }, 1200);
   };
-
 
   const stopLongPress = () => clearTimeout(textareaLongPressTimer);
 
