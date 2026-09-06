@@ -173,6 +173,62 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   box-shadow: 0 0 50px rgba(0,0,0,0.8);
   border-radius: 8px;
 }
+#format-toolbar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+#align-toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.format-btn {
+  padding: 10px 6px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background: #333;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.format-btn:active {
+  background: #555;
+}
+#settings-modal {
+  height: 100dvh !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  touch-action: auto !important;
+  box-sizing: border-box;
+  padding: 12px;
+}
+
+#settings-modal > div {
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y !important;
+  box-sizing: border-box;
+}
+.format-btn[data-align="left"] {
+  text-align: left;
+}
+
+.format-btn[data-align="center"] {
+  text-align: center;
+}
+
+.format-btn[data-align="right"] {
+  text-align: right;
+}
 </style>
 </head>
 <body>
@@ -200,7 +256,19 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       <option value='"American Typewriter", Courier, monospace'>Typewriter</option>
       <option value='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'>System UI</option>
     </select>
+<div id="format-toolbar">
+  <button type="button" class="format-btn" data-format="bold">B</button>
+<button type="button" class="format-btn" data-format="italic"><em>i</em></button>
+  <button type="button" class="format-btn" data-format="underline">U</button>
+  <button type="button" class="format-btn" data-format="strikeThrough">S</button>
+  <button type="button" class="format-btn" data-format="normal">N</button>
+</div>
 
+<div id="align-toolbar">
+<button type="button" style="padding: 6px 16px" class="format-btn" data-align="left">≡</button>
+<button type="button" style="padding: 6px 16px" class="format-btn" data-align="center">≡</button>
+<button type="button" style="padding: 6px 16px" class="format-btn" data-align="right">≡</button>
+</div>
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font Size:</label>
     <select id="setting-size" style="margin-bottom:16px;">
       <option value="14px">Small (14px)</option>
@@ -484,7 +552,76 @@ const chkDelImg = document.getElementById('setting-del-img');
 const imgActionContainer = document.getElementById('image-action-container');
 const btnSave = document.getElementById('setting-save');
 const btnCancel = document.getElementById('setting-cancel');
+let savedRange = null;
 
+function saveSelection() {
+  const selection = window.getSelection();
+
+  if (!selection || selection.rangeCount === 0) return;
+
+  const range = selection.getRangeAt(0);
+
+  if (activeIndex !== null) {
+    const ta = textareas[activeIndex];
+
+    if (ta.contains(range.commonAncestorContainer)) {
+      savedRange = range.cloneRange();
+    }
+  }
+}
+
+function restoreSelection() {
+  if (!savedRange) return;
+
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(savedRange);
+}
+
+function applyFormat(command) {
+  if (activeIndex === null) return;
+
+  const ta = textareas[activeIndex];
+
+  restoreSelection();
+  ta.focus();
+
+  if (command === 'normal') {
+    document.execCommand('removeFormat', false, null);
+  } else {
+    document.execCommand(command, false, null);
+  }
+
+  saveToDB(activeIndex, ta.innerHTML);
+  saveSelection();
+}
+
+document.querySelectorAll('[data-format]').forEach(button => {
+  button.addEventListener('click', () => {
+    applyFormat(button.dataset.format);
+  });
+});
+
+document.querySelectorAll('[data-align]').forEach(button => {
+  button.addEventListener('click', () => {
+    if (activeIndex === null) return;
+
+    const ta = textareas[activeIndex];
+
+    restoreSelection();
+    ta.focus();
+
+    document.execCommand(
+      'justify' + button.dataset.align.charAt(0).toUpperCase() +
+      button.dataset.align.slice(1),
+      false,
+      null
+    );
+
+    saveToDB(activeIndex, ta.innerHTML);
+    saveSelection();
+  });
+});
 let activeIndex = null;
 let textareaLongPressTimer;
 
@@ -520,10 +657,13 @@ textareas.forEach((ta, i) => {
     }
   });
 
-  const startLongPress = () => {
-    activeIndex = i;
-    textareaLongPressTimer = setTimeout(() => {
-      ta.blur();
+const startLongPress = () => {
+  activeIndex = i;
+
+  saveSelection();
+
+  textareaLongPressTimer = setTimeout(() => {
+    ta.blur();
 
       selFont.value = localStorage.getItem(`q_f_${i}`) || selFont.options[0].value;
       selSize.value = localStorage.getItem(`q_s_${i}`) || '18px';
