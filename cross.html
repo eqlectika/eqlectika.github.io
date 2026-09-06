@@ -21,11 +21,11 @@
 <style>
 /* ——— СКРОЛЛ-БАРЫ МИНИМИЗИРОВАНЫ ——— */
 * {
-  scrollbar-width: thin;          /* Firefox */
-  scrollbar-color: transparent transparent; /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
 }
 *::-webkit-scrollbar {
-  width: 4px;                   /* Safari/Chrome */
+  width: 4px;
   height: 4px;
   background: transparent;
 }
@@ -61,45 +61,45 @@ height: 100%;
 overflow: hidden;
 }
 
-#t0 { 
-  --default-bg: #ff8700; 
-  --default-color: #000000; 
-}
+#t0 { --default-bg: #ff8700; --default-color: #000000; }
 #t1 { --default-bg: #005f00; --default-color: #E1BEE7; }
 #t2 { --default-bg: #870000; --default-color: #81C784; }
 #t3 { --default-bg: #000080; --default-color: #FFD54F; }
 
 .editor {
-width: 100%;
-height: 100%;
-background: var(--bg, var(--default-bg));
-color: var(--color, var(--default-color));
-box-sizing: border-box;
-padding: 15px;
-font-size: 18px;
-outline: none;
-touch-action: auto;
--webkit-user-select: text;
-user-select: text;
--webkit-touch-callout: default;
-overflow-y: auto;
-font-family: var(--fn, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
-white-space: pre-wrap;
+  width: 100%;
+  height: 100%;
+  background: var(--bg, var(--default-bg));
+  color: var(--color, var(--default-color));
+  box-sizing: border-box;
+  padding: 15px;
+  font-size: 18px;
+  outline: none;
+  touch-action: auto;
+  
+  /* Жестко отключаем выделение везде по умолчанию */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none; 
+  
+  overflow-y: auto;
+  font-family: var(--fn, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+  white-space: pre-wrap;
 }
 
-.editor:empty::before {
-content: attr(data-placeholder);
-pointer-events: none;
-display: block;
-white-space: pre-wrap;
+/* Разрешаем выделение и работу с текстом ТОЛЬКО когда поле находится в фокусе (когда вы туда кликнули и пишете) */
+.editor:focus {
+  -webkit-user-select: text;
+  user-select: text;
 }
+
 
 .img-preview {
   position: absolute;
   max-width: 30%;
   max-height: 30%;
   border-radius: 4px;
-  pointer-events: auto; /* Разрешаем клики */
+  pointer-events: auto;
   cursor: pointer;
   display: none;
   opacity: 0.7;
@@ -138,7 +138,6 @@ pointer-events: none;
 transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* КРУПНЫЕ И ЭСТЕТИЧНЫЕ ЭЛЕМЕНТЫ МЕНЮ НАСТРОЕК */
 #settings-modal select {
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -173,12 +172,6 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   box-shadow: 0 0 50px rgba(0,0,0,0.8);
   border-radius: 8px;
 }
-#format-toolbar {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  margin-bottom: 16px;
-}
 
 #align-toolbar {
   display: grid;
@@ -202,33 +195,20 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 .format-btn:active {
   background: #555;
 }
+
 #settings-modal {
-  height: 100dvh !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch;
-  touch-action: auto !important;
   box-sizing: border-box;
-  padding: 12px;
 }
+
 
 #settings-modal > div {
   max-height: calc(100dvh - 24px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-y !important;
   box-sizing: border-box;
 }
-.format-btn[data-align="left"] {
-  text-align: left;
-}
 
-.format-btn[data-align="center"] {
-  text-align: center;
-}
 
-.format-btn[data-align="right"] {
-  text-align: right;
-}
 </style>
 </head>
 <body>
@@ -240,7 +220,7 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 <a href="#" class="handle" id="handle" draggable="false"><img src="handle.png" alt="Logo" draggable="false"></a>
 </div>
 
-<!-- Мобильное меню настроек поля (увеличенные размеры) -->
+<!-- Мобильное меню настроек поля -->
 <div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
   <div style="background:#222; color:#fff; padding:24px; border-radius:16px; width:85%; max-width:360px; font-family:sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
     <h3 style="margin-top:0; margin-bottom:20px; font-size:20px; text-align:center; font-weight:bold;">Field Settings</h3>
@@ -256,19 +236,13 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       <option value='"American Typewriter", Courier, monospace'>Typewriter</option>
       <option value='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'>System UI</option>
     </select>
-<div id="format-toolbar">
-  <button type="button" class="format-btn" data-format="bold">B</button>
-<button type="button" class="format-btn" data-format="italic"><em>i</em></button>
-  <button type="button" class="format-btn" data-format="underline">U</button>
-  <button type="button" class="format-btn" data-format="strikeThrough">S</button>
-  <button type="button" class="format-btn" data-format="normal">N</button>
-</div>
 
-<div id="align-toolbar">
-<button type="button" style="padding: 6px 16px" class="format-btn" data-align="left">≡</button>
-<button type="button" style="padding: 6px 16px" class="format-btn" data-align="center">≡</button>
-<button type="button" style="padding: 6px 16px" class="format-btn" data-align="right">≡</button>
-</div>
+    <div id="align-toolbar">
+      <button type="button" style="padding: 6px 16px" class="format-btn" data-align="left">≡</button>
+      <button type="button" style="padding: 6px 16px" class="format-btn" data-align="center">≡</button>
+      <button type="button" style="padding: 6px 16px" class="format-btn" data-align="right">≡</button>
+    </div>
+
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font Size:</label>
     <select id="setting-size" style="margin-bottom:16px;">
       <option value="14px">Small (14px)</option>
@@ -277,38 +251,22 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       <option value="32px">Extra Large (32px)</option>
     </select>
 
-<div style="display:flex; gap:12px; margin-bottom:16px;">
-  <div style="flex:1;">
-    <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Background:</label>
-    <button id="bg-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#ff8700; cursor:pointer; border:2px solid #555; padding:0;">
-      <span style="color:#fff; font-size:14px;">Choose Color</span>
-    </button>
-    <input type="color" id="setting-bg" style="display:none;">
-  </div>
-  <div style="flex:1;">
-    <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Text Color:</label>
-    <button id="color-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#000000; cursor:pointer; border:2px solid #555; padding:0;">
-      <span style="color:#fff; font-size:14px;">Choose Color</span>
-    </button>
-    <input type="color" id="setting-color" style="display:none;">
-  </div>
-</div>
-
-<script>
-document.getElementById('bg-picker-btn').onclick = () => {
-  document.getElementById('setting-bg').click();
-};
-document.getElementById('color-picker-btn').onclick = () => {
-  document.getElementById('setting-color').click();
-};
-
-document.getElementById('setting-bg').oninput = function() {
-  document.getElementById('bg-picker-btn').style.background = this.value;
-};
-document.getElementById('setting-color').oninput = function() {
-  document.getElementById('color-picker-btn').style.background = this.value;
-};
-</script>
+    <div style="display:flex; gap:12px; margin-bottom:16px;">
+      <div style="flex:1; position:relative;">
+        <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Background:</label>
+        <button type="button" id="bg-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#ff8700; cursor:pointer; border:2px solid #555; padding:0; display:flex; align-items:center; justify-content:center;">
+          <span style="color:#fff; font-size:13px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); pointer-events:none;">Color</span>
+        </button>
+        <input type="color" id="setting-bg" style="position:absolute; bottom:0; left:0; width:100%; height:100%; opacity:0; pointer-events:auto; cursor:pointer;">
+      </div>
+      <div style="flex:1; position:relative;">
+        <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Text Color:</label>
+        <button type="button" id="color-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#000000; cursor:pointer; border:2px solid #555; padding:0; display:flex; align-items:center; justify-content:center;">
+          <span style="color:#fff; font-size:13px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); pointer-events:none;">Color</span>
+        </button>
+        <input type="color" id="setting-color" style="position:absolute; bottom:0; left:0; width:100%; height:100%; opacity:0; pointer-events:auto; cursor:pointer;">
+      </div>
+    </div>
 
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Image Position:</label>
     <select id="setting-pos" style="margin-bottom:20px;">
@@ -325,42 +283,48 @@ document.getElementById('setting-color').oninput = function() {
     </div>
 
     <div style="display:flex; gap:12px;">
-      <button id="setting-cancel" style="flex:1; padding:12px; border:none; border-radius:8px; background:#444; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Cancel</button>
-      <button id="setting-save" style="flex:1; padding:12px; border:none; border-radius:8px; background:#ff8700; color:#000; font-size:16px; font-weight:bold; cursor:pointer;">Save</button>
+      <button type="button" id="setting-cancel" style="flex:1; padding:12px; border:none; border-radius:8px; background:#444; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Cancel</button>
+      <button type="button" id="setting-save" style="flex:1; padding:12px; border:none; border-radius:8px; background:#ff8700; color:#000; font-size:16px; font-weight:bold; cursor:pointer;">Save</button>
     </div>
-    <div id="update-app"
-     style="text-align:center; margin:20px; color:#aaa; font-size:13px; font-weight: bold; cursor:pointer;">
+    <div id="update-app" style="text-align:center; margin:20px; color:#aaa; font-size:13px; font-weight: bold; cursor:pointer;">
        Update
     </div>
   </div>
 </div>
 
 <script>
+const inpBg = document.getElementById('setting-bg');
+const inpColor = document.getElementById('setting-color');
+const bgPickerBtn = document.getElementById('bg-picker-btn');
+const colorPickerBtn = document.getElementById('color-picker-btn');
+
+inpBg.addEventListener('input', (e) => {
+  bgPickerBtn.style.background = e.target.value;
+});
+
+inpColor.addEventListener('input', (e) => {
+  colorPickerBtn.style.background = e.target.value;
+});
+
 let refreshing = false;
 let updateWorker = null;
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').then((registration) => {
-
     registration.update();
-
-
     if (registration.waiting) {
       updateWorker = registration.waiting;
     }
-
     registration.addEventListener('updatefound', () => {
       updateWorker = registration.installing;
       updateWorker.addEventListener('statechange', () => {
         if (updateWorker.state === 'installed' && navigator.serviceWorker.controller) {
-
           const updateEl = document.getElementById('update-app');
-          if (updateEl) updateEl.style.color = '#ff8700'; // Подсветим оранжевым
+          if (updateEl) updateEl.style.color = '#ff8700';
         }
       });
     });
   });
-
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!refreshing) {
@@ -370,20 +334,14 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-
 document.getElementById('update-app').onclick = () => {
   if (updateWorker) {
-
     updateWorker.postMessage({ type: 'SKIP_WAITING' });
   } else {
-
     window.location.reload(true);
   }
 };
-</script>
 
-
-<script>
 const container = document.getElementById('app');
 const handle = document.getElementById('handle');
 const textareas = document.querySelectorAll('.editor');
@@ -465,7 +423,11 @@ function loadData() {
   textareas.forEach((ta, i) => {
     const pos = imgPositions[i];
     const img = images[i];
-    
+
+  ta.addEventListener('selectstart', (e) => {
+    e.preventDefault();
+  });
+
     img.style.top = pos.top;
     img.style.bottom = pos.bottom;
     img.style.left = pos.left;
@@ -587,87 +549,30 @@ function handleImageFile(file, index, ta) {
   reader.readAsDataURL(file);
 }
 
-// Элементы модального окна
 const modal = document.getElementById('settings-modal');
 const selFont = document.getElementById('setting-font');
 const selSize = document.getElementById('setting-size');
-const inpBg = document.getElementById('setting-bg');
-const inpColor = document.getElementById('setting-color');
 const selPos = document.getElementById('setting-pos');
 const chkDelImg = document.getElementById('setting-del-img');
 const imgActionContainer = document.getElementById('image-action-container');
 const btnSave = document.getElementById('setting-save');
 const btnCancel = document.getElementById('setting-cancel');
-let savedRange = null;
-
-function saveSelection() {
-  const selection = window.getSelection();
-
-  if (!selection || selection.rangeCount === 0) return;
-
-  const range = selection.getRangeAt(0);
-
-  if (activeIndex !== null) {
-    const ta = textareas[activeIndex];
-
-    if (ta.contains(range.commonAncestorContainer)) {
-      savedRange = range.cloneRange();
-    }
-  }
-}
-
-function restoreSelection() {
-  if (!savedRange) return;
-
-  const selection = window.getSelection();
-  selection.removeAllRanges();
-  selection.addRange(savedRange);
-}
-
-function applyFormat(command) {
-  if (activeIndex === null) return;
-
-  const ta = textareas[activeIndex];
-
-  restoreSelection();
-  ta.focus();
-
-  if (command === 'normal') {
-    document.execCommand('removeFormat', false, null);
-  } else {
-    document.execCommand(command, false, null);
-  }
-
-  saveToDB(activeIndex, ta.innerHTML);
-  saveSelection();
-}
-
-document.querySelectorAll('[data-format]').forEach(button => {
-  button.addEventListener('click', () => {
-    applyFormat(button.dataset.format);
-  });
-});
 
 document.querySelectorAll('[data-align]').forEach(button => {
   button.addEventListener('click', () => {
     if (activeIndex === null) return;
-
     const ta = textareas[activeIndex];
-
-    restoreSelection();
     ta.focus();
-
     document.execCommand(
       'justify' + button.dataset.align.charAt(0).toUpperCase() +
       button.dataset.align.slice(1),
       false,
       null
     );
-
     saveToDB(activeIndex, ta.innerHTML);
-    saveSelection();
   });
 });
+
 let activeIndex = null;
 let textareaLongPressTimer;
 
@@ -703,18 +608,33 @@ textareas.forEach((ta, i) => {
     }
   });
 
-const startLongPress = () => {
-  activeIndex = i;
+  // Блокируем стандартное нативное меню по долгому тапу
+  ta.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+  });
 
-  saveSelection();
+  const startLongPress = () => {
+    activeIndex = i;
 
-  textareaLongPressTimer = setTimeout(() => {
-    ta.blur();
+    textareaLongPressTimer = setTimeout(() => {
+      ta.blur();
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+      }
 
       selFont.value = localStorage.getItem(`q_f_${i}`) || selFont.options[0].value;
       selSize.value = localStorage.getItem(`q_s_${i}`) || '18px';
-      inpBg.value = localStorage.getItem(`q_b_${i}`) || getComputedStyle(ta).getPropertyValue('--default-bg').trim();
-      inpColor.value = localStorage.getItem(`q_c_${i}`) || getComputedStyle(ta).getPropertyValue('--default-color').trim();
+      
+      const currentBg = localStorage.getItem(`q_b_${i}`) || getComputedStyle(ta).getPropertyValue('--default-bg').trim();
+      const currentColor = localStorage.getItem(`q_c_${i}`) || getComputedStyle(ta).getPropertyValue('--default-color').trim();
+      
+      inpBg.value = currentBg;
+      bgPickerBtn.style.background = currentBg;
+      
+      inpColor.value = currentColor;
+      colorPickerBtn.style.background = currentColor;
+
       selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
 
       if (images[i].style.display === 'block') {
@@ -724,9 +644,17 @@ const startLongPress = () => {
         imgActionContainer.style.display = 'none';
       }
 
+      const modalContent = modal.querySelector('div');
+      if (modalContent) {
+        modalContent.scrollTo({ top: 0, behavior: 'instant' });
+      }
+
+
+
       modal.style.display = 'flex';
-    }, 1500);
+    }, 1200);
   };
+
 
   const stopLongPress = () => clearTimeout(textareaLongPressTimer);
 
@@ -735,6 +663,7 @@ const startLongPress = () => {
   ta.addEventListener('mouseleave', stopLongPress);
   ta.addEventListener('touchstart', startLongPress, {passive: true});
   ta.addEventListener('touchend', stopLongPress);
+  ta.addEventListener('touchmove', stopLongPress);
 
   const img = images[i];
   let imgLongPressTimer;
@@ -780,6 +709,7 @@ btnSave.onclick = () => {
 
   targetTa.style.setProperty('--bg', inpBg.value);
   localStorage.setItem(`q_b_${activeIndex}`, inpBg.value);
+  
   targetTa.style.setProperty('--color', inpColor.value);
   localStorage.setItem(`q_c_${activeIndex}`, inpColor.value);
 
