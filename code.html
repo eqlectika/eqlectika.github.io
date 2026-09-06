@@ -50,12 +50,6 @@ body {
       height: 100%;
     }
 
-    #lineNumbering {
-      width: 40px; padding: 10px 5px; text-align: right; font-family: monospace;
-      font-size: 14px; line-height: 1.2; color: #666; background-color: #111;
-      user-select: none; white-space: pre; overflow: hidden; box-sizing: border-box; flex-shrink: 0;
-    }
-
     #editor {
       flex: 1; padding: 10px; border: none; resize: none; font-family: monospace;
       font-size: 14px; line-height: 1.2; background-color: black; color: white; 
@@ -114,7 +108,6 @@ body {
 <body>
 <script src="pwa-init.js"></script>
   <div id="editorContainer">
-    <div id="lineNumbering">1</div>
     <textarea id="editor" placeholder="Type your code here..."></textarea>
   </div>
 
@@ -152,7 +145,6 @@ body {
     const searchField = document.getElementById("searchField");
     const prevMatchButton = document.getElementById("prevMatchButton");
     const nextMatchButton = document.getElementById("nextMatchButton");
-    const lineNumbering = document.getElementById("lineNumbering");
     let searchMatches = [];
     let currentMatchIndex = -1;
     let currentSearchTerm = "";
@@ -161,18 +153,9 @@ body {
       js: "application/javascript", css: "text/css",
     };
 
-    function updateLineNumbers() {
-        const lines = editor.value.split('\n');
-        lineNumbering.textContent = Array.from({ length: lines.length }, (_, i) => i + 1).join('\n');
-    }
-
     editor.addEventListener('input', () => {
         preview.srcdoc = editor.value;
-        updateLineNumbers();
     });
-
-    editor.addEventListener('scroll', () => { lineNumbering.scrollTop = editor.scrollTop; });
-    updateLineNumbers();
 
     saveButton.addEventListener("click", () => {
       const format = fileFormat.value;
@@ -239,10 +222,6 @@ editor.addEventListener('touchmove', (e) => {
   }
 }, { passive: false });
 
-
-
-
-
 editor.addEventListener('pointerdown', () => {
   window.addEventListener('wheel', stopGlobalScroll, { passive: false });
   window.addEventListener('touchmove', stopGlobalScroll, { passive: false });
@@ -252,11 +231,6 @@ window.addEventListener('pointerup', () => {
   window.removeEventListener('wheel', stopGlobalScroll);
   window.removeEventListener('touchmove', stopGlobalScroll);
 });
-
-
-
-
-
   </script>
 </body>
 </html>
