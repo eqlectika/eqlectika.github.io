@@ -8,14 +8,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
 <link href="https://fonts.cdnfonts.com/css/copperplate-gothic-std" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <title>Cross Notes | Meme Editor</title>
 
 <style>
@@ -76,19 +75,11 @@ padding: 15px;
 font-size: 18px;
 outline: none;
 touch-action: auto;
-/* Разрешаем текст и выделение двойным тапом/ползунками, но отключаем системное всплывающее меню */
 -webkit-user-select: text;
 user-select: text;
 -webkit-touch-callout: none; 
 overflow-y: auto;
 font-family: var(--fn, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
-white-space: pre-wrap;
-}
-
-.editor:empty::before {
-content: attr(data-placeholder);
-pointer-events: none;
-display: block;
 white-space: pre-wrap;
 }
 
@@ -209,6 +200,18 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   touch-action: pan-y !important;
   box-sizing: border-box;
 }
+
+.editor:focus {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.editor:empty::before {
+  content: attr(data-placeholder);
+  pointer-events: none;
+  display: block;
+  white-space: pre-wrap;
+}
 </style>
 </head>
 <body>
@@ -227,13 +230,13 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font:</label>
     <select id="setting-font" style="margin-bottom:16px;">
-      <option value='"Luckiest Guy", Arial, sans-serif'>Luckiest Guy</option>
-      <option value='"Roboto Condensed", Arial, sans-serif'>Roboto Condensed</option>
-      <option value='"Lato", Arial, sans-serif'>Lato</option>
-      <option value='"Playfair Display", serif, monospace'>Playfair Display</option>
-      <option value='"Unbounded", Arial, monospace'>Unbounded</option>
-      <option value='Copperplate, "Copperplate Gothic Bold", sans-serif'>Copperplate</option>
-      <option value='"American Typewriter", Courier, monospace'>Typewriter</option>
+<option value="'Luckiest Guy', Arial, sans-serif">Luckiest Guy</option>
+<option value="'Roboto Condensed', Arial, sans-serif">Roboto Condensed</option>
+<option value="'Lato', Arial, sans-serif">Lato</option>
+<option value="'Playfair Display', serif">Playfair Display</option>
+<option value="'Unbounded', Arial, sans-serif">Unbounded</option>
+<option value='Copperplate, "Copperplate Gothic Bold", sans-serif'>Copperplate</option>
+<option value="'Courier Prime', 'American Typewriter', 'Courier New', monospace">Typewriter</option>
       <option value='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'>System UI</option>
     </select>
 
@@ -286,7 +289,7 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       <button type="button" id="setting-cancel" style="flex:1; padding:12px; border:none; border-radius:8px; background:#444; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Cancel</button>
       <button type="button" id="setting-save" style="flex:1; padding:12px; border:none; border-radius:8px; background:#ff8700; color:#000; font-size:16px; font-weight:bold; cursor:pointer;">Save</button>
     </div>
-    <div id="update-app" style="text-align:center; margin:20px; color:#aaa; font-size:13px; font-weight: bold; cursor:pointer;">
+    <div id="update-app" style="text-align:center; margin:40px; color:#aaa; font-size:13px; font-weight: bold; cursor:pointer;">
        Update
     </div>
   </div>
@@ -357,7 +360,7 @@ let currentDesign = parseInt(localStorage.getItem('q_handle_design') || '0');
 const fontsPool = [
   '"Luckiest Guy", Arial, sans-serif',
   'Copperplate, "Copperplate Gothic Bold", sans-serif',
-  '"American Typewriter", Courier, monospace',
+  "'Courier Prime', 'American Typewriter', monospace",
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
 ];
 
