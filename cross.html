@@ -336,10 +336,52 @@ document.getElementById('setting-color').oninput = function() {
 </div>
 
 <script>
+let refreshing = false;
+let updateWorker = null;
+
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js');
+  navigator.serviceWorker.register('/sw.js').then((registration) => {
+
+    registration.update();
+
+
+    if (registration.waiting) {
+      updateWorker = registration.waiting;
+    }
+
+    registration.addEventListener('updatefound', () => {
+      updateWorker = registration.installing;
+      updateWorker.addEventListener('statechange', () => {
+        if (updateWorker.state === 'installed' && navigator.serviceWorker.controller) {
+
+          const updateEl = document.getElementById('update-app');
+          if (updateEl) updateEl.style.color = '#ff8700'; // Подсветим оранжевым
+        }
+      });
+    });
+  });
+
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
 }
+
+
+document.getElementById('update-app').onclick = () => {
+  if (updateWorker) {
+
+    updateWorker.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+
+    window.location.reload(true);
+  }
+};
 </script>
+
 
 <script>
 const container = document.getElementById('app');
