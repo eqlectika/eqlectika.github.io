@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-image'; 
+const CACHE_NAME = 'version-width'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
