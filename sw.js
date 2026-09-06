@@ -57,12 +57,19 @@ const CORE_ASSETS = [
 
 self.addEventListener('install', event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => {
-            return cache.addAll(CORE_ASSETS);
+        caches.open(CACHE_NAME).then(async cache => {
+            for (const asset of CORE_ASSETS) {
+                try {
+                    await cache.add(asset);
+                } catch (err) {
+                    console.warn('Failed to cache asset during install:', asset, err);
+                }
+            }
         })
     );
-    self.skipWaiting(); 
+    self.self?.skipWaiting?.() || self.skipWaiting();
 });
+
 
 self.addEventListener('activate', event => {
     event.waitUntil(
