@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-margin'; 
+const CACHE_NAME = 'version-image'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
