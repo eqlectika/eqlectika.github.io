@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-color'; 
+const CACHE_NAME = 'version-paragraph'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
