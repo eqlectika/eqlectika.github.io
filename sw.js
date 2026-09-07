@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-planet'; 
+const CACHE_NAME = 'version-color'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
