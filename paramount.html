@@ -33,7 +33,7 @@ html {
 
 .edit-btn {
     width: 100%;
-    background: #0097ff;
+    background: #afff0050;
     color: white;
     border: none;
     padding: 10px 15px;
@@ -46,6 +46,21 @@ html {
 }
 
 .edit-btn:hover { background: #2979ff; }
+
+#new-desc {
+  margin: 0.8em 0 !important;
+}
+
+.item-details div {
+  margin: 0.8em 0 !important;
+}
+
+.item-details p {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    line-height: 1.8 !important;
+    margin: 0.8em 0 !important;
+}
 
 .external-link { 
     color: #448aff; 
@@ -1664,7 +1679,8 @@ function updateRankingList() {
             ${deliveryStatusHtml}
 ${item.sender === myId ? `<button class="edit-btn" onclick="event.stopPropagation(); editItem('${item.id}')">Edit and/or Re-inject Meme (free)</button>` : `<span style="color: #666; font-size: 12px;">by ${item.sender}</span>`}
 ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
-            <p>${item.description || 'No description.'}</p>
+${(item.description || 'No description.').split('\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('')}
+
             <button class="admin-btn" type="button" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
         </div>`;
     });
