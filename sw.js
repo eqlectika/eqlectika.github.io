@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-paragraph'; 
+const CACHE_NAME = 'version-focus'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
