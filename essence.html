@@ -124,6 +124,78 @@
     #new-desc::placeholder,
     #new-url::placeholder {
     }
+
+    #disclaimerText.collapsed { display: none; }
+#helpText.collapsed { display: none; }
+#loreText.collapsed { display: none; }
+    
+#statusToggle, #disclaimerToggle, #helpToggle, #loreToggle {
+    cursor: pointer;
+}
+
+.network-status::before,
+#disclaimerToggle::before,
+#helpToggle::before,
+#loreToggle::before {
+    content: "▶ ";
+}
+
+.network-status.open::before,
+#disclaimerToggle.open::before,
+#helpToggle.open::before,
+#loreToggle.open::before {
+    content: "▼ ";
+}
+
+
+#disclaimerToggle { 
+    background: #000; 
+    font-size: 14px; 
+font-family: 'Unbounded', monospace;
+    color: #ff2440; 
+}
+#helpToggle, #loreToggle { 
+    background: #000; 
+    font-size: 14px; 
+font-family: 'Unbounded', monospace;
+    color: #fff; 
+    margin-bottom: 10px;  
+}
+
+#disclaimerText, #helpText, #loreText {    
+    background: #000;    
+    font-size: 14px;    
+font-family: 'Unbounded', monospace;
+    color: #ccc;    
+    margin: 0 0 10px 0;
+    line-height: 1.5;
+}
+
+#disclaimerToggle, #disclaimerText, 
+#helpToggle, #helpText, 
+#loreToggle, #loreText,
+.claim-panel, .exchange-panel, .transfer-panel,
+#desktopWarningPanel, #mobileWarningPanel {
+    font-size: 14px !important; 
+}
+
+#aboutToggle {
+    cursor: pointer;
+    margin: 0 0 10px 0;
+    display: block;
+}
+
+#aboutToggle::before {
+    content: "▶ ";
+}
+
+#aboutToggle.open::before {
+    content: "▼ ";
+}
+
+#aboutContent.collapsed {
+    display: none;
+}
 </style>
 </head>
 <body>
@@ -149,6 +221,79 @@
 <p style="text-align:center;font-size:12px; margin:0 0 20px 0">External currently votes have an effect</p>
 <div class="ranking-container">
     <div id="ranking-list"></div>
+</div>
+
+<div id="disclaimerToggle" style="padding: 0 10px; margin: 30px 0 10px 0; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+    <span>
+        <strong>Disclaimer</strong><span id="aboutLabel" style="color: #fff;"> & About</span>
+    </span>
+    <span id="updateAvailableLine" style="display: none; color: #0097ff; font-size: 14px; font-family: monospace; cursor: pointer;" onclick="event.stopPropagation(); document.getElementById('disclaimerToggle').click()">
+        Update Available
+    </span>
+</div>
+
+<div id="disclaimerText" class="collapsed">
+    <p style="padding: 0 10px">Refresh page (swipe main title down) to check for updates.</p>
+    <p style="padding: 0 10px">Some updates happen constantly, you can use blue button below anytime without waiting for "Update Available" notification.</p>
+    <p style="padding: 0 10px">⚠️ Before updating, please verify if your current meme is ready but was not injected to avoid losing any unsent content.</p>
+    <div style="margin: 10px 0;">
+        <button class="admin-btn" style="background: #0097ff; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="syncAndKeepData()">
+            Update & Keep All Memes & Credits
+        </button>
+    </div>
+    <p style="padding: 0 10px">All messages and data transmitted in this session are for informational and demonstration purposes only.</p>
+    <p style="padding: 0 10px">Any data you enter is automatically synchronized and stored on the devices of all users currently viewing this page.</p>
+    <p style="padding: 0 10px">
+        This application uses public broker test infrastructure to sync data between users in real time.
+        Because these channels are public and experimental, data is not encrypted for privacy and may not persist permanently. 
+        <strong>Please avoid transmitting sensitive personal information.</strong>
+    </p>
+
+    <p style="color: #afff00; padding: 0 10px">
+        ⚠️ Transport Layer Notice: Public MQTT brokers may experience temporary downtime or network congestion. If connectivity drops or messages are not syncing, switch to an alternate broker using the connection controls below and monitor the active peer count in the system log.
+    </p>
+    
+    <select id="brokerSelect" class="admin-input" onchange="onBrokerSelectChange(this)" style="margin-bottom: 10px; width: 100%; box-sizing: border-box; appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23afff00%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 10px; padding-right: 30px;">
+        <option value="wss://broker.emqx.io:8084/mqtt">EMQX Public Broker (Default)</option>
+        <option value="wss://test.mosquitto.org:8081/mqtt">Mosquitto Test Broker</option>
+        <option value="wss://broker.hivemq.com:8884/mqtt">HiveMQ Public Broker</option>
+        <option value="custom">Custom WebSocket URL...</option>
+    </select>
+
+    <input type="text" id="customBrokerUrl" class="admin-input" placeholder="wss://your-broker-domain:port/mqtt" style="display: none; margin-bottom: 10px; width: 100%; box-sizing: border-box;">
+    
+    <button class="admin-btn" type="button" style="background: #afff00; color: #000; padding: 12px; font-size: 14px; width: 100%;" onclick="switchBroker()">
+        Connect to Broker
+    </button>
+    
+    <p style="padding: 0 10px">The image you publish is compressed to a size of 15–50 kB, so even a large number of images will not take up much space in your device's storage. However, you can delete individual memes along with their images entirely from your device via ranking, or choose this way:</p>
+
+    <div style="margin: 10px 0;">
+        <button class="admin-btn" style="background: #ff3333; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="resetToDefault()">Reset to Default</button>
+    </div>
+    
+    <p style="padding: 0 10px">⚠️ <strong>Clearing browser cache will reset all data.</strong></p>
+    
+    <p style="padding: 0 10px">The mechanics of impact transmission and collision detection are based on trust between clients in an open network without cryptographic guarantees of transaction authenticity and allow packet interception or forgery.</p>
+
+    <div style="padding: 0 10px" id="aboutToggle"><strong>About</strong></div>
+    <div style="padding: 0 10px" id="aboutContent" class="collapsed">
+        <p>Resonance Match: Tap one meme to elevate its ranking, or other to drop opponent.</p>
+        <p>To rise, vote for the weak memes against the strong ones.</p>
+        <p><strong>Common votes are counted only in a <span class="about-alert" style="color: #ff0000;">live</span> session</strong>.</p>
+        <p>Global Matrix Rank: The ranking engine calculates the relative strength of players using the Elo formula.</p>
+        <p>Broadcast Breakthrough Meme: The meme you publish will appear and be stored only in the cache of devices of users who are currently online. <span class="about-highlight" style="color: #afff00;">However, you can always re-inject your offline meme directly from ranking (for free).</span></p>
+        <p>State and Credits: Every competitor gets 8 free impacts, 5 free votes and 3 free publication slots.</p>
+        <p>Hourly Resonance Claim: lets you earn +4 Impact per hour.</p>
+        <p>If you return in a day (or later), the long-term absence limitation will kick in, and you will receive +24 impact.</p>
+        <p>You can delete any meme in the ranking.</p>
+        <p>Use 'Convert Impacts to Action Limits' to spend 1 impact for +3 votes, or 3 impacts for +1 post slot.</p>
+        <p>Use 'Transfer Impact(s)' to send it(s) to other network participants.</p>
+
+        <p>Due to the temporary absence of individual participants and the presence of memes they cannot see, the number of votes required to update ranking does not accumulate synchronously across devices. When live parity is reached, "spontaneous" updates of the pair in the voting block occur.</p>
+        <p>To protect your notes, keep things clear: add this app to your Home Screen via the browser menu and use that shortcut to launch. (•••)</p>
+        <p>Refresh page (swipe main title down) to check for updates.</p>
+    </div>
 </div>
 
 <div class="main-panel">
@@ -1523,6 +1668,84 @@ async function syncAndKeepData() {
     window.location.reload(true);
 }
 
+    // ===== DISCLAIMER & ABOUT LOGIC =====
+const disclaimerToggle = document.getElementById('disclaimerToggle');
+const disclaimerText = document.getElementById('disclaimerText');
+const aboutLabel = document.getElementById('aboutLabel'); 
+
+if (disclaimerToggle && disclaimerText) {
+    disclaimerToggle.addEventListener('click', () => {
+        disclaimerText.classList.toggle('collapsed');
+        disclaimerToggle.classList.toggle('open');
+        
+        if (disclaimerText.classList.contains('collapsed')) {
+            aboutLabel.style.display = 'inline'; 
+        } else {
+            aboutLabel.style.display = 'none';  
+        }
+    });
+}
+
+const aboutToggle = document.getElementById('aboutToggle');
+const aboutContent = document.getElementById('aboutContent');
+
+if (aboutToggle && aboutContent) {
+    aboutToggle.addEventListener('click', () => {
+        aboutContent.classList.toggle('collapsed');
+        aboutToggle.classList.toggle('open');
+    });
+}
+
+// ===== SWITCH BROKER =====
+function switchBroker() {
+    const select = document.getElementById('brokerSelect');
+    const customUrl = document.getElementById('customBrokerUrl');
+    let brokerUrl = select.value;
+    
+    if (brokerUrl === 'custom') {
+        brokerUrl = customUrl.value.trim();
+        if (!brokerUrl) {
+            alert('Please enter a valid WebSocket URL');
+            return;
+        }
+    }
+    
+    if (client && client.connected) {
+        client.end(true);
+    }
+    
+    // Создаём нового клиента
+    const newClient = mqtt.connect(brokerUrl, {
+        clientId: 'essence_resonance_' + Math.random().toString(16).substr(2, 8),
+        reconnectPeriod: 5000,
+        connectTimeout: 5000,
+        keepalive: 60
+    });
+    
+    newClient.on('connect', () => {
+        document.getElementById('netStatus').innerHTML = `Status: Connected to ${brokerUrl} as ${myId}`;
+        log("Connected to new broker");
+        newClient.subscribe(TOPIC, { qos: 1 });
+    });
+    
+    newClient.on('error', (err) => {
+        document.getElementById('netStatus').style.color = '#f00';
+        document.getElementById('netStatus').innerHTML = `Network Error`;
+        log("MQTT Error: " + JSON.stringify(err));
+    });
+    
+    alert('Broker switched! Page will reload to apply changes.');
+    setTimeout(() => location.reload(), 1000);
+}
+
+function onBrokerSelectChange(select) {
+    const customUrl = document.getElementById('customBrokerUrl');
+    if (select.value === 'custom') {
+        customUrl.style.display = 'block';
+    } else {
+        customUrl.style.display = 'none';
+    }
+}
 </script>
 
 </body>
