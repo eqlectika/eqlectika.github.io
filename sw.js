@@ -2,7 +2,6 @@ const CACHE_NAME = 'version-color';
 const CORE_ASSETS = [
     '/',
     './index.html',
-    './code.html',
     './manifest-index.json',
     './cross.html',
     './flash.html',
@@ -20,7 +19,6 @@ const CORE_ASSETS = [
     './bismuth.html',
     './essence.html',
     
-    './manifest.json',
     './manifest-essence.json',
     './manifest-cross.json',
     './manifest-flash.json',
