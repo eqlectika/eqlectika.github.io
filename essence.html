@@ -321,14 +321,14 @@ if (logArea && statusToggle && logContainer) {
 }
 
 
-let myId = localStorage.getItem('paramount_custom_my_id');
+let myId = localStorage.getItem('essence_custom_my_id');
 if (!myId) {
     myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
-    localStorage.setItem('paramount_custom_my_id', myId);
+    localStorage.setItem('essence_custom_my_id', myId);
 }
 document.getElementById('nodeId').innerText = myId;
 
-let processedTxIds = JSON.parse(localStorage.getItem('paramount_processed_txs')) || [];
+let processedTxIds = JSON.parse(localStorage.getItem('essence_processed_txs')) || [];
 
 function isTxProcessed(txId) {
     return processedTxIds.includes(txId);
@@ -340,11 +340,11 @@ function markTxProcessed(txId) {
         if (processedTxIds.length > 1000) {
             processedTxIds = processedTxIds.slice(-500);
         }
-        localStorage.setItem('paramount_processed_txs', JSON.stringify(processedTxIds));
+        localStorage.setItem('essence_processed_txs', JSON.stringify(processedTxIds));
     }
 }
 
-let playerState = JSON.parse(localStorage.getItem('paramount_player_state'));
+let playerState = JSON.parse(localStorage.getItem('essence_player_state'));
 if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playerState.postsLeft === 'undefined') {
     playerState = { 
         impacts: 8,     
@@ -352,18 +352,18 @@ if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playe
         votesLeft: 5,   
         postsLeft: 3    
     };
-    localStorage.setItem('paramount_player_state', JSON.stringify(playerState));
+    localStorage.setItem('essence_player_state', JSON.stringify(playerState));
 }
 
-let peerBalances = JSON.parse(localStorage.getItem('paramount_peer_balances')) || {};
-let blacklistedPeers = JSON.parse(localStorage.getItem('paramount_blacklist')) || [];
+let peerBalances = JSON.parse(localStorage.getItem('essence_peer_balances')) || {};
+let blacklistedPeers = JSON.parse(localStorage.getItem('essence_blacklist')) || [];
 
-let activityHistory = JSON.parse(localStorage.getItem('paramount_activity_history')) || {
+let activityHistory = JSON.parse(localStorage.getItem('essence_activity_history')) || {
     votes: [],
     posts: [],
     deliveries: []
 };
-let activityRange = localStorage.getItem('paramount_activity_range') || 'week';
+let activityRange = localStorage.getItem('essence_activity_range') || 'week';
 
 function saveActivityHistory() {
     ['votes', 'posts', 'deliveries'].forEach(key => {
@@ -371,7 +371,7 @@ function saveActivityHistory() {
             activityHistory[key] = activityHistory[key].slice(-2000);
         }
     });
-    localStorage.setItem('paramount_activity_history', JSON.stringify(activityHistory));
+    localStorage.setItem('essence_activity_history', JSON.stringify(activityHistory));
 }
 function recordActivity(type) {
     if (!activityHistory[type]) activityHistory[type] = [];
@@ -382,7 +382,7 @@ function recordActivity(type) {
 
 function setActivityRange(range) {
     activityRange = range;
-    localStorage.setItem('paramount_activity_range', range);
+    localStorage.setItem('essence_activity_range', range);
     document.querySelectorAll('.activity-range-btn').forEach(btn => {
         const active = btn.getAttribute('data-range') === range;
         btn.style.color = active ? '#afff00' : '#888';
@@ -391,9 +391,9 @@ function setActivityRange(range) {
     updateActivityChart();
 }
 
-let pendingTransfers = JSON.parse(localStorage.getItem('paramount_pending_transfers')) || {};
+let pendingTransfers = JSON.parse(localStorage.getItem('essence_pending_transfers')) || {};
 function savePending() {
-    localStorage.setItem('paramount_pending_transfers', JSON.stringify(pendingTransfers));
+    localStorage.setItem('essence_pending_transfers', JSON.stringify(pendingTransfers));
 }
 
 function updatePlayerStatsUI() {
@@ -401,7 +401,7 @@ function updatePlayerStatsUI() {
     document.getElementById('playerLevel').innerText = playerState.level;
     document.getElementById('votesLeft').innerText = playerState.votesLeft;
     document.getElementById('postsLeft').innerText = playerState.postsLeft;
-    localStorage.setItem('paramount_player_state', JSON.stringify(playerState));
+    localStorage.setItem('essence_player_state', JSON.stringify(playerState));
 }
 updatePlayerStatsUI();
 
@@ -591,10 +591,10 @@ const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
 function getClaimableCount() {
-    let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || '0');
+    let lastClaimTime = parseInt(localStorage.getItem('essence_last_claim_time') || '0');
     if (!lastClaimTime) {
         lastClaimTime = Date.now();
-        localStorage.setItem('paramount_last_claim_time', lastClaimTime.toString());
+        localStorage.setItem('essence_last_claim_time', lastClaimTime.toString());
     }
     const elapsed = Date.now() - lastClaimTime;
     
@@ -608,7 +608,7 @@ function getClaimableCount() {
 }
 
 function updateClaimUI() {
-    let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || Date.now());
+    let lastClaimTime = parseInt(localStorage.getItem('essence_last_claim_time') || Date.now());
     const elapsed = Date.now() - lastClaimTime;
     const claimable = getClaimableCount();
     
@@ -638,7 +638,7 @@ function claimHourly() {
     playerState.level = Math.floor(playerState.impacts / 20) + 1;
     updatePlayerStatsUI();
 
-    localStorage.setItem('paramount_last_claim_time', Date.now().toString());
+    localStorage.setItem('essence_last_claim_time', Date.now().toString());
     
     updateClaimUI();
     log(`[Claim] Collected +${claimable} impacts.`);
@@ -648,7 +648,7 @@ function claimHourly() {
 setInterval(updateClaimUI, 1000);
 updateClaimUI();
 
-let items = JSON.parse(localStorage.getItem('paramount_versus_items')) || [];
+let items = JSON.parse(localStorage.getItem('essence_versus_items')) || [];
 
 if (items.length === 0) {
     items = [
@@ -743,16 +743,16 @@ if (items.length === 0) {
             rating: 1520
         },
     ];
-    localStorage.setItem('paramount_versus_items', JSON.stringify(items));
+    localStorage.setItem('essence_versus_items', JSON.stringify(items));
 }
 
 let currentPair = [];
 function saveLocal() {
-    localStorage.setItem('paramount_versus_items', JSON.stringify(items));
+    localStorage.setItem('essence_versus_items', JSON.stringify(items));
 }
 
 const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
-    clientId: 'paramount_resonance_' + Math.random().toString(16).substr(2, 8),
+    clientId: 'essence_resonance_' + Math.random().toString(16).substr(2, 8),
     reconnectPeriod: 5000,
     connectTimeout: 5000,
     keepalive: 60
@@ -1285,7 +1285,7 @@ function transferImpact() {
     }
     
     peerBalances[myId] = playerState.impacts;
-    localStorage.setItem('paramount_peer_balances', JSON.stringify(peerBalances));
+    localStorage.setItem('essence_peer_balances', JSON.stringify(peerBalances));
 
     if (!target || !amount || amount < 1) {
         return alert('Please enter the correct participant ID and number of impacts!');
@@ -1295,7 +1295,7 @@ function transferImpact() {
     }
     
     peerBalances[myId] = playerState.impacts;
-    localStorage.setItem('paramount_peer_balances', JSON.stringify(peerBalances));
+    localStorage.setItem('essence_peer_balances', JSON.stringify(peerBalances));
 
     if (!target || !amount || amount < 1) {
         return alert('Please enter the correct participant ID and number of impacts!');
@@ -1423,10 +1423,10 @@ window.addEventListener('touchend', () => {
 function clearAllExceptDemo() {
     if (confirm("Are you sure? This action will delete all your created memes and transaction history, but will KEEP your current State & Credits (Level, Impacts, Votes) and restore the system's demo memes.")) {
         
-        localStorage.removeItem('paramount_versus_items');
-        localStorage.removeItem('paramount_peer_balances');
-        localStorage.removeItem('paramount_blacklist');
-        localStorage.removeItem('paramount_pending_transfers');
+        localStorage.removeItem('essence_versus_items');
+        localStorage.removeItem('essence_peer_balances');
+        localStorage.removeItem('essence_blacklist');
+        localStorage.removeItem('essence_pending_transfers');
 
         location.reload();
     }
@@ -1483,30 +1483,30 @@ async function syncAndKeepData() {
     }
     
     const keysToKeep = [
-        'paramount_versus_items',
-        'paramount_player_state',
-        'paramount_peer_balances',
-        'paramount_activity_history',
-        'paramount_processed_txs',
-        'paramount_pending_transfers',
-        'paramount_custom_my_id',
-        'paramount_last_claim_time',
-        'paramount_activity_range'
+        'essence_versus_items',
+        'essence_player_state',
+        'essence_peer_balances',
+        'essence_activity_history',
+        'essence_processed_txs',
+        'essence_pending_transfers',
+        'essence_custom_my_id',
+        'essence_last_claim_time',
+        'essence_activity_range'
     ];
     
     for (let key in localStorage) {
-        if (!keysToKeep.includes(key) && !key.startsWith('paramount_')) {
+        if (!keysToKeep.includes(key) && !key.startsWith('essence_')) {
             localStorage.removeItem(key);
         }
     }
     
-    localStorage.setItem('paramount_versus_items', JSON.stringify(savedItems));
-    localStorage.setItem('paramount_player_state', JSON.stringify(savedPlayerState));
-    localStorage.setItem('paramount_peer_balances', JSON.stringify(savedPeerBalances));
-    localStorage.setItem('paramount_activity_history', JSON.stringify(savedActivityHistory));
-    localStorage.setItem('paramount_processed_txs', JSON.stringify(savedProcessedTxIds));
-    localStorage.setItem('paramount_pending_transfers', JSON.stringify(savedPendingTransfers));
-    localStorage.setItem('paramount_custom_my_id', savedMyId);
+    localStorage.setItem('essence_versus_items', JSON.stringify(savedItems));
+    localStorage.setItem('essence_player_state', JSON.stringify(savedPlayerState));
+    localStorage.setItem('essence_peer_balances', JSON.stringify(savedPeerBalances));
+    localStorage.setItem('essence_activity_history', JSON.stringify(savedActivityHistory));
+    localStorage.setItem('essence_processed_txs', JSON.stringify(savedProcessedTxIds));
+    localStorage.setItem('essence_pending_transfers', JSON.stringify(savedPendingTransfers));
+    localStorage.setItem('essence_custom_my_id', savedMyId);
     
     log(`[Sync] Data preserved. Cache cleared. Refreshing...`);
     
