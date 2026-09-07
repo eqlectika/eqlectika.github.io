@@ -105,7 +105,7 @@ html {
     background: #000; 
     font-size: 14px; 
     font-family: 'Unbounded', monospace; 
-    color: #00ffcc; 
+    color: #0097ff; 
 }
 
 .player-stats {
@@ -129,7 +129,7 @@ html {
 }
 
 .player-stats .stat-box span {
-    color: #afff00;
+    color: #0097ff;
     font-weight: bold;
 }
 
@@ -155,8 +155,8 @@ html {
     object-fit: cover; 
 }
 .ranking-container { margin-top: 10px;}
-.ranking-title { font-family: 'Unbounded', serif; font-size: 20px !important; text-align: center; padding-bottom: 0; margin-bottom: 20px; color: #ff00cc; }
-.ranking-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #222; cursor: pointer; }
+.ranking-title { font-family: 'Unbounded', serif; font-size: 20px !important; text-align: center; border-bottom: 0px solid #222; padding-bottom: 0; margin-bottom: 20px; color: #ff00cc; }
+.ranking-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 0px solid #222; cursor: pointer; }
 .ranking-img { width: 40px; height: 40px; object-fit: cover; margin-right: 12px; border: 1px solid #afff00; }
 
 .text-thumbnail {
@@ -168,7 +168,7 @@ html {
 }
 .text-thumbnail>div {
     background: #111;
-    color: #afff00;
+    color: #ccc;
     font-family: 'Unbounded', monospace;
     font-size: 13px;
     line-height: 1.4;
@@ -208,6 +208,7 @@ html {
     display: none; 
     padding: 15px; 
     background: #000; 
+    border-bottom: 0px solid #222; 
     font-size: 14px; 
     color: #ccc; 
     font-family: 'Unbounded', monospace;
@@ -381,7 +382,7 @@ body.inverted img.no-invert {
     background: #000; 
     font-size: 14px; 
     font-family: 'Unbounded', monospace; 
-    color: #00ffcc; 
+    color: #0097ff; 
     height: 100px;
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
@@ -528,9 +529,9 @@ a { color: #448aff; text-decoration: none; }
 </div>
 
 <div class="ranking-container">
-    <div <p class="ranking-title" Global Matrix Rank</p>
-<p style="margin:-20px 0 20px 0;font-size:12px;">External currently votes have an effect</p>
-    <div>
+    <div class="ranking-title" style="color: #afff00">Global Matrix Rank</div>
+    <p style="margin:-20px 0 20px 0;color:#afff00;text-align:center;font-size:12px;">External currently votes have an effect</p>
+
     <div id="ranking-list"></div>
 </div>
 
@@ -627,7 +628,7 @@ a { color: #448aff; text-decoration: none; }
 <div class="exchange-panel" style="border-color: #afff00; background: #000;">
     <h3 style="color: #afff00; text-align: center; margin-bottom: 4px;">Terra Incognita</h3>
     <div id="activityReadout" style="text-align: center; font-family: 'Unbounded', monospace; font-size: 12px; color: #888; margin-bottom: 8px;">
-        <span style="color:#afff00">Votes 0</span> · <span style="color:#de00b2">Posts 0</span> · <span style="color:#00ffcc">Deliveries 0</span>
+        <span style="color:#afff00">Votes 0</span> · <span style="color:#de00b2">Posts 0</span> · <span style="color:#0097ff">Deliveries 0</span>
     </div>
     <div id="activityRangeBtns" style="display: flex; gap: 6px; justify-content: center; margin-bottom: 10px; flex-wrap: wrap;">
         <button type="button" class="activity-range-btn" data-range="week"  style="padding: 5px 12px; font-size: 12px; font-family: 'Unbounded', monospace; background: #111; color: #afff00; border: 1px solid #afff00; cursor: pointer; border-radius: 3px;">Week</button>
@@ -695,11 +696,13 @@ a { color: #448aff; text-decoration: none; }
 
 <div id="updatePanel" class="panel" style="margin-top:40px;cursor:pointer;color:#0097ff;text-align:center;font-weight:bold" onclick="syncAndKeepData()">Update</div>
 
+
 <div class="footer-credit">
     <div style="display: flex; flex-direction: column; align-items: center; gap: 50px;">
-        <a href="essence.html">
-            <img src="breakthrough.png" class="no-invert" style="height: 42px; width: auto; display: block;">
-        </a>
+<a href="essence.html" style="display: flex; flex-direction: column; align-items: center;">
+    <img src="breakthrough.png" class="no-invert" style="height: 42px; width: auto; display: block;">
+    <span style="font-size: 10px; color:#ccc">Online Essence</span>
+</a>
         <a href="index.html">
             <img src="fleurdelis.png" class="no-invert" style="height: 64px; width: auto; display: block;">
         </a>
@@ -756,7 +759,7 @@ function createTextThumbnail(text) {
     if (!text) return '';
     return `<div style="
         background: #111;
-        color: #afff00;
+        color: #ccc;
         font-family: 'Unbounded', monospace;
         font-size: 13px;
         line-height: 1.4;
@@ -937,7 +940,7 @@ function updateActivityChart() {
     const series = [
         { key: 'votes',      color: '#afff00', label: 'Votes' },
         { key: 'posts',      color: '#de00b2', label: 'Posts' },
-        { key: 'deliveries', color: '#00ffcc', label: 'Deliveries' }
+        { key: 'deliveries', color: '#0097ff', label: 'Deliveries' }
     ];
     
     const now = Date.now();
@@ -1095,7 +1098,7 @@ ctx.textAlign = 'left';
     const totalDeliveries = (activityHistory.deliveries || []).length;
     const readout = document.getElementById('activityReadout');
     if (readout) {
-        readout.innerHTML = `<span style="color:#afff00">Votes ${totalVotes}</span> · <span style="color:#de00b2">Posts ${totalPosts}</span> · <span style="color:#00ffcc">Deliveries ${totalDeliveries}</span>`;
+        readout.innerHTML = `<span style="color:#afff00">Votes ${totalVotes}</span> · <span style="color:#de00b2">Posts ${totalPosts}</span> · <span style="color:#0097ff">Deliveries ${totalDeliveries}</span>`;
     }
 }
 
@@ -1617,11 +1620,11 @@ function updateRankingList() {
         
         let deliveryStatusHtml = '';
         if (isDemo) {
-            deliveryStatusHtml = `<div style="color: #00ffcc; margin-bottom: 10px;">Demo Meme is delivered by default</div>`;
+            deliveryStatusHtml = `<div style="color: #0097ff; margin-bottom: 10px;">Demo Meme is delivered by default</div>`;
         } else {
             const deliveredCount = item.deliveredPeers ? item.deliveredPeers.length : 0;
             const peerLabel = deliveredCount === 1 ? 'peer' : 'peers';
-            deliveryStatusHtml = `<div style="color: #00ffcc; margin-bottom: 10px;">Delivered to: ${deliveredCount} ${peerLabel}</div>`;
+            deliveryStatusHtml = `<div style="color: #0097ff; margin-bottom: 10px;">Delivered to: ${deliveredCount} ${peerLabel}</div>`;
         }
         
         const hasImage = item.img && item.img.length > 0;
@@ -1654,7 +1657,7 @@ function updateRankingList() {
     <div class="ranking-info">
         <p class="title" style="text-align: left; font-size: 16px; margin: 0;">${index + 1}. ${item.title}</p>
         ${item.sender !== 'System-Genesis' ? `<span style="color: #666; font-size: 11px; margin-left: 8px;">by ${item.sender}</span>` : ''}
-        <span>${Math.round(item.rating)}</span>
+        <span style="color:#0097ff;">${Math.round(item.rating)}</span>
     </div> 
 </div>
         <div id="details-${item.id}" class="item-details">
