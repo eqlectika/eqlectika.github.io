@@ -1484,81 +1484,36 @@ async function addItem() {
             alert('Meme not found!');
             return;
         }
+        
         if (item.sender !== myId) {
             alert('❌ You are not the author of this meme! Only the author can edit it.');
+            editingId = null;
+            $('.inject-btn-bg').text('Inject Meme to Network');
+            $('#new-title, #new-desc, #new-url, #new-img-file').val('');
+            $('#file-label-text').text("Select Meme Image");
             return;
-        }
-    }
-    
-    if (!title) return alert('Enter title!');
-
-    let imgData = "";
-    if (editingId !== null) {
-        const item = items.find(i => i.id === editingId);
-        if (item) {
-            item.title = title;
-            item.description = desc;
-            item.externalUrl = url;
-            if (file) {
-                item.img = await compressImage(file);
-            }
-            saveLocal();
-
-            client.publish(TOPIC, JSON.stringify({
-                type: 'UPDATE_ITEM',
-                sender: myId,
-                item: item
-            }), { qos: 1 });
-
-            log(`You updated and re-published meme: "${title}"`);
-        }
-        editingId = null;
-        $('.inject-btn-bg').text('Inject Meme to Network');
-    } else {
-        if (playerState.postsLeft <= 0) {
-            alert('Publication limit reached! Exchange impacts for higher publication slots.');
-            return;
-        }
-        playerState.postsLeft--;
-        playerState.level = Math.floor(playerState.impacts / 20) + 1;
-        updatePlayerStatsUI();
-
-        recordActivity('posts');
-
-if (client && client.connected) {
-    client.publish(TOPIC, JSON.stringify({
-        type: 'ACTIVITY',
-        activityType: 'posts',
-        sender: myId,
-        ts: Date.now()
-    }), { qos: 0 });
-}
-
-        if (file) {
-            imgData = await compressImage(file);
         }
         
-        const newItem = { 
-            id: 'meme-' + Date.now() + '-' + Math.floor(Math.random()*1000), 
-            sender: myId, 
-            title, 
-            description: desc, 
-            externalUrl: url, 
-            img: imgData, 
-            rating: 1500,
-            deliveredPeers: [] 
-        };
-
-        items.push(newItem);
+        item.title = title;
+        item.description = desc;
+        item.externalUrl = url;
+        if (file) {
+            item.img = await compressImage(file);
+        }
         saveLocal();
 
         client.publish(TOPIC, JSON.stringify({
-            type: 'ADD_ITEM',
+            type: 'UPDATE_ITEM',
             sender: myId,
-            item: newItem
+            item: item
         }), { qos: 1 });
 
-        log(`You injected meme: "${title}"`);
+        log(`You updated and re-published meme: "${title}"`);
+        
+        editingId = null;
+        $('.inject-btn-bg').text('Inject Meme to Network');
+        
+    } else {
     }
     
     $('#new-title, #new-desc, #new-url, #new-img-file').val('');
