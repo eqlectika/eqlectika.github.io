@@ -237,7 +237,7 @@ font-family: 'Unbounded', monospace;
     <p style="padding: 0 10px">Some updates happen constantly, you can use blue button below anytime without waiting for "Update Available" notification.</p>
     <p style="padding: 0 10px">⚠️ Before updating, please verify if your current meme is ready but was not injected to avoid losing any unsent content.</p>
     <div style="margin: 10px 0;">
-        <button class="admin-btn" style="background: #0097ff; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="syncAndKeepData()">
+        <button class="admin-btn" style="background: #0097ff; color: #fff; padding: 8px; font-size: 14px; width: 100%;" onclick="syncAndKeepData()">
             Update & Keep All Memes & Credits
         </button>
     </div>
@@ -262,14 +262,14 @@ font-family: 'Unbounded', monospace;
 
     <input type="text" id="customBrokerUrl" class="admin-input" placeholder="wss://your-broker-domain:port/mqtt" style="display: none; margin-bottom: 10px; width: 100%; box-sizing: border-box;">
     
-    <button class="admin-btn" type="button" style="background: #afff00; color: #000; padding: 12px; font-size: 14px; width: 100%;" onclick="switchBroker()">
+    <button class="admin-btn" type="button" style="background: #afff00; color: #000; padding: 8px; font-size: 14px; width: 100%;" onclick="switchBroker()">
         Connect to Broker
     </button>
     
     <p style="padding: 0 10px">The image you publish is compressed to a size of 15–50 kB, so even a large number of images will not take up much space in your device's storage. However, you can delete individual memes along with their images entirely from your device via ranking, or choose this way:</p>
 
     <div style="margin: 10px 0;">
-        <button class="admin-btn" style="background: #ff3333; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="resetToDefault()">Reset to Default</button>
+        <button class="admin-btn" style="background: #ff3333; color: #fff; padding: 8px; font-size: 14px; width: 100%;" onclick="resetToDefault()">Reset to Default</button>
     </div>
     
     <p style="padding: 0 10px">⚠️ <strong>Clearing browser cache will reset all data.</strong></p>
@@ -1244,7 +1244,12 @@ function editItem(id) {
     const details = document.getElementById(`details-${id}`);
     if (!details) return;
     editingId = id;
-    details.innerHTML = `<span class="peers">${item.deliveredPeers ? item.deliveredPeers.length : 0} peers</span><div style="position:absolute;top:13px;left:10px;color:#afff00">${Math.round(item.rating)}</div><textarea id="edit-desc-${id}" class="admin-input" style="height:auto">${item.description || ''}</textarea><input id="edit-url-${id}" class="admin-input" value="${item.externalUrl || ''}" placeholder="External Link"><div class="actions"><button class="edit-btn" onclick="event.stopPropagation();saveEdit('${id}')">Forward Meme to Network</button><button class="delete-btn" onclick="event.stopPropagation();deleteItemLocal('${id}')">Delete</button></div>`;
+    details.innerHTML = `<span class="peers">${item.deliveredPeers ? item.deliveredPeers.length : 0} peers</span>
+    <div style="position:absolute;top:13px;left:10px;color:#afff00">${Math.round(item.rating)}</div>
+    <textarea id="edit-desc-${id}" class="admin-input" style="color: #ff8b00; height:auto; padding: 15px 0;">${item.description || ''}</textarea>
+    <input id="edit-url-${id}" class="admin-input" style="color: #ff8b00; padding: 15px 0;" value="${item.externalUrl || ''}" placeholder="External Link">
+    <div class="actions"><button class="edit-btn" onclick="event.stopPropagation();saveEdit('${id}')">Forward Meme to Network</button>
+    <button class="delete-btn" onclick="event.stopPropagation();deleteItemLocal('${id}')">Delete</button></div>`;
 }
 function saveEdit(id) {
     const item = items.find(i => i.id === id);
