@@ -26,9 +26,21 @@
     }
 
     .clickable-word {
-      transition: color 0.0s ease;
+      transition: color 0.3s ease;
       cursor: pointer;
       display: inline-block; 
+    }
+
+    .clickable-word.state-0 {
+      color: #ddd;
+    }
+
+    .clickable-word.state-1 {
+      color: #00ff00 !important; /* Зелёный */
+    }
+
+    .clickable-word.state-2 {
+      color: #ffa500 !important; /* Оранжевый */
     }
 
     h1 {
@@ -89,6 +101,10 @@
         z-index: 100; 
         display: flex;
         flex-direction: column;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        min-width: 200px;
     }
 
     #leftMenuSelectMenu button {
@@ -96,10 +112,12 @@
         color: #ffa500;
         border: none;
         font-size: 1.1em; 
-        padding: 5px 10px;
+        padding: 10px 15px;
         width: 100%; 
-        text-align: center; 
+        text-align: left; 
         cursor: pointer;
+        transition: background-color 0.2s;
+        border-radius: 4px;
     }
 
     #leftMenuSelectMenu button:hover {
@@ -115,6 +133,10 @@
         z-index: 100; 
         display: flex;
         flex-direction: column;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        min-width: 150px;
     }
 
     #fontSelectMenu button {
@@ -122,10 +144,12 @@
         color: #ffa500;
         border: none;
         font-size: 1.1em; 
-        padding: 5px 10px;
+        padding: 10px 15px;
         width: 100%; 
-        text-align: center; 
+        text-align: left; 
         cursor: pointer;
+        transition: background-color 0.2s;
+        border-radius: 4px;
     }
 
     #fontSelectMenu button:hover {
@@ -155,6 +179,88 @@
       line-height: 1.6;
       color: #ddd;
     }
+
+    /* Help Popup Styles */
+    .help-popup {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .help-popup.active {
+      display: flex;
+    }
+
+    .help-content {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .help-content h2 {
+      color: #ffa500;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .help-content p {
+      color: #ddd;
+      line-height: 1.6;
+      margin-bottom: 15px;
+      text-align: left;
+    }
+
+    .help-content .color-sample {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    .help-content .color-sample.green {
+      background: #00ff00;
+    }
+
+    .help-content .color-sample.orange {
+      background: #ffa500;
+    }
+
+    .help-close {
+      background: #ffa500;
+      color: #000080;
+      border: none;
+      padding: 10px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    .help-close:hover {
+      transform: scale(1.05);
+    }
+
+    .help-close:active {
+      transform: scale(0.95);
+    }
   </style>
 </head>
 <body>
@@ -168,7 +274,7 @@
 
   <div id="leftMenuSelectMenu" style="display: none;">
     <button id="loadBookMenuItem">Load book</button>
-    <button id="helpMenuItem">Home</button>
+    <button id="helpMenuItem">Help</button>
   </div>
 
   <div id="fontSelectMenu" style="display: none;">
@@ -178,6 +284,23 @@
   </div>
   
   <div id="content" style="margin-top: 20px;"></div>
+
+  <!-- Help Popup -->
+  <div class="help-popup" id="helpPopup">
+    <div class="help-content">
+      <h2>📚 Help</h2>
+      <p><strong>Tap</strong> on a word to cycle through colors:</p>
+      <p>
+        <span class="color-sample green"></span> 1st tap — <strong>Green</strong><br>
+        <span class="color-sample orange"></span> 2nd tap — <strong>Orange</strong>
+      </p>
+      <p><strong>3rd tap</strong> — opens ChatGPT request to clarify the word definition and resets to default color.</p>
+      <p>The word is automatically copied to clipboard when ChatGPT opens.</p>
+      <p>Operating system or AI may retain a previous word for reasons beyond this app's control.</p>
+      <p><a href="index.html" style="color: #0055ff; text-decoration: none; font-size: 18px; font-weight: bold;">Trust Fibonacci</a></p>
+      <button class="help-close" id="helpCloseBtn">Close</button>
+    </div>
+  </div>
 
   <script>
     const loadFileButton = document.getElementById('loadFileButton');
@@ -189,8 +312,56 @@
     const leftMenuSelectMenu = document.getElementById('leftMenuSelectMenu');
     const loadBookMenuItem = document.getElementById('loadBookMenuItem');
     const helpMenuItem = document.getElementById('helpMenuItem');
-    const matchMenuItem = document.getElementById('matchMenuItem');
     
+    const helpPopup = document.getElementById('helpPopup');
+    const helpCloseBtn = document.getElementById('helpCloseBtn');
+    
+    // Функция для обработки клика по слову
+    function handleWordClick(wordElement) {
+      const word = wordElement.textContent.trim();
+      if (!word) return;
+      
+      // Получаем текущее состояние
+      let currentState = parseInt(wordElement.dataset.state || '0');
+      
+      // Переходим к следующему состоянию (цикл: 0->1->2->0)
+      currentState = (currentState + 1) % 3;
+      
+      // Применяем состояние
+      wordElement.dataset.state = currentState;
+      
+      // Удаляем все классы состояний
+      wordElement.classList.remove('state-0', 'state-1', 'state-2');
+      wordElement.classList.add(`state-${currentState}`);
+      
+      // Если достигли состояния 2 (оранжевый) и нажали ещё раз - открываем ChatGPT
+      // Для этого используем отдельный счетчик
+      if (!wordElement._tapCount) {
+        wordElement._tapCount = 0;
+      }
+      wordElement._tapCount++;
+      
+      // Если нажали 3-й раз (после оранжевого)
+      if (wordElement._tapCount === 3) {
+        // Открываем ChatGPT
+        navigator.clipboard.writeText(word).catch(() => {});
+        
+        const query = `What is the definition of the word "${word}" in the interface language?`;
+        window.open(
+          `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
+          '_blank'
+        );
+        
+        // Сбрасываем счетчик и состояние
+        wordElement._tapCount = 0;
+        wordElement.dataset.state = '0';
+        wordElement.classList.remove('state-0', 'state-1', 'state-2');
+        wordElement.classList.add('state-0');
+      }
+      
+      localStorage.setItem('fb2_book_content', contentDiv.innerHTML);
+    }
+
     function setMenuWidth() {
       const leftButtonWidth = loadFileButton.offsetWidth; 
       leftMenuSelectMenu.style.width = leftButtonWidth + 'px';
@@ -204,6 +375,7 @@
       const savedBook = localStorage.getItem('fb2_book_content');
       if (savedBook) {
         contentDiv.innerHTML = savedBook;
+        attachWordListeners();
       }
     });
 
@@ -227,10 +399,90 @@
     });
 
     helpMenuItem.addEventListener('click', () => {
-      window.location.href = 'index.html'; 
+      helpPopup.classList.add('active');
       leftMenuSelectMenu.style.display = 'none';
     });
+
+    helpCloseBtn.addEventListener('click', () => {
+      helpPopup.classList.remove('active');
+    });
+
+    helpPopup.addEventListener('click', (e) => {
+      if (e.target === helpPopup) {
+        helpPopup.classList.remove('active');
+      }
+    });
     
+    // Функция для прикрепления обработчиков к словам
+    function attachWordListeners() {
+      const wordElements = document.querySelectorAll('.clickable-word');
+      
+      wordElements.forEach(wordEl => {
+        // Инициализируем состояние
+        if (!wordEl.dataset.state) {
+          wordEl.dataset.state = '0';
+          wordEl.classList.add('state-0');
+        }
+        if (!wordEl._tapCount) {
+          wordEl._tapCount = 0;
+        }
+        
+        // Удаляем старые обработчики, чтобы избежать дублирования
+        wordEl.removeEventListener('click', wordClickHandler);
+        wordEl.removeEventListener('pointerdown', wordPointerDownHandler);
+        wordEl.removeEventListener('pointerup', wordPointerUpHandler);
+        wordEl.removeEventListener('pointercancel', wordPointerCancelHandler);
+        wordEl.removeEventListener('pointerleave', wordPointerLeaveHandler);
+        
+        // Добавляем новые обработчики
+        wordEl.addEventListener('click', wordClickHandler);
+        
+        // Для touch-устройств используем pointer events
+        let pressStartTime = 0;
+        
+        function wordPointerDownHandler(event) {
+          event.stopPropagation();
+          pressStartTime = Date.now();
+        }
+        
+        function wordPointerUpHandler(event) {
+          event.stopPropagation();
+          const pressDuration = Date.now() - pressStartTime;
+          
+          if (pressDuration < 300) {
+            handleWordClick(wordEl);
+          }
+        }
+        
+        function wordPointerCancelHandler(event) {
+          event.stopPropagation();
+        }
+        
+        function wordPointerLeaveHandler(event) {
+          event.stopPropagation();
+        }
+        
+        // Сохраняем ссылки на обработчики для возможности удаления
+        wordEl._wordClickHandler = wordClickHandler;
+        wordEl._wordPointerDownHandler = wordPointerDownHandler;
+        wordEl._wordPointerUpHandler = wordPointerUpHandler;
+        wordEl._wordPointerCancelHandler = wordPointerCancelHandler;
+        wordEl._wordPointerLeaveHandler = wordPointerLeaveHandler;
+        
+        wordEl.addEventListener('pointerdown', wordPointerDownHandler);
+        wordEl.addEventListener('pointerup', wordPointerUpHandler);
+        wordEl.addEventListener('pointercancel', wordPointerCancelHandler);
+        wordEl.addEventListener('pointerleave', wordPointerLeaveHandler);
+      });
+    }
+    
+    // Обработчик клика
+    function wordClickHandler(event) {
+      // Обработка клика происходит через pointer events
+      // Этот обработчик оставляем для совместимости
+    }
+    
+    // Обновляем обработчик загрузки файла
     fileInput.addEventListener('change', function(event) {
       const file = event.target.files[0];
       if (!file) {
@@ -274,7 +526,7 @@
                 
                 pDiv.innerHTML = paragraph.textContent.split(/(\s+)/).map(part => {
                   if (part.trim().length === 0) return part; 
-                  return `<span class="clickable-word">${part}</span>`;
+                  return `<span class="clickable-word state-0" data-state="0">${part}</span>`;
                 }).join('');
                 
                 contentDiv.appendChild(pDiv);
@@ -285,6 +537,7 @@
           }
 
           localStorage.setItem('fb2_book_content', contentDiv.innerHTML);
+          attachWordListeners(); // Прикрепляем обработчики после загрузки
         };
 
         reader.readAsText(file); 
@@ -319,22 +572,6 @@
             fontSelectMenu.style.display = 'none';
         }
     }); 
-
-    document.addEventListener('click', function(e) {
-      if (e.target.classList.contains('clickable-word')) {
-        e.preventDefault();
-        
-        const targetGreen = '#00ff00'; 
-        
-        if (e.target.style.color === 'rgb(0, 255, 0)' || e.target.style.color === targetGreen) {
-          e.target.style.color = ''; 
-        } else {
-          e.target.style.color = targetGreen;
-        }
-
-        localStorage.setItem('fb2_book_content', contentDiv.innerHTML);
-      }
-    }, true);
   </script>
 </body>
 </html>
