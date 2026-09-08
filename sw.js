@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-ubuntu'; 
+const CACHE_NAME = 'version-bytesize'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
