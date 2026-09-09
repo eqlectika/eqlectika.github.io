@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      <link rel="icon" type="image/png" href="loop.png">
+<link rel="icon" type="image/png" href="loop.png">
 
 <link rel="manifest" href="manifest-match.json">
 <title>Trust Fibonacci | Beauty and the best</title>
@@ -257,6 +257,7 @@ display: none;
     flex-shrink: 0; 
     object-fit: contain;
 }
+p {margin: 0 0 10px 0;}
 
 #collapsible-content {
     text-align: center; 
@@ -639,7 +640,7 @@ function updateRankingList() {
             <button class="edit-btn" onclick="event.stopPropagation(); editItem(${item.id})">Edit Item</button>
             <button class="delete-btn" onclick="event.stopPropagation(); deleteItem(${item.id})">Delete Item</button>
             ${item.externalUrl ? `<a href="${item.externalUrl}" class="external-link">Visit Link •</a>` : ''}
-            <p>${item.description || 'No description.'}</p>
+            ${item.description      ? item.description.split('\n\n').map(p => `<p>${p.trim()}</p>`).join('')      : '<p>No description.</p>'} 
         </div>`;
     });
     $('#ranking-list').html(html);
