@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-spark'; 
+const CACHE_NAME = 'version-anchor'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
