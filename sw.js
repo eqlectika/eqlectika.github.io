@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-topic'; 
+const CACHE_NAME = 'version-spark'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
