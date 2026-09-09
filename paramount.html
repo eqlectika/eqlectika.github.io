@@ -105,12 +105,12 @@ html::-webkit-scrollbar {
 .mobile-no-mm-only { display: none; }
 
 :root {
-    --header-height: 220px; 
+    --header-height: 120px; 
 }
 
 @media (max-width: 768px) {
     :root {
-        --header-height: 250px; 
+        --header-height: 150px; 
     }
 }
 
@@ -2146,7 +2146,24 @@ if (aboutToggle && aboutContent) {
         aboutToggle.classList.toggle('open');
     });
 }
-
+document.addEventListener('DOMContentLoaded', () => {
+    const anchorLinks = document.querySelectorAll('a[href^="#"]');
+    
+    anchorLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            const disclaimerText = document.getElementById('disclaimerText');
+            const disclaimerToggle = document.getElementById('disclaimerToggle');
+            
+            if (disclaimerText && !disclaimerText.classList.contains('collapsed')) {
+                disclaimerText.classList.add('collapsed');
+                
+                if (disclaimerToggle) {
+                    disclaimerToggle.classList.remove('open');
+                }
+            }
+        });
+    });
+});
 </script>
 
 </body>
