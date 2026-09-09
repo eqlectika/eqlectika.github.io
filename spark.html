@@ -2,9 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="/spark.png">
+  <meta property="og:image" content="/Verge.jpeg">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="1280">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="manifest" href="manifest-spark.json">
-  <title>Vital Spark Calibration</title>
+  <title>Vital Spark | Subject Calibration</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -14,7 +18,7 @@
       --creativity-color: #00ff00; --vision-color: #0000ff; --hearing-color: #9c27b0; --smell-color: #00bcd4;
       --dopamine-color: #ff00ff; --boomerang-color: #ff4500; --problem-color: #ff3333; --load-color: #adff2f;
       --tension-color: #cccccc; --light-gray: #aaaaaa;
-      --text-color: #ffffff; --bar-bg: #444444; /* <-- ВОТ ЭТО ДОБАВИТЬ */
+      --text-color: #ffffff; --bar-bg: #444444; 
     }
     
 .invert-element {
@@ -162,6 +166,7 @@ user-select: none;
   <div class="select-group"><label for="hearing" style="color: var(--hearing-color);">Hearing</label><select id="hearing" onchange="log('hearing')"><option selected disabled>—</option><option value="1">Muffled</option><option value="2">Weak</option><option value="3">Normal</option><option value="4">Detailed</option><option value="5">Acute</option></select></div>
   <div class="select-group"><label for="smell" style="color: var(--smell-color);">Smell</label><select id="smell" onchange="log('smell')"><option selected disabled>—</option><option value="1">None</option><option value="2">Faint</option><option value="3">Normal</option><option value="4">Sharp</option><option value="5">Sensitive</option></select></div>
   <div class="select-group"><label for="problem" style="color: var(--problem-color);">Problem</label><select id="problem" onchange="log('problem')"><option selected disabled>—</option><option value="1">Surrender</option><option value="2">Run Away</option><option value="3">Avoid</option><option value="4">Ignore</option><option value="5">Attack</option></select></div>
+  <div class="select-group"><label for="subject" style="color: var(--text-color);">Subject</label><select id="subject" onchange="log('subject')"><option selected disabled>—</option><option value="1">Profit</option><option value="2">Loss</option><option value="3">Investment</option><option value="4">Plans</option><option value="5">Intent</option></select></div>
 </div>
 
 <div id="risk-container">
@@ -222,7 +227,7 @@ user-select: none;
 </div>
 
 <script>
-  const rows = ['time', 'breath', 'pulse', 'emotion', 'dopamine', 'load', 'tension', 'energy', 'focus', 'creativity', 'vision', 'hearing', 'smell', 'boomerang', 'problem'];
+  const rows = ['time', 'breath', 'pulse', 'emotion', 'dopamine', 'load', 'tension', 'energy', 'focus', 'creativity', 'vision', 'hearing', 'smell', 'boomerang', 'problem', 'subject'];
   const colors = {
     time: '#8493d6', breath: '#ffffff', pulse: '#ff1493', emotion: '#ff5252', dopamine: '#ff00ff',
     load: '#adff2f', tension: '#cccccc', energy: '#ff9800', focus: '#ffeb3b', creativity: '#00ff00',
@@ -270,12 +275,30 @@ const RecoveryWeights = {
     pulse: 0.4
 };
 
+/*
+ * Subject Calibration:
+ * 1 → Profit
+ * 2 → Loss
+ * 3 → Investment
+ * 4 → Plans
+ * 5 → Serenity
+ *
+ * The axis acts as a directional suppressor:
+ * lower values favor recovery/relaxation;
+ * higher values shift priority toward activation/concentration.
+ */
+const SubjectCalibrationWeight = 1.0;
+
 function updatePriorityVector() {
     const s = getCurrentValues();
     const hasData = chart.data.labels.length > 0;
     if (!hasData) return;
 
     const problemFactor = (s.problem - 3) * 0.5;
+
+    // Subject Calibration: 1 = relaxed end, 5 = concentrated end.
+    // It is intentionally a suppressor rather than a new physiological demand.
+    const subjectFactor = (s.subject - 3) * SubjectCalibrationWeight;
 
     const recovery = (
         (3 - s.energy) * RecoveryWeights.energy +
@@ -284,12 +307,13 @@ function updatePriorityVector() {
         (3 - s.load) * RecoveryWeights.load +
         (3 - s.tension) * RecoveryWeights.tension +
         (3 - s.pulse) * RecoveryWeights.pulse +
-        problemFactor
+        problemFactor -
+        subjectFactor
     ) / 2;
 
     const hydration = (3 - s.energy) + (3 - s.vision) + (3 - s.focus) + (3 - s.pulse);
     const energy = (3 - s.energy) + (3 - s.creativity) + (3 - s.focus) + (3 - s.pulse) + problemFactor;
-    const activation = (3 - s.focus) + (3 - s.energy) + (3 - s.pulse) + (3 - s.emotion) - problemFactor;
+    const activation = (3 - s.focus) + (3 - s.energy) + (3 - s.pulse) + (3 - s.emotion) - problemFactor + subjectFactor;
 
     document.getElementById("pv-recovery").textContent = renderVector(recovery);
     document.getElementById("pv-hydration").textContent = renderVector(hydration);
