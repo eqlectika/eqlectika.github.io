@@ -813,6 +813,13 @@ if (window.self !== window.top) {
     }
 }
 
+function resetWordState(wordElement) {
+  wordElement.dataset.state = '0';
+  wordElement.classList.remove('state-0', 'state-1', 'state-2');
+  wordElement.classList.add('state-0');
+  wordElement._tapCount = 0;
+}
+
 function handleWordClick(wordElement) {
   const word = wordElement.textContent.trim();
   if (!word) return;
@@ -831,10 +838,7 @@ function handleWordClick(wordElement) {
     navigator.clipboard.writeText(word).catch(() => {});
     const query = `What is the definition of the word "${word}" in its original language?`;
     window.open(`https://chatgpt.com/?q=${encodeURIComponent(query)}`, '_blank');
-    wordElement._tapCount = 0;
-    wordElement.dataset.state = '0';
-    wordElement.classList.remove('state-0', 'state-1', 'state-2');
-    wordElement.classList.add('state-0');
+    resetWordState(wordElement);
   }
 }
 
@@ -851,14 +855,41 @@ function attachWordListeners(scope) {
     wordEl.addEventListener('pointerdown', e => {
       e.stopPropagation();
       wordEl._pressStart = Date.now();
+      
+      clearTimeout(wordEl._longPressTimer);
+      wordEl._longPressTimer = setTimeout(() => {
+        wordEl._isLongPress = true;
+        resetWordState(wordEl);
+      }, 600);
     });
+
     wordEl.addEventListener('pointerup', e => {
       e.stopPropagation();
+      clearTimeout(wordEl._longPressTimer);
+      
+      if (wordEl._isLongPress) {
+        wordEl._isLongPress = false;
+        return;
+      }
+
       const dur = Date.now() - (wordEl._pressStart || 0);
-      if (dur < 300) handleWordClick(wordEl);
+      if (dur < 300) {
+        handleWordClick(wordEl);
+      }
     });
-    wordEl.addEventListener('pointercancel', e => e.stopPropagation());
-    wordEl.addEventListener('pointerleave', e => e.stopPropagation());
+
+    wordEl.addEventListener('pointercancel', e => {
+      e.stopPropagation();
+      clearTimeout(wordEl._longPressTimer);
+      wordEl._isLongPress = false;
+    });
+
+    wordEl.addEventListener('pointerleave', e => {
+      e.stopPropagation();
+      clearTimeout(wordEl._longPressTimer);
+      wordEl._isLongPress = false;
+    });
+
     wordEl.addEventListener('click', e => e.stopPropagation());
   });
 }
