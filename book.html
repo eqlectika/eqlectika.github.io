@@ -314,6 +314,7 @@
         2nd tap — Orange
       </p>
       <p>3rd tap — opens ChatGPT request to clarify the word definition and resets to default color.</p>
+      <p>Long tap — resets word selection.</p>
       <p>The word is automatically copied to clipboard when ChatGPT opens.</p>
       <p>Operating system or AI may retain a previous word for reasons beyond this app's control.</p>
       <p><span class="update-link" id="updateLink">Update</span></p>
@@ -337,6 +338,14 @@
     const helpCloseBtn = document.getElementById('helpCloseBtn');
     const updateLink = document.getElementById('updateLink');
     
+function resetWordState(wordElement) {
+      wordElement.dataset.state = '0';
+      wordElement.classList.remove('state-0', 'state-1', 'state-2');
+      wordElement.classList.add('state-0');
+      wordElement._tapCount = 0;
+      localStorage.setItem('fb2_book_content', contentDiv.innerHTML);
+    }
+
     function handleWordClick(wordElement) {
       const word = wordElement.textContent.trim();
       if (!word) return;
@@ -443,7 +452,7 @@
       }
     });
     
-    function attachWordListeners() {
+function attachWordListeners() {
       const wordElements = document.querySelectorAll('.clickable-word');
       
       wordElements.forEach(wordEl => {
@@ -468,10 +477,26 @@
         function wordPointerDownHandler(event) {
           event.stopPropagation();
           pressStartTime = Date.now();
+          wordEl._isLongPress = false;
+          
+          // Запускаем таймер длинного нажатия (600 мс) для сброса цвета
+          clearTimeout(wordEl._longPressTimer);
+          wordEl._longPressTimer = setTimeout(() => {
+            wordEl._isLongPress = true;
+            resetWordState(wordEl);
+          }, 600);
         }
         
         function wordPointerUpHandler(event) {
           event.stopPropagation();
+          clearTimeout(wordEl._longPressTimer);
+          
+          // Если сработало длинное нажатие, отменяем обычный клик
+          if (wordEl._isLongPress) {
+            wordEl._isLongPress = false;
+            return;
+          }
+          
           const pressDuration = Date.now() - pressStartTime;
           
           if (pressDuration < 300) {
@@ -481,17 +506,15 @@
         
         function wordPointerCancelHandler(event) {
           event.stopPropagation();
+          clearTimeout(wordEl._longPressTimer);
+          wordEl._isLongPress = false;
         }
         
         function wordPointerLeaveHandler(event) {
           event.stopPropagation();
+          clearTimeout(wordEl._longPressTimer);
+          wordEl._isLongPress = false;
         }
-        
-        wordEl._wordClickHandler = wordClickHandler;
-        wordEl._wordPointerDownHandler = wordPointerDownHandler;
-        wordEl._wordPointerUpHandler = wordPointerUpHandler;
-        wordEl._wordPointerCancelHandler = wordPointerCancelHandler;
-        wordEl._wordPointerLeaveHandler = wordPointerLeaveHandler;
         
         wordEl.addEventListener('pointerdown', wordPointerDownHandler);
         wordEl.addEventListener('pointerup', wordPointerUpHandler);
