@@ -206,6 +206,15 @@ input[type=number]::-webkit-outer-spin-button {
 input[type=number] {
     -moz-appearance: textfield;
 }
+
+.clickable-word {
+  transition: color 0.3s ease;
+  cursor: pointer;
+  display: inline;
+}
+.clickable-word.state-0 { color: #ccc; }
+.clickable-word.state-1 { color: #0097ff !important; }
+.clickable-word.state-2 { color: #de00b2 !important; }
 </style>
 </head>
 <body>
@@ -302,6 +311,7 @@ input[type=number] {
         <p>Hourly Resonance Claim: lets you earn +4 Impact per hour.</p>
         <p>If you return in a day (or later), the long-term absence limitation will kick in, and you will receive +24 impact.</p>
         <p>You can delete any meme in the ranking.</p>
+        <p>Tap word in the opened description to change its color twice, 3rd tap — copies the word and opens a definition request in ChatGPT. Long tap resets the word selection.</p>
         <p>Use 'Convert Impacts to Action Limits' to spend 1 impact for +3 votes, or 3 impacts for +1 post slot.</p>
         <p>Use 'Transfer Impact(s)' to send it(s) to other network participants.</p>
 
@@ -1320,7 +1330,7 @@ function updateRankingList() {
             <span class="peers">${peers} peers</span>
             <span onclick="event.stopPropagation();toggleDetails('${item.id}')" style="position:absolute;top:13px;left:50%;transform:translateX(-50%);color:#afff00;cursor:pointer;font-size:18px;font-weight:bold;">✕</span>            
             ${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
-            <p>${item.description || item.title || 'No description.'}</p>
+            <p>${wrapWordsForClick(item.description || item.title || 'No description.')}</p>
             <div class="actions">
                 ${own ? `<button class="edit-btn" onclick="event.stopPropagation();editItem('${item.id}')">Edit</button>` : '<span></span>'}
                 <button class="delete-btn" onclick="event.stopPropagation();deleteItemLocal('${item.id}')">Delete</button>
@@ -1328,6 +1338,7 @@ function updateRankingList() {
         </div>`;
     });
     $('#ranking-list').html(html || '<div style="text-align:center;padding:0px;color:#999;">Matrix is empty.</div>');
+    document.querySelectorAll('.item-details').forEach(el => attachWordListeners(el));
 }
 
 function nextPair() {
@@ -1533,6 +1544,99 @@ function log(txt) {
     let l = document.getElementById('logContainer');
     l.innerHTML += `<div>${txt}</div>`;
     l.scrollTop = l.scrollHeight;
+}
+
+function resetWordState(wordEl) {
+    wordEl.dataset.state = '0';
+    wordEl.classList.remove('state-0', 'state-1', 'state-2');
+    wordEl.classList.add('state-0');
+    wordEl._tapCount = 0;
+}
+
+function handleWordClick(wordEl) {
+    const word = wordEl.textContent.trim();
+    if (!word) return;
+
+    let s = parseInt(wordEl.dataset.state || '0');
+
+    if (s === 2) {
+        navigator.clipboard.writeText(word).catch(() => {});
+        const query = `What is the definition of the word "${word}" in its original language?`;
+        window.open(
+            `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
+            '_blank'
+        );
+        return;
+    }
+
+    s = s + 1;
+    wordEl.dataset.state = s;
+    wordEl.classList.remove('state-0', 'state-1', 'state-2');
+    wordEl.classList.add(`state-${s}`);
+}
+
+function attachWordListeners(root) {
+    if (!root) return;
+    root.querySelectorAll('.clickable-word').forEach(wordEl => {
+        if (wordEl._wordBound) return;
+        wordEl._wordBound = true;
+
+        if (!wordEl.dataset.state) {
+            wordEl.dataset.state = '0';
+            wordEl.classList.add('state-0');
+        }
+        wordEl._tapCount = 0;
+
+        let pressStartTime = 0;
+
+        wordEl.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            pressStartTime = Date.now();
+            wordEl._isLongPress = false;
+            clearTimeout(wordEl._longPressTimer);
+            wordEl._longPressTimer = setTimeout(() => {
+                wordEl._isLongPress = true;
+                resetWordState(wordEl);
+            }, 600);
+        });
+
+        wordEl.addEventListener('pointerup', (e) => {
+            e.stopPropagation();
+            clearTimeout(wordEl._longPressTimer);
+            if (wordEl._isLongPress) {
+                wordEl._isLongPress = false;
+                return;
+            }
+            const dur = Date.now() - pressStartTime;
+            if (dur < 300) handleWordClick(wordEl);
+        });
+
+        wordEl.addEventListener('pointercancel', (e) => {
+            e.stopPropagation();
+            clearTimeout(wordEl._longPressTimer);
+            wordEl._isLongPress = false;
+        });
+
+        wordEl.addEventListener('pointerleave', (e) => {
+            e.stopPropagation();
+            clearTimeout(wordEl._longPressTimer);
+            wordEl._isLongPress = false;
+        });
+
+        wordEl.addEventListener('click', (e) => e.stopPropagation());
+    });
+}
+
+function wrapWordsForClick(text) {
+    if (!text) return '';
+    const safe = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    return safe.split(/(\s+)/).map(part => {
+        if (part.trim().length === 0) return part;
+        return `<span class="clickable-word state-0" data-state="0">${part}</span>`;
+    }).join('');
 }
 
 let touchStartY = 0;
