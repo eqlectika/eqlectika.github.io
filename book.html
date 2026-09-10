@@ -313,7 +313,7 @@
         1st tap — Green<br>
         2nd tap — Orange
       </p>
-      <p>3rd tap — opens ChatGPT request to clarify the word definition and resets to default color.</p>
+      <p>3rd tap and further taps — open ChatGPT request to clarify the word definition. The word stays highlighted.</p>
       <p>Long tap — resets word selection.</p>
       <p>The word is automatically copied to clipboard when ChatGPT opens.</p>
       <p>Operating system or AI may retain a previous word for reasons beyond this app's control.</p>
@@ -346,39 +346,31 @@ function resetWordState(wordElement) {
       localStorage.setItem('fb2_book_content', contentDiv.innerHTML);
     }
 
-    function handleWordClick(wordElement) {
-      const word = wordElement.textContent.trim();
-      if (!word) return;
-      
-      let currentState = parseInt(wordElement.dataset.state || '0');
-      currentState = (currentState + 1) % 3;
-      
-      wordElement.dataset.state = currentState;
-      wordElement.classList.remove('state-0', 'state-1', 'state-2');
-      wordElement.classList.add(`state-${currentState}`);
-      
-      if (!wordElement._tapCount) {
-        wordElement._tapCount = 0;
-      }
-      wordElement._tapCount++;
-      
-      if (wordElement._tapCount === 3) {
-        navigator.clipboard.writeText(word).catch(() => {});
-        
-        const query = `What is the definition of the word "${word}" in its original language?`;
-        window.open(
-          `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
-          '_blank'
-        );
-        
-        wordElement._tapCount = 0;
-        wordElement.dataset.state = '0';
-        wordElement.classList.remove('state-0', 'state-1', 'state-2');
-        wordElement.classList.add('state-0');
-      }
-      
-      localStorage.setItem('fb2_book_content', contentDiv.innerHTML);
-    }
+function handleWordClick(wordElement) {
+  const word = wordElement.textContent.trim();
+  if (!word) return;
+  
+  let currentState = parseInt(wordElement.dataset.state || '0');
+
+  // Если уже оранжевый (state-2) — просто открываем ChatGPT, цвет не трогаем
+  if (currentState === 2) {
+    navigator.clipboard.writeText(word).catch(() => {});
+    const query = `What is the definition of the word "${word}" in its original language?`;
+    window.open(
+      `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
+      '_blank'
+    );
+    return;
+  }
+
+  // Иначе переключаем цвет: 0 → 1 → 2
+  currentState = currentState + 1;
+  wordElement.dataset.state = currentState;
+  wordElement.classList.remove('state-0', 'state-1', 'state-2');
+  wordElement.classList.add(`state-${currentState}`);
+  
+  localStorage.setItem('fb2_book_content', contentDiv.innerHTML);
+}
 
     function setMenuWidth() {
       const leftButtonWidth = loadFileButton.offsetWidth; 
