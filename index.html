@@ -85,6 +85,15 @@ body::-webkit-scrollbar {
     overflow: hidden;
 }
 
+.clickable-word {
+  transition: color 0.3s ease;
+  cursor: pointer;
+  display: inline-block;
+}
+.clickable-word.state-0 { color: inherit; }
+.clickable-word.state-1 { color: #00ff00 !important; }
+.clickable-word.state-2 { color: #ffa500 !important; }
+
 .ranking-container { 
     padding: 0; 
     margin: 0; 
@@ -376,9 +385,9 @@ p {margin: 8px 0 0 0;}
     <p style="line-weight: 2; font-family: 'Ubuntu', monospace, serif;">A logo that someone applied for you is already twice as effective, and objectively more substantial, than the one you created yourself.</p>
 
     <p style="text-align: center;">
-        <a href="https://t.me/eugenebox/" target="_blank" rel="noopener noreferrer" style="display: inline-block; color: #ffb200; font-weight: bold; font-size: 18px; text-decoration: none;">@eugenebox</a>
+        <a href="https://t.me/eugenebox/" target="_blank" rel="noopener noreferrer" style="display: inline-block; color: #afff00; font-weight: bold; font-size: 18px; text-decoration: none;">@eugenebox</a>
     <p>
-    <button id="force-update-btn" style="margin: 20px 0 10px 0; background: none; border: none; color: #9ACD32; font-family: 'Ubuntu', sans-serif; font-size: 18px; font-weight: bold; cursor: pointer;">
+    <button id="force-update-btn" style="margin: 20px 0 10px 0; background: none; border: none; color: #0097ff; font-family: 'Ubuntu', sans-serif; font-size: 18px; font-weight: bold; cursor: pointer;">
         Update
     </button>
 </div>
@@ -655,11 +664,12 @@ function updateRankingList() {
             <button class="delete-btn" onclick="event.stopPropagation(); deleteItem(${item.id})">Delete Item</button>
             ${item.externalUrl ? `<a href="${item.externalUrl}" class="external-link">Visit Link •</a>` : ''}
             ${item.description 
-                ? item.description.split(/\r?\n/).map(p => `<p style="margin: 8px 0 0 0;">${p.trim() !== '' ? p.trim() : '&nbsp;'}</p>`).join('') 
+                ? item.description.split(/\r?\n/).map(p => `<p style="margin: 8px 0 0 0;">${p.trim() !== '' ? wrapWords(p.trim()) : '&nbsp;'}</p>`).join('') 
                 : '<p style="margin: 0;">No description.</p>'}
         </div>`;
     });
     $('#ranking-list').html(html);
+    attachWordListeners(document.getElementById('ranking-list'));
 }
 
 function nextPair() {
@@ -801,6 +811,107 @@ if (window.self !== window.top) {
             parent.style.display = 'none';
         }
     }
+}
+
+function handleWordClick(wordElement) {
+  const word = wordElement.textContent.trim();
+  if (!word) return;
+
+  let currentState = parseInt(wordElement.dataset.state || '0');
+  currentState = (currentState + 1) % 3;
+
+  wordElement.dataset.state = currentState;
+  wordElement.classList.remove('state-0', 'state-1', 'state-2');
+  wordElement.classList.add(`state-${currentState}`);
+
+  if (!wordElement._tapCount) wordElement._tapCount = 0;
+  wordElement._tapCount++;
+
+  if (wordElement._tapCount === 3) {
+    navigator.clipboard.writeText(word).catch(() => {});
+    const query = `What is the definition of the word "${word}" in its original language?`;
+    window.open(`https://chatgpt.com/?q=${encodeURIComponent(query)}`, '_blank');
+    wordElement._tapCount = 0;
+    wordElement.dataset.state = '0';
+    wordElement.classList.remove('state-0', 'state-1', 'state-2');
+    wordElement.classList.add('state-0');
+  }
+}
+
+function attachWordListeners(scope) {
+  const root = scope || document;
+  root.querySelectorAll('.clickable-word').forEach(wordEl => {
+    if (!wordEl.dataset.state) {
+      wordEl.dataset.state = '0';
+      wordEl.classList.add('state-0');
+    }
+    if (wordEl._wordBound) return;
+    wordEl._wordBound = true;
+
+    wordEl.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      wordEl._pressStart = Date.now();
+    });
+    wordEl.addEventListener('pointerup', e => {
+      e.stopPropagation();
+      const dur = Date.now() - (wordEl._pressStart || 0);
+      if (dur < 300) handleWordClick(wordEl);
+    });
+    wordEl.addEventListener('pointercancel', e => e.stopPropagation());
+    wordEl.addEventListener('pointerleave', e => e.stopPropagation());
+    wordEl.addEventListener('click', e => e.stopPropagation());
+  });
+}
+
+function wrapWords(text) {
+  return text.split(/(\s+)/).map(part => {
+    if (part.trim().length === 0) return part;
+    return `<span class="clickable-word state-0" data-state="0">${part}</span>`;
+  }).join('');
+}
+    
+function wrapTextNodes(rootElement) {
+  const SKIP_TAGS = ['A', 'BUTTON', 'IMG', 'SCRIPT', 'STYLE', 'INPUT', 'TEXTAREA', 'SVG', 'PATH'];
+  const walker = document.createTreeWalker(rootElement, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      let parent = node.parentNode;
+      while (parent && parent !== rootElement) {
+        if (SKIP_TAGS.includes(parent.tagName)) return NodeFilter.FILTER_REJECT;
+        if (parent.classList && parent.classList.contains('clickable-word')) return NodeFilter.FILTER_REJECT;
+        parent = parent.parentNode;
+      }
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  const textNodes = [];
+  let n;
+  while ((n = walker.nextNode())) textNodes.push(n);
+
+  textNodes.forEach(node => {
+    const text = node.nodeValue;
+    const parts = text.split(/(\s+)/);
+    const frag = document.createDocumentFragment();
+    parts.forEach(part => {
+      if (part.trim().length === 0) {
+        frag.appendChild(document.createTextNode(part));
+      } else {
+        const span = document.createElement('span');
+        span.className = 'clickable-word state-0';
+        span.dataset.state = '0';
+        span.textContent = part;
+        frag.appendChild(span);
+      }
+    });
+    node.parentNode.replaceChild(frag, node);
+  });
+}
+
+const aboutBlock = document.getElementById('collapsible-content');
+if (aboutBlock) {
+  wrapTextNodes(aboutBlock);
+  attachWordListeners(aboutBlock);
 }
 </script>
 </body>
