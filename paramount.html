@@ -544,6 +544,19 @@ a { color: #448aff; text-decoration: none; }
 ::-webkit-scrollbar-thumb:hover {
   background: #444444;
 }
+
+@keyframes livePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+#liveIndicatorBcast {
+    color: #ff0000;                   
+    animation: livePulse 1.5s infinite;
+}
+#tapeIndicatorBcast {
+    color: #afff00;                      
+}
 </style>
 </head>
 <body>
@@ -554,7 +567,7 @@ a { color: #448aff; text-decoration: none; }
     
   <div style="display: flex; flex-direction: column;">
 
-<h2 id="invertTrigger" style="margin: -4px; line-height: 0.9; color: #ccc; font-family: 'Unbounded', serif; margin-top: 28px; cursor: pointer;" title="Tap to invert interface">Paramount</h2>
+<h2 id="invertTrigger" style="margin: -4px; line-height: 0.9; color: #ccc; font-family: 'Unbounded', serif; margin-top: 28px; cursor: pointer;" title="Tap to invert interface">Paramount<span id="liveIndicator" style="display: none; color: #ff0000; margin-left: 6px; animation: livePulse 1.5s infinite;">● Live!</span><span id="tapeIndicator" style="display: none; color: #afff00; margin-left: 6px;">● Tape</span></h2>
 
 
     <span style="margin: -3px; font-size: 14px; letter-spacing: 1px; font-family: 'Unbounded', monospace; color: #efbc40; margin-top: 5px;">
@@ -673,6 +686,10 @@ a { color: #448aff; text-decoration: none; }
     <input type="url" id="new-url" class="admin-input" placeholder="External Link (optional)">
     <label for="new-img-file" class="file-label" id="file-label-text">Select Meme Image</label>
     <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)">
+<div style="text-align: center; margin: 6px 0 10px 0; font-family: 'Unbounded', monospace; font-size: 14px;">
+    <span id="liveIndicatorBcast" style="display: none;">● Live! — peers online: <span id="livePeerCount">0</span></span>
+    <span id="tapeIndicatorBcast" style="display: none;">● Tape — no peer(s)</span>
+</div>
 <button class="admin-btn inject-btn-bg" style="border: 2px solid #afff00;" onclick="addItem()">Inject Meme to Network</button>
 </div>
 
@@ -1277,6 +1294,7 @@ client.on('connect', () => {
     }, 5000);
 
     setInterval(updateOnlinePeersCount, 5000);
+    updateOnlinePeersCount();
 });
 
 client.on('error', (err) => {
@@ -1923,6 +1941,27 @@ function updateOnlinePeersCount() {
     const onlineCount = Object.keys(activePeers).length;
     const peerLabel = onlineCount === 1 ? 'peer' : 'peers';
     log(`[Network] Active online: ${onlineCount} ${peerLabel}`);
+
+    const liveIndicator = document.getElementById('liveIndicator');
+    const tapeIndicator = document.getElementById('tapeIndicator');
+    if (liveIndicator && tapeIndicator) {
+        liveIndicator.style.display = onlineCount > 0 ? 'inline' : 'none';
+        tapeIndicator.style.display = onlineCount > 0 ? 'none' : 'inline';
+    }
+
+    const liveB = document.getElementById('liveIndicatorBcast');
+    const tapeB = document.getElementById('tapeIndicatorBcast');
+    const liveCount = document.getElementById('livePeerCount');
+    if (liveB && tapeB) {
+        if (onlineCount > 0) {
+            liveB.style.display = 'inline';
+            tapeB.style.display = 'none';
+            if (liveCount) liveCount.textContent = onlineCount;
+        } else {
+            liveB.style.display = 'none';
+            tapeB.style.display = 'inline';
+        }
+    }
 }
 
 function log(txt) {
