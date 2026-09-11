@@ -630,46 +630,21 @@ if (vrThrust !== 0) {
 let localUp = new THREE.Vector3(0, 1, 0)
     .applyQuaternion(player.quaternion);
 
-// ==========================================
-// ВЕРТИКАЛЬНАЯ ФИЗИКА
-// ==========================================
-
-if (autoClimb) {
-
-    const heightError = START_HOVER_HEIGHT - player.position.y;
-
-    velocity.y += heightError * 0.0025;
-    velocity.y *= 0.94;
-
-    if (
-        Math.abs(heightError) < 0.15 &&
-        Math.abs(velocity.y) < 0.02
-    ) {
-        player.position.y = START_HOVER_HEIGHT;
-        velocity.y = 0;
-        autoClimb = false;
-    }
-
-} else if (Math.abs(thrustForce) > 0) {
+if (Math.abs(thrustForce) > 0) {
 
     velocity.add(
         localUp.clone().multiplyScalar(thrustForce)
     );
 
-    velocity.y -= GRAVITY;
-
-    velocity.y = THREE.MathUtils.clamp(
-        velocity.y,
-        -MAX_VERTICAL_SPEED,
-        MAX_VERTICAL_SPEED
-    );
-
-} else {
-
-    // Ничего не делаем.
-    // velocity.y сохраняется.
-
 }
+
+velocity.y -= GRAVITY;
+
+velocity.y = THREE.MathUtils.clamp(
+    velocity.y,
+    -MAX_VERTICAL_SPEED,
+    MAX_VERTICAL_SPEED
+);
 
 updateInfiniteWorld(player.position);
 
