@@ -39,13 +39,18 @@ canvas {
 
 @media (pointer: coarse) { #controls { display: flex; } }
 #logoLink {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 4000; 
-    pointer-events: auto;
+    display: inline-block;
+    margin-bottom: 10px;
     cursor: pointer;
+    pointer-events: auto;
+}
+
+#logoLink img {
+    display: block;
+    width: 48px;
+    height: 48px;
+    align-item: center;
+    opacity: 0.5;
 }
 
 #throttleArea {
@@ -117,7 +122,7 @@ canvas {
     margin-bottom: 8px;
     padding: 10px 14px;
     line-height: 1.6;
-    text-align: left;
+    text-align: center;
     white-space: nowrap;
     background: rgba(0,0,0,0.65);
     border-radius: 6px;
@@ -131,10 +136,6 @@ canvas {
 </head>
 <body>
     <button id="startButton">START GAME</button>
-
-<a href="index.html" id="logoLink">
-    <img src="logo.png" alt="Logo" draggable="false" style="margin-bottom: 20px; width: 42px; height: 42px; opacity: 0.5;">
-</a>
     
     <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
 <div id="help">
@@ -146,8 +147,12 @@ canvas {
         <div><b>Space</b> — forward thrust</div>
         <div><b>Double Space</b> — reverse thrust</div>
         <div><b>Arrow keys</b> — steer and tilt</div>
+        <a href="index.html" id="logoLink">
+            <img src="fleurdelis.png" draggable="false">
+        </a>
     </div>
 </div>
+
 <script>
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -168,7 +173,7 @@ let isReverseThrust = false;
 
 const throttleArea = document.getElementById('throttleArea');
 const controlArea = document.getElementById('controlArea');
-const logoLink = document.getElementById('logoLink');
+
 
 const activeTouches = {
     throttle: null,
@@ -705,6 +710,8 @@ const help = document.getElementById('help');
 const helpButton = document.getElementById('helpButton');
 
 help.addEventListener('click', (e) => {
+    if (e.target.closest('#logoLink')) return;
+
     e.preventDefault();
     e.stopPropagation();
 
