@@ -315,8 +315,8 @@
       </p>
       <p>3rd tap and further taps — open ChatGPT request to clarify the word definition. The word stays highlighted.</p>
       <p>Long tap — resets word selection.</p>
-      <p>The word is automatically copied to clipboard when ChatGPT opens.</p>
-      <p>Operating system or AI may retain a previous word for reasons beyond this app's control.</p>
+      <p>The previous word may remain in the executed ChatGPT request. Therefore, the new word is saved to the clipboard each time for quick replacement.</p>
+      <p>Try it right here.</p>
       <p><span class="update-link" id="updateLink">Update</span></p>
       <p><a href="index.html" style="color: #00ccff; text-decoration: none; font-size: 18px;">Trust Fibonacci</a></p>
       <button class="help-close" id="helpCloseBtn">Close</button>
@@ -408,10 +408,12 @@ function handleWordClick(wordElement) {
         leftMenuSelectMenu.style.display = 'none';
     });
 
-    helpMenuItem.addEventListener('click', () => {
-      helpPopup.classList.add('active');
-      leftMenuSelectMenu.style.display = 'none';
-    });
+helpMenuItem.addEventListener('click', () => {
+  helpPopup.classList.add('active');
+  leftMenuSelectMenu.style.display = 'none';
+
+  makeHelpWordsClickable();
+});
 
     helpCloseBtn.addEventListener('click', () => {
       helpPopup.classList.remove('active');
@@ -443,6 +445,60 @@ function handleWordClick(wordElement) {
         location.reload(true);
       }
     });
+    
+    function makeHelpWordsClickable() {
+  const helpContent = document.querySelector('.help-content');
+
+  const walker = document.createTreeWalker(
+    helpContent,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode(node) {
+        const parent = node.parentElement;
+
+        // Не обрабатываем кнопки, ссылки и Update
+        if (
+          parent.closest('.help-close') ||
+          parent.closest('a') ||
+          parent.closest('#updateLink') ||
+          parent.closest('.clickable-word')
+        ) {
+          return NodeFilter.FILTER_REJECT;
+        }
+
+        return node.textContent.trim()
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_REJECT;
+      }
+    }
+  );
+
+  const textNodes = [];
+
+  while (walker.nextNode()) {
+    textNodes.push(walker.currentNode);
+  }
+
+  textNodes.forEach(node => {
+    const fragment = document.createDocumentFragment();
+
+    node.textContent.split(/(\s+)/).forEach(part => {
+      if (/^\s+$/.test(part)) {
+        fragment.appendChild(document.createTextNode(part));
+      } else {
+        const span = document.createElement('span');
+        span.className = 'clickable-word state-0';
+        span.dataset.state = '0';
+        span.textContent = part;
+        fragment.appendChild(span);
+      }
+    });
+
+    node.parentNode.replaceChild(fragment, node);
+  });
+
+  attachWordListeners();
+}
     
 function attachWordListeners() {
       const wordElements = document.querySelectorAll('.clickable-word');
