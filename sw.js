@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-jetpack'; 
+const CACHE_NAME = 'version-logolink'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
