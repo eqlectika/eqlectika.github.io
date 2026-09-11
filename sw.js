@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-description'; 
+const CACHE_NAME = 'version-jetpack'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
