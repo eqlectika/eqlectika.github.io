@@ -44,7 +44,7 @@ canvas {
     cursor: pointer;
     pointer-events: auto;
 }
-
+ 
 #logoLink img {
     display: block;
     width: 48px;
@@ -95,6 +95,7 @@ canvas {
     font-size: 18px;
     cursor: pointer;
 }
+
 #help {
     position: fixed;
     left: 50%;
@@ -136,6 +137,10 @@ canvas {
 </head>
 <body>
     <button id="startButton">START GAME</button>
+
+<a href="index.html" id="logoLink">
+    <img src="logo.png" alt="Logo" draggable="false" style="margin-bottom: 20px; width: 42px; height: 42px; opacity: 0.5;">
+</a>
     
     <div id="throttleArea"></div> <div id="controlArea"></div>  <div id="controls"></div>
 <div id="help">
@@ -152,7 +157,6 @@ canvas {
         </a>
     </div>
 </div>
-
 <script>
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
@@ -173,7 +177,7 @@ let isReverseThrust = false;
 
 const throttleArea = document.getElementById('throttleArea');
 const controlArea = document.getElementById('controlArea');
-
+const logoLink = document.getElementById('logoLink');
 
 const activeTouches = {
     throttle: null,
@@ -188,19 +192,8 @@ throttleArea.addEventListener('pointerdown', (e) => {
 
 function updateThrottle(e) {
     const rect = throttleArea.getBoundingClientRect();
-    const centerY = rect.top + rect.height / 2;
-
-    if (e.clientY < centerY) {
-
-        currentThrottle = (centerY - e.clientY) / (rect.height / 2);
-        currentThrottle = Math.max(0, Math.min(1, currentThrottle));
-        isReverseThrust = false;
-    } else {
-
-        currentThrottle = (e.clientY - centerY) / (rect.height / 2);
-        currentThrottle = Math.max(0, Math.min(1, currentThrottle));
-        isReverseThrust = true;
-    }
+    let val = 1 - ((e.clientY - rect.top) / rect.height);
+    currentThrottle = Math.max(0, Math.min(1, val));
 }
 
 controlArea.addEventListener('pointerdown', (e) => {
@@ -229,10 +222,9 @@ window.addEventListener('pointermove', (e) => {
 
 window.addEventListener('pointerup', (e) => {
     if (e.pointerId === activeTouches.throttle) {
-    activeTouches.throttle = null;
-    currentThrottle = 0;
-    isReverseThrust = false;
-}
+        activeTouches.throttle = null;
+        currentThrottle = 0;
+    }
     if (e.pointerId === activeTouches.control) {
         activeTouches.control = null;
         touchJoystick.active = false;
@@ -515,54 +507,43 @@ const roadHeight2 = 220; // все дороги второго уровня на
         Space: false 
     };
     
-let lastSpaceTime = 0;
-let reverseSpace = false;
+    let lastSpaceTime = 0;
+    let superThrust = false;
     
-window.addEventListener('keydown', (e) => {
-    if (e.key.startsWith('Arrow')) {
-        keys[e.code] = true;
-        e.preventDefault();
-    }
-
-    if (e.code === 'Space') {
-        e.preventDefault();
-
-        const currentTime = performance.now();
-
-        if (currentTime - lastSpaceTime < 300) {
-            reverseSpace = true;
-        } else {
-            reverseSpace = false;
+    window.addEventListener('keydown', (e) => {
+        // Обработка стрелок
+        if (e.key.startsWith('Arrow')) {
+            keys[e.code] = true;
+            e.preventDefault();
         }
-
-        lastSpaceTime = currentTime;
-        keys['Space'] = true;
-    }
-});
+        
+        // Обработка Space с двойным тапом
+        if (e.code === 'Space') {
+            e.preventDefault();
+            const currentTime = performance.now();
+            if (currentTime - lastSpaceTime < 300) { // 300ms для двойного тапа
+                superThrust = true;
+            }
+            lastSpaceTime = currentTime;
+            keys['Space'] = true;
+        }
+    });
     
-window.addEventListener('keyup', (e) => {
-    if (e.key.startsWith('Arrow')) {
-        keys[e.code] = false;
-        e.preventDefault();
-    }
-
-    if (e.code === 'Space') {
-        e.preventDefault();
-        keys['Space'] = false;
-        reverseSpace = false;
-    }
-});
+    window.addEventListener('keyup', (e) => {
+        if (e.key.startsWith('Arrow')) {
+            keys[e.code] = false;
+            e.preventDefault();
+        }
+        if (e.code === 'Space') {
+            e.preventDefault();
+            keys['Space'] = false;
+            superThrust = false;
+        }
+    });
     
-let velocity = new THREE.Vector3(0, 0, 0);
-let angularVelocityX = 0;
-let angularVelocityZ = 0;
-
-
-const START_HOVER_HEIGHT = 38; // только начальная высота
-let autoClimb = true;
-
-const VERTICAL_ACCELERATION = 0.035;
-const MAX_VERTICAL_SPEED = 1.2;
+    let velocity = new THREE.Vector3(0, 0, 0);
+    let angularVelocityX = 0;
+    let angularVelocityZ = 0;
 
     renderer.setAnimationLoop(() => {
         const session = renderer.xr.getSession();
@@ -577,13 +558,11 @@ const MAX_VERTICAL_SPEED = 1.2;
         if (keys['ArrowUp']) tX = -1;
         if (keys['ArrowDown']) tX = 1;
 
-   if (keys['Space']) {
-    if (reverseSpace) {
-        vrThrust = -FLY_SPEED;
-    } else {
-        vrThrust = FLY_SPEED;
-    }
-}
+        // Тяга: обычная или супер (двойной тап Space)
+        if (keys['Space']) {
+            const thrustMultiplier = superThrust ? 2.5 : 1.0;
+            vrThrust = FLY_SPEED * thrustMultiplier;
+        }
 
         if (touchJoystick.active) {
             angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
@@ -615,38 +594,22 @@ const MAX_VERTICAL_SPEED = 1.2;
         
         player.quaternion.multiply(deltaQuaternion);
 
-let thrustForce = 0;
+        let thrustForce = 0;
+        if (vrThrust > 0) {
+            thrustForce = vrThrust;
+        } else if (currentThrottle > 0.05) {
+            thrustForce = FLY_SPEED * (currentThrottle * 2.0); 
+        }
 
-if (vrThrust !== 0) {
-    thrustForce = vrThrust;
-} else if (currentThrottle > 0.05) {
-    thrustForce = FLY_SPEED * (currentThrottle * 4.0);
+        let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
 
-    if (isReverseThrust) {
-        thrustForce = -thrustForce;
-    }
-}
+        if (thrustForce > 0) {
+            velocity.add(localUp.clone().multiplyScalar(thrustForce));
+        }
 
-let localUp = new THREE.Vector3(0, 1, 0)
-    .applyQuaternion(player.quaternion);
+        velocity.y -= GRAVITY;
 
-if (Math.abs(thrustForce) > 0) {
-
-    velocity.add(
-        localUp.clone().multiplyScalar(thrustForce)
-    );
-
-}
-
-velocity.y -= GRAVITY;
-
-velocity.y = THREE.MathUtils.clamp(
-    velocity.y,
-    -MAX_VERTICAL_SPEED,
-    MAX_VERTICAL_SPEED
-);
-
-updateInfiniteWorld(player.position);
+        updateInfiniteWorld(player.position);
 
         const playerRadius = 1.5; 
         const nextPos = player.position.clone().add(velocity);
@@ -669,8 +632,7 @@ updateInfiniteWorld(player.position);
         }
 
         player.position.add(velocity);
-velocity.x *= DAMPING_MOVE;
-velocity.z *= DAMPING_MOVE;
+        velocity.multiplyScalar(DAMPING_MOVE);
 
         if (player.position.y < 2) {
             player.position.y = 2;
@@ -680,7 +642,7 @@ velocity.z *= DAMPING_MOVE;
         infiniteGrid.position.set(player.position.x, 0, player.position.z);
         renderer.render(scene, camera);
     });
-    
+
 const help = document.getElementById('help');
 const helpButton = document.getElementById('helpButton');
 
