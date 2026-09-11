@@ -136,8 +136,19 @@ throttleArea.addEventListener('pointerdown', (e) => {
 
 function updateThrottle(e) {
     const rect = throttleArea.getBoundingClientRect();
-    let val = 1 - ((e.clientY - rect.top) / rect.height);
-    currentThrottle = Math.max(0, Math.min(1, val));
+    const centerY = rect.top + rect.height / 2;
+
+    if (e.clientY < centerY) {
+
+        currentThrottle = (centerY - e.clientY) / (rect.height / 2);
+        currentThrottle = Math.max(0, Math.min(1, currentThrottle));
+        isReverseThrust = false;
+    } else {
+
+        currentThrottle = (e.clientY - centerY) / (rect.height / 2);
+        currentThrottle = Math.max(0, Math.min(1, currentThrottle));
+        isReverseThrust = true;
+    }
 }
 
 controlArea.addEventListener('pointerdown', (e) => {
@@ -166,9 +177,10 @@ window.addEventListener('pointermove', (e) => {
 
 window.addEventListener('pointerup', (e) => {
     if (e.pointerId === activeTouches.throttle) {
-        activeTouches.throttle = null;
-        currentThrottle = 0;
-    }
+    activeTouches.throttle = null;
+    currentThrottle = 0;
+    isReverseThrust = false;
+}
     if (e.pointerId === activeTouches.control) {
         activeTouches.control = null;
         touchJoystick.active = false;
@@ -451,43 +463,54 @@ const roadHeight2 = 220; // все дороги второго уровня на
         Space: false 
     };
     
-    let lastSpaceTime = 0;
-    let superThrust = false;
+let lastSpaceTime = 0;
+let reverseSpace = false;
     
-    window.addEventListener('keydown', (e) => {
-        // Обработка стрелок
-        if (e.key.startsWith('Arrow')) {
-            keys[e.code] = true;
-            e.preventDefault();
+window.addEventListener('keydown', (e) => {
+    if (e.key.startsWith('Arrow')) {
+        keys[e.code] = true;
+        e.preventDefault();
+    }
+
+    if (e.code === 'Space') {
+        e.preventDefault();
+
+        const currentTime = performance.now();
+
+        if (currentTime - lastSpaceTime < 300) {
+            reverseSpace = true;
+        } else {
+            reverseSpace = false;
         }
-        
-        // Обработка Space с двойным тапом
-        if (e.code === 'Space') {
-            e.preventDefault();
-            const currentTime = performance.now();
-            if (currentTime - lastSpaceTime < 300) { // 300ms для двойного тапа
-                superThrust = true;
-            }
-            lastSpaceTime = currentTime;
-            keys['Space'] = true;
-        }
-    });
+
+        lastSpaceTime = currentTime;
+        keys['Space'] = true;
+    }
+});
     
-    window.addEventListener('keyup', (e) => {
-        if (e.key.startsWith('Arrow')) {
-            keys[e.code] = false;
-            e.preventDefault();
-        }
-        if (e.code === 'Space') {
-            e.preventDefault();
-            keys['Space'] = false;
-            superThrust = false;
-        }
-    });
+window.addEventListener('keyup', (e) => {
+    if (e.key.startsWith('Arrow')) {
+        keys[e.code] = false;
+        e.preventDefault();
+    }
+
+    if (e.code === 'Space') {
+        e.preventDefault();
+        keys['Space'] = false;
+        reverseSpace = false;
+    }
+});
     
-    let velocity = new THREE.Vector3(0, 0, 0);
-    let angularVelocityX = 0;
-    let angularVelocityZ = 0;
+let velocity = new THREE.Vector3(0, 0, 0);
+let angularVelocityX = 0;
+let angularVelocityZ = 0;
+
+
+const START_HOVER_HEIGHT = 38; // только начальная высота
+let autoClimb = true;
+
+const VERTICAL_ACCELERATION = 0.035;
+const MAX_VERTICAL_SPEED = 1.2;
 
     renderer.setAnimationLoop(() => {
         const session = renderer.xr.getSession();
@@ -502,11 +525,13 @@ const roadHeight2 = 220; // все дороги второго уровня на
         if (keys['ArrowUp']) tX = -1;
         if (keys['ArrowDown']) tX = 1;
 
-        // Тяга: обычная или супер (двойной тап Space)
-        if (keys['Space']) {
-            const thrustMultiplier = superThrust ? 2.5 : 1.0;
-            vrThrust = FLY_SPEED * thrustMultiplier;
-        }
+   if (keys['Space']) {
+    if (reverseSpace) {
+        vrThrust = -FLY_SPEED;
+    } else {
+        vrThrust = FLY_SPEED;
+    }
+}
 
         if (touchJoystick.active) {
             angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
@@ -538,22 +563,63 @@ const roadHeight2 = 220; // все дороги второго уровня на
         
         player.quaternion.multiply(deltaQuaternion);
 
-        let thrustForce = 0;
-        if (vrThrust > 0) {
-            thrustForce = vrThrust;
-        } else if (currentThrottle > 0.05) {
-            thrustForce = FLY_SPEED * (currentThrottle * 2.0); 
-        }
+let thrustForce = 0;
 
-        let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+if (vrThrust !== 0) {
+    thrustForce = vrThrust;
+} else if (currentThrottle > 0.05) {
+    thrustForce = FLY_SPEED * (currentThrottle * 4.0);
 
-        if (thrustForce > 0) {
-            velocity.add(localUp.clone().multiplyScalar(thrustForce));
-        }
+    if (isReverseThrust) {
+        thrustForce = -thrustForce;
+    }
+}
 
-        velocity.y -= GRAVITY;
+let localUp = new THREE.Vector3(0, 1, 0)
+    .applyQuaternion(player.quaternion);
 
-        updateInfiniteWorld(player.position);
+// ==========================================
+// ВЕРТИКАЛЬНАЯ ФИЗИКА
+// ==========================================
+
+if (autoClimb) {
+
+    const heightError = START_HOVER_HEIGHT - player.position.y;
+
+    velocity.y += heightError * 0.0025;
+    velocity.y *= 0.94;
+
+    if (
+        Math.abs(heightError) < 0.15 &&
+        Math.abs(velocity.y) < 0.02
+    ) {
+        player.position.y = START_HOVER_HEIGHT;
+        velocity.y = 0;
+        autoClimb = false;
+    }
+
+} else if (Math.abs(thrustForce) > 0) {
+
+    velocity.add(
+        localUp.clone().multiplyScalar(thrustForce)
+    );
+
+    velocity.y -= GRAVITY;
+
+    velocity.y = THREE.MathUtils.clamp(
+        velocity.y,
+        -MAX_VERTICAL_SPEED,
+        MAX_VERTICAL_SPEED
+    );
+
+} else {
+
+    // Ничего не делаем.
+    // velocity.y сохраняется.
+
+}
+
+updateInfiniteWorld(player.position);
 
         const playerRadius = 1.5; 
         const nextPos = player.position.clone().add(velocity);
@@ -576,7 +642,8 @@ const roadHeight2 = 220; // все дороги второго уровня на
         }
 
         player.position.add(velocity);
-        velocity.multiplyScalar(DAMPING_MOVE);
+velocity.x *= DAMPING_MOVE;
+velocity.z *= DAMPING_MOVE;
 
         if (player.position.y < 2) {
             player.position.y = 2;
