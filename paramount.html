@@ -1709,8 +1709,9 @@ function updateRankingList() {
         const hasImage = item.img && item.img.length > 0;
         let thumbnailHtml;
         if (hasImage) {
-            thumbnailHtml = `<img src="${item.img}" class="ranking-img" onerror="this.style.display='none'">`;
-        } else {
+            thumbnailHtml = `<img src="${item.img}" class="ranking-img"
+                style="width:40px; height:40px; object-fit:cover; object-position:center; display:block; flex-shrink:0;"
+                    onerror="this.style.display='none'">`;        } else {
             const text = item.description || item.title;
             thumbnailHtml = `<div class="ranking-img text-preview" style="
                 overflow: hidden;
@@ -1735,7 +1736,7 @@ function updateRankingList() {
     ${thumbnailHtml}
     <div class="ranking-info">
         <p class="title" style="text-align: left; font-size: 16px; margin: 0; color: #fff;">${index + 1}. ${item.title}</p>
-        ${item.sender !== 'System-Genesis' ? `<span style="color: #666; font-size: 11px; margin-left: 8px;">by ${item.sender}</span>` : ''}
+        <span style="color: ${item.sender === 'System-Genesis' ? '#ff00cc99' : '#999'}; font-size: 11px; margin-left: 8px; margin-right: auto;">by ${item.sender}</span>
         <span style="color:#0097ff;">${Math.round(item.rating)}</span>
     </div> 
 </div>
