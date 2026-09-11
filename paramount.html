@@ -686,8 +686,11 @@ a { color: #448aff; text-decoration: none; }
     <span id="broadcast"></span>    
 
 <div class="main-panel">
-    <h3 style="color: #afff00; text-align: center;">Broadcast</h3>
-    <input type="text" id="new-title" class="admin-input" placeholder="Your Meme Title">
+<h3 style="color: #afff00; text-align: center;">
+    Broadcast
+    <span id="liveIndicatorH3" style="display: none; color: #ff0000; margin-left: 6px; animation: livePulse 1.5s infinite;">● Live!</span>
+    <span id="tapeIndicatorH3" style="display: none; color: #afff00; margin-left: 6px;">● Tape</span>
+</h3>    <input type="text" id="new-title" class="admin-input" placeholder="Your Meme Title">
     <textarea id="new-desc" class="admin-input" placeholder="Your meme details (optional)"></textarea>
     <input type="url" id="new-url" class="admin-input" placeholder="External Link (optional)">
     <label for="new-img-file" class="file-label" id="file-label-text">Select Meme Image</label>
@@ -1971,6 +1974,18 @@ function updateOnlinePeersCount() {
         } else {
             liveB.style.display = 'none';
             tapeB.style.display = 'inline';
+        }
+    }
+
+    const liveH3 = document.getElementById('liveIndicatorH3');
+    const tapeH3 = document.getElementById('tapeIndicatorH3');
+    if (liveH3 && tapeH3) {
+        if (onlineCount > 0) {
+            liveH3.style.display = 'inline';
+            tapeH3.style.display = 'none';
+        } else {
+            liveH3.style.display = 'none';
+            tapeH3.style.display = 'inline';
         }
     }
 }
