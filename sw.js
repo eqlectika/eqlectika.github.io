@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-logolink'; 
+const CACHE_NAME = 'version-gravity'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
