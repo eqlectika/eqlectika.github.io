@@ -1235,40 +1235,44 @@ updateClaimUI();
 
 let items = JSON.parse(localStorage.getItem('paramount_versus_items')) || [];
 
-if (items.length === 0) {
-    items = [
-        {
-            id: 'meme-demo-1',
-            sender: 'System-Genesis',
-            title: 'Aura',
-            description: 'No registration is required. You can save your meme to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your meme and your voting calculations will remain only on your device, but you can always Re-inject your tape mode meme (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the meme creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete memes on other users\' devices.',
-            externalUrl: '',
-            img: '',
-            externalUrl: '',
-            img: 'woman.PNG',
-            rating: 1520
-        },
-        {
-            id: 'meme-demo-2',
-            sender: 'System-Genesis',
-            title: 'Max',
-            description: 'No registration is required. You can save your meme to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your meme and your voting calculations will remain only on your device, but you can always Re-inject your tape mode meme (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the meme creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete memes on other users\' devices.',
-            externalUrl: '',
-            img: '',
-            externalUrl: '',
-            img: 'man.PNG',
-            rating: 1520
-        },
-        {
-            id: 'meme-demo-3',
-            sender: 'System-Genesis',
-            title: 'No Image',
-            description: 'No registration is required. You can save your meme to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your meme and your voting calculations will remain only on your device, but you can always Re-inject your tape mode meme (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the meme creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete memes on other users\' devices.',
-            externalUrl: '',
-            img: '',
-            rating: 1520
-        },
-    ];
+const demoItems = [
+    {
+        id: 'meme-demo-1',
+        sender: 'System-Genesis',
+        title: 'Aura',
+        description: 'No registration is required. You can save your meme to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your meme and your voting calculations will remain only on your device, but you can always Re-inject your tape mode meme (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the meme creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete memes on other users\' devices.',
+        externalUrl: '',
+        img: 'woman.PNG',
+        rating: 1520
+    },
+    {
+        id: 'meme-demo-2',
+        sender: 'System-Genesis',
+        title: 'Max',
+        description: 'No registration is required. You can save your meme to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your meme and your voting calculations will remain only on your device, but you can always Re-inject your tape mode meme (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the meme creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete memes on other users\' devices.',
+        externalUrl: '',
+        img: 'man.PNG',
+        rating: 1520
+    },
+    {
+        id: 'meme-demo-3',
+        sender: 'System-Genesis',
+        title: 'No Image',
+        description: 'No registration is required. You can save your meme to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your meme and your voting calculations will remain only on your device, but you can always Re-inject your tape mode meme (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the meme creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete memes on other users\' devices.',
+        externalUrl: '',
+        img: '',
+        rating: 1520
+    }
+];
+
+const hasDemo = items.some(i => i.id && i.id.startsWith('meme-demo-'));
+
+if (!hasDemo) {
+    demoItems.forEach(demo => {
+        if (!items.some(i => i.id === demo.id)) {
+            items.push(demo);
+        }
+    });
     localStorage.setItem('paramount_versus_items', JSON.stringify(items));
 }
 
@@ -2172,8 +2176,7 @@ async function resetToDefault() {
 
 async function syncAndKeepData() {
     
-const demoIds = ['meme-demo-1', 'meme-demo-2', 'meme-demo-3'];
-const savedItems = items.filter(item => !demoIds.includes(item.id));
+const savedItems = items;
     const savedPlayerState = JSON.parse(JSON.stringify(playerState)); 
     const savedPeerBalances = JSON.parse(JSON.stringify(peerBalances));
     const savedActivityHistory = JSON.parse(JSON.stringify(activityHistory));
