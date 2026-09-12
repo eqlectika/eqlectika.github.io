@@ -1290,9 +1290,23 @@ function editItem(id) {
     <div style="position:absolute;top:13px;left:10px;color:#afff00">${Math.round(item.rating)}</div>
     <textarea id="edit-desc-${id}" class="admin-input" style="color: #ff8b00; height:auto; padding: 15px 0;">${item.description || ''}</textarea>
     <input id="edit-url-${id}" class="admin-input" style="color: #ff8b00; padding: 15px 0;" value="${item.externalUrl || ''}" placeholder="External Link">
-    <div class="actions"><button class="edit-btn" onclick="event.stopPropagation();saveEdit('${id}')">Forward Meme to Network</button>
-    <button class="delete-btn" onclick="event.stopPropagation();deleteItemLocal('${id}')">Delete</button></div>`;
+    <div class="actions">
+        <button class="edit-btn" onclick="event.stopPropagation();saveEdit('${id}')">Forward Meme to Network</button>
+        <button class="edit-btn" style="color:#ff3333" onclick="event.stopPropagation();cancelEdit('${id}')">Cancel</button>
+        <button class="delete-btn" onclick="event.stopPropagation();deleteItemLocal('${id}')">Delete</button>
+    </div>`;
 }
+
+function cancelEdit(id) {
+    editingId = null;
+    updateRankingList();
+    // Перерисовка ранкинга закроет details, но если нужно — оставить открытым:
+    const details = document.getElementById(`details-${id}`);
+    if (details) details.style.display = 'none';
+    const card = document.getElementById(`card-${id}`);
+    if (card) card.style.display = 'block';
+}
+
 function saveEdit(id) {
     const item = items.find(i => i.id === id);
     if (!item) return;
