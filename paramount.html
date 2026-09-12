@@ -684,6 +684,11 @@ a { color: #448aff; text-decoration: none; }
 #aboutContent {
     color: #ffd700cc;
 }
+.edit-btn {
+    background: #afff0050 !important;
+    color: #fff !important;
+    border: 0px solid #afff00;
+}
 </style>
 </head>
 <body>
@@ -1911,24 +1916,22 @@ function updateRankingList() {
 
                 ${deliveryStatusHtml}
 
-                ${
-                    item.sender === myId
+<div style="color:#666;font-size:12px;margin-bottom:10px;">
+    by ${item.sender || 'Unknown'}
+</div>
 
-                    ? `
-                        <button
-                            class="edit-btn"
-                            onclick="event.stopPropagation(); editItem('${item.id}')"
-                        >
-                            Edit and/or Re-inject Meme (free)
-                        </button>
-                    `
-
-                    : `
-                        <span style="color:#666;font-size:12px;">
-                            by ${item.sender}
-                        </span>
-                    `
-                }
+${
+    item.sender === myId
+    ? `
+        <button
+            class="edit-btn"
+            onclick="event.stopPropagation(); editItem('${item.id}')"
+        >
+            Edit and/or Re-inject Meme (free)
+        </button>
+    `
+    : ''
+}
 
                 ${
                     item.externalUrl
