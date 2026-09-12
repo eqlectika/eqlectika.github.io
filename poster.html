@@ -104,7 +104,25 @@
     flex-shrink: 0;
   }
 
+  .stage-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .stage-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: transparent;
+  }
   #capture-target {
+    position: relative;
+    z-index: 2;
     width: 100%; height: 100%;
     display: flex; flex-direction: column;
     justify-content: center; align-items: center;
@@ -122,7 +140,6 @@
   }
   .brand .subtitle { margin: 0; display: block; }
 
-  /* Happiness Bar — как в оригинале: трек 160px, заливка 21% */
   .progress-wrap {
     display: flex;
     flex-direction: column;
@@ -179,6 +196,35 @@
     <div class="field"><label>Bottom color</label><input type="color" id="grad-bottom" value="#7E52F5"></div>
     <div class="field"><label>Middle stop (%)</label><input type="number" id="grad-mid" value="60" min="0" max="100"></div>
 
+    <h3>Background</h3>
+    <label class="file-btn">Upload background<input type="file" id="bg-file" accept="image/*"></label>
+    <button class="action-btn secondary" onclick="clearBg()" style="margin-top:0;margin-bottom:8px;">Clear background</button>
+     <div class="field">
+      <label>Image fit</label>
+      <select id="bg-fit">
+        <option value="cover" selected>cover</option>
+        <option value="contain">contain</option>
+        <option value="stretch">stretch</option>
+      </select>
+    </div>
+    <div class="field"><label>Overlay color</label><input type="color" id="ov-color" value="#000000"></div>
+    <div class="field"><label>Overlay opacity (%)</label><input type="number" id="ov-opacity" value="30" min="0" max="100"></div>
+    <div class="field">
+      <label>Blend mode</label>
+      <select id="ov-blend">
+        <option value="normal" selected>normal</option>
+        <option value="multiply">multiply</option>
+        <option value="screen">screen</option>
+        <option value="overlay">overlay</option>
+        <option value="soft-light">soft-light</option>
+        <option value="hard-light">hard-light</option>
+        <option value="color">color</option>
+        <option value="hue">hue</option>
+        <option value="saturation">saturation</option>
+        <option value="luminosity">luminosity</option>
+      </select>
+    </div>
+
     <h3>Logo</h3>
     <label class="file-btn">Upload logo<input type="file" id="logo-file" accept="image/*"></label>
     <div class="field"><label>Height (px)</label><input type="number" id="logo-h" value="56" min="8" max="400"></div>
@@ -230,7 +276,7 @@
     <div class="field"><label>Height (px)</label><input type="number" id="bar-h" value="8" min="1" max="80"></div>
     <div class="field"><label>Fill color</label><input type="color" id="bar-fill" value="#ffffff"></div>
     <div class="field"><label>Track color</label><input type="color" id="bar-track" value="#444444"></div>
-    <div class="field"><label>Progress (%)</label><input type="number" id="bar-progress" value="21" min="0" max="100"></div>
+    <div class="field"><label>Progress (%)</label><input type="number" id="bar-progress" value="34" min="0" max="100"></div>
 
     <h3>Export</h3>
     <button class="action-btn" onclick="downloadImage()">Download</button>
@@ -242,6 +288,8 @@
   <main class="preview-area">
     <div class="stage-holder">
       <div class="stage" id="stage">
+        <div class="stage-bg" id="stage-bg"></div>
+        <div class="stage-overlay" id="stage-overlay"></div>
         <div id="capture-target">
 
           <div class="brand">
@@ -251,8 +299,8 @@
           </div>
 
           <div class="progress-wrap" id="progress-wrap">
-            <div class="progress-track" id="bar-track">
-              <div class="progress-fill" id="bar-fill"></div>
+            <div class="progress-track" id="bar-el-track">
+              <div class="progress-fill" id="bar-el-fill"></div>
             </div>
           </div>
 
@@ -265,16 +313,26 @@
 
 <script>
 const stage        = document.getElementById('stage');
+const stageBg      = document.getElementById('stage-bg');
+const stageOverlay = document.getElementById('stage-overlay');
 const logoImg      = document.getElementById('logo-img');
 const titleEl      = document.getElementById('title-el');
 const subtitleEl   = document.getElementById('subtitle-el');
 const progressWrap = document.getElementById('progress-wrap');
-const barTrack     = document.getElementById('bar-track');
-const barFill      = document.getElementById('bar-fill');
+const barTrack     = document.getElementById('bar-el-track');
+const barFill      = document.getElementById('bar-el-fill');
 
 function bind(id, fn, event = 'input') {
   const el = document.getElementById(id);
   if (el) el.addEventListener(event, fn);
+}
+
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 function render() {
@@ -289,6 +347,12 @@ function render() {
   const bot = document.getElementById('grad-bottom').value;
   const mid = Math.min(100, Math.max(0, parseInt(document.getElementById('grad-mid').value) || 60));
   stage.style.background = `linear-gradient(180deg, ${top} 0%, ${top} 30%, ${bot} ${mid}%, ${bot} 120%)`;
+
+  const ovColor   = document.getElementById('ov-color').value;
+  const ovOpacity = Math.min(100, Math.max(0, parseInt(document.getElementById('ov-opacity').value) || 0)) / 100;
+  const ovBlend   = document.getElementById('ov-blend').value;
+  stageOverlay.style.background   = hexToRgba(ovColor, ovOpacity);
+  stageOverlay.style.mixBlendMode = ovBlend;
 
   const baseLogoH   = Math.max(8,  parseInt(document.getElementById('logo-h').value) || 56);
   const baseTitleS  = Math.max(8,  parseInt(document.getElementById('title-size').value) || 22);
@@ -336,13 +400,17 @@ function render() {
   barFill.style.height     = (baseBarH * k) + 'px';
 }
 
-['cw','ch','fit','grad-top','grad-bottom','grad-mid','logo-h',
+['cw','ch','fit','grad-top','grad-bottom','grad-mid',
+ 'ov-color','ov-opacity',
+ 'logo-h',
  'title-size','title-spacing','title-color',
  'sub-size','sub-spacing','sub-color',
  'gap-logo-title','gap-title-sub','gap-sub-bar',
  'bar-w','bar-h','bar-fill','bar-track','bar-progress'
 ].forEach(id => bind(id, render));
 
+bind('ov-blend', render, 'change');
+bind('bg-fit', applyBgFit, 'change');
 bind('title-font', render, 'change');
 bind('title-weight', render, 'change');
 bind('sub-font', render, 'change');
@@ -358,6 +426,39 @@ document.getElementById('logo-file').addEventListener('change', e => {
   };
   reader.readAsDataURL(f);
 });
+
+document.getElementById('bg-file').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    stageBg.style.backgroundImage = `url(${ev.target.result})`;
+    applyBgFit();
+  };
+  reader.readAsDataURL(f);
+});
+
+function applyBgFit() {
+  const fit = document.getElementById('bg-fit').value;
+  if (fit === 'cover') {
+    stageBg.style.backgroundSize     = 'cover';
+    stageBg.style.backgroundPosition = 'center';
+    stageBg.style.backgroundRepeat   = 'no-repeat';
+  } else if (fit === 'contain') {
+    stageBg.style.backgroundSize     = 'contain';
+    stageBg.style.backgroundPosition = 'center';
+    stageBg.style.backgroundRepeat   = 'no-repeat';
+  } else {
+    stageBg.style.backgroundSize     = '100% 100%';
+    stageBg.style.backgroundPosition = 'center';
+    stageBg.style.backgroundRepeat   = 'no-repeat';
+  }
+}
+
+function clearBg() {
+  stageBg.style.backgroundImage = '';
+  document.getElementById('bg-file').value = '';
+}
 
 render();
 
