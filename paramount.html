@@ -774,8 +774,9 @@ a { color: #448aff; text-decoration: none; }
     ⚠️ Transport Layer Notice: Public MQTT brokers may experience temporary downtime or network congestion. If connectivity drops or messages are not syncing, switch to an alternate broker using the connection controls below and monitor the active peer count in the system log.
     </p>
     
-<select id="brokerSelect" class="admin-input" onchange="onBrokerSelectChange(this)" style="margin-bottom: 10px; width: 100%; box-sizing: border-box; appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23afff00%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 10px; padding-right: 30px;">    <option value="wss://broker.emqx.io:8084/mqtt">EMQX Public Broker (Default)</option>
+<select id="brokerSelect" class="admin-input" onchange="onBrokerSelectChange(this)" style="margin-bottom: 10px; width: 100%; box-sizing: border-box; appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23afff00%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 10px; padding-right: 30px;">
     <option value="wss://test.mosquitto.org:8081/mqtt">Mosquitto Test Broker</option>
+    <option value="wss://broker.emqx.io:8084/mqtt">EMQX Public Broker (Default)</option>
     <option value="wss://broker.hivemq.com:8884/mqtt">HiveMQ Public Broker</option>
     <option value="custom">Custom WebSocket URL...</option>
 </select>
@@ -1410,7 +1411,10 @@ function saveLocal() {
     localStorage.setItem('paramount_versus_items', JSON.stringify(items));
 }
 
-const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+const DEFAULT_BROKER = 'wss://test.mosquitto.org:8081/mqtt';
+const savedBroker = localStorage.getItem('paramount_broker_url') || DEFAULT_BROKER;
+
+const client = mqtt.connect(savedBroker, {
     clientId: 'paramount_resonance_' + Math.random().toString(16).substr(2, 8),
     reconnectPeriod: 5000,
     connectTimeout: 5000,
@@ -2219,6 +2223,60 @@ function updateOnlinePeersCount() {
     }
 }
 
+function onBrokerSelectChange(selectEl) {
+    const customInput = document.getElementById('customBrokerUrl');
+    if (!customInput) return;
+    if (selectEl.value === 'custom') {
+        customInput.style.display = 'block';
+        if (!customInput.value && client && client.options && client.options.hostname) {
+        }
+    } else {
+        customInput.style.display = 'none';
+    }
+}
+
+function switchBroker() {
+    const selectEl = document.getElementById('brokerSelect');
+    const customInput = document.getElementById('customBrokerUrl');
+    if (!selectEl) return;
+
+    let url = selectEl.value;
+
+    if (url === 'custom') {
+        url = (customInput?.value || '').trim();
+        if (!url) {
+            alert('Please enter a custom WebSocket broker URL (e.g. wss://host:port/mqtt)');
+            return;
+        }
+        if (!/^wss?:\/\//i.test(url)) {
+            alert('URL must start with ws:// or wss://');
+            return;
+        }
+    }
+
+    localStorage.setItem('paramount_broker_url', url);
+
+    const netStatus = document.getElementById('netStatus');
+    if (netStatus) {
+        netStatus.style.color = '#0097ff';
+        netStatus.innerHTML = `Status: Connecting to ${url} ...`;
+    }
+    log(`[Broker] Switching to ${url} ...`);
+
+    try {
+        if (client && typeof client.end === 'function') {
+            client.end(true, () => {
+                log('[Broker] Previous connection closed.');
+            });
+        }
+
+        window.location.reload();
+    } catch (e) {
+        log('[Broker] Switch error: ' + e.message);
+        alert('Failed to switch broker: ' + e.message);
+    }
+}
+
 function log(txt) {
     let l = document.getElementById('logContainer');
     l.innerHTML += `<div>${txt}</div>`;
@@ -2507,6 +2565,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+    const selectEl = document.getElementById('brokerSelect');
+    const customInput = document.getElementById('customBrokerUrl');
+    if (!selectEl) return;
+
+    const saved = localStorage.getItem('paramount_broker_url');
+    if (saved) {
+        const isKnown = Array.from(selectEl.options).some(o => o.value === saved && o.value !== 'custom');
+        if (isKnown) {
+            selectEl.value = saved;
+            if (customInput) customInput.style.display = 'none';
+        } else {
+            selectEl.value = 'custom';
+            if (customInput) {
+                customInput.style.display = 'block';
+                customInput.value = saved;
+            }
+        }
+    }
+});
+
 </script>
 
 </body>
