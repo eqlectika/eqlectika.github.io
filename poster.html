@@ -160,7 +160,7 @@
     margin: 0; line-height: 1.1; text-decoration: none; display: block;
   }
   .brand .subtitle { margin: 0; display: block; }
-  .brand .eqlectica {
+  .brand .eqlectika {
     display: block;
     font-family: 'Ubuntu', sans-serif;
     font-size: 12px;
@@ -169,7 +169,7 @@
     text-decoration: none;
     margin: 0;
   }
-  .brand .eqlectica:hover {
+  .brand .eqlectika:hover {
     text-decoration: underline;
   }
   .progress-wrap {
@@ -325,7 +325,7 @@
 
     <h3>Spacing</h3>
    <div class="field">
-  <label>Eqlectica font</label>
+  <label>Eqlectika font</label>
   <select id="eq-font">
     <option value="'Ubuntu', sans-serif" selected>Ubuntu</option>
     <option value="'Cinzel', serif">Cinzel</option>
@@ -343,14 +343,18 @@
 </div>
     <div class="field"><label>Logo → Title</label><input type="number" id="gap-logo-title" value="0" min="-100" max="200"></div>
     <div class="field"><label>Title → Subtitle</label><input type="number" id="gap-title-sub" value="0" min="-100" max="200"></div>
-    <div class="field"><label>Subtitle → Eqlectica</label><input type="number" id="gap-sub-eq" value="10" min="-100" max="200"></div>
-    <div class="field"><label>Eqlectica color</label><input type="color" id="eq-color" value="#ffffff"></div>
-    <div class="field"><label>Eqlectica size (px)</label><input type="number" id="eq-size" value="12" min="6" max="120"></div>
-    <div class="field"><label>Eqlectica → Bar</label><input type="number" id="gap-eq-bar" value="20" min="-100" max="200"></div>
+    <div class="field"><label>Subtitle → Eqlectika</label><input type="number" id="gap-sub-eq" value="10" min="-100" max="200"></div>
+    <div class="field"><label>Eqlectika color</label><input type="color" id="eq-color" value="#ffffff"></div>
+    <div class="field"><label>Eqlectika size (px)</label><input type="number" id="eq-size" value="12" min="6" max="120"></div>
+    <div class="field"><label>Eqlectika → Bar</label><input type="number" id="gap-eq-bar" value="20" min="-100" max="200"></div>
+    <div class="field">
+     <label>Show Eqlectika address</label>
+        <input type="checkbox" id="eq-show" checked style="width:18px;height:18px;accent-color:#448aff;cursor:pointer;">
+    </div>
 
     <h3>Happiness Bar</h3>
-    <div class="field"><label>Width (px)</label><input type="number" id="bar-w" value="160" min="20" max="1000"></div>
-    <div class="field"><label>Height (px)</label><input type="number" id="bar-h" value="8" min="1" max="80"></div>
+    <div class="field"><label>Width (px)</label><input type="number" id="bar-w" value="120" min="20" max="1000"></div>
+    <div class="field"><label>Height (px)</label><input type="number" id="bar-h" value="6" min="1" max="80"></div>
     <div class="field"><label>Fill color</label><input type="color" id="bar-fill" value="#ffffff"></div>
     <div class="field"><label>Track color</label><input type="color" id="bar-track" value="#444444"></div>
     <div class="field"><label>Progress (%)</label><input type="number" id="bar-progress" value="34" min="0" max="100"></div>
@@ -374,7 +378,7 @@
             <img class="logo" id="logo-img" src="fleurdelis.png" alt="" onerror="this.style.visibility='hidden'">
             <a class="title" id="title-el" href="#">Trust Fibonacci</a>
             <span class="subtitle" id="subtitle-el">Custom web site and application</span>
-            <a class="eqlectica" id="eqlectica-el" href="https://eqlectica.github.io" target="_blank" rel="noopener noreferrer">eqlectica.github.io</a>
+            <a class="eqlectika" id="eqlectika-el" href="https://eqlectika.github.io" target="_blank" rel="noopener noreferrer">eqlectika.github.io</a>
           </div>
 
           <div class="progress-wrap" id="progress-wrap">
@@ -398,7 +402,7 @@ const stageOverlay = document.getElementById('stage-overlay');
 const logoImg      = document.getElementById('logo-img');
 const titleEl      = document.getElementById('title-el');
 const subtitleEl   = document.getElementById('subtitle-el');
-const eqlecticaEl  = document.getElementById('eqlectica-el');
+const eqlectikaEl  = document.getElementById('eqlectika-el');
 const progressWrap = document.getElementById('progress-wrap');
 const barTrack     = document.getElementById('bar-el-track');
 const barFill      = document.getElementById('bar-el-fill');
@@ -456,8 +460,8 @@ function render() {
   const baseTitleLS = parseFloat(document.getElementById('title-spacing').value) || 0;
   const baseSubS    = Math.max(6,  parseInt(document.getElementById('sub-size').value) || 12);
   const baseSubLS   = parseFloat(document.getElementById('sub-spacing').value) || 0;
-  const baseBarW    = Math.max(20, parseInt(document.getElementById('bar-w').value) || 160);
-  const baseBarH    = Math.max(1,  parseInt(document.getElementById('bar-h').value) || 8);
+  const baseBarW    = Math.max(20, parseInt(document.getElementById('bar-w').value) || 120);
+  const baseBarH    = Math.max(1,  parseInt(document.getElementById('bar-h').value) || 6);
   const baseG1      = parseInt(document.getElementById('gap-logo-title').value) || 0;
   const baseG2      = parseInt(document.getElementById('gap-title-sub').value) || 0;
   const baseG3a     = parseInt(document.getElementById('gap-sub-eq').value) || 0;
@@ -480,20 +484,32 @@ function render() {
   titleEl.style.fontWeight    = document.getElementById('title-weight').value;
   titleEl.style.marginBottom  = (baseG2 * k) + 'px';
 
+  const eqShow = document.getElementById('eq-show').checked;
+
   subtitleEl.style.fontFamily    = document.getElementById('sub-font').value;
   subtitleEl.style.fontSize      = (baseSubS * k) + 'px';
   subtitleEl.style.letterSpacing = (baseSubLS * k) + 'px';
   subtitleEl.style.color         = document.getElementById('sub-color').value;
-  subtitleEl.style.marginBottom  = '0px';
 
   const baseEqS = Math.max(6, parseInt(document.getElementById('eq-size').value) || 12);
-  eqlecticaEl.style.fontSize = (baseEqS * k) + 'px';
+  eqlectikaEl.style.fontSize = (baseEqS * k) + 'px';
 
-  eqlecticaEl.style.fontFamily    = document.getElementById('eq-font').value;
-  eqlecticaEl.style.letterSpacing = (baseSubLS * k) + 'px';
-  eqlecticaEl.style.color         = document.getElementById('eq-color').value;
-  eqlecticaEl.style.marginTop     = (baseG3a * k) + 'px';
-  eqlecticaEl.style.marginBottom  = (baseG3b * k) + 'px';
+  if (eqShow) {
+    subtitleEl.style.marginBottom = '0px';
+
+    eqlectikaEl.style.display       = 'block';
+    eqlectikaEl.style.fontFamily    = document.getElementById('eq-font').value;
+    eqlectikaEl.style.letterSpacing = (baseSubLS * k) + 'px';
+    eqlectikaEl.style.color         = document.getElementById('eq-color').value;
+    eqlectikaEl.style.marginTop     = (baseG3a * k) + 'px';
+    eqlectikaEl.style.marginBottom  = (baseG3b * k) + 'px';
+  } else {
+    subtitleEl.style.marginBottom = ((baseG3a + baseG3b) * k) + 'px';
+
+    eqlectikaEl.style.display = 'none';
+    eqlectikaEl.style.marginTop     = '0px';
+    eqlectikaEl.style.marginBottom  = '0px';
+  }
 
   progressWrap.style.marginTop = '0px';
 
@@ -523,7 +539,7 @@ bind('bg-fit', applyBgFit, 'change');
 bind('title-font', render, 'change');
 bind('title-weight', render, 'change');
 bind('sub-font', render, 'change');
-bind('eq-font', render, 'change');
+bind('eq-show', render, 'change');
 
 document.getElementById('logo-file').addEventListener('change', e => {
   const f = e.target.files[0];
@@ -591,10 +607,12 @@ async function renderCanvas() {
     scrollY: 0,
     x: 0,
     y: 0,
-    onclone: (clonedDoc) => {
-      const sc = clonedDoc.getElementById('stage-scaler');
-      if (sc) sc.style.transform = 'none';
-    }
+onclone: (clonedDoc) => {
+  const sc = clonedDoc.getElementById('stage-scaler');
+  if (sc) sc.style.transform = 'none';
+  const eq = clonedDoc.getElementById('eqlectika-el');
+  if (eq && !document.getElementById('eq-show').checked) eq.style.display = 'none';
+}
   });
 }
 async function downloadImage() {
