@@ -415,6 +415,66 @@ function bind(id, fn, event = 'input') {
   if (el) el.addEventListener(event, fn);
 }
 
+const STORAGE_KEY = 'converter_settings_v1';
+
+function collectSettings() {
+  const ids = [
+    'cw','ch','fit','format','scale',
+    'grad-top','grad-bottom','grad-mid',
+    'ov-color','ov-opacity','ov-blend',
+    'bg-fit',
+    'logo-h',
+    'title-font','title-size','title-spacing','title-color','title-weight',
+    'sub-font','sub-size','sub-spacing','sub-color',
+    'eq-font','eq-color','eq-size','eq-show',
+    'gap-logo-title','gap-title-sub','gap-sub-eq','gap-eq-bar',
+    'bar-w','bar-h','bar-fill','bar-track','bar-progress'
+  ];
+  const obj = {};
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    obj[id] = el.type === 'checkbox' ? el.checked : el.value;
+  });
+  obj['bg-image'] = stageBg.style.backgroundImage || '';
+  return obj;
+}
+
+function applySettings(obj) {
+  if (!obj) return;
+  Object.keys(obj).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.type === 'checkbox') {
+      el.checked = obj[id];
+    } else {
+      el.value = obj[id];
+    }
+  });
+  if (obj['bg-image']) {
+    stageBg.style.backgroundImage = obj['bg-image'];
+    applyBgFit();
+  }
+  render();
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(collectSettings()));
+  } catch (e) {
+    console.warn('Cannot save:', e);
+  }
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    applySettings(JSON.parse(raw));
+  } catch (e) {
+    console.warn('Cannot load:', e);
+  }
+}
 function hexToRgba(hex, alpha) {
   const h = hex.replace('#', '');
   const r = parseInt(h.substring(0, 2), 16);
@@ -645,8 +705,24 @@ async function copyToClipboard() {
 
 window.addEventListener('resize', fitStageToScreen);
 
+document.querySelectorAll('.sidebar input, .sidebar select').forEach(el => {
+  el.addEventListener('input', saveSettings);
+  el.addEventListener('change', saveSettings);
+});
+
+loadSettings();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('SW OK:', reg.scope))
+      .catch(err => console.warn('SW FAIL:', err));
+  });
+}
+ 
 function resetAll() {
-  if (!confirm('Reset all settings?')) return;
+  if (!confirm('Reset all settings and clear storage?')) return;
+  localStorage.removeItem(STORAGE_KEY);
   location.reload();
 }
 </script>
