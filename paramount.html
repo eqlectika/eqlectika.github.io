@@ -202,10 +202,139 @@ html {
     height: 100%; 
     object-fit: cover; 
 }
-.ranking-container { margin-top: 10px;}
-.ranking-title { font-family: 'Unbounded', sans-serif; font-size: 20px !important; text-align: center; border-bottom: 0px solid #222; padding-bottom: 0; margin-bottom: 20px; color: #ff00cc; }
-.ranking-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 0px solid #222; cursor: pointer; }
-.ranking-img { width: 40px; height: 40px; object-fit: cover; margin-right: 12px; border: 1px solid #afff00; }
+
+.ranking-container {
+    margin-top: 10px;
+}
+
+.ranking-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 20px !important;
+    text-align: center;
+    padding: 0;
+    margin-bottom: 20px;
+    color: #ff00cc;
+}
+
+.ranking-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 56px;
+    padding: 8px 0;
+    margin: 0;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.ranking-img {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    flex: 0 0 40px;
+    display: block;
+    object-fit: cover;
+    object-position: center;
+    margin: 0 12px 0 0 !important;
+    padding: 0 !important;
+    border: 1px solid #afff00;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.ranking-img.text-preview {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    flex: 0 0 40px;
+    padding: 4px !important;
+    margin: 0 12px 0 0 !important;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: #111;
+    color: #ccc;
+    font-family: 'Unbounded', monospace;
+    font-size: 7px;
+    line-height: 1.2;
+    text-align: left;
+    word-break: break-word;
+}
+
+.ranking-info {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    gap: 8px;
+}
+
+.ranking-info .title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.2;
+    text-align: left;
+    font-size: 14px !important;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ranking-info .sender {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ranking-info .rating {
+    flex: 0 0 auto;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #0097ff;
+    font-size: 12px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.item-details {
+    display: none;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 0 10px 52px;
+    background: #000;
+    border-bottom: 0;
+    font-size: 14px;
+    color: #ccc;
+    font-family: 'Unbounded', monospace;
+}
+
+.item-details p {
+    margin: 0.8em 0 !important;
+    padding: 0;
+    line-height: 1.8 !important;
+}
 
 .text-thumbnail {
     width: 100%;
@@ -251,15 +380,7 @@ html {
     box-sizing: border-box;
 }
     
-.ranking-info { flex-grow: 1; display: flex; justify-content: space-between; align-items: center; }
-.item-details { 
-    display: none; 
-    background: #000; 
-    border-bottom: 0px solid #222; 
-    font-size: 14px; 
-    color: #ccc; 
-    font-family: 'Unbounded', monospace;
-}
+
 
 .admin-input { 
     width: 100%; 
@@ -1697,62 +1818,167 @@ function deleteItemLocal(id) {
 function updateRankingList() {
     const sorted = [...items].sort((a, b) => b.rating - a.rating);
     let html = '';
-    sorted.forEach((item, index) => {
-        const isDemo = item.sender === 'System-Genesis' || (item.id && item.id.startsWith('meme-demo-'));
-        
-        let deliveryStatusHtml = '';
-        if (isDemo) {
-            deliveryStatusHtml = `<div style="color: #0097ff; margin-bottom: 10px;">Demo Meme is delivered by default</div>`;
-        } else {
-            const deliveredCount = item.deliveredPeers ? item.deliveredPeers.length : 0;
-            const peerLabel = deliveredCount === 1 ? 'peer' : 'peers';
-            deliveryStatusHtml = `<div style="color: #0097ff; margin-bottom: 10px;">Delivered to: ${deliveredCount} ${peerLabel}</div>`;
-        }
-        
-        const hasImage = item.img && item.img.length > 0;
-        let thumbnailHtml;
-        if (hasImage) {
-            thumbnailHtml = `<img src="${item.img}" class="ranking-img"
-                style="width:40px; height:40px; object-fit:cover; object-position:center; display:block; flex-shrink:0;"
-                    onerror="this.style.display='none'">`;        } else {
-            const text = item.description || item.title;
-            thumbnailHtml = `<div class="ranking-img text-preview" style="
-                overflow: hidden;
-                word-wrap: break-word;
-                font-size: 7px;
-                padding: 4px 3px;
-                background: #111;
-                color: #ccc;
-                font-family: 'Unbounded', monospace;
-                text-align: left;
-                width: 40px;
-                height: 40px;
-                display: flex;
-                align-items: flex-start;
-                justify-content: flex-start;
-                box-sizing: border-box;
-                line-height: 1.2;
-            ">${text}</div>`;
-        }
-        
-       html += `<div class="ranking-item" onclick="toggleDetails('${item.id}')">
-    ${thumbnailHtml}
-    <div class="ranking-info">
-        <p class="title" style="text-align: left; font-size: 14px; margin: 0; color: #fff;">${index + 1}. ${item.title}</p>
-        <span style="color: ${item.sender === 'System-Genesis' ? '#ff00cc99' : '#999'}; font-size: 11px; margin-left: 8px; margin-right: auto;">by ${item.sender}</span>
-        <span style="color:#0097ff;">${Math.round(item.rating)}</span>
-    </div> 
-</div>
-        <div id="details-${item.id}" class="item-details">
-            ${deliveryStatusHtml}
-${item.sender === myId ? `<button class="edit-btn" onclick="event.stopPropagation(); editItem('${item.id}')">Edit and/or Re-inject Meme (free)</button>` : `<span style="color: #666; font-size: 12px;">by ${item.sender}</span>`}
-${item.externalUrl ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>` : ''}
-${(item.description || 'No description.').split('\n').filter(p => p.trim()).map(p => `<p>${p}</p>`).join('')}
 
-            <button class="admin-btn" type="button" style="margin-top: 15px; background: #ff3333; color: #fff; padding: 10px; font-size: 14px;" onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">Remove Locally</button>
-        </div>`;
+    sorted.forEach((item, index) => {
+        const isDemo =
+            item.sender === 'System-Genesis' ||
+            (item.id && item.id.startsWith('meme-demo-'));
+
+        let deliveryStatusHtml = '';
+
+        if (isDemo) {
+            deliveryStatusHtml =
+                `<div style="color:#0097ff; margin:0 0 10px 0;">
+                    Demo Meme is delivered by default
+                </div>`;
+        } else {
+            const deliveredCount = item.deliveredPeers
+                ? item.deliveredPeers.length
+                : 0;
+
+            const peerLabel = deliveredCount === 1 ? 'peer' : 'peers';
+
+            deliveryStatusHtml =
+                `<div style="color:#0097ff; margin:0 0 10px 0;">
+                    Delivered to: ${deliveredCount} ${peerLabel}
+                </div>`;
+        }
+
+        const hasImage = item.img && item.img.length > 0;
+
+        let thumbnailHtml;
+
+        if (hasImage) {
+
+            thumbnailHtml = `
+                <img
+                    src="${item.img}"
+                    class="ranking-img"
+                    alt=""
+                    onerror="this.style.display='none'"
+                >
+            `;
+
+        } else {
+
+            const text = item.description || item.title || '';
+
+            thumbnailHtml = `
+                <div class="ranking-img text-preview">
+                    ${text}
+                </div>
+            `;
+        }
+
+        const senderColor =
+            item.sender === 'System-Genesis'
+                ? '#ff00cc99'
+                : '#999';
+
+        html += `
+            <div
+                class="ranking-item"
+                onclick="toggleDetails('${item.id}')"
+            >
+
+                ${thumbnailHtml}
+
+                <div class="ranking-info">
+
+                    <div class="title">
+                        ${index + 1}. ${item.title || ''}
+                    </div>
+
+                    <div
+                        class="sender"
+                        style="color:${senderColor};"
+                    >
+                        by ${item.sender || ''}
+                    </div>
+
+                    <div class="rating">
+                        ${Math.round(item.rating)}
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div
+                id="details-${item.id}"
+                class="item-details"
+            >
+
+                ${deliveryStatusHtml}
+
+                ${
+                    item.sender === myId
+
+                    ? `
+                        <button
+                            class="edit-btn"
+                            onclick="event.stopPropagation(); editItem('${item.id}')"
+                        >
+                            Edit and/or Re-inject Meme (free)
+                        </button>
+                    `
+
+                    : `
+                        <span style="color:#666;font-size:12px;">
+                            by ${item.sender}
+                        </span>
+                    `
+                }
+
+                ${
+                    item.externalUrl
+                    ? `
+                        <a
+                            href="${item.externalUrl}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="external-link"
+                        >
+                            External Link →
+                        </a>
+                    `
+                    : ''
+                }
+
+                ${
+                    (item.description || 'No description.')
+                        .split('\\n')
+                        .filter(p => p.trim())
+                        .map(p => `<p>${p}</p>`)
+                        .join('')
+                }
+
+                <button
+                    class="admin-btn"
+                    type="button"
+                    style="
+                        margin-top:15px;
+                        background:#ff3333;
+                        color:#fff;
+                        padding:10px;
+                        font-size:14px;
+                    "
+                    onclick="
+                        event.stopPropagation();
+                        deleteItemLocal('${item.id}');
+                    "
+                >
+                    Remove Locally
+                </button>
+
+            </div>
+        `;
     });
-    $('#ranking-list').html(html || '<div style="text-align: center; padding:10px; color:#999;">Matrix is empty.<br>Inject first memes below!</div>');
+
+    $('#ranking-list').html(
+        html ||
+        '<div style="text-align:center;padding:10px;color:#999;">Matrix is empty.<br>Inject first memes below!</div>'
+    );
 }
 
 function nextPair() {
