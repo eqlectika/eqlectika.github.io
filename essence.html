@@ -215,6 +215,11 @@ input[type=number] {
 .clickable-word.state-0 { color: #ccc; }
 .clickable-word.state-1 { color: #0097ff !important; }
 .clickable-word.state-2 { color: #de00b2 !important; }
+
+@keyframes livePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
 </style>
 </head>
 <body>
@@ -222,7 +227,10 @@ input[type=number] {
 
 <div id="top" style="display:flex;align-items:flex-start;gap:15px;padding:10px;">
 <a href="#broadcast"><img src="breakthrough.png" alt="Logo" style="height:35px;width:auto;"></a>
-<div><div id="invertTrigger" onclick="syncAndKeepData()" style="margin-top:0px;font-family:monospace;font-size:20px;line-height:1;cursor:pointer;color:#ccc;">Online Essence</div><div style="margin:0 1px;font:14px monospace;letter-spacing:1px;color:#efbc40;">Breakthrough engine</div></div></div>
+<div id="invertTrigger" onclick="syncAndKeepData()" style="margin-top:0px;font-family:monospace;font-size:20px;line-height:1;cursor:pointer;color:#ccc;">
+    Online Essence<span id="liveIndicator" style="display:none;color:#ff0000;margin-left:6px;animation:livePulse 1.5s infinite;">● Live!</span><span id="tapeIndicator" style="display:none;color:#afff00;margin-left:6px;">● Tape</span>
+</div>
+</div>
 
 <div id="versus">
     <div class="ranking-title" style="text-align:center;margin:0 0 10px 0;font-size:18px;color: #fff">Choose one</div>
@@ -253,7 +261,7 @@ input[type=number] {
 
 <div id="disclaimerToggle" style="padding: 0 10px; margin: 30px 0 10px 0; cursor: pointer; display: flex; align-items: center; gap: 12px;">
     <span>
-        <strong>Disclaimer</strong><span id="aboutLabel" style="color: #fff;"> & About</span>
+        <strong>Disclaimer</strong><span id="aboutLabel" style="color: #ffd700cc;"> & About</span>
     </span>
     <span id="updateAvailableLine" style="display: none; color: #0097ff; font-size: 14px; font-family: monospace; cursor: pointer;" onclick="event.stopPropagation(); document.getElementById('disclaimerToggle').click()">
         Update Available
@@ -286,8 +294,8 @@ input[type=number] {
     </p>
     
     <select id="brokerSelect" class="admin-input" onchange="onBrokerSelectChange(this)" style="margin-bottom: 10px; width: 100%; box-sizing: border-box; appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23afff00%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 10px; padding-right: 30px;">
-        <option value="wss://broker.emqx.io:8084/mqtt">EMQX Public Broker (Default)</option>
         <option value="wss://test.mosquitto.org:8081/mqtt">Mosquitto Test Broker</option>
+        <option value="wss://broker.emqx.io:8084/mqtt">EMQX Public Broker (Default)</option>
         <option value="wss://broker.hivemq.com:8884/mqtt">HiveMQ Public Broker</option>
         <option value="custom">Custom WebSocket URL...</option>
     </select>
@@ -300,8 +308,8 @@ input[type=number] {
     
     <p style="padding: 0 10px">The mechanics of impact transmission and collision detection are based on trust between clients in an open network without cryptographic guarantees of transaction authenticity and allow packet interception or forgery.</p>
 
-    <div style="padding: 0 10px" id="aboutToggle"><strong>About</strong></div>
-    <div style="padding: 0 10px" id="aboutContent" class="collapsed">
+    <div style="padding: 0 10px; color: #ffd700cc;" id="aboutToggle"><strong>About</strong></div>
+    <div style="padding: 0 10px; color: #ffd700cc;" id="aboutContent" class="collapsed">
         <p>Resonance Match: Tap one meme to elevate its ranking, or other to drop opponent.</p>
         <p>To rise, vote for the weak memes against the strong ones.</p>
         <p><strong>Common votes are counted only in a <span class="about-alert" style="color: #ff0000;">live</span> session</strong>.</p>
@@ -322,7 +330,15 @@ input[type=number] {
 </div>
 
 <div id="broadcast" class="main-panel">
-    <div class="ranking-title" style="text-align:center;font-size:18px;color: #fff">Broadcast</div>
+    <div class="ranking-title" style="text-align:center;font-size:18px;color: #fff">
+        Broadcast
+        <span id="liveIndicatorH3" style="display:none;color:#ff0000;margin-left:6px;animation:livePulse 1.5s infinite;">● Live!</span>
+        <span id="tapeIndicatorH3" style="display:none;color:#afff00;margin-left:6px;">● Tape</span>
+    </div>
+    <div style="text-align:center;margin:6px 0 10px 0;font-family:monospace;font-size:14px;">
+        <span id="liveIndicatorBcast" style="display:none;">● Live! — peers online: <span id="livePeerCount">0</span></span>
+        <span id="tapeIndicatorBcast" style="display:none;">● Tape — no peer(s)</span>
+    </div>
 
     <textarea id="new-desc" class="admin-input" placeholder="Your meme content"></textarea>
     <input type="url" id="new-url" class="admin-input" placeholder="External Link (optional)">
@@ -908,7 +924,10 @@ function saveLocal() {
     localStorage.setItem('essence_versus_items', JSON.stringify(items));
 }
 
-const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+const DEFAULT_BROKER = 'wss://test.mosquitto.org:8081/mqtt';
+const savedBroker = localStorage.getItem('essence_broker_url') || DEFAULT_BROKER;
+
+const client = mqtt.connect(savedBroker, {
     clientId: 'essence_resonance_' + Math.random().toString(16).substr(2, 8),
     reconnectPeriod: 5000,
     connectTimeout: 5000,
@@ -931,6 +950,7 @@ client.on('connect', () => {
     }, 5000);
 
     setInterval(updateOnlinePeersCount, 5000);
+    updateOnlinePeersCount();
 });
 
 client.on('error', (err) => {
@@ -1538,6 +1558,39 @@ function updateOnlinePeersCount() {
     const onlineCount = Object.keys(activePeers).length;
     const peerLabel = onlineCount === 1 ? 'peer' : 'peers';
     log(`[Network] Active online: ${onlineCount} ${peerLabel}`);
+
+    const liveIndicator = document.getElementById('liveIndicator');
+    const tapeIndicator = document.getElementById('tapeIndicator');
+    if (liveIndicator && tapeIndicator) {
+        liveIndicator.style.display = onlineCount > 0 ? 'inline' : 'none';
+        tapeIndicator.style.display = onlineCount > 0 ? 'none' : 'inline';
+    }
+
+    const liveB = document.getElementById('liveIndicatorBcast');
+    const tapeB = document.getElementById('tapeIndicatorBcast');
+    const liveCount = document.getElementById('livePeerCount');
+    if (liveB && tapeB) {
+        if (onlineCount > 0) {
+            liveB.style.display = 'inline';
+            tapeB.style.display = 'none';
+            if (liveCount) liveCount.textContent = onlineCount;
+        } else {
+            liveB.style.display = 'none';
+            tapeB.style.display = 'inline';
+        }
+    }
+
+    const liveH3 = document.getElementById('liveIndicatorH3');
+    const tapeH3 = document.getElementById('tapeIndicatorH3');
+    if (liveH3 && tapeH3) {
+        if (onlineCount > 0) {
+            liveH3.style.display = 'inline';
+            tapeH3.style.display = 'none';
+        } else {
+            liveH3.style.display = 'none';
+            tapeH3.style.display = 'inline';
+        }
+    }
 }
 
 function log(txt) {
@@ -1806,46 +1859,39 @@ if (aboutToggle && aboutContent) {
     });
 }
 
-// ===== SWITCH BROKER =====
 function switchBroker() {
     const select = document.getElementById('brokerSelect');
     const customUrl = document.getElementById('customBrokerUrl');
     let brokerUrl = select.value;
-    
+
     if (brokerUrl === 'custom') {
         brokerUrl = customUrl.value.trim();
         if (!brokerUrl) {
             alert('Please enter a valid WebSocket URL');
             return;
         }
+        if (!/^wss?:\/\//i.test(brokerUrl)) {
+            alert('URL must start with ws:// or wss://');
+            return;
+        }
     }
-    
-    if (client && client.connected) {
-        client.end(true);
+
+    localStorage.setItem('essence_broker_url', brokerUrl);
+
+    const netStatus = document.getElementById('netStatus');
+    if (netStatus) {
+        netStatus.style.color = '#0097ff';
+        netStatus.innerHTML = `Status: Connecting to ${brokerUrl} ...`;
     }
-    
-    // Создаём нового клиента
-    const newClient = mqtt.connect(brokerUrl, {
-        clientId: 'essence_resonance_' + Math.random().toString(16).substr(2, 8),
-        reconnectPeriod: 5000,
-        connectTimeout: 5000,
-        keepalive: 60
-    });
-    
-    newClient.on('connect', () => {
-        document.getElementById('netStatus').innerHTML = `Status: Connected to ${brokerUrl} as ${myId}`;
-        log("Connected to new broker");
-        newClient.subscribe(TOPIC, { qos: 1 });
-    });
-    
-    newClient.on('error', (err) => {
-        document.getElementById('netStatus').style.color = '#f00';
-        document.getElementById('netStatus').innerHTML = `Network Error`;
-        log("MQTT Error: " + JSON.stringify(err));
-    });
-    
-    alert('Broker switched! Page will reload to apply changes.');
-    setTimeout(() => location.reload(), 1000);
+    log(`[Broker] Switching to ${brokerUrl} ...`);
+
+    if (client && typeof client.end === 'function') {
+        client.end(true, () => {
+            log('[Broker] Previous connection closed.');
+        });
+    }
+
+    setTimeout(() => location.reload(), 600);
 }
 
 function onBrokerSelectChange(select) {
@@ -1856,6 +1902,27 @@ function onBrokerSelectChange(select) {
         customUrl.style.display = 'none';
     }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const selectEl = document.getElementById('brokerSelect');
+    const customInput = document.getElementById('customBrokerUrl');
+    if (!selectEl) return;
+
+    const saved = localStorage.getItem('essence_broker_url');
+    if (saved) {
+        const isKnown = Array.from(selectEl.options).some(o => o.value === saved && o.value !== 'custom');
+        if (isKnown) {
+            selectEl.value = saved;
+            if (customInput) customInput.style.display = 'none';
+        } else {
+            selectEl.value = 'custom';
+            if (customInput) {
+                customInput.style.display = 'block';
+                customInput.value = saved;
+            }
+        }
+    }
+});
 </script>
 
 </body>
