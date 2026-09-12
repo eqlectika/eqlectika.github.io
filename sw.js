@@ -1,8 +1,8 @@
-const CACHE_NAME = 'version-gravity'; 
+const CACHE_NAME = 'version-poster'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
-    './manifest-index.json',
+    './poster.html',
     './cross.html',
     './flash.html',
     './life.html',
@@ -18,7 +18,8 @@ const CORE_ASSETS = [
     './cube.html',
     './bismuth.html',
     './essence.html',
-    
+
+    './manifest-index.json',
     './manifest-essence.json',
     './manifest-cross.json',
     './manifest-flash.json',
