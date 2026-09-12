@@ -356,16 +356,16 @@ p {margin: 8px 0 0 0;}
 <div class="ranking-container">
     <div id="ranking-list"></div>
 </div>
-<div class="admin-panel">
-    <input type="text" id="new-title" class="admin-input" placeholder="Item Title">
-    <textarea id="new-desc" class="admin-input" placeholder="Description"></textarea>
-    <input type="url" id="new-url" class="admin-input" placeholder="External URL (optional)">
-    
-    <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
-        <label for="new-img-file" class="file-label" id="file-label-text" style="flex: 1; text-align: center; margin: 0; padding: 12px 18px; min-width: 0;">Select image</label>
-        <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)" style="display: none;">
-        <button class="admin-btn" style="flex: 1; margin: 0; padding: 12px 18px; min-width: 0; text-align: center;" onclick="saveOrAddItem()">Add Item</button>
-    </div>
+<div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+    <label for="new-img-file" class="file-label" id="file-label-text" style="flex: 1; text-align: center; margin: 0; padding: 12px 18px; min-width: 0;">Select image</label>
+    <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)" style="display: none;">
+    <button class="admin-btn" style="flex: 1; margin: 0; padding: 12px 18px; min-width: 0; text-align: center;" onclick="saveOrAddItem()">Add Item</button>
+</div>
+<button id="cancel-edit-btn" class="admin-btn"
+        style="display: none; margin-top: 10px; background: #444; color: #fff; border: 2px solid #ff3333;"
+        onclick="cancelEdit()">
+    ✕ Cancel Edit
+</button>
 </div>
 <div id="collapsible-content" style="color: #fff; margin: 10px auto;">
 <p>This memo ranking for your own priorities.</p>
@@ -563,6 +563,20 @@ function renderThumbnail(container, item) {
     }
 }
 
+function cancelEdit() {
+    $('#new-title').val('');
+    $('#new-desc').val('');
+    $('#new-url').val('');
+    $('#new-img-file').val('');
+    $('#file-label-text').text("Select image");
+
+    editingId = null;
+    $('.admin-btn').text('Add Item');
+
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+}
+
 function editItem(id) {
     const item = items.find(i => i.id === id);
     if (!item) return;
@@ -574,6 +588,10 @@ function editItem(id) {
 
     editingId = id;
     $('.admin-btn').text('Save Changes');
+
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    if (cancelBtn) cancelBtn.style.display = 'block';
+
     $('.admin-panel')[0].scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -582,6 +600,17 @@ async function saveOrAddItem() {
     const desc = $('#new-desc').val().trim();
     const url = $('#new-url').val().trim();
     const file = $('#new-img-file')[0].files[0];
+
+    // Проверки для режима редактирования (защита от гонок)
+    if (editingId !== null) {
+        const item = items.find(i => i.id === editingId);
+
+        if (!item) {
+            alert('❌ This item no longer exists. Edit mode has been cancelled.');
+            cancelEdit();
+            return;
+        }
+    }
 
     if (!title) return;
 
@@ -598,6 +627,9 @@ async function saveOrAddItem() {
         }
         editingId = null;
         $('.admin-btn').text('Add Item');
+
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        if (cancelBtn) cancelBtn.style.display = 'none';
     } else {
         if (file) {
             imgData = await compressImage(file);
@@ -606,10 +638,10 @@ async function saveOrAddItem() {
     }
 
     save();
-    
+
     $('#new-title, #new-desc, #new-url, #new-img-file').val('');
     $('#file-label-text').text("Select image");
-    
+
     if (items.length >= 2 && currentPair.length === 0) nextPair();
 }
 
@@ -700,16 +732,29 @@ function vote(side) {
 }
 
 function deleteItem(id) {
-    if (confirm("Are you sure to delete this item?")) {
-        items = items.filter(item => item.id !== id);
-        save();
-        if (items.length < 2) {
-            currentPair = [];
-            $('#item-left img, #item-right img').attr('src', '');
-            $('#item-left .title, #item-right .title').text('');
-        } else {
-            nextPair();
-        }
+    const isEditingThis = (editingId === id);
+
+    let confirmMsg = "Are you sure to delete this item?";
+    if (isEditingThis) {
+        confirmMsg = "⚠️ This item is currently being edited.\n\nHide it and cancel editing?";
+    }
+
+    if (!confirm(confirmMsg)) return;
+
+    if (isEditingThis) {
+        cancelEdit();
+    }
+
+    items = items.filter(item => item.id !== id);
+    save();
+
+    if (items.length < 2) {
+        currentPair = [];
+        $('#item-left img, #item-right img').attr('src', '');
+        $('#item-left .title, #item-right .title').text('');
+        $('#item-left .fallback-text, #item-right .fallback-text').hide();
+    } else {
+        nextPair();
     }
 }
 
