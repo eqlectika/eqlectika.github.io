@@ -85,9 +85,12 @@
   .action-btn.secondary:hover { background: #0f1420; border-color: #448aff; color: #fff; }
 
   .preview-area {
-    flex: 1; display: flex; justify-content: center;
-    align-items: flex-start; padding: 40px 20px 80px 20px;
-    overflow: auto;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow: hidden;
   }
 
   .stage-holder {
@@ -97,13 +100,23 @@
     flex-shrink: 0;
   }
 
+  .stage-fit {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+  }
+  .stage-scaler {
+    transform-origin: center center;
+  }
   .stage {
     overflow: hidden;
     box-shadow: 0 0 60px rgba(0,0,0,0.7);
     position: relative;
     flex-shrink: 0;
   }
-
   .stage-bg {
     position: absolute;
     inset: 0;
@@ -286,8 +299,9 @@
   </aside>
 
   <main class="preview-area">
-    <div class="stage-holder">
-      <div class="stage" id="stage">
+    <div class="stage-fit">
+      <div class="stage-scaler" id="stage-scaler">
+        <div class="stage" id="stage">
         <div class="stage-bg" id="stage-bg"></div>
         <div class="stage-overlay" id="stage-overlay"></div>
         <div id="capture-target">
@@ -295,7 +309,7 @@
           <div class="brand">
             <img class="logo" id="logo-img" src="fleurdelis.png" alt="" onerror="this.style.visibility='hidden'">
             <a class="title" id="title-el" href="#">Trust Fibonacci</a>
-            <span class="subtitle" id="subtitle-el">Custom web site and application</span>
+            <span class="subtitle" id="subtitle-el">Custom web sites and applications</span>
           </div>
 
           <div class="progress-wrap" id="progress-wrap">
@@ -306,6 +320,7 @@
 
         </div>
       </div>
+    </div>
     </div>
   </main>
 
@@ -333,6 +348,22 @@ function hexToRgba(hex, alpha) {
   const g = parseInt(h.substring(2, 4), 16);
   const b = parseInt(h.substring(4, 6), 16);
   return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function fitStageToScreen() {
+  const area    = document.querySelector('.stage-fit');
+  const scaler  = document.getElementById('stage-scaler');
+  const cw      = parseInt(document.getElementById('cw').value) || 1080;
+  const ch      = parseInt(document.getElementById('ch').value) || 1920;
+
+  const availW = area.clientWidth  - 40;
+  const availH = area.clientHeight - 40;
+
+  const scale  = Math.min(availW / cw, availH / ch, 1);
+
+  scaler.style.width  = cw + 'px';
+  scaler.style.height = ch + 'px';
+  scaler.style.transform = `scale(${scale})`;
 }
 
 function render() {
@@ -398,8 +429,9 @@ function render() {
   barFill.style.background = document.getElementById('bar-fill').value;
   barFill.style.width      = Math.min(100, Math.max(0, parseInt(document.getElementById('bar-progress').value) || 0)) + '%';
   barFill.style.height     = (baseBarH * k) + 'px';
-}
 
+  fitStageToScreen();
+}
 ['cw','ch','fit','grad-top','grad-bottom','grad-mid',
  'ov-color','ov-opacity',
  'logo-h',
@@ -465,25 +497,28 @@ render();
 async function renderCanvas() {
   const scale = parseInt(document.getElementById('scale').value) || 1;
   const isJpg = document.getElementById('format').value === 'jpeg';
-  const w = stage.offsetWidth;
-  const h = stage.offsetHeight;
+  const cw    = parseInt(document.getElementById('cw').value) || 1080;
+  const ch    = parseInt(document.getElementById('ch').value) || 1920;
 
   return await html2canvas(stage, {
     scale: scale,
     useCORS: true,
     allowTaint: false,
     backgroundColor: isJpg ? document.getElementById('grad-top').value : null,
-    width:  w,
-    height: h,
-    windowWidth:  w,
-    windowHeight: h,
+    width:  cw,
+    height: ch,
+    windowWidth:  cw,
+    windowHeight: ch,
     scrollX: 0,
     scrollY: 0,
     x: 0,
-    y: 0
+    y: 0,
+    onclone: (clonedDoc) => {
+      const sc = clonedDoc.getElementById('stage-scaler');
+      if (sc) sc.style.transform = 'none';
+    }
   });
 }
-
 async function downloadImage() {
   const canvas = await renderCanvas();
   const fmt = document.getElementById('format').value;
@@ -508,6 +543,8 @@ async function copyToClipboard() {
     }, mime, 0.95);
   } catch (e) { alert('Render failed: ' + e.message); }
 }
+
+window.addEventListener('resize', fitStageToScreen);
 
 function resetAll() {
   if (!confirm('Reset all settings?')) return;
