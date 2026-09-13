@@ -281,10 +281,12 @@
 
   <aside class="sidebar">
 
-    <h3>Canvas</h3>
+<h3>Canvas</h3>
     <div>
       <div class="field"><label>Width</label><input type="number" id="cw" value="1080" min="100" max="4000"></div>
       <div class="field"><label>Height</label><input type="number" id="ch" value="1920" min="100" max="4000"></div>
+      <div class="field"><label>Offset X (px)</label><input type="number" id="content-x" value="0" min="-2000" max="2000"></div>
+      <div class="field"><label>Offset Y (px)</label><input type="number" id="content-y" value="0" min="-2000" max="2000"></div>
     </div>
     <div class="field">
       <label>Fit to canvas (%)</label>
@@ -497,6 +499,7 @@ const STORAGE_KEY = 'converter_settings_v1';
 function collectSettings() {
   const ids = [
     'cw','ch','fit','format','scale',
+    'content-x', 'content-y',
     'grad-top','grad-bottom','grad-mid',
     'ov-color','ov-opacity','ov-blend',
     'bg-fit',
@@ -608,7 +611,11 @@ function render() {
   const baseG3b     = parseInt(document.getElementById('gap-eq-bar').value) || 0;
 
   const naturalH = baseLogoH + baseBarH + 60;
-
+  
+  const offsetX = (parseInt(document.getElementById('content-x').value) || 0) * k;
+  const offsetY = (parseInt(document.getElementById('content-y').value) || 0) * k;
+  document.getElementById('capture-target').style.transform =
+    `translate(${offsetX}px, ${offsetY}px)`;
   const canvasMin = Math.min(cw, ch);
   const targetH   = canvasMin * (fit / 100);
   const k         = targetH / naturalH;
@@ -664,7 +671,7 @@ function render() {
   fitStageToScreen();
 }
 
-['cw','ch','fit','grad-top','grad-bottom','grad-mid',
+['cw','ch','content-x','content-y','fit','grad-top','grad-bottom','grad-mid',
  'ov-color','ov-opacity',
  'logo-h',
  'title-size','title-spacing','title-color',
