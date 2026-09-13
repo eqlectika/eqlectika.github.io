@@ -192,8 +192,17 @@ throttleArea.addEventListener('pointerdown', (e) => {
 
 function updateThrottle(e) {
     const rect = throttleArea.getBoundingClientRect();
-    let val = 1 - ((e.clientY - rect.top) / rect.height);
-    currentThrottle = Math.max(0, Math.min(1, val));
+    const centerY = rect.top + rect.height / 2;
+
+    if (e.clientY < centerY) {
+
+        currentThrottle = 1 - ((e.clientY - rect.top) / (rect.height / 2));
+    } else {
+
+        currentThrottle = -((e.clientY - centerY) / (rect.height / 2));
+    }
+
+    currentThrottle = Math.max(-1, Math.min(1, currentThrottle));
 }
 
 controlArea.addEventListener('pointerdown', (e) => {
@@ -594,18 +603,20 @@ const roadHeight2 = 220; // все дороги второго уровня на
         
         player.quaternion.multiply(deltaQuaternion);
 
-        let thrustForce = 0;
-        if (vrThrust > 0) {
-            thrustForce = vrThrust;
-        } else if (currentThrottle > 0.05) {
-            thrustForce = FLY_SPEED * (currentThrottle * 2.0); 
-        }
+let thrustForce = 0;
 
-        let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+if (vrThrust > 0) {
+    thrustForce = vrThrust;
+} else if (Math.abs(currentThrottle) > 0.05) {
+    thrustForce = FLY_SPEED * (currentThrottle * 2.0);
+}
 
-        if (thrustForce > 0) {
-            velocity.add(localUp.clone().multiplyScalar(thrustForce));
-        }
+let localUp = new THREE.Vector3(0, 1, 0)
+    .applyQuaternion(player.quaternion);
+
+if (Math.abs(thrustForce) > 0) {
+    velocity.add(localUp.clone().multiplyScalar(thrustForce));
+}
 
         velocity.y -= GRAVITY;
 
