@@ -804,14 +804,51 @@ async function renderCanvas() {
 
 
 async function downloadImage() {
-  const canvas = await renderCanvas();
-  const fmt = document.getElementById('format').value;
-  const mime = fmt === 'jpeg' ? 'image/jpeg' : 'image/png';
-  const ext  = fmt === 'jpeg' ? 'jpg' : 'png';
-  const link = document.createElement('a');
-  link.download = `interface-${Date.now()}.${ext}`;
-  link.href = canvas.toDataURL(mime, 0.95);
-  link.click();
+  try {
+    const canvas = await renderCanvas();
+    const fmt = document.getElementById('format').value;
+    const mime = fmt === 'jpeg' ? 'image/jpeg' : 'image/png';
+    const ext = fmt === 'jpeg' ? 'jpg' : 'png';
+    const filename = `interface-${Date.now()}.${ext}`;
+
+    canvas.toBlob(async (blob) => {
+      // Проверяем поддержку современного API сохранения файлов (работает в PWA и Chrome)
+      if ('showSaveFilePicker' in window) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+              description: fmt.toUpperCase() + ' Image',
+              accept: { [mime]: [`.${ext}`] },
+            }],
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          return;
+        } catch (err) {
+          // Если пользователь отменил выбор, не выводим ошибку
+          if (err.name === 'AbortError') return;
+          console.warn('File picker failed, falling back to standard download', err);
+        }
+      }
+
+      // Fallback-метод через создание объекта URL (для окружений без showSaveFilePicker)
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+    }, mime, 0.95);
+
+  } catch (e) {
+    alert('Export failed: ' + e.message);
+  }
 }
 
 async function copyToClipboard() {
