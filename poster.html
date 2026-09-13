@@ -62,7 +62,7 @@
   .field input[type="number"],
   .field input[type="text"],
   .field select {
-    width: 110px; flex-shrink: 0; padding: 6px 8px;
+    width: 50px; flex-shrink: 0; padding: 6px 8px;
     background: #0f1420; color: #fff; border: 1px solid #2a3348;
     font-family: 'Ubuntu', sans-serif; font-size: 12px; border-radius: 3px;
   }
@@ -224,6 +224,54 @@
   display: none;
   width: 0;
   height: 0;
+}
+
+@media (max-width: 600px) {
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .layout {
+    display: flex;
+    width: 200vw;
+    height: 100vh;
+    min-height: 100vh;
+    transition: transform 0.3s ease;
+    touch-action: pan-y;
+  }
+
+  .sidebar {
+    width: 100vw;
+    min-width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    flex-shrink: 0;
+    border-right: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+    top: auto;
+  }
+
+  .preview-area {
+    display: flex;
+    width: 100vw;
+    min-width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .stage-fit {
+    width: 100%;
+    height: 100%;
+  }
 }
 </style>
 </head>
@@ -754,6 +802,61 @@ function resetAll() {
   localStorage.removeItem(STORAGE_KEY);
   location.reload();
 }
+// Mobile swipe between Settings and Preview
+(function () {
+  if (window.innerWidth > 600) return;
+
+  const layout = document.querySelector('.layout');
+  const sidebar = document.querySelector('.sidebar');
+
+  let startX = 0;
+  let startY = 0;
+  let startTime = 0;
+
+  function showPage(page) {
+    layout.style.transform =
+      page === 'preview'
+        ? 'translateX(-100vw)'
+        : 'translateX(0)';
+  }
+
+  function handleTouchStart(e) {
+    const t = e.touches[0];
+
+    startX = t.clientX;
+    startY = t.clientY;
+    startTime = Date.now();
+  }
+
+  function handleTouchEnd(e) {
+    const t = e.changedTouches[0];
+
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    const dt = Date.now() - startTime;
+
+    // Only horizontal, fast enough gestures
+    if (dt > 600) return;
+    if (Math.abs(dx) < 60) return;
+    if (Math.abs(dx) < Math.abs(dy)) return;
+
+    if (dx < 0) {
+      // Swipe left → Preview
+      showPage('preview');
+    } else {
+      // Swipe right → Settings
+      showPage('settings');
+    }
+  }
+
+  document.addEventListener('touchstart', handleTouchStart, {
+    passive: true
+  });
+
+  document.addEventListener('touchend', handleTouchEnd, {
+    passive: true
+  });
+})();
 </script>
 </body>
 </html>
