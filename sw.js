@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-flash'; 
+const CACHE_NAME = 'version-poster'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
