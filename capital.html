@@ -473,15 +473,19 @@ a {
 
 <div class="main-layout">
 <div class="column-left">
+        <div class="chart-container funding-chart-container"><canvas id="fundingHistoryChart"></canvas></div>
 
-
-          
       <div class="chart-container"><canvas id="moireChart"></canvas></div>
+      
 
-            <div id="akai-indicator">
-                <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
-                <div class="akai-center"></div>
-            </div>
+      <div id="akai-indicator">
+          <div id="akai-fill" style="height: 100%; width: 0%; transition: width 0.1s ease-out;"></div>
+          <div class="akai-center"></div>
+      </div>
+
+      <div class="funding-percent-container">
+          <canvas id="fundingPercentChart"></canvas>
+      </div>
 <div class="chart-container funding-chart-container"><canvas id="fundingHistoryChart"></canvas></div>
 <div class="funding-percent-container">
     <canvas id="fundingPercentChart"></canvas>
@@ -2145,19 +2149,18 @@ async function initFundingHistoryChart(symbol) {
         const response = await fetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${symbol.toUpperCase()}&limit=500`);
         const fundingData = await response.json();
         
-        // Создаем карту времени выплаты -> ставка
+        // Создаем карту: точный timestamp выплаты фандинга -> ставка
         const fundingMap = {};
         fundingData.forEach(item => {
-            // Округляем до минут/часов для точного матчинга со свечами
             fundingMap[item.fundingTime] = parseFloat(item.fundingRate) * 100;
         });
 
-        // Проецируем ставки на таймстемпы основных свечей (candleTimes)
+        // Проецируем ставки строго по индексам candleTimes основного графика, 
+        // чтобы точки встали копейка в копейку под свечи
         const rates = candleTimes.map(time => {
-            // Ищем ближайшее или точное совпадение по времени выплаты фандинга
-            // Ставки фандинга обычно раз в 4/8 часов, для остальных свечей ставим null или 0
-            const matchedTime = Object.keys(fundingMap).find(t => Math.abs(t - time) < 3600000);
-            return matchedTime ? fundingMap[matchedTime] : 0; // 0 или null для пустых зон
+            // Ищем точное или ближайшее попадание в пределах интервала свечи
+            const matchedTime = Object.keys(fundingMap).find(t => Math.abs(parseInt(t) - time) < 60000);
+            return matchedTime !== undefined ? fundingMap[matchedTime] : null; 
         });
 
         const ctx = document.getElementById('fundingHistoryChart').getContext('2d');
@@ -2169,20 +2172,30 @@ async function initFundingHistoryChart(symbol) {
         window.fundingChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: moireChart.data.labels, // Привязка к индексам основного графика
-datasets: [{
-    type: 'line',
-    data: rates,
-    borderColor: 'transparent', // Саму линию между точками делаем невидимой
-    backgroundColor: rates.map(r => r >= 0 ? '#00e676' : '#ff5252'),
-    pointRadius: 3,             // Фиксированный радиус точки в пикселях
-    pointStyle: 'rect',         // Форма точки — прямоугольник (квадрат)
-    pointRotation: 0
-}]      },
+                labels: moireChart.data.labels,
+                datasets: [{
+                    type: 'line',
+                    data: rates,
+                    borderColor: 'transparent',
+                    backgroundColor: rates.map(r => (r !== null && r >= 0) ? '#00e676' : '#ff5252'),
+                    pointRadius: 3,
+                    pointStyle: 'rect',
+                    pointRotation: 0
+                }]
+            },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: false,
+                layout: {
+                    padding: {
+                        // Динамически берем ширину правой шкалы основного графика
+                        right: (chart) => {
+                            const yAxis = moireChart.scales.y || moireChart.scales.yRSI;
+                            return yAxis ? yAxis.width + -10 : 45; // запас 10px для выравнивания с сеткой
+                        }
+                    }
+                },
                 interaction: {
                     mode: 'index',
                     intersect: false
@@ -2193,19 +2206,25 @@ datasets: [{
                         grid: { display: false }
                     },
                     y: {
-                        display: false,
+                        display: true,
                         position: 'right',
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        grid: { display: false },
                         ticks: {
-                            color: '#d1d4dc',
-                            font: { size: 10 },
-                            crossAlign: 'far',
-                            align: 'end',
-                            padding: 4,
-                            callback: value => value.toFixed(3) + '%'
+                            color: 'transparent',
+                            callback: () => ''
+                        }
+                    },
+                    yRSI: {
+                        display: true,
+                        position: 'left',
+                        min: 0,
+                        max: 100,
+                        grid: { drawOnChartArea: false },
+                        ticks: {
+                            color: 'transparent',
+                            callback: () => ''
                         }
                     }
-
                 },
                 plugins: {
                     legend: { display: false },
@@ -2223,7 +2242,6 @@ datasets: [{
             }
         });
         
-        // Сразу синхронизируем зум с основным графиком
         syncChartsScale();
 
     } catch (error) {
