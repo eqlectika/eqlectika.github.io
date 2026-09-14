@@ -1,10 +1,13 @@
-// sw.js — ЗАМЕНИТЬ ПОЛНОСТЬЮ
+// sw.js — версия 2.0
+const CACHE_VERSION = 'v2';
+const CACHE_NAME = `paramount-cache-${CACHE_VERSION}`;
 
-const CACHE_VERSION = 'v2.0.1'; // ← МЕНЯЙТЕ при каждом обновлении!
-const CACHE_NAME = 'version-target-' + CACHE_VERSION;
-const RUNTIME_CACHE = 'runtime-' + CACHE_VERSION;
+// Стратегия: 
+// - APP_SHELL кэшируется при install (атомарно, через Promise.allSettled)
+// - Пользовательские данные (localStorage) НЕ трогаются SW вообще
+// - При activate удаляются ТОЛЬКО старые кэши SW, localStorage не трогается
 
-const CORE_ASSETS = [
+const APP_SHELL = [
     '/',
     './index.html',
     './poster.html',
@@ -23,7 +26,6 @@ const CORE_ASSETS = [
     './cube.html',
     './bismuth.html',
     './essence.html',
-
     './manifest-index.json',
     './manifest-essence.json',
     './manifest-cross.json',
@@ -59,134 +61,102 @@ const CORE_ASSETS = [
     './bitfufu.png',
     './binance.PNG',
     './star.png',
-    './breakthrough.png',
-    './Verge.jpeg'
+    './breakthrough.png'
 ];
 
-// ==================== INSTALL ====================
-// Кэшируем всё, НО не удаляем старые кэши — они нужны для отката
+// ============ INSTALL ============
 self.addEventListener('install', event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(async cache => {
-            console.log('[SW] Installing version:', CACHE_VERSION);
-            // Кэшируем параллельно с обработкой ошибок
-            await Promise.allSettled(
-                CORE_ASSETS.map(asset =>
-                    cache.add(asset).catch(err => {
-                        console.warn('[SW] Failed to cache:', asset, err);
+        caches.open(CACHE_NAME).then(cache => {
+            // Promise.allSettled — не падаем если один ресурс 404
+            return Promise.allSettled(
+                APP_SHELL.map(url =>
+                    cache.add(url).catch(err => {
+                        console.warn('[SW] Failed to cache:', url, err.message);
                     })
                 )
             );
+        }).then(() => {
+            console.log('[SW] Install complete, version:', CACHE_VERSION);
+            // НЕ вызываем skipWaiting() автоматически — ждём команды
         })
     );
-    // НЕ вызываем skipWaiting() здесь — ждём решения пользователя
 });
 
-// ==================== ACTIVATE ====================
-// Удаляем ТОЛЬКО старые версии этого же приложения,
-// но НЕ трогаем localStorage и данные пользователя
+// ============ ACTIVATE ============
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys => {
             return Promise.all(
-                keys.map(key => {
-                    // Удаляем только старые кэши НАШЕГО приложения
-                    // (начинающиеся с version-target- или runtime-)
-                    const isOurCache = key.startsWith('version-target-') || 
-                                       key.startsWith('runtime-');
-                    const isCurrent = key === CACHE_NAME || key === RUNTIME_CACHE;
-                    
-                    if (isOurCache && !isCurrent) {
+                keys
+                    .filter(key => key.startsWith('paramount-cache-') && key !== CACHE_NAME)
+                    .map(key => {
                         console.log('[SW] Deleting old cache:', key);
                         return caches.delete(key);
-                    }
-                    // ВАЖНО: кэши других приложений НЕ трогаем
-                })
+                    })
             );
         }).then(() => {
-            console.log('[SW] Activated version:', CACHE_VERSION);
+            console.log('[SW] Activate complete');
             return self.clients.claim();
         })
     );
 });
 
-// ==================== FETCH ====================
-// Стратегия: Cache First для навигации и статики,
-// Network First для данных с последующим fallback на кэш.
+// ============ FETCH ============
 self.addEventListener('fetch', event => {
     const request = event.request;
 
-    // Игнорируем не-GET запросы
+    // Игнорируем не-GET
     if (request.method !== 'GET') return;
 
-    // Игнорируем запросы к MQTT-брокерам и внешним API
+    // Игнорируем внешние запросы (MQTT, шрифты, jQuery CDN)
     const url = new URL(request.url);
-    if (url.protocol === 'wss:' || url.protocol === 'ws:') return;
-    if (url.hostname.includes('mqtt') || 
-        url.hostname.includes('broker') ||
-        url.hostname.includes('emqx') ||
-        url.hostname.includes('hivemq') ||
-        url.hostname.includes('mosquitto')) return;
+    if (url.origin !== self.location.origin) return;
 
-    // Навигационные запросы (страницы) — Cache First с fallback на index.html
+    // Навигационные запросы — offline-first
     if (request.mode === 'navigate') {
         event.respondWith(
-            caches.match(request).then(cached => {
-                if (cached) return cached;
-                return fetch(request).then(response => {
-                    if (response && response.status === 200) {
-                        const copy = response.clone();
-                        caches.open(CACHE_NAME).then(cache => {
-                            cache.put(request, copy);
-                        });
-                    }
+            fetch(request)
+                .then(response => {
+                    // Обновляем кэш свежей версией
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
                     return response;
-                }).catch(() => {
-                    // Offline fallback — пытаемся вернуть index.html
-                    return caches.match('./index.html').then(idx => {
-                        return idx || caches.match('/') || new Response(
-                            '<h1>Offline</h1><p>Нет соединения и нет кэша.</p>',
-                            { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
-                        );
-                    });
-                });
-            })
+                })
+                .catch(() => {
+                    // Offline fallback
+                    return caches.match(request)
+                        .then(cached => cached || caches.match('./index.html'));
+                })
         );
         return;
     }
 
-    // Для всех остальных запросов — Stale-While-Revalidate
-    // (отдаём из кэша, параллельно обновляем)
+    // Остальные ресурсы — cache-first с фоновым обновлением
     event.respondWith(
         caches.match(request).then(cachedResponse => {
-            const fetchPromise = fetch(request).then(networkResponse => {
-                if (networkResponse && networkResponse.status === 200 && 
-                    networkResponse.type !== 'error') {
-                    const copy = networkResponse.clone();
-                    caches.open(RUNTIME_CACHE).then(cache => {
-                        cache.put(request, copy);
-                    });
-                }
-                return networkResponse;
-            }).catch(() => null);
+            const networkFetch = fetch(request)
+                .then(response => {
+                    if (response && response.status === 200) {
+                        const copy = response.clone();
+                        caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+                    }
+                    return response;
+                })
+                .catch(() => cachedResponse);
 
-            // Возвращаем кэш сразу, если он есть; иначе ждём сеть
-            return cachedResponse || fetchPromise;
-        }).catch(() => {
-            return Response.error();
+            return cachedResponse || networkFetch;
         })
     );
 });
 
-// ==================== MESSAGE ====================
+// ============ MESSAGE ============
 self.addEventListener('message', event => {
     if (event.data && event.data.type === 'SKIP_WAITING') {
-        console.log('[SW] Skipping waiting, activating new version...');
         self.skipWaiting();
     }
-    
-    // Опционально: запрос версии от клиента
+    // Новый тип: запрос версии
     if (event.data && event.data.type === 'GET_VERSION') {
-        event.source.postMessage({ type: 'VERSION', version: CACHE_VERSION });
+        event.ports[0].postMessage({ version: CACHE_VERSION });
     }
 });
