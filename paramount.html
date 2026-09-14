@@ -942,13 +942,14 @@ a { color: #448aff; text-decoration: none; }
     if ('serviceWorker' in navigator) {
         let newWorker;
         
-        navigator.serviceWorker.register('./sw.js').then(reg => {
+        navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
             if (reg.waiting) {
                 document.getElementById('updateAvailableLine').style.display = 'block';
             }
             
             reg.addEventListener('updatefound', () => {
                 newWorker = reg.installing;
+                if (!newWorker) return;
                 newWorker.addEventListener('statechange', () => {
                     if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                         document.getElementById('updateAvailableLine').style.display = 'block';
@@ -960,7 +961,68 @@ a { color: #448aff; text-decoration: none; }
 </script>
 
 <script>
-function createTextThumbnail(text) {
+// ============================================
+// DataManager — единое хранилище данных
+// ============================================
+const DataManager = (() => {
+    const PREFIX = 'paramount_';
+    const SCHEMA_VERSION = 3;
+    const SCHEMA_KEY = PREFIX + 'schema_version';
+
+    const PERSISTENT_KEYS = [
+        'versus_items',
+        'player_state',
+        'peer_balances',
+        'activity_history',
+        'processed_txs',
+        'pending_transfers',
+        'custom_my_id',
+        'last_claim_time',
+        'activity_range',
+        'broker_url'
+    ];
+
+    function key(name) { return PREFIX + name; }
+
+    function get(name, fallback = null) {
+        try {
+            const raw = localStorage.getItem(key(name));
+            if (raw === null) return fallback;
+            return JSON.parse(raw);
+        } catch (e) {
+            console.warn('[DataManager] Corrupted:', name);
+            return fallback;
+        }
+    }
+
+    function set(name, value) {
+        try {
+            localStorage.setItem(key(name), JSON.stringify(value));
+        } catch (e) {
+            console.error('[DataManager] Save failed:', name, e);
+        }
+    }
+
+    function remove(name) { localStorage.removeItem(key(name)); }
+
+    function clearAll() {
+        PERSISTENT_KEYS.forEach(k => localStorage.removeItem(key(k)));
+        localStorage.removeItem(SCHEMA_KEY);
+    }
+
+    function migrate() {
+        const storedVersion = parseInt(localStorage.getItem(SCHEMA_KEY) || '0', 10);
+        if (storedVersion === SCHEMA_VERSION) return;
+        // Пока просто помечаем версию — миграции добавим позже при необходимости
+        localStorage.setItem(SCHEMA_KEY, String(SCHEMA_VERSION));
+    }
+
+    migrate();
+
+    return { get, set, remove, clearAll, key, PERSISTENT_KEYS };
+})();
+
+    function createTextThumbnail(text) {
     if (!text) return '';
     return `<div style="
         background: #111;
@@ -1041,14 +1103,14 @@ if (loreToggle && loreText) {
     });
 }
 
-let myId = localStorage.getItem('paramount_custom_my_id');
+let myId = DataManager.get('custom_my_id');
 if (!myId) {
     myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
-    localStorage.setItem('paramount_custom_my_id', myId);
+    DataManager.set('custom_my_id', myId);
 }
 document.getElementById('nodeId').innerText = myId;
 
-let processedTxIds = JSON.parse(localStorage.getItem('paramount_processed_txs')) || [];
+let processedTxIds = DataManager.get('processed_txs', []);
 
 function isTxProcessed(txId) {
     return processedTxIds.includes(txId);
@@ -1060,11 +1122,11 @@ function markTxProcessed(txId) {
         if (processedTxIds.length > 1000) {
             processedTxIds = processedTxIds.slice(-500);
         }
-        localStorage.setItem('paramount_processed_txs', JSON.stringify(processedTxIds));
+        DataManager.set('processed_txs', processedTxIds);
     }
 }
 
-let playerState = JSON.parse(localStorage.getItem('paramount_player_state'));
+let playerState = DataManager.get('player_state');
 if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playerState.postsLeft === 'undefined') {
     playerState = { 
         impacts: 8,     
@@ -1072,18 +1134,18 @@ if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playe
         votesLeft: 5,   
         postsLeft: 3    
     };
-    localStorage.setItem('paramount_player_state', JSON.stringify(playerState));
+    DataManager.set('player_state', playerState);
 }
 
-let peerBalances = JSON.parse(localStorage.getItem('paramount_peer_balances')) || {};
-let blacklistedPeers = JSON.parse(localStorage.getItem('paramount_blacklist')) || [];
+let peerBalances = DataManager.get('peer_balances', {});
+let blacklistedPeers = DataManager.get('blacklist', []);
 
-let activityHistory = JSON.parse(localStorage.getItem('paramount_activity_history')) || {
+let activityHistory = DataManager.get('activity_history', {
     votes: [],
     posts: [],
     deliveries: []
-};
-let activityRange = localStorage.getItem('paramount_activity_range') || 'week';
+});
+let activityRange = DataManager.get('activity_range', 'week');
 
 function saveActivityHistory() {
     ['votes', 'posts', 'deliveries'].forEach(key => {
@@ -1091,7 +1153,7 @@ function saveActivityHistory() {
             activityHistory[key] = activityHistory[key].slice(-2000);
         }
     });
-    localStorage.setItem('paramount_activity_history', JSON.stringify(activityHistory));
+    DataManager.set('activity_history', activityHistory);
 }
 function recordActivity(type) {
     if (!activityHistory[type]) activityHistory[type] = [];
@@ -1102,7 +1164,7 @@ function recordActivity(type) {
 
 function setActivityRange(range) {
     activityRange = range;
-    localStorage.setItem('paramount_activity_range', range);
+    DataManager.set('activity_range', range);
     document.querySelectorAll('.activity-range-btn').forEach(btn => {
         const active = btn.getAttribute('data-range') === range;
         btn.style.color = active ? '#afff00' : '#888';
@@ -1111,9 +1173,9 @@ function setActivityRange(range) {
     updateActivityChart();
 }
 
-let pendingTransfers = JSON.parse(localStorage.getItem('paramount_pending_transfers')) || {};
+let pendingTransfers = DataManager.get('pending_transfers', {});
 function savePending() {
-    localStorage.setItem('paramount_pending_transfers', JSON.stringify(pendingTransfers));
+    DataManager.set('pending_transfers', pendingTransfers);
 }
 
 function updatePlayerStatsUI() {
@@ -1121,7 +1183,7 @@ function updatePlayerStatsUI() {
     document.getElementById('playerLevel').innerText = playerState.level;
     document.getElementById('votesLeft').innerText = playerState.votesLeft;
     document.getElementById('postsLeft').innerText = playerState.postsLeft;
-    localStorage.setItem('paramount_player_state', JSON.stringify(playerState));
+    DataManager.set('player_state', playerState);
 }
 updatePlayerStatsUI();
 
@@ -1311,10 +1373,10 @@ const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
 
 function getClaimableCount() {
-    let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || '0');
+    let lastClaimTime = DataManager.get('last_claim_time', 0);
     if (!lastClaimTime) {
         lastClaimTime = Date.now();
-        localStorage.setItem('paramount_last_claim_time', lastClaimTime.toString());
+        DataManager.set('last_claim_time', lastClaimTime);
     }
     const elapsed = Date.now() - lastClaimTime;
     
@@ -1328,7 +1390,7 @@ function getClaimableCount() {
 }
 
 function updateClaimUI() {
-    let lastClaimTime = parseInt(localStorage.getItem('paramount_last_claim_time') || Date.now());
+    let lastClaimTime = DataManager.get('last_claim_time', Date.now());
     const elapsed = Date.now() - lastClaimTime;
     const claimable = getClaimableCount();
     
@@ -1358,7 +1420,7 @@ function claimHourly() {
     playerState.level = Math.floor(playerState.impacts / 20) + 1;
     updatePlayerStatsUI();
 
-    localStorage.setItem('paramount_last_claim_time', Date.now().toString());
+    DataManager.set('last_claim_time', Date.now());
     
     updateClaimUI();
     log(`[Claim] Collected +${claimable} impacts.`);
@@ -1368,7 +1430,7 @@ function claimHourly() {
 setInterval(updateClaimUI, 1000);
 updateClaimUI();
 
-let items = JSON.parse(localStorage.getItem('paramount_versus_items')) || [];
+let items = DataManager.get('versus_items', []);
 
 const demoItems = [
     {
@@ -1408,16 +1470,16 @@ if (!hasDemo) {
             items.push(demo);
         }
     });
-    localStorage.setItem('paramount_versus_items', JSON.stringify(items));
+    DataManager.set('versus_items', items);
 }
 
 let currentPair = [];
 function saveLocal() {
-    localStorage.setItem('paramount_versus_items', JSON.stringify(items));
+    DataManager.set('versus_items', items);
 }
 
 const DEFAULT_BROKER = 'wss://test.mosquitto.org:8081/mqtt';
-const savedBroker = localStorage.getItem('paramount_broker_url') || DEFAULT_BROKER;
+const savedBroker = DataManager.get('broker_url', DEFAULT_BROKER);
 
 const client = mqtt.connect(savedBroker, {
     clientId: 'paramount_resonance_' + Math.random().toString(16).substr(2, 8),
@@ -2150,7 +2212,7 @@ function transferImpact() {
     }
     
     peerBalances[myId] = playerState.impacts;
-    localStorage.setItem('paramount_peer_balances', JSON.stringify(peerBalances));
+    DataManager.set('peer_balances', peerBalances);
 
     if (!target || !amount || amount < 1) {
         return alert('Please enter the correct participant ID and number of impacts!');
@@ -2306,7 +2368,7 @@ function switchBroker() {
         }
     }
 
-    localStorage.setItem('paramount_broker_url', url);
+    DataManager.set('broker_url', url);
 
     const netStatus = document.getElementById('netStatus');
     if (netStatus) {
@@ -2504,90 +2566,52 @@ async function resetToDefault() {
         return;
     }
     
-    localStorage.clear();
+    DataManager.clearAll();
     
     if ('caches' in window) {
         try {
             const cacheNames = await caches.keys();
             await Promise.all(cacheNames.map(name => caches.delete(name)));
-            console.log('[Reset] Cache cleared');
         } catch(e) {
-            console.log('[Reset] Cache clear error:', e);
+            console.warn('[Reset] Cache clear error:', e);
         }
     }
     
-    items = [];
-    playerState = { impacts: 8, level: 1, votesLeft: 5, postsLeft: 3 };
-    peerBalances = {};
-    pendingTransfers = {};
-    activityHistory = { votes: [], posts: [], deliveries: [] };
-    processedTxIds = [];
+    if ('serviceWorker' in navigator) {
+        try {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(r => r.unregister()));
+        } catch(e) {
+            console.warn('[Reset] SW unregister error:', e);
+        }
+    }
     
-    log(`[Reset] All data and cache cleared. Reloading...`);
-    alert(`✅ Reset complete!\n\nCache and data cleared.`);
-    
+    alert('✅ Reset complete!\n\nCache and data cleared.');
     window.location.reload(true);
 }
 
 async function syncAndKeepData() {
-    
-const savedItems = items;
-    const savedPlayerState = JSON.parse(JSON.stringify(playerState)); 
-    const savedPeerBalances = JSON.parse(JSON.stringify(peerBalances));
-    const savedActivityHistory = JSON.parse(JSON.stringify(activityHistory));
-    const savedProcessedTxIds = [...processedTxIds];
-    const savedPendingTransfers = JSON.parse(JSON.stringify(pendingTransfers));
-    const savedMyId = myId;
-    
-    if ('caches' in window) {
+    log('[Update] Applying update, preserving all data...');
+
+    // Данные в localStorage НЕ ТРОГАЕМ.
+    // Просто активируем новый SW, если он ждёт.
+    if ('serviceWorker' in navigator) {
         try {
-            const cacheNames = await caches.keys();
-            await Promise.all(cacheNames.map(name => caches.delete(name)));
-            console.log('[Sync] Cache cleared');
+            const reg = await navigator.serviceWorker.ready;
+            if (reg.waiting) {
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    window.location.reload();
+                });
+                return;
+            }
         } catch(e) {
-            console.log('[Sync] Cache clear error:', e);
+            console.warn('[Update] SW activation error:', e);
         }
     }
-    
-    const keysToKeep = [
-        'paramount_versus_items',
-        'paramount_player_state',
-        'paramount_peer_balances',
-        'paramount_activity_history',
-        'paramount_processed_txs',
-        'paramount_pending_transfers',
-        'paramount_custom_my_id',
-        'paramount_last_claim_time',
-        'paramount_activity_range'
-    ];
-    
-    for (let key in localStorage) {
-        if (!keysToKeep.includes(key) && !key.startsWith('paramount_')) {
-            localStorage.removeItem(key);
-        }
-    }
-    
-    localStorage.setItem('paramount_versus_items', JSON.stringify(savedItems));
-    localStorage.setItem('paramount_player_state', JSON.stringify(savedPlayerState));
-    localStorage.setItem('paramount_peer_balances', JSON.stringify(savedPeerBalances));
-    localStorage.setItem('paramount_activity_history', JSON.stringify(savedActivityHistory));
-    localStorage.setItem('paramount_processed_txs', JSON.stringify(savedProcessedTxIds));
-    localStorage.setItem('paramount_pending_transfers', JSON.stringify(savedPendingTransfers));
-    localStorage.setItem('paramount_custom_my_id', savedMyId);
-    
-    log(`[Sync] Data preserved. Cache cleared. Refreshing...`);
 
-    navigator.serviceWorker.ready.then(reg => {
-    if (reg.waiting) {
-        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-    });
-
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload(true);
-    });
-    
-    window.location.reload(true);
+    // Fallback: обычная перезагрузка
+    window.location.reload();
 }
 
 const aboutToggle = document.getElementById('aboutToggle');
@@ -2623,7 +2647,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const customInput = document.getElementById('customBrokerUrl');
     if (!selectEl) return;
 
-    const saved = localStorage.getItem('paramount_broker_url');
+    const saved = DataManager.get('broker_url');
     if (saved) {
         const isKnown = Array.from(selectEl.options).some(o => o.value === saved && o.value !== 'custom');
         if (isKnown) {
