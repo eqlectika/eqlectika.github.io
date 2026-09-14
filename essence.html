@@ -653,6 +653,53 @@ function savePending() {
     DataManager.set('pending_transfers', pendingTransfers);
 }
 
+function changeMyId() {
+    const input = document.getElementById('my-id-input');
+    const newId = (input.value || '').trim();
+
+    if (!newId) {
+        alert('Enter a new ID first.');
+        return;
+    }
+    if (!/^[A-Za-z0-9_\-]{3,24}$/.test(newId)) {
+        alert('ID must be 3–24 chars: letters, digits, dash, underscore.');
+        return;
+    }
+    if (newId === myId) {
+        alert('That is already your current ID.');
+        return;
+    }
+    if (!confirm(
+        'Change your ID from "' + myId + '" to "' + newId + '"?\n\n' +
+        'Peers who saved your old ID will no longer reach you.\n' +
+        'Pending transfers to "' + myId + '" will not arrive.'
+    )) return;
+
+    const oldId = myId;
+
+    if (peerBalances[oldId] !== undefined) {
+        peerBalances[newId] = peerBalances[oldId];
+        delete peerBalances[oldId];
+        DataManager.set('peer_balances', peerBalances);
+    }
+
+    myId = newId;
+    DataManager.set('custom_my_id', myId);
+    document.getElementById('nodeId').innerText = myId;
+
+    items.forEach(it => {
+        if (it.sender === oldId) it.sender = myId;
+    });
+    saveLocal();
+    updateRankingList();
+
+    pendingTransfers = {};
+    savePending();
+
+    log('[ID] Renamed to ' + myId);
+    alert('Your ID is now "' + myId + '".');
+}
+
 function updatePlayerStatsUI() {
     document.getElementById('playerImpact').innerText = playerState.impacts;
     document.getElementById('playerLevel').innerText = playerState.level;
@@ -1606,6 +1653,11 @@ document.querySelectorAll('.activity-range-btn').forEach(btn => {
 });
 setActivityRange(activityRange);
 
+(function initIdInput() {
+    const el = document.getElementById('my-id-input');
+    if (el) el.value = myId;
+})();
+
 let activePeers = {};
 
 function updateOnlinePeersCount() {
@@ -1950,6 +2002,12 @@ function onBrokerSelectChange(select) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    const idInput = document.getElementById('my-id-input');
+    if (idInput) {
+        idInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); changeMyId(); }
+        });
+    }
     const selectEl = document.getElementById('brokerSelect');
     const customInput = document.getElementById('customBrokerUrl');
     if (!selectEl) return;
