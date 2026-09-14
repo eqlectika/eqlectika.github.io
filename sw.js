@@ -1,11 +1,5 @@
-// sw.js — версия 2.0
 const CACHE_VERSION = 'v2';
 const CACHE_NAME = `paramount-cache-${CACHE_VERSION}`;
-
-// Стратегия: 
-// - APP_SHELL кэшируется при install (атомарно, через Promise.allSettled)
-// - Пользовательские данные (localStorage) НЕ трогаются SW вообще
-// - При activate удаляются ТОЛЬКО старые кэши SW, localStorage не трогается
 
 const APP_SHELL = [
     '/',
@@ -64,11 +58,9 @@ const APP_SHELL = [
     './breakthrough.png'
 ];
 
-// ============ INSTALL ============
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
-            // Promise.allSettled — не падаем если один ресурс 404
             return Promise.allSettled(
                 APP_SHELL.map(url =>
                     cache.add(url).catch(err => {
@@ -76,55 +68,38 @@ self.addEventListener('install', event => {
                     })
                 )
             );
-        }).then(() => {
-            console.log('[SW] Install complete, version:', CACHE_VERSION);
-            // НЕ вызываем skipWaiting() автоматически — ждём команды
         })
     );
 });
 
-// ============ ACTIVATE ============
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys => {
             return Promise.all(
                 keys
                     .filter(key => key.startsWith('paramount-cache-') && key !== CACHE_NAME)
-                    .map(key => {
-                        console.log('[SW] Deleting old cache:', key);
-                        return caches.delete(key);
-                    })
+                    .map(key => caches.delete(key))
             );
-        }).then(() => {
-            console.log('[SW] Activate complete');
-            return self.clients.claim();
-        })
+        }).then(() => self.clients.claim())
     );
 });
 
-// ============ FETCH ============
 self.addEventListener('fetch', event => {
     const request = event.request;
-
-    // Игнорируем не-GET
     if (request.method !== 'GET') return;
 
-    // Игнорируем внешние запросы (MQTT, шрифты, jQuery CDN)
     const url = new URL(request.url);
     if (url.origin !== self.location.origin) return;
 
-    // Навигационные запросы — offline-first
     if (request.mode === 'navigate') {
         event.respondWith(
             fetch(request)
                 .then(response => {
-                    // Обновляем кэш свежей версией
                     const copy = response.clone();
                     caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
                     return response;
                 })
                 .catch(() => {
-                    // Offline fallback
                     return caches.match(request)
                         .then(cached => cached || caches.match('./index.html'));
                 })
@@ -132,7 +107,6 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Остальные ресурсы — cache-first с фоновым обновлением
     event.respondWith(
         caches.match(request).then(cachedResponse => {
             const networkFetch = fetch(request)
@@ -150,13 +124,8 @@ self.addEventListener('fetch', event => {
     );
 });
 
-// ============ MESSAGE ============
 self.addEventListener('message', event => {
     if (event.data && event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
-    }
-    // Новый тип: запрос версии
-    if (event.data && event.data.type === 'GET_VERSION') {
-        event.ports[0].postMessage({ version: CACHE_VERSION });
     }
 });
