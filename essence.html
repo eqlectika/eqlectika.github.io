@@ -228,6 +228,10 @@ input[type=number] {
 #tapeIndicatorBcast {
     color: #afff00;                      
 }
+
+#new-recipients::placeholder { color:#ff2440; opacity:0.8; }
+#new-recipients::-webkit-input-placeholder { color:#ff2440; opacity:0.8; }
+#new-recipients:focus { outline:none; border-color:#ff2440; }
 </style>
 </head>
 <body>
@@ -346,6 +350,9 @@ input[type=number] {
 
     <textarea id="new-desc" class="admin-input" placeholder="Your meme content"></textarea>
     <input type="url" id="new-url" class="admin-input" placeholder="External Link (optional)">
+    <input type="text" id="new-recipients" class="admin-input"
+           placeholder="Send only to (Peer IDs, comma-separated, empty = public)"
+           style="color:#ff2440;">
 
     <div style="text-align:center;margin:6px 0 10px 0;font-family:monospace;font-size:14px;">
         <span id="liveIndicatorBcast" style="display:none;">● Live! — peers online: <span id="livePeerCount">0</span></span>
@@ -1009,6 +1016,12 @@ if (packet.type === 'TRANSFER_IMPACT' && packet.target === myId) {
         }
         
         if (packet.type === 'ADD_ITEM') {
+            const r = packet.item.recipients || [];
+            const isPublic = r.length === 0;
+            const isForMe = r.includes(myId);
+            if (!isPublic && !isForMe && packet.sender !== myId) {
+                return;
+            }
             if (!items.some(i => i.id === packet.item.id)) {
                 items.push(packet.item);
                 saveLocal();
@@ -1053,6 +1066,12 @@ else if (packet.type === 'DELIVERY_ACK') {
 }
             
         else if (packet.type === 'UPDATE_ITEM') {
+            const r = packet.item.recipients || [];
+            const isPublic = r.length === 0;
+            const isForMe = r.includes(myId);
+            if (!isPublic && !isForMe && packet.sender !== myId) {
+                return;
+            }
             let existingItem = items.find(i => i.id === packet.item.id);
             if (existingItem) {
                 existingItem.title = packet.item.title;
@@ -1233,6 +1252,11 @@ if (client && client.connected) {
     }), { qos: 0 });
 }
 
+        const recipientsRaw = $('#new-recipients').val().trim();
+        const recipients = recipientsRaw
+            ? recipientsRaw.split(',').map(s => s.trim()).filter(Boolean)
+            : [];
+
         const newItem = { 
             id: 'meme-' + Date.now() + '-' + Math.floor(Math.random()*1000), 
             sender: myId, 
@@ -1241,7 +1265,8 @@ if (client && client.connected) {
             externalUrl: url, 
             img: '', 
             rating: 1500,
-            deliveredPeers: [] 
+            deliveredPeers: [],
+            recipients: recipients
         };
 
         items.push(newItem);
@@ -1256,7 +1281,7 @@ if (client && client.connected) {
         log(`You injected meme: "${title}"`);
     }
     
-    $('#new-desc, #new-url').val('');
+    $('#new-desc, #new-url, #new-recipients').val('');
     
     updateRankingList();
     if (items.length >= 2 && currentPair.length === 0) nextPair();
@@ -1279,10 +1304,13 @@ function editItem(id) {
     const details = document.getElementById(`details-${id}`);
     if (!details) return;
     editingId = id;
-    details.innerHTML = `<span class="peers">${item.deliveredPeers ? item.deliveredPeers.length : 0} peers</span>
+        details.innerHTML = `<span class="peers">${item.deliveredPeers ? item.deliveredPeers.length : 0} peers</span>
     <div style="position:absolute;top:13px;left:10px;color:#afff00">${Math.round(item.rating)}</div>
     <textarea id="edit-desc-${id}" class="admin-input" style="color: #ff8b00; height:auto; padding: 15px 0;">${item.description || ''}</textarea>
     <input id="edit-url-${id}" class="admin-input" style="color: #ff8b00; padding: 15px 0;" value="${item.externalUrl || ''}" placeholder="External Link">
+    <input id="edit-recipients-${id}" class="admin-input" style="color:#ff2440; border:2px solid #ff2440; padding: 15px 0;"
+           value="${(item.recipients || []).join(', ')}"
+           placeholder="Send only to (Peer IDs, empty = public)">
     <div class="actions" style="flex-wrap: wrap;">
     <button class="edit-btn" onclick="event.stopPropagation();saveEdit('${id}')">Forward Meme to Network</button>
     <button class="delete-btn" onclick="event.stopPropagation();deleteItemLocal('${id}')">Delete</button>
@@ -1307,6 +1335,15 @@ function saveEdit(id) {
     item.description = document.getElementById(`edit-desc-${id}`).value.trim();
     item.externalUrl = document.getElementById(`edit-url-${id}`).value.trim();
     item.img = '';
+
+    const recInput = document.getElementById(`edit-recipients-${id}`);
+    if (recInput) {
+        const raw = recInput.value.trim();
+        item.recipients = raw
+            ? raw.split(',').map(s => s.trim()).filter(Boolean)
+            : [];
+    }
+
     saveLocal();
     client.publish(TOPIC, JSON.stringify({type:'UPDATE_ITEM',sender:myId,item}), {qos:1});
     updateRankingList();
@@ -1359,7 +1396,11 @@ function updateRankingList() {
         const peers = item.sender === 'System-Genesis' ? 0 : (item.deliveredPeers ? item.deliveredPeers.length : 0);
         const rating = Math.round(item.rating);
         const description = item.description || item.title || 'No description.';
-        const text = `<span style="color: #fff;">${rating}</span> <span style="color: #afff00;">${description}</span>`;
+        const isPrivate = item.recipients && item.recipients.length > 0;
+        const privTag = isPrivate
+            ? `<span style="color:#ff2440; font-size:11px;"> 🔒 ${item.recipients.length}</span>`
+            : '';
+        const text = `<span style="color: #fff;">${rating}</span>${privTag} <span style="color: #afff00;">${description}</span>`;
         html += `<div id="card-${item.id}" class="ranking-item">
             <div class="ranking-img text-preview" style="position:relative;padding:20px 10px;display:flex;align-items:center;background:#111;color:#afff00;font-family:monospace;font-size:14px;line-height:1.5;word-wrap:break-word;overflow:hidden;cursor:pointer;" onclick="toggleDetails('${item.id}')">${text}</div>
         </div>
