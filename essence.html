@@ -1841,15 +1841,6 @@ async function resetToDefault() {
     
     DataManager.clearAll();
     
-    if ('caches' in window) {
-        try {
-            const cacheNames = await caches.keys();
-            await Promise.all(cacheNames.map(name => caches.delete(name)));
-        } catch(e) {
-            console.warn('[Reset] Cache clear error:', e);
-        }
-    }
-    
     if ('serviceWorker' in navigator) {
         try {
             const regs = await navigator.serviceWorker.getRegistrations();
@@ -1910,7 +1901,7 @@ async function syncAndKeepData() {
     localStorage.setItem('essence_pending_transfers', JSON.stringify(savedPendingTransfers));
     localStorage.setItem('essence_custom_my_id', savedMyId);
     
-    log(`[Sync] Data preserved. Cache cleared. Refreshing...`);
+    log(`[Sync] User data preserved. Refreshing...`);
     
     navigator.serviceWorker.ready.then(reg => {
         if (reg.waiting) {
