@@ -1,7 +1,5 @@
-const CACHE_VERSION = 'v5';
-const CACHE_NAME = `paramount-cache-${CACHE_VERSION}`;
-
-const APP_SHELL = [
+const CACHE_NAME = 'version-life'; 
+const CORE_ASSETS = [
     '/',
     './index.html',
     './poster.html',
@@ -20,6 +18,7 @@ const APP_SHELL = [
     './cube.html',
     './bismuth.html',
     './essence.html',
+
     './manifest-index.json',
     './manifest-essence.json',
     './manifest-cross.json',
@@ -51,39 +50,41 @@ const APP_SHELL = [
     './syntax.png',
     './words.png',
     './media.png',
-'./bybit.png',
-'./bitfufu.png',
-'./binance.PNG',
-'./star.png',
-'./breakthrough.png',
-'./Verge.jpeg',
-'https://code.jquery.com/jquery-3.6.0.min.js',
-'https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js'
+    './bybit.png',
+    './bitfufu.png',
+    './binance.PNG',
+    './star.png'
 ];
 
 self.addEventListener('install', event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => {
-            return Promise.allSettled(
-                APP_SHELL.map(url =>
-                    cache.add(url).catch(err => {
-                        console.warn('[SW] Failed to cache:', url, err.message);
-                    })
-                )
-            );
+        caches.open(CACHE_NAME).then(async cache => {
+            for (const asset of CORE_ASSETS) {
+                try {
+                    await cache.add(asset);
+                } catch (err) {
+                    console.warn('Failed to cache asset during install:', asset, err);
+                }
+            }
         })
     );
+    self.self?.skipWaiting?.() || self.skipWaiting();
 });
+
 
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys => {
             return Promise.all(
-                keys
-                    .filter(key => key.startsWith('paramount-cache-') && key !== CACHE_NAME)
-                    .map(key => caches.delete(key))
+                keys.map(key => {
+                    if (key !== CACHE_NAME) {
+                        return caches.delete(key);
+                    }
+                })
             );
-        }).then(() => self.clients.claim())
+        }).then(() => {
+            self.clients.claim();
+        })
     );
 });
 
@@ -91,38 +92,26 @@ self.addEventListener('fetch', event => {
     const request = event.request;
     if (request.method !== 'GET') return;
 
-    const url = new URL(request.url);
-    if (url.origin !== self.location.origin) return;
-
-    if (request.mode === 'navigate') {
-        event.respondWith(
-            fetch(request)
-                .then(response => {
-                    const copy = response.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-                    return response;
-                })
-                .catch(() => {
-                    return caches.match(request)
-                        .then(cached => cached || caches.match('./index.html'));
-                })
-        );
-        return;
-    }
-
     event.respondWith(
         caches.match(request).then(cachedResponse => {
-            const networkFetch = fetch(request)
-                .then(response => {
-                    if (response && response.status === 200) {
-                        const copy = response.clone();
-                        caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-                    }
+            if (cachedResponse) {
+                return cachedResponse;
+            }
+            return fetch(request).then(response => {
+                if (!response || response.status !== 200 || response.type === 'error') {
                     return response;
-                })
-                .catch(() => cachedResponse);
-
-            return cachedResponse || networkFetch;
+                }
+                const copy = response.clone();
+                caches.open(CACHE_NAME).then(cache => {
+                    cache.put(request, copy);
+                });
+                return response;
+            });
+        }).catch(() => {
+            if (request.mode === 'navigate') {
+                return caches.match('/');
+            }
+            return Response.error();
         })
     );
 });
