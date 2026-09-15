@@ -275,9 +275,11 @@ input[type=number] {
     <span>
         <strong>Disclaimer</strong><span id="aboutLabel" style="color: #ffd700cc;"> & About</span>
     </span>
-    <span id="updateAvailableLine" style="display: none; color: #0097ff; font-size: 14px; font-family: monospace; cursor: pointer;" onclick="event.stopPropagation(); document.getElementById('disclaimerToggle').click()">
-        Update Available
-    </span>
+<span id="updateAvailableLine"
+      style="display: none; color: #0097ff; font-size: 14px; font-family: monospace; cursor: pointer;"
+      onclick="event.stopPropagation(); syncAndKeepData()">
+    Update Available
+</span>
 </div>
 
 <div id="disclaimerText" class="collapsed">
@@ -286,13 +288,8 @@ input[type=number] {
         <strong>No confidential is guaranteed because data is not encrypted for privacy.</strong>
         Please avoid transmitting sensitive personal information!
     </p>
-    <p style="padding: 0 10px">Any data you enter is automatically synchronized and stored on the devices of all users currently (live) viewing this page.</p>
-    <p style="padding: 0 10px">Before updating, please verify if your current meme is ready but was not injected to avoid losing any unsent content.</p>
-    <div style="margin: 10px 0;">
-        <button class="admin-btn" style="background: #0097ff90; color: #fff; padding: 8px; font-size: 14px; width: 100%;" onclick="syncAndKeepData()">
-            Update & Keep All Memes & Credits
-        </button>
-    </div>
+    <p style="padding: 0 10px">Any data you enter is automatically synchronized and stored on the devices of all users currently <span class="about-alert" style="color: #ff0000;">live</span> viewing this page.</p>
+
         <p style="padding: 0 10px">⚠️ <strong>Clearing browser cache will reset all data.</strong></p>
     <div style="margin: 10px 0;">
         <button class="admin-btn" style="background: #ff333390; color: #fff; padding: 8px; font-size: 14px; width: 100%;" onclick="resetToDefault()">Reset to Default</button>
@@ -428,8 +425,6 @@ input[type=number] {
     <button class="send-btn" onclick="transferImpact()">Send Impacts</button>
 </div>
 
-<div id="updatePanel" class="panel" style="margin:40px;cursor:pointer;color:#afff00b3;font-weight:bold;text-align:center;" onclick="syncAndKeepData()">Update</div>
-    
 <div class="footer-credit">
     
     <p style="font-size: 14px; color: #fff; font-family: 'Ubuntu', sans-serif; margin: 0 0 4px 0;">
@@ -1857,63 +1852,28 @@ async function resetToDefault() {
 async function syncAndKeepData() {
     log('[Update] Applying update, preserving all data...');
 
-    // Данные в localStorage НЕ ТРОГАЕМ.
-    // Просто активируем новый SW, если он ждёт.
-    if ('serviceWorker' in navigator) {
-        try {
-            const reg = await navigator.serviceWorker.ready;
-            if (reg.waiting) {
-                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    window.location.reload();
-                });
-                return;
-            }
-        } catch(e) {
-            console.warn('[Update] SW activation error:', e);
-        }
+    if (!('serviceWorker' in navigator)) {
+        log('[Update] Service Worker not supported. Reloading...');
+        window.location.reload();
+        return;
     }
 
-    
-    const keysToKeep = [
-        'essence_versus_items',
-        'essence_player_state',
-        'essence_peer_balances',
-        'essence_activity_history',
-        'essence_processed_txs',
-        'essence_pending_transfers',
-        'essence_custom_my_id',
-        'essence_last_claim_time',
-        'essence_activity_range'
-    ];
-    
-    for (let key in localStorage) {
-        if (!keysToKeep.includes(key) && !key.startsWith('essence_')) {
-            localStorage.removeItem(key);
-        }
-    }
-    
-    localStorage.setItem('essence_versus_items', JSON.stringify(savedItems));
-    localStorage.setItem('essence_player_state', JSON.stringify(savedPlayerState));
-    localStorage.setItem('essence_peer_balances', JSON.stringify(savedPeerBalances));
-    localStorage.setItem('essence_activity_history', JSON.stringify(savedActivityHistory));
-    localStorage.setItem('essence_processed_txs', JSON.stringify(savedProcessedTxIds));
-    localStorage.setItem('essence_pending_transfers', JSON.stringify(savedPendingTransfers));
-    localStorage.setItem('essence_custom_my_id', savedMyId);
-    
-    log(`[Sync] User data preserved. Refreshing...`);
-    
-    navigator.serviceWorker.ready.then(reg => {
+    try {
+        const reg = await navigator.serviceWorker.ready;
+
         if (reg.waiting) {
             reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+            }, { once: true });
+        } else {
+            // Нового SW нет — просто перезагружаемся
+            window.location.reload();
         }
-    });
-
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload(true);
-    });
-    
-    window.location.reload();
+    } catch (e) {
+        console.warn('[Update] SW activation error:', e);
+        window.location.reload();
+    }
 }
 
     // ===== DISCLAIMER & ABOUT LOGIC =====
