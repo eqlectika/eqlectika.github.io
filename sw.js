@@ -2,6 +2,8 @@ const CACHE_VERSION = 'v4';
 const CACHE_NAME = `paramount-cache-${CACHE_VERSION}`;
 
 const APP_SHELL = [
+    'https://code.jquery.com/jquery-3.6.0.min.js',
+'https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js',
     '/',
     './index.html',
     './poster.html',
