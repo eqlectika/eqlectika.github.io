@@ -1,9 +1,7 @@
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = `paramount-cache-${CACHE_VERSION}`;
 
 const APP_SHELL = [
-    'https://code.jquery.com/jquery-3.6.0.min.js',
-'https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js',
     '/',
     './index.html',
     './poster.html',
@@ -53,11 +51,14 @@ const APP_SHELL = [
     './syntax.png',
     './words.png',
     './media.png',
-    './bybit.png',
-    './bitfufu.png',
-    './binance.PNG',
-    './star.png',
-    './breakthrough.png'
+'./bybit.png',
+'./bitfufu.png',
+'./binance.PNG',
+'./star.png',
+'./breakthrough.png',
+'./Verge.jpeg',
+'https://code.jquery.com/jquery-3.6.0.min.js',
+'https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js'
 ];
 
 self.addEventListener('install', event => {
