@@ -749,25 +749,22 @@ a { color: #448aff; text-decoration: none; }
 <div id="disclaimerToggle" style="margin: 30px 0 10px 0; cursor: pointer; display: flex; align-items: center; gap: 12px;">
     <span>
         <strong>Disclaimer</strong><span id="aboutLabel" style="color: #ffd700;"> & About</span>
-    </span>
-    <span id="updateAvailableLine" style="display: none; color: #0097ff; font-size: 14px; font-family: 'Unbounded', monospace; cursor: pointer;" onclick="event.stopPropagation(); document.getElementById('disclaimerToggle').click()">
+<span id="updateAvailableLine" 
+      style="display: none; color: #0097ff; font-size: 14px; font-family: 'Unbounded', monospace; cursor: pointer;"
+      onclick="event.stopPropagation(); syncAndKeepData()">
     Update Available
 </span>
 </div>
 
 <div id="disclaimerText" class="collapsed">
-    <p style="padding: 0 10px">
-        ⚠️ This application uses public broker test infrastructure to sync data between users in real time for demonstration purposes only!
-        <strong>No confidential is guaranteed because data is not encrypted for privacy.</strong>
-        Please avoid transmitting sensitive personal information!
+    <p>
+    ⚠️ This application uses public broker test infrastructure to sync data between users in real time for demonstration purposes only!
+    <strong>No confidential is guaranteed because data is not encrypted for privacy.</strong>
+    Please avoid transmitting sensitive personal information!
     </p>
-    <p style="padding: 0 10px">Any data you enter is automatically synchronized and stored on the devices of all users currently (live) viewing this page.</p>
-    <p style="padding: 0 10px">Before updating, please verify if your current meme is ready but was not injected to avoid losing any unsent content.</p>
-            <div style="margin: 10px 0;">
-<button class="admin-btn" style="background: #0097ff90; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="syncAndKeepData()">
-    Update & Keep All Memes & Credits
-</button>
-        </div>
+    <p>Any data you enter is automatically synchronized and stored on the devices of all users currently (live) viewing this page.</p>
+    <p>Before updating, please verify if your current meme is ready but was not injected to avoid losing any unsent content.</p>
+
         
     <p>⚠️ <strong>Clearing browser cache will reset all data.</strong></p>
     <div style="margin: 10px 0;">
@@ -811,7 +808,7 @@ a { color: #448aff; text-decoration: none; }
 
     <p>Due to the temporary absence of individual participants and the presence of memes they cannot see, the number of votes required to update ranking does not accumulate synchronously across devices. When live parity is reached, "spontaneous" updates of the pair in the voting block occur.</p>
     <p>To protect your notes, keep things clear: add this app to your Home Screen via the browser menu and use that shortcut to launch. (•••)</p>
-    <p>Refresh page (swipe main title down) to check for updates.</p>
+    <p>Swipe down from the top to check for updates.</p>
 </div>
 </div>
     <span id="broadcast"></span>    
@@ -923,9 +920,6 @@ a { color: #448aff; text-decoration: none; }
         <button class="admin-btn" style="width: auto; padding: 8px 15px; background: #ccc; color: #000;" onclick="sendToGuide()">Send</button>
     </div>
 </div>
-
-<div id="updatePanel" class="panel" style="margin-top:40px;cursor:pointer;color:#0097ff90;text-align:center;font-weight:bold" onclick="syncAndKeepData()">Update</div>
-
 
 <div class="footer-credit">
     <div style="display: flex; flex-direction: column; align-items: center; gap: 70px;">
@@ -2476,7 +2470,11 @@ function switchBroker() {
 }
 
 function log(txt) {
-    let l = document.getElementById('logContainer');
+    const l = document.getElementById('logContainer');
+    if (!l) {
+        console.log('[log]', txt);
+        return;
+    }
     l.innerHTML += `<div>${txt}</div>`;
     l.scrollTop = l.scrollHeight;
 }
@@ -2508,10 +2506,15 @@ window.addEventListener('touchend', () => {
     if (!touchStartY) return;
     
     if (pullDistance > refreshThreshold) {
-
-        location.reload();
+        syncAndKeepData();   // ← было location.reload()
     }
     
+    touchStartY = 0;
+    pullDistance = 0;
+});
+
+// ← НОВЫЙ обработчик: сброс состояния, если жест прерван системой
+window.addEventListener('touchcancel', () => {
     touchStartY = 0;
     pullDistance = 0;
 });
@@ -2629,31 +2632,6 @@ document.getElementById('invertTrigger').addEventListener('click', () => {
     document.body.classList.toggle('inverted');
 });
 
-function clearAllData() {
-    if (confirm("Are you sure? All data, including stats, credits, and initial examples, will be permanently deleted.")) {
-        localStorage.clear();
-        
-        items = [];
-        peerBalances = {};
-        blacklistedPeers = [];
-        pendingTransfers = {};
-
-        location.reload();
-    }
-}
-
-function clearAllExceptDemo() {
-    if (confirm("Are you sure? This action will delete all your created memes and transaction history, but will keep your current State & Credits (Level, Impacts, Votes) and restore the system's demo memes.")) {
-        
-        localStorage.removeItem('paramount_versus_items');
-        localStorage.removeItem('paramount_peer_balances');
-        localStorage.removeItem('paramount_blacklist');
-        localStorage.removeItem('paramount_pending_transfers');
-
-        location.reload();
-    }
-}
-
 async function resetToDefault() {
     if (!confirm("⚠️ This will DELETE ALL your custom memes and reset everything to default.\n\nOnly demo memes and default stats (8 impacts, 5 votes, 3 posts) will remain.\n\nContinue?")) {
         return;
@@ -2680,7 +2658,7 @@ async function resetToDefault() {
     }
     
     alert('✅ Reset complete!\n\nCache and data cleared.');
-    window.location.reload(true);
+    window.location.reload();
 }
 
 async function syncAndKeepData() {
