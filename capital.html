@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="icon" type="image/png" href="loop.png">
@@ -406,9 +406,9 @@ a {
 <body>
 <div id="page-content">
     <div style="display: flex; align-items: flex-start; justify-content: left; gap: 15px; margin-bottom: 5px;">
-      <a href="index.html" id="logo-link" style="text-decoration: none;">
-        <img src="capital.png" alt="Logo" style="height: 42px; width: auto;">
-      </a>
+<div id="logo-link" style="text-decoration: none; cursor: pointer;">
+  <img src="capital.png" alt="Logo" style="height: 42px; width: auto;">
+</div>
       
       <div style="display: flex; flex-direction: column;">
         <h2 style="font-family: Copperplate Gothic Std, sans-serif; font-weight: 700; letter-spacing: -2px; margin: 3px -8px; line-height: 0.74;">Capital&Eqlectika</h2>
@@ -517,7 +517,7 @@ a {
     <p><strong>No Advisory Status:</strong> Capital&Eqlectika is not a registered financial advisor, broker, or investment institution. The use of any tools or strategies described on this resource is entirely at the user's own risk.</p>
     <p><strong>Trading Risks:</strong> Trading in cryptocurrencies and other financial assets involves a high level of risk and can result in the total loss of your capital. Historical data and mathematical models <strong>do not guarantee</strong> future results. Past performance is not indicative of future profits.</p>
     <p><strong>User Responsibility:</strong> By using this resource, you acknowledge that you understand the risks associated with cryptocurrency market volatility, assume full personal responsibility for all trading decisions made, and agree that the administration of Capital&Eqlectika shall not be held liable for any losses or damages arising from the use of this functional.</p>
-
+    <p>Tap the header to update.</p>
 </div>
 <a href="https://www.bitfufu.com/en/activity/invitee?inviteCode=UQQ9QB" id="header-link" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; width: fit-content;">
     <img src="bitfufu.png" alt="Logo" id="header-logo" style="margin-bottom: 5px;">
@@ -563,6 +563,15 @@ if (header) {
     header.style.cursor = 'pointer'; 
     header.addEventListener('click', function(e) {
         if (e.target.closest('a')) return;
+        refreshSite();
+    });
+}
+
+const logoLink = document.getElementById('logo-link');
+if (logoLink) {
+    logoLink.style.cursor = 'pointer';
+    logoLink.addEventListener('click', function(e) {
+        e.stopPropagation(); // чтобы не сработал обработчик родителя (header) дважды
         refreshSite();
     });
 }
