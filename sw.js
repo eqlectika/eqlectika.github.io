@@ -92,26 +92,45 @@ self.addEventListener('fetch', event => {
     const request = event.request;
     if (request.method !== 'GET') return;
 
+    const url = new URL(request.url);
+
+    // API Binance — не кэшируем вообще
+    if (url.hostname.includes('binance.com')) return;
+
+    // HTML-навигация — stale-while-revalidate
+    if (request.mode === 'navigate') {
+        event.respondWith(
+            caches.open(CACHE_NAME).then(cache => {
+                return cache.match(request).then(cachedResponse => {
+                    const fetchPromise = fetch(request).then(networkResponse => {
+                        // Обновляем кэш свежей версией
+                        if (networkResponse && networkResponse.status === 200) {
+                            cache.put(request, networkResponse.clone());
+                        }
+                        return networkResponse;
+                    }).catch(() => {
+                        // Сеть упала — оставляем кэш как есть
+                        return cachedResponse;
+                    });
+
+                    // Отдаём кэш СРАЗУ (если есть), сеть идёт в фоне
+                    return cachedResponse || fetchPromise;
+                });
+            })
+        );
+        return;
+    }
+
+    // Всё остальное (картинки, шрифты, манифесты) — cache-first
     event.respondWith(
         caches.match(request).then(cachedResponse => {
-            if (cachedResponse) {
-                return cachedResponse;
-            }
+            if (cachedResponse) return cachedResponse;
             return fetch(request).then(response => {
-                if (!response || response.status !== 200 || response.type === 'error') {
-                    return response;
-                }
+                if (!response || response.status !== 200 || response.type === 'error') return response;
                 const copy = response.clone();
-                caches.open(CACHE_NAME).then(cache => {
-                    cache.put(request, copy);
-                });
+                caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
                 return response;
             });
-        }).catch(() => {
-            if (request.mode === 'navigate') {
-                return caches.match('/');
-            }
-            return Response.error();
         })
     );
 });
