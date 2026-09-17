@@ -385,14 +385,11 @@ const handle = document.getElementById('handle');
 const textareas = document.querySelectorAll('.editor');
 const images = document.querySelectorAll('.img-preview');
 
-
-  
- 
 let isDragging = false;
 let dragStartTime = 0;
 let db;
 
-const designs = ['handle.png', 'handle-black.png', 'logo.png', 'fleurdelis.png', 'break.png', 'paw.png', 'handle-cross-transparent.png' ];
+const designs = ['handle.png', 'handle-black.png', 'logo.png', 'fleurdelis.png', 'break.png', 'paw.png', 'handle-cross-transparent.png'];
 let currentDesign = parseInt(localStorage.getItem('q_handle_design') || '0');
 
 const fontsPool = [
@@ -402,8 +399,8 @@ const fontsPool = [
   '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
 ];
 
-const defBgs = ['#ff8700', '#005f00', '#870000', '#000080']; 
-const defColors = ['#000000', '#E1BEE7', '#81C784', '#FFD54F']; 
+const defBgs = ['#ff8700', '#005f00', '#870000', '#000080'];
+const defColors = ['#000000', '#E1BEE7', '#81C784', '#FFD54F'];
 
 const magicPalettes = [
   { bg: defBgs, co: defColors },
@@ -418,7 +415,7 @@ const magicPalettes = [
 const dbRequest = indexedDB.open("QuadEditorDB", 3);
 dbRequest.onupgradeneeded = e => {
   db = e.target.result;
-  if(!db.objectStoreNames.contains("texts")) db.createObjectStore("texts", { keyPath: "id" });
+  if (!db.objectStoreNames.contains("texts")) db.createObjectStore("texts", { keyPath: "id" });
 };
 dbRequest.onsuccess = e => { db = e.target.result; loadData(); };
 
@@ -426,14 +423,14 @@ async function saveToDB(id, content, img = null, clearImg = false) {
   return new Promise((resolve) => {
     const tx = db.transaction("texts", "readwrite");
     const store = tx.objectStore("texts");
-    const req = store.get(id); 
+    const req = store.get(id);
     req.onsuccess = () => {
       const data = req.result || { id };
       data.content = content;
       if (clearImg) {
         delete data.img;
-      } else if (img) { 
-        data.img = img; 
+      } else if (img) {
+        data.img = img;
       }
       store.put(data);
       tx.oncomplete = () => resolve();
@@ -464,7 +461,7 @@ function loadData() {
   textareas.forEach((ta, i) => {
     const pos = imgPositions[i];
     const img = images[i];
-    
+
     img.style.top = pos.top;
     img.style.bottom = pos.bottom;
     img.style.left = pos.left;
@@ -491,7 +488,7 @@ function loadData() {
   });
 }
 
-let handleLongPressTimer; 
+let handleLongPressTimer;
 let startX = 0, startY = 0;
 
 handle.addEventListener('pointerdown', (e) => {
@@ -512,10 +509,10 @@ handle.addEventListener('pointerdown', (e) => {
 window.addEventListener('pointermove', (e) => {
   if (!isDragging) return;
   const touch = e.touches ? e.touches[0] : e;
-  
+
   const moveX = Math.abs(touch.clientX - startX);
   const moveY = Math.abs(touch.clientY - startY);
-  
+
   if (moveX > 5 || moveY > 5) {
     clearTimeout(handleLongPressTimer);
   }
@@ -545,7 +542,7 @@ window.addEventListener('pointerup', (e) => {
     updateHandleImage(currentDesign);
 
     const randomHue = Math.floor(Math.random() * 360);
-    
+
     if (currentDesign === 3) {
       handle.style.filter = `drop-shadow(0 4px 4px rgba(0,0,0,0.5)) drop-shadow(0 4px 4px rgba(255,255,255,0.3))`;
     } else {
@@ -555,12 +552,12 @@ window.addEventListener('pointerup', (e) => {
     }
 
     const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
-    
+
     textareas.forEach((ta, i) => {
       const randomFont = fontsPool[Math.floor(Math.random() * fontsPool.length)];
       ta.style.setProperty('--fn', randomFont);
       localStorage.setItem(`q_f_${i}`, randomFont);
-      
+
       ta.style.setProperty('--bg', palette.bg[i]);
       ta.style.setProperty('--color', palette.co[i]);
       localStorage.setItem(`q_b_${i}`, palette.bg[i]);
@@ -649,7 +646,32 @@ textareas.forEach((ta, i) => {
     e.preventDefault();
   });
 
-  const startLongPress = () => {
+  // --- ЗАЩИТА ОТ ДВОЙНОГО КЛИКА / ДВОЙНОГО ТАПА ---
+  let lastTapTime = 0;
+  let lastTapX = 0;
+  let lastTapY = 0;
+  const DOUBLE_TAP_DELAY = 350; // мс
+  const DOUBLE_TAP_DIST = 30;   // пикселей
+
+  const startLongPress = (e) => {
+    // Определяем координаты касания/клика
+    const touch = e.touches ? e.touches[0] : e;
+    const now = Date.now();
+    const dx = Math.abs(touch.clientX - lastTapX);
+    const dy = Math.abs(touch.clientY - lastTapY);
+
+    // Если это второй клик/тап в пределах допустимого времени и расстояния —
+    // считаем это двойным кликом и НЕ запускаем таймер настроек
+    if (now - lastTapTime < DOUBLE_TAP_DELAY && dx < DOUBLE_TAP_DIST && dy < DOUBLE_TAP_DIST) {
+      lastTapTime = 0;
+      clearTimeout(textareaLongPressTimer);
+      return;
+    }
+
+    lastTapTime = now;
+    lastTapX = touch.clientX;
+    lastTapY = touch.clientY;
+
     activeIndex = i;
 
     textareaLongPressTimer = setTimeout(() => {
@@ -661,13 +683,13 @@ textareas.forEach((ta, i) => {
 
       selFont.value = localStorage.getItem(`q_f_${i}`) || selFont.options[0].value;
       selSize.value = localStorage.getItem(`q_s_${i}`) || '18px';
-      
+
       const currentBg = localStorage.getItem(`q_b_${i}`) || getComputedStyle(ta).getPropertyValue('--default-bg').trim();
       const currentColor = localStorage.getItem(`q_c_${i}`) || getComputedStyle(ta).getPropertyValue('--default-color').trim();
-      
+
       inpBg.value = currentBg;
       bgPickerBtn.style.background = currentBg;
-      
+
       inpColor.value = currentColor;
       colorPickerBtn.style.background = currentColor;
 
@@ -689,7 +711,7 @@ textareas.forEach((ta, i) => {
   ta.addEventListener('mousedown', startLongPress);
   ta.addEventListener('mouseup', stopLongPress);
   ta.addEventListener('mouseleave', stopLongPress);
-  ta.addEventListener('touchstart', startLongPress, {passive: true});
+  ta.addEventListener('touchstart', startLongPress, { passive: true });
   ta.addEventListener('touchend', stopLongPress);
   ta.addEventListener('touchmove', stopLongPress);
 
@@ -721,7 +743,7 @@ textareas.forEach((ta, i) => {
   img.addEventListener('mousedown', startImgLongPress);
   img.addEventListener('mouseup', stopImgLongPress);
   img.addEventListener('mouseleave', stopImgLongPress);
-  img.addEventListener('touchstart', startImgLongPress, {passive: true});
+  img.addEventListener('touchstart', startImgLongPress, { passive: true });
   img.addEventListener('touchend', stopImgLongPress);
 });
 
@@ -737,7 +759,7 @@ btnSave.onclick = () => {
 
   targetTa.style.setProperty('--bg', inpBg.value);
   localStorage.setItem(`q_b_${activeIndex}`, inpBg.value);
-  
+
   targetTa.style.setProperty('--color', inpColor.value);
   localStorage.setItem(`q_c_${activeIndex}`, inpColor.value);
 
