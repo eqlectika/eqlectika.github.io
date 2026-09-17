@@ -1,8 +1,12 @@
 <a href="https://eqlectika.github.io"><img src="logo.png" width="48" height="48" alt="logo"></a>
 
-## The Return
-
-Every "new" word—or rather, the next one, which is actually just a forgotten one—can become a trap. And a single word multiplies through repetition. Yet the fact that this happens everywhere simultaneously—all at once—is nothing short of magic; there is no other word for it. The point is that one can return—not merely recall, but actually return—to one’s own source by scanning these traps and shedding the imposed state one enters at birth. This is a state where, before one can speak, one experiences—and later cannot explain—the emotions and intonations that suppressed one and that one is forced to live with, unable even to voice a complaint to anyone (especially since the only people to complain to are the parents who likely did the suppressing in the first place, having been suppressed in exactly the same way themselves). Family dynamics are quite peculiar. Relationships outside the family are a different matter. When a person enters a different environment—such as kindergarten or school—where relationships are freer and more independent, things become easier, and their state improves. However, this state can improve further and further—endlessly, in fact—if one learns how to work with the myriad derivative nuances involved. Problems then cease to exist; they simply transform into tasks. There are several methods I have been studying for years that facilitate this return—methods that work far more effectively when practiced with a partner who is also familiar with them. In addition to this, I create websites and applications—both for general use and specifically to facilitate this process of return.
+>Obviously, the exchange of information, from cave paintings, is evolving through a virtual interface into a new measurable hyperspace based on an immutable ledger.
+Between these two extremes lies a gradient encompassing an infinite variety of phenomenal conventions and degrees of freedom.
+Over time, each of us will learn to create and transmit our own virtual worlds into neural networks.
+I create custom websites and applications.>
+>If you have any ideas on how to use or apply these developments to your website, feel free to contact.
+>
+>[Yevgeniy Korobka](https://eqlectika.github.io/resume.html)
 
 ## The Concept of Project Eqlectika: Semantic Field Core & Building an Outside-in Planets Network
 
@@ -170,14 +174,6 @@ If you wish to integrate the **Breakthrough Engine** mechanics (P2P gossip netwo
 * Email to [yevgeniykorobka@gmail.com](mailto:yevgeniykorobka@gmail.com)
 
 ## Trust Fibonacci
-
->Obviously, the exchange of information, from cave paintings, is evolving through a virtual interface into a new measurable hyperspace based on an immutable ledger.
-Between these two extremes lies a gradient encompassing an infinite variety of phenomenal conventions and degrees of freedom.
-Over time, each of us will learn to create and transmit our own virtual worlds into neural networks.
-I create custom websites and applications.>
->If you have any ideas on how to use or apply these developments to your website, feel free to contact.
->
->[Yevgeniy Korobka](https://eqlectika.github.io/resume.html)
  
 Happiness loading… Please wait.
 
