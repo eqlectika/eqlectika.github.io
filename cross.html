@@ -675,11 +675,17 @@ textareas.forEach((ta, i) => {
     activeIndex = i;
 
     textareaLongPressTimer = setTimeout(() => {
-      ta.blur();
-      const selection = window.getSelection();
-      if (selection) {
-        selection.removeAllRanges();
-      }
+const selection = window.getSelection();
+
+if (selection && !selection.isCollapsed) {
+  return;
+}
+
+ta.blur();
+
+if (selection) {
+  selection.removeAllRanges();
+}
 
       selFont.value = localStorage.getItem(`q_f_${i}`) || selFont.options[0].value;
       selSize.value = localStorage.getItem(`q_s_${i}`) || '18px';
