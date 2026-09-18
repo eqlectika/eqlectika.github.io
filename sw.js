@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-cross'; 
+const CACHE_NAME = 'version-target'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
