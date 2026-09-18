@@ -7,7 +7,7 @@ I create custom websites and applications.>
 >If you have any ideas on how to use or apply these developments to your website, feel free to contact.
 >
 >[Yevgeniy Korobka](https://eqlectika.github.io/resume.html)
-
+>
 
 ## The Concept of Project Eqlectika: Semantic Field Core & Building an Outside-in Planets Network
 
