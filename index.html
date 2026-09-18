@@ -915,20 +915,46 @@ $toggleBtn.on('click', function() {
     
 document.getElementById('force-update-btn').addEventListener('click', async () => {
     try {
+        // 1. Удаляем все Cache Storage
         if ('caches' in window) {
             const cacheNames = await caches.keys();
-            await Promise.all(cacheNames.map(name => caches.delete(name)));
+            await Promise.all(
+                cacheNames.map(name => caches.delete(name))
+            );
         }
+
         if ('serviceWorker' in navigator) {
             const registrations = await navigator.serviceWorker.getRegistrations();
-            await Promise.all(registrations.map(reg => reg.unregister()));
+
+            await Promise.all(
+                registrations.map(async reg => {
+                    try {
+                        await reg.update();
+                    } catch (e) {}
+
+                    await reg.unregister();
+                })
+            );
+
+            if (navigator.serviceWorker.controller) {
+                await new Promise(resolve => {
+                    const timeout = setTimeout(resolve, 1000);
+
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        clearTimeout(timeout);
+                        resolve();
+                    }, { once: true });
+                });
+            }
         }
     } catch (e) {
         console.error('Update clearing error:', e);
-    } finally {
-        const cleanUrl = window.location.origin + window.location.pathname;
-        window.location.href = cleanUrl + '?v=' + Date.now();
     }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('update', Date.now());
+
+    window.location.replace(url.href);
 });
 
 if (window.self !== window.top) {
