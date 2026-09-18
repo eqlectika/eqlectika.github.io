@@ -411,8 +411,6 @@ function handleWordClick(wordElement) {
 helpMenuItem.addEventListener('click', () => {
   helpPopup.classList.add('active');
   leftMenuSelectMenu.style.display = 'none';
-
-  makeHelpWordsClickable();
 });
 
     helpCloseBtn.addEventListener('click', () => {
@@ -446,59 +444,7 @@ helpMenuItem.addEventListener('click', () => {
       }
     });
     
-    function makeHelpWordsClickable() {
-  const helpContent = document.querySelector('.help-content');
 
-  const walker = document.createTreeWalker(
-    helpContent,
-    NodeFilter.SHOW_TEXT,
-    {
-      acceptNode(node) {
-        const parent = node.parentElement;
-
-        // Не обрабатываем кнопки, ссылки и Update
-        if (
-          parent.closest('.help-close') ||
-          parent.closest('a') ||
-          parent.closest('#updateLink') ||
-          parent.closest('.clickable-word')
-        ) {
-          return NodeFilter.FILTER_REJECT;
-        }
-
-        return node.textContent.trim()
-          ? NodeFilter.FILTER_ACCEPT
-          : NodeFilter.FILTER_REJECT;
-      }
-    }
-  );
-
-  const textNodes = [];
-
-  while (walker.nextNode()) {
-    textNodes.push(walker.currentNode);
-  }
-
-  textNodes.forEach(node => {
-    const fragment = document.createDocumentFragment();
-
-    node.textContent.split(/(\s+)/).forEach(part => {
-      if (/^\s+$/.test(part)) {
-        fragment.appendChild(document.createTextNode(part));
-      } else {
-        const span = document.createElement('span');
-        span.className = 'clickable-word state-0';
-        span.dataset.state = '0';
-        span.textContent = part;
-        fragment.appendChild(span);
-      }
-    });
-
-    node.parentNode.replaceChild(fragment, node);
-  });
-
-  attachWordListeners();
-}
     
 function attachWordListeners() {
       const wordElements = document.querySelectorAll('.clickable-word');
