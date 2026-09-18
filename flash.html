@@ -737,32 +737,46 @@ function splitTextIntoSentences(text) {
     const protectedText = text
         .replace(/\b(Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc|e g|i e|No|Fig|cf|al|Inc|Corp|Ltd|Co)\s*\./gi, '$1.')
         .replace(/\b([A-Z])\./g, '$1.');
-    
-    const sentences = protectedText
-        .split(/(?<=[.!?])\s+/)
-        .filter(s => s.trim().length > 0);
-    
+
+    // Сохраняем абзацы
+    const paragraphs = protectedText
+        .split(/\n\s*\n+/)
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
+
     let allWords = [];
-    
-    sentences.forEach((sentence, index) => {
-        const cleanSentence = sentence.trim();
-        if (cleanSentence === '') return;
-        
-        const wordsInSentence = cleanSentence
-            .replace(/([,;:.!?])(?!\s|$)/g, '$1 ')
-            .split(/\s+/)
-            .filter(w => w !== "");
-        
-        if (index > 0 && wordsInSentence.length > 0) {
-            allWords.push('SENTENCE_START');
+
+    paragraphs.forEach((paragraph, paragraphIndex) => {
+        const sentences = paragraph
+            .split(/(?<=[.!?])\s+/)
+            .filter(s => s.trim().length > 0);
+
+        sentences.forEach((sentence, sentenceIndex) => {
+            const cleanSentence = sentence.trim();
+            if (!cleanSentence) return;
+
+            const wordsInSentence = cleanSentence
+                .replace(/([,;:.!?])(?!\s|$)/g, '$1 ')
+                .split(/\s+/)
+                .filter(w => w !== "");
+
+            // Маркер начала нового предложения
+            if (allWords.length > 0) {
+                allWords.push('SENTENCE_START');
+            }
+
+            allWords = allWords.concat(wordsInSentence);
+        });
+
+        // Маркер окончания абзаца
+        if (paragraphIndex < paragraphs.length - 1) {
+            allWords.push('PARAGRAPH_END');
         }
-        
-        allWords = allWords.concat(wordsInSentence);
     });
-    
+
     return {
         words: allWords,
-        totalSentences: sentences.length
+        totalSentences: allWords.filter(w => w === 'SENTENCE_START').length + 1
     };
 }
 
@@ -793,15 +807,19 @@ function showNext() {
     let rawTxt = words[index];
     let displayTxt = rawTxt;
     
-    // ===== ПРОПУСК МАРКЕРОВ =====
-    // Убираем пробелы и проверяем
-    const cleanTxt = displayTxt.trim();
-    if (cleanTxt === 'SENTENCE_START' || cleanTxt.includes('SENTENCE_START')) {
-        index++;
-        setTimeout(showNext, 10);
-        return;
-    }
-    // ===== КОНЕЦ =====
+const cleanTxt = displayTxt.trim();
+
+if (cleanTxt === 'SENTENCE_START') {
+    index++;
+    setTimeout(showNext, 10);
+    return;
+}
+
+if (cleanTxt === 'PARAGRAPH_END') {
+    index++;
+    setTimeout(showNext, 800);
+    return;
+}
 
     let isLongHold = displayTxt.includes('/');
     if (isLongHold) displayTxt = displayTxt.replace(/\//g, '');
