@@ -497,9 +497,32 @@ p {margin: 8px 0 0 0;}
 </div>
 
 <script>
+let refreshing = false;
+let updateWorker = null;
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => console.error('SW_REG_FAIL', err));
+    navigator.serviceWorker.register('sw.js').then((registration) => {
+      registration.update();
+      if (registration.waiting) updateWorker = registration.waiting;
+
+      registration.addEventListener('updatefound', () => {
+        updateWorker = registration.installing;
+        updateWorker.addEventListener('statechange', () => {
+          if (updateWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            const btn = document.getElementById('force-update-btn');
+            if (btn) btn.style.color = '#ff8700';
+          }
+        });
+      });
+    }).catch(err => console.error('SW_REG_FAIL', err));
+  });
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
   });
 }
 
@@ -914,47 +937,19 @@ $toggleBtn.on('click', function() {
 });
     
 document.getElementById('force-update-btn').addEventListener('click', async () => {
-    try {
-        // 1. Удаляем все Cache Storage
-        if ('caches' in window) {
-            const cacheNames = await caches.keys();
-            await Promise.all(
-                cacheNames.map(name => caches.delete(name))
-            );
-        }
-
-        if ('serviceWorker' in navigator) {
-            const registrations = await navigator.serviceWorker.getRegistrations();
-
-            await Promise.all(
-                registrations.map(async reg => {
-                    try {
-                        await reg.update();
-                    } catch (e) {}
-
-                    await reg.unregister();
-                })
-            );
-
-            if (navigator.serviceWorker.controller) {
-                await new Promise(resolve => {
-                    const timeout = setTimeout(resolve, 1000);
-
-                    navigator.serviceWorker.addEventListener('controllerchange', () => {
-                        clearTimeout(timeout);
-                        resolve();
-                    }, { once: true });
-                });
+    if (updateWorker) {
+        updateWorker.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+        try {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(r => r.unregister()));
+            if ('caches' in window) {
+                const names = await caches.keys();
+                await Promise.all(names.map(n => caches.delete(n)));
             }
-        }
-    } catch (e) {
-        console.error('Update clearing error:', e);
+        } catch (e) {}
+        window.location.reload();
     }
-
-    const url = new URL(window.location.href);
-    url.searchParams.set('update', Date.now());
-
-    window.location.replace(url.href);
 });
 
 if (window.self !== window.top) {
