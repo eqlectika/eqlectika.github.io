@@ -790,7 +790,7 @@ function splitTextIntoSentences(text) {
     if (cleanLen > 12) complexity = 1.4;
     else if (cleanLen > 9) complexity = 1.2;
     else if (cleanLen > 6) complexity = 1.05;
-    else if (cleanLen < 3) complexity = 0.7;
+    else if (cleanLen < 3) complexity = 1.0;
     
     const rareLetters = /[qzxwj]/i; // редкие буквы в английском
     if (rareLetters.test(word)) complexity *= 1.1;
@@ -877,10 +877,10 @@ if (cleanTxt === 'PARAGRAPH_END') {
         const sentenceInfo = getSentenceProgress(words, index);
         const progress = sentenceInfo.progress;
         
-        const minSpeed = 0.3;
-        const maxSpeed = 0.7;
+        const minSpeed = 0.4;
+        const maxSpeed = 0.6;
         
-        let speedFactor = 1 - 4 * Math.pow(progress - 0.5, 2);
+        let speedFactor = 0.6 - 0.4 * (1 - 4 * Math.pow(progress - 0.5, 2));
         speedFactor = Math.max(minSpeed, Math.min(maxSpeed, speedFactor));
         
         const complexity = getWordComplexity(words[index]);
