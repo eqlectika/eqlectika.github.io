@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-target'; 
+const CACHE_NAME = 'version-images'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
@@ -35,6 +35,7 @@ const CORE_ASSETS = [
     './manifest-fields.json',
     './manifest-cube.json',
     './manifest-bismuth.json',
+    
     './handle.png',
     './ladybug-icon-10.png',
     './handle-black.png',
@@ -43,17 +44,28 @@ const CORE_ASSETS = [
     './fleurdelis-black.png',
     './florence.png',
     './capital.png',
+    './planet.png',
+    './cross.png',
+    './flash-blur.png',
+    './book.png',
+    './clock.png',
+    './matrix-v5.png',
     './fields.png',
     './break.png',
     './spark.png',
-    './clock.PNG',
+    './bismuth.png',
+    './quaternion.PNG',
+    './cube.png',
+    './capital.png',
     './syntax.png',
     './words.png',
     './media.png',
     './bybit.png',
     './bitfufu.png',
     './binance.PNG',
-    './star.png'
+    './star.png',
+    './man.PNG',
+    './woman.PNG'
 ];
 
 self.addEventListener('install', event => {
