@@ -633,7 +633,34 @@ const defaultItems = [
 ];
 
 let savedItems = localStorage.getItem('versus_items');
+
 let items = savedItems ? JSON.parse(savedItems) : defaultItems;
+
+if (savedItems) {
+    items = items.map(item => {
+        const updated = defaultItems.find(d => d.id === item.id);
+
+        if (updated) {
+            return {
+                ...item,
+                title: updated.title,
+                description: updated.description,
+                externalUrl: updated.externalUrl,
+                img: updated.img
+            };
+        }
+
+        return item;
+    });
+
+    defaultItems.forEach(defaultItem => {
+        if (!items.some(item => item.id === defaultItem.id)) {
+            items.push({ ...defaultItem });
+        }
+    });
+
+    localStorage.setItem('versus_items', JSON.stringify(items));
+}
 
 let currentPair = [];
 let editingId = null;
