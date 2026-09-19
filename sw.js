@@ -1,7 +1,7 @@
-const CACHE_NAME = 'version-phrase'; 
+const CACHE_NAME = 'version-//'; 
 const CORE_ASSETS = [
-    '/',
-    './index.html',
+//    '/',
+  //  './index.html',
     './poster.html',
     './cross.html',
     './flash.html',
@@ -19,11 +19,11 @@ const CORE_ASSETS = [
     './bismuth.html',
     './essence.html',
 
-    './manifest-index.json',
+//    './manifest-index.json',
     './manifest-essence.json',
     './manifest-cross.json',
     './manifest-flash.json',
-    './manifest-match.json',
+//    './manifest-match.json',
     './manifest-life.json',
     './manifest-spark.json',
     './manifest-capital.json',
