@@ -836,7 +836,9 @@ const updateCrosshair = (e) => {
     clientY >= chartArea.top &&
     clientY <= chartArea.bottom
   ) {
-    chart.crosshair.x = clientX;
+const index = Math.round(chart.scales.x.getValueForPixel(clientX));
+const element = chart.getDatasetMeta(0).data[index];
+chart.crosshair.x = element ? element.x : clientX;
     chart.crosshair.y = clientY;
     chart.crosshair.active = true;
     chart.update('none');
@@ -878,8 +880,8 @@ afterDraw(chart) {
 
   // Crosshair
   ctx.beginPath();
-  ctx.strokeStyle = 'rgba(41, 98, 255, 0.8)';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(41, 98, 255, 0.6)';
+  ctx.lineWidth = 1.5;
   ctx.moveTo(x.left, yPos);
   ctx.lineTo(x.right, yPos);
   ctx.moveTo(xPos, yPrice.top);
@@ -1044,8 +1046,8 @@ const fundingCrosshairSyncPlugin = {
     // Рисуем вертикальную линию
     ctx.save();
     ctx.beginPath();
-    ctx.strokeStyle = 'rgba(41, 98, 255, 0.8)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(41, 98, 255, 0.6)';
+    ctx.lineWidth = 1.5;
     ctx.moveTo(xPixel, chartArea.top);
     ctx.lineTo(xPixel, chartArea.bottom);
     ctx.stroke();
@@ -1271,7 +1273,7 @@ datasets.push({
 x: { 
     position: 'top',
     display: true, 
-    offset: false,
+    offset: true,
     grid: { display: false }, 
     ticks: { 
       display: true,
@@ -2290,7 +2292,8 @@ options: {
     scales: {
         x: {
             display: false,
-            grid: { display: false }
+            grid: { display: false },
+            offset: true
         },
         y: {
             display: true,
