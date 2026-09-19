@@ -224,7 +224,6 @@ font-weight: bold;
 .admin-panel { 
     margin: 40px 0 40px 0; 
     font-family: 'Ubuntu', sans-serif;
-    background: 333; 
     display: flex;
     flex-direction: column;
     gap: 10px; 
@@ -463,7 +462,7 @@ p {margin: 8px 0 0 0;}
 
 <p>Perhaps you have an idea for your website or custom application.</p>
 <p>Feel free to reach out.</p>
-    <p style="line-weight: 2; font-family: 'Ubuntu', monospace, serif;">A logo or website that someone applied for you is already twice as effective, and objectively more substantial, than the one you created yourself.</p>
+    <p style="line-height: 2; font-family: 'Ubuntu', monospace, serif;">A logo or website that someone applied for you is already twice as effective, and objectively more substantial, than the one you created yourself.</p>
 
     <p style="text-align: center;">
         <a href="https://t.me/eugenebox/" style="display: inline-block; color: #0097ff; font-weight: bold; font-size: 18px; text-decoration: none;">@eugenebox</a>
@@ -537,7 +536,7 @@ const defaultItems = [
     { 
         id: 2, 
         title: "Beauty And The Best", 
-        description: "Welcome to Terra Incognita. Launch breakthrough engine and inject memes into <span live active peer(s) caches, claim hourly impacts, and dominate the Global Matrix Rank on a trustless, real-time decentralized grid.", 
+        description: "Welcome to Terra Incognita. Launch breakthrough engine and inject memes into live active peer(s) caches, claim hourly impacts, and dominate the Global Matrix Rank on a trustless, real-time decentralized grid.", 
         externalUrl: "paramount.html", 
         img: "star.png", 
     rating: 1500,
@@ -646,7 +645,26 @@ const defaultItems = [
 
 let savedItems = localStorage.getItem('versus_items');
 
-let items = savedItems ? JSON.parse(savedItems) : defaultItems.map(item => ({ ...item }));
+let deletedDemoIds = JSON.parse(
+    localStorage.getItem('versus_deleted_demo_ids') || '[]'
+);
+
+let items = savedItems
+    ? JSON.parse(savedItems)
+    : defaultItems.map(item => ({ ...item }));
+
+// MIGRATION: mark old demo items as demo
+if (savedItems) {
+    items.forEach(item => {
+        if (
+            item.id >= 1 &&
+            item.id <= 13 &&
+            item.isDemo === undefined
+        ) {
+            item.isDemo = true;
+        }
+    });
+}
 
 if (savedItems) {
     items = items.map(item => {
@@ -668,7 +686,10 @@ if (savedItems) {
     });
 
     defaultItems.forEach(defaultItem => {
-        if (!items.some(item => item.id === defaultItem.id)) {
+        const exists = items.some(item => item.id === defaultItem.id);
+        const wasDeleted = deletedDemoIds.includes(defaultItem.id);
+
+        if (!exists && !wasDeleted) {
             items.push({ ...defaultItem });
         }
     });
@@ -899,6 +920,20 @@ function deleteItem(id) {
 
     if (isEditingThis) {
         cancelEdit();
+    }
+
+    const deletedItem = items.find(item => item.id === id);
+
+    // Remember deleted demo permanently
+    if (deletedItem && deletedItem.isDemo === true) {
+        if (!deletedDemoIds.includes(id)) {
+            deletedDemoIds.push(id);
+
+            localStorage.setItem(
+                'versus_deleted_demo_ids',
+                JSON.stringify(deletedDemoIds)
+            );
+        }
     }
 
     items = items.filter(item => item.id !== id);
