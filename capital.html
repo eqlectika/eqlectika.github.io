@@ -848,6 +848,10 @@ const updateCrosshair = (e) => {
       clearTimeout(pressTimer);
       chart.crosshair.active = false;
       chart.update('none');
+      if (window.fundingChartInstance) {
+    window.fundingChartInstance.tooltip.setActiveElements([], { x: 0, y: 0 });
+    window.fundingChartInstance.update('none');
+}
     };
 
     chart.canvas.addEventListener('mousedown', (e) => {
@@ -922,7 +926,19 @@ afterDraw(chart) {
   // Определяем свечу под crosshair
   const index = Math.round(x.getValueForPixel(xPos));
   const timestamp = candleTimes[index];
-
+// ===== СИНХРОНИЗАЦИЯ FUNDING TOOLTIP =====
+if (window.fundingChartInstance && index >= 0) {
+    const fc = window.fundingChartInstance;
+    const meta = fc.getDatasetMeta(0);
+    const point = meta.data[index];
+    if (point) {
+        fc.tooltip.setActiveElements(
+            [{ datasetIndex: 0, index: index }],
+            { x: point.x, y: point.y }
+        );
+        fc.update('none');
+    }
+}
   // Плашка времени
   let timeText = '';
 
@@ -1004,6 +1020,37 @@ afterDraw(chart) {
 
   ctx.restore();
 }
+};
+
+const fundingCrosshairSyncPlugin = {
+  id: 'fundingCrosshairSync',
+  afterDraw(chart) {
+    // Если crosshair на основном графике не активен — ничего не рисуем
+    if (!moireChart || !moireChart.crosshair || !moireChart.crosshair.active) return;
+
+    const { ctx, chartArea, scales: { x } } = chart;
+    if (!chartArea) return;
+
+    // Получаем индекс свечи под crosshair на moireChart
+    const xPos = moireChart.crosshair.x;
+    const moireX = moireChart.scales.x;
+    const index = Math.round(moireX.getValueForPixel(xPos));
+    if (index < 0) return;
+
+    // Превращаем индекс в X-координату на fundingHistoryChart
+    const xPixel = x.getPixelForValue(index);
+    if (xPixel < chartArea.left || xPixel > chartArea.right) return;
+
+    // Рисуем вертикальную линию
+    ctx.save();
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(41, 98, 255, 0.8)';
+    ctx.lineWidth = 1;
+    ctx.moveTo(xPixel, chartArea.top);
+    ctx.lineTo(xPixel, chartArea.bottom);
+    ctx.stroke();
+    ctx.restore();
+  }
 };
 
 const divConLinesPlugin = {
@@ -2228,63 +2275,68 @@ async function initFundingHistoryChart(symbol) {
                     pointRotation: 0
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: false,
-                layout: {
-                    padding: {
-                        // Динамически берем ширину правой шкалы основного графика
-                        right: (chart) => {
-                            const yAxis = moireChart.scales.y || moireChart.scales.yRSI;
-                            return yAxis ? yAxis.width + -10 : 45; // запас 10px для выравнивания с сеткой
-                        }
-                    }
-                },
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
-                scales: {
-                    x: {
-                        display: false,
-                        grid: { display: false }
-                    },
-                    y: {
-                        display: true,
-                        position: 'right',
-                        grid: { display: false },
-                        ticks: {
-                            color: 'transparent',
-                            callback: () => ''
-                        }
-                    },
-                    yRSI: {
-                        display: true,
-                        position: 'left',
-                        min: 0,
-                        max: 100,
-                        grid: { drawOnChartArea: false },
-                        ticks: {
-                            color: 'transparent',
-                            callback: () => ''
-                        }
-                    }
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { 
-                        enabled: true,
-                        callbacks: {
-                            label: function(context) {
-                                let value = context.parsed.y;
-                                if (value === null || value === undefined) return '';
-                                return `Funding: ${value.toFixed(4)}%`;
-                            }
-                        }
-                    }
+          plugins: [fundingCrosshairSyncPlugin],   
+options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    layout: {
+        padding: { right: 0 }
+    },
+    interaction: {
+        mode: 'index',
+        intersect: false
+    },
+    scales: {
+        x: {
+            display: false,
+            grid: { display: false }
+        },
+        y: {
+            display: true,
+            position: 'right',
+            grid: { display: false },
+            ticks: {
+                color: 'transparent',
+                callback: () => ''
+            },
+            afterFit: function(scale) {
+                if (moireChart && moireChart.scales && moireChart.scales.y) {
+                    scale.width = moireChart.scales.y.width;
                 }
             }
+        },
+        yRSI: {
+            display: true,
+            position: 'left',
+            min: 0,
+            max: 100,
+            grid: { drawOnChartArea: false },
+            ticks: {
+                color: 'transparent',
+                callback: () => ''
+            },
+            afterFit: function(scale) {
+                if (moireChart && moireChart.scales && moireChart.scales.yRSI) {
+                    scale.width = moireChart.scales.yRSI.width;
+                }
+            }
+        }
+    },
+    plugins: {
+        legend: { display: false },
+        tooltip: {
+            enabled: true,
+            callbacks: {
+                label: function(context) {
+                    let value = context.parsed.y;
+                    if (value === null || value === undefined) return '';
+                    return `Funding: ${value.toFixed(4)}%`;
+                }
+            }
+        }
+    }
+}
         });
         
         syncChartsScale();
