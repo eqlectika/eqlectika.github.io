@@ -8,7 +8,7 @@
 <meta property="og:image:height" content="1280">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="manifest" href="manifest-auction.json">
-<title>Versus | Auction | Offers and bids</title>
+<title>Auction | Offers and bids</title>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -868,17 +868,14 @@ a { color: #448aff; text-decoration: none; }
 </head>
 <body>
 <div class="header" style="display: flex; align-items: flex-start; justify-content: left; gap: 15px; margin-bottom: 10px;">
-  <a href="#broadcast">
-    <img src="star.png" alt="Logo" style="height: 48px; width: auto; margin-top: 20px;">
-  </a>
     
   <div style="display: flex; flex-direction: column;">
 
-<h2 id="invertTrigger" style="margin: -4px; line-height: 0.9; color: #ccc; font-family: 'Unbounded', sans-serif; margin-top: 28px; cursor: pointer;" title="Tap to invert interface">Versus<span id="liveIndicator" style="display: none; color: #ff0000; margin-left: 6px; animation: livePulse 1.5s infinite;">● Live!</span><span id="tapeIndicator" style="display: none; color: #afff00; margin-left: 6px;">● Tape</span></h2>
+<h2 id="invertTrigger" style="margin: -4px; line-height: 0.9; color: #ccc; font-family: 'Unbounded', sans-serif; margin-top: 28px; cursor: pointer;" title="Tap to invert interface">Auction<span id="liveIndicator" style="display: none; color: #ff0000; margin-left: 6px; animation: livePulse 1.5s infinite;">● Live!</span><span id="tapeIndicator" style="display: none; color: #afff00; margin-left: 6px;">● Tape</span></h2>
 
 
     <span style="margin: -3px; font-size: 14px; letter-spacing: 1px; font-family: 'Unbounded', monospace; color: #ffd700; margin-top: 5px;">
-      Auction | Offers and bids
+      Offers and bids
     </span>
   </div>
 </div>
@@ -1716,32 +1713,65 @@ const demoItems = [
     {
         id: 'meme-demo-1',
         sender: 'System-Genesis',
-        title: 'Aura',
+        title: 'Watch',
         description: 'No registration is required. You can save your item to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your item and your voting calculations will remain only on your device, but you can always Re-inject your tape mode item (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the item creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete items on other users\' devices.',
         externalUrl: '',
-        img: 'woman.PNG',
+        img: 'watch.PNG',
         rating: 1520,
-        auction: null
+        auction: {
+            auctionId: 'demo-auction-watch',
+            seller: 'System-Genesis',
+            startBid: 100,
+            currentBid: 100,
+            buyNow: 500,
+            bids: [],
+            status: 'live',
+            winner: null,
+            finalPrice: null,
+            createdAt: Date.now()
+        }
     },
     {
         id: 'meme-demo-2',
         sender: 'System-Genesis',
-        title: 'Max',
+        title: 'Ring',
         description: 'No registration is required. You can save your item to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your item and your voting calculations will remain only on your device, but you can always Re-inject your tape mode item (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the item creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete items on other users\' devices.',
         externalUrl: '',
-        img: 'man.PNG',
+        img: 'ring.PNG',
         rating: 1520,
-        auction: null
+        auction: {
+            auctionId: 'demo-auction-ring',
+            seller: 'System-Genesis',
+            startBid: 250,
+            currentBid: 250,
+            buyNow: 1200,
+            bids: [],
+            status: 'live',
+            winner: null,
+            finalPrice: null,
+            createdAt: Date.now()
+        }
     },
     {
         id: 'meme-demo-3',
         sender: 'System-Genesis',
-        title: 'No Image',
+        title: 'Sample',
         description: 'No registration is required. You can save your item to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your item and your voting calculations will remain only on your device, but you can always Re-inject your tape mode item (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the item creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete items on other users\' devices.',
         externalUrl: '',
-        img: '',
+        img: 'sample.PNG',
         rating: 1520,
-        auction: null
+        auction: {
+            auctionId: 'demo-auction-sample',
+            seller: 'System-Genesis',
+            startBid: 50,
+            currentBid: 50,
+            buyNow: 300,
+            bids: [],
+            status: 'live',
+            winner: null,
+            finalPrice: null,
+            createdAt: Date.now()
+        }
     }
 ];
 
@@ -1761,6 +1791,7 @@ items.forEach(it => {
     if (typeof it.auction === 'undefined') it.auction = null;
 });
 
+let openDetails = new Set();
 let currentPair = [];
 function saveLocal() {
     DataManager.set('versus_items', items);
@@ -1775,7 +1806,7 @@ const client = mqtt.connect(savedBroker, {
     connectTimeout: 5000,
     keepalive: 60
 });
-const TOPIC = 'breakthrough/p2p/network/v1';
+const TOPIC = 'auction/p2p/network/v1';
 
 client.on('connect', () => {
     document.getElementById('netStatus').innerHTML = `Status: Connected to the transport layer as ${myId}`;
@@ -2365,7 +2396,23 @@ const newItem = {
 }
 
 function toggleDetails(id) { 
-    $(`#details-${id}`).slideToggle(200); 
+    const el = document.getElementById(`details-${id}`);
+    if (!el) return;
+    const isOpen = el.style.display === 'block' || el.style.display === '';
+    // '' означает, что элемент показан (CSS по умолчанию display:none, но jQuery мог поставить block)
+    const actuallyOpen = el.style.display === 'block';
+
+    if (actuallyOpen) {
+        $(el).slideUp(200, () => {
+            el.style.display = 'none';
+            openDetails.delete(id);
+        });
+    } else {
+        $(el).slideDown(200, () => {
+            el.style.display = 'block';
+            openDetails.add(id);
+        });
+    }
 }
 
 let editingId = null;
@@ -2436,6 +2483,7 @@ function deleteItemLocal(id) {
 
         items.splice(index, 1);
         saveLocal();
+        openDetails.delete(id);
 
         log(`You removed item locally: ${id}.`);
         updateRankingList();
@@ -2961,6 +3009,12 @@ ${
         html ||
         '<div style="text-align:center;padding:10px;color:#999;">Matrix is empty.<br>Inject first items below!</div>'
     );
+
+    // Восстанавливаем открытые панели без анимации
+    openDetails.forEach(id => {
+        const el = document.getElementById(`details-${id}`);
+        if (el) el.style.display = 'block';
+    });
 }
 
 function nextPair() {
@@ -3156,6 +3210,10 @@ function updateOnlinePeersCount() {
     const onlineCount = Object.keys(activePeers).length;
     const peerLabel = onlineCount === 1 ? 'peer' : 'peers';
     log(`[Network] Active online: ${onlineCount} ${peerLabel}`);
+
+    // Перерисовываем список только если количество пиров изменилось
+    if (window._lastOnlineCount === onlineCount) return;
+    window._lastOnlineCount = onlineCount;
 
     const liveIndicator = document.getElementById('liveIndicator');
     const tapeIndicator = document.getElementById('tapeIndicator');
