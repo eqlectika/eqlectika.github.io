@@ -1,7 +1,8 @@
-const CACHE_NAME = 'version-capital'; 
+const CACHE_NAME = 'version-auction'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
+    './auction.html', 
     './poster.html',
     './cross.html',
     './flash.html',
