@@ -7,8 +7,8 @@
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="1280">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link rel="manifest" href="manifest-paramount.json">
-<title>Paramount | Beauty and the best</title>
+<link rel="manifest" href="manifest-versus.json">
+<title>Versus | Auction | Offers and bids</title>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,24 +17,86 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-body { background-color: #000; color: #fff; font-family: 'Unbounded', monospace; margin: 0; padding: 0; }
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scrollbar-width: none; -ms-overflow-style: none; }
-html::-webkit-scrollbar { display: none; }
+body { 
+    background-color: #000; 
+    color: #fff; 
+    font-family: 'Unbounded', monospace;
+    margin: 0; 
+    padding: 0; 
+}
 
-.header { position: fixed; width: 100%; max-width: 768px; box-sizing: border-box; top: 0; left: 50%; transform: translateX(-50%); background-color: #000; padding: env(safe-area-inset-top, 0) 4px 0 4px; z-index: 1000; }
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+    
+html::-webkit-scrollbar {
+    display: none; 
+}
 
-.edit-btn { width: 100%; background: #afff0050; color: white; border: none; padding: 10px 15px; margin-right: 10px; text-transform: uppercase; cursor: pointer; font-size: 12px; font-weight: bold; font-family: 'Unbounded', monospace; }
+.header {
+    position: fixed;
+    width: 100%;         
+    max-width: 768px;   
+    box-sizing: border-box; 
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #000;
+    padding: env(safe-area-inset-top, 0) 4px 0 4px;
+    z-index: 1000;
+}
+
+.edit-btn {
+    width: 100%;
+    background: #afff0050;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin-right: 10px;
+    text-transform: uppercase; 
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    font-family: 'Unbounded', monospace; 
+}
+
 .edit-btn:hover { background: #2979ff; }
 
-#new-title { margin-bottom: 4px; }
-#new-desc { margin: 0.8em 0 !important; }
+#new-title {
+    margin-bottom: 4px; 
+}
 
-.item-details div { margin: 0.8em 0 !important; }
-.item-details p { white-space: pre-wrap !important; word-break: break-word !important; line-height: 1.8 !important; margin: 0.8em 0 !important; }
+#new-desc {
+  margin: 0.8em 0 !important;
+}
 
-.external-link { color: #448aff; text-decoration: none; display: block; margin-top: 25px; margin-bottom: 10px; font-weight: bold; }
+.item-details div {
+  margin: 0.8em 0 !important;
+}
 
-#ai-chat-log { scrollbar-width: thin; scrollbar-color: #333 #000; }
+.item-details p {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    line-height: 1.8 !important;
+    margin: 0.8em 0 !important;
+}
+
+.external-link { 
+    color: #448aff; 
+    text-decoration: none; 
+    display: block; 
+    margin-top: 25px; 
+    margin-bottom: 10px; 
+    font-weight: bold; 
+}
+
+#ai-chat-log {
+    scrollbar-width: thin;
+    scrollbar-color: #333 #000;
+}
 #ai-chat-log::-webkit-scrollbar { width: 5px; }
 #ai-chat-log::-webkit-scrollbar-track { background: #000; }
 #ai-chat-log::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
@@ -42,172 +104,766 @@ html::-webkit-scrollbar { display: none; }
 .desktop-only { display: block; }
 .mobile-no-mm-only { display: none; }
 
-:root { --header-height: 70px; }
-@media (max-width: 768px) { :root { --header-height: 100px; } }
-html { scroll-padding-top: var(--header-height); }
+:root {
+    --header-height: 70px; 
+}
 
-.app-container { max-width: 768px; margin: 0 auto; background-color: #000; min-height: 100dvh; padding: 4px; box-sizing: border-box; }
+@media (max-width: 768px) {
+    :root {
+        --header-height: 100px; 
+    }
+}
+
+html {
+    scroll-padding-top: var(--header-height);
+}
+    
+.app-container {
+    max-width: 768px;
+    margin: 0 auto;
+    background-color: #000;
+    min-height: 100dvh;
+    padding: 4px;
+    box-sizing: border-box;
+}
 
 #logContainer.collapsed { display: none; }
 #disclaimerText.collapsed { display: none; }
 #helpText.collapsed { display: none; }
 #loreText.collapsed { display: none; }
-
-#statusToggle, #disclaimerToggle, #helpToggle, #loreToggle { cursor: pointer; }
+    
+#statusToggle, #disclaimerToggle, #helpToggle, #loreToggle {
+    cursor: pointer;
+}
 
 .network-status::before,
 #disclaimerToggle::before,
 #helpToggle::before,
-#loreToggle::before { content: "▶ "; }
+#loreToggle::before {
+    content: "▶ ";
+}
 
 .network-status.open::before,
 #disclaimerToggle.open::before,
 #helpToggle.open::before,
-#loreToggle.open::before { content: "▼ "; }
+#loreToggle.open::before {
+    content: "▼ ";
+}
+.network-status { 
+    background: #000; 
+    font-size: 14px; 
+    font-family: 'Unbounded', monospace; 
+    color: #0097ff; 
+}
 
-.network-status { background: #000; font-size: 14px; font-family: 'Unbounded', monospace; color: #0097ff; }
+.player-stats {
+    background: #000;
+    border: 1px solid #fff;
+    padding: 12px;
+    font-family: 'Unbounded', monospace;
+    font-size: 14px;
+    margin: 20px 0;
+}
 
-.player-stats { background: #000; border: 1px solid #fff; padding: 12px; font-family: 'Unbounded', monospace; font-size: 14px; margin: 20px 0; }
-.player-stats .stats-row { display: flex; gap: 15px; justify-content: space-between; }
-.player-stats .stat-box { flex: 1; text-align: center; }
-.player-stats .stat-box span { color: #0097ff; font-weight: bold; }
+.player-stats .stats-row {
+    display: flex;
+    gap: 15px;
+    justify-content: space-between;
+}
+
+.player-stats .stat-box {
+    flex: 1; 
+    text-align: center; 
+}
+
+.player-stats .stat-box span {
+    color: #0097ff;
+    font-weight: bold;
+}
+
+
 
 #versus { width: 100%; margin: 2em 0; }
 .versus-wrapper { display: flex; gap: 10px; justify-content: center; }
 .versus_column { flex: 1; min-width: 0; cursor: pointer; transition: transform 0.1s; }
 .versus_column:active { transform: scale(0.98); }
-.versus_thumbwrapper { position: relative; border: 3px solid #afff00; background-color: #333; aspect-ratio: 1/1; box-sizing: border-box; box-shadow: 0 0 15px rgba(255,0,255,0.2); }
-.versus_thumbwrapper img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+.versus_thumbwrapper { 
+    position: relative; 
+    border: 3px solid #afff00; 
+    background-color: #333; 
+    aspect-ratio: 1/1; 
+    box-sizing: border-box;
+    box-shadow: 0 0 15px rgba(255,0,255,0.2);
+}
+.versus_thumbwrapper img { 
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+}
 
-.ranking-container { margin-top: 10px; }
-.ranking-title { font-family: 'Unbounded', sans-serif; font-size: 20px !important; text-align: center; padding: 0; margin-bottom: 20px; color: #ff00cc; }
+.ranking-container {
+    margin-top: 10px;
+}
 
-.ranking-item { display: flex; align-items: center; width: 100%; min-height: 56px; padding: 8px 0; margin: 0; box-sizing: border-box; cursor: pointer; }
+.ranking-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 20px !important;
+    text-align: center;
+    padding: 0;
+    margin-bottom: 20px;
+    color: #ff00cc;
+}
 
-.ranking-img { width: 40px !important; height: 40px !important; min-width: 40px !important; min-height: 40px !important; max-width: 40px !important; max-height: 40px !important; flex: 0 0 40px; display: block; object-fit: cover; object-position: center; margin: 0 12px 0 0 !important; padding: 0 !important; border: 1px solid #afff00; box-sizing: border-box; overflow: hidden; }
+.ranking-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 56px;
+    padding: 8px 0;
+    margin: 0;
+    box-sizing: border-box;
+    cursor: pointer;
+}
 
-.ranking-img.text-preview { width: 40px !important; height: 40px !important; min-width: 40px !important; min-height: 40px !important; max-width: 40px !important; max-height: 40px !important; flex: 0 0 40px; padding: 4px !important; margin: 0 12px 0 0 !important; display: flex; align-items: flex-start; justify-content: flex-start; box-sizing: border-box; overflow: hidden; background: #111; color: #ccc; font-family: 'Unbounded', monospace; font-size: 7px; line-height: 1.2; text-align: left; word-break: break-word; }
+.ranking-img {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    flex: 0 0 40px;
+    display: block;
+    object-fit: cover;
+    object-position: center;
+    margin: 0 12px 0 0 !important;
+    padding: 0 !important;
+    border: 1px solid #afff00;
+    box-sizing: border-box;
+    overflow: hidden;
+}
 
-.ranking-info { flex: 1 1 auto; min-width: 0; height: 40px; display: flex; align-items: center; margin: 0; padding: 0; box-sizing: border-box; gap: 8px; }
-.ranking-info .title { flex: 1 1 auto; min-width: 0; margin: 0 !important; padding: 0 !important; line-height: 1.2; text-align: left; font-size: 14px !important; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ranking-info .sender { flex: 0 1 auto; min-width: 0; margin: 0 !important; padding: 0 !important; font-size: 11px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ranking-info .rating { flex: 0 0 auto; margin: 0 !important; padding: 0 !important; color: #0097ff; font-size: 12px; line-height: 1.2; white-space: nowrap; }
+.ranking-img.text-preview {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    flex: 0 0 40px;
+    padding: 4px !important;
+    margin: 0 12px 0 0 !important;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: #111;
+    color: #ccc;
+    font-family: 'Unbounded', monospace;
+    font-size: 7px;
+    line-height: 1.2;
+    text-align: left;
+    word-break: break-word;
+}
 
-.item-details { display: none; width: 100%; box-sizing: border-box; margin: 0; padding: 0 0 10px 2px; background: #000; border-bottom: 0; font-size: 14px; color: #ccc; font-family: 'Unbounded', monospace; }
-.item-details p { margin: 0.8em 0 !important; padding: 0; line-height: 1.8 !important; }
+.ranking-info {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    gap: 8px;
+}
 
-.text-thumbnail { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-.text-thumbnail>div { background: #111; color: #ccc; font-family: 'Unbounded', monospace; font-size: 13px; line-height: 1.4; padding: 12px 12px; width: 100%; height: 100%; box-sizing: border-box; text-align: left; word-wrap: break-word; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; text-overflow: ellipsis; align-items: flex-start; justify-content: flex-start; }
+.ranking-info .title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.2;
+    text-align: left;
+    font-size: 14px !important;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
-.admin-input { width: 100%; padding: 12px; margin-bottom: 15px; background: #000; border: 1px solid #999; font-size: 14px; color: #fff; box-sizing: border-box; font-family: 'Unbounded', monospace; }
-.admin-input::placeholder { color: #999; opacity: 1; }
-.admin-input:-ms-input-placeholder { color: #999; }
-.admin-input::-webkit-input-placeholder { color: #999; }
+.ranking-info .sender {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ranking-info .rating {
+    flex: 0 0 auto;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #0097ff;
+    font-size: 12px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.item-details {
+    display: none;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 0 10px 2px;
+    background: #000;
+    border-bottom: 0;
+    font-size: 14px;
+    color: #ccc;
+    font-family: 'Unbounded', monospace;
+}
+
+.item-details p {
+    margin: 0.8em 0 !important;
+    padding: 0;
+    line-height: 1.8 !important;
+}
+
+.text-thumbnail {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.text-thumbnail>div {
+    background: #111;
+    color: #ccc;
+    font-family: 'Unbounded', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 12px 12px;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    word-wrap: break-word;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+.ranking-img.text-preview {
+    background: #111;
+    color: #ccc;
+    font-family: 'Unbounded', monospace;
+    font-size: 8px;
+    padding: 4px 3px;
+    text-align: left;
+    overflow: hidden;
+    word-wrap: break-word;
+    line-height: 1.2;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: 40px;
+    height: 40px;
+    box-sizing: border-box;
+}
+    
+
+
+.admin-input { 
+    width: 100%; 
+    padding: 12px; 
+    margin-bottom: 15px; 
+    background: #000; 
+    border: 1px solid #999; 
+    font-size: 14px;
+    color: #fff; 
+    box-sizing: border-box; 
+    font-family: 'Unbounded', monospace;
+}
+
+.admin-input::placeholder {
+    color: #999; 
+    opacity: 1;  
+}
+
+.admin-input:-ms-input-placeholder {
+    color: #999;
+}
+
+.admin-input::-webkit-input-placeholder {
+    color: #999;
+}
 
 .claim-panel { margin-top: 20px; padding: 10px; background: #000; border: 1px solid #0097ff; font-family: 'Unbounded', monospace; }
-.claim-panel input, .claim-panel textarea { font-family: 'Unbounded', monospace; }
-.claim-panel button { font-family: 'Unbounded', monospace; }
+
+.claim-panel input, 
+.claim-panel textarea {
+    font-family: 'Unbounded', monospace;
+}
+
+.claim-panel button {
+    font-family: 'Unbounded', monospace;
+}
+
 
 .exchange-panel { margin-top: 20px; padding: 10px; background: #000; border: 1px solid #de00b2; font-family: 'Unbounded', monospace; }
-.exchange-panel input, .exchange-panel textarea { font-family: 'Unbounded', monospace; }
-.exchange-panel button { font-family: 'Unbounded', monospace; }
 
-button, .admin-btn, .edit-btn, .file-label { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; font-size: 14px !important; }
+.exchange-panel input, 
+.exchange-panel textarea {
+    font-family: 'Unbounded', monospace;
+}
 
+.exchange-panel button {
+    font-family: 'Unbounded', monospace;
+}
+
+button,
+.admin-btn,
+.edit-btn,
+.file-label {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    font-size: 14px !important;
+}
+    
 .transfer-panel { margin-top: 20px; padding: 10px; background: #000; border: 1px solid #f8b800; font-family: 'Unbounded', monospace; }
-.transfer-panel input, .transfer-panel textarea { font-family: 'Unbounded', monospace; }
-.transfer-panel button { font-family: 'Unbounded', monospace; }
+
+.transfer-panel input, 
+.transfer-panel textarea {
+    font-family: 'Unbounded', monospace;
+}
+
+.transfer-panel button {
+    font-family: 'Unbounded', monospace;
+}
+
 
 .main-panel { margin-top: 30px; padding: 10px; background: #000; border: 1px solid #afff00; }
-.main-panel h3 { font-size: 18px !important; }
-
-input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-input[type=number] { -moz-appearance: textfield; }
+.main-panel h3 {
+    font-size: 18px !important;   /* или 20px — как вам больше нравится */
+}
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+}
+input[type=number] {
+    -moz-appearance: textfield;
+}
 
 textarea.admin-input { height: 180px; resize: vertical; }
 #new-img-file { display: none; }
+.file-label {
+    display: inline-block;
+    padding: 12px;
+    background: #000;
+    color: #afff00;
+    font-size: 14px;
+    text-align: left;
+    box-sizing: border-box;
+    cursor: pointer;
+    margin-bottom: 20px;
+    border: 2px solid #afff00;
+    width: 100%;
+}
+.admin-btn { 
+    width: 100%; 
+    padding: 18px; 
+    background: #de00b2; 
+    color: #fff; 
+    border: none;
+    font-weight: bold; 
+    cursor: pointer; 
+    text-transform: uppercase; 
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(255,0,255,0.4);
+    font-family: 'Unbounded', monospace; 
+}
 
-.file-label { display: inline-block; padding: 12px; background: #000; color: #afff00; font-size: 14px; text-align: left; box-sizing: border-box; cursor: pointer; margin-bottom: 20px; border: 2px solid #afff00; width: 100%; }
+.send-btn { 
+    width: 100%; 
+    padding: 18px; 
+    background: #ff8b00; 
+    color: #fff; 
+    border: none;
+    font-weight: bold; 
+    cursor: pointer; 
+    text-transform: uppercase; 
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(255,0,255,0.4);
+    font-family: 'Unbounded', monospace; 
+}
 
-.admin-btn { width: 100%; padding: 18px; background: #de00b2; color: #fff; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 14px; box-shadow: 0 0 15px rgba(255,0,255,0.4); font-family: 'Unbounded', monospace; }
+.inject-btn-bg {
+    background: #afff00;
+    background-size: cover;
+    background-position: center;
+    color: #000;
+}
 
-.send-btn { width: 100%; padding: 18px; background: #ff8b00; color: #fff; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 14px; box-shadow: 0 0 15px rgba(255,0,255,0.4); font-family: 'Unbounded', monospace; }
+#desktopWarningPanel, 
+#mobileWarningPanel {
+    font-family: 'Unbounded', monospace;
+}
 
-.inject-btn-bg { background: #afff00; color: #000; }
+#desktopWarningPanel h3, 
+#desktopWarningPanel p, 
+#desktopWarningPanel .admin-btn,
+#mobileWarningPanel h3, 
+#mobileWarningPanel p, 
+#mobileWarningPanel .admin-btn {
+    font-family: inherit;
+}
 
-#desktopWarningPanel, #mobileWarningPanel { font-family: 'Unbounded', monospace; }
-#desktopWarningPanel h3, #desktopWarningPanel p, #desktopWarningPanel .admin-btn,
-#mobileWarningPanel h3, #mobileWarningPanel p, #mobileWarningPanel .admin-btn { font-family: inherit; }
+body, body * {
+    transition: background-color 0.6s ease, color 0.6s ease, border-color 0.6s ease, filter 0.6s ease;
+}
 
-body, body * { transition: background-color 0.6s ease, color 0.6s ease, border-color 0.6s ease, filter 0.6s ease; }
-body.inverted { filter: invert(1) hue-rotate(180deg); background-color: #fff; }
-body.inverted img { filter: invert(1) hue-rotate(180deg); }
-body.inverted img.no-invert { filter: none; }
+body.inverted {
+    filter: invert(1) hue-rotate(180deg);
+    background-color: #fff;
+}
 
-#logContainer { background: #000; font-size: 14px; font-family: 'Unbounded', monospace; color: #0097ff; height: 100px; font-weight: 400; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; overflow-y: auto; scrollbar-width: none !important; -ms-overflow-style: none !important; }
-#logContainer::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+body.inverted img {
+    filter: invert(1) hue-rotate(180deg);
+}
 
-#disclaimerToggle { background: #000; font-size: 14px; font-family: 'Unbounded', monospace; color: #ff2440; }
-#helpToggle, #loreToggle { background: #000; font-size: 14px; font-family: 'Unbounded', monospace; color: #fff; margin-bottom: 10px; }
+body.inverted img.no-invert {
+    filter: none;
+}
 
-#disclaimerText, #helpText, #loreText { background: #000; font-size: 14px; font-family: 'Unbounded', monospace; color: #ccc; margin: 0 0 10px 0; line-height: 1.5; }
 
-#disclaimerToggle, #disclaimerText, #helpToggle, #helpText, #loreToggle, #loreText,
-.claim-panel, .exchange-panel, .transfer-panel, #desktopWarningPanel, #mobileWarningPanel { font-size: 14px !important; }
+#logContainer { 
+    background: #000; 
+    font-size: 14px; 
+    font-family: 'Unbounded', monospace; 
+    color: #0097ff; 
+    height: 100px;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-y: auto;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
 
-#aboutToggle { cursor: pointer; margin: 0 0 10px 0; display: block; }
-#aboutToggle::before { content: "▶ "; }
-#aboutToggle.open::before { content: "▼ "; }
-#aboutContent.collapsed { display: none; }
+#logContainer::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
 
-.footer-credit { text-align: center; font-size: 14px; color: #fff; margin: 50px 0 30px 0; }
+#disclaimerToggle { 
+    background: #000; 
+    font-size: 14px; 
+font-family: 'Unbounded', monospace;
+    color: #ff2440; 
+}
+#helpToggle, #loreToggle { 
+    background: #000; 
+    font-size: 14px; 
+font-family: 'Unbounded', monospace;
+    color: #fff; 
+    margin-bottom: 10px;  
+}
+
+#disclaimerText, #helpText, #loreText {    
+    background: #000;    
+    font-size: 14px;    
+font-family: 'Unbounded', monospace;
+    color: #ccc;    
+    margin: 0 0 10px 0;
+    line-height: 1.5;
+}
+
+#disclaimerToggle, #disclaimerText, 
+#helpToggle, #helpText, 
+#loreToggle, #loreText,
+.claim-panel, .exchange-panel, .transfer-panel,
+#desktopWarningPanel, #mobileWarningPanel {
+    font-size: 14px !important; 
+}
+
+#aboutToggle {
+    cursor: pointer;
+    margin: 0 0 10px 0;
+    display: block;
+}
+
+#aboutToggle::before {
+    content: "▶ ";
+}
+
+#aboutToggle.open::before {
+    content: "▼ ";
+}
+
+#aboutContent.collapsed {
+    display: none;
+}
+    
+.footer-credit {
+    text-align: center;
+    font-size: 14px;
+    color: #fff;
+    margin: 50px 0 30px 0;
+}
+    
 h2 { font-size: 20px !important; margin-bottom: -10px; }
-h3 { font-size: 18px !important; font-weight: normal !important; }
-
+    
+h3 {
+    font-size: 18px !important;
+    font-weight: normal !important;
+}
+    
 a { color: #448aff; text-decoration: none; }
 .footer-credit a:hover { text-decoration: underline; }
 
-.progress-fill { height: 8px; background: #aaa; transition: width 600ms cubic-bezier(0.25, 1, 0.5, 1); }
-.footer-credit h2 a:hover { text-decoration: underline; color: #0097ff !important; }
+.progress-fill {
+  height: 8px;
+  background: #aaa;
+  transition: width 600ms cubic-bezier(0.25, 1, 0.5, 1); 
+}
 
-* { scrollbar-width: thin; scrollbar-color: #444444 #00001f; }
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #00001f; }
-::-webkit-scrollbar-thumb { background: #444444; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #444444; }
+.footer-credit h2 a:hover {
+    text-decoration: underline;
+    color: #0097ff !important;
+}
 
-@keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-#liveIndicatorBcast { color: #ff0000; animation: livePulse 1.5s infinite; }
-#tapeIndicatorBcast { color: #afff00; }
-#aboutToggle { color: #ffd700; }
-#aboutContent { color: #ffd700cc; }
-.edit-btn { background: #afff0050 !important; color: #fff !important; border: 0px solid #afff00; }
-#new-recipients::placeholder { color: #ff2440cc; opacity: 1; }
-#new-recipients::-webkit-input-placeholder { color: #ff2440cc; opacity: 1; }
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #444444 #00001f; 
+}
 
-/* ================= AUCTION STYLES ================= */
-.auction-panel { margin-top: 0; padding: 0; background: transparent; border: none; font-family: 'Unbounded', monospace; }
-.auction-panel h3 { color: #ffd700; text-align: left; margin: 0 0 8px 0; font-size: 14px !important; font-weight: normal !important; letter-spacing: 0.5px; }
-.auction-panel .auction-hint { color: #ffd700cc; font-size: 11px; margin-bottom: 10px; line-height: 1.4; }
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px; 
+}
 
-.auction-badge { display: inline-block; padding: 3px 8px; font-size: 11px; border-radius: 3px; font-weight: bold; margin-right: 6px; }
-.auction-badge.live { background: #ff000030; color: #ff5555; border: 1px solid #ff0000; }
-.auction-badge.tape { background: #afff0030; color: #afff00; border: 1px solid #afff00; }
-.auction-badge.ended { background: #66666630; color: #aaa; border: 1px solid #666; }
-.auction-badge.delivered { background: #0097ff30; color: #0097ff; border: 1px solid #0097ff; }
-.auction-row { display: flex; justify-content: space-between; font-size: 12px; color: #ccc; margin: 4px 0; }
-.auction-row span:last-child { color: #fff; font-weight: bold; }
-.bid-input-row { display: flex; gap: 6px; margin-top: 8px; }
-.bid-input-row input { flex: 1; margin-bottom: 0; }
-.gate-panel { margin-top: 10px; padding: 10px; background: #001a00; border: 1px solid #00ff88; font-size: 12px; color: #00ff88; }
-.gate-panel textarea { width: 100%; min-height: 60px; background: #000; color: #00ff88; border: 1px solid #00ff88; font-family: 'Unbounded', monospace; font-size: 12px; padding: 6px; box-sizing: border-box; margin-top: 6px; }
-.gate-msg { margin: 4px 0; padding: 4px; border-bottom: 1px dashed #00ff8840; }
-.gate-msg .meta { color: #008855; font-size: 10px; }
-.bid-list { margin-top: 8px; }
-.bid-entry { padding: 6px; border-bottom: 1px solid #ffd70030; font-size: 12px; display: flex; justify-content: space-between; }
-.bid-entry.accepted { color: #0097ff; }
-.bid-entry.mine { color: #afff00; }
-.bid-count-badge { background: #ffd70020; color: #ffd700; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 6px; }
+::-webkit-scrollbar-track {
+  background: #00001f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #444444; 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444444;
+}
+
+@keyframes livePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+#liveIndicatorBcast {
+    color: #ff0000;                   
+    animation: livePulse 1.5s infinite;
+}
+#tapeIndicatorBcast {
+    color: #afff00;                      
+}
+#aboutToggle {
+    color: #ffd700;
+}
+#aboutContent {
+    color: #ffd700cc;
+}
+.edit-btn {
+    background: #afff0050 !important;
+    color: #fff !important;
+    border: 0px solid #afff00;
+}
+#new-recipients::placeholder {
+    color: #ff2440cc;
+    opacity: 1;
+}
+#new-recipients::-webkit-input-placeholder {
+    color: #ff2440cc;
+    opacity: 1;
+}
+
+/* === Auction block (без жёлтых рамок) === */
+.auction-block {
+    margin: 16px 0 8px 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+.auction-block .auction-head {
+    color: #ffd700;
+    font-size: 15px;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.auction-block .auction-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 6px;
+    margin-left: 6px;
+    border-radius: 3px;
+    vertical-align: middle;
+    font-weight: bold;
+}
+.auction-badge.live { background: #ff0000; color: #fff; }
+.auction-badge.tape { background: #afff00; color: #000; }
+.auction-badge.delivered { background: #0097ff; color: #fff; }
+.auction-badge.ended { background: #666; color: #fff; }
+
+.auction-block .auction-row {
+    margin: 4px 0 !important;
+    font-size: 13px;
+    color: #ccc;
+}
+
+.auction-block .auction-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.auction-block .auction-actions input[type=number] {
+    flex: 1 1 120px;
+    padding: 8px;
+    background: #000;
+    border: 1px solid #555;
+    color: #fff;
+    font-family: 'Unbounded', monospace;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+.auction-block .auction-actions button {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    font-family: 'Unbounded', monospace;
+    font-size: 12px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.auction-block .btn-bid { background: #afff00; color: #000; }
+.auction-block .btn-buy { background: #de00b2; color: #fff; }
+.auction-block .btn-save { background: #ff8b00; color: #fff; }
+.auction-block .btn-accept { background: #0097ff; color: #fff; }
+.auction-block .btn-reject { background: #ff3333; color: #fff; }
+
+.auction-block .auction-bids {
+    margin-top: 10px;
+    font-size: 12px;
+}
+
+.auction-block .auction-bids .bid-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    border-bottom: 1px dashed #333;
+}
+
+.auction-block .auction-bids .bid-row .bid-info {
+    flex: 1;
+    color: #ccc;
+}
+
+.auction-block .auction-bids .bid-row button {
+    padding: 4px 8px;
+    font-size: 11px;
+    font-family: 'Unbounded', monospace;
+    border: none;
+    cursor: pointer;
+}
+
+/* Gate */
+.gate-block {
+    margin-top: 12px;
+    padding: 8px;
+    background: #0a0a0a;
+    border: 1px solid #0097ff40;
+}
+
+.gate-block .gate-head {
+    color: #0097ff;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.gate-block .gate-status {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 6px;
+}
+
+.gate-block .gate-msgs {
+    max-height: 160px;
+    overflow-y: auto;
+    font-size: 12px;
+    color: #ccc;
+    margin-bottom: 6px;
+    padding: 4px;
+    background: #000;
+    border: 1px solid #222;
+}
+
+.gate-block .gate-msgs .gate-msg {
+    margin: 3px 0;
+    word-break: break-word;
+}
+
+.gate-block .gate-msgs .gate-msg .from {
+    color: #0097ff;
+}
+
+.gate-block .gate-input-row {
+    display: flex;
+    gap: 6px;
+}
+
+.gate-block .gate-input-row textarea {
+    flex: 1;
+    min-height: 40px;
+    padding: 6px;
+    background: #000;
+    border: 1px solid #555;
+    color: #fff;
+    font-family: 'Unbounded', monospace;
+    font-size: 12px;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.gate-block .gate-input-row button {
+    padding: 6px 12px;
+    background: #0097ff;
+    color: #fff;
+    border: none;
+    font-family: 'Unbounded', monospace;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+}
 </style>
 </head>
 <body>
@@ -218,10 +874,11 @@ a { color: #448aff; text-decoration: none; }
     
   <div style="display: flex; flex-direction: column;">
 
-<h2 id="invertTrigger" style="margin: -4px; line-height: 0.9; color: #ccc; font-family: 'Unbounded', sans-serif; margin-top: 28px; cursor: pointer;" title="Tap to invert interface">Paramount<span id="liveIndicator" style="display: none; color: #ff0000; margin-left: 6px; animation: livePulse 1.5s infinite;">● Live!</span><span id="tapeIndicator" style="display: none; color: #afff00; margin-left: 6px;">● Tape</span></h2>
+<h2 id="invertTrigger" style="margin: -4px; line-height: 0.9; color: #ccc; font-family: 'Unbounded', sans-serif; margin-top: 28px; cursor: pointer;" title="Tap to invert interface">Versus<span id="liveIndicator" style="display: none; color: #ff0000; margin-left: 6px; animation: livePulse 1.5s infinite;">● Live!</span><span id="tapeIndicator" style="display: none; color: #afff00; margin-left: 6px;">● Tape</span></h2>
+
 
     <span style="margin: -3px; font-size: 14px; letter-spacing: 1px; font-family: 'Unbounded', monospace; color: #ffd700; margin-top: 5px;">
-      Beauty and the best 
+      Auction | Offers and bids
     </span>
   </div>
 </div>
@@ -276,6 +933,7 @@ a { color: #448aff; text-decoration: none; }
     </p>
     <p>Before updating, please verify if your current item is ready but was not injected to avoid losing any unsent content.</p>
 
+        
     <p>⚠️ <strong>Clearing browser cache will reset all data.</strong></p>
     <div style="margin: 10px 0;">
         <button class="admin-btn" style="background: #ff333390; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="resetToDefault()">Reset to Default</button>
@@ -316,22 +974,15 @@ a { color: #448aff; text-decoration: none; }
     <p>Use 'Convert Impacts to Action Limits' to spend 1 impact for +3 votes, or 3 impacts for +1 post slot.</p>
     <p>Use 'Transfer Impact(s)' to send it(s) to other network participants.</p>
 
-    <p style="color:#ffd700; border-top: 1px solid #ffd70050; padding-top: 10px;">
-        <strong>Auction Logic:</strong> Any ranking-item can be turned into an auction in the Broadcast panel below. The author of the item is always the seller — no external seller can be assigned. Only the starting bid and an optional Buy Now price are set. Bids are accepted while the seller is LIVE; when the seller goes offline the auction switches to TAPE (saved bids only). Bids are accepted 24/7 without fixed time windows — the LIVE/TAPE state of the seller is the only gate.
-    </p>
-    <p style="color:#ffd700cc;">
-        <strong>Seller <span style="color:#ff0000;">LIVE</span>:</strong> Buyer can press <em>Bid</em> — the bid is really sent to the seller, who may Accept it. After acceptance the deal gets status <code>Delivered</code> and a private gate opens between the two peers for additional non-public info. <em>Buy Now</em> (if set) instantly closes the deal at the seller's price.
-    </p>
-    <p style="color:#ffd700cc;">
-        <strong>Seller <span style="color:#afff00;">TAPE</span> (offline):</strong> Buyer can only view the auction data received while the seller was live. New bids are stored as <em>Save</em> (intended bids). Buy Now is unavailable. When the seller becomes LIVE again, the buyer is offered to <em>edit and/or re-bid</em> — same pattern as edit/re-inject for items.
-    </p>
-    <p style="color:#00ff88;">
-        ⚠️ <strong>Live peer exchange of additional information works only if both participants are online right now.</strong> If either party goes offline, the gate is closed and messages sent while the peer is offline are not delivered until they return LIVE.
-    </p>
-
     <p>Due to the temporary absence of individual participants and the presence of items they cannot see, the number of votes required to update ranking does not accumulate synchronously across devices. When live parity is reached, "spontaneous" updates of the pair in the voting block occur.</p>
     <p>To protect your notes, keep things clear: add this app to your Home Screen via the browser menu and use that shortcut to launch. (•••)</p>
     <p>Swipe down from the top to check for updates.</p>
+
+    <h3 style="color:#ffd700; font-size:16px; margin-top:18px;">Auction Logic</h3>
+    <p>Any ranking-item can be turned into an auction in the Broadcast panel below. The author of the item is always the seller — no external seller can be assigned. Only the starting bid and an optional Buy Now price are set. Bids are accepted while the seller is LIVE; when the seller goes offline the auction switches to TAPE (saved bids only). Bids are accepted 24/7 without fixed time windows — the LIVE/TAPE state of the seller is the only gate.</p>
+    <p><strong>Seller LIVE:</strong> Buyer can press Bid — the bid is really sent to the seller, who may Accept it. After acceptance the deal gets status Delivered and a private gate opens between the two peers for additional non-public info. Buy Now (if set) instantly closes the deal at the seller's price.</p>
+    <p><strong>Seller TAPE (offline):</strong> Buyer can only view the auction data received while the seller was live. New bids are stored as Save (intended bids). Buy Now is unavailable. When the seller becomes LIVE again, the buyer is offered to edit and/or re-bid — same pattern as edit/re-inject for items.</p>
+    <p>⚠️ <strong>Live peer exchange of additional information works only if both participants are online right now.</strong> If either party goes offline, the gate is closed and messages sent while the peer is offline are not delivered until they return LIVE.</p>
 </div>
 </div>
     <span id="broadcast"></span>    
@@ -341,12 +992,18 @@ a { color: #448aff; text-decoration: none; }
     Broadcast
     <span id="liveIndicatorH3" style="display: none; color: #ff0000; margin-left: 6px; animation: livePulse 1.5s infinite;">● Live!</span>
     <span id="tapeIndicatorH3" style="display: none; color: #afff00; margin-left: 6px;">● Tape</span>
-</h3>    
-    <input type="text" id="new-title" class="admin-input" placeholder="Your Item Title">
+</h3>    <input type="text" id="new-title" class="admin-input" placeholder="Your Item Title">
     <textarea id="new-desc" class="admin-input" placeholder="Your item details (optional)"></textarea>
     <input type="url" id="new-url" class="admin-input" placeholder="External Link (optional)">
     <label for="new-img-file" class="file-label" id="file-label-text">Select Item Image</label>
     <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)">
+
+    <!-- Auction fields (без внешней жёлтой рамки) -->
+    <div class="auction-panel" style="margin-bottom: 15px;">
+        <input type="number" id="new-auction-start-bid" class="admin-input" placeholder="Starting / current bid" min="0" step="1">
+        <input type="number" id="new-auction-buy-now" class="admin-input" placeholder="Buy Now price (optional)" min="0" step="1">
+    </div>
+
 <div style="text-align: center; margin: 6px 0 10px 0; font-family: 'Unbounded', monospace; font-size: 14px;">
     <span id="liveIndicatorBcast" style="display: none;">● Live! — peers online: <span id="livePeerCount">0</span></span>
     <span id="tapeIndicatorBcast" style="display: none;">● Tape — no peer(s)</span>
@@ -357,16 +1014,6 @@ a { color: #448aff; text-decoration: none; }
         <div style="color:#afff00cc; font-size:11px; margin:-10px 0 14px;">
             You can save a note exclusively for your Peer-XXXX (or name)—even in Live mode.    
         </div>
-
-<!-- ==================== AUCTION ADMIN FIELDS ==================== -->
-<div class="auction-panel">
-    <div class="auction-hint">
-        Optional — fill to publish as an auction (Starting bid and/or Buy Now). Leave empty for a normal item.
-    </div>
-    <input type="number" id="new-auction-start-bid" class="admin-input" placeholder="Starting / current bid (e.g. 100)" min="0" step="1">
-    <input type="number" id="new-auction-buy-now" class="admin-input" placeholder="Buy Now price (optional, e.g. 500)" min="0" step="1">
-</div>
-
 <button class="admin-btn inject-btn-bg" style="border: 2px solid #afff00;" onclick="addItem()">Inject Item to Network</button>
 <button id="cancel-edit-btn" class="admin-btn"
         style="display: none; margin-top: 10px; background: #444; color: #fff; border: 2px solid #ff3333;"
@@ -389,6 +1036,7 @@ a { color: #448aff; text-decoration: none; }
     <div style="position: relative; width: 100%; height: 180px; background: #000; box-sizing: border-box;">
         <canvas id="activityChart" style="width: 100%; height: 100%; display: block;"></canvas>
     </div>
+
 </div>
 
 <div class="player-stats">
@@ -408,7 +1056,7 @@ a { color: #448aff; text-decoration: none; }
             Posts: <span id="postsLeft">3</span>
         </div>
     </div>
-    <div style="margin-top:14px; display:flex; gap:8px;">
+        <div style="margin-top:14px; display:flex; gap:8px;">
         <input type="text" id="my-id-input" class="admin-input"
                style="margin-bottom:0; flex:1;"
                placeholder="Your Peer ID (Peer-XXXX)">
@@ -458,6 +1106,7 @@ a { color: #448aff; text-decoration: none; }
     <div style="display: flex; flex-direction: column; align-items: center; gap: 70px;">
   <a href="#broadcast" style="color: #afff00; display: inline-flex; font-size: 48px; align-items: center; text-decoration: none;">
 +
+
   </a>
         <a href="research.html">
             <img src="fleurdelis.png" class="no-invert" style="height: 64px; width: auto; display: block;">
@@ -513,14 +1162,22 @@ a { color: #448aff; text-decoration: none; }
 // DataManager — единое хранилище данных
 // ============================================
 const DataManager = (() => {
-    const PREFIX = 'paramount_';
-    const SCHEMA_VERSION = 4;
+    const PREFIX = 'versus_';
+    const SCHEMA_VERSION = 3;
     const SCHEMA_KEY = PREFIX + 'schema_version';
 
     const PERSISTENT_KEYS = [
-        'versus_items', 'player_state', 'peer_balances', 'activity_history',
-        'processed_txs', 'pending_transfers', 'custom_my_id', 'last_claim_time',
-        'activity_range', 'broker_url', 'auction_gates'
+        'versus_items',
+        'player_state',
+        'peer_balances',
+        'activity_history',
+        'processed_txs',
+        'pending_transfers',
+        'custom_my_id',
+        'last_claim_time',
+        'activity_range',
+        'broker_url',
+        'auction_gates'
     ];
 
     function key(name) { return PREFIX + name; }
@@ -537,8 +1194,11 @@ const DataManager = (() => {
     }
 
     function set(name, value) {
-        try { localStorage.setItem(key(name), JSON.stringify(value)); }
-        catch (e) { console.error('[DataManager] Save failed:', name, e); }
+        try {
+            localStorage.setItem(key(name), JSON.stringify(value));
+        } catch (e) {
+            console.error('[DataManager] Save failed:', name, e);
+        }
     }
 
     function remove(name) { localStorage.removeItem(key(name)); }
@@ -559,9 +1219,32 @@ const DataManager = (() => {
     return { get, set, remove, clearAll, key, PERSISTENT_KEYS };
 })();
 
+// ============================================
+// TDZ-защита: activePeers объявлен В САМОМ НАЧАЛЕ
+// ============================================
+let activePeers = {};
+
 function createTextThumbnail(text) {
     if (!text) return '';
-    return `<div style="background: #111; color: #ccc; font-family: 'Unbounded', monospace; font-size: 13px; line-height: 1.4; padding: 12px 12px; width: 100%; height: 100%; box-sizing: border-box; text-align: left; word-wrap: break-word; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; text-overflow: ellipsis; align-items: flex-start; justify-content: flex-start;">${text}</div>`;
+    return `<div style="
+        background: #111;
+        color: #ccc;
+        font-family: 'Unbounded', monospace;
+        font-size: 13px;
+        line-height: 1.4;
+        padding: 12px 12px;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        text-align: left;
+        word-wrap: break-word;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        text-overflow: ellipsis;
+        align-items: flex-start;
+        justify-content: flex-start;
+    ">${text}</div>`;
 }
     
 const logArea = document.getElementById('logArea');
@@ -570,13 +1253,19 @@ const logContainer = document.getElementById('logContainer');
     
 if (logArea && statusToggle && logContainer) {
     let pressStart = 0;
-    logArea.addEventListener('pointerdown', () => { pressStart = Date.now(); });
+
+    logArea.addEventListener('pointerdown', () => {
+        pressStart = Date.now();
+    });
+
     logArea.addEventListener('pointerup', () => {
         const pressDuration = Date.now() - pressStart;
+
         if (pressDuration < 500) {
             logContainer.classList.toggle('collapsed');
             statusToggle.classList.toggle('open');
         }
+
         pressStart = 0;
     });
 }
@@ -589,8 +1278,12 @@ if (disclaimerToggle && disclaimerText) {
     disclaimerToggle.addEventListener('click', () => {
         disclaimerText.classList.toggle('collapsed');
         disclaimerToggle.classList.toggle('open');
-        if (disclaimerText.classList.contains('collapsed')) aboutLabel.style.display = 'inline'; 
-        else aboutLabel.style.display = 'none';  
+        
+        if (disclaimerText.classList.contains('collapsed')) {
+            aboutLabel.style.display = 'inline'; 
+        } else {
+            aboutLabel.style.display = 'none';  
+        }
     });
 }
 
@@ -620,32 +1313,47 @@ if (!myId) {
 document.getElementById('nodeId').innerText = myId;
 
 let processedTxIds = DataManager.get('processed_txs', []);
-function isTxProcessed(txId) { return processedTxIds.includes(txId); }
+
+function isTxProcessed(txId) {
+    return processedTxIds.includes(txId);
+}
+
 function markTxProcessed(txId) {
     if (!processedTxIds.includes(txId)) {
         processedTxIds.push(txId);
-        if (processedTxIds.length > 1000) processedTxIds = processedTxIds.slice(-500);
+        if (processedTxIds.length > 1000) {
+            processedTxIds = processedTxIds.slice(-500);
+        }
         DataManager.set('processed_txs', processedTxIds);
     }
 }
 
 let playerState = DataManager.get('player_state');
 if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playerState.postsLeft === 'undefined') {
-    playerState = { impacts: 8, level: 1, votesLeft: 5, postsLeft: 3 };
+    playerState = { 
+        impacts: 8,     
+        level: 1, 
+        votesLeft: 5,   
+        postsLeft: 3    
+    };
     DataManager.set('player_state', playerState);
 }
 
 let peerBalances = DataManager.get('peer_balances', {});
 let blacklistedPeers = DataManager.get('blacklist', []);
 
-let activityHistory = DataManager.get('activity_history', { votes: [], posts: [], deliveries: [] });
+let activityHistory = DataManager.get('activity_history', {
+    votes: [],
+    posts: [],
+    deliveries: []
+});
 let activityRange = DataManager.get('activity_range', 'week');
-
-let auctionGates = DataManager.get('auction_gates', {});
 
 function saveActivityHistory() {
     ['votes', 'posts', 'deliveries'].forEach(key => {
-        if (activityHistory[key].length > 2000) activityHistory[key] = activityHistory[key].slice(-2000);
+        if (activityHistory[key].length > 2000) {
+            activityHistory[key] = activityHistory[key].slice(-2000);
+        }
     });
     DataManager.set('activity_history', activityHistory);
 }
@@ -668,16 +1376,63 @@ function setActivityRange(range) {
 }
 
 let pendingTransfers = DataManager.get('pending_transfers', {});
-function savePending() { DataManager.set('pending_transfers', pendingTransfers); }
+function savePending() {
+    DataManager.set('pending_transfers', pendingTransfers);
+}
+
+// ============================================
+// Auction gates
+// ============================================
+let auctionGates = DataManager.get('auction_gates', {});
+function saveAuctionGates() {
+    DataManager.set('auction_gates', auctionGates);
+}
+
+function makeGateId(peerA, peerB, itemId) {
+    return 'gate-' + [peerA, peerB].sort().join('-') + '-' + itemId;
+}
+
+function ensureGate(peerA, peerB, itemId) {
+    const gateId = makeGateId(peerA, peerB, itemId);
+    if (!auctionGates[gateId]) {
+        auctionGates[gateId] = {
+            participants: [peerA, peerB],
+            messages: [],
+            itemId: itemId
+        };
+        saveAuctionGates();
+    }
+    return gateId;
+}
+
+function isPeerOnline(peerId) {
+    if (!peerId) return false;
+    const ts = activePeers[peerId];
+    if (!ts) return false;
+    return (Date.now() - ts) <= 12000;
+}
 
 function changeMyId() {
     const input = document.getElementById('my-id-input');
     const newId = (input.value || '').trim();
 
-    if (!newId) { alert('Enter a new ID first.'); return; }
-    if (!/^[A-Za-z0-9_\-]{3,24}$/.test(newId)) { alert('ID must be 3–24 chars: letters, digits, dash, underscore.'); return; }
-    if (newId === myId) { alert('That is already your current ID.'); return; }
-    if (!confirm('Change your ID from "' + myId + '" to "' + newId + '"?\n\nPeers who saved your old ID will no longer reach you.\nPending transfers to "' + myId + '" will not arrive.')) return;
+    if (!newId) {
+        alert('Enter a new ID first.');
+        return;
+    }
+    if (!/^[A-Za-z0-9_\-]{3,24}$/.test(newId)) {
+        alert('ID must be 3–24 chars: letters, digits, dash, underscore.');
+        return;
+    }
+    if (newId === myId) {
+        alert('That is already your current ID.');
+        return;
+    }
+    if (!confirm(
+        'Change your ID from "' + myId + '" to "' + newId + '"?\n\n' +
+        'Peers who saved your old ID will no longer reach you.\n' +
+        'Pending transfers to "' + myId + '" will not arrive.'
+    )) return;
 
     const oldId = myId;
 
@@ -691,7 +1446,9 @@ function changeMyId() {
     DataManager.set('custom_my_id', myId);
     document.getElementById('nodeId').innerText = myId;
 
-    items.forEach(it => { if (it.sender === oldId) it.sender = myId; });
+    items.forEach(it => {
+        if (it.sender === oldId) it.sender = myId;
+    });
     saveLocal();
     updateRankingList();
 
@@ -735,17 +1492,24 @@ function updateActivityChart() {
     ];
     
     const now = Date.now();
-    const MS = { week: 7 * 24 * 3600000, month: 30 * 24 * 3600000, year: 365 * 24 * 3600000 };
+    const MS = {
+        week:  7 * 24 * 3600000,
+        month: 30 * 24 * 3600000,
+        year:  365 * 24 * 3600000
+    };
     
     let allTs = [];
-    series.forEach(s => { (activityHistory[s.key] || []).forEach(t => allTs.push(t)); });
+    series.forEach(s => {
+        (activityHistory[s.key] || []).forEach(t => allTs.push(t));
+    });
     
     let tMin, tMax;
     tMax = now;
     
     if (activityRange === 'all') {
-        if (allTs.length === 0) { tMin = now - 3600000; }
-        else {
+        if (allTs.length === 0) {
+            tMin = now - 3600000;
+        } else {
             tMin = Math.min(...allTs);
             if (tMax - tMin < 3600000) tMin = tMax - 3600000;
         }
@@ -755,6 +1519,7 @@ function updateActivityChart() {
     }
     
     const span = tMax - tMin || 1;
+    
     const padL = 4, padR = 4, padT = 18, padB = 28;
     let plotW, plotH, rightScaleX;
 
@@ -763,47 +1528,72 @@ function updateActivityChart() {
         const points = [];
         let count = (timestamps || []).filter(t => t < tMin).length;
         points.push({ t: tMin, c: count });
-        sorted.forEach(t => { count++; points.push({ t, c: count }); });
-        if (points.length === 0 || points[points.length - 1].t < tMax) points.push({ t: tMax, c: count });
+        sorted.forEach(t => {
+            count++;
+            points.push({ t, c: count });
+        });
+        if (points.length === 0 || points[points.length - 1].t < tMax) {
+            points.push({ t: tMax, c: count });
+        }
         return points;
     }
     
-    const cumSeries = series.map(s => ({ ...s, points: buildCumulative(activityHistory[s.key]) }));
+    const cumSeries = series.map(s => ({
+        ...s,
+        points: buildCumulative(activityHistory[s.key])
+    }));
     
     let yMax = 1;
-    cumSeries.forEach(s => { s.points.forEach(p => { if (p.c > yMax) yMax = p.c; }); });
+    cumSeries.forEach(s => {
+        s.points.forEach(p => { if (p.c > yMax) yMax = p.c; });
+    });
     yMax = Math.ceil(yMax * 1.15) || 1; 
 
-    const yLabels = [String(yMax), ...Array.from({length: 5}, (_, i) => String(Math.round((i / 4) * yMax)))];
-    let maxLen = 0;
-    for (let label of yLabels) if (label.length > maxLen) maxLen = label.length;
+const yLabels = [
+    String(yMax),
+    ...Array.from({length: 5}, (_, i) =>
+        String(Math.round((i / 4) * yMax))
+    )
+];
 
-    const rightScaleWidth = maxLen * 7;
+let maxLen = 0;
+for (let label of yLabels) {
+    if (label.length > maxLen) maxLen = label.length;
+}
+
+const rightScaleWidth = maxLen * 7;
     const gapToRightScale = 8;
     plotW = Math.max(20, W - padL - padR - rightScaleWidth - gapToRightScale);
     plotH = H - padT - padB;
     rightScaleX = padL + plotW + gapToRightScale;
 
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = '#666';
-    ctx.font = '10px "Unbounded", monospace';
+    
+ctx.textAlign = 'left';
+ctx.textBaseline = 'top';
+ctx.fillStyle = '#666';
+ctx.font = '10px "Unbounded", monospace';
 
-    const timeTicks = 5;
-    for (let i = 0; i <= timeTicks; i++) {
-        const t = tMin + (i / timeTicks) * span;
-        const x = padL + (i / timeTicks) * plotW;
-        const d = new Date(t);
-        let label;
-        if (activityRange === 'year' || span > 90 * 24 * 3600000) label = d.toLocaleDateString([], { month: 'short', year: '2-digit' });
-        else if (activityRange === 'month' || span > 10 * 24 * 3600000) label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-        else if (span <= 48 * 3600000) label = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        else label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-        ctx.fillStyle = '#ccc';
-        ctx.textAlign = 'center';
-        ctx.fillText(label, x, padT + plotH + 6);
-        ctx.textAlign = 'left';
+const timeTicks = 5;
+for (let i = 0; i <= timeTicks; i++) {
+    const t = tMin + (i / timeTicks) * span;
+    const x = padL + (i / timeTicks) * plotW;
+    
+    const d = new Date(t);
+    let label;
+    if (activityRange === 'year' || span > 90 * 24 * 3600000) {
+        label = d.toLocaleDateString([], { month: 'short', year: '2-digit' });
+    } else if (activityRange === 'month' || span > 10 * 24 * 3600000) {
+        label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    } else if (span <= 48 * 3600000) {
+        label = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else {
+        label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
+    ctx.fillStyle = '#ccc';
+ctx.textAlign = 'center';
+ctx.fillText(label, x, padT + plotH + 6);
+ctx.textAlign = 'left';
+}
     
     function drawLine(points, color) {
         if (points.length < 2) return;
@@ -870,8 +1660,13 @@ function getClaimableCount() {
         DataManager.set('last_claim_time', lastClaimTime);
     }
     const elapsed = Date.now() - lastClaimTime;
-    if (elapsed < HOUR_MS) return 0;
-    if (elapsed >= DAY_MS) return 24;
+    
+    if (elapsed < HOUR_MS) {
+        return 0;
+    }
+    if (elapsed >= DAY_MS) {
+        return 24;
+    }
     return 4;
 }
 
@@ -898,11 +1693,16 @@ function updateClaimUI() {
 
 function claimHourly() {
     const claimable = getClaimableCount();
-    if (claimable <= 0) return alert('No accumulated impacts available yet. Please wait at least 1 hour.');
+    if (claimable <= 0) {
+        return alert('No accumulated impacts available yet. Please wait at least 1 hour.');
+    }
+
     playerState.impacts += claimable;
     playerState.level = Math.floor(playerState.impacts / 20) + 1;
     updatePlayerStatsUI();
+
     DataManager.set('last_claim_time', Date.now());
+    
     updateClaimUI();
     log(`[Claim] Collected +${claimable} impacts.`);
 }
@@ -912,120 +1712,65 @@ updateClaimUI();
 
 let items = DataManager.get('versus_items', []);
 
-// ==================== DEMO ITEMS (FORCE REFRESH) ====================
-// Demo items use prefix "demo-" (not "meme-" and not "auction-")
-// so they never clash with ranking versus logic or auction IDs.
-
 const demoItems = [
     {
-        id: 'demo-1',
+        id: 'meme-demo-1',
         sender: 'System-Genesis',
-        title: 'Vintage Compass — Auction',
-        description: 'Example auction item. Brass marine compass. Bids accepted while seller is LIVE. Buy Now closes the deal immediately.',
+        title: 'Aura',
+        description: 'No registration is required. You can save your item to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your item and your voting calculations will remain only on your device, but you can always Re-inject your tape mode item (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the item creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete items on other users\' devices.',
         externalUrl: '',
-        img: 'data:image/svg+xml;utf8,' + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">' +
-            '<rect width="200" height="200" fill="#0a0a0a"/>' +
-            '<circle cx="100" cy="100" r="70" fill="none" stroke="#ffd700" stroke-width="3"/>' +
-            '<circle cx="100" cy="100" r="60" fill="none" stroke="#ffd700" stroke-width="1" opacity="0.5"/>' +
-            '<polygon points="100,45 108,100 100,155 92,100" fill="#ffd700"/>' +
-            '<polygon points="45,100 100,92 155,100 100,108" fill="#ff3333"/>' +
-            '<circle cx="100" cy="100" r="6" fill="#fff"/>' +
-            '<text x="100" y="25" font-family="sans-serif" font-size="11" fill="#ffd700" text-anchor="middle">AUCTION</text>' +
-            '</svg>'
-        ),
+        img: 'woman.PNG',
         rating: 1520,
-        deliveredPeers: [],
-        recipients: [],
-        auction: {
-            auctionId: 'auction-demo-1',
-            seller: 'System-Genesis',
-            startBid: 100,
-            currentBid: 100,
-            buyNow: 500,
-            bids: [],
-            status: 'live',
-            winner: null,
-            finalPrice: null,
-            createdAt: Date.now()
-        }
+        auction: null
     },
     {
-        id: 'demo-2',
+        id: 'meme-demo-2',
         sender: 'System-Genesis',
-        title: 'Rare Manuscript — Auction',
-        description: 'Example auction item. Hand-bound leather manuscript. Starting bid 250. Buy Now 1200.',
+        title: 'Max',
+        description: 'No registration is required. You can save your item to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your item and your voting calculations will remain only on your device, but you can always Re-inject your tape mode item (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the item creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete items on other users\' devices.',
         externalUrl: '',
-        img: 'data:image/svg+xml;utf8,' + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">' +
-            '<rect width="200" height="200" fill="#0a0a0a"/>' +
-            '<rect x="50" y="45" width="100" height="115" fill="#3a1a0a" stroke="#ffd700" stroke-width="2"/>' +
-            '<rect x="58" y="55" width="84" height="95" fill="#1a0a05" stroke="#ffd700" stroke-width="1" opacity="0.6"/>' +
-            '<line x1="70" y1="75" x2="130" y2="75" stroke="#ffd700" stroke-width="1"/>' +
-            '<line x1="70" y1="90" x2="130" y2="90" stroke="#ffd700" stroke-width="1"/>' +
-            '<line x1="70" y1="105" x2="130" y2="105" stroke="#ffd700" stroke-width="1"/>' +
-            '<line x1="70" y1="120" x2="110" y2="120" stroke="#ffd700" stroke-width="1"/>' +
-            '<text x="100" y="30" font-family="sans-serif" font-size="11" fill="#ffd700" text-anchor="middle">AUCTION</text>' +
-            '</svg>'
-        ),
-        rating: 1515,
-        deliveredPeers: [],
-        recipients: [],
-        auction: {
-            auctionId: 'auction-demo-2',
-            seller: 'System-Genesis',
-            startBid: 250,
-            currentBid: 250,
-            buyNow: 1200,
-            bids: [],
-            status: 'live',
-            winner: null,
-            finalPrice: null,
-            createdAt: Date.now()
-        }
+        img: 'man.PNG',
+        rating: 1520,
+        auction: null
     },
     {
-        id: 'demo-3',
+        id: 'meme-demo-3',
         sender: 'System-Genesis',
-        title: 'Silver Pocket Watch — Auction',
-        description: 'Example auction item without image. Rendered as text-preview thumbnail. Starting bid 180. Buy Now 900.',
+        title: 'No Image',
+        description: 'No registration is required. You can save your item to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your item and your voting calculations will remain only on your device, but you can always Re-inject your tape mode item (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the item creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete items on other users\' devices.',
         externalUrl: '',
         img: '',
-        rating: 1510,
-        deliveredPeers: [],
-        recipients: [],
-        auction: {
-            auctionId: 'auction-demo-3',
-            seller: 'System-Genesis',
-            startBid: 180,
-            currentBid: 180,
-            buyNow: 900,
-            bids: [],
-            status: 'live',
-            winner: null,
-            finalPrice: null,
-            createdAt: Date.now()
-        }
+        rating: 1520,
+        auction: null
     }
 ];
 
-// Force-refresh demo items on every load:
-//   remove any old demo (prefix "demo-" or legacy "meme-demo-")
-//   then insert fresh ones.
-(function forceRefreshDemoItems() {
-    items = items.filter(i => !(i.id && (i.id.startsWith('demo-') || i.id.startsWith('meme-demo-'))));
-    demoItems.forEach(demo => items.push(demo));
+const hasDemo = items.some(i => i.id && i.id.startsWith('meme-demo-'));
+
+if (!hasDemo) {
+    demoItems.forEach(demo => {
+        if (!items.some(i => i.id === demo.id)) {
+            items.push(demo);
+        }
+    });
     DataManager.set('versus_items', items);
-})();
+}
+
+// Убедимся, что у всех items есть поле auction (null если нет)
+items.forEach(it => {
+    if (typeof it.auction === 'undefined') it.auction = null;
+});
 
 let currentPair = [];
-function saveLocal() { DataManager.set('versus_items', items); }
+function saveLocal() {
+    DataManager.set('versus_items', items);
+}
 
 const DEFAULT_BROKER = 'wss://test.mosquitto.org:8081/mqtt';
 const savedBroker = DataManager.get('broker_url', DEFAULT_BROKER);
 
 const client = mqtt.connect(savedBroker, {
-    clientId: 'paramount_resonance_' + Math.random().toString(16).substr(2, 8),
+    clientId: 'versus_resonance_' + Math.random().toString(16).substr(2, 8),
     reconnectPeriod: 5000,
     connectTimeout: 5000,
     keepalive: 60
@@ -1039,7 +1784,10 @@ client.on('connect', () => {
 
     setInterval(() => {
         if (client && client.connected) {
-            client.publish(TOPIC, JSON.stringify({ type: 'PING', sender: myId }), { qos: 0 });
+            client.publish(TOPIC, JSON.stringify({
+                type: 'PING',
+                sender: myId
+            }), { qos: 0 });
         }
     }, 5000);
 
@@ -1057,18 +1805,33 @@ client.on('message', (topic, payload) => {
     try {
         let packet = JSON.parse(payload.toString());
 
-        if (packet.type === 'TRANSFER_IMPACT' && packet.target === myId) {
-            if (packet.sender === myId) { log(`[Security] Blocked self-transfer from ${packet.sender}`); return; }
-            if (isTxProcessed(packet.txId)) { log(`[Security] Duplicate transfer ${packet.txId} blocked.`); return; }
-            log(`[Network] Received ${packet.amount} impacts from ${packet.sender}`);
-            playerState.impacts += parseInt(packet.amount);
-            playerState.level = Math.floor(playerState.impacts / 20) + 1;
-            updatePlayerStatsUI();
-            saveLocal();
-            markTxProcessed(packet.txId);
-            client.publish(TOPIC, JSON.stringify({ type: 'TRANSFER_ACK', txId: packet.txId, sender: myId }), { qos: 1 });
-            alert(`Received ${packet.amount} impacts from ${packet.sender}`);
-        }
+if (packet.type === 'TRANSFER_IMPACT' && packet.target === myId) {
+    if (packet.sender === myId) {
+        log(`[Security] Blocked self-transfer from ${packet.sender}`);
+        return;
+    }
+    if (isTxProcessed(packet.txId)) {
+        log(`[Security] Duplicate transfer ${packet.txId} blocked.`);
+        return;
+    }
+    
+    log(`[Network] Received ${packet.amount} impacts from ${packet.sender}`);
+    
+    playerState.impacts += parseInt(packet.amount);
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+    saveLocal();
+
+    markTxProcessed(packet.txId);
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'TRANSFER_ACK',
+        txId: packet.txId,
+        sender: myId 
+    }), { qos: 1 });
+    
+    alert(`Received ${packet.amount} impacts from ${packet.sender}`);
+}
         
         else if (packet.type === 'TRANSFER_ACK') {
             if (pendingTransfers[packet.txId]) {
@@ -1079,11 +1842,14 @@ client.on('message', (topic, payload) => {
         }
 
         if (packet.type === 'PING') {
-            if (packet.sender !== myId) activePeers[packet.sender] = Date.now();
+            if (packet.sender !== myId) {
+                activePeers[packet.sender] = Date.now();
+            }
         }
         
         if (packet.type === 'ADD_ITEM') {
             if (!items.some(i => i.id === packet.item.id)) {
+                if (typeof packet.item.auction === 'undefined') packet.item.auction = null;
                 items.push(packet.item);
                 saveLocal();
                 log(`[Resonance] Item captured from ${packet.sender}: "${packet.item.title}"`);
@@ -1100,76 +1866,90 @@ client.on('message', (topic, payload) => {
                     }), { qos: 1 });
                 }
             }
-        }
+        } 
 
-        else if (packet.type === 'DELIVERY_ACK') {
-            if (packet.target && packet.target !== myId) return;
-            let item = items.find(i => i.id === packet.itemId);
-            if (item) {
-                if (!item.deliveredPeers) item.deliveredPeers = [];
-                if (!item.deliveredPeers.includes(packet.peerId)) {
-                    item.deliveredPeers.push(packet.peerId);
-                    saveLocal();
-                    updateRankingList();
-                    
-                    if (item.sender === myId) {
-                        recordActivity('deliveries');
-                        if (client && client.connected) {
-                            client.publish(TOPIC, JSON.stringify({ type: 'ACTIVITY', activityType: 'deliveries', sender: myId, ts: Date.now() }), { qos: 0 });
-                        }
-                    }
+else if (packet.type === 'DELIVERY_ACK') {
+    if (packet.target && packet.target !== myId) return;
+    let item = items.find(i => i.id === packet.itemId);
+    if (item) {
+        if (!item.deliveredPeers) item.deliveredPeers = [];
+        if (!item.deliveredPeers.includes(packet.peerId)) {
+            item.deliveredPeers.push(packet.peerId);
+            saveLocal();
+            updateRankingList();
+            
+            if (item.sender === myId) {
+                recordActivity('deliveries');
+
+                if (client && client.connected) {
+                    client.publish(TOPIC, JSON.stringify({
+                        type: 'ACTIVITY',
+                        activityType: 'deliveries',
+                        sender: myId,
+                        ts: Date.now()
+                    }), { qos: 0 });
                 }
             }
         }
+    }
+}
             
         else if (packet.type === 'UPDATE_ITEM') {
             const r = packet.item.recipients || [];
             const isPublic = r.length === 0;
             const isForMe = r.includes(myId);
-            if (!isPublic && !isForMe && packet.sender !== myId) return;
-
+            if (!isPublic && !isForMe && packet.sender !== myId) {
+                return;
+            }
             let existingItem = items.find(i => i.id === packet.item.id);
-
             if (existingItem) {
                 existingItem.title = packet.item.title;
                 existingItem.description = packet.item.description;
                 existingItem.externalUrl = packet.item.externalUrl;
                 if (packet.item.img) existingItem.img = packet.item.img;
 
-                if (typeof packet.item.auction !== 'undefined') {
-                    if (packet.item.auction === null) {
-                        existingItem.auction = null;
+                // === Слияние auction ===
+                if (packet.item.auction) {
+                    if (!existingItem.auction) {
+                        existingItem.auction = packet.item.auction;
                     } else {
-                        const incoming = packet.item.auction;
-                        const local = existingItem.auction || {};
-
-                        const mergedBidsMap = new Map();
-                        (incoming.bids || []).forEach(b => mergedBidsMap.set(b.bidId, b));
-                        (local.bids || []).forEach(b => {
-                            const prev = mergedBidsMap.get(b.bidId);
-                            if (!prev) mergedBidsMap.set(b.bidId, b);
-                            else {
-                                const rank = { pending_saved: 1, pending: 2, rejected: 3, accepted: 4 };
-                                if ((rank[b.status] || 0) > (rank[prev.status] || 0)) mergedBidsMap.set(b.bidId, b);
+                        // Сохраняем свои bids, если их нет у продавца
+                        const localBids = existingItem.auction.bids || [];
+                        const incomingBids = packet.item.auction.bids || [];
+                        const rank = { pending_saved: 1, pending: 2, rejected: 3, accepted: 4 };
+                        const mergedMap = {};
+                        incomingBids.forEach(b => { mergedMap[b.bidId] = b; });
+                        localBids.forEach(b => {
+                            const exist = mergedMap[b.bidId];
+                            if (!exist) {
+                                mergedMap[b.bidId] = b;
+                            } else {
+                                const rExist = rank[exist.status] || 0;
+                                const rLocal = rank[b.status] || 0;
+                                if (rLocal > rExist) mergedMap[b.bidId] = b;
                             }
                         });
-
-                        existingItem.auction = Object.assign({}, local, incoming, {
-                            bids: Array.from(mergedBidsMap.values())
+                        // Статус и winner берём из incoming, т.к. продавец — источник истины
+                        const mergedBids = Object.values(mergedMap);
+                        existingItem.auction = Object.assign({}, packet.item.auction, {
+                            bids: mergedBids
                         });
                     }
+                } else if (existingItem.auction === null) {
+                    // остаётся null
                 }
 
                 saveLocal();
                 log(`[Resonance] Item updated by ${packet.sender}: "${packet.item.title}"`);
                 updateRankingList();
             } else {
+                if (typeof packet.item.auction === 'undefined') packet.item.auction = null;
                 items.push(packet.item);
                 saveLocal();
                 updateRankingList();
                 if (items.length >= 2 && currentPair.length === 0) nextPair();
             }
-
+            
             if (packet.sender !== myId) {
                 client.publish(TOPIC, JSON.stringify({
                     type: 'DELIVERY_ACK',
@@ -1181,150 +1961,160 @@ client.on('message', (topic, payload) => {
             }
         }
             
-        else if (packet.type === 'VOTE') {
-            let winItem = items.find(i => i.id === packet.winId);
-            let loseItem = items.find(i => i.id === packet.loseId);
-            if (winItem && loseItem) {
-                winItem.rating = packet.newWinRating;
-                loseItem.rating = packet.newLoseRating;
-                saveLocal();
-                updateRankingList();
-                if (packet.sender !== myId) {
-                    log(`[Resonance] Global sync adjusted by ${packet.sender}`);
-                    nextPair();
-                }
-            }
+else if (packet.type === 'VOTE') {
+    let winItem = items.find(i => i.id === packet.winId);
+    let loseItem = items.find(i => i.id === packet.loseId);
+    
+    if (winItem && loseItem) {
+        winItem.rating = packet.newWinRating;
+        loseItem.rating = packet.newLoseRating;
+        saveLocal();
+        updateRankingList();
+
+        if (packet.sender !== myId) {
+            log(`[Resonance] Global sync adjusted by ${packet.sender}`);
+            nextPair();
         }
+    }
+}
 
-        else if (packet.type === 'ACTIVITY') {
-            if (packet.sender === myId) return;
-            const type = packet.activityType; 
-            if (!['votes', 'posts', 'deliveries'].includes(type)) return;
-            const ts = packet.ts || Date.now();
-            if (!activityHistory[type]) activityHistory[type] = [];
-            activityHistory[type].push(ts);
-            saveActivityHistory();
-            updateActivityChart();
-            log(`[Activity] ${packet.sender}: ${type}`);
+else if (packet.type === 'ACTIVITY') {
+    if (packet.sender === myId) return;
+
+    const type = packet.activityType; 
+    if (!['votes', 'posts', 'deliveries'].includes(type)) return;
+
+    const ts = packet.ts || Date.now();
+    if (!activityHistory[type]) activityHistory[type] = [];
+    
+    activityHistory[type].push(ts);
+    saveActivityHistory();
+    updateActivityChart();
+
+    log(`[Activity] ${packet.sender}: ${type}`);
+    
+}
+
+// ============ AUCTION PACKETS ============
+else if (packet.type === 'BID') {
+    const item = items.find(i => i.id === packet.itemId);
+    if (!item || !item.auction) return;
+    // Только seller обрабатывает BID (или сам адресат, если это seller)
+    if (item.auction.seller !== myId && packet.target !== myId) return;
+    if (packet.sender === myId) return;
+
+    const bids = item.auction.bids || [];
+    if (bids.some(b => b.bidId === packet.bidId)) return; // дедуп
+
+    const status = packet.saved ? 'pending_saved' : 'pending';
+    bids.push({
+        bidId: packet.bidId,
+        bidder: packet.sender,
+        amount: Number(packet.amount),
+        ts: packet.ts || Date.now(),
+        status: status
+    });
+    if (Number(packet.amount) > Number(item.auction.currentBid || 0)) {
+        item.auction.currentBid = Number(packet.amount);
+    }
+    saveLocal();
+    updateRankingList();
+    log(`[Auction] Bid ${packet.amount} from ${packet.sender} on "${item.title}"`);
+}
+else if (packet.type === 'BID_ACCEPT') {
+    const item = items.find(i => i.id === packet.itemId);
+    if (!item || !item.auction) return;
+    if (packet.target !== myId && packet.sender !== myId) return;
+    if (packet.sender === myId) return; // не обрабатываем своё же
+
+    // Обновляем/создаём bid
+    let bid = (item.auction.bids || []).find(b => b.bidId === packet.bidId);
+    if (!bid) {
+        bid = {
+            bidId: packet.bidId,
+            bidder: packet.bidder || packet.target,
+            amount: Number(packet.amount),
+            ts: Date.now(),
+            status: 'accepted'
+        };
+        if (!item.auction.bids) item.auction.bids = [];
+        item.auction.bids.push(bid);
+    } else {
+        bid.status = 'accepted';
+    }
+    // Обновляем остальные pending -> rejected
+    (item.auction.bids || []).forEach(b => {
+        if (b.bidId !== packet.bidId && (b.status === 'pending' || b.status === 'pending_saved')) {
+            b.status = 'rejected';
         }
+    });
+    item.auction.status = 'delivered';
+    item.auction.winner = packet.bidder || packet.target;
+    item.auction.finalPrice = Number(packet.amount);
+    saveLocal();
 
-        // ==================== AUCTION PACKETS ====================
-        else if (packet.type === 'BID') {
-            const item = items.find(i => i.id === packet.itemId);
-            if (!item || !item.auction) return;
-            if (item.auction.seller !== myId && packet.target !== myId) return;
+    // Открываем gate со своей стороны
+    const other = packet.sender === myId ? packet.target : packet.sender;
+    ensureGate(myId, other, item.id);
 
-            if (!item.auction.bids) item.auction.bids = [];
-            if (!item.auction.bids.some(b => b.bidId === packet.bidId)) {
-                item.auction.bids.push({
-                    bidId: packet.bidId,
-                    bidder: packet.sender,
-                    amount: packet.amount,
-                    ts: packet.ts || Date.now(),
-                    status: 'pending'
-                });
-                if (packet.amount > (item.auction.currentBid || 0)) {
-                    item.auction.currentBid = packet.amount;
-                }
-                saveLocal();
-                updateRankingList();
-                log(`[Auction] ${packet.sender} bids ${packet.amount} on "${item.title}" (${packet.saved ? 'SAVED tape bid' : 'LIVE bid'})`);
-            }
-        }
+    updateRankingList();
+    log(`[Auction] Deal delivered: "${item.title}" to ${item.auction.winner} for ${item.auction.finalPrice}`);
+}
+else if (packet.type === 'BID_REJECT') {
+    const item = items.find(i => i.id === packet.itemId);
+    if (!item || !item.auction) return;
+    if (packet.target !== myId && packet.sender !== myId) return;
+    if (packet.sender === myId) return;
+    const bid = (item.auction.bids || []).find(b => b.bidId === packet.bidId);
+    if (bid) {
+        bid.status = 'rejected';
+        saveLocal();
+        updateRankingList();
+        log(`[Auction] Bid rejected by seller: "${item.title}"`);
+    }
+}
+else if (packet.type === 'BUY_NOW') {
+    const item = items.find(i => i.id === packet.itemId);
+    if (!item || !item.auction) return;
+    if (packet.target !== myId && item.auction.seller !== myId) return;
+    if (packet.sender === myId) return;
+    item.auction.status = 'delivered';
+    item.auction.winner = packet.buyer || packet.sender;
+    item.auction.finalPrice = Number(item.auction.buyNow) || Number(item.auction.currentBid) || 0;
+    // Все pending -> rejected
+    (item.auction.bids || []).forEach(b => {
+        if (b.status === 'pending' || b.status === 'pending_saved') b.status = 'rejected';
+    });
+    saveLocal();
 
-        else if (packet.type === 'BID_ACCEPT') {
-            const item = items.find(i => i.id === packet.itemId);
-            if (!item || !item.auction) return;
+    const other = packet.sender === myId ? packet.target : packet.sender;
+    ensureGate(myId, other, item.id);
 
-            if (packet.target && packet.target !== myId) return;
-
-            item.auction.status = 'delivered';
-            item.auction.winner = packet.bidder || packet.target || null;
-            item.auction.acceptedAt = Date.now();
-
-            if (!item.auction.bids) item.auction.bids = [];
-            let bid = item.auction.bids.find(b => b.bidId === packet.bidId);
-            if (bid) {
-                bid.status = 'accepted';
-                item.auction.finalPrice = bid.amount;
-            } else if (packet.bidder === myId && typeof packet.amount === 'number') {
-                item.auction.bids.push({
-                    bidId: packet.bidId,
-                    bidder: myId,
-                    amount: packet.amount,
-                    ts: Date.now(),
-                    status: 'accepted'
-                });
-                item.auction.finalPrice = packet.amount;
-            }
-
-            saveLocal();
-            updateRankingList();
-            log(`[Auction] Bid accepted for "${item.title}" → Delivered to ${item.auction.winner}`);
-
-            if (item.auction.seller === myId && item.auction.winner && item.auction.winner !== myId) {
-                openGate(item.id, item.auction.winner);
-            }
-            if (item.auction.winner === myId && item.auction.seller !== myId) {
-                openGate(item.id, item.auction.seller);
-            }
-        }
-
-        else if (packet.type === 'BID_REJECT') {
-            const item = items.find(i => i.id === packet.itemId);
-            if (!item || !item.auction) return;
-            const bid = (item.auction.bids || []).find(b => b.bidId === packet.bidId);
-            if (bid) {
-                bid.status = 'rejected';
-                saveLocal();
-                updateRankingList();
-                log(`[Auction] Bid rejected for "${item.title}"`);
-            }
-        }
-
-        else if (packet.type === 'BUY_NOW') {
-            const item = items.find(i => i.id === packet.itemId);
-            if (!item || !item.auction) return;
-            if (packet.target && packet.target !== myId && item.auction.seller !== myId) return;
-
-            item.auction.status = 'delivered';
-            item.auction.winner = packet.buyer;
-            item.auction.finalPrice = item.auction.buyNow;
-            item.auction.acceptedAt = Date.now();
-            saveLocal();
-            updateRankingList();
-            log(`[Auction] BUY NOW completed for "${item.title}" by ${packet.buyer} at ${item.auction.buyNow}`);
-            if (item.auction.seller === myId && packet.buyer !== myId) openGate(item.id, packet.buyer);
-            if (packet.buyer === myId && item.auction.seller !== myId) openGate(item.id, item.auction.seller);
-        }
-
-        else if (packet.type === 'GATE_MSG') {
-            if (packet.to !== myId && packet.from !== myId) return;
-
-            const gateId = packet.gateId;
-            if (!auctionGates[gateId]) {
-                auctionGates[gateId] = {
-                    participants: [packet.from, packet.to],
-                    messages: [],
-                    itemId: packet.itemId || null
-                };
-            }
-
-            const exists = auctionGates[gateId].messages.some(
-                m => m.from === packet.from && m.ts === packet.ts && m.text === packet.text
-            );
-            if (!exists) {
-                auctionGates[gateId].messages.push({
-                    from: packet.from,
-                    text: packet.text,
-                    ts: packet.ts || Date.now()
-                });
-            }
-
-            DataManager.set('auction_gates', auctionGates);
-            updateRankingList();
-            log(`[Gate] Private message in gate ${gateId} from ${packet.from}`);
-        }
+    updateRankingList();
+    log(`[Auction] Buy Now: "${item.title}" to ${item.auction.winner} for ${item.auction.finalPrice}`);
+}
+else if (packet.type === 'GATE_MSG') {
+    if (packet.to !== myId && packet.from !== myId) return;
+    const gateId = packet.gateId;
+    if (!auctionGates[gateId]) {
+        auctionGates[gateId] = {
+            participants: [packet.from, packet.to],
+            messages: [],
+            itemId: packet.itemId || null
+        };
+    }
+    const msgs = auctionGates[gateId].messages;
+    const dup = msgs.some(m => m.from === packet.from && m.ts === packet.ts && m.text === packet.text);
+    if (dup) return;
+    msgs.push({
+        from: packet.from,
+        text: packet.text,
+        ts: packet.ts || Date.now()
+    });
+    if (msgs.length > 200) auctionGates[gateId].messages = msgs.slice(-200);
+    saveAuctionGates();
+    updateRankingList();
+}
 
     } catch(e) {
         log("Packet processing error: " + e.message);
@@ -1344,7 +2134,10 @@ setInterval(() => {
             refundedCount++;
         }
     }
-    if (refundedCount > 0) { updatePlayerStatsUI(); savePending(); }
+    if (refundedCount > 0) {
+        updatePlayerStatsUI();
+        savePending();
+    }
 }, 5000);
 
 function updateLabel(input) {
@@ -1376,13 +2169,17 @@ async function compressImage(file) {
 function convertImpacts(type) {
     if (type === 'votes') {
         const cost = 1;
-        if (playerState.impacts < cost) return alert('Not enough impacts! 1 impact is required for conversion.');
+        if (playerState.impacts < cost) {
+            return alert('Not enough impacts! 1 impact is required for conversion.');
+        }
         playerState.impacts -= cost;
         playerState.votesLeft += 3;
         log(`Converted ${cost} impact into +3 votes.`);
     } else if (type === 'posts') {
         const cost = 3;
-        if (playerState.impacts < cost) return alert('Not enough impacts! 3 impacts are required for conversion.');
+        if (playerState.impacts < cost) {
+            return alert('Not enough impacts! 3 impacts are required for conversion.');
+        }
         playerState.impacts -= cost;
         playerState.postsLeft += 1;
         log(`Converted ${cost} impacts into +1 post slot.`);
@@ -1391,40 +2188,11 @@ function convertImpacts(type) {
     updatePlayerStatsUI();
 }
 
-// ==================== AUCTION ADMIN HELPERS ====================
-function clearAuctionFields() {
-    document.getElementById('new-auction-start-bid').value = '';
-    document.getElementById('new-auction-buy-now').value = '';
+function makeAuctionId() {
+    return 'auction-' + Date.now() + '-' + Math.floor(Math.random() * 1000000);
 }
-
-function readAuctionFromForm() {
-    const startBidRaw = $('#new-auction-start-bid').val();
-    const buyNowRaw = $('#new-auction-buy-now').val();
-    const startBid = startBidRaw !== '' ? parseFloat(startBidRaw) : NaN;
-    const buyNow = buyNowRaw !== '' ? parseFloat(buyNowRaw) : null;
-
-    const hasAny = (!isNaN(startBid) && startBid >= 0) || (buyNow !== null && !isNaN(buyNow));
-    if (!hasAny) return null;
-
-    return {
-        auctionId: 'auction-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
-        seller: myId,
-        currentBid: (!isNaN(startBid) ? startBid : 0),
-        startBid: (!isNaN(startBid) ? startBid : 0),
-        buyNow: (buyNow !== null && !isNaN(buyNow)) ? buyNow : null,
-        bids: [],
-        status: 'live',
-        winner: null,
-        finalPrice: null,
-        createdAt: Date.now()
-    };
-}
-
-function fillAuctionForm(auction) {
-    clearAuctionFields();
-    if (!auction) return;
-    if (auction.startBid) document.getElementById('new-auction-start-bid').value = auction.startBid;
-    if (auction.buyNow)   document.getElementById('new-auction-buy-now').value   = auction.buyNow;
+function makeBidId() {
+    return 'bid-' + Date.now() + '-' + Math.floor(Math.random() * 1000000);
 }
 
 async function addItem() {
@@ -1432,20 +2200,37 @@ async function addItem() {
     const desc = $('#new-desc').val().trim();
     const url = $('#new-url').val().trim();
     const file = $('#new-img-file')[0].files[0];
-    const auctionData = readAuctionFromForm();
+
+    const startBidRaw = $('#new-auction-start-bid').val().trim();
+    const buyNowRaw = $('#new-auction-buy-now').val().trim();
+    const startBid = startBidRaw === '' ? null : Number(startBidRaw);
+    const buyNow = buyNowRaw === '' ? null : Number(buyNowRaw);
+
+    const wantsAuction = (startBid !== null && !isNaN(startBid) && startBid >= 0);
 
     if (editingId !== null) {
         const item = items.find(i => i.id === editingId);
-        if (!item) { alert('❌ This item no longer exists. Edit mode has been cancelled.'); cancelEdit(); return; }
-        if (item.sender !== myId) { alert('❌ You are not the author of this item! Only the author can edit it.'); cancelEdit(); return; }
+
+        if (!item) {
+            alert('❌ This item no longer exists. Edit mode has been cancelled.');
+            cancelEdit();
+            return;
+        }
+
+        if (item.sender !== myId) {
+            alert('❌ You are not the author of this item! Only the author can edit it.');
+            cancelEdit();
+            return;
+        }
     }
 
     if (!title) return alert('Enter title!');
 
     let imgData = "";
 
-    if (editingId !== null) {
+        if (editingId !== null) {
         const item = items.find(i => i.id === editingId);
+
         if (item) {
             item.title = title;
             item.description = desc;
@@ -1456,24 +2241,36 @@ async function addItem() {
                 ? recipientsRawEdit.split(',').map(s => s.trim()).filter(Boolean)
                 : [];
 
-            if (auctionData) {
-                const existingAuction = item.auction || {};
-                item.auction = Object.assign({}, existingAuction, {
-                    auctionId: existingAuction.auctionId || auctionData.auctionId,
-                    seller: myId,
-                    startBid: auctionData.startBid,
-                    buyNow: auctionData.buyNow,
-                    bids: existingAuction.bids || [],
-                    currentBid: existingAuction.currentBid || auctionData.startBid,
-                    status: existingAuction.status || auctionData.status,
-                    winner: existingAuction.winner || null,
-                    finalPrice: existingAuction.finalPrice || null
-                });
+            if (file) {
+                item.img = await compressImage(file);
+            }
+
+            // Auction update
+            if (wantsAuction) {
+                if (!item.auction) {
+                    item.auction = {
+                        auctionId: makeAuctionId(),
+                        seller: myId,
+                        startBid: startBid,
+                        currentBid: startBid,
+                        buyNow: (buyNow !== null && !isNaN(buyNow)) ? buyNow : null,
+                        bids: [],
+                        status: 'live',
+                        winner: null,
+                        finalPrice: null,
+                        createdAt: Date.now()
+                    };
+                } else {
+                    item.auction.startBid = startBid;
+                    if (Number(item.auction.currentBid || 0) < startBid) {
+                        item.auction.currentBid = startBid;
+                    }
+                    item.auction.buyNow = (buyNow !== null && !isNaN(buyNow)) ? buyNow : null;
+                    item.auction.seller = myId;
+                }
             } else {
                 item.auction = null;
             }
-
-            if (file) item.img = await compressImage(file);
 
             saveLocal();
 
@@ -1514,25 +2311,38 @@ async function addItem() {
             }), { qos: 0 });
         }
 
-        if (file) imgData = await compressImage(file);
+        if (file) {
+            imgData = await compressImage(file);
+        }
 
-        const recipientsRaw = $('#new-recipients').val().trim();
-        const recipients = recipientsRaw
-            ? recipientsRaw.split(',').map(s => s.trim()).filter(Boolean)
-            : [];
+const recipientsRaw = $('#new-recipients').val().trim();
+const recipients = recipientsRaw
+    ? recipientsRaw.split(',').map(s => s.trim()).filter(Boolean)
+    : [];
 
-        const newItem = {
-            id: 'item-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
-            sender: myId,
-            title,
-            description: desc,
-            externalUrl: url,
-            img: imgData,
-            rating: 1500,
-            deliveredPeers: [],
-            recipients: recipients,
-            auction: auctionData || null
-        };
+const newItem = {
+    id: 'meme-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+    sender: myId,
+    title,
+    description: desc,
+    externalUrl: url,
+    img: imgData,
+    rating: 1500,
+    deliveredPeers: [],
+    recipients: recipients,
+    auction: wantsAuction ? {
+        auctionId: makeAuctionId(),
+        seller: myId,
+        startBid: startBid,
+        currentBid: startBid,
+        buyNow: (buyNow !== null && !isNaN(buyNow)) ? buyNow : null,
+        bids: [],
+        status: 'live',
+        winner: null,
+        finalPrice: null,
+        createdAt: Date.now()
+    } : null
+};
 
         items.push(newItem);
         saveLocal();
@@ -1543,12 +2353,12 @@ async function addItem() {
             item: newItem
         }), { qos: 1 });
 
-        log(`You injected item: "${title}"${newItem.auction ? ' (as auction)' : ''}`);
+        log(`You injected item: "${title}"`);
     }
 
     $('#new-title, #new-desc, #new-url, #new-img-file').val('');
+    $('#new-auction-start-bid, #new-auction-buy-now').val('');
     $('#file-label-text').text("Select Item Image");
-    clearAuctionFields();
 
     updateRankingList();
     if (items.length >= 2 && currentPair.length === 0) nextPair();
@@ -1568,7 +2378,14 @@ function editItem(id) {
     $('#new-desc').val(item.description);
     $('#new-url').val(item.externalUrl);
     $('#file-label-text').text("Keep current image or choose new");
-    fillAuctionForm(item.auction);
+
+    if (item.auction) {
+        $('#new-auction-start-bid').val(item.auction.startBid);
+        $('#new-auction-buy-now').val(item.auction.buyNow !== null ? item.auction.buyNow : '');
+    } else {
+        $('#new-auction-start-bid').val('');
+        $('#new-auction-buy-now').val('');
+    }
 
     editingId = id;
     $('.inject-btn-bg').text('Save Changes');
@@ -1584,10 +2401,12 @@ function cancelEdit() {
     $('#new-desc').val('');
     $('#new-url').val('');
     $('#new-img-file').val('');
+    $('#new-auction-start-bid').val('');
+    $('#new-auction-buy-now').val('');
     $('#file-label-text').text("Select Item Image");
-    clearAuctionFields();
 
     editingId = null;
+
     $('.inject-btn-bg').text('Inject Item to Network');
 
     const cancelBtn = document.getElementById('cancel-edit-btn');
@@ -1598,11 +2417,17 @@ function cancelEdit() {
 
 function deleteItemLocal(id) {
     const isEditingThis = (editingId === id);
+
     let confirmMsg = 'Are you sure you want to delete this item from your device?';
-    if (isEditingThis) confirmMsg = '⚠️ This item is currently being edited.\n\nDelete it and cancel editing?';
+    if (isEditingThis) {
+        confirmMsg = '⚠️ This item is currently being edited.\n\nDelete it and cancel editing?';
+    }
+
     if (!confirm(confirmMsg)) return;
 
-    if (isEditingThis) cancelEdit();
+    if (isEditingThis) {
+        cancelEdit();
+    }
 
     let index = items.findIndex(i => i.id === id);
     if (index !== -1) {
@@ -1615,356 +2440,357 @@ function deleteItemLocal(id) {
         log(`You removed item locally: ${id}.`);
         updateRankingList();
 
-        if (items.length < 2) { currentPair = []; nextPair(); return; }
+        if (items.length < 2) {
+            currentPair = [];
+            nextPair();
+            return;
+        }
 
         const wasActivePairAffected = (id === activeLeftId || id === activeRightId);
+
         if (wasActivePairAffected || currentPair.length === 0) {
             nextPair();
         } else {
             const newLeftIndex = items.findIndex(i => i.id === activeLeftId);
             const newRightIndex = items.findIndex(i => i.id === activeRightId);
-            if (newLeftIndex !== -1 && newRightIndex !== -1) currentPair = [newLeftIndex, newRightIndex];
-            else nextPair();
-        }
-    }
-}
 
-// ==================== AUCTION RENDERING & ACTIONS ====================
-
-function getAuctionStatusLabel(auction) {
-    if (!auction) return '';
-    if (auction.status === 'delivered') return { cls: 'delivered', text: 'DELIVERED' };
-    if (auction.status === 'ended')     return { cls: 'ended',     text: 'ENDED' };
-    if (activePeers[auction.seller] && Date.now() - activePeers[auction.seller] < 12000) {
-        return { cls: 'live', text: 'LIVE' };
-    }
-    return { cls: 'tape', text: 'TAPE' };
-}
-
-function renderAuctionBlock(item) {
-    if (!item.auction) return '';
-    const a = item.auction;
-    const isSeller = a.seller === myId;
-    const sellerLive = activePeers[a.seller] && (Date.now() - activePeers[a.seller] < 12000);
-    const myBids = (a.bids || []).filter(b => b.bidder === myId);
-    const hasSavedBid = myBids.some(b => b.status === 'pending_saved');
-    const acceptedBid = (a.bids || []).find(b => b.status === 'accepted');
-    const isWinner = acceptedBid && acceptedBid.bidder === myId;
-    const statusInfo = getAuctionStatusLabel(a);
-
-    let html = `
-        <div class="auction-panel">
-            <h3>
-                🔨 Auction
-                <span class="auction-badge ${statusInfo.cls}">${statusInfo.text}</span>
-                <span class="bid-count-badge">${(a.bids || []).length} bids</span>
-            </h3>
-            <div class="auction-row"><span>Seller:</span><span>${a.seller}</span></div>
-            <div class="auction-row"><span>Current bid:</span><span>${a.currentBid || 0}</span></div>
-            ${a.buyNow ? `<div class="auction-row"><span>Buy Now:</span><span style="color:#ffd700">${a.buyNow}</span></div>` : ''}
-    `;
-
-    if (a.status === 'delivered') {
-        html += `<div class="auction-row" style="color:#0097ff"><span>Winner:</span><span>${a.winner || '—'}</span></div>`;
-        if (a.finalPrice) html += `<div class="auction-row"><span>Final:</span><span>${a.finalPrice}</span></div>`;
-    }
-
-    if (!isSeller && a.status !== 'delivered') {
-        const canBuyNow = a.buyNow && sellerLive && a.status !== 'delivered';
-
-        if (sellerLive) {
-            html += `
-                <div class="bid-input-row">
-                    <input type="number" id="bid-input-${item.id}" class="admin-input" placeholder="Your bid (min ${(a.currentBid||0)+1})">
-                    <button class="edit-btn" style="margin:0; width:auto; padding:10px; background:#afff0050 !important; border:1px solid #afff00;" onclick="placeBid('${item.id}')">Bid</button>
-                </div>
-            `;
-            if (canBuyNow) {
-                html += `<button class="admin-btn" style="margin-top:8px; background:#ffd700; color:#000;" onclick="buyNow('${item.id}')">Buy Now — ${a.buyNow}</button>`;
+            if (newLeftIndex !== -1 && newRightIndex !== -1) {
+                currentPair = [newLeftIndex, newRightIndex];
+            } else {
+                nextPair();
             }
-        } else {
-            html += `
-                <div style="color:#afff00; font-size:12px; margin-top:6px;">
-                    Seller is offline (TAPE). You can save an intended bid and re-bid when seller returns LIVE.
-                </div>
-                <div class="bid-input-row">
-                    <input type="number" id="bid-input-${item.id}" class="admin-input" placeholder="Intended bid (min ${(a.currentBid||0)+1})" value="${hasSavedBid ? (myBids.find(b=>b.status==='pending_saved')?.amount || '') : ''}">
-                    <button class="edit-btn" style="margin:0; width:auto; padding:10px; background:#afff0050 !important; border:1px solid #afff00;" onclick="saveTapeBid('${item.id}')">Save Bid</button>
-                </div>
-            `;
         }
     }
-
-    if (isSeller && a.status !== 'delivered') {
-        const pendingBids = (a.bids || []).filter(b => b.status === 'pending' || b.status === 'pending_saved');
-        if (pendingBids.length > 0) {
-            html += `<div class="bid-list"><div style="color:#ffd700; margin-bottom:4px;">Incoming bids:</div>`;
-            pendingBids.sort((x,y) => y.amount - x.amount).forEach(b => {
-                html += `
-                    <div class="bid-entry">
-                        <span>${b.bidder} — ${b.amount} ${b.status === 'pending_saved' ? '(saved)' : ''}</span>
-                        <span>
-                            <button class="edit-btn" style="width:auto; padding:4px 8px; margin:0; background:#0097ff50 !important; border:1px solid #0097ff;" onclick="acceptBid('${item.id}','${b.bidId}')">Accept</button>
-                            <button class="edit-btn" style="width:auto; padding:4px 8px; margin:0; background:#ff333350 !important; border:1px solid #ff3333;" onclick="rejectBid('${item.id}','${b.bidId}')">Reject</button>
-                        </span>
-                    </div>`;
-            });
-            html += `</div>`;
-        }
-    }
-
-    if (!isSeller && (a.bids || []).length > 0) {
-        html += `<div class="bid-list"><div style="color:#888; margin-bottom:4px;">Bid history:</div>`;
-        (a.bids || []).slice(-8).forEach(b => {
-            const isMe = b.bidder === myId;
-            html += `<div class="bid-entry ${b.status === 'accepted' ? 'accepted' : ''} ${isMe ? 'mine' : ''}">
-                <span>${b.bidder}</span><span>${b.amount} ${b.status === 'accepted' ? '✓' : b.status === 'rejected' ? '✗' : ''}</span>
-            </div>`;
-        });
-        html += `</div>`;
-    }
-
-    if ((isSeller || isWinner) && a.status === 'delivered') {
-        const otherPeer = isSeller ? a.winner : a.seller;
-        html += renderGatePanel(item.id, otherPeer);
-    }
-
-    html += `</div>`;
-    return html;
 }
 
-function openGate(itemId, otherPeer) {
-    const gateId = 'gate-' + [myId, otherPeer].sort().join('-') + '-' + itemId;
-    if (!auctionGates[gateId]) {
-        auctionGates[gateId] = { participants: [myId, otherPeer], messages: [], itemId };
-        DataManager.set('auction_gates', auctionGates);
-    }
-    log(`[Gate] Gate opened between ${myId} and ${otherPeer} (only works if both are LIVE)`);
-    updateRankingList();
-}
-
-function renderGatePanel(itemId, otherPeer) {
-    const gateId = 'gate-' + [myId, otherPeer].sort().join('-') + '-' + itemId;
-    const gate = auctionGates[gateId];
-    const peerLive = activePeers[otherPeer] && (Date.now() - activePeers[otherPeer] < 12000);
-
-    let html = `<div class="gate-panel">
-        <div><strong>🔒 Private Gate</strong> with ${otherPeer} ${peerLive ? '<span style="color:#ff0000">● online now</span>' : '<span style="color:#888">● offline</span>'}</div>
-        <div style="font-size:10px; color:#008855; margin-top:4px;">Live peer info exchange works only if both participants are online now.</div>
-    `;
-
-    if (gate && gate.messages && gate.messages.length > 0) {
-        gate.messages.slice(-10).forEach(m => {
-            const dir = m.from === myId ? '→' : '←';
-            html += `<div class="gate-msg"><span class="meta">${m.from} ${dir}</span> ${m.text}</div>`;
-        });
-    } else {
-        html += `<div style="color:#008855; font-size:11px; margin:4px 0;">No messages yet.</div>`;
-    }
-
-    html += `
-        <textarea id="gate-input-${gateId}" placeholder="Send private message (only delivered if peer is LIVE)..."></textarea>
-        <button class="edit-btn" style="width:auto; padding:6px 10px; margin-top:6px; background:#00ff8850 !important; border:1px solid #00ff88; color:#00ff88;" onclick="sendGateMsg('${gateId}','${otherPeer}')">Send</button>
-    </div>`;
-    return html;
-}
-
-function sendGateMsg(gateId, otherPeer) {
-    const input = document.getElementById('gate-input-' + gateId);
-    if (!input) return;
-    const text = input.value.trim();
-    if (!text) return;
-
-    const peerLive = activePeers[otherPeer] && (Date.now() - activePeers[otherPeer] < 12000);
-    if (!peerLive) {
-        if (!confirm('Peer ' + otherPeer + ' appears to be offline (TAPE). The message will be sent but may not be delivered until they come back online. Send anyway?')) return;
-    }
-
-    if (!auctionGates[gateId]) {
-        auctionGates[gateId] = { participants: [myId, otherPeer], messages: [], itemId: null };
-    }
-    const itemId = auctionGates[gateId].itemId || null;
-
-    const ts = Date.now();
-    auctionGates[gateId].messages.push({ from: myId, text, ts });
-    DataManager.set('auction_gates', auctionGates);
-
-    client.publish(TOPIC, JSON.stringify({
-        type: 'GATE_MSG',
-        gateId,
-        itemId,
-        from: myId,
-        to: otherPeer,
-        text,
-        ts
-    }), { qos: 1 });
-
-    input.value = '';
-    updateRankingList();
-}
-
+// ============================================
+// Auction actions (global)
+// ============================================
 function placeBid(itemId) {
     const item = items.find(i => i.id === itemId);
     if (!item || !item.auction) return;
+    if (item.auction.seller === myId) return alert('You cannot bid on your own item.');
+
     const input = document.getElementById('bid-input-' + itemId);
-    const amount = parseFloat(input.value);
-    if (isNaN(amount) || amount <= (item.auction.currentBid || 0)) {
-        alert('Bid must be greater than current bid (' + (item.auction.currentBid || 0) + ')');
-        return;
-    }
+    const raw = input ? input.value.trim() : '';
+    const amount = Number(raw);
+    if (!raw || isNaN(amount) || amount <= 0) return alert('Enter a valid bid amount.');
 
-    const bidId = 'bid-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+    const minNext = Math.max(
+        Number(item.auction.startBid || 0),
+        Number(item.auction.currentBid || 0)
+    ) + 1;
+    if (amount < minNext) return alert('Minimum bid is ' + minNext);
 
+    const sellerOnline = isPeerOnline(item.auction.seller);
+    const savedFlag = !sellerOnline;
+
+    const bidId = makeBidId();
+    const bid = {
+        bidId: bidId,
+        bidder: myId,
+        amount: amount,
+        ts: Date.now(),
+        status: savedFlag ? 'pending_saved' : 'pending'
+    };
+
+    // Локально сразу добавим
     if (!item.auction.bids) item.auction.bids = [];
-    item.auction.bids.push({ bidId, bidder: myId, amount, ts: Date.now(), status: 'pending' });
-    if (amount > (item.auction.currentBid || 0)) item.auction.currentBid = amount;
+    item.auction.bids.push(bid);
+    if (amount > Number(item.auction.currentBid || 0)) {
+        item.auction.currentBid = amount;
+    }
     saveLocal();
+    updateRankingList();
 
     client.publish(TOPIC, JSON.stringify({
         type: 'BID',
         sender: myId,
         target: item.auction.seller,
-        itemId,
-        bidId,
-        amount,
-        ts: Date.now(),
+        itemId: item.id,
+        bidId: bidId,
+        amount: amount,
+        ts: bid.ts,
+        saved: savedFlag
+    }), { qos: 1 });
+
+    log(`[Auction] Bid ${amount} on "${item.title}" (${savedFlag ? 'saved' : 'live'})`);
+}
+
+function reBid(itemId, bidId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item || !item.auction) return;
+    const bid = (item.auction.bids || []).find(b => b.bidId === bidId);
+    if (!bid) return;
+    if (bid.bidder !== myId) return;
+
+    const sellerOnline = isPeerOnline(item.auction.seller);
+    if (!sellerOnline) return alert('Seller is still offline.');
+
+    bid.status = 'pending';
+    bid.ts = Date.now();
+    saveLocal();
+    updateRankingList();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'BID',
+        sender: myId,
+        target: item.auction.seller,
+        itemId: item.id,
+        bidId: bid.bidId,
+        amount: bid.amount,
+        ts: bid.ts,
         saved: false
     }), { qos: 1 });
 
-    log(`[Auction] LIVE bid sent: ${amount} on "${item.title}"`);
-    input.value = '';
-    updateRankingList();
-}
-
-function saveTapeBid(itemId) {
-    const item = items.find(i => i.id === itemId);
-    if (!item || !item.auction) return;
-    const input = document.getElementById('bid-input-' + itemId);
-    const amount = parseFloat(input.value);
-    if (isNaN(amount) || amount <= (item.auction.currentBid || 0)) {
-        alert('Intended bid must be greater than current bid (' + (item.auction.currentBid || 0) + ')');
-        return;
-    }
-
-    const bidId = 'bid-' + Date.now() + '-' + Math.floor(Math.random()*1000);
-
-    if (!item.auction.bids) item.auction.bids = [];
-    item.auction.bids.push({ bidId, bidder: myId, amount, ts: Date.now(), status: 'pending_saved' });
-    saveLocal();
-
-    client.publish(TOPIC, JSON.stringify({
-        type: 'BID',
-        sender: myId,
-        target: item.auction.seller,
-        itemId,
-        bidId,
-        amount,
-        ts: Date.now(),
-        saved: true
-    }), { qos: 1 });
-
-    log(`[Auction] TAPE bid SAVED: ${amount} on "${item.title}". Will be re-biddable when seller is LIVE.`);
-    updateRankingList();
-}
-
-function acceptBid(itemId, bidId) {
-    const item = items.find(i => i.id === itemId);
-    if (!item || !item.auction) return;
-    const bid = (item.auction.bids || []).find(b => b.bidId === bidId);
-    if (!bid) return;
-
-    bid.status = 'accepted';
-    item.auction.status = 'delivered';
-    item.auction.winner = bid.bidder;
-    item.auction.finalPrice = bid.amount;
-    item.auction.acceptedAt = Date.now();
-    saveLocal();
-
-    client.publish(TOPIC, JSON.stringify({
-        type: 'BID_ACCEPT',
-        sender: myId,
-        target: bid.bidder,
-        itemId,
-        bidId,
-        bidder: bid.bidder,
-        amount: bid.amount
-    }), { qos: 1 });
-
-    log(`[Auction] Bid accepted: ${bid.bidder} wins "${item.title}" at ${bid.amount} → Delivered.`);
-    openGate(itemId, bid.bidder);
-    updateRankingList();
-}
-
-function rejectBid(itemId, bidId) {
-    const item = items.find(i => i.id === itemId);
-    if (!item || !item.auction) return;
-    const bid = (item.auction.bids || []).find(b => b.bidId === bidId);
-    if (!bid) return;
-
-    bid.status = 'rejected';
-    saveLocal();
-
-    client.publish(TOPIC, JSON.stringify({
-        type: 'BID_REJECT',
-        sender: myId,
-        target: bid.bidder,
-        itemId,
-        bidId
-    }), { qos: 1 });
-
-    log(`[Auction] Bid rejected from ${bid.bidder}.`);
-    updateRankingList();
+    log(`[Auction] Re-bid ${bid.amount} on "${item.title}"`);
 }
 
 function buyNow(itemId) {
     const item = items.find(i => i.id === itemId);
     if (!item || !item.auction) return;
-    if (!item.auction.buyNow) return alert('Buy Now is not set for this auction.');
-    const sellerLive = activePeers[item.auction.seller] && (Date.now() - activePeers[item.auction.seller] < 12000);
-    if (!sellerLive) return alert('Seller is TAPE (offline). Buy Now is unavailable. Wait for the seller to become LIVE.');
+    if (item.auction.seller === myId) return alert('You cannot buy your own item.');
+    if (item.auction.buyNow === null) return;
+    if (!isPeerOnline(item.auction.seller)) return alert('Seller is offline. Buy Now unavailable.');
 
-    if (!confirm('Buy Now for ' + item.auction.buyNow + '? This immediately completes the deal.')) return;
-
-    item.auction.status = 'delivered';
-    item.auction.winner = myId;
-    item.auction.finalPrice = item.auction.buyNow;
-    item.auction.acceptedAt = Date.now();
-    saveLocal();
+    if (!confirm('Buy Now for ' + item.auction.buyNow + ' ?')) return;
 
     client.publish(TOPIC, JSON.stringify({
         type: 'BUY_NOW',
         sender: myId,
         target: item.auction.seller,
-        itemId,
+        itemId: item.id,
         buyer: myId
     }), { qos: 1 });
 
-    log(`[Auction] BUY NOW executed for "${item.title}" at ${item.auction.buyNow}`);
-    openGate(itemId, item.auction.seller);
+    log(`[Auction] Buy Now sent for "${item.title}" at ${item.auction.buyNow}`);
+}
+
+function acceptBid(itemId, bidId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item || !item.auction) return;
+    if (item.auction.seller !== myId) return;
+
+    const bid = (item.auction.bids || []).find(b => b.bidId === bidId);
+    if (!bid) return;
+
+    bid.status = 'accepted';
+    (item.auction.bids || []).forEach(b => {
+        if (b.bidId !== bidId && (b.status === 'pending' || b.status === 'pending_saved')) {
+            b.status = 'rejected';
+        }
+    });
+    item.auction.status = 'delivered';
+    item.auction.winner = bid.bidder;
+    item.auction.finalPrice = bid.amount;
+    saveLocal();
+    updateRankingList();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'BID_ACCEPT',
+        sender: myId,
+        target: bid.bidder,
+        itemId: item.id,
+        bidId: bidId,
+        bidder: bid.bidder,
+        amount: bid.amount
+    }), { qos: 1 });
+
+    // Gate
+    ensureGate(myId, bid.bidder, item.id);
+
+    log(`[Auction] Accepted bid ${bid.amount} from ${bid.bidder} on "${item.title}"`);
+}
+
+function rejectBid(itemId, bidId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item || !item.auction) return;
+    if (item.auction.seller !== myId) return;
+
+    const bid = (item.auction.bids || []).find(b => b.bidId === bidId);
+    if (!bid) return;
+    bid.status = 'rejected';
+    saveLocal();
+    updateRankingList();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'BID_REJECT',
+        sender: myId,
+        target: bid.bidder,
+        itemId: item.id,
+        bidId: bidId
+    }), { qos: 1 });
+}
+
+function sendGateMessage(itemId, peerId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+    const gateId = makeGateId(myId, peerId, item.id);
+    const gate = auctionGates[gateId];
+    if (!gate) return;
+
+    const textarea = document.getElementById('gate-input-' + gateId);
+    const text = textarea ? textarea.value.trim() : '';
+    if (!text) return;
+
+    const online = isPeerOnline(peerId);
+    if (!online) {
+        if (!confirm('Peer ' + peerId + ' appears offline. Send anyway?')) return;
+    }
+
+    const ts = Date.now();
+    gate.messages.push({ from: myId, text: text, ts: ts });
+    if (gate.messages.length > 200) gate.messages = gate.messages.slice(-200);
+    saveAuctionGates();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'GATE_MSG',
+        gateId: gateId,
+        itemId: item.id,
+        from: myId,
+        to: peerId,
+        text: text,
+        ts: ts
+    }), { qos: 1 });
+
+    if (textarea) textarea.value = '';
     updateRankingList();
 }
 
-function reBid(itemId) {
-    const item = items.find(i => i.id === itemId);
-    if (!item || !item.auction) return;
-    const mySaved = (item.auction.bids || []).find(b => b.bidder === myId && b.status === 'pending_saved');
-    if (!mySaved) return;
+// ============================================
+// renderAuctionBlock
+// ============================================
+function renderAuctionBlock(item) {
+    if (!item.auction) return '';
 
-    mySaved.status = 'pending';
-    client.publish(TOPIC, JSON.stringify({
-        type: 'BID',
-        sender: myId,
-        target: item.auction.seller,
-        itemId,
-        bidId: mySaved.bidId,
-        amount: mySaved.amount,
-        ts: Date.now(),
-        saved: false
-    }), { qos: 1 });
+    const a = item.auction;
+    const isSeller = (a.seller === myId);
+    const isWinner = (a.winner === myId);
+    const sellerOnline = isPeerOnline(a.seller);
 
-    saveLocal();
-    log(`[Auction] Re-bid sent: ${mySaved.amount} on "${item.title}"`);
-    updateRankingList();
+    let badgeClass = 'live';
+    let badgeText = 'LIVE';
+    if (a.status === 'delivered') { badgeClass = 'delivered'; badgeText = 'DELIVERED'; }
+    else if (a.status === 'ended') { badgeClass = 'ended'; badgeText = 'ENDED'; }
+    else if (!sellerOnline) { badgeClass = 'tape'; badgeText = 'TAPE'; }
+
+    const bidsCount = (a.bids || []).length;
+
+    let html = `<div class="auction-block">`;
+    html += `<div class="auction-head">🔨 Auction <span class="auction-badge ${badgeClass}">${badgeText}</span> <span style="color:#888;font-size:11px;font-weight:normal;">${bidsCount} bid${bidsCount===1?'':'s'}</span></div>`;
+    html += `<div class="auction-row">Seller: <span style="color:#ffd700">${a.seller}</span> ${sellerOnline ? '<span style="color:#ff0000">● online</span>' : '<span style="color:#afff00">● offline</span>'}</div>`;
+    html += `<div class="auction-row">Current bid: <span style="color:#afff00">${a.currentBid}</span></div>`;
+    if (a.buyNow !== null && a.buyNow !== undefined) {
+        html += `<div class="auction-row">Buy Now: <span style="color:#de00b2">${a.buyNow}</span></div>`;
+    }
+    if (a.status === 'delivered') {
+        html += `<div class="auction-row">Winner: <span style="color:#0097ff">${a.winner}</span></div>`;
+        html += `<div class="auction-row">Final: <span style="color:#0097ff">${a.finalPrice}</span></div>`;
+    }
+
+    // ===== Действия покупателя =====
+    if (!isSeller && a.status !== 'delivered' && a.status !== 'ended') {
+        const myPending = (a.bids || []).filter(b => b.bidder === myId && (b.status === 'pending' || b.status === 'pending_saved'));
+        const myPendingSaved = myPending.filter(b => b.status === 'pending_saved');
+        const myPendingLive = myPending.filter(b => b.status === 'pending');
+
+        if (sellerOnline) {
+            if (myPendingSaved.length > 0) {
+                html += `<div class="auction-row" style="color:#ff8b00;">You have a saved bid. Seller is now LIVE — you can Re-bid.</div>`;
+                myPendingSaved.forEach(b => {
+                    html += `<div class="auction-actions">
+                        <button class="btn-bid" onclick="event.stopPropagation(); reBid('${item.id}','${b.bidId}')">Re-bid — ${b.amount}</button>
+                    </div>`;
+                });
+            } else {
+                const minNext = Math.max(Number(a.startBid||0), Number(a.currentBid||0)) + 1;
+                html += `<div class="auction-actions">
+                    <input type="number" id="bid-input-${item.id}" placeholder="Your bid (min ${minNext})" min="${minNext}" step="1">
+                    <button class="btn-bid" onclick="event.stopPropagation(); placeBid('${item.id}')">Bid</button>
+                </div>`;
+                if (a.buyNow !== null && a.buyNow !== undefined) {
+                    html += `<div class="auction-actions">
+                        <button class="btn-buy" onclick="event.stopPropagation(); buyNow('${item.id}')">Buy Now — ${a.buyNow}</button>
+                    </div>`;
+                }
+            }
+        } else {
+            if (myPendingLive.length > 0) {
+                html += `<div class="auction-row" style="color:#ff8b00;">Your live bid is waiting; seller is offline now.</div>`;
+            }
+            const minNext = Math.max(Number(a.startBid||0), Number(a.currentBid||0)) + 1;
+            html += `<div class="auction-row" style="color:#afff00;font-size:12px;">Seller is TAPE (offline). You can save a bid.</div>`;
+            html += `<div class="auction-actions">
+                <input type="number" id="bid-input-${item.id}" placeholder="Save bid (min ${minNext})" min="${minNext}" step="1">
+                <button class="btn-save" onclick="event.stopPropagation(); placeBid('${item.id}')">Save Bid</button>
+            </div>`;
+        }
+    }
+
+    // ===== Действия продавца =====
+    if (isSeller && a.status !== 'delivered' && a.status !== 'ended') {
+        const incoming = (a.bids || []).filter(b => b.bidder !== myId && (b.status === 'pending' || b.status === 'pending_saved'));
+        incoming.sort((x, y) => y.amount - x.amount);
+        if (incoming.length > 0) {
+            html += `<div class="auction-bids">`;
+            html += `<div style="color:#ffd700;font-size:12px;margin-bottom:4px;">Incoming bids:</div>`;
+            incoming.forEach(b => {
+                html += `<div class="bid-row">
+                    <div class="bid-info">${b.bidder} — <span style="color:#afff00">${b.amount}</span> <span style="color:#888;font-size:10px;">(${b.status})</span></div>
+                    <button class="btn-accept" style="background:#0097ff;color:#fff;" onclick="event.stopPropagation(); acceptBid('${item.id}','${b.bidId}')">Accept</button>
+                    <button class="btn-reject" style="background:#ff3333;color:#fff;" onclick="event.stopPropagation(); rejectBid('${item.id}','${b.bidId}')">Reject</button>
+                </div>`;
+            });
+            html += `</div>`;
+        } else {
+            html += `<div class="auction-row" style="color:#888;">No incoming bids yet.</div>`;
+        }
+    }
+
+    // ===== История ставок покупателя =====
+    if (!isSeller) {
+        const myBids = (a.bids || []).filter(b => b.bidder === myId);
+        myBids.sort((x, y) => y.ts - x.ts);
+        const recent = myBids.slice(0, 8);
+        if (recent.length > 0) {
+            html += `<div class="auction-bids">
+                <div style="color:#ffd700;font-size:12px;margin-bottom:4px;">Your bids:</div>`;
+            recent.forEach(b => {
+                html += `<div class="bid-row"><div class="bid-info">${b.amount} — <span style="color:#888;font-size:10px;">${b.status}</span></div></div>`;
+            });
+            html += `</div>`;
+        }
+    }
+
+    // ===== Приватный gate =====
+    if (a.status === 'delivered' && (isSeller || isWinner)) {
+        const other = isSeller ? a.winner : a.seller;
+        const gateId = makeGateId(myId, other, item.id);
+        const gate = auctionGates[gateId];
+        const online = isPeerOnline(other);
+
+        html += `<div class="gate-block">
+            <div class="gate-head">🔒 Private Gate <span style="color:#888;font-size:11px;font-weight:normal;">with ${other}</span></div>
+            <div class="gate-status">${online ? '<span style="color:#ff0000">● online</span>' : '<span style="color:#ff8b00">● offline</span> — messages will be delivered when peer returns'}</div>
+            <div class="gate-msgs" id="gate-msgs-${gateId}">`;
+        if (gate) {
+            const msgs = gate.messages.slice(-10);
+            msgs.forEach(m => {
+                html += `<div class="gate-msg"><span class="from">${m.from}:</span> ${m.text.replace(/</g,'&lt;')}</div>`;
+            });
+        } else {
+            html += `<div class="gate-msg" style="color:#555;">No messages yet.</div>`;
+        }
+        html += `</div>
+            <div class="gate-input-row">
+                <textarea id="gate-input-${gateId}" placeholder="Message to ${other}..."></textarea>
+                <button onclick="event.stopPropagation(); sendGateMessage('${item.id}','${other}')">Send</button>
+            </div>
+        </div>`;
+    }
+
+    html += `</div>`;
+    return html;
 }
 
 function updateRankingList() {
@@ -1972,54 +2798,133 @@ function updateRankingList() {
     let html = '';
 
     sorted.forEach((item, index) => {
-        const isDemo = item.sender === 'System-Genesis' || (item.id && item.id.startsWith('demo-'));
+        const isDemo =
+            item.sender === 'System-Genesis' ||
+            (item.id && item.id.startsWith('meme-demo-'));
+
         let deliveryStatusHtml = '';
 
         if (isDemo) {
-            deliveryStatusHtml = `<div style="color:#0097ff; margin:0 0 10px 0;">Demo Item is delivered by default</div>`;
+            deliveryStatusHtml =
+                `<div style="color:#0097ff; margin:0 0 10px 0;">
+                    Demo Item is delivered by default
+                </div>`;
         } else {
-            const deliveredCount = item.deliveredPeers ? item.deliveredPeers.length : 0;
+            const deliveredCount = item.deliveredPeers
+                ? item.deliveredPeers.length
+                : 0;
+
             const peerLabel = deliveredCount === 1 ? 'peer' : 'peers';
-            deliveryStatusHtml = `<div style="color:#0097ff; margin:0 0 10px 0;">Delivered to: ${deliveredCount} ${peerLabel}</div>`;
+
+            deliveryStatusHtml =
+                `<div style="color:#0097ff; margin:0 0 10px 0;">
+                    Delivered to: ${deliveredCount} ${peerLabel}
+                </div>`;
         }
 
         const hasImage = item.img && item.img.length > 0;
+
         let thumbnailHtml;
+
         if (hasImage) {
-            thumbnailHtml = `<img src="${item.img}" class="ranking-img" alt="" onerror="this.style.display='none'">`;
+
+            thumbnailHtml = `
+                <img
+                    src="${item.img}"
+                    class="ranking-img"
+                    alt=""
+                    onerror="this.style.display='none'"
+                >
+            `;
+
         } else {
+
             const text = item.description || item.title || '';
-            thumbnailHtml = `<div class="ranking-img text-preview">${text}</div>`;
+
+            thumbnailHtml = `
+                <div class="ranking-img text-preview">
+                    ${text}
+                </div>
+            `;
         }
 
-        const senderColor = item.sender === 'System-Genesis' ? '#ff00cc99' : '#999';
+        const senderColor =
+            item.sender === 'System-Genesis'
+                ? '#ff00cc99'
+                : '#999';
 
-        const auctionBadge = item.auction
-            ? `<span class="bid-count-badge">🔨 ${(item.auction.bids||[]).length}</span>`
+        const auctionBadge = (item.auction)
+            ? `<span style="color:#ffd700;font-size:11px;margin-left:6px;">🔨 ${(item.auction.bids||[]).length}</span>`
             : '';
 
         html += `
-            <div class="ranking-item" onclick="toggleDetails('${item.id}')">
+            <div
+                class="ranking-item"
+                onclick="toggleDetails('${item.id}')"
+            >
+
                 ${thumbnailHtml}
+
                 <div class="ranking-info">
-                    <div class="title">${index + 1}. ${item.title || ''} ${auctionBadge}</div>
-                    <div class="sender" style="color:${senderColor};">by ${item.sender || ''}</div>
-                    <div class="rating">${Math.round(item.rating)}</div>
+
+                    <div class="title">
+                        ${index + 1}. ${item.title || ''}${auctionBadge}
+                    </div>
+
+                    <div
+                        class="sender"
+                        style="color:${senderColor};"
+                    >
+                        by ${item.sender || ''}
+                    </div>
+
+                    <div class="rating">
+                        ${Math.round(item.rating)}
+                    </div>
+
                 </div>
+
             </div>
-            <div id="details-${item.id}" class="item-details">
+
+            <div
+                id="details-${item.id}"
+                class="item-details"
+            >
+
                 ${deliveryStatusHtml}
-                <div style="color:#666;font-size:12px;margin-bottom:10px;">by ${item.sender || 'Unknown'}</div>
-                ${
-                    item.sender === myId
-                    ? `<button class="edit-btn" onclick="event.stopPropagation(); editItem('${item.id}')">Edit and/or Re-inject Item (free)</button>`
-                    : ''
-                }
+
+<div style="color:#666;font-size:12px;margin-bottom:10px;">
+    by ${item.sender || 'Unknown'}
+</div>
+
+${
+    item.sender === myId
+    ? `
+        <button
+            class="edit-btn"
+            onclick="event.stopPropagation(); editItem('${item.id}')"
+        >
+            Edit and/or Re-inject Item (free)
+        </button>
+    `
+    : ''
+}
+
                 ${
                     item.externalUrl
-                    ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>`
+                    ? `
+                        <a
+                            href="${item.externalUrl}"
+                            
+                            rel="noopener noreferrer"
+                            class="external-link"
+                        >
+                            External Link →
+                        </a>
+                    `
                     : ''
                 }
+
                 ${
                     (item.description || 'No description.')
                         .split('\\n')
@@ -2027,18 +2932,34 @@ function updateRankingList() {
                         .map(p => `<p>${p}</p>`)
                         .join('')
                 }
+
                 ${renderAuctionBlock(item)}
-                <button class="admin-btn" type="button"
-                    style="margin-top:15px;background:#ff3333;color:#fff;padding:10px;font-size:14px;"
-                    onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">
+
+                <button
+                    class="admin-btn"
+                    type="button"
+                    style="
+                        margin-top:15px;
+                        background:#ff3333;
+                        color:#fff;
+                        padding:10px;
+                        font-size:14px;
+                    "
+                    onclick="
+                        event.stopPropagation();
+                        deleteItemLocal('${item.id}');
+                    "
+                >
                     Remove Locally
                 </button>
+
             </div>
         `;
     });
 
     $('#ranking-list').html(
-        html || '<div style="text-align:center;padding:10px;color:#999;">Matrix is empty.<br>Inject first items below!</div>'
+        html ||
+        '<div style="text-align:center;padding:10px;color:#999;">Matrix is empty.<br>Inject first items below!</div>'
     );
 }
 
@@ -2089,13 +3010,13 @@ function vote(side) {
     recordActivity('votes');
 
     if (client && client.connected) {
-        client.publish(TOPIC, JSON.stringify({
-            type: 'ACTIVITY',
-            activityType: 'votes',
-            sender: myId,
-            ts: Date.now()
-        }), { qos: 0 });
-    }
+    client.publish(TOPIC, JSON.stringify({
+        type: 'ACTIVITY',
+        activityType: 'votes',
+        sender: myId,
+        ts: Date.now()
+    }), { qos: 0 });
+}
 
     const winIdx = currentPair[side === 'left' ? 0 : 1];
     const loseIdx = currentPair[side === 'left' ? 1 : 0];
@@ -2127,9 +3048,12 @@ function vote(side) {
             newLoseRating: loseItem.rating
         }), { qos: 1 });
 
+
         updateRankingList();
         nextPair();
+
     } else {
+
         updateRankingList();
         $('#versus').animate({ opacity: 0 }, 50, function() { 
             nextPair(); 
@@ -2138,24 +3062,36 @@ function vote(side) {
     }
 }
 
+
 function transferImpact() {
     const target = $('#target-peer').val().trim();
     const amount = parseInt($('#transfer-amount').val());
 
-    if (target === myId) { alert('❌ Cannot send impacts to yourself!'); return; }
+    if (target === myId) {
+        alert('❌ Cannot send impacts to yourself!');
+        return;
+    }
     
     peerBalances[myId] = playerState.impacts;
     DataManager.set('peer_balances', peerBalances);
 
-    if (!target || !amount || amount < 1) return alert('Please enter the correct participant ID and number of impacts!');
-    if (playerState.impacts < amount) return alert('Impacts are out! You do not have enough impacts to translate.');
+    if (!target || !amount || amount < 1) {
+        return alert('Please enter the correct participant ID and number of impacts!');
+    }
+    if (playerState.impacts < amount) {
+        return alert('Impacts are out! You do not have enough impacts to translate.');
+    }
     
     playerState.impacts -= amount;
     playerState.level = Math.floor(playerState.impacts / 20) + 1;
     updatePlayerStatsUI();
 
     const txId = 'tx-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-    pendingTransfers[txId] = { target, amount, time: Date.now() };
+    pendingTransfers[txId] = {
+        target: target,
+        amount: amount,
+        time: Date.now()
+    };
     savePending();
 
     client.publish(TOPIC, JSON.stringify({
@@ -2178,10 +3114,16 @@ if (items.length >= 2) nextPair();
     const hasHistory = (activityHistory.deliveries && activityHistory.deliveries.length > 0);
     if (hasHistory) return;
     let total = 0;
-    items.forEach(item => { if (item.sender === myId && item.deliveredPeers) total += item.deliveredPeers.length; });
+    items.forEach(item => {
+        if (item.sender === myId && item.deliveredPeers) {
+            total += item.deliveredPeers.length;
+        }
+    });
     if (total > 0) {
         const now = Date.now();
-        for (let i = 0; i < total; i++) activityHistory.deliveries.push(now - 3600000 + Math.floor((i / total) * 3600000));
+        for (let i = 0; i < total; i++) {
+            activityHistory.deliveries.push(now - 3600000 + Math.floor((i / total) * 3600000));
+        }
         saveActivityHistory();
     }
 })();
@@ -2193,7 +3135,9 @@ window.addEventListener('resize', () => {
 });
 
 document.querySelectorAll('.activity-range-btn').forEach(btn => {
-    btn.addEventListener('click', () => { setActivityRange(btn.getAttribute('data-range')); });
+    btn.addEventListener('click', () => {
+        setActivityRange(btn.getAttribute('data-range'));
+    });
 });
 setActivityRange(activityRange);
 
@@ -2202,11 +3146,13 @@ setActivityRange(activityRange);
     if (el) el.value = myId;
 })();
 
-let activePeers = {};
-
 function updateOnlinePeersCount() {
     const now = Date.now();
-    for (let peerId in activePeers) if (now - activePeers[peerId] > 12000) delete activePeers[peerId];
+    for (let peerId in activePeers) {
+        if (now - activePeers[peerId] > 12000) {
+            delete activePeers[peerId];
+        }
+    }
     const onlineCount = Object.keys(activePeers).length;
     const peerLabel = onlineCount === 1 ? 'peer' : 'peers';
     log(`[Network] Active online: ${onlineCount} ${peerLabel}`);
@@ -2235,16 +3181,29 @@ function updateOnlinePeersCount() {
     const liveH3 = document.getElementById('liveIndicatorH3');
     const tapeH3 = document.getElementById('tapeIndicatorH3');
     if (liveH3 && tapeH3) {
-        if (onlineCount > 0) { liveH3.style.display = 'inline'; tapeH3.style.display = 'none'; }
-        else { liveH3.style.display = 'none'; tapeH3.style.display = 'inline'; }
+        if (onlineCount > 0) {
+            liveH3.style.display = 'inline';
+            tapeH3.style.display = 'none';
+        } else {
+            liveH3.style.display = 'none';
+            tapeH3.style.display = 'inline';
+        }
     }
+
+    // Перерисовываем список, чтобы статусы online/offline и кнопки auction были актуальны
+    updateRankingList();
 }
 
 function onBrokerSelectChange(selectEl) {
     const customInput = document.getElementById('customBrokerUrl');
     if (!customInput) return;
-    if (selectEl.value === 'custom') customInput.style.display = 'block';
-    else customInput.style.display = 'none';
+    if (selectEl.value === 'custom') {
+        customInput.style.display = 'block';
+        if (!customInput.value && client && client.options && client.options.hostname) {
+        }
+    } else {
+        customInput.style.display = 'none';
+    }
 }
 
 function switchBroker() {
@@ -2256,8 +3215,14 @@ function switchBroker() {
 
     if (url === 'custom') {
         url = (customInput?.value || '').trim();
-        if (!url) { alert('Please enter a custom WebSocket broker URL (e.g. wss://host:port/mqtt)'); return; }
-        if (!/^wss?:\/\//i.test(url)) { alert('URL must start with ws:// or wss://'); return; }
+        if (!url) {
+            alert('Please enter a custom WebSocket broker URL (e.g. wss://host:port/mqtt)');
+            return;
+        }
+        if (!/^wss?:\/\//i.test(url)) {
+            alert('URL must start with ws:// or wss://');
+            return;
+        }
     }
 
     DataManager.set('broker_url', url);
@@ -2271,8 +3236,11 @@ function switchBroker() {
 
     try {
         if (client && typeof client.end === 'function') {
-            client.end(true, () => { log('[Broker] Previous connection closed.'); });
+            client.end(true, () => {
+                log('[Broker] Previous connection closed.');
+            });
         }
+
         window.location.reload();
     } catch (e) {
         log('[Broker] Switch error: ' + e.message);
@@ -2282,7 +3250,10 @@ function switchBroker() {
 
 function log(txt) {
     const l = document.getElementById('logContainer');
-    if (!l) { console.log('[log]', txt); return; }
+    if (!l) {
+        console.log('[log]', txt);
+        return;
+    }
     l.innerHTML += `<div>${txt}</div>`;
     l.scrollTop = l.scrollHeight;
 }
@@ -2292,25 +3263,40 @@ let pullDistance = 0;
 const refreshThreshold = 90; 
 
 window.addEventListener('touchstart', (e) => {
-    if (window.scrollY === 0) touchStartY = e.touches[0].clientY;
-    else touchStartY = 0;
+
+    if (window.scrollY === 0) {
+        touchStartY = e.touches[0].clientY;
+    } else {
+        touchStartY = 0;
+    }
 }, { passive: true });
 
 window.addEventListener('touchmove', (e) => {
     if (!touchStartY) return;
     const currentY = e.touches[0].clientY;
     pullDistance = currentY - touchStartY;
-    if (pullDistance > 0) e.preventDefault(); 
+    
+    if (pullDistance > 0) {
+        e.preventDefault(); 
+    }
 }, { passive: false }); 
 
 window.addEventListener('touchend', () => {
     if (!touchStartY) return;
-    if (pullDistance > refreshThreshold) syncAndKeepData();
+    
+    if (pullDistance > refreshThreshold) {
+        syncAndKeepData();
+    }
+    
     touchStartY = 0;
     pullDistance = 0;
 });
 
-window.addEventListener('touchcancel', () => { touchStartY = 0; pullDistance = 0; });
+window.addEventListener('touchcancel', () => {
+    touchStartY = 0;
+    pullDistance = 0;
+});
+
 
 function sendToGuide() {
     const inputField = document.getElementById('guide-input');
@@ -2329,27 +3315,25 @@ function sendToGuide() {
 function appendGuideChat(msg) {
     const log = document.getElementById('guide-chat-log');
     log.innerHTML += `<div>${msg}</div>`;
-    const lastMsg = log.lastElementChild;
-    if (lastMsg) lastMsg.scrollIntoView({ block: 'start' });
+const lastMsg = log.lastElementChild;
+if (lastMsg) {
+    lastMsg.scrollIntoView({ block: 'start' });
+}
 }
 
 function generateGuideResponse(query) {
     const q = query.toLowerCase();
     
     if (q.includes('hi') || q.includes('hello') || q.includes('hey') || q.includes('how') || q.includes('what') || q.includes('greetings')) {
-        return 'Hello! This is not an AI agent, and the answer list is limited. The logic in this section is mechanical and is being refined at the developer level. If you do not receive a satisfactory answer, it means the phrases you entered were not predicted by the system. Use simple words from the content. Read the Disclaimer & About section to the end. Try submitting your item in the Broadcast Breakthrough Item section. Vote for items in the Resonance Match section and track their position in the Global Matrix Rank.';
+        return 'Hello! This is not an AI agent, and the answer list is limited. The logic in this section is mechanical and is being refined at the developer level. If you don not receive a satisfactory answer, it means the phrases you entered were not predicted by the system. Use simple words from the content. Read the Disclaimer & About section to the end. Try submitting your item in the Broadcast Breakthrough Item section. Vote for items in the Resonance Match section and track their position in the Global Matrix Rank.';
     }
     
-    if (q.includes('inject') || q.includes('item') || q.includes('meme') || q.includes('manifest') || q.includes('matrix') || q.includes('link') || q.includes('description') || q.includes('details') || q.includes('external') || q.includes('post') || q.includes('publish') || q.includes('image') || q.includes('to do') || q.includes('upload') || q.includes('choose')) {
-        return '"Inject Item to Network" is sending your publication (item or creative work) into the general matrix: set an Item Title, Manifestation Details (Description) and External Link, under "Select Item Image" choose your image. You can also fill the Auction fields to make it an auction.';
+    if (q.includes('inject') || q.includes('item') || q.includes('manifest') ||q.includes('matrix') || q.includes('link') || q.includes('description') || q.includes('details') || q.includes('external') || q.includes('post') || q.includes('publish') || q.includes('image') || q.includes('to do') || q.includes('upload') || q.includes('choose')) {
+        return '"Inject Item to Network" is sending your publication (item or creative work) into the general matrix: set a Item Title, Manifestation Details (Description) and External Link, under "Select Item Image" choose your image.';
     }
     
     if (q.includes('vote') || q.includes('match') || q.includes('rating') || q.includes('rank') || q.includes('elo') || q.includes('compare') || q.includes('versus')) {
         return '"Resonance Match" is a pairwise item comparison using the Elo system. You vote for one of two big items to adjust their rankings, which directly affects their global position in the matrix.';
-    }
-
-    if (q.includes('auction') || q.includes('bid') || q.includes('buy now') || q.includes('seller') || q.includes('gate') || q.includes('delivered')) {
-        return 'Auction is part of each item. Fill the Auction panel in Broadcast to publish it as an auction. If the seller is LIVE — you can Bid or Buy Now (if set). If TAPE — only Save Bid is possible, and re-bid later when seller returns LIVE. Accepted bid → Delivered → a private gate opens between the two live peers. The gate works only when both participants are online now.';
     }
     
     if (q.includes('impact') || q.includes('score') || q.includes('level') || q.includes('claim') || q.includes('hour') || q.includes('day') || q.includes('convert')) {
@@ -2360,6 +3344,7 @@ function generateGuideResponse(query) {
         return 'As the data resides solely within the ephemeral vaults of your browser\'s cache—which one might inadvertently sweep away—each node remains in splendid isolation. To set the items into circulation and expose them to the wider world, one is obliged to transmit the application link unto companions; this is no mere entreaty, but an absolute imperative should you desire the mechanism to function. Yet, in any event, this shall inevitably crystallize as your own private catalog—perhaps a curated register of your most cherished cinematographic works.';
     }
 
+    
     if (q.includes('why') || q.includes('different') || q.includes('change') || q.includes('happen')) {
         return 'Due to the temporary absence of participants and invisible items, the vote count required for rating updates does not sync across devices automatically. Once parity is reached, then voting pair updates seems spontaneously.';
     }
@@ -2380,7 +3365,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const guideInput = document.getElementById('guide-input');
     if (guideInput) {
         guideInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') { event.preventDefault(); sendToGuide(); }
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendToGuide();
+            }
         });
     }
 });
@@ -2405,10 +3393,14 @@ if (bar) {
   function scheduleNextStep() {
     if (currentProgress < maxTarget) {
       const remaining = maxTarget - currentProgress;
+      
       const stepSize = Math.floor(Math.random() * Math.min(remaining, 7)) + 1;
       currentProgress = Math.min(currentProgress + stepSize, maxTarget);
+      
       bar.style.width = currentProgress + '%';
+
       const randomDelay = Math.floor(Math.random() * (2200 - 150 + 1)) + 150;
+      
       setTimeout(scheduleNextStep, randomDelay);
     }
   }
@@ -2419,7 +3411,9 @@ document.getElementById('invertTrigger').addEventListener('click', () => {
 });
 
 async function resetToDefault() {
-    if (!confirm("⚠️ This will DELETE ALL your custom items and reset everything to default.\n\nOnly demo items and default stats (8 impacts, 5 votes, 3 posts) will remain.\n\nContinue?")) return;
+    if (!confirm("⚠️ This will DELETE ALL your custom items and reset everything to default.\n\nOnly demo items and default stats (8 impacts, 5 votes, 3 posts) will remain.\n\nContinue?")) {
+        return;
+    }
     
     DataManager.clearAll();
     
@@ -2427,14 +3421,18 @@ async function resetToDefault() {
         try {
             const cacheNames = await caches.keys();
             await Promise.all(cacheNames.map(name => caches.delete(name)));
-        } catch(e) { console.warn('[Reset] Cache clear error:', e); }
+        } catch(e) {
+            console.warn('[Reset] Cache clear error:', e);
+        }
     }
     
     if ('serviceWorker' in navigator) {
         try {
             const regs = await navigator.serviceWorker.getRegistrations();
             await Promise.all(regs.map(r => r.unregister()));
-        } catch(e) { console.warn('[Reset] SW unregister error:', e); }
+        } catch(e) {
+            console.warn('[Reset] SW unregister error:', e);
+        }
     }
     
     alert('✅ Reset complete!\n\nCache and data cleared.');
@@ -2443,16 +3441,22 @@ async function resetToDefault() {
 
 async function syncAndKeepData() {
     log('[Update] Applying update, preserving all data...');
+
     if ('serviceWorker' in navigator) {
         try {
             const reg = await navigator.serviceWorker.ready;
             if (reg.waiting) {
                 reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                navigator.serviceWorker.addEventListener('controllerchange', () => { window.location.reload(); });
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    window.location.reload();
+                });
                 return;
             }
-        } catch(e) { console.warn('[Update] SW activation error:', e); }
+        } catch(e) {
+            console.warn('[Update] SW activation error:', e);
+        }
     }
+
     window.location.reload();
 }
 
@@ -2467,13 +3471,18 @@ if (aboutToggle && aboutContent) {
 }
 document.addEventListener('DOMContentLoaded', () => {
     const anchorLinks = document.querySelectorAll('a[href^="#"]');
+    
     anchorLinks.forEach(link => {
         link.addEventListener('click', () => {
             const disclaimerText = document.getElementById('disclaimerText');
             const disclaimerToggle = document.getElementById('disclaimerToggle');
+            
             if (disclaimerText && !disclaimerText.classList.contains('collapsed')) {
                 disclaimerText.classList.add('collapsed');
-                if (disclaimerToggle) disclaimerToggle.classList.remove('open');
+                
+                if (disclaimerToggle) {
+                    disclaimerToggle.classList.remove('open');
+                }
             }
         });
     });
@@ -2492,7 +3501,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (customInput) customInput.style.display = 'none';
         } else {
             selectEl.value = 'custom';
-            if (customInput) { customInput.style.display = 'block'; customInput.value = saved; }
+            if (customInput) {
+                customInput.style.display = 'block';
+                customInput.value = saved;
+            }
         }
     }
 });
