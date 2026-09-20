@@ -308,129 +308,1647 @@ window.addEventListener('pointerup', (e) => {
     const CHUNK_SIZE = 200;          
     const CHUNK_RENDER_DISTANCE = 3; 
 
-    function generateChunk(chunkX, chunkZ) {
-        const chunkGroup = new THREE.Group();
-        const chunkColliders = [];
-        const localSeed = Math.sin(chunkX * 12.9898 + chunkZ * 78.233) * 43758.5453;
-        
-        // --- ЗДАНИЯ с РАЗНОЙ ВЫСОТОЙ ---
-        for(let i=0; i<3; i++) { // Увеличил количество зданий до 6
-            // Случайная высота от 5 до 150
-            let sizeY = 5 + Math.abs(Math.sin(localSeed * i + 1.7)) * 145;
-            
-            // Иногда делаем очень высокие здания (небоскребы)
-            if (Math.abs(Math.sin(localSeed * i + 3.14)) > 0.8) {
-                sizeY = 80 + Math.abs(Math.sin(localSeed * i + 2.5)) * 120;
-            }
-            
-            const sizeX = 8 + Math.abs(Math.sin(localSeed + i * 1.3)) * 20;
-            const sizeZ = 8 + Math.abs(Math.sin(localSeed * 2 + i * 0.7)) * 20;
+// ==========================================
+// ПРОЦЕДУРНАЯ АРХИТЕКТУРНАЯ ДЕКОРАЦИЯ
+// ==========================================
 
-            // Разноцветные здания
-            const hue = Math.abs(Math.sin(localSeed + i * 2.1));
-            const color = new THREE.Color().setHSL(hue * 0.7 + 0.5, 0.7, 0.3 + hue * 0.3);
-            const material = new THREE.MeshPhongMaterial({ color: color });
-            
-            const box = new THREE.Mesh(new THREE.BoxGeometry(sizeX, sizeY, sizeZ), material);
-            
-            box.position.set(
-                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 3 + i * 1.1)) - 0.5) * (CHUNK_SIZE - 40)),
-                sizeY / 2 + Math.abs(Math.sin(localSeed + i)) * 10 + 100, 
-                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 4 + i * 0.9)) - 0.5) * (CHUNK_SIZE - 40))
-            );
-            
-            chunkGroup.add(box);
-            chunkColliders.push(box);
-        }
+function addBoxDecoration(group, x, y, z, sx, sy, sz, material) {
+    const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(sx, sy, sz),
+        material
+    );
+    mesh.position.set(x, y, z);
+    group.add(mesh);
+}
 
-        // --- АРКИ с РАЗНЫМИ РАЗМЕРАМИ ---
-        for(let i=0; i<3; i++) { // Увеличил до 3 арок
-            const archGroup = new THREE.Group();
-            
-            // Случайные размеры арки
-            const w = 3 + Math.abs(Math.sin(localSeed + i * 2.3)) * 5;    // ширина ног
-            const h = 30 + Math.abs(Math.cos(localSeed * 2 + i * 1.7)) * 70;
-            const d = 3 + Math.abs(Math.sin(localSeed * 3 + i)) * 4;      // глубина
-            const span = 15 + Math.abs(Math.cos(localSeed + i * 1.3)) * 20; // ширина пролета
+function addColumn(group, x, z, height, radius, material) {
+    const column = new THREE.Mesh(
+        new THREE.CylinderGeometry(radius, radius * 1.15, height, 8),
+        material
+    );
 
-            const archColor = new THREE.Color().setHSL(
-                0.5 + Math.abs(Math.sin(localSeed + i * 3.7)) * 0.3,
-                0.6,
-                0.3 + Math.abs(Math.cos(localSeed * 2 + i)) * 0.3
-            );
-            const material = new THREE.MeshPhongMaterial({ color: archColor });
+    column.position.set(x, height / 2, z);
+    group.add(column);
 
-            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-            leftLeg.position.set(-span/2, h/2, 0);
-            archGroup.add(leftLeg);
+    // основание
+    const base = new THREE.Mesh(
+        new THREE.CylinderGeometry(radius * 1.45, radius * 1.45, radius * 0.45, 8),
+        material
+    );
 
-            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-            rightLeg.position.set(span/2, h/2, 0);
-            archGroup.add(rightLeg);
+    base.position.set(x, radius * 0.22, z);
+    group.add(base);
 
-            const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w * 1.2, d), material);
-            topBar.position.set(0, h + w/2 * 1.2, 0);
-            archGroup.add(topBar);
+    // капитель
+    const capital = new THREE.Mesh(
+        new THREE.CylinderGeometry(radius * 1.5, radius * 1.2, radius * 0.45, 8),
+        material
+    );
 
-            archGroup.position.set(
-                (chunkX * CHUNK_SIZE) + ((Math.abs(Math.sin(localSeed * 5 + i * 2.7)) - 0.5) * (CHUNK_SIZE - 50)),
-                0,
-                (chunkZ * CHUNK_SIZE) + ((Math.abs(Math.cos(localSeed * 6 + i * 1.9)) - 0.5) * (CHUNK_SIZE - 50))
-            );
-            archGroup.rotation.y = Math.abs(Math.sin(localSeed + i * 1.1)) * Math.PI * 2;
+    capital.position.set(x, height - radius * 0.2, z);
+    group.add(capital);
+}
 
-            leftLeg.updateMatrixWorld();
-            rightLeg.updateMatrixWorld();
-            topBar.updateMatrixWorld();
-            chunkColliders.push(leftLeg, rightLeg, topBar);
-            
-            chunkGroup.add(archGroup);
-        }
+function addCornice(group, width, depth, y, material) {
+    addBoxDecoration(
+        group,
+        0,
+        y,
+        0,
+        width + 1.5,
+        1.2,
+        depth + 1.5,
+        material
+    );
+}
 
-        // --- ДОРОГИ с ПЕРЕМЕННОЙ ВЫСОТОЙ ---
-        // Первый уровень дорог - случайная высота от 15 до 40
-        const roadMaterial1 = new THREE.MeshPhongMaterial({ color: 0x333344 });
-        const roadWidth = 14;
-const roadHeight1 = 100;  // все дороги первого уровня на высоте 50
+function addRoof(group, width, depth, y, material, type) {
 
-        const roadX = new THREE.Mesh(new THREE.BoxGeometry(CHUNK_SIZE, 1.5, roadWidth), roadMaterial1);
-        roadX.position.set(chunkX * CHUNK_SIZE, roadHeight1, chunkZ * CHUNK_SIZE);
-        roadX.updateMatrixWorld();
-        chunkGroup.add(roadX);
-        chunkColliders.push(roadX);
-
-        const roadZ = new THREE.Mesh(new THREE.BoxGeometry(roadWidth, 1.5, CHUNK_SIZE), roadMaterial1);
-        roadZ.position.set(chunkX * CHUNK_SIZE, roadHeight1, chunkZ * CHUNK_SIZE);
-        roadZ.updateMatrixWorld();
-        chunkGroup.add(roadZ);
-        chunkColliders.push(roadZ);
-
-
-
-        // --- ВТОРОЙ УРОВЕНЬ ДОРОГ - СЛУЧАЙНАЯ ВЫСОТА ---
-        const roadMaterial2 = new THREE.MeshPhongMaterial({ color: 0x553366 });
-const roadHeight2 = 220; // все дороги второго уровня на высоте 120
-        const halfChunk = CHUNK_SIZE / 2;
-
-        const roadX2 = new THREE.Mesh(new THREE.BoxGeometry(CHUNK_SIZE, 1.5, roadWidth), roadMaterial2);
-        roadX2.position.set(chunkX * CHUNK_SIZE, roadHeight2, chunkZ * CHUNK_SIZE + halfChunk);
-        roadX2.updateMatrixWorld();
-        chunkGroup.add(roadX2);
-        chunkColliders.push(roadX2);
-
-        const roadZ2 = new THREE.Mesh(new THREE.BoxGeometry(roadWidth, 1.5, CHUNK_SIZE), roadMaterial2);
-        roadZ2.position.set(chunkX * CHUNK_SIZE + halfChunk, roadHeight2, chunkZ * CHUNK_SIZE);
-        roadZ2.updateMatrixWorld();
-        chunkGroup.add(roadZ2);
-        chunkColliders.push(roadZ2);
-
-
-
-
-
-        scene.add(chunkGroup);
-        chunkRegistry.set(`${chunkX},${chunkZ}`, { group: chunkGroup, colliders: chunkColliders });
+    if (type === 0) {
+        // Плоская крыша с выступающим карнизом
+        addCornice(group, width, depth, y, material);
     }
+
+    if (type === 1) {
+        // Пирамида
+        const roof = new THREE.Mesh(
+            new THREE.ConeGeometry(
+                Math.max(width, depth) * 0.72,
+                Math.max(width, depth) * 0.8,
+                4
+            ),
+            material
+        );
+
+        roof.rotation.y = Math.PI / 4;
+        roof.position.y = y + Math.max(width, depth) * 0.4;
+        roof.scale.z = depth / width;
+        group.add(roof);
+    }
+
+    if (type === 2) {
+        // Небольшой купол
+        const dome = new THREE.Mesh(
+            new THREE.SphereGeometry(
+                Math.min(width, depth) * 0.38,
+                12,
+                8,
+                0,
+                Math.PI * 2,
+                0,
+                Math.PI / 2
+            ),
+            material
+        );
+
+        dome.position.y = y;
+        group.add(dome);
+
+        const spire = new THREE.Mesh(
+            new THREE.ConeGeometry(
+                Math.min(width, depth) * 0.08,
+                Math.min(width, depth) * 0.5,
+                8
+            ),
+            material
+        );
+
+        spire.position.y = y + Math.min(width, depth) * 0.55;
+        group.add(spire);
+    }
+}
+
+function addBalconies(group, width, depth, height, material) {
+
+    const levels = Math.max(1, Math.floor(height / 25));
+
+    for (let i = 1; i <= levels; i++) {
+
+        const y = i * (height / (levels + 1));
+
+        // передний балкон
+        addBoxDecoration(
+            group,
+            0,
+            y,
+            depth / 2 + 0.8,
+            width * 0.65,
+            0.6,
+            2.0,
+            material
+        );
+
+        // боковые опоры
+        addBoxDecoration(
+            group,
+            -width * 0.28,
+            y + 1.2,
+            depth / 2 + 1.1,
+            0.35,
+            2.4,
+            0.35,
+            material
+        );
+
+        addBoxDecoration(
+            group,
+            width * 0.28,
+            y + 1.2,
+            depth / 2 + 1.1,
+            0.35,
+            2.4,
+            0.35,
+            material
+        );
+    }
+}
+
+function addVerticalPilasters(group, width, depth, height, material) {
+
+    const count = Math.max(2, Math.floor(width / 5));
+
+    for (let i = 0; i < count; i++) {
+
+        const x = -width / 2 + (i + 0.5) * (width / count);
+
+        addBoxDecoration(
+            group,
+            x,
+            height / 2,
+            depth / 2 + 0.25,
+            0.55,
+            height,
+            0.45,
+            material
+        );
+    }
+}
+
+function addHorizontalBands(group, width, depth, height, material) {
+
+    const levels = Math.max(1, Math.floor(height / 18));
+
+    for (let i = 1; i <= levels; i++) {
+
+        const y = i * (height / (levels + 1));
+
+        addBoxDecoration(
+            group,
+            0,
+            y,
+            depth / 2 + 0.3,
+            width + 0.6,
+            0.45,
+            0.5,
+            material
+        );
+    }
+}
+
+function addArchitecturalDecoration(group, width, height, depth, material, seed) {
+
+    // Получаем стабильный "случайный" стиль из seed
+    const style = Math.floor(
+        Math.abs(Math.sin(seed * 17.731)) * 7
+    );
+
+    const detailMaterial = material.clone();
+
+    // Немного светлее основного здания
+    detailMaterial.color.offsetHSL(
+        0,
+        -0.05,
+        0.12
+    );
+
+    // 0 — строгая башня
+    if (style === 0) {
+
+        addCornice(group, width, depth, height, detailMaterial);
+
+        addVerticalPilasters(
+            group,
+            width,
+            depth,
+            height,
+            detailMaterial
+        );
+    }
+
+    // 1 — колоннадное здание
+    if (style === 1) {
+
+        const count = Math.max(
+            2,
+            Math.floor(width / 5)
+        );
+
+        for (let i = 0; i < count; i++) {
+
+            const x =
+                -width / 2 +
+                (i + 0.5) * (width / count);
+
+            addColumn(
+                group,
+                x,
+                depth / 2 + 0.8,
+                height * 0.9,
+                Math.min(width, depth) * 0.035,
+                detailMaterial
+            );
+        }
+
+        addCornice(
+            group,
+            width,
+            depth,
+            height,
+            detailMaterial
+        );
+    }
+
+    // 2 — горизонтальные архитектурные пояса
+    if (style === 2) {
+
+        addHorizontalBands(
+            group,
+            width,
+            depth,
+            height,
+            detailMaterial
+        );
+
+        addCornice(
+            group,
+            width,
+            depth,
+            height,
+            detailMaterial
+        );
+    }
+
+    // 3 — балконы
+    if (style === 3) {
+
+        addBalconies(
+            group,
+            width,
+            depth,
+            height,
+            detailMaterial
+        );
+
+        addCornice(
+            group,
+            width,
+            depth,
+            height,
+            detailMaterial
+        );
+    }
+
+    // 4 — пилястры + карниз
+    if (style === 4) {
+
+        addVerticalPilasters(
+            group,
+            width,
+            depth,
+            height,
+            detailMaterial
+        );
+
+        addCornice(
+            group,
+            width,
+            depth,
+            height,
+            detailMaterial
+        );
+    }
+
+    // 5 — декоративная крыша
+    if (style === 5) {
+
+        addCornice(
+            group,
+            width,
+            depth,
+            height,
+            detailMaterial
+        );
+
+        addRoof(
+            group,
+            width,
+            depth,
+            height,
+            detailMaterial,
+            Math.floor(
+                Math.abs(Math.sin(seed * 4.31)) * 3
+            )
+        );
+    }
+
+    // 6 — смешанный вариант
+    if (style === 6) {
+
+        addHorizontalBands(
+            group,
+            width,
+            depth,
+            height,
+            detailMaterial
+        );
+
+        addVerticalPilasters(
+            group,
+            width,
+            depth,
+            height,
+            detailMaterial
+        );
+
+        addRoof(
+            group,
+            width,
+            depth,
+            height,
+            detailMaterial,
+            2
+        );
+    }
+}
+
+function generateChunk(chunkX, chunkZ) {
+
+    const chunkGroup = new THREE.Group();
+    const chunkColliders = [];
+
+    const localSeed =
+        Math.sin(chunkX * 12.9898 + chunkZ * 78.233) * 43758.5453;
+
+    // =========================================================
+    // RANDOM HELPERS
+    // =========================================================
+
+    function rnd(n) {
+        return Math.abs(Math.sin(localSeed * 17.31 + n * 91.73));
+    }
+
+    function mat(color, metalness = 0.0) {
+        return new THREE.MeshPhongMaterial({
+            color,
+            shininess: metalness ? 90 : 45
+        });
+    }
+
+    // =========================================================
+    // BASIC DECORATIVE ELEMENTS
+    // =========================================================
+
+    function box(parent, x, y, z, sx, sy, sz, material) {
+        const mesh = new THREE.Mesh(
+            new THREE.BoxGeometry(sx, sy, sz),
+            material
+        );
+        mesh.position.set(x, y, z);
+        parent.add(mesh);
+        return mesh;
+    }
+
+    function cylinder(parent, x, y, z, r1, r2, h, material, segments = 8) {
+        const mesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(r1, r2, h, segments),
+            material
+        );
+        mesh.position.set(x, y, z);
+        parent.add(mesh);
+        return mesh;
+    }
+
+    // =========================================================
+    // GREEK COLUMN
+    // =========================================================
+
+    function greekColumn(parent, x, y, z, height, radius, material, style = 0) {
+
+        const base = radius * 1.55;
+
+        // base
+        cylinder(
+            parent,
+            x,
+            y + base * 0.15,
+            z,
+            base,
+            base,
+            base * 0.3,
+            material
+        );
+
+        cylinder(
+            parent,
+            x,
+            y + base * 0.38,
+            z,
+            radius * 1.2,
+            radius * 1.2,
+            base * 0.18,
+            material
+        );
+
+        // shaft
+        const shaft = cylinder(
+            parent,
+            x,
+            y + height / 2,
+            z,
+            radius * 1.08,
+            radius,
+            height - base * 1.1,
+            material,
+            10
+        );
+
+        // subtle fluting
+        if (style !== 0) {
+            for (let k = 0; k < 8; k++) {
+
+                const a = k / 8 * Math.PI * 2;
+
+                const flute = new THREE.Mesh(
+                    new THREE.BoxGeometry(
+                        radius * 0.12,
+                        height * 0.78,
+                        radius * 0.12
+                    ),
+                    material
+                );
+
+                flute.position.set(
+                    x + Math.cos(a) * radius * 0.94,
+                    y + height * 0.51,
+                    z + Math.sin(a) * radius * 0.94
+                );
+
+                flute.rotation.y = -a;
+
+                parent.add(flute);
+            }
+        }
+
+        // capital
+        const capY = y + height - base * 0.45;
+
+        cylinder(
+            parent,
+            x,
+            capY,
+            z,
+            radius * 1.15,
+            radius * 1.35,
+            radius * 0.22,
+            material
+        );
+
+        cylinder(
+            parent,
+            x,
+            capY + radius * 0.22,
+            z,
+            radius * 1.55,
+            radius * 1.55,
+            radius * 0.18,
+            material
+        );
+
+        // square abacus
+        box(
+            parent,
+            x,
+            capY + radius * 0.4,
+            z,
+            radius * 3.2,
+            radius * 0.28,
+            radius * 3.2,
+            material
+        );
+
+        // Ionic volute suggestion
+        if (style === 1) {
+
+            for (const side of [-1, 1]) {
+
+                const volute = new THREE.Mesh(
+                    new THREE.TorusGeometry(
+                        radius * 0.38,
+                        radius * 0.09,
+                        6,
+                        12
+                    ),
+                    material
+                );
+
+                volute.position.set(
+                    x + side * radius * 1.05,
+                    capY + radius * 0.15,
+                    z
+                );
+
+                volute.rotation.y = Math.PI / 2;
+
+                parent.add(volute);
+            }
+        }
+
+        return shaft;
+    }
+
+    // =========================================================
+    // ENTABLATURE
+    // =========================================================
+
+    function entablature(parent, width, depth, y, material, heavy = false) {
+
+        const h = heavy ? 1.8 : 1.2;
+
+        // architrave
+        box(
+            parent,
+            0,
+            y,
+            0,
+            width,
+            h * 0.35,
+            depth,
+            material
+        );
+
+        // frieze
+        box(
+            parent,
+            0,
+            y + h * 0.42,
+            0,
+            width * 0.96,
+            h * 0.45,
+            depth * 0.96,
+            material
+        );
+
+        // cornice
+        box(
+            parent,
+            0,
+            y + h * 0.85,
+            0,
+            width * 1.08,
+            h * 0.25,
+            depth * 1.08,
+            material
+        );
+    }
+
+    // =========================================================
+    // GREEK MEANDER / FRIEZE
+    // =========================================================
+
+    function meander(parent, width, y, z, material, depth = 0.18) {
+
+        const count = Math.max(2, Math.floor(width / 3));
+        const step = width / count;
+
+        for (let i = 0; i < count; i++) {
+
+            const x = -width / 2 + i * step;
+
+            box(
+                parent,
+                x + step * 0.5,
+                y,
+                z,
+                step * 0.75,
+                0.22,
+                depth,
+                material
+            );
+
+            if (i % 2 === 0) {
+
+                box(
+                    parent,
+                    x + step * 0.5,
+                    y + 0.25,
+                    z,
+                    0.18,
+                    0.5,
+                    depth,
+                    material
+                );
+            }
+        }
+    }
+
+    // =========================================================
+    // TRIANGULAR PEDIMENT
+    // =========================================================
+
+    function pediment(parent, width, depth, y, material) {
+
+        const bar = 0.7;
+
+        const left = box(
+            parent,
+            -width * 0.25,
+            y + width * 0.12,
+            0,
+            width * 0.55,
+            bar,
+            depth,
+            material
+        );
+
+        left.rotation.z = -Math.atan(0.48);
+
+        const right = box(
+            parent,
+            width * 0.25,
+            y + width * 0.12,
+            0,
+            width * 0.55,
+            bar,
+            depth,
+            material
+        );
+
+        right.rotation.z = Math.atan(0.48);
+
+        box(
+            parent,
+            0,
+            y,
+            0,
+            width * 0.08,
+            width * 0.08,
+            depth,
+            material
+        );
+    }
+
+    // =========================================================
+    // ROSETTE
+    // =========================================================
+
+    function rosette(parent, x, y, z, radius, material) {
+
+        const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(
+                radius,
+                radius * 0.18,
+                6,
+                12
+            ),
+            material
+        );
+
+        ring.position.set(x, y, z);
+        ring.rotation.x = Math.PI / 2;
+
+        parent.add(ring);
+
+        cylinder(
+            parent,
+            x,
+            y,
+            z,
+            radius * 0.45,
+            radius * 0.45,
+            radius * 0.15,
+            material,
+            8
+        );
+    }
+
+    // =========================================================
+    // BALUSTRADE
+    // =========================================================
+
+    function balustrade(parent, width, y, z, material) {
+
+        const count = Math.max(3, Math.floor(width / 2.5));
+        const step = width / count;
+
+        box(
+            parent,
+            0,
+            y,
+            z,
+            width,
+            0.35,
+            0.35,
+            material
+        );
+
+        for (let i = 0; i <= count; i++) {
+
+            const x = -width / 2 + i * step;
+
+            cylinder(
+                parent,
+                x,
+                y - 0.7,
+                z,
+                0.16,
+                0.22,
+                1.4,
+                material,
+                6
+            );
+        }
+
+        box(
+            parent,
+            0,
+            y - 1.4,
+            z,
+            width,
+            0.35,
+            0.35,
+            material
+        );
+    }
+
+    // =========================================================
+    // BUILDING DECORATION
+    // =========================================================
+
+    function decorateBuilding(group, sx, sy, sz, material, seed) {
+
+        const style = Math.floor(
+            Math.abs(Math.sin(seed * 7.173)) * 8
+        );
+
+        const deco = material.clone();
+
+        // slightly contrasting architectural material
+        deco.color.offsetHSL(
+            0,
+            -0.05,
+            0.12
+        );
+
+        const frontZ = sz / 2 + 0.35;
+
+        // -----------------------------------------------------
+        // COLUMN FACADE
+        // -----------------------------------------------------
+
+        if (style === 0 || style === 3 || style === 7) {
+
+            const count = Math.max(
+                2,
+                Math.floor(sx / 4.5)
+            );
+
+            for (let i = 0; i < count; i++) {
+
+                const x =
+                    -sx / 2 +
+                    (i + 0.5) *
+                    (sx / count);
+
+                greekColumn(
+                    group,
+                    x,
+                    0,
+                    frontZ,
+                    sy * 0.82,
+                    Math.min(sx, sz) * 0.035,
+                    deco,
+                    style === 3 ? 1 : 2
+                );
+            }
+
+            entablature(
+                group,
+                sx * 1.05,
+                sz * 0.35,
+                sy * 0.84,
+                deco,
+                true
+            );
+
+            meander(
+                group,
+                sx * 0.85,
+                sy * 0.87,
+                frontZ,
+                deco
+            );
+        }
+
+        // -----------------------------------------------------
+        // PILASTERS
+        // -----------------------------------------------------
+
+        if (style === 1 || style === 4 || style === 6) {
+
+            const count = Math.max(
+                2,
+                Math.floor(sx / 4)
+            );
+
+            for (let i = 0; i < count; i++) {
+
+                const x =
+                    -sx / 2 +
+                    (i + 0.5) *
+                    (sx / count);
+
+                box(
+                    group,
+                    x,
+                    sy / 2,
+                    frontZ,
+                    0.7,
+                    sy,
+                    0.5,
+                    deco
+                );
+
+                box(
+                    group,
+                    x,
+                    sy * 0.03,
+                    frontZ,
+                    1.1,
+                    0.35,
+                    0.8,
+                    deco
+                );
+
+                box(
+                    group,
+                    x,
+                    sy - 0.5,
+                    frontZ,
+                    1.2,
+                    0.5,
+                    0.8,
+                    deco
+                );
+            }
+
+            entablature(
+                group,
+                sx * 1.08,
+                sz * 0.5,
+                sy * 0.92,
+                deco
+            );
+        }
+
+        // -----------------------------------------------------
+        // HORIZONTAL GREEK BANDS
+        // -----------------------------------------------------
+
+        if (style === 2 || style === 5 || style === 7) {
+
+            const levels = Math.max(
+                2,
+                Math.floor(sy / 22)
+            );
+
+            for (let i = 1; i <= levels; i++) {
+
+                const y =
+                    i * sy / (levels + 1);
+
+                box(
+                    group,
+                    0,
+                    y,
+                    frontZ,
+                    sx * 1.04,
+                    0.65,
+                    0.55,
+                    deco
+                );
+
+                meander(
+                    group,
+                    sx * 0.85,
+                    y + 0.12,
+                    frontZ + 0.3,
+                    deco
+                );
+            }
+        }
+
+        // -----------------------------------------------------
+        // BALCONIES
+        // -----------------------------------------------------
+
+        if (style === 3 || style === 5) {
+
+            const levels = Math.max(
+                1,
+                Math.floor(sy / 30)
+            );
+
+            for (let i = 1; i <= levels; i++) {
+
+                const y =
+                    i * sy / (levels + 1);
+
+                box(
+                    group,
+                    0,
+                    y,
+                    sz / 2 + 1.1,
+                    sx * 0.62,
+                    0.45,
+                    2.0,
+                    deco
+                );
+
+                balustrade(
+                    group,
+                    sx * 0.55,
+                    y + 0.8,
+                    sz / 2 + 1.8,
+                    deco
+                );
+            }
+        }
+
+        // -----------------------------------------------------
+        // TOP PEDIMENT
+        // -----------------------------------------------------
+
+        if (style === 0 || style === 1 || style === 4 || style === 7) {
+
+            entablature(
+                group,
+                sx * 1.12,
+                sz * 1.08,
+                sy,
+                deco,
+                true
+            );
+
+            pediment(
+                group,
+                sx * 0.9,
+                sz * 0.75,
+                sy + 1.7,
+                deco
+            );
+
+            rosette(
+                group,
+                0,
+                sy + 1.8,
+                frontZ + 0.15,
+                Math.min(sx, sz) * 0.08,
+                deco
+            );
+        }
+
+        // -----------------------------------------------------
+        // CORNER COLUMNS
+        // -----------------------------------------------------
+
+        if (style === 2 || style === 4 || style === 6) {
+
+            for (const x of [-sx / 2, sx / 2]) {
+
+                greekColumn(
+                    group,
+                    x,
+                    0,
+                    sz / 2 + 0.45,
+                    sy,
+                    Math.min(sx, sz) * 0.04,
+                    deco,
+                    1
+                );
+            }
+        }
+    }
+
+    // =========================================================
+    // BUILDINGS
+    // =========================================================
+
+    for (let i = 0; i < 3; i++) {
+
+        let sizeY =
+            5 +
+            Math.abs(
+                Math.sin(localSeed * i + 1.7)
+            ) * 145;
+
+        if (
+            Math.abs(
+                Math.sin(localSeed * i + 3.14)
+            ) > 0.8
+        ) {
+            sizeY =
+                80 +
+                Math.abs(
+                    Math.sin(localSeed * i + 2.5)
+                ) * 120;
+        }
+
+        const sizeX =
+            8 +
+            Math.abs(
+                Math.sin(localSeed + i * 1.3)
+            ) * 20;
+
+        const sizeZ =
+            8 +
+            Math.abs(
+                Math.sin(localSeed * 2 + i * 0.7)
+            ) * 20;
+
+        const hue =
+            Math.abs(
+                Math.sin(localSeed + i * 2.1)
+            );
+
+        const color =
+            new THREE.Color().setHSL(
+                hue * 0.7 + 0.5,
+                0.7,
+                0.3 + hue * 0.3
+            );
+
+        const material =
+            new THREE.MeshPhongMaterial({
+                color
+            });
+
+        const buildingGroup = new THREE.Group();
+
+        const boxMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(
+                sizeX,
+                sizeY,
+                sizeZ
+            ),
+            material
+        );
+
+        buildingGroup.add(boxMesh);
+
+        buildingGroup.position.set(
+            (chunkX * CHUNK_SIZE) +
+            (
+                Math.abs(
+                    Math.sin(
+                        localSeed * 3 +
+                        i * 1.1
+                    )
+                ) - 0.5
+            ) *
+            (CHUNK_SIZE - 40),
+
+            sizeY / 2 +
+            Math.abs(
+                Math.sin(
+                    localSeed + i
+                )
+            ) * 10 +
+            100,
+
+            (chunkZ * CHUNK_SIZE) +
+            (
+                Math.abs(
+                    Math.cos(
+                        localSeed * 4 +
+                        i * 0.9
+                    )
+                ) - 0.5
+            ) *
+            (CHUNK_SIZE - 40)
+        );
+
+        buildingGroup.rotation.y =
+            Math.abs(
+                Math.sin(
+                    localSeed + i * 1.1
+                )
+            ) *
+            Math.PI * 2;
+
+        decorateBuilding(
+            buildingGroup,
+            sizeX,
+            sizeY,
+            sizeZ,
+            material,
+            localSeed + i * 13.71
+        );
+
+        chunkGroup.add(buildingGroup);
+
+        // Only the original building is a collider
+        boxMesh.updateMatrixWorld();
+        chunkColliders.push(boxMesh);
+    }
+
+    // =========================================================
+    // ARCHES
+    // Existing simple arches are preserved,
+    // but transformed into eclectic Greek portals.
+    // =========================================================
+
+    for (let i = 0; i < 3; i++) {
+
+        const archGroup = new THREE.Group();
+
+        const w =
+            3 +
+            Math.abs(
+                Math.sin(localSeed + i * 2.3)
+            ) * 5;
+
+        const h =
+            30 +
+            Math.abs(
+                Math.cos(localSeed * 2 + i * 1.7)
+            ) * 70;
+
+        const d =
+            3 +
+            Math.abs(
+                Math.sin(localSeed * 3 + i)
+            ) * 4;
+
+        const span =
+            15 +
+            Math.abs(
+                Math.cos(localSeed + i * 1.3)
+            ) * 20;
+
+        const archColor =
+            new THREE.Color().setHSL(
+                0.5 +
+                Math.abs(
+                    Math.sin(
+                        localSeed + i * 3.7
+                    )
+                ) * 0.3,
+                0.6,
+                0.3 +
+                Math.abs(
+                    Math.cos(
+                        localSeed * 2 + i
+                    )
+                ) * 0.3
+            );
+
+        const material =
+            new THREE.MeshPhongMaterial({
+                color: archColor
+            });
+
+        const deco = material.clone();
+        deco.color.offsetHSL(0, -0.05, 0.13);
+
+        // -----------------------------------------------------
+        // ORIGINAL ARCH
+        // -----------------------------------------------------
+
+        const leftLeg = new THREE.Mesh(
+            new THREE.BoxGeometry(w, h, d),
+            material
+        );
+
+        leftLeg.position.set(
+            -span / 2,
+            h / 2,
+            0
+        );
+
+        archGroup.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(
+            new THREE.BoxGeometry(w, h, d),
+            material
+        );
+
+        rightLeg.position.set(
+            span / 2,
+            h / 2,
+            0
+        );
+
+        archGroup.add(rightLeg);
+
+        const topBar = new THREE.Mesh(
+            new THREE.BoxGeometry(
+                span + w,
+                w * 1.2,
+                d
+            ),
+            material
+        );
+
+        topBar.position.set(
+            0,
+            h + w * 0.6,
+            0
+        );
+
+        archGroup.add(topBar);
+
+        // -----------------------------------------------------
+        // GREEK COLUMNS ON BOTH SIDES
+        // -----------------------------------------------------
+
+        const columnRadius = w * 0.38;
+
+        greekColumn(
+            archGroup,
+            -span / 2,
+            0,
+            -d / 2 - 0.8,
+            h * 0.96,
+            columnRadius,
+            deco,
+            1
+        );
+
+        greekColumn(
+            archGroup,
+            span / 2,
+            0,
+            -d / 2 - 0.8,
+            h * 0.96,
+            columnRadius,
+            deco,
+            1
+        );
+
+        // rear columns
+        if (i % 2 === 0) {
+
+            greekColumn(
+                archGroup,
+                -span / 2,
+                0,
+                d / 2 + 0.8,
+                h * 0.96,
+                columnRadius,
+                deco,
+                0
+            );
+
+            greekColumn(
+                archGroup,
+                span / 2,
+                0,
+                d / 2 + 0.8,
+                h * 0.96,
+                columnRadius,
+                deco,
+                0
+            );
+        }
+
+        // -----------------------------------------------------
+        // LARGE ENTABLATURE
+        // -----------------------------------------------------
+
+        entablature(
+            archGroup,
+            span + w * 2.5,
+            d * 1.7,
+            h + w * 1.15,
+            deco,
+            true
+        );
+
+        // Greek meander across the top
+        meander(
+            archGroup,
+            span + w * 1.8,
+            h + w * 1.65,
+            -d / 2 - 0.15,
+            deco,
+            0.3
+        );
+
+        // -----------------------------------------------------
+        // PEDIMENT
+        // -----------------------------------------------------
+
+        pediment(
+            archGroup,
+            span + w * 1.8,
+            d * 1.4,
+            h + w * 3.1,
+            deco
+        );
+
+        // central rosette
+        rosette(
+            archGroup,
+            0,
+            h + w * 3.15,
+            -d / 2 - 0.25,
+            w * 0.5,
+            deco
+        );
+
+        // -----------------------------------------------------
+        // ACROTERIA
+        // -----------------------------------------------------
+
+        for (const x of [
+            -(span + w) * 0.42,
+            0,
+            (span + w) * 0.42
+        ]) {
+
+            const acro = new THREE.Mesh(
+                new THREE.ConeGeometry(
+                    w * 0.42,
+                    w * 1.2,
+                    4
+                ),
+                deco
+            );
+
+            acro.position.set(
+                x,
+                h + w * 3.65,
+                0
+            );
+
+            acro.rotation.y = Math.PI / 4;
+
+            archGroup.add(acro);
+        }
+
+        // -----------------------------------------------------
+        // POSITION
+        // -----------------------------------------------------
+
+        archGroup.position.set(
+            (chunkX * CHUNK_SIZE) +
+            (
+                Math.abs(
+                    Math.sin(
+                        localSeed * 5 +
+                        i * 2.7
+                    )
+                ) - 0.5
+            ) *
+            (CHUNK_SIZE - 50),
+
+            0,
+
+            (chunkZ * CHUNK_SIZE) +
+            (
+                Math.abs(
+                    Math.cos(
+                        localSeed * 6 +
+                        i * 1.9
+                    )
+                ) - 0.5
+            ) *
+            (CHUNK_SIZE - 50)
+        );
+
+        archGroup.rotation.y =
+            Math.abs(
+                Math.sin(
+                    localSeed + i * 1.1
+                )
+            ) *
+            Math.PI * 2;
+
+        // Original arch pieces only are collidable
+        leftLeg.updateMatrixWorld();
+        rightLeg.updateMatrixWorld();
+        topBar.updateMatrixWorld();
+
+        chunkColliders.push(
+            leftLeg,
+            rightLeg,
+            topBar
+        );
+
+        chunkGroup.add(archGroup);
+    }
+
+    // =========================================================
+    // ROADS
+    // Existing roads preserved.
+    // Added architectural borders and occasional columns.
+    // =========================================================
+
+    const roadWidth = 14;
+
+    // ---------------------------------------------------------
+    // FIRST ROAD LEVEL
+    // ---------------------------------------------------------
+
+    const roadMaterial1 =
+        new THREE.MeshPhongMaterial({
+            color: 0x333344
+        });
+
+    const roadHeight1 = 100;
+
+    const roadX = new THREE.Mesh(
+        new THREE.BoxGeometry(
+            CHUNK_SIZE,
+            1.5,
+            roadWidth
+        ),
+        roadMaterial1
+    );
+
+    roadX.position.set(
+        chunkX * CHUNK_SIZE,
+        roadHeight1,
+        chunkZ * CHUNK_SIZE
+    );
+
+    chunkGroup.add(roadX);
+    chunkColliders.push(roadX);
+
+    const roadZ = new THREE.Mesh(
+        new THREE.BoxGeometry(
+            roadWidth,
+            1.5,
+            CHUNK_SIZE
+        ),
+        roadMaterial1
+    );
+
+    roadZ.position.set(
+        chunkX * CHUNK_SIZE,
+        roadHeight1,
+        chunkZ * CHUNK_SIZE
+    );
+
+    chunkGroup.add(roadZ);
+    chunkColliders.push(roadZ);
+
+    // ---------------------------------------------------------
+    // ROAD DECORATION
+    // ---------------------------------------------------------
+
+    const roadDeco1 = mat(0x6d6375);
+
+    // central crossing monument
+    if (rnd(4) > 0.35) {
+
+        const monument =
+            new THREE.Group();
+
+        greekColumn(
+            monument,
+            0,
+            0,
+            0,
+            12 + rnd(8) * 12,
+            0.9,
+            roadDeco1,
+            1
+        );
+
+        const base = 2.5;
+
+        box(
+            monument,
+            0,
+            0.4,
+            0,
+            base,
+            0.8,
+            base,
+            roadDeco1
+        );
+
+        monument.position.set(
+            chunkX * CHUNK_SIZE,
+            roadHeight1 + 1,
+            chunkZ * CHUNK_SIZE
+        );
+
+        chunkGroup.add(monument);
+    }
+
+    // ---------------------------------------------------------
+    // SECOND ROAD LEVEL
+    // ---------------------------------------------------------
+
+    const roadMaterial2 =
+        new THREE.MeshPhongMaterial({
+            color: 0x553366
+        });
+
+    const roadHeight2 = 220;
+    const halfChunk = CHUNK_SIZE / 2;
+
+    const roadX2 = new THREE.Mesh(
+        new THREE.BoxGeometry(
+            CHUNK_SIZE,
+            1.5,
+            roadWidth
+        ),
+        roadMaterial2
+    );
+
+    roadX2.position.set(
+        chunkX * CHUNK_SIZE,
+        roadHeight2,
+        chunkZ * CHUNK_SIZE + halfChunk
+    );
+
+    chunkGroup.add(roadX2);
+    chunkColliders.push(roadX2);
+
+    const roadZ2 = new THREE.Mesh(
+        new THREE.BoxGeometry(
+            roadWidth,
+            1.5,
+            CHUNK_SIZE
+        ),
+        roadMaterial2
+    );
+
+    roadZ2.position.set(
+        chunkX * CHUNK_SIZE + halfChunk,
+        roadHeight2,
+        chunkZ * CHUNK_SIZE
+    );
+
+    chunkGroup.add(roadZ2);
+    chunkColliders.push(roadZ2);
+
+    // ---------------------------------------------------------
+    // SECOND LEVEL ARCHITECTURAL ELEMENTS
+    // ---------------------------------------------------------
+
+    const roadDeco2 = mat(0x80658b);
+
+    // Four monumental corner columns
+    if (rnd(8) > 0.25) {
+
+        const monumentGroup =
+            new THREE.Group();
+
+        const offset = CHUNK_SIZE * 0.34;
+
+        for (const x of [-offset, offset]) {
+            for (const z of [-offset, offset]) {
+
+                greekColumn(
+                    monumentGroup,
+                    x,
+                    0,
+                    z,
+                    16 + rnd(x + z + 10) * 14,
+                    0.75,
+                    roadDeco2,
+                    1
+                );
+            }
+        }
+
+        monumentGroup.position.set(
+            chunkX * CHUNK_SIZE,
+            roadHeight2 + 1,
+            chunkZ * CHUNK_SIZE
+        );
+
+        chunkGroup.add(monumentGroup);
+    }
+
+    // ---------------------------------------------------------
+    // ADD CHUNK
+    // ---------------------------------------------------------
+
+    scene.add(chunkGroup);
+
+    chunkRegistry.set(
+        `${chunkX},${chunkZ}`,
+        {
+            group: chunkGroup,
+            colliders: chunkColliders
+        }
+    );
+}
 
     function updateInfiniteWorld(playerPos) {
         const currentChunkX = Math.floor((playerPos.x + CHUNK_SIZE / 2) / CHUNK_SIZE);
