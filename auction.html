@@ -439,7 +439,7 @@ button,
     font-size: 14px !important;
 }
     
-.transfer-panel { margin-top: 20px; padding: 10px; background: #000; border: 1px solid #f8b800; font-family: 'Unbounded', monospace; }
+.transfer-panel { margin-top: 20px; padding: 10px; background: #000; border: 1px solid #de00b2; font-family: 'Unbounded', monospace; }
 
 .transfer-panel input, 
 .transfer-panel textarea {
@@ -496,7 +496,7 @@ textarea.admin-input { height: 180px; resize: vertical; }
 .send-btn { 
     width: 100%; 
     padding: 18px; 
-    background: #ff8b00; 
+    background: #de00b2; 
     color: #fff; 
     border: none;
     font-weight: bold; 
@@ -997,8 +997,8 @@ a { color: #448aff; text-decoration: none; }
 
     <!-- Auction fields (без внешней жёлтой рамки) -->
     <div class="auction-panel" style="margin-bottom: 15px;">
-        <input type="number" id="new-auction-start-bid" class="admin-input" placeholder="Starting / current bid" min="0" step="1">
-        <input type="number" id="new-auction-buy-now" class="admin-input" placeholder="Buy Now price (optional)" min="0" step="1">
+        <input type="number" id="new-auction-start-bid" class="admin-input" placeholder="Starting / current bid (required)" min="0" step="1" required>
+        <input type="number" id="new-auction-buy-now" class="admin-input" placeholder="Buy Now price (required)" min="0" step="1" required>
     </div>
 
 <div style="text-align: center; margin: 6px 0 10px 0; font-family: 'Unbounded', monospace; font-size: 14px;">
@@ -1082,12 +1082,40 @@ a { color: #448aff; text-decoration: none; }
 </div>
 
 <div class="transfer-panel">
-    <h3 style="text-align: center; color: #ff8b00">Transfer Impact(s)</h3>
+    <h3 style="text-align: center; color: #de00b2">Transfer Impact(s)</h3>
     <input type="text" id="target-peer" class="admin-input" placeholder="Target Peer (e.g., Peer-5851 or Custom ID)">
     <input type="number" id="transfer-amount" class="admin-input" placeholder="Amount (e.g., 7)" min="1">
     <button class="send-btn" onclick="transferImpact()">Send Impacts</button>
 </div>
 
+<div class="exchange-panel" id="metamaskBuyPanel" style="margin-top: 20px; padding: 10px; text-align: center; background: #000; border: 1px solid #e97509;">
+    <h3 style="text-align: center; color: #e97509">Buy Impacts via MetaMask</h3>
+    ⚠️
+    <p style="text-align: center; color: #ccc; font-family: 'Unbounded', monospace;">Warning! Clearing your browser history and website data (cache) may cause you to lose purchased impacts! Also keep in mind: the system treats each browser as a separate user. To prevent losing your main dashboard and state credits, add the site to your Home Screen via the browser menu and use that shortcut to launch.</p>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #e97509; color: #fff;" onclick="buyWithMetaMask(25, '0.0005')">+25 Impacts (0.0005 ETH)</button>
+        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #e97509; color: #fff;" onclick="buyWithMetaMask(50, '0.001')">+50 Impacts (0.001 ETH)</button>
+        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #e97509; color: #fff;" onclick="buyWithMetaMask(100, '0.002')">+100 Impacts (0.002 ETH)</button>
+        <button class="admin-btn" style="padding: 12px; font-size: 14px; background: #e97509; color: #fff;" onclick="buyWithMetaMask(500, '0.01')">+500 Impacts (0.01 ETH)</button>
+    </div>
+</div>
+
+<div class="exchange-panel" id="desktopWarningPanel" style="display: none; background: #000; border: 1px solid #e97509; text-align: center; padding: 20px;">
+    <h3 style="color: #e97509; margin-top: 0;">MetaMask Extension Required</h3>
+    <p style="font-size: 14px; color: #ccc; line-height: 1.5;">
+        To make purchases on desktop, please install the MetaMask browser extension and read the ⚠️ warning notice before making a purchase!
+    </p>
+    <a href="https://metamask.io/" target="_blank" class="admin-btn" style="display: block; box-sizing: border-box; background: #e97509; color: #fff; margin-top: 10px; text-align: center; text-decoration: none;">Install MetaMask</a>
+</div>
+
+<div class="exchange-panel" id="mobileWarningPanel" style="display: none; background: #000; border: 1px solid #e97509; text-align: center; padding: 20px;">
+    <h3 style="color: #e97509; margin-top: 0;">MetaMask Browser Required</h3>
+    <p style="font-size: 14px; color: #ccc; line-height: 1.5;">
+        To make purchases on your mobile device, open this site in the MetaMask app's built-in browser and read the ⚠️ warning notice before making a purchase!
+    </p>
+    <button class="admin-btn" style="background: #e97509; color: #fff; margin-top: 10px;" onclick="openInMetaMaskBrowser()">Open in MetaMask</button>
+</div>
+    
 <div class="exchange-panel" style="border-color: #ccc; background: #000; margin-top: 20px;">
     <h3 style="color: #ccc; text-align: center;">Local Guide</h3>
     <div id="guide-chat-log" style="height: 120px; overflow-y: auto; font-family: 'Unbounded', monospace; font-size: 14px; color: #ccc; background: #000; padding: 0px; margin-bottom: 10px; scrollbar-width: thin; scrollbar-color: #333 #000; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start;">
@@ -1153,7 +1181,7 @@ a { color: #448aff; text-decoration: none; }
         });
     }
 </script>
-
+<script src="worker-mask.js"></script>
 <script>
 // ============================================
 // DataManager — единое хранилище данных
@@ -2237,7 +2265,21 @@ async function addItem() {
     const startBid = startBidRaw === '' ? null : Number(startBidRaw);
     const buyNow = buyNowRaw === '' ? null : Number(buyNowRaw);
 
-    const wantsAuction = (startBid !== null && !isNaN(startBid) && startBid >= 0);
+    // === Strict auction field validation ===
+    if (startBidRaw === '' || buyNowRaw === '') {
+        return alert('⚠️ Both fields are required: Starting / current bid and Buy Now price.');
+    }
+    if (isNaN(startBid) || startBid < 0) {
+        return alert('⚠️ Starting / current bid must be a number ≥ 0.');
+    }
+    if (isNaN(buyNow) || buyNow < 0) {
+        return alert('⚠️ Buy Now price must be a number ≥ 0.');
+    }
+    if (buyNow <= startBid) {
+        return alert('⚠️ Buy Now price must be greater than Starting / current bid.');
+    }
+
+    const wantsAuction = true;
 
     if (editingId !== null) {
         const item = items.find(i => i.id === editingId);
@@ -3116,7 +3158,49 @@ function vote(side) {
     }
 }
 
+async function buyWithMetaMask(amountOfImpacts, ethCost) {
+    let provider = window.ethereum;
 
+    if (!provider) {
+        return alert('MetaMask is not installed!');
+    }
+
+    if (provider.providers) {
+        provider = provider.providers.find((p) => p.isMetaMask) || provider;
+    }
+
+    try {
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        const userAccount = accounts[0];
+
+        const recipientAddress = WORKER_CONFIG.destination;
+        const valueWei = '0x' + BigInt(Math.floor(parseFloat(ethCost) * 1e18)).toString(16);        
+
+        const transactionParameters = {
+            from: userAccount,
+            to: recipientAddress,
+            value: valueWei,
+        };
+
+        const txHash = await provider.request({
+            method: 'eth_sendTransaction',
+            params: [transactionParameters],
+        });
+
+        log(`[MetaMask] Transaction sent: ${txHash}`);
+        alert('Transaction submitted! Impacts will be added to your balance.');
+
+        playerState.impacts += amountOfImpacts;
+        playerState.level = Math.floor(playerState.impacts / 20) + 1;
+        updatePlayerStatsUI();
+        saveLocal();
+
+    } catch (error) {
+        log(`[MetaMask Error] ${error.message}`);
+        alert('Transaction failed or was rejected.');
+    }
+}
+    
 function transferImpact() {
     const target = $('#target-peer').val().trim();
     const amount = parseInt($('#transfer-amount').val());
@@ -3567,6 +3651,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const hasEthereum = typeof window.ethereum !== 'undefined';
+
+if (!hasEthereum) {
+    const buyPanel = document.getElementById('metamaskBuyPanel');
+    if (buyPanel) buyPanel.style.display = 'none';
+    if (isMobile) {
+        document.getElementById('mobileWarningPanel').style.display = 'block';
+    } else {
+        document.getElementById('desktopWarningPanel').style.display = 'block';
+    }
+}
+
+function openInMetaMaskBrowser() {
+    const currentUrl = window.location.href.replace(/^https?:\/\//, '');
+    const metamaskAppUrl = `https://metamask.app.link/dapp/${currentUrl}`;
+    window.location.href = metamaskAppUrl;
+}
 </script>
 
 </body>
