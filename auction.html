@@ -1,0 +1,2772 @@
+<!DOCTYPE html>
+<html lang="en"> 
+<head> 
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/star.png">
+<meta property="og:image" content="/Verge.jpeg">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="1280">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest-paramount.json">
+<title>Paramount | Beauty and the best</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+body { 
+    background-color: #000; 
+    color: #fff; 
+    font-family: 'Unbounded', monospace;
+    margin: 0; 
+    padding: 0; 
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+    
+html::-webkit-scrollbar { display: none; }
+
+.header {
+    position: fixed;
+    width: 100%;         
+    max-width: 768px;   
+    box-sizing: border-box; 
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #000;
+    padding: env(safe-area-inset-top, 0) 4px 0 4px;
+    z-index: 1000;
+}
+
+.edit-btn {
+    width: 100%;
+    background: #afff0050;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin-right: 10px;
+    text-transform: uppercase; 
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    font-family: 'Unbounded', monospace; 
+}
+
+.edit-btn:hover { background: #2979ff; }
+
+#new-title { margin-bottom: 4px; }
+#new-desc { margin: 0.8em 0 !important; }
+
+.item-details div { margin: 0.8em 0 !important; }
+
+.item-details p {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    line-height: 1.8 !important;
+    margin: 0.8em 0 !important;
+}
+
+.external-link { 
+    color: #448aff; 
+    text-decoration: none; 
+    display: block; 
+    margin-top: 25px; 
+    margin-bottom: 10px; 
+    font-weight: bold; 
+}
+
+#ai-chat-log {
+    scrollbar-width: thin;
+    scrollbar-color: #333 #000;
+}
+#ai-chat-log::-webkit-scrollbar { width: 5px; }
+#ai-chat-log::-webkit-scrollbar-track { background: #000; }
+#ai-chat-log::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+
+.desktop-only { display: block; }
+.mobile-no-mm-only { display: none; }
+
+:root { --header-height: 70px; }
+
+@media (max-width: 768px) { :root { --header-height: 100px; } }
+
+html { scroll-padding-top: var(--header-height); }
+    
+.app-container {
+    max-width: 768px;
+    margin: 0 auto;
+    background-color: #000;
+    min-height: 100dvh;
+    padding: 4px;
+    box-sizing: border-box;
+}
+
+#logContainer.collapsed { display: none; }
+#disclaimerText.collapsed { display: none; }
+#helpText.collapsed { display: none; }
+#loreText.collapsed { display: none; }
+    
+#statusToggle, #disclaimerToggle, #helpToggle, #loreToggle { cursor: pointer; }
+
+.network-status::before,
+#disclaimerToggle::before,
+#helpToggle::before,
+#loreToggle::before { content: "▶ "; }
+
+.network-status.open::before,
+#disclaimerToggle.open::before,
+#helpToggle.open::before,
+#loreToggle.open::before { content: "▼ "; }
+
+.network-status { 
+    background: #000; 
+    font-size: 14px; 
+    font-family: 'Unbounded', monospace; 
+    color: #0097ff; 
+}
+
+.player-stats {
+    background: #000;
+    border: 1px solid #fff;
+    padding: 12px;
+    font-family: 'Unbounded', monospace;
+    font-size: 14px;
+    margin: 20px 0;
+}
+
+.player-stats .stats-row { display: flex; gap: 15px; justify-content: space-between; }
+.player-stats .stat-box { flex: 1; text-align: center; }
+.player-stats .stat-box span { color: #0097ff; font-weight: bold; }
+
+#versus { width: 100%; margin: 2em 0; }
+.versus-wrapper { display: flex; gap: 10px; justify-content: center; }
+.versus_column { flex: 1; min-width: 0; cursor: pointer; transition: transform 0.1s; }
+.versus_column:active { transform: scale(0.98); }
+.versus_thumbwrapper { 
+    position: relative; 
+    border: 3px solid #afff00; 
+    background-color: #333; 
+    aspect-ratio: 1/1; 
+    box-sizing: border-box;
+    box-shadow: 0 0 15px rgba(255,0,255,0.2);
+}
+.versus_thumbwrapper img { 
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+}
+
+.ranking-container { margin-top: 10px; }
+
+.ranking-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 20px !important;
+    text-align: center;
+    padding: 0;
+    margin-bottom: 20px;
+    color: #ff00cc;
+}
+
+.ranking-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 56px;
+    padding: 8px 0;
+    margin: 0;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.ranking-img {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    flex: 0 0 40px;
+    display: block;
+    object-fit: cover;
+    object-position: center;
+    margin: 0 12px 0 0 !important;
+    padding: 0 !important;
+    border: 1px solid #afff00;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.ranking-img.text-preview {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    flex: 0 0 40px;
+    padding: 4px !important;
+    margin: 0 12px 0 0 !important;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    overflow: hidden;
+    background: #111;
+    color: #ccc;
+    font-family: 'Unbounded', monospace;
+    font-size: 7px;
+    line-height: 1.2;
+    text-align: left;
+    word-break: break-word;
+}
+
+.ranking-info {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    gap: 8px;
+}
+
+.ranking-info .title {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.2;
+    text-align: left;
+    font-size: 14px !important;
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ranking-info .sender {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ranking-info .rating {
+    flex: 0 0 auto;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #0097ff;
+    font-size: 12px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.item-details {
+    display: none;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 0 10px 2px;
+    background: #000;
+    border-bottom: 0;
+    font-size: 14px;
+    color: #ccc;
+    font-family: 'Unbounded', monospace;
+}
+
+.item-details p {
+    margin: 0.8em 0 !important;
+    padding: 0;
+    line-height: 1.8 !important;
+}
+
+.text-thumbnail { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+.text-thumbnail>div {
+    background: #111;
+    color: #ccc;
+    font-family: 'Unbounded', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 12px 12px;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    text-align: left;
+    word-wrap: break-word;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.admin-input { 
+    width: 100%; 
+    padding: 12px; 
+    margin-bottom: 15px; 
+    background: #000; 
+    border: 1px solid #999; 
+    font-size: 14px;
+    color: #fff; 
+    box-sizing: border-box; 
+    font-family: 'Unbounded', monospace;
+}
+
+.admin-input::placeholder { color: #999; opacity: 1; }
+.admin-input:-ms-input-placeholder { color: #999; }
+.admin-input::-webkit-input-placeholder { color: #999; }
+
+.claim-panel { margin-top: 20px; padding: 10px; background: #000; border: 1px solid #0097ff; font-family: 'Unbounded', monospace; }
+.claim-panel input, .claim-panel textarea { font-family: 'Unbounded', monospace; }
+.claim-panel button { font-family: 'Unbounded', monospace; }
+
+.exchange-panel { margin-top: 20px; padding: 10px; background: #000; border: 1px solid #de00b2; font-family: 'Unbounded', monospace; }
+.exchange-panel input, .exchange-panel textarea { font-family: 'Unbounded', monospace; }
+.exchange-panel button { font-family: 'Unbounded', monospace; }
+
+button, .admin-btn, .edit-btn, .file-label {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    font-size: 14px !important;
+}
+    
+.transfer-panel { margin-top: 20px; padding: 10px; background: #000; border: 1px solid #f8b800; font-family: 'Unbounded', monospace; }
+.transfer-panel input, .transfer-panel textarea { font-family: 'Unbounded', monospace; }
+.transfer-panel button { font-family: 'Unbounded', monospace; }
+
+.main-panel { margin-top: 30px; padding: 10px; background: #000; border: 1px solid #afff00; }
+.main-panel h3 { font-size: 18px !important; }
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+textarea.admin-input { height: 180px; resize: vertical; }
+#new-img-file { display: none; }
+
+.file-label {
+    display: inline-block;
+    padding: 12px;
+    background: #000;
+    color: #afff00;
+    font-size: 14px;
+    text-align: left;
+    box-sizing: border-box;
+    cursor: pointer;
+    margin-bottom: 20px;
+    border: 2px solid #afff00;
+    width: 100%;
+}
+
+.admin-btn { 
+    width: 100%; 
+    padding: 18px; 
+    background: #de00b2; 
+    color: #fff; 
+    border: none;
+    font-weight: bold; 
+    cursor: pointer; 
+    text-transform: uppercase; 
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(255,0,255,0.4);
+    font-family: 'Unbounded', monospace; 
+}
+
+.send-btn { 
+    width: 100%; 
+    padding: 18px; 
+    background: #ff8b00; 
+    color: #fff; 
+    border: none;
+    font-weight: bold; 
+    cursor: pointer; 
+    text-transform: uppercase; 
+    font-size: 14px;
+    box-shadow: 0 0 15px rgba(255,0,255,0.4);
+    font-family: 'Unbounded', monospace; 
+}
+
+.inject-btn-bg { background: #afff00; color: #000; }
+
+#desktopWarningPanel, #mobileWarningPanel { font-family: 'Unbounded', monospace; }
+#desktopWarningPanel h3, #desktopWarningPanel p, #desktopWarningPanel .admin-btn,
+#mobileWarningPanel h3, #mobileWarningPanel p, #mobileWarningPanel .admin-btn { font-family: inherit; }
+
+body, body * { transition: background-color 0.6s ease, color 0.6s ease, border-color 0.6s ease, filter 0.6s ease; }
+
+body.inverted { filter: invert(1) hue-rotate(180deg); background-color: #fff; }
+body.inverted img { filter: invert(1) hue-rotate(180deg); }
+body.inverted img.no-invert { filter: none; }
+
+#logContainer { 
+    background: #000; 
+    font-size: 14px; 
+    font-family: 'Unbounded', monospace; 
+    color: #0097ff; 
+    height: 100px;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-y: auto;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+#logContainer::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+
+#disclaimerToggle { background: #000; font-size: 14px; font-family: 'Unbounded', monospace; color: #ff2440; }
+#helpToggle, #loreToggle { background: #000; font-size: 14px; font-family: 'Unbounded', monospace; color: #fff; margin-bottom: 10px; }
+
+#disclaimerText, #helpText, #loreText {    
+    background: #000;    
+    font-size: 14px;    
+    font-family: 'Unbounded', monospace;
+    color: #ccc;    
+    margin: 0 0 10px 0;
+    line-height: 1.5;
+}
+
+#disclaimerToggle, #disclaimerText, 
+#helpToggle, #helpText, 
+#loreToggle, #loreText,
+.claim-panel, .exchange-panel, .transfer-panel,
+#desktopWarningPanel, #mobileWarningPanel { font-size: 14px !important; }
+
+#aboutToggle { cursor: pointer; margin: 0 0 10px 0; display: block; }
+#aboutToggle::before { content: "▶ "; }
+#aboutToggle.open::before { content: "▼ "; }
+#aboutContent.collapsed { display: none; }
+    
+.footer-credit { text-align: center; font-size: 14px; color: #fff; margin: 50px 0 30px 0; }
+    
+h2 { font-size: 20px !important; margin-bottom: -10px; }
+h3 { font-size: 18px !important; font-weight: normal !important; }
+    
+a { color: #448aff; text-decoration: none; }
+.footer-credit a:hover { text-decoration: underline; }
+
+.progress-fill { height: 8px; background: #aaa; transition: width 600ms cubic-bezier(0.25, 1, 0.5, 1); }
+.footer-credit h2 a:hover { text-decoration: underline; color: #0097ff !important; }
+
+* { scrollbar-width: thin; scrollbar-color: #444444 #00001f; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #00001f; }
+::-webkit-scrollbar-thumb { background: #444444; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #444444; }
+
+@keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+#liveIndicatorBcast { color: #ff0000; animation: livePulse 1.5s infinite; }
+#tapeIndicatorBcast { color: #afff00; }
+#aboutToggle { color: #ffd700; }
+#aboutContent { color: #ffd700cc; }
+.edit-btn { background: #afff0050 !important; color: #fff !important; border: 0px solid #afff00; }
+#new-recipients::placeholder { color: #ff2440cc; opacity: 1; }
+#new-recipients::-webkit-input-placeholder { color: #ff2440cc; opacity: 1; }
+
+/* ================= AUCTION STYLES ================= */
+.auction-panel {
+    margin-top: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    font-family: 'Unbounded', monospace;
+}
+.auction-panel h3 {
+    color: #ffd700;
+    text-align: left;
+    margin: 0 0 8px 0;
+    font-size: 14px !important;
+    font-weight: normal !important;
+    letter-spacing: 0.5px;
+}
+.auction-panel .auction-hint {
+    color: #ffd700cc;
+    font-size: 11px;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+.auction-panel h3 { color: #ffd700; text-align: center; margin-top: 0; }
+.auction-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 3px;
+    font-weight: bold;
+    margin-right: 6px;
+}
+.auction-badge.live   { background: #ff000030; color: #ff5555; border: 1px solid #ff0000; }
+.auction-badge.tape   { background: #afff0030; color: #afff00; border: 1px solid #afff00; }
+.auction-badge.ended  { background: #66666630; color: #aaa;    border: 1px solid #666; }
+.auction-badge.delivered { background: #0097ff30; color: #0097ff; border: 1px solid #0097ff; }
+.auction-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #ccc;
+    margin: 4px 0;
+}
+.auction-row span:last-child { color: #fff; font-weight: bold; }
+.bid-input-row { display: flex; gap: 6px; margin-top: 8px; }
+.bid-input-row input { flex: 1; margin-bottom: 0; }
+.gate-panel {
+    margin-top: 10px;
+    padding: 10px;
+    background: #001a00;
+    border: 1px solid #00ff88;
+    font-size: 12px;
+    color: #00ff88;
+}
+.gate-panel textarea {
+    width: 100%;
+    min-height: 60px;
+    background: #000;
+    color: #00ff88;
+    border: 1px solid #00ff88;
+    font-family: 'Unbounded', monospace;
+    font-size: 12px;
+    padding: 6px;
+    box-sizing: border-box;
+    margin-top: 6px;
+}
+.gate-msg { margin: 4px 0; padding: 4px; border-bottom: 1px dashed #00ff8840; }
+.gate-msg .meta { color: #008855; font-size: 10px; }
+.bid-list { margin-top: 8px; }
+.bid-entry {
+    padding: 6px;
+    border-bottom: 1px solid #ffd70030;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+}
+.bid-entry.accepted { color: #0097ff; }
+.bid-entry.mine { color: #afff00; }
+.bid-count-badge {
+    background: #ffd70020;
+    color: #ffd700;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    margin-left: 6px;
+}
+</style>
+</head>
+<body>
+<div class="header" style="display: flex; align-items: flex-start; justify-content: left; gap: 15px; margin-bottom: 10px;">
+  <a href="#broadcast">
+    <img src="star.png" alt="Logo" style="height: 48px; width: auto; margin-top: 20px;">
+  </a>
+    
+  <div style="display: flex; flex-direction: column;">
+
+<h2 id="invertTrigger" style="margin: -4px; line-height: 0.9; color: #ccc; font-family: 'Unbounded', sans-serif; margin-top: 28px; cursor: pointer;" title="Tap to invert interface">Paramount<span id="liveIndicator" style="display: none; color: #ff0000; margin-left: 6px; animation: livePulse 1.5s infinite;">● Live!</span><span id="tapeIndicator" style="display: none; color: #afff00; margin-left: 6px;">● Tape</span></h2>
+
+    <span style="margin: -3px; font-size: 14px; letter-spacing: 1px; font-family: 'Unbounded', monospace; color: #ffd700; margin-top: 5px;">
+      Beauty and the best 
+    </span>
+  </div>
+</div>
+<div class="app-container">
+
+<div id="versus" style="margin-top: 6em;">
+    <div class="ranking-title" style="color: #afff00">Choose one</div>
+    <div class="versus-wrapper">
+        <div class="versus_column" id="item-left" onclick="vote('left')">
+            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+            <h3 class="title" style="text-align: center; font-size: 16px;"></h3>
+        </div>
+        <div class="versus_column" id="item-right" onclick="vote('right')">
+            <div class="versus_thumbwrapper"><img src="" alt=""></div>
+            <h3 class="title" style="text-align: center; font-size: 16px;"></h3>
+        </div>
+    </div>
+</div>
+
+<div class="ranking-container">
+    <div class="ranking-title" style="color: #afff00">Global Matrix Rank</div>
+    <p style="margin:-20px 0 20px 0;color:#afff00;text-align:center;font-size:12px;">External currently votes have an effect</p>
+
+    <div id="ranking-list"></div>
+</div>
+
+<div id="logArea">
+    <div class="network-status open" style="margin: 20px 0 5px 0;" id="statusToggle">
+        <span id="netStatus">Status: Connecting to node network... (<span id="nodeId">...</span>)</span>
+    </div>
+
+    <div id="logContainer"></div>
+</div>
+
+<div id="disclaimerToggle" style="margin: 30px 0 10px 0; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+    <span>
+        <strong>Disclaimer</strong><span id="aboutLabel" style="color: #ffd700;"> & About</span>
+<span id="updateAvailableLine" 
+      style="display: none; color: #0097ff; font-size: 14px; font-family: 'Unbounded', monospace; cursor: pointer;"
+      onclick="event.stopPropagation(); syncAndKeepData()">
+    Update Available
+</span>
+</div>
+
+<div id="disclaimerText" class="collapsed">
+    <p>
+        ⚠️ This application uses public broker test infrastructure to sync data between users in real time for demonstration purposes only!
+        No confidential is guaranteed because data is not encrypted for privacy.
+        Any data you enter is automatically synchronized and stored on the devices of all users currently viewing this page <span class="about-alert" style="color: #ff0000;">live</span> (online). 
+        <strong>However, hidden listeners may also exist!</strong>
+        Please avoid transmitting sensitive personal information! 
+    </p>
+    <p>Before updating, please verify if your current meme is ready but was not injected to avoid losing any unsent content.</p>
+
+    <p>⚠️ <strong>Clearing browser cache will reset all data.</strong></p>
+    <div style="margin: 10px 0;">
+        <button class="admin-btn" style="background: #ff333390; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="resetToDefault()">Reset to Default</button>
+    </div>
+
+    <p style="color: #afff00;">
+    Transport Layer Notice: Public MQTT brokers may experience temporary downtime or network congestion. If connectivity drops or messages are not syncing, switch to an alternate broker using the connection controls below and monitor the active peer count in the system log.
+    </p>
+    
+<select id="brokerSelect" class="admin-input" onchange="onBrokerSelectChange(this)" style="margin-bottom: 10px; width: 100%; box-sizing: border-box; appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23afff00%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 10px; padding-right: 30px;">
+    <option value="wss://test.mosquitto.org:8081/mqtt">Mosquitto Test Broker</option>
+    <option value="wss://broker.emqx.io:8084/mqtt">EMQX Public Broker (Default)</option>
+    <option value="wss://broker.hivemq.com:8884/mqtt">HiveMQ Public Broker</option>
+    <option value="custom">Custom WebSocket URL...</option>
+</select>
+
+    <input type="text" id="customBrokerUrl" class="admin-input" placeholder="wss://your-broker-domain:port/mqtt" style="display: none; margin-bottom: 10px; width: 100%; box-sizing: border-box;">
+    
+    <button class="admin-btn" type="button" style="background: #afff0090; color: #fff; padding: 12px; font-size: 14px; width: 100%;" onclick="switchBroker()">
+    Connect to Broker
+    </button>
+    
+    <p>The image you publish is compressed to a size of 15–50 kB, so even a large number of images will not take up much space in your device's storage. However, you can delete individual memes along with their images entirely from your device via ranking, or choose this way:</p>
+    
+    <p>The mechanics of impact transmission and collision detection are based on trust between clients in an open network without cryptographic guarantees of transaction authenticity and allow packet interception or forgery.</p>
+
+<div id="aboutToggle"><strong>About</strong></div>
+<div id="aboutContent" class="collapsed">
+    <p>Resonance Match: Tap one meme to elevate its ranking, or other to drop opponent.</p>
+    <p>To rise, vote for the weak memes against the strong ones.</p>
+    <p><strong>Common votes are counted only in a <span class="about-alert" style="color: #ff0000;">live</span> session</strong>.</p>
+    <p>Global Matrix Rank: The ranking engine calculates the relative strength of players using the Elo formula.</p>
+    <p>Broadcast Breakthrough Meme: The meme you publish will appear and be stored only in the cache of devices of users who are currently <span class="about-alert" style="color: #ff0000;">live</span> session. No one will see your meme if it is injected (posted) in <span class="about-alert" style="color: #afff00;">tape</span> mode (offline). However, you can always Re-inject your tape mode meme (free) directly from ranking via Edit... button.</p>
+    <p>State and Credits: Every competitor gets 8 free impacts, 5 free votes and 3 free publication slots.</p>
+    <p>Hourly Resonance Claim: lets you earn +4 Impact per hour.</p>
+    <p>If you return in a day (or later), the long-term absence limitation will kick in, and you will receive +24 impact.</p>
+    <p>You can delete any meme in the ranking.</p>
+    <p>Use 'Convert Impacts to Action Limits' to spend 1 impact for +3 votes, or 3 impacts for +1 post slot.</p>
+    <p>Use 'Transfer Impact(s)' to send it(s) to other network participants.</p>
+
+    <p style="color:#ffd700; border-top: 1px solid #ffd70050; padding-top: 10px;">
+        <strong>Auction Logic:</strong> Any ranking-item can be turned into an auction in the Broadcast panel below. The author of the meme is always the seller — no external seller can be assigned. Only the starting bid and an optional Buy Now price are set. Bids are accepted while the seller is LIVE; when the seller goes offline the auction switches to TAPE (saved bids only). Bids are accepted 24/7 without fixed time windows — the LIVE/TAPE state of the seller is the only gate.
+    </p>
+    <p style="color:#ffd700cc;">
+        <strong>Seller <span style="color:#ff0000;">LIVE</span>:</strong> Buyer can press <em>Bid</em> — the bid is really sent to the seller, who may Accept it. After acceptance the deal gets status <code>Delivered</code> and a private gate opens between the two peers for additional non-public info. <em>Buy Now</em> (if set) instantly closes the deal at the seller's price.
+    </p>
+    <p style="color:#ffd700cc;">
+        <strong>Seller <span style="color:#afff00;">TAPE</span> (offline):</strong> Buyer can only view the auction data received while the seller was live. New bids are stored as <em>Save</em> (intended bids). Buy Now is unavailable. When the seller becomes LIVE again, the buyer is offered to <em>edit and/or re-bid</em> — same pattern as edit/re-inject for memes.
+    </p>
+    <p style="color:#00ff88;">
+        ⚠️ <strong>Live peer exchange of additional information works only if both participants are online right now.</strong> If either party goes offline, the gate is closed and messages sent while the peer is offline are not delivered until they return LIVE.
+    </p>
+
+    <p>Due to the temporary absence of individual participants and the presence of memes they cannot see, the number of votes required to update ranking does not accumulate synchronously across devices. When live parity is reached, "spontaneous" updates of the pair in the voting block occur.</p>
+    <p>To protect your notes, keep things clear: add this app to your Home Screen via the browser menu and use that shortcut to launch. (•••)</p>
+    <p>Swipe down from the top to check for updates.</p>
+</div>
+</div>
+    <span id="broadcast"></span>    
+
+<div class="main-panel">
+<h3 style="color: #afff00; text-align: center;">
+    Broadcast
+    <span id="liveIndicatorH3" style="display: none; color: #ff0000; margin-left: 6px; animation: livePulse 1.5s infinite;">● Live!</span>
+    <span id="tapeIndicatorH3" style="display: none; color: #afff00; margin-left: 6px;">● Tape</span>
+</h3>    
+    <input type="text" id="new-title" class="admin-input" placeholder="Your Meme Title">
+    <textarea id="new-desc" class="admin-input" placeholder="Your meme details (optional)"></textarea>
+    <input type="url" id="new-url" class="admin-input" placeholder="External Link (optional)">
+    <label for="new-img-file" class="file-label" id="file-label-text">Select Meme Image</label>
+    <input type="file" id="new-img-file" accept="image/*" onchange="updateLabel(this)">
+<div style="text-align: center; margin: 6px 0 10px 0; font-family: 'Unbounded', monospace; font-size: 14px;">
+    <span id="liveIndicatorBcast" style="display: none;">● Live! — peers online: <span id="livePeerCount">0</span></span>
+    <span id="tapeIndicatorBcast" style="display: none;">● Tape — no peer(s)</span>
+</div>
+<input type="text" id="new-recipients" class="admin-input" 
+       placeholder="Send only to Peer IDs: comma-separated, empty = public (optional)"
+       style="border: 2px solid #ff2440cc; color:#ff2440;">
+        <div style="color:#afff00cc; font-size:11px; margin:-10px 0 14px;">
+            You can save a note exclusively for your Peer-XXXX (or name)—even in Live mode.    
+        </div>
+
+<!-- ==================== AUCTION ADMIN FIELDS ==================== -->
+<div class="auction-panel">
+    <div class="auction-hint">
+        Optional — fill to publish as an auction (Starting bid and/or Buy Now). Leave empty for a normal meme.
+    </div>
+    <input type="number" id="new-auction-start-bid" class="admin-input" placeholder="Starting / current bid (e.g. 100)" min="0" step="1">
+    <input type="number" id="new-auction-buy-now" class="admin-input" placeholder="Buy Now price (optional, e.g. 500)" min="0" step="1">
+</div>
+
+<button class="admin-btn inject-btn-bg" style="border: 2px solid #afff00;" onclick="addItem()">Inject Meme to Network</button>
+<button id="cancel-edit-btn" class="admin-btn"
+        style="display: none; margin-top: 10px; background: #444; color: #fff; border: 2px solid #ff3333;"
+        onclick="cancelEdit()">
+    Cancel Edit
+</button>
+</div>
+
+<div class="exchange-panel" style="border-color: #afff00; background: #000;">
+    <h3 style="color: #afff00; text-align: center; margin-bottom: 4px;">Terra Incognita</h3>
+    <div id="activityReadout" style="text-align: center; font-family: 'Unbounded', monospace; font-size: 12px; color: #888; margin-bottom: 8px;">
+        <span style="color:#afff00">Votes 0</span> · <span style="color:#de00b2">Posts 0</span> · <span style="color:#0097ff">Deliveries 0</span>
+    </div>
+    <div id="activityRangeBtns" style="display: flex; gap: 6px; justify-content: center; margin-bottom: 10px; flex-wrap: wrap;">
+        <button type="button" class="activity-range-btn" data-range="week"  style="padding: 5px 12px; font-size: 12px; font-family: 'Unbounded', monospace; background: #111; color: #afff00; border: 1px solid #afff00; cursor: pointer; border-radius: 3px;">Week</button>
+        <button type="button" class="activity-range-btn" data-range="month" style="padding: 5px 12px; font-size: 12px; font-family: 'Unbounded', monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">Month</button>
+        <button type="button" class="activity-range-btn" data-range="year"  style="padding: 5px 12px; font-size: 12px; font-family: 'Unbounded', monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">Year</button>
+        <button type="button" class="activity-range-btn" data-range="all"   style="padding: 5px 12px; font-size: 12px; font-family: 'Unbounded', monospace; background: #111; color: #888; border: 1px solid #444; cursor: pointer; border-radius: 3px;">All</button>
+    </div>
+    <div style="position: relative; width: 100%; height: 180px; background: #000; box-sizing: border-box;">
+        <canvas id="activityChart" style="width: 100%; height: 100%; display: block;"></canvas>
+    </div>
+</div>
+
+<div class="player-stats">
+    <h3 style="text-align: center; font-family: 'Unbounded', monospace; color: #fff; margin-top: 0px; margin-bottom: 12px;">State and Credits</h3>
+    
+    <div class="stats-row" style="display: flex; gap: 10px;"> 
+        <div class="stat-box" style="display: flex; flex-direction: column; align-items: center;">
+            Level: <span id="playerLevel">1</span>
+        </div>
+        <div class="stat-box" style="display: flex; flex-direction: column; align-items: center;">
+            Impacts: <span id="playerImpact">8</span>
+        </div>
+        <div class="stat-box" style="display: flex; flex-direction: column; align-items: center;">
+            Votes: <span id="votesLeft">5</span>
+        </div>
+        <div class="stat-box" style="display: flex; flex-direction: column; align-items: center;">
+            Posts: <span id="postsLeft">3</span>
+        </div>
+    </div>
+    <div style="margin-top:14px; display:flex; gap:8px;">
+        <input type="text" id="my-id-input" class="admin-input"
+               style="margin-bottom:0; flex:1;"
+               placeholder="Your Peer ID (Peer-XXXX)">
+        <button class="admin-btn" type="button"
+                style="width:auto; padding:12px 16px; background:#fff; color:#000;"
+                onclick="changeMyId()">Save ID</button>
+    </div>
+    <div style="color:#ff2440; font-size:11px; margin-top:6px;">
+        Changing ID resets all ties to the old ID (incoming impacts, private memes, and delivery confirmations). It is recommended to change the ID before actively using the network.
+    </div>
+</div>
+
+<div class="exchange-panel">
+    <h3 style="text-align: center; color: #de00b2">Convert Impacts to Action Limits</h3>
+    <p style="text-align: center; font-family: 'Unbounded', monospace; font-size: 14px; color: #ccc; margin-top: 0;">Spend 1 Impact to get +3 Votes, or 3 Impacts to get +1 Post</p>
+    <div style="display: flex; gap: 10px;">
+<button class="admin-btn" style="flex: 1; padding: 12px; font-size: 14px;" onclick="convertImpacts('votes')"><span style="white-space: nowrap;">–1 Impact</span> <span style="white-space: nowrap;">+3 Votes</span></button>
+<button class="admin-btn" style="flex: 1; padding: 12px; font-size: 14px;" onclick="convertImpacts('posts')"><span style="white-space: nowrap;">–3 Impacts</span> <span style="white-space: nowrap;">+1 Post</span></button>
+    </div>
+</div>
+
+<div class="claim-panel">
+    <h3 style="text-align: center; color: #0097ff">Hourly Resonance Claim</h3>
+    <button class="admin-btn" id="claimBtn" style="background: #0097ff; color: #fff;" onclick="claimHourly()">Claim Accumulated Impacts (<span id="claimableAmount">0</span>)</button>
+    <div id="claimTimer" style="font-family: 'Unbounded', monospace; font-size: 14px; text-align: center; color: #ccc; margin-top: 10px;"></div>
+</div>
+
+<div class="transfer-panel">
+    <h3 style="text-align: center; color: #ff8b00">Transfer Impact(s)</h3>
+    <input type="text" id="target-peer" class="admin-input" placeholder="Target Peer (e.g., Peer-5851 or Custom ID)">
+    <input type="number" id="transfer-amount" class="admin-input" placeholder="Amount (e.g., 7)" min="1">
+    <button class="send-btn" onclick="transferImpact()">Send Impacts</button>
+</div>
+
+<div class="exchange-panel" style="border-color: #ccc; background: #000; margin-top: 20px;">
+    <h3 style="color: #ccc; text-align: center;">Local Guide</h3>
+    <div id="guide-chat-log" style="height: 120px; overflow-y: auto; font-family: 'Unbounded', monospace; font-size: 14px; color: #ccc; background: #000; padding: 0px; margin-bottom: 10px; scrollbar-width: thin; scrollbar-color: #333 #000; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start;">
+        System: Local Guide initialized. You can simply use words from the content instead of formulating full questions, for example: meme, vote, breakthrough.
+    </div>
+    <div style="display: flex; gap: 5px;">
+        <input type="text" id="guide-input" class="admin-input" placeholder="Ask Guide (e.g., inject, vote, impact)..." style="margin-bottom: 0; padding: 8px;">
+        <button class="admin-btn" style="width: auto; padding: 8px 15px; background: #ccc; color: #000;" onclick="sendToGuide()">Send</button>
+    </div>
+</div>
+
+<div class="footer-credit">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 70px;">
+  <a href="#broadcast" style="color: #afff00; display: inline-flex; font-size: 48px; align-items: center; text-decoration: none;">
++
+  </a>
+        <a href="research.html">
+            <img src="fleurdelis.png" class="no-invert" style="height: 64px; width: auto; display: block;">
+        </a>
+    </div>
+    
+    <h2 style="font-family: 'Cinzel', sans-serif; font-weight: bold; margin: 20px 0 5px 0;">
+        <a href="research.html" style="color: #fff; letter-spacing: 1.5px; text-decoration: none;">Made in Space</a>
+    </h2>
+    
+    <p style="letter-spacing: 3px; font-size: 12px; color: #fff; font-family: 'Cinzel', sans-serif; margin: 0 0 20px 0;">
+        Live custom peer websites
+    </p>
+    
+    <div style="margin: 0 0 30px 0; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+        <div style="width: 160px; background: #444; overflow: hidden;">
+            <div id="happiness-bar" class="progress-fill" style="width: 34%;"></div>
+        </div>
+    </div>
+</div>
+
+    <div style="margin: 60px 0 70px 0; text-align: center;">
+        <a href="https://t.me/eugenebox/" style="display: inline-block; color: #0097ff; font-size: 14px; text-decoration: none;">@eugenebox</a>
+    </div>
+
+</div>
+</div>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        let newWorker;
+        
+        navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
+            if (reg.waiting) {
+                document.getElementById('updateAvailableLine').style.display = 'block';
+            }
+            
+            reg.addEventListener('updatefound', () => {
+                newWorker = reg.installing;
+                if (!newWorker) return;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        document.getElementById('updateAvailableLine').style.display = 'block';
+                    }
+                });
+            });
+        });
+    }
+</script>
+
+<script>
+// ============================================
+// DataManager — единое хранилище данных
+// ============================================
+const DataManager = (() => {
+    const PREFIX = 'paramount_';
+    const SCHEMA_VERSION = 3;
+    const SCHEMA_KEY = PREFIX + 'schema_version';
+
+    const PERSISTENT_KEYS = [
+        'versus_items',
+        'player_state',
+        'peer_balances',
+        'activity_history',
+        'processed_txs',
+        'pending_transfers',
+        'custom_my_id',
+        'last_claim_time',
+        'activity_range',
+        'broker_url',
+        'auction_gates'
+    ];
+
+    function key(name) { return PREFIX + name; }
+
+    function get(name, fallback = null) {
+        try {
+            const raw = localStorage.getItem(key(name));
+            if (raw === null) return fallback;
+            return JSON.parse(raw);
+        } catch (e) {
+            console.warn('[DataManager] Corrupted:', name);
+            return fallback;
+        }
+    }
+
+    function set(name, value) {
+        try {
+            localStorage.setItem(key(name), JSON.stringify(value));
+        } catch (e) {
+            console.error('[DataManager] Save failed:', name, e);
+        }
+    }
+
+    function remove(name) { localStorage.removeItem(key(name)); }
+
+    function clearAll() {
+        PERSISTENT_KEYS.forEach(k => localStorage.removeItem(key(k)));
+        localStorage.removeItem(SCHEMA_KEY);
+    }
+
+    function migrate() {
+        const storedVersion = parseInt(localStorage.getItem(SCHEMA_KEY) || '0', 10);
+        if (storedVersion === SCHEMA_VERSION) return;
+        localStorage.setItem(SCHEMA_KEY, String(SCHEMA_VERSION));
+    }
+
+    migrate();
+
+    return { get, set, remove, clearAll, key, PERSISTENT_KEYS };
+})();
+
+function createTextThumbnail(text) {
+    if (!text) return '';
+    return `<div style="
+        background: #111;
+        color: #ccc;
+        font-family: 'Unbounded', monospace;
+        font-size: 13px;
+        line-height: 1.4;
+        padding: 12px 12px;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        text-align: left;
+        word-wrap: break-word;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        text-overflow: ellipsis;
+        align-items: flex-start;
+        justify-content: flex-start;
+    ">${text}</div>`;
+}
+    
+const logArea = document.getElementById('logArea');
+const statusToggle = document.getElementById('statusToggle');
+const logContainer = document.getElementById('logContainer');
+    
+if (logArea && statusToggle && logContainer) {
+    let pressStart = 0;
+
+    logArea.addEventListener('pointerdown', () => { pressStart = Date.now(); });
+
+    logArea.addEventListener('pointerup', () => {
+        const pressDuration = Date.now() - pressStart;
+        if (pressDuration < 500) {
+            logContainer.classList.toggle('collapsed');
+            statusToggle.classList.toggle('open');
+        }
+        pressStart = 0;
+    });
+}
+
+const disclaimerToggle = document.getElementById('disclaimerToggle');
+const disclaimerText = document.getElementById('disclaimerText');
+const aboutLabel = document.getElementById('aboutLabel'); 
+
+if (disclaimerToggle && disclaimerText) {
+    disclaimerToggle.addEventListener('click', () => {
+        disclaimerText.classList.toggle('collapsed');
+        disclaimerToggle.classList.toggle('open');
+        
+        if (disclaimerText.classList.contains('collapsed')) {
+            aboutLabel.style.display = 'inline'; 
+        } else {
+            aboutLabel.style.display = 'none';  
+        }
+    });
+}
+
+const helpToggle = document.getElementById('helpToggle');
+const helpText = document.getElementById('helpText');
+if (helpToggle && helpText) {
+    helpToggle.addEventListener('click', () => {
+        helpText.classList.toggle('collapsed');
+        helpToggle.classList.toggle('open');
+    });
+}
+
+const loreToggle = document.getElementById('loreToggle');
+const loreText = document.getElementById('loreText');
+if (loreToggle && loreText) {
+    loreToggle.addEventListener('click', () => {
+        loreText.classList.toggle('collapsed');
+        loreToggle.classList.toggle('open');
+    });
+}
+
+let myId = DataManager.get('custom_my_id');
+if (!myId) {
+    myId = 'Peer-' + Math.floor(Math.random() * 9000 + 1000);
+    DataManager.set('custom_my_id', myId);
+}
+document.getElementById('nodeId').innerText = myId;
+
+let processedTxIds = DataManager.get('processed_txs', []);
+
+function isTxProcessed(txId) { return processedTxIds.includes(txId); }
+
+function markTxProcessed(txId) {
+    if (!processedTxIds.includes(txId)) {
+        processedTxIds.push(txId);
+        if (processedTxIds.length > 1000) processedTxIds = processedTxIds.slice(-500);
+        DataManager.set('processed_txs', processedTxIds);
+    }
+}
+
+let playerState = DataManager.get('player_state');
+if (!playerState || typeof playerState.votesLeft === 'undefined' || typeof playerState.postsLeft === 'undefined') {
+    playerState = { impacts: 8, level: 1, votesLeft: 5, postsLeft: 3 };
+    DataManager.set('player_state', playerState);
+}
+
+let peerBalances = DataManager.get('peer_balances', {});
+let blacklistedPeers = DataManager.get('blacklist', []);
+
+let activityHistory = DataManager.get('activity_history', { votes: [], posts: [], deliveries: [] });
+let activityRange = DataManager.get('activity_range', 'week');
+
+// AUCTION GATES: { gateId: { peerA, peerB, messages: [...] } }
+let auctionGates = DataManager.get('auction_gates', {});
+
+function saveActivityHistory() {
+    ['votes', 'posts', 'deliveries'].forEach(key => {
+        if (activityHistory[key].length > 2000) activityHistory[key] = activityHistory[key].slice(-2000);
+    });
+    DataManager.set('activity_history', activityHistory);
+}
+function recordActivity(type) {
+    if (!activityHistory[type]) activityHistory[type] = [];
+    activityHistory[type].push(Date.now());
+    saveActivityHistory();
+    updateActivityChart();
+}
+
+function setActivityRange(range) {
+    activityRange = range;
+    DataManager.set('activity_range', range);
+    document.querySelectorAll('.activity-range-btn').forEach(btn => {
+        const active = btn.getAttribute('data-range') === range;
+        btn.style.color = active ? '#afff00' : '#888';
+        btn.style.borderColor = active ? '#afff00' : '#888';
+    });
+    updateActivityChart();
+}
+
+let pendingTransfers = DataManager.get('pending_transfers', {});
+function savePending() { DataManager.set('pending_transfers', pendingTransfers); }
+
+function changeMyId() {
+    const input = document.getElementById('my-id-input');
+    const newId = (input.value || '').trim();
+
+    if (!newId) { alert('Enter a new ID first.'); return; }
+    if (!/^[A-Za-z0-9_\-]{3,24}$/.test(newId)) { alert('ID must be 3–24 chars: letters, digits, dash, underscore.'); return; }
+    if (newId === myId) { alert('That is already your current ID.'); return; }
+    if (!confirm('Change your ID from "' + myId + '" to "' + newId + '"?\n\nPeers who saved your old ID will no longer reach you.\nPending transfers to "' + myId + '" will not arrive.')) return;
+
+    const oldId = myId;
+
+    if (peerBalances[oldId] !== undefined) {
+        peerBalances[newId] = peerBalances[oldId];
+        delete peerBalances[oldId];
+        DataManager.set('peer_balances', peerBalances);
+    }
+
+    myId = newId;
+    DataManager.set('custom_my_id', myId);
+    document.getElementById('nodeId').innerText = myId;
+
+    items.forEach(it => { if (it.sender === oldId) it.sender = myId; });
+    saveLocal();
+    updateRankingList();
+
+    pendingTransfers = {};
+    savePending();
+
+    log('[ID] Renamed to ' + myId);
+    alert('Your ID is now "' + myId + '".');
+}
+    
+function updatePlayerStatsUI() {
+    document.getElementById('playerImpact').innerText = playerState.impacts;
+    document.getElementById('playerLevel').innerText = playerState.level;
+    document.getElementById('votesLeft').innerText = playerState.votesLeft;
+    document.getElementById('postsLeft').innerText = playerState.postsLeft;
+    DataManager.set('player_state', playerState);
+}
+updatePlayerStatsUI();
+
+function updateActivityChart() {
+    const canvas = document.getElementById('activityChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const W = rect.width;
+    const H = rect.height;
+    
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.scale(dpr, dpr);
+    
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, W, H);
+    
+    const series = [
+        { key: 'votes',      color: '#afff00', label: 'Votes' },
+        { key: 'posts',      color: '#de00b2', label: 'Posts' },
+        { key: 'deliveries', color: '#0097ff', label: 'Deliveries' }
+    ];
+    
+    const now = Date.now();
+    const MS = { week: 7 * 24 * 3600000, month: 30 * 24 * 3600000, year: 365 * 24 * 3600000 };
+    
+    let allTs = [];
+    series.forEach(s => { (activityHistory[s.key] || []).forEach(t => allTs.push(t)); });
+    
+    let tMin, tMax;
+    tMax = now;
+    
+    if (activityRange === 'all') {
+        if (allTs.length === 0) { tMin = now - 3600000; }
+        else {
+            tMin = Math.min(...allTs);
+            if (tMax - tMin < 3600000) tMin = tMax - 3600000;
+        }
+    } else {
+        const windowMs = MS[activityRange] || MS.week;
+        tMin = tMax - windowMs;
+    }
+    
+    const span = tMax - tMin || 1;
+    const padL = 4, padR = 4, padT = 18, padB = 28;
+    let plotW, plotH, rightScaleX;
+
+    function buildCumulative(timestamps) {
+        const sorted = (timestamps || []).filter(t => t >= tMin && t <= tMax).sort((a, b) => a - b);
+        const points = [];
+        let count = (timestamps || []).filter(t => t < tMin).length;
+        points.push({ t: tMin, c: count });
+        sorted.forEach(t => { count++; points.push({ t, c: count }); });
+        if (points.length === 0 || points[points.length - 1].t < tMax) points.push({ t: tMax, c: count });
+        return points;
+    }
+    
+    const cumSeries = series.map(s => ({ ...s, points: buildCumulative(activityHistory[s.key]) }));
+    
+    let yMax = 1;
+    cumSeries.forEach(s => { s.points.forEach(p => { if (p.c > yMax) yMax = p.c; }); });
+    yMax = Math.ceil(yMax * 1.15) || 1; 
+
+    const yLabels = [String(yMax), ...Array.from({length: 5}, (_, i) => String(Math.round((i / 4) * yMax)))];
+
+    let maxLen = 0;
+    for (let label of yLabels) if (label.length > maxLen) maxLen = label.length;
+
+    const rightScaleWidth = maxLen * 7;
+    const gapToRightScale = 8;
+    plotW = Math.max(20, W - padL - padR - rightScaleWidth - gapToRightScale);
+    plotH = H - padT - padB;
+    rightScaleX = padL + plotW + gapToRightScale;
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#666';
+    ctx.font = '10px "Unbounded", monospace';
+
+    const timeTicks = 5;
+    for (let i = 0; i <= timeTicks; i++) {
+        const t = tMin + (i / timeTicks) * span;
+        const x = padL + (i / timeTicks) * plotW;
+        const d = new Date(t);
+        let label;
+        if (activityRange === 'year' || span > 90 * 24 * 3600000) label = d.toLocaleDateString([], { month: 'short', year: '2-digit' });
+        else if (activityRange === 'month' || span > 10 * 24 * 3600000) label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        else if (span <= 48 * 3600000) label = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        else label = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        ctx.fillStyle = '#ccc';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x, padT + plotH + 6);
+        ctx.textAlign = 'left';
+    }
+    
+    function drawLine(points, color) {
+        if (points.length < 2) return;
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        
+        points.forEach((p, i) => {
+            const x = padL + ((p.t - tMin) / span) * plotW;
+            const y = padT + plotH - (p.c / yMax) * plotH;
+            if (i === 0) ctx.moveTo(x, y);
+            else {
+                const prev = points[i - 1];
+                const prevX = padL + ((prev.t - tMin) / span) * plotW;
+                const prevY = padT + plotH - (prev.c / yMax) * plotH;
+                ctx.lineTo(x, prevY); 
+                ctx.lineTo(x, y);     
+            }
+        });
+        ctx.stroke();
+        
+        const last = points[points.length - 1];
+        const lx = padL + ((last.t - tMin) / span) * plotW;
+        const ly = padT + plotH - (last.c / yMax) * plotH;
+        ctx.beginPath();
+        ctx.arc(lx, ly, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+    }
+    
+    cumSeries.forEach(s => drawLine(s.points, s.color));
+    
+    ctx.font = '11px "Unbounded", monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    cumSeries.forEach((s, idx) => {
+        const last = s.points[s.points.length - 1];
+        if (!last) return;
+        const lx = padL + ((last.t - tMin) / span) * plotW;
+        const ly = padT + plotH - (last.c / yMax) * plotH;
+        const valueX = Math.min(lx + 7, rightScaleX - 2);
+        ctx.fillStyle = s.color;
+        ctx.fillText(String(last.c), valueX, ly);
+    });
+    
+    const totalVotes = (activityHistory.votes || []).length;
+    const totalPosts = (activityHistory.posts || []).length;
+    const totalDeliveries = (activityHistory.deliveries || []).length;
+    const readout = document.getElementById('activityReadout');
+    if (readout) {
+        readout.innerHTML = `<span style="color:#afff00">Votes ${totalVotes}</span> · <span style="color:#de00b2">Posts ${totalPosts}</span> · <span style="color:#0097ff">Deliveries ${totalDeliveries}</span>`;
+    }
+}
+
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+
+function getClaimableCount() {
+    let lastClaimTime = DataManager.get('last_claim_time', 0);
+    if (!lastClaimTime) {
+        lastClaimTime = Date.now();
+        DataManager.set('last_claim_time', lastClaimTime);
+    }
+    const elapsed = Date.now() - lastClaimTime;
+    if (elapsed < HOUR_MS) return 0;
+    if (elapsed >= DAY_MS) return 24;
+    return 4;
+}
+
+function updateClaimUI() {
+    let lastClaimTime = DataManager.get('last_claim_time', Date.now());
+    const elapsed = Date.now() - lastClaimTime;
+    const claimable = getClaimableCount();
+    
+    document.getElementById('claimableAmount').innerText = claimable;
+    
+    if (elapsed >= DAY_MS) {
+        document.getElementById('claimTimer').innerText = '24-hour cap reached! Claim now.';
+    } else if (elapsed < HOUR_MS) {
+        const nextMilestone = lastClaimTime + HOUR_MS;
+        const timeLeft = nextMilestone - Date.now();
+        const mins = Math.floor((timeLeft % HOUR_MS) / 60000);
+        const secs = Math.floor((timeLeft % 60000) / 1000);
+        const hours = Math.floor(timeLeft / HOUR_MS);
+        document.getElementById('claimTimer').innerText = `Next +4 impacts in: ${hours > 0 ? hours + 'h ' : ''}${mins}m ${secs}s`;
+    } else {
+        document.getElementById('claimTimer').innerText = 'Claim impacts +4 every hour or wait up to 24h for accumulate +24 every day';
+    }
+}
+
+function claimHourly() {
+    const claimable = getClaimableCount();
+    if (claimable <= 0) return alert('No accumulated impacts available yet. Please wait at least 1 hour.');
+    playerState.impacts += claimable;
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+    DataManager.set('last_claim_time', Date.now());
+    updateClaimUI();
+    log(`[Claim] Collected +${claimable} impacts.`);
+}
+
+setInterval(updateClaimUI, 1000);
+updateClaimUI();
+
+let items = DataManager.get('versus_items', []);
+
+const demoItems = [
+    { id: 'meme-demo-1', sender: 'System-Genesis', title: 'Aura',
+      description: 'No registration is required. You can save your meme to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your meme and your voting calculations will remain only on your device, but you can always Re-inject your tape mode meme (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the meme creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete memes on other users\' devices.',
+      externalUrl: '', img: 'woman.PNG', rating: 1520 },
+    { id: 'meme-demo-2', sender: 'System-Genesis', title: 'Max',
+      description: 'No registration is required. You can save your meme to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your meme and your voting calculations will remain only on your device, but you can always Re-inject your tape mode meme (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the meme creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete memes on other users\' devices.',
+      externalUrl: '', img: 'man.PNG', rating: 1520 },
+    { id: 'meme-demo-3', sender: 'System-Genesis', title: 'No Image',
+      description: 'No registration is required. You can save your meme to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your meme and your voting calculations will remain only on your device, but you can always Re-inject your tape mode meme (free) directly from ranking via Edit... button to try delivery it again. Tap the logo at the top of the screen or the "+" icon at the bottom to open the meme creation and sending panel. The impacts needed for your activity you can claim below. Please check the "disclaimer & about" for details. ⚠️ Be careful! You cannot delete memes on other users\' devices.',
+      externalUrl: '', img: '', rating: 1520 }
+];
+
+const hasDemo = items.some(i => i.id && i.id.startsWith('meme-demo-'));
+if (!hasDemo) {
+    demoItems.forEach(demo => {
+        if (!items.some(i => i.id === demo.id)) items.push(demo);
+    });
+    DataManager.set('versus_items', items);
+}
+
+let currentPair = [];
+function saveLocal() { DataManager.set('versus_items', items); }
+
+const DEFAULT_BROKER = 'wss://test.mosquitto.org:8081/mqtt';
+const savedBroker = DataManager.get('broker_url', DEFAULT_BROKER);
+
+const client = mqtt.connect(savedBroker, {
+    clientId: 'paramount_resonance_' + Math.random().toString(16).substr(2, 8),
+    reconnectPeriod: 5000,
+    connectTimeout: 5000,
+    keepalive: 60
+});
+const TOPIC = 'breakthrough/p2p/network/v1';
+
+client.on('connect', () => {
+    document.getElementById('netStatus').innerHTML = `Status: Connected to the transport layer as ${myId}`;
+    log("Waiting for peer(s)...");
+    client.subscribe(TOPIC, { qos: 1 });
+
+    setInterval(() => {
+        if (client && client.connected) {
+            client.publish(TOPIC, JSON.stringify({ type: 'PING', sender: myId }), { qos: 0 });
+        }
+    }, 5000);
+
+    setInterval(updateOnlinePeersCount, 5000);
+    updateOnlinePeersCount();
+});
+
+client.on('error', (err) => {
+    document.getElementById('netStatus').style.color = '#f00';
+    document.getElementById('netStatus').innerHTML = `Network Error`;
+    log("MQTT Error: " + JSON.stringify(err));
+});
+
+client.on('message', (topic, payload) => {
+    try {
+        let packet = JSON.parse(payload.toString());
+
+        if (packet.type === 'TRANSFER_IMPACT' && packet.target === myId) {
+            if (packet.sender === myId) { log(`[Security] Blocked self-transfer from ${packet.sender}`); return; }
+            if (isTxProcessed(packet.txId)) { log(`[Security] Duplicate transfer ${packet.txId} blocked.`); return; }
+            log(`[Network] Received ${packet.amount} impacts from ${packet.sender}`);
+            playerState.impacts += parseInt(packet.amount);
+            playerState.level = Math.floor(playerState.impacts / 20) + 1;
+            updatePlayerStatsUI();
+            saveLocal();
+            markTxProcessed(packet.txId);
+            client.publish(TOPIC, JSON.stringify({ type: 'TRANSFER_ACK', txId: packet.txId, sender: myId }), { qos: 1 });
+            alert(`Received ${packet.amount} impacts from ${packet.sender}`);
+        }
+        
+        else if (packet.type === 'TRANSFER_ACK') {
+            if (pendingTransfers[packet.txId]) {
+                delete pendingTransfers[packet.txId];
+                savePending();
+                log(`[Network] Transfer ${packet.txId} confirmed by receiver.`);
+            }
+        }
+
+        if (packet.type === 'PING') {
+            if (packet.sender !== myId) activePeers[packet.sender] = Date.now();
+        }
+        
+        if (packet.type === 'ADD_ITEM') {
+            if (!items.some(i => i.id === packet.item.id)) {
+                items.push(packet.item);
+                saveLocal();
+                log(`[Resonance] Meme captured from ${packet.sender}: "${packet.item.title}"`);
+                updateRankingList();
+                if (items.length >= 2 && currentPair.length === 0) nextPair();
+                
+                if (packet.sender !== myId) {
+                    client.publish(TOPIC, JSON.stringify({
+                        type: 'DELIVERY_ACK',
+                        itemId: packet.item.id,
+                        authorId: packet.sender,
+                        peerId: myId,
+                        target: packet.sender
+                    }), { qos: 1 });
+                }
+            }
+        }
+
+        else if (packet.type === 'DELIVERY_ACK') {
+            if (packet.target && packet.target !== myId) return;
+            let item = items.find(i => i.id === packet.itemId);
+            if (item) {
+                if (!item.deliveredPeers) item.deliveredPeers = [];
+                if (!item.deliveredPeers.includes(packet.peerId)) {
+                    item.deliveredPeers.push(packet.peerId);
+                    saveLocal();
+                    updateRankingList();
+                    
+                    if (item.sender === myId) {
+                        recordActivity('deliveries');
+                        if (client && client.connected) {
+                            client.publish(TOPIC, JSON.stringify({ type: 'ACTIVITY', activityType: 'deliveries', sender: myId, ts: Date.now() }), { qos: 0 });
+                        }
+                    }
+                }
+            }
+        }
+            
+        else if (packet.type === 'UPDATE_ITEM') {
+            const r = packet.item.recipients || [];
+            const isPublic = r.length === 0;
+            const isForMe = r.includes(myId);
+            if (!isPublic && !isForMe && packet.sender !== myId) return;
+            let existingItem = items.find(i => i.id === packet.item.id);
+            if (existingItem) {
+                existingItem.title = packet.item.title;
+                existingItem.description = packet.item.description;
+                existingItem.externalUrl = packet.item.externalUrl;
+                if (packet.item.img) existingItem.img = packet.item.img;
+                // AUCTION FIELDS SYNC
+                if (typeof packet.item.auction !== 'undefined') existingItem.auction = packet.item.auction;
+                saveLocal();
+                log(`[Resonance] Meme updated by ${packet.sender}: "${packet.item.title}"`);
+                updateRankingList();
+            } else {
+                items.push(packet.item);
+                saveLocal();
+                updateRankingList();
+                if (items.length >= 2 && currentPair.length === 0) nextPair();
+            }
+            
+            if (packet.sender !== myId) {
+                client.publish(TOPIC, JSON.stringify({
+                    type: 'DELIVERY_ACK',
+                    itemId: packet.item.id,
+                    authorId: packet.sender,
+                    peerId: myId,
+                    target: packet.sender
+                }), { qos: 1 });
+            }
+        }
+            
+        else if (packet.type === 'VOTE') {
+            let winItem = items.find(i => i.id === packet.winId);
+            let loseItem = items.find(i => i.id === packet.loseId);
+            if (winItem && loseItem) {
+                winItem.rating = packet.newWinRating;
+                loseItem.rating = packet.newLoseRating;
+                saveLocal();
+                updateRankingList();
+                if (packet.sender !== myId) {
+                    log(`[Resonance] Global sync adjusted by ${packet.sender}`);
+                    nextPair();
+                }
+            }
+        }
+
+        else if (packet.type === 'ACTIVITY') {
+            if (packet.sender === myId) return;
+            const type = packet.activityType; 
+            if (!['votes', 'posts', 'deliveries'].includes(type)) return;
+            const ts = packet.ts || Date.now();
+            if (!activityHistory[type]) activityHistory[type] = [];
+            activityHistory[type].push(ts);
+            saveActivityHistory();
+            updateActivityChart();
+            log(`[Activity] ${packet.sender}: ${type}`);
+        }
+
+        // ==================== AUCTION PACKETS ====================
+        else if (packet.type === 'BID') {
+            // Bid goes to the seller of the item.
+            const item = items.find(i => i.id === packet.itemId);
+            if (!item || !item.auction) return;
+            if (item.auction.seller !== myId && packet.target !== myId) return;
+
+            if (!item.auction.bids) item.auction.bids = [];
+            if (!item.auction.bids.some(b => b.bidId === packet.bidId)) {
+                item.auction.bids.push({
+                    bidId: packet.bidId,
+                    bidder: packet.sender,
+                    amount: packet.amount,
+                    ts: packet.ts || Date.now(),
+                    status: 'pending'
+                });
+                if (packet.amount > (item.auction.currentBid || 0)) {
+                    item.auction.currentBid = packet.amount;
+                }
+                saveLocal();
+                updateRankingList();
+                log(`[Auction] ${packet.sender} bids ${packet.amount} on "${item.title}" (${packet.saved ? 'SAVED tape bid' : 'LIVE bid'})`);
+            }
+        }
+
+        else if (packet.type === 'BID_ACCEPT') {
+            const item = items.find(i => i.id === packet.itemId);
+            if (!item || !item.auction) return;
+            const bid = (item.auction.bids || []).find(b => b.bidId === packet.bidId);
+            if (bid) {
+                bid.status = 'accepted';
+                item.auction.status = 'delivered';
+                item.auction.winner = bid.bidder;
+                item.auction.acceptedAt = Date.now();
+                saveLocal();
+                updateRankingList();
+                log(`[Auction] Bid accepted for "${item.title}" → Delivered to ${bid.bidder}`);
+                // If I am the seller — open gate
+                if (item.auction.seller === myId && bid.bidder !== myId) {
+                    openGate(item.id, bid.bidder);
+                }
+                // If I am the buyer — open gate on my side too
+                if (bid.bidder === myId && item.auction.seller !== myId) {
+                    openGate(item.id, item.auction.seller);
+                }
+            }
+        }
+
+        else if (packet.type === 'BID_REJECT') {
+            const item = items.find(i => i.id === packet.itemId);
+            if (!item || !item.auction) return;
+            const bid = (item.auction.bids || []).find(b => b.bidId === packet.bidId);
+            if (bid) {
+                bid.status = 'rejected';
+                saveLocal();
+                updateRankingList();
+                log(`[Auction] Bid rejected for "${item.title}"`);
+            }
+        }
+
+        else if (packet.type === 'BUY_NOW') {
+            const item = items.find(i => i.id === packet.itemId);
+            if (!item || !item.auction) return;
+            if (packet.target !== myId && item.auction.seller !== myId) return;
+            item.auction.status = 'delivered';
+            item.auction.winner = packet.buyer;
+            item.auction.finalPrice = item.auction.buyNow;
+            item.auction.acceptedAt = Date.now();
+            saveLocal();
+            updateRankingList();
+            log(`[Auction] BUY NOW completed for "${item.title}" by ${packet.buyer} at ${item.auction.buyNow}`);
+            if (item.auction.seller === myId && packet.buyer !== myId) openGate(item.id, packet.buyer);
+            if (packet.buyer === myId && item.auction.seller !== myId) openGate(item.id, item.auction.seller);
+        }
+
+        else if (packet.type === 'GATE_MSG') {
+            // Private peer-to-peer message inside a gate. Delivered only if this peer is online.
+            const gateId = packet.gateId;
+            if (!auctionGates[gateId]) {
+                auctionGates[gateId] = { participants: [packet.from, packet.to], messages: [] };
+            }
+            auctionGates[gateId].messages.push({
+                from: packet.from,
+                text: packet.text,
+                ts: packet.ts || Date.now()
+            });
+            DataManager.set('auction_gates', auctionGates);
+            updateRankingList();
+            log(`[Gate] Private message in gate ${gateId}`);
+        }
+
+    } catch(e) {
+        log("Packet processing error: " + e.message);
+    }
+});
+
+setInterval(() => {
+    const now = Date.now();
+    let refundedCount = 0;
+    for (let txId in pendingTransfers) {
+        let tx = pendingTransfers[txId];
+        if (now - tx.time > 15000) {
+            playerState.impacts += tx.amount;
+            playerState.level = Math.floor(playerState.impacts / 20) + 1;
+            log(`[Timeout] Transfer ${txId} to ${tx.target} timed out. Refunded ${tx.amount} impacts.`);
+            delete pendingTransfers[txId];
+            refundedCount++;
+        }
+    }
+    if (refundedCount > 0) { updatePlayerStatsUI(); savePending(); }
+}, 5000);
+
+function updateLabel(input) {
+    const fileName = input.files[0] ? input.files[0].name : "Select Meme Image";
+    document.getElementById('file-label-text').innerText = fileName;
+}
+
+async function compressImage(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxWidth = 400; 
+                let width = img.width, height = img.height;
+                if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
+            };
+        };
+    });
+}
+
+function convertImpacts(type) {
+    if (type === 'votes') {
+        const cost = 1;
+        if (playerState.impacts < cost) return alert('Not enough impacts! 1 impact is required for conversion.');
+        playerState.impacts -= cost;
+        playerState.votesLeft += 3;
+        log(`Converted ${cost} impact into +3 votes.`);
+    } else if (type === 'posts') {
+        const cost = 3;
+        if (playerState.impacts < cost) return alert('Not enough impacts! 3 impacts are required for conversion.');
+        playerState.impacts -= cost;
+        playerState.postsLeft += 1;
+        log(`Converted ${cost} impacts into +1 post slot.`);
+    }
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+}
+
+// ==================== AUCTION ADMIN HELPERS ====================
+
+function clearAuctionFields() {
+    document.getElementById('new-auction-start-bid').value = '';
+    document.getElementById('new-auction-buy-now').value = '';
+}
+
+function readAuctionFromForm() {
+    const startBidRaw = $('#new-auction-start-bid').val();
+    const buyNowRaw = $('#new-auction-buy-now').val();
+    const startBid = startBidRaw !== '' ? parseFloat(startBidRaw) : NaN;
+    const buyNow = buyNowRaw !== '' ? parseFloat(buyNowRaw) : null;
+
+    const hasAny = (!isNaN(startBid) && startBid >= 0) || (buyNow !== null && !isNaN(buyNow));
+    if (!hasAny) return null;
+
+    return {
+        seller: myId,                                        // ← всегда сам автор
+        currentBid: (!isNaN(startBid) ? startBid : 0),
+        startBid: (!isNaN(startBid) ? startBid : 0),
+        buyNow: (buyNow !== null && !isNaN(buyNow)) ? buyNow : null,
+        bids: [],
+        status: 'live',       // live | tape | ended | delivered
+        winner: null,
+        finalPrice: null,
+        createdAt: Date.now()
+    };
+}
+
+function fillAuctionForm(auction) {
+    clearAuctionFields();
+    if (!auction) return;
+    if (auction.startBid) document.getElementById('new-auction-start-bid').value = auction.startBid;
+    if (auction.buyNow)   document.getElementById('new-auction-buy-now').value   = auction.buyNow;
+}
+
+async function addItem() {
+    const title = $('#new-title').val().trim();
+    const desc = $('#new-desc').val().trim();
+    const url = $('#new-url').val().trim();
+    const file = $('#new-img-file')[0].files[0];
+    const auctionData = readAuctionFromForm();
+
+    if (editingId !== null) {
+        const item = items.find(i => i.id === editingId);
+        if (!item) { alert('❌ This meme no longer exists. Edit mode has been cancelled.'); cancelEdit(); return; }
+        if (item.sender !== myId) { alert('❌ You are not the author of this meme! Only the author can edit it.'); cancelEdit(); return; }
+    }
+
+    if (!title) return alert('Enter title!');
+
+    let imgData = "";
+
+    if (editingId !== null) {
+        const item = items.find(i => i.id === editingId);
+        if (item) {
+            item.title = title;
+            item.description = desc;
+            item.externalUrl = url;
+
+            const recipientsRawEdit = $('#new-recipients').val().trim();
+            item.recipients = recipientsRawEdit
+                ? recipientsRawEdit.split(',').map(s => s.trim()).filter(Boolean)
+                : [];
+
+            // Preserve existing bids/status if auction already has them
+            if (auctionData) {
+                const existingAuction = item.auction || {};
+                item.auction = Object.assign({}, existingAuction, {
+                    seller: myId,                                   // ← всегда автор
+                    startBid: auctionData.startBid,
+                    buyNow: auctionData.buyNow,
+                    // Preserve bids, status, winner if already set
+                    bids: existingAuction.bids || [],
+                    currentBid: existingAuction.currentBid || auctionData.startBid,
+                    status: existingAuction.status || auctionData.status,
+                    winner: existingAuction.winner || null,
+                    finalPrice: existingAuction.finalPrice || null
+                });
+            } else {
+                item.auction = null;
+            }
+
+            if (file) item.img = await compressImage(file);
+
+            saveLocal();
+
+            client.publish(TOPIC, JSON.stringify({
+                type: 'UPDATE_ITEM',
+                sender: myId,
+                item: item
+            }), { qos: 1 });
+
+            log(`You updated and re-published meme: "${title}"`);
+        }
+
+        editingId = null;
+        $('.inject-btn-bg').text('Inject Meme to Network');
+
+        const cancelBtn = document.getElementById('cancel-edit-btn');
+        if (cancelBtn) cancelBtn.style.display = 'none';
+
+    } else {
+
+        if (playerState.postsLeft <= 0) {
+            alert('Publication limit reached! Exchange impacts for higher publication slots.');
+            return;
+        }
+
+        playerState.postsLeft--;
+        playerState.level = Math.floor(playerState.impacts / 20) + 1;
+        updatePlayerStatsUI();
+
+        recordActivity('posts');
+
+        if (client && client.connected) {
+            client.publish(TOPIC, JSON.stringify({
+                type: 'ACTIVITY',
+                activityType: 'posts',
+                sender: myId,
+                ts: Date.now()
+            }), { qos: 0 });
+        }
+
+        if (file) imgData = await compressImage(file);
+
+        const recipientsRaw = $('#new-recipients').val().trim();
+        const recipients = recipientsRaw
+            ? recipientsRaw.split(',').map(s => s.trim()).filter(Boolean)
+            : [];
+
+        const newItem = {
+            id: 'meme-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+            sender: myId,
+            title,
+            description: desc,
+            externalUrl: url,
+            img: imgData,
+            rating: 1500,
+            deliveredPeers: [],
+            recipients: recipients,
+            auction: auctionData || null
+        };
+
+        items.push(newItem);
+        saveLocal();
+
+        client.publish(TOPIC, JSON.stringify({
+            type: 'ADD_ITEM',
+            sender: myId,
+            item: newItem
+        }), { qos: 1 });
+
+        log(`You injected meme: "${title}"${newItem.auction ? ' (as auction)' : ''}`);
+    }
+
+    $('#new-title, #new-desc, #new-url, #new-img-file').val('');
+    $('#file-label-text').text("Select Meme Image");
+    clearAuctionFields();
+
+    updateRankingList();
+    if (items.length >= 2 && currentPair.length === 0) nextPair();
+}
+
+function toggleDetails(id) { 
+    $(`#details-${id}`).slideToggle(200); 
+}
+
+let editingId = null;
+
+function editItem(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    $('#new-title').val(item.title);
+    $('#new-desc').val(item.description);
+    $('#new-url').val(item.externalUrl);
+    $('#file-label-text').text("Keep current image or choose new");
+    fillAuctionForm(item.auction);
+
+    editingId = id;
+    $('.inject-btn-bg').text('Save Changes');
+
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    if (cancelBtn) cancelBtn.style.display = 'block';
+
+    $('.main-panel')[0].scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEdit() {
+    $('#new-title').val('');
+    $('#new-desc').val('');
+    $('#new-url').val('');
+    $('#new-img-file').val('');
+    $('#file-label-text').text("Select Meme Image");
+    clearAuctionFields();
+
+    editingId = null;
+    $('.inject-btn-bg').text('Inject Meme to Network');
+
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+
+    log('[UI] Edit cancelled.');
+}
+
+function deleteItemLocal(id) {
+    const isEditingThis = (editingId === id);
+    let confirmMsg = 'Are you sure you want to delete this meme from your device?';
+    if (isEditingThis) confirmMsg = '⚠️ This meme is currently being edited.\n\nDelete it and cancel editing?';
+    if (!confirm(confirmMsg)) return;
+
+    if (isEditingThis) cancelEdit();
+
+    let index = items.findIndex(i => i.id === id);
+    if (index !== -1) {
+        const activeLeftId = currentPair.length > 0 ? items[currentPair[0]]?.id : null;
+        const activeRightId = currentPair.length > 0 ? items[currentPair[1]]?.id : null;
+
+        items.splice(index, 1);
+        saveLocal();
+
+        log(`You removed meme locally: ${id}.`);
+        updateRankingList();
+
+        if (items.length < 2) { currentPair = []; nextPair(); return; }
+
+        const wasActivePairAffected = (id === activeLeftId || id === activeRightId);
+        if (wasActivePairAffected || currentPair.length === 0) {
+            nextPair();
+        } else {
+            const newLeftIndex = items.findIndex(i => i.id === activeLeftId);
+            const newRightIndex = items.findIndex(i => i.id === activeRightId);
+            if (newLeftIndex !== -1 && newRightIndex !== -1) currentPair = [newLeftIndex, newRightIndex];
+            else nextPair();
+        }
+    }
+}
+
+// ==================== AUCTION RENDERING & ACTIONS ====================
+
+function getAuctionStatusLabel(auction) {
+    if (!auction) return '';
+    if (auction.status === 'delivered') return { cls: 'delivered', text: 'DELIVERED' };
+    if (auction.status === 'ended')     return { cls: 'ended',     text: 'ENDED' };
+    // live if seller is currently online
+    if (activePeers[auction.seller] && Date.now() - activePeers[auction.seller] < 12000) {
+        return { cls: 'live', text: 'LIVE' };
+    }
+    return { cls: 'tape', text: 'TAPE' };
+}
+
+function renderAuctionBlock(item) {
+    if (!item.auction) return '';
+    const a = item.auction;
+    const isSeller = a.seller === myId;
+    const sellerLive = activePeers[a.seller] && (Date.now() - activePeers[a.seller] < 12000);
+    const myBids = (a.bids || []).filter(b => b.bidder === myId);
+    const hasSavedBid = myBids.some(b => b.status === 'pending_saved');
+    const acceptedBid = (a.bids || []).find(b => b.status === 'accepted');
+    const isWinner = acceptedBid && acceptedBid.bidder === myId;
+    const statusInfo = getAuctionStatusLabel(a);
+
+    let html = `
+        <div class="auction-panel">
+            <h3>
+                🔨 Auction
+                <span class="auction-badge ${statusInfo.cls}">${statusInfo.text}</span>
+                <span class="bid-count-badge">${(a.bids || []).length} bids</span>
+            </h3>
+            <div class="auction-row"><span>Seller:</span><span>${a.seller}</span></div>
+            <div class="auction-row"><span>Current bid:</span><span>${a.currentBid || 0}</span></div>
+            ${a.buyNow ? `<div class="auction-row"><span>Buy Now:</span><span style="color:#ffd700">${a.buyNow}</span></div>` : ''}
+    `;
+
+    // Winner / delivered
+    if (a.status === 'delivered') {
+        html += `<div class="auction-row" style="color:#0097ff"><span>Winner:</span><span>${a.winner || '—'}</span></div>`;
+        if (a.finalPrice) html += `<div class="auction-row"><span>Final:</span><span>${a.finalPrice}</span></div>`;
+    }
+
+    // Action area
+    if (!isSeller && a.status !== 'delivered') {
+        // Bid / Buy Now area
+        const canBuyNow = a.buyNow && sellerLive && a.status !== 'delivered';
+        const canBid = sellerLive;
+
+        if (sellerLive) {
+            html += `
+                <div class="bid-input-row">
+                    <input type="number" id="bid-input-${item.id}" class="admin-input" placeholder="Your bid (min ${(a.currentBid||0)+1})">
+                    <button class="edit-btn" style="margin:0; width:auto; padding:10px; background:#afff0050 !important; border:1px solid #afff00;" onclick="placeBid('${item.id}')">Bid</button>
+                </div>
+            `;
+            if (canBuyNow) {
+                html += `<button class="admin-btn" style="margin-top:8px; background:#ffd700; color:#000;" onclick="buyNow('${item.id}')">Buy Now — ${a.buyNow}</button>`;
+            }
+        } else {
+            // Seller TAPE: Save bid
+            html += `
+                <div style="color:#afff00; font-size:12px; margin-top:6px;">
+                    Seller is offline (TAPE). You can save an intended bid and re-bid when seller returns LIVE.
+                </div>
+                <div class="bid-input-row">
+                    <input type="number" id="bid-input-${item.id}" class="admin-input" placeholder="Intended bid (min ${(a.currentBid||0)+1})" value="${hasSavedBid ? (myBids.find(b=>b.status==='pending_saved')?.amount || '') : ''}">
+                    <button class="edit-btn" style="margin:0; width:auto; padding:10px; background:#afff0050 !important; border:1px solid #afff00;" onclick="saveTapeBid('${item.id}')">Save Bid</button>
+                </div>
+            `;
+        }
+    }
+
+    // Seller's acceptance panel
+    if (isSeller && a.status !== 'delivered') {
+        const pendingBids = (a.bids || []).filter(b => b.status === 'pending' || b.status === 'pending_saved');
+        if (pendingBids.length > 0) {
+            html += `<div class="bid-list"><div style="color:#ffd700; margin-bottom:4px;">Incoming bids:</div>`;
+            pendingBids.sort((x,y) => y.amount - x.amount).forEach(b => {
+                html += `
+                    <div class="bid-entry">
+                        <span>${b.bidder} — ${b.amount} ${b.status === 'pending_saved' ? '(saved)' : ''}</span>
+                        <span>
+                            <button class="edit-btn" style="width:auto; padding:4px 8px; margin:0; background:#0097ff50 !important; border:1px solid #0097ff;" onclick="acceptBid('${item.id}','${b.bidId}')">Accept</button>
+                            <button class="edit-btn" style="width:auto; padding:4px 8px; margin:0; background:#ff333350 !important; border:1px solid #ff3333;" onclick="rejectBid('${item.id}','${b.bidId}')">Reject</button>
+                        </span>
+                    </div>`;
+            });
+            html += `</div>`;
+        }
+    }
+
+    // Show all bids to everyone (public auction log)
+    if (!isSeller && (a.bids || []).length > 0) {
+        html += `<div class="bid-list"><div style="color:#888; margin-bottom:4px;">Bid history:</div>`;
+        (a.bids || []).slice(-8).forEach(b => {
+            const isMe = b.bidder === myId;
+            html += `<div class="bid-entry ${b.status === 'accepted' ? 'accepted' : ''} ${isMe ? 'mine' : ''}">
+                <span>${b.bidder}</span><span>${b.amount} ${b.status === 'accepted' ? '✓' : b.status === 'rejected' ? '✗' : ''}</span>
+            </div>`;
+        });
+        html += `</div>`;
+    }
+
+    // Peer gate (open only between the two involved live peers)
+    if ((isSeller || isWinner) && a.status === 'delivered') {
+        const otherPeer = isSeller ? a.winner : a.seller;
+        html += renderGatePanel(item.id, otherPeer);
+    }
+
+    html += `</div>`;
+    return html;
+}
+
+function openGate(itemId, otherPeer) {
+    const gateId = 'gate-' + [myId, otherPeer].sort().join('-') + '-' + itemId;
+    if (!auctionGates[gateId]) {
+        auctionGates[gateId] = { participants: [myId, otherPeer], messages: [], itemId };
+        DataManager.set('auction_gates', auctionGates);
+    }
+    log(`[Gate] Gate opened between ${myId} and ${otherPeer} (only works if both are LIVE)`);
+    updateRankingList();
+}
+
+function renderGatePanel(itemId, otherPeer) {
+    const gateId = 'gate-' + [myId, otherPeer].sort().join('-') + '-' + itemId;
+    const gate = auctionGates[gateId];
+    const peerLive = activePeers[otherPeer] && (Date.now() - activePeers[otherPeer] < 12000);
+
+    let html = `<div class="gate-panel">
+        <div><strong>🔒 Private Gate</strong> with ${otherPeer} ${peerLive ? '<span style="color:#ff0000">● online now</span>' : '<span style="color:#888">● offline</span>'}</div>
+        <div style="font-size:10px; color:#008855; margin-top:4px;">Live peer info exchange works only if both participants are online now.</div>
+    `;
+
+    if (gate && gate.messages && gate.messages.length > 0) {
+        gate.messages.slice(-10).forEach(m => {
+            const dir = m.from === myId ? '→' : '←';
+            html += `<div class="gate-msg"><span class="meta">${m.from} ${dir}</span> ${m.text}</div>`;
+        });
+    } else {
+        html += `<div style="color:#008855; font-size:11px; margin:4px 0;">No messages yet.</div>`;
+    }
+
+    html += `
+        <textarea id="gate-input-${gateId}" placeholder="Send private message (only delivered if peer is LIVE)..."></textarea>
+        <button class="edit-btn" style="width:auto; padding:6px 10px; margin-top:6px; background:#00ff8850 !important; border:1px solid #00ff88; color:#00ff88;" onclick="sendGateMsg('${gateId}','${otherPeer}')">Send</button>
+    </div>`;
+    return html;
+}
+
+function sendGateMsg(gateId, otherPeer) {
+    const input = document.getElementById('gate-input-' + gateId);
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    const peerLive = activePeers[otherPeer] && (Date.now() - activePeers[otherPeer] < 12000);
+    if (!peerLive) {
+        if (!confirm('Peer ' + otherPeer + ' appears to be offline (TAPE). The message will be sent but may not be delivered until they come back online. Send anyway?')) return;
+    }
+
+    if (!auctionGates[gateId]) auctionGates[gateId] = { participants: [myId, otherPeer], messages: [] };
+    auctionGates[gateId].messages.push({ from: myId, text, ts: Date.now() });
+    DataManager.set('auction_gates', auctionGates);
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'GATE_MSG',
+        gateId,
+        from: myId,
+        to: otherPeer,
+        text,
+        ts: Date.now()
+    }), { qos: 1 });
+
+    input.value = '';
+    updateRankingList();
+}
+
+function placeBid(itemId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item || !item.auction) return;
+    const input = document.getElementById('bid-input-' + itemId);
+    const amount = parseFloat(input.value);
+    if (isNaN(amount) || amount <= (item.auction.currentBid || 0)) {
+        alert('Bid must be greater than current bid (' + (item.auction.currentBid || 0) + ')');
+        return;
+    }
+
+    const bidId = 'bid-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+
+    if (!item.auction.bids) item.auction.bids = [];
+    item.auction.bids.push({
+        bidId, bidder: myId, amount, ts: Date.now(), status: 'pending'
+    });
+    if (amount > (item.auction.currentBid || 0)) item.auction.currentBid = amount;
+    saveLocal();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'BID',
+        sender: myId,
+        target: item.auction.seller,
+        itemId,
+        bidId,
+        amount,
+        ts: Date.now(),
+        saved: false
+    }), { qos: 1 });
+
+    log(`[Auction] LIVE bid sent: ${amount} on "${item.title}"`);
+    input.value = '';
+    updateRankingList();
+}
+
+function saveTapeBid(itemId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item || !item.auction) return;
+    const input = document.getElementById('bid-input-' + itemId);
+    const amount = parseFloat(input.value);
+    if (isNaN(amount) || amount <= (item.auction.currentBid || 0)) {
+        alert('Intended bid must be greater than current bid (' + (item.auction.currentBid || 0) + ')');
+        return;
+    }
+
+    const bidId = 'bid-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+
+    if (!item.auction.bids) item.auction.bids = [];
+    item.auction.bids.push({
+        bidId, bidder: myId, amount, ts: Date.now(), status: 'pending_saved'
+    });
+    saveLocal();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'BID',
+        sender: myId,
+        target: item.auction.seller,
+        itemId,
+        bidId,
+        amount,
+        ts: Date.now(),
+        saved: true
+    }), { qos: 1 });
+
+    log(`[Auction] TAPE bid SAVED: ${amount} on "${item.title}". Will be re-biddable when seller is LIVE.`);
+    updateRankingList();
+}
+
+function acceptBid(itemId, bidId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item || !item.auction) return;
+    const bid = (item.auction.bids || []).find(b => b.bidId === bidId);
+    if (!bid) return;
+
+    bid.status = 'accepted';
+    item.auction.status = 'delivered';
+    item.auction.winner = bid.bidder;
+    item.auction.finalPrice = bid.amount;
+    item.auction.acceptedAt = Date.now();
+    saveLocal();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'BID_ACCEPT',
+        sender: myId,
+        target: bid.bidder,
+        itemId,
+        bidId
+    }), { qos: 1 });
+
+    log(`[Auction] Bid accepted: ${bid.bidder} wins "${item.title}" at ${bid.amount} → Delivered.`);
+    openGate(itemId, bid.bidder);
+    updateRankingList();
+}
+
+function rejectBid(itemId, bidId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item || !item.auction) return;
+    const bid = (item.auction.bids || []).find(b => b.bidId === bidId);
+    if (!bid) return;
+
+    bid.status = 'rejected';
+    saveLocal();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'BID_REJECT',
+        sender: myId,
+        target: bid.bidder,
+        itemId,
+        bidId
+    }), { qos: 1 });
+
+    log(`[Auction] Bid rejected from ${bid.bidder}.`);
+    updateRankingList();
+}
+
+function buyNow(itemId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item || !item.auction) return;
+    if (!item.auction.buyNow) return alert('Buy Now is not set for this auction.');
+    const sellerLive = activePeers[item.auction.seller] && (Date.now() - activePeers[item.auction.seller] < 12000);
+    if (!sellerLive) return alert('Seller is TAPE (offline). Buy Now is unavailable. Wait for the seller to become LIVE.');
+
+    if (!confirm('Buy Now for ' + item.auction.buyNow + '? This immediately completes the deal.')) return;
+
+    item.auction.status = 'delivered';
+    item.auction.winner = myId;
+    item.auction.finalPrice = item.auction.buyNow;
+    item.auction.acceptedAt = Date.now();
+    saveLocal();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'BUY_NOW',
+        sender: myId,
+        target: item.auction.seller,
+        itemId,
+        buyer: myId
+    }), { qos: 1 });
+
+    log(`[Auction] BUY NOW executed for "${item.title}" at ${item.auction.buyNow}`);
+    openGate(itemId, item.auction.seller);
+    updateRankingList();
+}
+
+function reBid(itemId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item || !item.auction) return;
+    // Called when seller becomes LIVE and my saved bid exists.
+    const mySaved = (item.auction.bids || []).find(b => b.bidder === myId && b.status === 'pending_saved');
+    if (!mySaved) return;
+
+    mySaved.status = 'pending';
+    client.publish(TOPIC, JSON.stringify({
+        type: 'BID',
+        sender: myId,
+        target: item.auction.seller,
+        itemId,
+        bidId: mySaved.bidId,
+        amount: mySaved.amount,
+        ts: Date.now(),
+        saved: false
+    }), { qos: 1 });
+
+    saveLocal();
+    log(`[Auction] Re-bid sent: ${mySaved.amount} on "${item.title}"`);
+    updateRankingList();
+}
+
+function updateRankingList() {
+    const sorted = [...items].sort((a, b) => b.rating - a.rating);
+    let html = '';
+
+    sorted.forEach((item, index) => {
+        const isDemo = item.sender === 'System-Genesis' || (item.id && item.id.startsWith('meme-demo-'));
+        let deliveryStatusHtml = '';
+
+        if (isDemo) {
+            deliveryStatusHtml = `<div style="color:#0097ff; margin:0 0 10px 0;">Demo Meme is delivered by default</div>`;
+        } else {
+            const deliveredCount = item.deliveredPeers ? item.deliveredPeers.length : 0;
+            const peerLabel = deliveredCount === 1 ? 'peer' : 'peers';
+            deliveryStatusHtml = `<div style="color:#0097ff; margin:0 0 10px 0;">Delivered to: ${deliveredCount} ${peerLabel}</div>`;
+        }
+
+        const hasImage = item.img && item.img.length > 0;
+        let thumbnailHtml;
+        if (hasImage) {
+            thumbnailHtml = `<img src="${item.img}" class="ranking-img" alt="" onerror="this.style.display='none'">`;
+        } else {
+            const text = item.description || item.title || '';
+            thumbnailHtml = `<div class="ranking-img text-preview">${text}</div>`;
+        }
+
+        const senderColor = item.sender === 'System-Genesis' ? '#ff00cc99' : '#999';
+
+        // Auction badge on top list
+        const auctionBadge = item.auction
+            ? `<span class="bid-count-badge">🔨 ${(item.auction.bids||[]).length}</span>`
+            : '';
+
+        html += `
+            <div class="ranking-item" onclick="toggleDetails('${item.id}')">
+                ${thumbnailHtml}
+                <div class="ranking-info">
+                    <div class="title">${index + 1}. ${item.title || ''} ${auctionBadge}</div>
+                    <div class="sender" style="color:${senderColor};">by ${item.sender || ''}</div>
+                    <div class="rating">${Math.round(item.rating)}</div>
+                </div>
+            </div>
+            <div id="details-${item.id}" class="item-details">
+                ${deliveryStatusHtml}
+                <div style="color:#666;font-size:12px;margin-bottom:10px;">by ${item.sender || 'Unknown'}</div>
+                ${
+                    item.sender === myId
+                    ? `<button class="edit-btn" onclick="event.stopPropagation(); editItem('${item.id}')">Edit and/or Re-inject Meme (free)</button>`
+                    : ''
+                }
+                ${
+                    item.externalUrl
+                    ? `<a href="${item.externalUrl}" target="_blank" rel="noopener noreferrer" class="external-link">External Link →</a>`
+                    : ''
+                }
+                ${
+                    (item.description || 'No description.')
+                        .split('\\n')
+                        .filter(p => p.trim())
+                        .map(p => `<p>${p}</p>`)
+                        .join('')
+                }
+                ${renderAuctionBlock(item)}
+                <button class="admin-btn" type="button"
+                    style="margin-top:15px;background:#ff3333;color:#fff;padding:10px;font-size:14px;"
+                    onclick="event.stopPropagation(); deleteItemLocal('${item.id}');">
+                    Remove Locally
+                </button>
+            </div>
+        `;
+    });
+
+    $('#ranking-list').html(
+        html || '<div style="text-align:center;padding:10px;color:#999;">Matrix is empty.<br>Inject first memes below!</div>'
+    );
+}
+
+function nextPair() {
+    if (items.length < 2) {
+        $('#item-left img, #item-right img').attr('src', '');
+        $('#item-left .title, #item-right .title').text('');
+        currentPair = [];
+        return;
+    }
+    let i1 = Math.floor(Math.random() * items.length), i2;
+    do { i2 = Math.floor(Math.random() * items.length); } while (i1 === i2);
+    currentPair = [i1, i2];
+    
+    function setThumbnail(index, side) {
+        const item = items[index];
+        const wrapper = $(`#item-${side} .versus_thumbwrapper`);
+        const img = wrapper.find('img');
+        const title = $(`#item-${side} .title`);
+        
+        title.text(item.title);
+        wrapper.find('.text-thumbnail').remove();
+        
+        if (item.img && item.img.length > 0) {
+            img.attr('src', item.img).show();
+        } else {
+            img.hide();
+            const textHtml = createTextThumbnail(item.description || item.title);
+            wrapper.append(`<div class="text-thumbnail">${textHtml}</div>`);
+        }
+    }
+    
+    setThumbnail(i1, 'left');
+    setThumbnail(i2, 'right');
+}
+
+function vote(side) {
+    if (items.length < 2) return;
+    if (playerState.votesLeft <= 0) {
+        alert('Votes limit reached! Exchange impacts for votes using the conversion panel above.');
+        return;
+    }
+    
+    playerState.votesLeft--;
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+
+    recordActivity('votes');
+
+    if (client && client.connected) {
+        client.publish(TOPIC, JSON.stringify({
+            type: 'ACTIVITY',
+            activityType: 'votes',
+            sender: myId,
+            ts: Date.now()
+        }), { qos: 0 });
+    }
+
+    const winIdx = currentPair[side === 'left' ? 0 : 1];
+    const loseIdx = currentPair[side === 'left' ? 1 : 0];
+    
+    const winItem = items[winIdx];
+    const loseItem = items[loseIdx];
+
+    const rW = winItem.rating, rL = loseItem.rating;
+    const expW = 1 / (1 + Math.pow(10, (rL - rW) / 400));
+    const change = 32 * (1 - expW);
+    
+    winItem.rating += change; 
+    loseItem.rating -= change;
+    saveLocal();
+
+    const isConnectedToBroker = (typeof client !== 'undefined' && client.connected);
+
+    if (isConnectedToBroker) {
+        const voteId = 'vote-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        winItem.lastVoteId = voteId; 
+
+        client.publish(TOPIC, JSON.stringify({
+            type: 'VOTE',
+            sender: myId,
+            voteId: voteId,
+            winId: winItem.id,
+            loseId: loseItem.id,
+            newWinRating: winItem.rating,
+            newLoseRating: loseItem.rating
+        }), { qos: 1 });
+
+        updateRankingList();
+        nextPair();
+    } else {
+        updateRankingList();
+        $('#versus').animate({ opacity: 0 }, 50, function() { 
+            nextPair(); 
+            $(this).animate({ opacity: 1 }, 50); 
+        });
+    }
+}
+
+function transferImpact() {
+    const target = $('#target-peer').val().trim();
+    const amount = parseInt($('#transfer-amount').val());
+
+    if (target === myId) { alert('❌ Cannot send impacts to yourself!'); return; }
+    
+    peerBalances[myId] = playerState.impacts;
+    DataManager.set('peer_balances', peerBalances);
+
+    if (!target || !amount || amount < 1) return alert('Please enter the correct participant ID and number of impacts!');
+    if (playerState.impacts < amount) return alert('Impacts are out! You do not have enough impacts to translate.');
+    
+    playerState.impacts -= amount;
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+
+    const txId = 'tx-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+    pendingTransfers[txId] = { target, amount, time: Date.now() };
+    savePending();
+
+    client.publish(TOPIC, JSON.stringify({
+        type: 'TRANSFER_IMPACT',
+        sender: myId,
+        target: target,
+        amount: amount,
+        txId: txId
+    }), { qos: 1 });
+
+    log(`Sent ${amount} impacts to ${target} (Waiting for ACK, ID: ${txId})`);
+    alert(`Successfully sent ${amount} impacts to user ${target}`);
+    $('#target-peer, #transfer-amount').val('');
+}
+
+updateRankingList();
+if (items.length >= 2) nextPair();
+
+(function bootstrapDeliveriesHistory() {
+    const hasHistory = (activityHistory.deliveries && activityHistory.deliveries.length > 0);
+    if (hasHistory) return;
+    let total = 0;
+    items.forEach(item => { if (item.sender === myId && item.deliveredPeers) total += item.deliveredPeers.length; });
+    if (total > 0) {
+        const now = Date.now();
+        for (let i = 0; i < total; i++) activityHistory.deliveries.push(now - 3600000 + Math.floor((i / total) * 3600000));
+        saveActivityHistory();
+    }
+})();
+updateActivityChart();
+
+window.addEventListener('resize', () => {
+    clearTimeout(window._activityChartResizeTimer);
+    window._activityChartResizeTimer = setTimeout(updateActivityChart, 150);
+});
+
+document.querySelectorAll('.activity-range-btn').forEach(btn => {
+    btn.addEventListener('click', () => { setActivityRange(btn.getAttribute('data-range')); });
+});
+setActivityRange(activityRange);
+
+(function initIdInput() {
+    const el = document.getElementById('my-id-input');
+    if (el) el.value = myId;
+})();
+
+let activePeers = {};
+
+function updateOnlinePeersCount() {
+    const now = Date.now();
+    for (let peerId in activePeers) if (now - activePeers[peerId] > 12000) delete activePeers[peerId];
+    const onlineCount = Object.keys(activePeers).length;
+    const peerLabel = onlineCount === 1 ? 'peer' : 'peers';
+    log(`[Network] Active online: ${onlineCount} ${peerLabel}`);
+
+    const liveIndicator = document.getElementById('liveIndicator');
+    const tapeIndicator = document.getElementById('tapeIndicator');
+    if (liveIndicator && tapeIndicator) {
+        liveIndicator.style.display = onlineCount > 0 ? 'inline' : 'none';
+        tapeIndicator.style.display = onlineCount > 0 ? 'none' : 'inline';
+    }
+
+    const liveB = document.getElementById('liveIndicatorBcast');
+    const tapeB = document.getElementById('tapeIndicatorBcast');
+    const liveCount = document.getElementById('livePeerCount');
+    if (liveB && tapeB) {
+        if (onlineCount > 0) {
+            liveB.style.display = 'inline';
+            tapeB.style.display = 'none';
+            if (liveCount) liveCount.textContent = onlineCount;
+        } else {
+            liveB.style.display = 'none';
+            tapeB.style.display = 'inline';
+        }
+    }
+
+    const liveH3 = document.getElementById('liveIndicatorH3');
+    const tapeH3 = document.getElementById('tapeIndicatorH3');
+    if (liveH3 && tapeH3) {
+        if (onlineCount > 0) { liveH3.style.display = 'inline'; tapeH3.style.display = 'none'; }
+        else { liveH3.style.display = 'none'; tapeH3.style.display = 'inline'; }
+    }
+}
+
+function onBrokerSelectChange(selectEl) {
+    const customInput = document.getElementById('customBrokerUrl');
+    if (!customInput) return;
+    if (selectEl.value === 'custom') customInput.style.display = 'block';
+    else customInput.style.display = 'none';
+}
+
+function switchBroker() {
+    const selectEl = document.getElementById('brokerSelect');
+    const customInput = document.getElementById('customBrokerUrl');
+    if (!selectEl) return;
+
+    let url = selectEl.value;
+
+    if (url === 'custom') {
+        url = (customInput?.value || '').trim();
+        if (!url) { alert('Please enter a custom WebSocket broker URL (e.g. wss://host:port/mqtt)'); return; }
+        if (!/^wss?:\/\//i.test(url)) { alert('URL must start with ws:// or wss://'); return; }
+    }
+
+    DataManager.set('broker_url', url);
+
+    const netStatus = document.getElementById('netStatus');
+    if (netStatus) {
+        netStatus.style.color = '#0097ff';
+        netStatus.innerHTML = `Status: Connecting to ${url} ...`;
+    }
+    log(`[Broker] Switching to ${url} ...`);
+
+    try {
+        if (client && typeof client.end === 'function') {
+            client.end(true, () => { log('[Broker] Previous connection closed.'); });
+        }
+        window.location.reload();
+    } catch (e) {
+        log('[Broker] Switch error: ' + e.message);
+        alert('Failed to switch broker: ' + e.message);
+    }
+}
+
+function log(txt) {
+    const l = document.getElementById('logContainer');
+    if (!l) { console.log('[log]', txt); return; }
+    l.innerHTML += `<div>${txt}</div>`;
+    l.scrollTop = l.scrollHeight;
+}
+
+let touchStartY = 0;
+let pullDistance = 0;
+const refreshThreshold = 90; 
+
+window.addEventListener('touchstart', (e) => {
+    if (window.scrollY === 0) touchStartY = e.touches[0].clientY;
+    else touchStartY = 0;
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (!touchStartY) return;
+    const currentY = e.touches[0].clientY;
+    pullDistance = currentY - touchStartY;
+    if (pullDistance > 0) e.preventDefault(); 
+}, { passive: false }); 
+
+window.addEventListener('touchend', () => {
+    if (!touchStartY) return;
+    if (pullDistance > refreshThreshold) syncAndKeepData();
+    touchStartY = 0;
+    pullDistance = 0;
+});
+
+window.addEventListener('touchcancel', () => { touchStartY = 0; pullDistance = 0; });
+
+function sendToGuide() {
+    const inputField = document.getElementById('guide-input');
+    const text = inputField.value.trim();
+    if (!text) return;
+    
+    appendGuideChat(`You: ${text}`);
+    inputField.value = '';
+
+    setTimeout(() => {
+        const reply = generateGuideResponse(text);
+        appendGuideChat(`Guide: ${reply}`);
+    }, 600);
+}
+
+function appendGuideChat(msg) {
+    const log = document.getElementById('guide-chat-log');
+    log.innerHTML += `<div>${msg}</div>`;
+    const lastMsg = log.lastElementChild;
+    if (lastMsg) lastMsg.scrollIntoView({ block: 'start' });
+}
+
+function generateGuideResponse(query) {
+    const q = query.toLowerCase();
+    
+    if (q.includes('hi') || q.includes('hello') || q.includes('hey') || q.includes('how') || q.includes('what') || q.includes('greetings')) {
+        return 'Hello! This is not an AI agent, and the answer list is limited. The logic in this section is mechanical and is being refined at the developer level. If you don not receive a satisfactory answer, it means the phrases you entered were not predicted by the system. Use simple words from the content. Read the Disclaimer & About section to the end. Try submitting your meme in the Broadcast Breakthrough Meme section. Vote for memes in the Resonance Match section and track their position in the Global Matrix Rank.';
+    }
+    
+    if (q.includes('inject') || q.includes('meme') || q.includes('manifest') || q.includes('matrix') || q.includes('link') || q.includes('description') || q.includes('details') || q.includes('external') || q.includes('post') || q.includes('publish') || q.includes('image') || q.includes('to do') || q.includes('upload') || q.includes('choose')) {
+        return '"Inject Meme to Network" is sending your publication (meme or creative work) into the general matrix: set a Meme Title, Manifestation Details (Description) and External Link, under "Select Meme Image" choose your image. You can also fill the Auction fields to make it an auction.';
+    }
+    
+    if (q.includes('vote') || q.includes('match') || q.includes('rating') || q.includes('rank') || q.includes('elo') || q.includes('compare') || q.includes('versus')) {
+        return '"Resonance Match" is a pairwise meme comparison using the Elo system. You vote for one of two big memes to adjust their rankings, which directly affects their global position in the matrix.';
+    }
+
+    if (q.includes('auction') || q.includes('bid') || q.includes('buy now') || q.includes('seller') || q.includes('gate') || q.includes('delivered')) {
+        return 'Auction is part of each meme. Fill the Auction panel in Broadcast to publish it as an auction. If the seller is LIVE — you can Bid or Buy Now (if set). If TAPE — only Save Bid is possible, and re-bid later when seller returns LIVE. Accepted bid → Delivered → a private gate opens between the two live peers. The gate works only when both participants are online now.';
+    }
+    
+    if (q.includes('impact') || q.includes('score') || q.includes('level') || q.includes('claim') || q.includes('hour') || q.includes('day') || q.includes('convert')) {
+        return 'Impacts are your internal energy and influence points. You can claim them hourly via "Hourly Resonance Claim" or buy them, and then convert them into extra votes or publication slots.';
+    }
+    
+    if (q.includes('nobody') || q.includes('one') || q.includes('people') || q.includes('friend') || q.includes('link') || q.includes('network') || q.includes('peer') || q.includes('see') || q.includes('scroll')) {
+        return 'As the data resides solely within the ephemeral vaults of your browser\'s cache—which one might inadvertently sweep away—each node remains in splendid isolation. To set the memes into circulation and expose them to the wider world, one is obliged to transmit the application link unto companions; this is no mere entreaty, but an absolute imperative should you desire the mechanism to function. Yet, in any event, this shall inevitably crystallize as your own private catalog—perhaps a curated register of your most cherished cinematographic works.';
+    }
+
+    if (q.includes('why') || q.includes('different') || q.includes('change') || q.includes('happen')) {
+        return 'Due to the temporary absence of participants and invisible memes, the vote count required for rating updates does not sync across devices automatically. Once parity is reached, then voting pair updates seems spontaneously.';
+    }
+    
+    return 'This is not an AI agent, and the list of responses is limited. You can use keywords instead of detailed questions or refer to the description below for more detailed information. Upload images via meme injection, distribute votes in matches, and calibrate the shared matrix.';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const idInput = document.getElementById('my-id-input');
+    if (idInput) {
+        idInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); changeMyId(); }
+        });
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const guideInput = document.getElementById('guide-input');
+    if (guideInput) {
+        guideInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') { event.preventDefault(); sendToGuide(); }
+        });
+    }
+});
+
+const bar = document.getElementById('happiness-bar');
+
+if (bar) {
+  let currentProgress = 34; 
+  const maxTarget = 88;     
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        scheduleNextStep();
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 }); 
+
+  observer.observe(bar);
+
+  function scheduleNextStep() {
+    if (currentProgress < maxTarget) {
+      const remaining = maxTarget - currentProgress;
+      const stepSize = Math.floor(Math.random() * Math.min(remaining, 7)) + 1;
+      currentProgress = Math.min(currentProgress + stepSize, maxTarget);
+      bar.style.width = currentProgress + '%';
+      const randomDelay = Math.floor(Math.random() * (2200 - 150 + 1)) + 150;
+      setTimeout(scheduleNextStep, randomDelay);
+    }
+  }
+}
+
+document.getElementById('invertTrigger').addEventListener('click', () => {
+    document.body.classList.toggle('inverted');
+});
+
+async function resetToDefault() {
+    if (!confirm("⚠️ This will DELETE ALL your custom memes and reset everything to default.\n\nOnly demo memes and default stats (8 impacts, 5 votes, 3 posts) will remain.\n\nContinue?")) return;
+    
+    DataManager.clearAll();
+    
+    if ('caches' in window) {
+        try {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+        } catch(e) { console.warn('[Reset] Cache clear error:', e); }
+    }
+    
+    if ('serviceWorker' in navigator) {
+        try {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(r => r.unregister()));
+        } catch(e) { console.warn('[Reset] SW unregister error:', e); }
+    }
+    
+    alert('✅ Reset complete!\n\nCache and data cleared.');
+    window.location.reload();
+}
+
+async function syncAndKeepData() {
+    log('[Update] Applying update, preserving all data...');
+    if ('serviceWorker' in navigator) {
+        try {
+            const reg = await navigator.serviceWorker.ready;
+            if (reg.waiting) {
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                navigator.serviceWorker.addEventListener('controllerchange', () => { window.location.reload(); });
+                return;
+            }
+        } catch(e) { console.warn('[Update] SW activation error:', e); }
+    }
+    window.location.reload();
+}
+
+const aboutToggle = document.getElementById('aboutToggle');
+const aboutContent = document.getElementById('aboutContent');
+
+if (aboutToggle && aboutContent) {
+    aboutToggle.addEventListener('click', () => {
+        aboutContent.classList.toggle('collapsed');
+        aboutToggle.classList.toggle('open');
+    });
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const anchorLinks = document.querySelectorAll('a[href^="#"]');
+    anchorLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            const disclaimerText = document.getElementById('disclaimerText');
+            const disclaimerToggle = document.getElementById('disclaimerToggle');
+            if (disclaimerText && !disclaimerText.classList.contains('collapsed')) {
+                disclaimerText.classList.add('collapsed');
+                if (disclaimerToggle) disclaimerToggle.classList.remove('open');
+            }
+        });
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const selectEl = document.getElementById('brokerSelect');
+    const customInput = document.getElementById('customBrokerUrl');
+    if (!selectEl) return;
+
+    const saved = DataManager.get('broker_url');
+    if (saved) {
+        const isKnown = Array.from(selectEl.options).some(o => o.value === saved && o.value !== 'custom');
+        if (isKnown) {
+            selectEl.value = saved;
+            if (customInput) customInput.style.display = 'none';
+        } else {
+            selectEl.value = 'custom';
+            if (customInput) { customInput.style.display = 'block'; customInput.value = saved; }
+        }
+    }
+});
+
+</script>
+
+</body>
+</html>
