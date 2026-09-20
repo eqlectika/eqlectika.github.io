@@ -21,6 +21,8 @@ const CORE_ASSETS = [
     './essence.html',
 
     './manifest-index.json',
+    './manifest-auction.json',
+
     './manifest-essence.json',
     './manifest-cross.json',
     './manifest-flash.json',
