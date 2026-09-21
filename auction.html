@@ -868,15 +868,17 @@ a { color: #448aff; text-decoration: none; }
 </head>
 <body>
 <div class="header" style="display: flex; align-items: flex-start; justify-content: left; gap: 15px; margin-bottom: 10px;">
-    
+      <a href="#broadcast">
+    <img src="auction.png" alt="Logo" style="height: 48px; width: auto; margin-top: 20px;">
+  </a>
   <div style="display: flex; flex-direction: column;">
 
-<h2 id="invertTrigger" style="margin: -4px; line-height: 0.9; color: #ccc; font-family: 'Unbounded', sans-serif; margin-top: 28px; cursor: pointer;" title="Tap to invert interface">Auction<span id="liveIndicator" style="display: none; color: #ff0000; margin-left: 6px; animation: livePulse 1.5s infinite;">● Live!</span><span id="tapeIndicator" style="display: none; color: #afff00; margin-left: 6px;">● Tape</span></h2>
+<h2 id="invertTrigger" style="margin: -4px; line-height: 0.9; color: #ccc; font-family: 'Unbounded', sans-serif; margin-top: 32px; cursor: pointer;" title="Tap to invert interface">Auction<span id="liveIndicator" style="display: none; color: #ff0000; margin-left: 6px; animation: livePulse 1.5s infinite;">● Live!</span><span id="tapeIndicator" style="display: none; color: #afff00; margin-left: 6px;">● Tape</span></h2>
 
 
-    <span style="margin: -3px; font-size: 14px; letter-spacing: 1px; font-family: 'Unbounded', monospace; color: #ffd700; margin-top: 5px;">
-      Offers and bids
-    </span>
+  <!--  <span style="margin: -3px; font-size: 14px; letter-spacing: 1px; font-family: 'Unbounded', monospace; color: #ffd700; margin-top: 5px;">
+        Offers and bids
+        </span> -->
   </div>
 </div>
 <div class="app-container">
@@ -2792,7 +2794,7 @@ function renderAuctionBlock(item) {
     const bidsCount = (a.bids || []).length;
 
     let html = `<div class="auction-block">`;
-    html += `<div class="auction-head">🔨 Auction <span class="auction-badge ${badgeClass}">${badgeText}</span> <span style="color:#888;font-size:11px;font-weight:normal;">${bidsCount} bid${bidsCount===1?'':'s'}</span></div>`;
+    html += `<div class="auction-head">Auction <span class="auction-badge ${badgeClass}">${badgeText}</span> <span style="color:#888;font-size:11px;font-weight:normal;">${bidsCount} bid${bidsCount===1?'':'s'}</span></div>`;
     html += `<div class="auction-row">Seller: <span style="color:#ffd700">${a.seller}</span> ${sellerOnline ? '<span style="color:#ff0000">● online</span>' : '<span style="color:#afff00">● offline</span>'}</div>`;
     html += `<div class="auction-row">Current bid: <span style="color:#afff00">${a.currentBid}</span></div>`;
     if (a.buyNow !== null && a.buyNow !== undefined) {
@@ -2885,7 +2887,7 @@ function renderAuctionBlock(item) {
         const online = isPeerOnline(other);
 
         html += `<div class="gate-block">
-            <div class="gate-head">🔒 Private Gate <span style="color:#888;font-size:11px;font-weight:normal;">with ${other}</span></div>
+            <div class="gate-head">Private Gate <span style="color:#888;font-size:11px;font-weight:normal;">with ${other}</span></div>
             <div class="gate-status">${online ? '<span style="color:#ff0000">● online</span>' : '<span style="color:#ff8b00">● offline</span> — messages will be delivered when peer returns'}</div>
             <div class="gate-msgs" id="gate-msgs-${gateId}">`;
         if (gate) {
@@ -2968,9 +2970,11 @@ function updateRankingList() {
                 ? '#ff00cc99'
                 : '#999';
 
-        const auctionBadge = (item.auction)
-            ? `<span style="color:#ffd700;font-size:11px;margin-left:6px;">🔨 ${(item.auction.bids||[]).length}</span>`
-            : '';
+const bidsArr = (item.auction && item.auction.bids) ? item.auction.bids : [];
+const bidsList = bidsArr.map(b => b.amount).join(', ');
+const auctionBadge = bidsList
+    ? `<span style="color:#ffd700;font-size:11px;margin-left:6px;">Bid${bidsArr.length > 1 ? 's' : ''} ${bidsList}</span>`
+    : '';
 
         html += `
             <div
