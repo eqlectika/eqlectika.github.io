@@ -18,7 +18,7 @@
   #draftLayer{
     flex:1 1 50%;position:relative;pointer-events:auto;overflow:hidden;
     user-select:none;-webkit-user-select:none;
-    background:rgba(0,255,0,0.04); /* отладочный фон, убери при желании */
+    background:rgba(0,255,0,0.04);
   }
   .draftItem{position:absolute;min-width:160px;max-width:90%;}
   .draftItem textarea{
@@ -49,16 +49,33 @@
     user-select:none;-webkit-user-select:none;touch-action:none;background:transparent;
   }
 
-  #swapBtn{
-    position:fixed;top:10px;left:50%;transform:translateX(-50%);
-    z-index:100;pointer-events:auto;
-    background:#000;color:#0f0;border:1px solid #0f0;
-    font-family:var(--ui-font);font-size:20px;padding:4px 12px;cursor:pointer;
+  #brokerMenu{
+    position:fixed;top:10px;right:10px;z-index:1000;
+    background:#000;color:#0f0;
+    font-family:var(--ui-font);font-size:14px;
+    padding:6px 8px;pointer-events:auto;
     user-select:none;-webkit-user-select:none;
+    max-width:60vw;
+    border:none;
+    cursor:move;
+    touch-action:none;
   }
+  #brokerSelect{
+    background:#000;color:#0f0;border:1px solid #0f0;
+    font-family:var(--ui-font);font-size:14px;
+    padding:2px 4px;max-width:100%;
+    outline:none;
+    cursor:pointer;
+  }
+  #brokerStatus{
+    margin-top:4px;font-size:11px;opacity:.7;
+    max-width:240px;word-break:break-all;
+    cursor:move;
+  }
+
   #status{
     position:fixed;bottom:8px;left:50%;transform:translateX(-50%);
-    z-index:100;color:#0f0;font-size:13px;opacity:.7;
+    z-index:1000;color:#0f0;font-size:13px;opacity:.7;
     pointer-events:none;text-align:center;max-width:90vw;
   }
 </style>
@@ -76,7 +93,11 @@
   <div id="directionZone"></div>
 </div>
 
-<button id="swapBtn" title="swap fields">⇄</button>
+<div id="brokerMenu">
+  <select id="brokerSelect"></select>
+  <div id="brokerStatus">—</div>
+</div>
+
 <div id="status">loading…</div>
 
 <script type="importmap">
@@ -90,9 +111,19 @@ import * as THREE from 'three';
 const LINE_HEIGHT = 1.6, LINE_GAP = 0.35;
 const CANVAS_FONT_SIZE = 56, CANVAS_PAD_X = 24, CANVAS_PAD_Y = 14;
 const COLOR_LAST = '#00ff00', COLOR_PREV = '#3366ff', COLOR_FOREIGN = '#3366ff';
-const MQTT_URL = 'wss://broker.hivemq.com:8884/mqtt';
 const ROOM = 'war-of-the-words-demo';
 const MY_ID = 'u-' + Math.random().toString(36).slice(2, 8);
+
+/* ---------- СПИСОК БРОКЕРОВ ---------- */
+const BROKERS = [
+  { id: 'hivemq',    label: 'HiveMQ (public)',       url: 'wss://broker.hivemq.com:8884/mqtt' },
+  { id: 'mosquitto', label: 'Mosquitto (public)',    url: 'wss://test.mosquitto.org:8081/mqtt' },
+  { id: 'emqx',      label: 'EMQX (public)',         url: 'wss://broker.emqx.io:8084/mqtt' },
+  { id: 'shiftr',    label: 'Shiftr.io',             url: 'wss://public.cloud.shiftr.io' },
+  { id: 'local',     label: 'local (ws://localhost:8083/mqtt)', url: 'ws://localhost:8083/mqtt' },
+];
+const BROKER_KEY = 'wow.brokerId';
+const DEFAULT_BROKER_ID = 'hivemq';
 
 /* ---------- THREE ---------- */
 const container = document.getElementById('space');
@@ -212,7 +243,7 @@ function publishMyText(text){
 
   const mesh = createTileMesh(text, COLOR_LAST);
   appendToLine(myLine, mesh, mesh.userData.width);
-  mesh.visible = false; // своя лента невидима
+  mesh.visible = false;
   tilesGroup.add(mesh);
   myLine.publications.push({mesh, text});
 
@@ -393,7 +424,6 @@ function onRotateOrPanMove(e){
   updateCamera();
 }
 
-// мышь — на зоне управления
 dz.addEventListener('contextmenu', e=> e.preventDefault());
 dz.addEventListener('mousedown', e=>{
   e.preventDefault();
@@ -404,7 +434,6 @@ dz.addEventListener('mousedown', e=>{
 dz.addEventListener('mousemove', onRotateOrPanMove);
 addEventListener('mouseup', ()=>{ dragging = null; });
 
-// колесо — на зоне и на canvas (всё равно всё пространство)
 function onWheel(e){
   e.preventDefault();
   cameraSize *= Math.exp(e.deltaY * 0.001);
@@ -414,7 +443,6 @@ function onWheel(e){
 dz.addEventListener('wheel', onWheel, {passive:false});
 renderer.domElement.addEventListener('wheel', onWheel, {passive:false});
 
-// тач на зоне
 let touchMode = null, tLastX = 0, tLastY = 0;
 let pinchStartDist = 0, pinchStartSize = 0, longTimer = null;
 function tDist(a,b){ return Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY); }
@@ -517,14 +545,13 @@ function createDraftAt(x, y){
     item.remove();
   });
 
-  // синхронный фокус
   requestAnimationFrame(()=>{ ta.focus(); autosize(); });
   return item;
 }
 
 draftLayer.addEventListener('mousedown', e=>{
   if (e.target.closest('.draftItem')) return;
-  e.preventDefault(); // чтобы фокус не потерялся
+  e.preventDefault();
   const rect = draftLayer.getBoundingClientRect();
   createDraftAt(e.clientX - rect.left, e.clientY - rect.top);
 });
@@ -540,7 +567,6 @@ function addHistory(text, mine){
   historyArea.scrollTop = historyArea.scrollHeight;
 }
 
-/* первый draft после полной загрузки */
 addEventListener('load', ()=>{
   setTimeout(()=>{
     const ta = createDraftAt(20, 20).querySelector('textarea');
@@ -548,52 +574,81 @@ addEventListener('load', ()=>{
   }, 30);
 });
 
-/* ---------- SWAP ---------- */
-const swapBtn = document.getElementById('swapBtn');
-swapBtn.addEventListener('click', ()=>{
-  const l = document.getElementById('leftField');
-  const r = document.getElementById('rightField');
-  // меняем местами через left/right
-  const lIsLeft = l.style.left === '0px' || l.style.left === '';
-  if (lIsLeft){
-    l.style.left=''; l.style.right='0';
-    r.style.right=''; r.style.left='0';
-  } else {
-    l.style.right=''; l.style.left='0';
-    r.style.left=''; r.style.right='0';
-  }
+/* ============================================================
+   MQTT с выбором брокера
+   ============================================================ */
+const statusEl        = document.getElementById('status');
+const brokerSelectEl  = document.getElementById('brokerSelect');
+const brokerStatusEl  = document.getElementById('brokerStatus');
+
+function setStatus(s){ if (statusEl) statusEl.textContent = s; }
+function setBrokerStatus(s){ if (brokerStatusEl) brokerStatusEl.textContent = s; }
+
+let mqttClient = null;
+let currentBroker = null;
+
+/* заполняем select */
+BROKERS.forEach(b=>{
+  const opt = document.createElement('option');
+  opt.value = b.id;
+  opt.textContent = b.label;
+  brokerSelectEl.appendChild(opt);
 });
 
-/* ---------- MQTT ---------- */
-const statusEl = document.getElementById('status');
-let mqttClient = null;
-function setStatus(s){ statusEl.textContent = s; }
+/* восстановление выбора */
+const savedId = localStorage.getItem(BROKER_KEY);
+const initialId = BROKERS.some(b=>b.id===savedId) ? savedId : DEFAULT_BROKER_ID;
+brokerSelectEl.value = initialId;
+currentBroker = BROKERS.find(b=>b.id===initialId);
 
+/* загрузка библиотеки mqtt */
 function loadMqttLib(cb){
   if (window.mqtt){ cb(); return; }
   const s = document.createElement('script');
   s.src = 'https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js';
   s.onload = ()=> cb();
-  s.onerror = ()=> { setStatus('mqtt lib failed — offline'); };
+  s.onerror = ()=> { setStatus('mqtt lib failed — offline'); setBrokerStatus('lib failed'); };
   document.head.appendChild(s);
 }
 
-function connectMQTT(){
-  if (!window.mqtt){ setStatus('offline mode'); return; }
+function disconnectCurrent(){
+  if (mqttClient){
+    try { mqttClient.end(true); } catch(_){}
+    mqttClient = null;
+  }
+}
+
+function connectToBroker(broker){
+  disconnectCurrent();
+  setBrokerStatus('connecting…');
+  setStatus('connecting…');
+
+  if (!window.mqtt){ setBrokerStatus('offline mode (no lib)'); setStatus('offline'); return; }
+
   try {
-    mqttClient = window.mqtt.connect(MQTT_URL, {
+    mqttClient = window.mqtt.connect(broker.url, {
       clientId: 'wow-' + MY_ID,
-      clean: true, reconnectPeriod: 3000, connectTimeout: 8000,
+      clean: true,
+      reconnectPeriod: 3000,
+      connectTimeout: 8000,
     });
-  } catch(err){ setStatus('mqtt error: ' + err.message); return; }
+  } catch(err){
+    setBrokerStatus('error: ' + err.message);
+    setStatus('mqtt error');
+    return;
+  }
 
   mqttClient.on('connect', ()=>{
     setStatus('mqtt connected as ' + MY_ID);
+    setBrokerStatus('connected: ' + broker.label);
     mqttClient.subscribe(`war-of-the-words/${ROOM}/#`, {qos:0});
   });
-  mqttClient.on('reconnect', ()=> setStatus('mqtt reconnecting…'));
-  mqttClient.on('error', (e)=> setStatus('mqtt error: ' + (e?.message || e)));
-  mqttClient.on('offline', ()=> setStatus('mqtt offline'));
+  mqttClient.on('reconnect', ()=> { setBrokerStatus('reconnecting…'); setStatus('mqtt reconnecting…'); });
+  mqttClient.on('error', (e)=> {
+    setBrokerStatus('error: ' + (e?.message || e));
+    setStatus('mqtt error');
+  });
+  mqttClient.on('offline', ()=> { setBrokerStatus('offline'); setStatus('mqtt offline'); });
 
   mqttClient.on('message', (topic, payload)=>{
     try {
@@ -605,6 +660,15 @@ function connectMQTT(){
   });
 }
 
+brokerSelectEl.addEventListener('change', ()=>{
+  const id = brokerSelectEl.value;
+  const b = BROKERS.find(x=>x.id===id);
+  if (!b) return;
+  currentBroker = b;
+  localStorage.setItem(BROKER_KEY, id);
+  connectToBroker(b);
+});
+
 function sendMQTT(text){
   if (!mqttClient || !mqttClient.connected) return;
   mqttClient.publish(
@@ -614,12 +678,58 @@ function sendMQTT(text){
   );
 }
 
-loadMqttLib(connectMQTT);
+loadMqttLib(()=> connectToBroker(currentBroker));
 
-/* если через 6 секунд ещё connecting — пометим */
 setTimeout(()=>{
-  if (!mqttClient || !mqttClient.connected) setStatus('mqtt: offline/проверь сеть');
-}, 6000);
+  if (!mqttClient || !mqttClient.connected){
+    setStatus('mqtt: offline/проверь сеть');
+  }
+}, 7000);
+
+/* ---------- Перетаскивание меню брокера ---------- */
+const brokerMenuEl = document.getElementById('brokerMenu');
+const BROKER_POS_KEY = 'wow.brokerMenuPos';
+
+(function restoreBrokerMenuPos(){
+  try {
+    const raw = localStorage.getItem(BROKER_POS_KEY);
+    if (!raw) return;
+    const {x, y} = JSON.parse(raw);
+    brokerMenuEl.style.left  = x + 'px';
+    brokerMenuEl.style.top   = y + 'px';
+    brokerMenuEl.style.right = 'auto';
+  } catch(_){}
+})();
+
+let brokerDrag = null;
+brokerMenuEl.addEventListener('pointerdown', e=>{
+  if (e.target.closest('#brokerSelect')) return;
+  e.preventDefault();
+  const rect = brokerMenuEl.getBoundingClientRect();
+  brokerDrag = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+  brokerMenuEl.style.left  = rect.left + 'px';
+  brokerMenuEl.style.top   = rect.top  + 'px';
+  brokerMenuEl.style.right = 'auto';
+  brokerMenuEl.setPointerCapture?.(e.pointerId);
+});
+brokerMenuEl.addEventListener('pointermove', e=>{
+  if (!brokerDrag) return;
+  let x = e.clientX - brokerDrag.dx;
+  let y = e.clientY - brokerDrag.dy;
+  const w = brokerMenuEl.offsetWidth;
+  const h = brokerMenuEl.offsetHeight;
+  x = Math.max(0, Math.min(innerWidth  - w, x));
+  y = Math.max(0, Math.min(innerHeight - h, y));
+  brokerMenuEl.style.left = x + 'px';
+  brokerMenuEl.style.top  = y + 'px';
+});
+brokerMenuEl.addEventListener('pointerup', ()=>{
+  if (!brokerDrag) return;
+  brokerDrag = null;
+  const rect = brokerMenuEl.getBoundingClientRect();
+  try { localStorage.setItem(BROKER_POS_KEY, JSON.stringify({x:rect.left,y:rect.top})); } catch(_){}
+});
+brokerMenuEl.addEventListener('pointercancel', ()=>{ brokerDrag = null; });
 
 </script>
 </body>
