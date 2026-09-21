@@ -976,10 +976,8 @@ a { color: #448aff; text-decoration: none; }
     <p>Swipe down from the top to check for updates.</p>
 
     <h3 style="color:#ffd700; font-size:16px; margin-top:18px;">Auction Logic</h3>
-    <p>Any ranking-item can be turned into an auction in the Broadcast panel below. The author of the item is always the seller — no external seller can be assigned. Only the starting bid and an optional Buy Now price are set. Bids are accepted while the seller is LIVE; when the seller goes offline the auction switches to TAPE (saved bids only). Bids are accepted 24/7 without fixed time windows — the LIVE/TAPE state of the seller is the only gate.</p>
-    <p><strong>Seller LIVE:</strong> Buyer can press Bid — the bid is really sent to the seller, who may Accept it. After acceptance the deal gets status Delivered and a private gate opens between the two peers for additional non-public info. Buy Now (if set) instantly closes the deal at the seller's price.</p>
-    <p><strong>Seller TAPE (offline):</strong> Buyer can only view the auction data received while the seller was live. New bids are stored as Save (intended bids). Buy Now is unavailable. When the seller becomes LIVE again, the buyer is offered to edit and/or re-bid — same pattern as edit/re-inject for items.</p>
-    <p>⚠️ <strong>Live peer exchange of additional information works only if both participants are online right now.</strong> If either party goes offline, the gate is closed and messages sent while the peer is offline are not delivered until they return LIVE.</p>
+    <p>Any ranking item is turned into an auction in the Broadcast panel below. If you want to place bid as a buyer, you need to make a symbolic offer. Offers & bids are accepted while both participants is <span class="about-alert" style="color: #afff00;">LIVE</span> online; when the seller goes offline the auction switches to TAPE (saved bids only).</p>
+
 </div>
 </div>
     <span id="broadcast"></span>    
@@ -1011,7 +1009,7 @@ a { color: #448aff; text-decoration: none; }
         <div style="color:#afff00cc; font-size:11px; margin:-10px 0 14px;">
             You can save a note exclusively for your Peer-XXXX (or name)—even in Live mode.    
         </div>
-<button class="admin-btn inject-btn-bg" style="border: 2px solid #afff00;" onclick="addItem()">Inject Item to Network</button>
+<button id="main-action-btn" class="admin-btn inject-btn-bg" style="border: 2px solid #afff00;" onclick="addItem()">Inject Item to Network</button>
 <button id="cancel-edit-btn" class="admin-btn"
         style="display: none; margin-top: 10px; background: #444; color: #fff; border: 2px solid #ff3333;"
         onclick="cancelEdit()">
@@ -2345,19 +2343,44 @@ async function addItem() {
                 item.auction = null;
             }
 
-            saveLocal();
+const onlineCount = Object.keys(activePeers).filter(peerId => {
+                const ts = activePeers[peerId];
+                return peerId !== myId && (Date.now() - ts) <= 12000;
+            }).length;
 
-            client.publish(TOPIC, JSON.stringify({
-                type: 'UPDATE_ITEM',
-                sender: myId,
-                item: item
-            }), { qos: 1 });
+            if (item.pending_tape) {
+                if (onlineCount > 0) {
+                    // Tape-item, пиры появились → публикуем как новый ADD_ITEM
+                    delete item.pending_tape;
+                    saveLocal();
 
-            log(`You updated and re-published item: "${title}"`);
+                    client.publish(TOPIC, JSON.stringify({
+                        type: 'ADD_ITEM',
+                        sender: myId,
+                        item: item
+                    }), { qos: 1 });
+
+                    log(`[Live] Tape item published: "${title}"`);
+                } else {
+                    // Пиров всё ещё нет — просто обновляем локально
+                    saveLocal();
+                    log(`[Tape] Item updated locally: "${title}"`);
+                }
+            } else {
+                // Обычное редактирование опубликованного item'а
+                saveLocal();
+                client.publish(TOPIC, JSON.stringify({
+                    type: 'UPDATE_ITEM',
+                    sender: myId,
+                    item: item
+                }), { qos: 1 });
+
+                log(`You updated and re-published item: "${title}"`);
+            }
         }
 
         editingId = null;
-        $('.inject-btn-bg').text('Inject Item to Network');
+        updateMainActionButton();
 
         const cancelBtn = document.getElementById('cancel-edit-btn');
         if (cancelBtn) cancelBtn.style.display = 'none';
@@ -2476,8 +2499,8 @@ function editItem(id) {
         $('#new-auction-buy-now').val('');
     }
 
-    editingId = id;
-    $('.inject-btn-bg').text('Save Changes');
+editingId = id;
+updateMainActionButton();
 
     const cancelBtn = document.getElementById('cancel-edit-btn');
     if (cancelBtn) cancelBtn.style.display = 'block';
@@ -2496,7 +2519,7 @@ function cancelEdit() {
 
     editingId = null;
 
-    $('.inject-btn-bg').text('Inject Item to Network');
+    updateMainActionButton();
 
     const cancelBtn = document.getElementById('cancel-edit-btn');
     if (cancelBtn) cancelBtn.style.display = 'none';
@@ -3332,8 +3355,41 @@ function updateOnlinePeersCount() {
         }
     }
 
+    // Обновляем текст главной кнопки в зависимости от наличия пиров
+    updateMainActionButton();
+
     // Перерисовываем список, чтобы статусы online/offline и кнопки auction были актуальны
     updateRankingList();
+}
+
+function updateMainActionButton() {
+    const btn = document.getElementById('main-action-btn');
+    if (!btn) return;
+
+    const onlineCount = Object.keys(activePeers).filter(peerId => {
+        const ts = activePeers[peerId];
+        return peerId !== myId && (Date.now() - ts) <= 12000;
+    }).length;
+
+    // Если редактируем — решаем по режиму item'а, а не по onlineCount
+    if (editingId !== null) {
+        const item = items.find(i => i.id === editingId);
+        if (item && item.pending_tape) {
+            // Item в Tape. Если пиры появились — можно публиковать.
+            btn.textContent = onlineCount > 0
+                ? 'Inject Item to Network'
+                : 'Save Item';
+        } else {
+            // Item уже опубликован — просто сохраняем изменения
+            btn.textContent = 'Save Changes';
+        }
+        return;
+    }
+
+    // Обычный режим (не редактирование)
+    btn.textContent = onlineCount > 0
+        ? 'Inject Item to Network'
+        : 'Save Item';
 }
 
 function onBrokerSelectChange(selectEl) {
