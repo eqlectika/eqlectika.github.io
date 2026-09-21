@@ -1,5 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
+<script>
+(function () {
+    const BUILD = 'v2026-09-21-01';   // ← меняй при каждом пуше
+    const KEY = 'fields_build';
+    const stored = localStorage.getItem(KEY);
+
+    if (stored !== BUILD) {
+        localStorage.setItem(KEY, BUILD);
+
+        // снести все регистрации SW и все кеши, потом перезагрузить
+        (async () => {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map(r => r.unregister()));
+                }
+                if ('caches' in window) {
+                    const names = await caches.keys();
+                    await Promise.all(names.map(n => caches.delete(n)));
+                }
+            } catch (e) {}
+            location.reload();
+        })();
+
+        return;   // дальше страница не грузится, ждём перезагрузки
+    }
+})();
+</script>
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -322,7 +350,7 @@ body {
     { title: 'Capital',    url: 'capital.html' },
     { title: 'Flash',      url: 'flash.html' },
     { title: 'Cross',      url: 'cross.html' },
-    { title: 'Match',      url: 'match.html' },
+    { title: 'Match',      url: 'index.html' },
     { title: 'Bismuth',    url: 'bismuth.html' },
 ];
 
