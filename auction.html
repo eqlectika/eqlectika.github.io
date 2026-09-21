@@ -782,7 +782,7 @@ a { color: #448aff; text-decoration: none; }
 
 .auction-block .auction-bids .bid-row .bid-info {
     flex: 1;
-    color: #ccc;
+    color: #ffd700;
 }
 
 .auction-block .auction-bids .bid-row button {
@@ -2599,7 +2599,6 @@ function placeBid(itemId) {
     if (amount < minNext) return alert('Minimum bid is ' + minNext);
 
     const sellerOnline = isPeerOnline(item.auction.seller);
-    const savedFlag = !sellerOnline;
 
     const bidId = makeBidId();
     const bid = {
@@ -2607,7 +2606,7 @@ function placeBid(itemId) {
         bidder: myId,
         amount: amount,
         ts: Date.now(),
-        status: savedFlag ? 'pending_saved' : 'pending'
+        status: 'pending'
     };
 
     // Локально сразу добавим
@@ -2793,7 +2792,7 @@ function renderAuctionBlock(item) {
     const bidsCount = (a.bids || []).length;
 
     let html = `<div class="auction-block">`;
-    html += `<div class="auction-head">Auction <span class="auction-badge ${badgeClass}">${badgeText}</span> <span style="color:#888;font-size:11px;font-weight:normal;">${bidsCount} bid${bidsCount===1?'':'s'}</span></div>`;
+    html += `<div class="auction-head">Auction <span class="auction-badge ${badgeClass}">${badgeText}</span> <span style="color:#ffd700;font-size:11px;font-weight:normal;">${bidsCount} bid${bidsCount===1?'':'s'}</span></div>`;
     html += `<div class="auction-row">Seller: <span style="color:#ffd700">${a.seller}</span> ${sellerOnline ? '<span style="color:#ff0000">● online</span>' : '<span style="color:#afff00">● offline</span>'}</div>`;
     html += `<div class="auction-row">Current bid: <span style="color:#afff00">${a.currentBid}</span></div>`;
     if (a.buyNow !== null && a.buyNow !== undefined) {
@@ -2834,12 +2833,7 @@ function renderAuctionBlock(item) {
             if (myPendingLive.length > 0) {
                 html += `<div class="auction-row" style="color:#ff8b00;">Your live bid is waiting; seller is offline now.</div>`;
             }
-            const minNext = Math.max(Number(a.startBid||0), Number(a.currentBid||0)) + 1;
-            html += `<div class="auction-row" style="color:#afff00;font-size:12px;">Seller is TAPE (offline). You can save a bid.</div>`;
-            html += `<div class="auction-actions">
-                <input type="number" id="bid-input-${item.id}" placeholder="Save bid (min ${minNext})" min="${minNext}" step="1">
-                <button class="btn-save" onclick="event.stopPropagation(); placeBid('${item.id}')">Save Bid</button>
-            </div>`;
+html += `<div class="auction-row" style="color:#afff00;font-size:12px;">Seller is TAPE (offline). Bidding unavailable.</div>`;
         }
     }
 
