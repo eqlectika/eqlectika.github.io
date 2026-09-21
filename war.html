@@ -425,14 +425,15 @@ function onRotateOrPanMove(e){
 }
 
 dz.addEventListener('contextmenu', e=> e.preventDefault());
-dz.addEventListener('mousedown', e=>{
+dz.addEventListener('pointerdown', e=>{
   e.preventDefault();
   if (e.button === 2) onRotateOrPanStart(e, 'pan');
   else if (e.button === 0) onRotateOrPanStart(e, 'rotate');
-  dz.setPointerCapture?.(e.pointerId);
+  try { dz.setPointerCapture?.(e.pointerId); } catch(_){}
 });
-dz.addEventListener('mousemove', onRotateOrPanMove);
-addEventListener('mouseup', ()=>{ dragging = null; });
+dz.addEventListener('pointermove', onRotateOrPanMove);
+addEventListener('pointerup', ()=>{ dragging = null; });
+addEventListener('pointercancel', ()=>{ dragging = null; });
 
 function onWheel(e){
   e.preventDefault();
