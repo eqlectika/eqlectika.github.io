@@ -24,6 +24,7 @@
     max-width: 768px;
     margin: 0 auto;
     min-height: 100vh;
+    padding-top: 60px;
 }
     .panel{padding:0px;margin-top:15px}
     .admin-input{width:100%;background:#000;color:#fff;border:0;outline:0;padding:15px 10px;margin:0 0 10px;font:14px monospace}
@@ -114,9 +115,32 @@
     .footer-credit{text-align:center;padding:20px 10px 20px}
     .footer-credit h2{font:700 20px 'Cinzel',serif}
     .progress-fill{height:8px;background:#aaa;transition:width 600ms cubic-bezier(.25,1,.5,1)}
-    body.inverted{filter:invert(1) hue-rotate(180deg);background:#fff}
-    body.inverted img{filter:invert(1) hue-rotate(180deg)}
-    body.inverted img.no-invert{filter:none}@media(max-width:480px){
+.fixed-header {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    max-width: 768px;
+    margin: 0 auto;
+    z-index: 1000;
+    background: #000011;
+}
+
+body.inverted {
+    background-color: #fff;
+}
+
+body.inverted .app-container {
+    filter: invert(1) hue-rotate(180deg);
+}
+
+body.inverted .fixed-header {
+    filter: invert(1) hue-rotate(180deg);
+}
+
+/* шапка не инвертируется, даже если внутри .app-container */
+
+    @media(max-width:480px){
     .panel,.main-panel,.claim-panel,.exchange-panel,.transfer-panel{padding-left:0;padding-right:0}}
     #target-peer::placeholder,
     
@@ -237,9 +261,10 @@ input[type=number] {
 <body>
 <div class="app-container">
 
-<div id="top" style="display:flex;align-items:flex-start;gap:15px;padding:10px;">
+<div id="top" class="fixed-header" style="display:flex;align-items:flex-start;gap:15px;padding:10px;">
 <a href="#broadcast"><img src="breakthrough.png" alt="Logo" style="height:35px;width:auto;"></a>
-<div id="invertTrigger" onclick="syncAndKeepData()" style="margin:7px 0;font-weight:bold;font-family:monospace;font-size:20px;line-height:1;cursor:pointer;color:#ccc;">
+<div id="invertTrigger" style="margin:7px 0;font-weight:bold;font-family:monospace;font-size:20px;line-height:1;cursor:pointer;color:#ccc;">
+    Essence
     <span id="liveIndicator" style="display:none;color:#ff0000;margin:6px;animation:livePulse 1.5s infinite;">● Live!</span><span id="tapeIndicator" style="display:none;color:#afff00;margin-left:6px;">● Tape</span>
 </div>
 </div>
@@ -526,6 +551,15 @@ const DataManager = (() => {
             });
         });
     }
+
+    // Вынести fixed-шапку из .app-container в body, чтобы filter не ломал fixed
+(function moveHeaderOut() {
+    const top = document.getElementById('top');
+    const container = document.querySelector('.app-container');
+    if (top && container && top.parentElement === container) {
+        document.body.insertBefore(top, container);
+    }
+})();
 </script>
 
 <script>
@@ -1970,6 +2004,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
+});
+document.getElementById('invertTrigger').addEventListener('click', () => {
+    document.body.classList.toggle('inverted');
 });
 </script>
 
