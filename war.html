@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>War Of The Words</title>
+<style>
+  :root{ --ui-font: "Courier New", ui-monospace, monospace; }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:#0f0;font-family:var(--ui-font);}
+  #space{position:fixed;inset:0;user-select:none;-webkit-user-select:none;}
+  #space canvas{display:block;user-select:none;-webkit-user-select:none;touch-action:none}
+
+  .field{position:fixed;top:0;bottom:0;width:50%;display:flex;flex-direction:column;pointer-events:none;z-index:10;}
+  #leftField{left:0;}
+  #rightField{right:0;}
+
+  #draftLayer{
+    flex:1 1 50%;position:relative;pointer-events:auto;overflow:hidden;
+    user-select:none;-webkit-user-select:none;
+    background:rgba(0,255,0,0.04); /* отладочный фон, убери при желании */
+  }
+  .draftItem{position:absolute;min-width:160px;max-width:90%;}
+  .draftItem textarea{
+    width:100%;background:rgba(0,0,0,0.55);color:#0f0;caret-color:#0f0;
+    border:1px solid #0f0;outline:none;font-family:var(--ui-font);font-size:20px;
+    line-height:1.25;padding:6px 8px;resize:none;overflow:hidden;
+    white-space:pre-wrap;word-break:break-word;
+    user-select:text;-webkit-user-select:text;
+  }
+  .draftItem .publishBtn{
+    display:none;margin-top:6px;background:#000;color:#0f0;border:1px solid #0f0;
+    font-family:var(--ui-font);font-size:16px;padding:4px 10px;cursor:pointer;
+  }
+  .draftItem.ready .publishBtn{display:inline-block}
+
+  #historyArea{
+    flex:1 1 50%;pointer-events:auto;overflow-y:auto;
+    border-top:1px solid rgba(0,255,0,0.35);
+    background:rgba(0,0,0,0.35);padding:8px;
+    user-select:none;-webkit-user-select:none;
+  }
+  .histItem{color:#3366ff;font-size:18px;line-height:1.3;padding:4px 6px;margin-bottom:4px;
+    border-left:2px solid #3366ff;cursor:pointer;white-space:pre-wrap;word-break:break-word;}
+  .histItem:active{background:rgba(51,102,255,0.15)}
+
+  #directionZone{
+    position:absolute;inset:0;pointer-events:auto;
+    user-select:none;-webkit-user-select:none;touch-action:none;background:transparent;
+  }
+
+  #swapBtn{
+    position:fixed;top:10px;left:50%;transform:translateX(-50%);
+    z-index:100;pointer-events:auto;
+    background:#000;color:#0f0;border:1px solid #0f0;
+    font-family:var(--ui-font);font-size:20px;padding:4px 12px;cursor:pointer;
+    user-select:none;-webkit-user-select:none;
+  }
+  #status{
+    position:fixed;bottom:8px;left:50%;transform:translateX(-50%);
+    z-index:100;color:#0f0;font-size:13px;opacity:.7;
+    pointer-events:none;text-align:center;max-width:90vw;
+  }
+</style>
+</head>
+<body>
+
+<div id="space"></div>
+
+<div class="field" id="leftField">
+  <div id="draftLayer"></div>
+  <div id="historyArea"></div>
+</div>
+
+<div class="field" id="rightField">
+  <div id="directionZone"></div>
+</div>
+
+<button id="swapBtn" title="swap fields">⇄</button>
+<div id="status">loading…</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ---------- КОНСТАНТЫ ---------- */
+const LINE_HEIGHT = 1.6, LINE_GAP = 0.35;
+const CANVAS_FONT_SIZE = 56, CANVAS_PAD_X = 24, CANVAS_PAD_Y = 14;
+const COLOR_LAST = '#00ff00', COLOR_PREV = '#3366ff', COLOR_FOREIGN = '#3366ff';
+const MQTT_URL = 'wss://broker.hivemq.com:8884/mqtt';
+const ROOM = 'war-of-the-words-demo';
+const MY_ID = 'u-' + Math.random().toString(36).slice(2, 8);
+
+/* ---------- THREE ---------- */
+const container = document.getElementById('space');
+const renderer = new THREE.WebGLRenderer({antialias:true, alpha:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.setClearColor(0x000000, 1);
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+let cameraSize = 30;
+const aspect = () => innerWidth / innerHeight;
+const camera = new THREE.OrthographicCamera(-1,1,1,-1,-1000,1000);
+
+const camState = { target: new THREE.Vector3(0,0,0), yaw:0, pitch:0, distance:60 };
+function updateCamera(){
+  const {target, yaw, pitch, distance} = camState;
+  const cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const cy = Math.cos(yaw),   sy = Math.sin(yaw);
+  camera.position.set(
+    target.x + distance*cp*sy,
+    target.y + distance*sp,
+    target.z + distance*cp*cy
+  );
+  camera.up.set(0,1,0);
+  camera.lookAt(target);
+  const a = aspect();
+  camera.left = -cameraSize*a; camera.right = cameraSize*a;
+  camera.top  =  cameraSize;   camera.bottom = -cameraSize;
+  camera.updateProjectionMatrix();
+}
+updateCamera();
+
+function getCameraYawXZ(){
+  const dir = new THREE.Vector3().subVectors(camState.target, camera.position);
+  const len = Math.hypot(dir.x, dir.z);
+  if (len < 1e-6) return 0;
+  return Math.atan2(-dir.x/len, -dir.z/len);
+}
+
+/* ---------- ТЕКСТ → CANVAS ---------- */
+function makeTextCanvas(text, color){
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d');
+  const font = `${CANVAS_FONT_SIZE}px "Courier New", ui-monospace, monospace`;
+  ctx.font = font;
+  const arr = String(text).split('\n');
+  let maxW = 0;
+  for (const ln of arr){ const w = ctx.measureText(ln).width; if (w > maxW) maxW = w; }
+  const w = Math.max(2, Math.ceil(maxW + CANVAS_PAD_X*2));
+  const h = Math.max(2, Math.ceil(arr.length * CANVAS_FONT_SIZE * 1.25 + CANVAS_PAD_Y*2));
+  c.width = w; c.height = h;
+  const c2 = c.getContext('2d');
+  c2.font = font; c2.fillStyle = color; c2.textBaseline='top'; c2.textAlign='left';
+  arr.forEach((ln,i)=> c2.fillText(ln, CANVAS_PAD_X, CANVAS_PAD_Y + i*CANVAS_FONT_SIZE*1.25));
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+  return {tex, canvas:c, width:c.width, height:c.height};
+}
+
+/* ---------- ПЛИТКИ ---------- */
+const tilesGroup = new THREE.Group(); scene.add(tilesGroup);
+
+function createTileMesh(text, color){
+  const {tex, width, height} = makeTextCanvas(text, color);
+  const worldW = LINE_HEIGHT * (width / height);
+  const geo = new THREE.PlaneGeometry(worldW, LINE_HEIGHT);
+  const mat = new THREE.MeshBasicMaterial({
+    map: tex, transparent: true, depthWrite: false, side: THREE.DoubleSide
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.renderOrder = 1;
+  mesh.userData = { text, color, width: worldW, height: LINE_HEIGHT, tex, geo, mat };
+  return mesh;
+}
+
+function recolorPublication(pub, newColor){
+  const d = pub.mesh.userData;
+  if (d.color === newColor) return;
+  const {tex} = makeTextCanvas(d.text, newColor);
+  if (d.tex) d.tex.dispose();
+  d.tex = tex; d.mat.map = tex; d.mat.needsUpdate = true; d.color = newColor;
+}
+
+function ensureLine(line, basePos, yawAngle){
+  if (!line.origin){
+    line.origin = basePos.clone();
+    const dir = new THREE.Vector3(Math.cos(yawAngle), 0, -Math.sin(yawAngle));
+    line.direction = dir.normalize();
+    line.cursor = line.origin.clone();
+  }
+}
+
+function appendToLine(line, mesh, width){
+  const center = line.cursor.clone().addScaledVector(line.direction, width/2);
+  mesh.position.copy(center);
+  mesh.quaternion.setFromAxisAngle(
+    new THREE.Vector3(0,1,0),
+    Math.atan2(line.direction.x, line.direction.z)
+  );
+  line.cursor.addScaledVector(line.direction, width + LINE_GAP);
+}
+
+/* ---------- СВОИ ПУБЛИКАЦИИ ---------- */
+const myLine = { origin:null, direction:null, cursor:null, publications:[] };
+
+function publishMyText(text){
+  const yawAngle = getCameraYawXZ();
+  const dir = new THREE.Vector3().subVectors(camState.target, camera.position);
+  const hlen = Math.hypot(dir.x, dir.z) || 1;
+  const forward = new THREE.Vector3(-dir.x/hlen, 0, -dir.z/hlen);
+  const basePos = camState.target.clone().addScaledVector(forward, cameraSize * 0.9);
+  basePos.y = 0;
+  ensureLine(myLine, basePos, yawAngle);
+
+  const mesh = createTileMesh(text, COLOR_LAST);
+  appendToLine(myLine, mesh, mesh.userData.width);
+  mesh.visible = false; // своя лента невидима
+  tilesGroup.add(mesh);
+  myLine.publications.push({mesh, text});
+
+  const n = myLine.publications.length;
+  myLine.publications.forEach((p,i)=> recolorPublication(p, (i===n-1)?COLOR_LAST:COLOR_PREV));
+
+  maybeExplode();
+}
+
+/* ---------- ЧУЖИЕ ПУБЛИКАЦИИ ---------- */
+const foreignLines = new Map();
+
+function hashString(s){
+  let h = 2166136261;
+  for (let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return Math.abs(h);
+}
+
+function addForeignPublication(authorId, text){
+  let line = foreignLines.get(authorId);
+  if (!line){
+    const seed = hashString(authorId);
+    const yawAngle = (seed % 1000) / 1000 * Math.PI * 2;
+    const radius  = 8 + (seed % 7);
+    const origin = new THREE.Vector3(
+      Math.cos(yawAngle) * radius, 0, Math.sin(yawAngle) * radius
+    );
+    line = { origin, direction:null, cursor:null, publications:[], yawAngle };
+    foreignLines.set(authorId, line);
+  }
+  ensureLine(line, line.origin, line.yawAngle);
+
+  const mesh = createTileMesh(text, COLOR_FOREIGN);
+  appendToLine(line, mesh, mesh.userData.width);
+  mesh.userData.authorId = authorId;
+  tilesGroup.add(mesh);
+  line.publications.push({mesh, text});
+
+  maybeExplode();
+}
+
+/* ---------- ВЗРЫВ НА ПЕРЕСЕЧЕНИИ ---------- */
+const debrisGroup = new THREE.Group(); scene.add(debrisGroup);
+const debris = [];
+
+function intersectLines(a, b){
+  const p=a.origin, r=a.direction, q=b.origin, s=b.direction;
+  const rxs = r.x*s.z - r.z*s.x;
+  if (Math.abs(rxs) < 1e-6) return null;
+  const qp = new THREE.Vector3().subVectors(q,p);
+  const t = (qp.x*s.z - qp.z*s.x) / rxs;
+  const u = (qp.x*r.z - qp.z*r.x) / rxs;
+  if (t < 0 || u < 0) return null;
+  return { point: new THREE.Vector3(p.x + r.x*t, 0, p.z + r.z*t) };
+}
+
+function explodeAt(point, radius = 4.5){
+  for (const line of foreignLines.values()){
+    for (const pub of line.publications){
+      const mesh = pub.mesh;
+      if (!mesh.visible) continue;
+      const wp = new THREE.Vector3(); mesh.getWorldPosition(wp);
+      const dx = wp.x - point.x, dz = wp.z - point.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist > radius) continue;
+
+      const words = pub.text.split(/\s+/).filter(Boolean);
+      if (!words.length) continue;
+      mesh.visible = false;
+
+      const baseYaw = Math.atan2(line.direction.x, line.direction.z);
+      words.forEach((word)=>{
+        const {tex, width, height} = makeTextCanvas(word, '#ff5522');
+        const worldW = LINE_HEIGHT*0.55*(width/height);
+        const geo = new THREE.PlaneGeometry(worldW, LINE_HEIGHT*0.55);
+        const mat = new THREE.MeshBasicMaterial({
+          map: tex, transparent:true, depthWrite:false, side:THREE.DoubleSide
+        });
+        const d = new THREE.Mesh(geo, mat);
+        d.position.copy(wp);
+        d.position.x += (Math.random()-0.5)*0.6;
+        d.position.y += (Math.random()-0.5)*0.6;
+        d.position.z += (Math.random()-0.5)*0.6;
+        d.quaternion.setFromAxisAngle(new THREE.Vector3(0,1,0), baseYaw);
+        d.renderOrder = 2;
+        debrisGroup.add(d);
+
+        const nx = dx/(dist||1), nz = dz/(dist||1);
+        const spread = 1.2 + Math.random()*1.5;
+        debris.push({
+          mesh: d,
+          vel: new THREE.Vector3(
+            nx*spread + (Math.random()-0.5)*1.2,
+            0.8 + Math.random()*1.6,
+            nz*spread + (Math.random()-0.5)*1.2
+          ),
+          angVel: (Math.random()-0.5)*2.5,
+          life: 0, maxLife: 2.2 + Math.random()*1.2,
+        });
+      });
+    }
+  }
+}
+
+const explodedPoints = [];
+function maybeExplode(){
+  const all = [];
+  if (myLine.origin) all.push(myLine);
+  for (const line of foreignLines.values()) all.push(line);
+  for (let i=0;i<all.length;i++){
+    for (let j=i+1;j<all.length;j++){
+      const a=all[i], b=all[j];
+      if (!a.direction || !b.direction) continue;
+      const hit = intersectLines(a,b);
+      if (!hit) continue;
+      let dup = false;
+      for (const p of explodedPoints) if (p.distanceTo(hit.point) < 0.75){ dup=true; break; }
+      if (dup) continue;
+      explodedPoints.push(hit.point.clone());
+      explodeAt(hit.point, 4.5);
+    }
+  }
+}
+
+/* ---------- АНИМАЦИЯ ---------- */
+const clock = new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  for (let i=debris.length-1;i>=0;i--){
+    const p = debris[i];
+    p.life += dt;
+    if (p.life >= p.maxLife){
+      debrisGroup.remove(p.mesh);
+      p.mesh.geometry.dispose(); p.mesh.material.map?.dispose(); p.mesh.material.dispose();
+      debris.splice(i,1); continue;
+    }
+    p.vel.y -= 2.5*dt;
+    p.vel.multiplyScalar(1 - 1.2*dt);
+    p.mesh.position.addScaledVector(p.vel, dt);
+    p.mesh.rotateY(p.angVel*dt);
+    const k = 1 - p.life/p.maxLife;
+    p.mesh.material.opacity = Math.max(0, k);
+    p.mesh.material.transparent = true;
+  }
+  renderer.render(scene, camera);
+}
+animate();
+
+addEventListener('resize', ()=>{
+  renderer.setSize(innerWidth, innerHeight);
+  updateCamera();
+});
+
+/* ---------- УПРАВЛЕНИЕ ---------- */
+const dz = document.getElementById('directionZone');
+let dragging = null, lastX = 0, lastY = 0;
+
+function onRotateOrPanStart(e, kind){
+  dragging = kind;
+  lastX = e.clientX; lastY = e.clientY;
+}
+function onRotateOrPanMove(e){
+  if (!dragging) return;
+  const dx = e.clientX - lastX, dy = e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY;
+  if (dragging === 'rotate'){
+    camState.yaw   -= dx * 0.005;
+    camState.pitch += dy * 0.005;
+    camState.pitch = Math.max(-1.3, Math.min(1.3, camState.pitch));
+  } else if (dragging === 'pan'){
+    const fwd = new THREE.Vector3().subVectors(camState.target, camera.position).normalize();
+    const right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0,1,0)).normalize();
+    const k = cameraSize / innerHeight * 1.5;
+    camState.target.addScaledVector(right, -dx*k);
+    camState.target.addScaledVector(new THREE.Vector3(0,1,0), dy*k);
+  }
+  updateCamera();
+}
+
+// мышь — на зоне управления
+dz.addEventListener('contextmenu', e=> e.preventDefault());
+dz.addEventListener('mousedown', e=>{
+  e.preventDefault();
+  if (e.button === 2) onRotateOrPanStart(e, 'pan');
+  else if (e.button === 0) onRotateOrPanStart(e, 'rotate');
+  dz.setPointerCapture?.(e.pointerId);
+});
+dz.addEventListener('mousemove', onRotateOrPanMove);
+addEventListener('mouseup', ()=>{ dragging = null; });
+
+// колесо — на зоне и на canvas (всё равно всё пространство)
+function onWheel(e){
+  e.preventDefault();
+  cameraSize *= Math.exp(e.deltaY * 0.001);
+  cameraSize = Math.max(4, Math.min(200, cameraSize));
+  updateCamera();
+}
+dz.addEventListener('wheel', onWheel, {passive:false});
+renderer.domElement.addEventListener('wheel', onWheel, {passive:false});
+
+// тач на зоне
+let touchMode = null, tLastX = 0, tLastY = 0;
+let pinchStartDist = 0, pinchStartSize = 0, longTimer = null;
+function tDist(a,b){ return Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY); }
+
+dz.addEventListener('touchstart', e=>{
+  e.preventDefault();
+  if (e.touches.length === 1){
+    touchMode = 'rotate';
+    tLastX = e.touches[0].clientX; tLastY = e.touches[0].clientY;
+    clearTimeout(longTimer);
+    longTimer = setTimeout(()=>{
+      if (touchMode !== 'rotate') return;
+      touchMode = 'long';
+      const fwd = new THREE.Vector3().subVectors(camState.target, camera.position);
+      fwd.y = 0; fwd.normalize();
+      camState.target.addScaledVector(fwd, 3);
+      updateCamera();
+    }, 550);
+  } else if (e.touches.length === 2){
+    clearTimeout(longTimer);
+    touchMode = 'pinch';
+    pinchStartDist = tDist(e.touches[0], e.touches[1]);
+    pinchStartSize = cameraSize;
+  }
+}, {passive:false});
+
+dz.addEventListener('touchmove', e=>{
+  e.preventDefault();
+  if (touchMode === 'rotate' && e.touches.length === 1){
+    const dx = e.touches[0].clientX - tLastX;
+    const dy = e.touches[0].clientY - tLastY;
+    tLastX = e.touches[0].clientX; tLastY = e.touches[0].clientY;
+    camState.yaw   -= dx*0.006;
+    camState.pitch += dy*0.006;
+    camState.pitch = Math.max(-1.3, Math.min(1.3, camState.pitch));
+    updateCamera();
+  } else if (touchMode === 'pinch' && e.touches.length === 2){
+    const d = tDist(e.touches[0], e.touches[1]);
+    if (pinchStartDist > 0){
+      cameraSize = Math.max(4, Math.min(200, pinchStartSize * (pinchStartDist/d)));
+      updateCamera();
+    }
+  } else if (touchMode === 'long' && e.touches.length === 1){
+    const dy = e.touches[0].clientY - tLastY;
+    tLastY = e.touches[0].clientY;
+    const fwd = new THREE.Vector3().subVectors(camState.target, camera.position);
+    fwd.y = 0; fwd.normalize();
+    camState.target.addScaledVector(fwd, -dy*0.05);
+    updateCamera();
+  }
+}, {passive:false});
+
+dz.addEventListener('touchend', e=>{
+  clearTimeout(longTimer);
+  if (e.touches.length === 0) touchMode = null;
+}, {passive:false});
+
+/* ---------- DRAFT ---------- */
+const draftLayer = document.getElementById('draftLayer');
+const historyArea = document.getElementById('historyArea');
+
+function createDraftAt(x, y){
+  const item = document.createElement('div');
+  item.className = 'draftItem';
+  item.style.left = x + 'px';
+  item.style.top  = y + 'px';
+
+  const ta = document.createElement('textarea');
+  ta.rows = 1;
+
+  const btn = document.createElement('button');
+  btn.className = 'publishBtn';
+  btn.textContent = 'PUBLISH';
+
+  item.appendChild(ta);
+  item.appendChild(btn);
+  draftLayer.appendChild(item);
+
+  function autosize(){ ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+
+  ta.addEventListener('input', ()=>{
+    autosize();
+    item.classList.remove('ready');
+  });
+  ta.addEventListener('keydown', ev=>{
+    if (ev.key === 'Enter' && !ev.shiftKey){
+      ev.preventDefault();
+      item.classList.add('ready');
+      btn.focus?.();
+    } else if (ev.key === 'Escape'){
+      item.remove();
+    }
+  });
+  btn.addEventListener('click', ()=>{
+    const text = ta.value.trim();
+    if (!text) return;
+    publishMyText(text);
+    addHistory(text, true);
+    sendMQTT(text);
+    item.remove();
+  });
+
+  // синхронный фокус
+  requestAnimationFrame(()=>{ ta.focus(); autosize(); });
+  return item;
+}
+
+draftLayer.addEventListener('mousedown', e=>{
+  if (e.target.closest('.draftItem')) return;
+  e.preventDefault(); // чтобы фокус не потерялся
+  const rect = draftLayer.getBoundingClientRect();
+  createDraftAt(e.clientX - rect.left, e.clientY - rect.top);
+});
+
+function addHistory(text, mine){
+  const el = document.createElement('div');
+  el.className = 'histItem' + (mine ? ' mine' : '');
+  el.textContent = text;
+  el.addEventListener('click', ()=>{
+    createDraftAt(20, 20).querySelector('textarea').value = text;
+  });
+  historyArea.appendChild(el);
+  historyArea.scrollTop = historyArea.scrollHeight;
+}
+
+/* первый draft после полной загрузки */
+addEventListener('load', ()=>{
+  setTimeout(()=>{
+    const ta = createDraftAt(20, 20).querySelector('textarea');
+    ta.focus();
+  }, 30);
+});
+
+/* ---------- SWAP ---------- */
+const swapBtn = document.getElementById('swapBtn');
+swapBtn.addEventListener('click', ()=>{
+  const l = document.getElementById('leftField');
+  const r = document.getElementById('rightField');
+  // меняем местами через left/right
+  const lIsLeft = l.style.left === '0px' || l.style.left === '';
+  if (lIsLeft){
+    l.style.left=''; l.style.right='0';
+    r.style.right=''; r.style.left='0';
+  } else {
+    l.style.right=''; l.style.left='0';
+    r.style.left=''; r.style.right='0';
+  }
+});
+
+/* ---------- MQTT ---------- */
+const statusEl = document.getElementById('status');
+let mqttClient = null;
+function setStatus(s){ statusEl.textContent = s; }
+
+function loadMqttLib(cb){
+  if (window.mqtt){ cb(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js';
+  s.onload = ()=> cb();
+  s.onerror = ()=> { setStatus('mqtt lib failed — offline'); };
+  document.head.appendChild(s);
+}
+
+function connectMQTT(){
+  if (!window.mqtt){ setStatus('offline mode'); return; }
+  try {
+    mqttClient = window.mqtt.connect(MQTT_URL, {
+      clientId: 'wow-' + MY_ID,
+      clean: true, reconnectPeriod: 3000, connectTimeout: 8000,
+    });
+  } catch(err){ setStatus('mqtt error: ' + err.message); return; }
+
+  mqttClient.on('connect', ()=>{
+    setStatus('mqtt connected as ' + MY_ID);
+    mqttClient.subscribe(`war-of-the-words/${ROOM}/#`, {qos:0});
+  });
+  mqttClient.on('reconnect', ()=> setStatus('mqtt reconnecting…'));
+  mqttClient.on('error', (e)=> setStatus('mqtt error: ' + (e?.message || e)));
+  mqttClient.on('offline', ()=> setStatus('mqtt offline'));
+
+  mqttClient.on('message', (topic, payload)=>{
+    try {
+      const msg = JSON.parse(payload.toString());
+      if (!msg || !msg.text || msg.authorId === MY_ID) return;
+      addForeignPublication(msg.authorId, msg.text);
+      addHistory(msg.text, false);
+    } catch(_){}
+  });
+}
+
+function sendMQTT(text){
+  if (!mqttClient || !mqttClient.connected) return;
+  mqttClient.publish(
+    `war-of-the-words/${ROOM}/${MY_ID}`,
+    JSON.stringify({ authorId: MY_ID, text, timestamp: Date.now() }),
+    {qos:0}
+  );
+}
+
+loadMqttLib(connectMQTT);
+
+/* если через 6 секунд ещё connecting — пометим */
+setTimeout(()=>{
+  if (!mqttClient || !mqttClient.connected) setStatus('mqtt: offline/проверь сеть');
+}, 6000);
+
+</script>
+</body>
+</html>
