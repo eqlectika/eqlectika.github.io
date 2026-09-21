@@ -342,21 +342,24 @@ function pickLink(callback, anchorEl) {
     quickLinks.forEach(link => {
         const btn = document.createElement('button');
         btn.textContent = link.title;
-        btn.addEventListener('click', e => {
-            e.stopPropagation();
-            closeLinkPicker();
-            linkPickerCallback && linkPickerCallback(link.url);
-        });
+    btn.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    const cb = linkPickerCallback;
+    closeLinkPicker();
+    cb && cb(link.url);
+});
         linkPicker.appendChild(btn);
     });
 
     const cancel = document.createElement('button');
     cancel.className = 'link-picker-cancel';
     cancel.textContent = '✕ Cancel';
-    cancel.addEventListener('click', e => {
-        e.stopPropagation();
-        closeLinkPicker();
-    });
+cancel.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    closeLinkPicker();
+});
     linkPicker.appendChild(cancel);
 
     // позиционируем рядом с переданным элементом
@@ -597,29 +600,25 @@ function isMobileDevice() {
                 menu.appendChild(row2);
                 resizer.appendChild(menu);
 
-                addLeft.addEventListener('pointerdown', e => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    addPanelLeft(resizer);
-                });
+addLeft.addEventListener('click', e => {
+    e.stopPropagation();
+    addPanelLeft(resizer);
+});
 
-                addRight.addEventListener('pointerdown', e => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    addPanelRight(resizer);
-                });
+addRight.addEventListener('click', e => {
+    e.stopPropagation();
+    addPanelRight(resizer);
+});
 
-                removeLeft.addEventListener('pointerdown', e => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    removePanelLeft(resizer);
-                });
+removeLeft.addEventListener('click', e => {
+    e.stopPropagation();
+    removePanelLeft(resizer);
+});
 
-                removeRight.addEventListener('pointerdown', e => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    removePanelRight(resizer);
-                });
+removeRight.addEventListener('click', e => {
+    e.stopPropagation();
+    removePanelRight(resizer);
+});
 
                 return resizer;
             }
