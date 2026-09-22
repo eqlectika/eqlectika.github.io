@@ -23,9 +23,8 @@
         html, body {
             width: 100%;
             height: 100%;
-            background-color: #121212;
+            background-color: #000000;
             font-family: 'Roboto Condensed', sans-serif;
-            transition: background-color 0.5s ease;
         }
 
         .container {
@@ -34,6 +33,7 @@
             justify-content: space-between;
             height: 100vh;
             padding: 20px 2px 4px;
+            background-color: #000000;
         }
         
         html {
@@ -80,7 +80,8 @@
     padding: 2px 4px;
     line-height: 0.7;
     opacity: 0.95;
-    transition: color 0.5s ease;
+    transition: color 0.3s ease;
+    color: #FFFFFF;
 }
 
 #word-input {
@@ -96,6 +97,8 @@
     border: 1px solid #999;
     border-radius: 12px;
     -webkit-user-select: text;
+    background-color: #212121;
+    color: #FFFFFF;
 }
 
         .logo-link {
@@ -113,7 +116,7 @@
         }
 
         #word-input::placeholder {
-            color: var(--placeholder-color, #fff);
+            color: #999;
             opacity: 1;
         }
         
@@ -168,10 +171,10 @@
         <div class="note-toggle" id="note-toggle"><strong>Help</strong></div>
         <div class="note-text">
             <p style="font-size:20px;font-weight:bold;">War Of The Words</h3>
-<p>A short tap on a word on screen opens ChatGPT request to clarify the word definition.</p>
-<p>Operating system or AI may retain a previous word for reasons beyond this app’s control.</p>
+<p>First tap highlights the word green. Second tap highlights it orange. Third tap opens request for definition via ChatGPT.</p>
+<p>Long tap removes word and highlight.</p>
+<p>External operating system or may retain a previous word for reasons beyond this app's control.</p>
 <p>Currently selected word will be copied to the clipboard anytime, so you can paste it instead if an older word appears in the request.</p>
-<p>Long tap to delete.</p>
         <a href="research.html" class="logo-link">
         <img src="fleurdelis.png">
     </a>
@@ -183,7 +186,6 @@
     <script>
         const inputField = document.getElementById('word-input');
         const displayContainer = document.getElementById('words-wrapper');
-        const mainContainer = document.getElementById('main-container');
 const note = document.getElementById('note');
 const noteToggle = document.getElementById('note-toggle');
 
@@ -199,44 +201,34 @@ note.querySelector('.note-text').addEventListener('click', (event) => {
     event.stopPropagation();
     note.classList.remove('open');
 });
+
+        // Each entry: { word: string, highlight: 0|1|2 }
         let wordsList = [];
 
-        // Загружаем сохраненные слова из Local Storage при запуске
+        // Load saved words from Local Storage
         const savedWords = localStorage.getItem('mosaic_words');
         if (savedWords) {
             try {
-                wordsList = JSON.parse(savedWords);
+                const parsed = JSON.parse(savedWords);
+                // Migrate old format (array of strings) to new format (array of objects)
+                wordsList = parsed.map(item =>
+                    typeof item === 'string'
+                        ? { word: item, highlight: 0 }
+                        : item
+                );
             } catch (e) {
                 wordsList = [];
             }
         }
 
-const themes = [
-    { bg: '#121212', inputBg: '#212121', inputColor: '#FFFFFF', inputBorder: '#999' },
-    { bg: '#000033', inputBg: '#0D47A1', inputColor: '#FFFFFF', inputBorder: '#999' },
-    { bg: '#1a3300', inputBg: '#1B5E20', inputColor: '#FFFFFF', inputBorder: '#999' },
-    { bg: '#2b1a33', inputBg: '#4A148C', inputColor: '#FFFFFF', inputBorder: '#999' }
-];
+        function saveWords() {
+            localStorage.setItem('mosaic_words', JSON.stringify(wordsList));
+        }
 
-        let currentThemeIndex = 0;
-
-function applyTheme(theme) {
-    document.body.style.backgroundColor = theme.bg; // Добавьте эту строку
-    mainContainer.style.backgroundColor = theme.bg;
-    inputField.style.backgroundColor = theme.inputBg;
-    inputField.style.color = theme.inputColor;
-    inputField.style.setProperty('--placeholder-color', theme.inputBorder);
-
-    const cells = document.querySelectorAll('.word-cell');
-    cells.forEach((cell, index) => {
-        cell.style.color = getPastelTextColor(index);
-    });
-}
-
-
-        function getPastelTextColor(index) {
-            const hue = (index * 53 + currentThemeIndex * 70) % 360;
-            return `hsl(${hue}, 65%, 80%)`;
+        function getHighlightColor(level) {
+            if (level === 1) return '#4CAF50'; // green
+            if (level === 2) return '#FF9800'; // orange
+            return '#FFFFFF'; // default white
         }
 
         function updateLayout() {
@@ -246,11 +238,11 @@ function applyTheme(theme) {
 
             const fragment = document.createDocumentFragment();
 
-            const tempCells = wordsList.map((word, index) => {
+            const tempCells = wordsList.map((item, index) => {
                 const cell = document.createElement('div');
                 cell.className = 'word-cell';
-                cell.textContent = word;
-                cell.style.color = getPastelTextColor(index);
+                cell.textContent = item.word;
+                cell.style.color = getHighlightColor(item.highlight);
                 cell.style.fontSize = '40px';
 
 let pressTimer;
@@ -265,8 +257,15 @@ cell.addEventListener('pointerdown', (event) => {
     pressTimer = setTimeout(() => {
         longPressTriggered = true;
 
-        wordsList.splice(index, 1);
-        localStorage.setItem('mosaic_words', JSON.stringify(wordsList));
+        // Long tap logic:
+        // If highlighted -> remove highlight
+        // If not highlighted -> delete word
+        if (wordsList[index].highlight > 0) {
+            wordsList[index].highlight = 0;
+        } else {
+            wordsList.splice(index, 1);
+        }
+        saveWords();
         updateLayout();
     }, 600);
 });
@@ -278,14 +277,27 @@ cell.addEventListener('pointerup', (event) => {
     clearTimeout(pressTimer);
 
 if (pressDuration < 600 && !longPressTriggered) {
-    const query = `What is the definition of the word "${word}" in the interface language?`;
+    const current = wordsList[index];
 
-    navigator.clipboard.writeText(word).catch(() => {});
-
-    window.open(
-        `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
-        '_blank'
-    );
+    if (current.highlight === 0) {
+        // First tap -> green
+        current.highlight = 1;
+        saveWords();
+        cell.style.color = getHighlightColor(1);
+    } else if (current.highlight === 1) {
+        // Second tap -> orange
+        current.highlight = 2;
+        saveWords();
+        cell.style.color = getHighlightColor(2);
+    } else {
+        // Third tap -> open ChatGPT
+        const query = `What is the definition of the word "${current.word}" in the interface language?`;
+        navigator.clipboard.writeText(current.word).catch(() => {});
+        window.open(
+            `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
+            '_blank'
+        );
+    }
 }
 });
 
@@ -327,27 +339,14 @@ requestAnimationFrame(() => {
 });
         }
 
-        document.body.addEventListener('click', (event) => {
-            if (
-                event.target === inputField ||
-                event.target.closest('#word-input') ||
-                event.target.closest('.logo-link') ||
-                event.target.closest('.word-cell')
-            ) return;
-
-            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
-            applyTheme(themes[currentThemeIndex]);
-            updateLayout();
-        });
-
         inputField.addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
                 const text = inputField.value.trim();
                 if (text) {
                     const newWords = text.split(/\s+/).filter(w => w.length > 0);
                     if (newWords.length > 0) {
-                        wordsList = wordsList.concat(newWords);
-                        localStorage.setItem('mosaic_words', JSON.stringify(wordsList));
+                        newWords.forEach(w => wordsList.push({ word: w, highlight: 0 }));
+                        saveWords();
                         inputField.value = '';
                         updateLayout();
                     }
@@ -355,7 +354,6 @@ requestAnimationFrame(() => {
             }
         });
 
-        applyTheme(themes[0]);
         updateLayout();
     </script>
 </body>
