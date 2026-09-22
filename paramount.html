@@ -1625,9 +1625,12 @@ if (packet.type === 'TRANSFER_IMPACT' && packet.target === myId) {
             }
         }
         
-        if (packet.type === 'ADD_ITEM') {
-            if (!items.some(i => i.id === packet.item.id)) {
-                items.push(packet.item);
+if (packet.type === 'ADD_ITEM') {
+    if (!items.some(i => i.id === packet.item.id)) {
+
+        delete packet.item.pending_tape;
+        items.push(packet.item);
+
                 saveLocal();
                 log(`[Resonance] Meme captured from ${packet.sender}: "${packet.item.title}"`);
                 updateRankingList();
@@ -1818,6 +1821,12 @@ async function addItem() {
     const url = $('#new-url').val().trim();
     const file = $('#new-img-file')[0].files[0];
 
+    const onlineCount = Object.keys(activePeers).filter(peerId => {
+        const ts = activePeers[peerId];
+        return peerId !== myId && (Date.now() - ts) <= 12000;
+    }).length;
+
+    // ===== РЕЖИМ РЕДАКТИРОВАНИЯ =====
     if (editingId !== null) {
         const item = items.find(i => i.id === editingId);
 
@@ -1826,37 +1835,45 @@ async function addItem() {
             cancelEdit();
             return;
         }
-
         if (item.sender !== myId) {
             alert('❌ You are not the author of this meme! Only the author can edit it.');
             cancelEdit();
             return;
         }
-    }
+        if (!title) return alert('Enter title!');
 
-    if (!title) return alert('Enter title!');
+        item.title = title;
+        item.description = desc;
+        item.externalUrl = url;
 
-    let imgData = "";
+        const recipientsRawEdit = $('#new-recipients').val().trim();
+        item.recipients = recipientsRawEdit
+            ? recipientsRawEdit.split(',').map(s => s.trim()).filter(Boolean)
+            : [];
 
-        if (editingId !== null) {
-        const item = items.find(i => i.id === editingId);
+        if (file) {
+            item.img = await compressImage(file);
+        }
 
-        if (item) {
-            item.title = title;
-            item.description = desc;
-            item.externalUrl = url;
+        saveLocal();
 
-            const recipientsRawEdit = $('#new-recipients').val().trim();
-            item.recipients = recipientsRawEdit
-                ? recipientsRawEdit.split(',').map(s => s.trim()).filter(Boolean)
-                : [];
+        // === TAPE / LIVE ===
+        if (item.pending_tape) {
+            if (onlineCount > 0) {
+                delete item.pending_tape;
+                saveLocal();
 
-            if (file) {
-                item.img = await compressImage(file);
+                client.publish(TOPIC, JSON.stringify({
+                    type: 'ADD_ITEM',
+                    sender: myId,
+                    item: item
+                }), { qos: 1 });
+
+                log(`[Live] Tape meme published: "${title}"`);
+            } else {
+                log(`[Tape] Meme updated locally: "${title}"`);
             }
-
-            saveLocal();
-
+        } else {
             client.publish(TOPIC, JSON.stringify({
                 type: 'UPDATE_ITEM',
                 sender: myId,
@@ -1867,12 +1884,14 @@ async function addItem() {
         }
 
         editingId = null;
-        $('.inject-btn-bg').text('Inject Meme to Network');
+        updateMainActionButton();
 
         const cancelBtn = document.getElementById('cancel-edit-btn');
         if (cancelBtn) cancelBtn.style.display = 'none';
 
     } else {
+        // ===== СОЗДАНИЕ НОВОГО МЕМА =====
+        if (!title) return alert('Enter title!');
 
         if (playerState.postsLeft <= 0) {
             alert('Publication limit reached! Exchange impacts for higher publication slots.');
@@ -1894,42 +1913,52 @@ async function addItem() {
             }), { qos: 0 });
         }
 
+        let imgData = "";
         if (file) {
             imgData = await compressImage(file);
         }
 
-// Читаем ID получателей из нового поля ввода (через запятую)
-const recipientsRaw = $('#new-recipients').val().trim();
-const recipients = recipientsRaw
-    ? recipientsRaw.split(',').map(s => s.trim()).filter(Boolean)
-    : []; // пусто = публичный мем
+        const recipientsRaw = $('#new-recipients').val().trim();
+        const recipients = recipientsRaw
+            ? recipientsRaw.split(',').map(s => s.trim()).filter(Boolean)
+            : [];
 
-const newItem = {
-    id: 'meme-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
-    sender: myId,
-    title,
-    description: desc,
-    externalUrl: url,
-    img: imgData,
-    rating: 1500,
-    deliveredPeers: [],
-    recipients: recipients   // <-- НОВОЕ
-};
-
-        items.push(newItem);
-        saveLocal();
-
-        client.publish(TOPIC, JSON.stringify({
-            type: 'ADD_ITEM',
+        const newItem = {
+            id: 'meme-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
             sender: myId,
-            item: newItem
-        }), { qos: 1 });
+            title,
+            description: desc,
+            externalUrl: url,
+            img: imgData,
+            rating: 1500,
+            deliveredPeers: [],
+            recipients: recipients
+        };
 
-        log(`You injected meme: "${title}"`);
+        // === TAPE / LIVE ===
+        if (onlineCount > 0) {
+            items.push(newItem);
+            saveLocal();
+
+            client.publish(TOPIC, JSON.stringify({
+                type: 'ADD_ITEM',
+                sender: myId,
+                item: newItem
+            }), { qos: 1 });
+
+            log(`You injected meme: "${title}"`);
+        } else {
+            newItem.pending_tape = true;
+            items.push(newItem);
+            saveLocal();
+
+            log(`[Tape] Meme saved locally (offline): "${title}"`);
+        }
     }
 
     $('#new-title, #new-desc, #new-url, #new-img-file').val('');
     $('#file-label-text').text("Select Meme Image");
+    $('#new-recipients').val('');
 
     updateRankingList();
     if (items.length >= 2 && currentPair.length === 0) nextPair();
@@ -1951,7 +1980,7 @@ function editItem(id) {
     $('#file-label-text').text("Keep current image or choose new");
 
     editingId = id;
-    $('.inject-btn-bg').text('Save Changes');
+updateMainActionButton();
 
     const cancelBtn = document.getElementById('cancel-edit-btn');
     if (cancelBtn) cancelBtn.style.display = 'block';
@@ -1968,7 +1997,7 @@ function cancelEdit() {
 
     editingId = null;
 
-    $('.inject-btn-bg').text('Inject Meme to Network');
+    updateMainActionButton();
 
     const cancelBtn = document.getElementById('cancel-edit-btn');
     if (cancelBtn) cancelBtn.style.display = 'none';
@@ -2084,7 +2113,9 @@ function updateRankingList() {
             item.sender === 'System-Genesis'
                 ? '#ff00cc99'
                 : '#999';
-
+const tapeTag = item.pending_tape
+            ? `<span style="color:#ff8b00; font-size:11px;"> ● TAPE</span>`
+            : '';
         html += `
             <div
                 class="ranking-item"
@@ -2095,8 +2126,8 @@ function updateRankingList() {
 
                 <div class="ranking-info">
 
-                    <div class="title">
-                        ${index + 1}. ${item.title || ''}
+                   <div class="title">
+                        ${index + 1}. ${item.title || ''}${tapeTag}
                     </div>
 
                     <div
@@ -2114,7 +2145,7 @@ function updateRankingList() {
 
             </div>
 
-            <div
+<div
                 id="details-${item.id}"
                 class="item-details"
             >
@@ -2375,6 +2406,32 @@ setActivityRange(activityRange);
 
 let activePeers = {};
 
+function updateMainActionButton() {
+    const btn = document.querySelector('.inject-btn-bg');
+    if (!btn) return;
+
+    const onlineCount = Object.keys(activePeers).filter(peerId => {
+        const ts = activePeers[peerId];
+        return peerId !== myId && (Date.now() - ts) <= 12000;
+    }).length;
+
+    if (editingId !== null) {
+        const item = items.find(i => i.id === editingId);
+        if (item && item.pending_tape) {
+            btn.textContent = onlineCount > 0
+                ? 'Inject Meme to Network'
+                : 'Save Meme';
+        } else {
+            btn.textContent = 'Save Changes';
+        }
+        return;
+    }
+
+    btn.textContent = onlineCount > 0
+        ? 'Inject Meme to Network'
+        : 'Save Meme';
+}
+
 function updateOnlinePeersCount() {
     const now = Date.now();
     for (let peerId in activePeers) {
@@ -2418,6 +2475,7 @@ function updateOnlinePeersCount() {
             tapeH3.style.display = 'inline';
         }
     }
+    updateMainActionButton();
 }
 
 function onBrokerSelectChange(selectEl) {
