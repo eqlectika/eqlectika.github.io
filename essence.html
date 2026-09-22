@@ -377,7 +377,7 @@ input[type=number] {
         <span id="tapeIndicatorBcast" style="display:none;">● Tape — no peer(s)</span>
     </div>
 
-    <button class="admin-btn inject-btn-bg" style="border: 0px solid #afff00;" onclick="addItem()">Forward Meme to Network</button>
+    <button id="main-action-btn" class="admin-btn inject-btn-bg" style="border: 0px solid #afff00;" onclick="addItem()">Forward Meme to Network</button>
 </div>
 
 <div class="exchange-panel" style="border-color: #afff00; background: #000; margin-top: 20px;">
@@ -526,6 +526,9 @@ const DataManager = (() => {
 
     return { get, set, remove, clearAll, key, PERSISTENT_KEYS };
 })();
+
+
+let activePeers = {};  
 </script>
     
 <script>
@@ -1292,15 +1295,43 @@ async function addItem() {
     const desc = $('#new-desc').val().trim();
     const url = $('#new-url').val().trim();
 
-    let imgData = "";
+    const onlineCount = Object.keys(activePeers).filter(peerId => {
+        const ts = activePeers[peerId];
+        return peerId !== myId && (Date.now() - ts) <= 12000;
+    }).length;
+
+    // ===== РЕЖИМ РЕДАКТИРОВАНИЯ =====
     if (editingId !== null) {
         const item = items.find(i => i.id === editingId);
-        if (item) {
-            item.title = title;
-            item.description = desc;
-            item.externalUrl = url;
-            saveLocal();
+        if (!item) { cancelEdit(editingId); return; }
 
+        item.title = title;
+        item.description = desc;
+        item.externalUrl = url;
+        item.img = '';
+
+        // recipients из textarea в панели редактирования (если editItem их проставил)
+        // В этом коде recipients редактируются через editItem() inline — оставляем как есть.
+        saveLocal();
+
+        if (item.pending_tape) {
+            // Это tape-мем, ещё никому не отправленный
+            if (onlineCount > 0) {
+                delete item.pending_tape;
+                saveLocal();
+
+                client.publish(TOPIC, JSON.stringify({
+                    type: 'ADD_ITEM',
+                    sender: myId,
+                    item: item
+                }), { qos: 1 });
+
+                log(`[Live] Tape meme published: "${title}"`);
+            } else {
+                log(`[Tape] Meme updated locally: "${title}"`);
+            }
+        } else {
+            // Обычное редактирование опубликованного мема
             client.publish(TOPIC, JSON.stringify({
                 type: 'UPDATE_ITEM',
                 sender: myId,
@@ -1309,45 +1340,54 @@ async function addItem() {
 
             log(`You updated and re-published meme: "${title}"`);
         }
+
         editingId = null;
-        $('.inject-btn-bg').text('Forward Meme to Network');
-    } else {
-        if (playerState.postsLeft <= 0) {
-            alert('Publication limit reached! Exchange impacts for higher publication slots.');
-            return;
-        }
-        playerState.postsLeft--;
-        playerState.level = Math.floor(playerState.impacts / 20) + 1;
-        updatePlayerStatsUI();
+        updateMainActionButton();
+        $('#new-desc, #new-url, #new-recipients').val('');
+        updateRankingList();
+        return;
+    }
 
-        recordActivity('posts');
+    // ===== СОЗДАНИЕ НОВОГО МЕМА =====
+    if (playerState.postsLeft <= 0) {
+        alert('Publication limit reached! Exchange impacts for higher publication slots.');
+        return;
+    }
 
-if (client && client.connected) {
-    client.publish(TOPIC, JSON.stringify({
-        type: 'ACTIVITY',
-        activityType: 'posts',
+    playerState.postsLeft--;
+    playerState.level = Math.floor(playerState.impacts / 20) + 1;
+    updatePlayerStatsUI();
+
+    recordActivity('posts');
+
+    if (client && client.connected) {
+        client.publish(TOPIC, JSON.stringify({
+            type: 'ACTIVITY',
+            activityType: 'posts',
+            sender: myId,
+            ts: Date.now()
+        }), { qos: 0 });
+    }
+
+    const recipientsRaw = $('#new-recipients').val().trim();
+    const recipients = recipientsRaw
+        ? recipientsRaw.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+
+    const newItem = {
+        id: 'meme-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
         sender: myId,
-        ts: Date.now()
-    }), { qos: 0 });
-}
+        title,
+        description: desc,
+        externalUrl: url,
+        img: '',
+        rating: 1500,
+        deliveredPeers: [],
+        recipients: recipients
+    };
 
-        const recipientsRaw = $('#new-recipients').val().trim();
-        const recipients = recipientsRaw
-            ? recipientsRaw.split(',').map(s => s.trim()).filter(Boolean)
-            : [];
-
-        const newItem = { 
-            id: 'meme-' + Date.now() + '-' + Math.floor(Math.random()*1000), 
-            sender: myId, 
-            title, 
-            description: desc, 
-            externalUrl: url, 
-            img: '', 
-            rating: 1500,
-            deliveredPeers: [],
-            recipients: recipients
-        };
-
+    if (onlineCount > 0) {
+        // LIVE — публикуем
         items.push(newItem);
         saveLocal();
 
@@ -1357,11 +1397,17 @@ if (client && client.connected) {
             item: newItem
         }), { qos: 1 });
 
-        log(`You injected meme: "${title}"`);
+        log(`You forwarded meme to network: "${title}"`);
+    } else {
+        // TAPE — только локально
+        newItem.pending_tape = true;
+        items.push(newItem);
+        saveLocal();
+
+        log(`[Tape] Meme saved locally (offline): "${title}"`);
     }
-    
+
     $('#new-desc, #new-url, #new-recipients').val('');
-    
     updateRankingList();
     if (items.length >= 2 && currentPair.length === 0) nextPair();
 }
@@ -1383,6 +1429,7 @@ function editItem(id) {
     const details = document.getElementById(`details-${id}`);
     if (!details) return;
     editingId = id;
+    updateMainActionButton();
         details.innerHTML = `<span class="peers">${item.deliveredPeers ? item.deliveredPeers.length : 0} peers</span>
     <div style="position:absolute;top:13px;left:10px;color:#afff00">${Math.round(item.rating)}</div>
     <textarea id="edit-desc-${id}" class="admin-input" style="color: #ff8b00; height:auto; padding: 15px 0;">${item.description || ''}</textarea>
@@ -1399,6 +1446,7 @@ function editItem(id) {
 
 function cancelEdit(id) {
     editingId = null;
+    updateMainActionButton();
     updateRankingList();
 
     const details = document.getElementById(`details-${id}`);
@@ -1424,7 +1472,36 @@ function saveEdit(id) {
     }
 
     saveLocal();
-    client.publish(TOPIC, JSON.stringify({type:'UPDATE_ITEM',sender:myId,item}), {qos:1});
+
+    if (item.pending_tape) {
+        // tape-мем — решаем по наличию пиров
+        const onlineCount = Object.keys(activePeers).filter(peerId => {
+            const ts = activePeers[peerId];
+            return peerId !== myId && (Date.now() - ts) <= 12000;
+        }).length;
+
+        if (onlineCount > 0) {
+            delete item.pending_tape;
+            saveLocal();
+            client.publish(TOPIC, JSON.stringify({
+                type: 'ADD_ITEM',
+                sender: myId,
+                item: item
+            }), { qos: 1 });
+            log(`[Live] Tape meme published from editor: "${item.title}"`);
+        } else {
+            log(`[Tape] Meme saved locally from editor: "${item.title}"`);
+        }
+    } else {
+        client.publish(TOPIC, JSON.stringify({
+            type: 'UPDATE_ITEM',
+            sender: myId,
+            item
+        }), { qos: 1 });
+    }
+
+    editingId = null;
+    updateMainActionButton();
     updateRankingList();
 }
 
@@ -1479,7 +1556,10 @@ function updateRankingList() {
         const privTag = isPrivate
             ? `<span style="color:#ff2440; font-size:11px;"> 🔒 ${item.recipients.length}</span>`
             : '';
-        const text = `<span style="color: #fff;">${rating}</span>${privTag} <span style="color: #afff00;">${description}</span>`;
+const tapeTag = item.pending_tape
+            ? `<span style="color:#ff8b00; font-size:11px;"> ● TAPE</span>`
+            : '';
+        const text = `<span style="color: #fff;">${rating}</span>${privTag}${tapeTag} <span style="color: #afff00;">${description}</span>`;
         html += `<div id="card-${item.id}" class="ranking-item">
             <div class="ranking-img text-preview" style="position:relative;padding:20px 10px;display:flex;align-items:center;background:#111;color:#afff00;font-family:monospace;font-size:14px;line-height:1.5;word-wrap:break-word;overflow:hidden;cursor:pointer;" onclick="toggleDetails('${item.id}')">${text}</div>
         </div>
@@ -1641,6 +1721,7 @@ function transferImpact() {
 }
 
 updateRankingList();
+updateMainActionButton();   // ← новая строка
 if (items.length >= 2) nextPair();
 
 (function bootstrapDeliveriesHistory() {
@@ -1678,8 +1759,6 @@ setActivityRange(activityRange);
     const el = document.getElementById('my-id-input');
     if (el) el.value = myId;
 })();
-
-let activePeers = {};
 
 function updateOnlinePeersCount() {
     const now = Date.now();
@@ -1724,6 +1803,33 @@ function updateOnlinePeersCount() {
             tapeH3.style.display = 'inline';
         }
     }
+    updateMainActionButton();
+}
+
+function updateMainActionButton() {
+    const btn = document.getElementById('main-action-btn');
+    if (!btn) return;
+
+    const onlineCount = Object.keys(activePeers).filter(peerId => {
+        const ts = activePeers[peerId];
+        return peerId !== myId && (Date.now() - ts) <= 12000;
+    }).length;
+
+    if (editingId !== null) {
+        const item = items.find(i => i.id === editingId);
+        if (item && item.pending_tape) {
+            btn.textContent = onlineCount > 0
+                ? 'Forward Meme to Network'
+                : 'Save Meme';
+        } else {
+            btn.textContent = 'Save Changes';
+        }
+        return;
+    }
+
+    btn.textContent = onlineCount > 0
+        ? 'Forward Meme to Network'
+        : 'Save Meme';
 }
 
 function log(txt) {
