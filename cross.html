@@ -242,7 +242,23 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   user-select: text;
 }
 
-
+.font-picker {
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 4px;
+}
+.font-option {
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+}
+.font-option:hover { background: #444; }
+.font-option.selected { background: #00f; color: #fff; }
 </style>
 </head>
 <body>
@@ -374,19 +390,19 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   <div style="background:#222; color:#fff; padding:16px; border-radius:16px; width:96%; max-width:470px; font-family:sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
     <h3 style="margin-top:0; margin-bottom:20px; font-size:20px; text-align:center; font-weight:bold;">Field Settings</h3>
     
-    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font:</label>
-    <select id="setting-font" style="margin-bottom:16px;">
-<option value="'Luckiest Guy', Arial, sans-serif">Luckiest Guy</option>
-<option value="'Roboto Condensed', Arial, sans-serif">Roboto Condensed</option>
-<option value="'Lato', Arial, sans-serif">Lato</option>
-<option value="'Playfair Display', serif">Playfair Display</option>
-<option value="'Unbounded', Arial, sans-serif">Unbounded</option>
-<option value='Copperplate, "Copperplate Gothic Bold", sans-serif'>Copperplate</option>
-<option value="'Courier Prime', 'American Typewriter', 'Courier New', monospace">Typewriter</option>
-<option value="'Ubuntu', Arial, sans-serif">Ubuntu</option>
-<option value="'Bytesized', 'Ubuntu', system-ui, -apple-system, sans-serif">Bytesized</option>
-<option value="'Roboto Mono', monospace">Monospace</option>
-    </select>
+<label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font:</label>
+<div id="setting-font" class="font-picker" style="margin-bottom:16px;">
+  <div class="font-option" data-value="'Luckiest Guy', Arial, sans-serif" style="font-family:'Luckiest Guy', Arial, sans-serif;">Luckiest Guy</div>
+  <div class="font-option" data-value="'Roboto Condensed', Arial, sans-serif" style="font-family:'Roboto Condensed', Arial, sans-serif;">Roboto Condensed</div>
+  <div class="font-option" data-value="'Lato', Arial, sans-serif" style="font-family:'Lato', Arial, sans-serif;">Lato</div>
+  <div class="font-option" data-value="'Playfair Display', serif" style="font-family:'Playfair Display', serif;">Playfair Display</div>
+  <div class="font-option" data-value="'Unbounded', Arial, sans-serif" style="font-family:'Unbounded', Arial, sans-serif;">Unbounded</div>
+  <div class="font-option" data-value="Copperplate, 'Copperplate Gothic Bold', sans-serif" style="font-family:Copperplate, 'Copperplate Gothic Bold', sans-serif;">Copperplate</div>
+  <div class="font-option" data-value="'Courier Prime', 'American Typewriter', 'Courier New', monospace" style="font-family:'Courier Prime', 'American Typewriter', 'Courier New', monospace;">Typewriter</div>
+  <div class="font-option" data-value="'Ubuntu', Arial, sans-serif" style="font-family:'Ubuntu', Arial, sans-serif;">Ubuntu</div>
+  <div class="font-option" data-value="'Bytesized', 'Ubuntu', system-ui, sans-serif" style="font-family:'Bytesized', 'Ubuntu', system-ui, sans-serif;">Bytesized</div>
+  <div class="font-option" data-value="'Roboto Mono', monospace" style="font-family:'Roboto Mono', monospace;">Monospace</div>
+</div>
 
     <div id="align-toolbar">
       <button type="button" style="padding: 6px 16px" class="format-btn" data-align="left">Left</button>
@@ -432,10 +448,10 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     </div>
 
     <div style="display:flex; gap:12px;">
-      <button type="button" id="setting-cancel" style="flex:1; padding:12px; border:none; border-radius:8px; background:#444; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Cancel</button>
-      <button type="button" id="setting-save" style="flex:1; padding:12px; border:none; border-radius:8px; background:#ff8700; color:#000; font-size:16px; font-weight:bold; cursor:pointer;">Save</button>
+      <button type="button" id="setting-cancel" style="flex:1; padding:12px; border:none; border-radius:8px; background:#ff000050; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Cancel</button>
+      <button type="button" id="setting-save" style="flex:1; padding:12px; border:none; border-radius:8px; background:#00ff0050; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Save</button>
     </div>
-    <div id="update-app" style="text-align:center; margin:50px 0; color:#afff00b3; font-size:16px; font-weight: bold; cursor:pointer;">
+    <div id="update-app" style="text-align:center; margin:50px 0; color:#ff8700; font-size:16px; font-weight: bold; cursor:pointer;">
        Update
     </div>
     <div style="margin: -10px 0 40px; text-align: center;">
@@ -505,13 +521,6 @@ let db;
 
 const designs = ['handle.png', 'handle-black.png', 'logo.png', 'fleurdelis.png', 'break.png', 'paw.png', 'handle-cross-transparent.png'];
 let currentDesign = parseInt(localStorage.getItem('q_handle_design') || '0');
-
-const fontsPool = [
-  '"Luckiest Guy", Arial, sans-serif',
-  'Copperplate, "Copperplate Gothic Bold", sans-serif',
-  "'Courier Prime', 'American Typewriter', monospace",
-  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-];
 
 const defBgs = ['#ff8700', '#005f00', '#870000', '#000080'];
 const defColors = ['#000000', '#E1BEE7', '#81C784', '#FFD54F'];
@@ -690,9 +699,13 @@ window.addEventListener('pointerup', (e) => {
 
     const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
 
+const fontValues = Array.from(
+  document.querySelectorAll('#setting-font .font-option')
+).map(o => o.dataset.value);
+
 textareas.forEach((ta, i) => {
   const wrap = ta.parentElement;
-  const randomFont = fontsPool[Math.floor(Math.random() * fontsPool.length)];
+  const randomFont = fontValues[Math.floor(Math.random() * fontValues.length)];
 
   wrap.style.setProperty('--fn', randomFont);
   wrap.style.setProperty('--bg', palette.bg[i]);
@@ -723,13 +736,20 @@ function handleImageFile(file, index, ta) {
 }
 
 const modal = document.getElementById('settings-modal');
-const selFont = document.getElementById('setting-font');
 const selSize = document.getElementById('setting-size');
 const selPos = document.getElementById('setting-pos');
 const chkDelImg = document.getElementById('setting-del-img');
 const imgActionContainer = document.getElementById('image-action-container');
 const btnSave = document.getElementById('setting-save');
 const btnCancel = document.getElementById('setting-cancel');
+
+document.querySelectorAll('#setting-font .font-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    document.querySelectorAll('#setting-font .font-option')
+      .forEach(o => o.classList.remove('selected'));
+    opt.classList.add('selected');
+  });
+});
 
 document.querySelectorAll('[data-align]').forEach(button => {
   button.addEventListener('click', () => {
@@ -802,8 +822,6 @@ const startLongPress = (e) => {
 
 textareaLongPressTimer = setTimeout(() => {
 
-  // Если за время ожидания пользователь начал выделение текста —
-  // это не long tap для настроек.
   const selection = window.getSelection();
 
   if (selection && !selection.isCollapsed) {
@@ -816,9 +834,23 @@ textareaLongPressTimer = setTimeout(() => {
     selection.removeAllRanges();
   }
 
-    selFont.value = localStorage.getItem(`q_f_${i}`) || selFont.options[0].value;
-    
-    selSize.value = localStorage.getItem(`q_s_${i}`) || '18px';
+const savedFont = localStorage.getItem(`q_f_${i}`) || '';
+const fontOpts = document.querySelectorAll('#setting-font .font-option');
+let fontMatched = false;
+fontOpts.forEach(o => {
+  const isMatch = o.dataset.value === savedFont;
+  o.classList.toggle('selected', isMatch);
+  if (isMatch) fontMatched = true;
+});
+if (!fontMatched && fontOpts[0]) {
+  fontOpts[0].classList.add('selected');
+}
+
+const savedSize = localStorage.getItem(`q_s_${i}`) || '';
+const sizeOptions = Array.from(selSize.options).map(o => o.value);
+selSize.selectedIndex = sizeOptions.indexOf(savedSize) >= 0
+  ? sizeOptions.indexOf(savedSize)
+  : 0;
 
 const currentBg =
   localStorage.getItem(`q_b_${i}`) ||
@@ -895,22 +927,30 @@ btnSave.onclick = () => {
   const targetTa = textareas[activeIndex];
   const wrap = targetTa.parentElement;
 
-  wrap.style.setProperty('--fn', selFont.value);
-  wrap.style.setProperty('--fs', selSize.value);
-  wrap.style.setProperty('--bg', inpBg.value);
-  wrap.style.setProperty('--color', inpColor.value);
+  // --- FONT ---
+  const fontOption = document.querySelector('#setting-font .font-option.selected');
+  const fontValue = fontOption
+    ? fontOption.dataset.value
+    : "'Luckiest Guy', Arial, sans-serif"; 
 
-  localStorage.setItem(`q_f_${activeIndex}`, selFont.value);
+  wrap.style.setProperty('--fn', fontValue);
+  localStorage.setItem(`q_f_${activeIndex}`, fontValue);
+
+  wrap.style.setProperty('--fs', selSize.value);
   localStorage.setItem(`q_s_${activeIndex}`, selSize.value);
+
+  wrap.style.setProperty('--bg', inpBg.value);
   localStorage.setItem(`q_b_${activeIndex}`, inpBg.value);
+
+  wrap.style.setProperty('--color', inpColor.value);
   localStorage.setItem(`q_c_${activeIndex}`, inpColor.value);
 
   localStorage.setItem(`q_pos_${activeIndex}`, selPos.value);
   const [v, h] = selPos.value.split(' ');
-  images[activeIndex].style.top = v === 'top' ? '10px' : 'auto';
+  images[activeIndex].style.top    = v === 'top'    ? '10px' : 'auto';
   images[activeIndex].style.bottom = v === 'bottom' ? '10px' : 'auto';
-  images[activeIndex].style.left = h === 'left' ? '10px' : 'auto';
-  images[activeIndex].style.right = h === 'right' ? '10px' : 'auto';
+  images[activeIndex].style.left   = h === 'left'   ? '10px' : 'auto';
+  images[activeIndex].style.right  = h === 'right'  ? '10px' : 'auto';
 
   if (chkDelImg.checked) {
     images[activeIndex].removeAttribute('src');
