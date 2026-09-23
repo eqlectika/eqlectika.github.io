@@ -306,7 +306,7 @@ window.addEventListener('pointerup', (e) => {
     const collidableObjects = [];
     const chunkRegistry = new Map(); 
     const CHUNK_SIZE = 200;          
-    const CHUNK_RENDER_DISTANCE = 3; 
+    const CHUNK_RENDER_DISTANCE = 2; 
 
 // ==========================================
 // ПРОЦЕДУРНАЯ АРХИТЕКТУРНАЯ ДЕКОРАЦИЯ
@@ -772,33 +772,6 @@ function generateChunk(chunkX, chunkZ) {
             10
         );
 
-        // subtle fluting
-        if (style !== 0) {
-            for (let k = 0; k < 8; k++) {
-
-                const a = k / 8 * Math.PI * 2;
-
-                const flute = new THREE.Mesh(
-                    new THREE.BoxGeometry(
-                        radius * 0.12,
-                        height * 0.78,
-                        radius * 0.12
-                    ),
-                    material
-                );
-
-                flute.position.set(
-                    x + Math.cos(a) * radius * 0.94,
-                    y + height * 0.51,
-                    z + Math.sin(a) * radius * 0.94
-                );
-
-                flute.rotation.y = -a;
-
-                parent.add(flute);
-            }
-        }
-
         // capital
         const capY = y + height - base * 0.45;
 
@@ -1109,7 +1082,7 @@ function generateChunk(chunkX, chunkZ) {
 
             const count = Math.max(
                 2,
-                Math.floor(sx / 4.5)
+                Math.floor(sx / 9)
             );
 
             for (let i = 0; i < count; i++) {
@@ -1157,7 +1130,7 @@ function generateChunk(chunkX, chunkZ) {
 
             const count = Math.max(
                 2,
-                Math.floor(sx / 4)
+                Math.floor(sx / 8)
             );
 
             for (let i = 0; i < count; i++) {
@@ -1601,17 +1574,6 @@ function generateChunk(chunkX, chunkZ) {
             greekColumn(
                 archGroup,
                 -span / 2,
-                0,
-                d / 2 + 0.8,
-                h * 0.96,
-                columnRadius,
-                deco,
-                0
-            );
-
-            greekColumn(
-                archGroup,
-                span / 2,
                 0,
                 d / 2 + 0.8,
                 h * 0.96,
