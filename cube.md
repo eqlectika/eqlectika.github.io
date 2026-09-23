@@ -27,4 +27,4 @@ Interaction and Interface
 * Mode Selector — A drop-down menu for switching interaction modes: Fix, Polar, Delete, View.
 * Cleanup Protocol — A mode for selectively removing objects (both cubic faces and physical bodies) from the scene.
 
-<a href="https://eqlectika.github.io/cube.html"><img src="logo.png" width="48" height="48" alt="logo"></a>
+<a href="#" onclick="history.back(); return false;" style="text-decoration: none;">Back</a>
