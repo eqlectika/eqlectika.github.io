@@ -243,16 +243,44 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .font-picker {
+  position: relative;
   background: #333;
   border: 1px solid #555;
   border-radius: 8px;
-  max-height: 180px;
-  overflow-y: auto;
-  padding: 4px;
+  padding: 0;
 }
+
+.font-picker-display {
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.font-picker-list {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 0 0 8px 8px;
+  max-height: 50vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  z-index: 1001;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+}
+
+.font-picker.open .font-picker-list {
+  display: block;
+}
+
 .font-option {
-  padding: 8px 10px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 0;
   color: #fff;
   cursor: pointer;
   font-size: 16px;
@@ -392,16 +420,19 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     
 <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font:</label>
 <div id="setting-font" class="font-picker" style="margin-bottom:16px;">
-  <div class="font-option" data-value="'Luckiest Guy', Arial, sans-serif" style="font-family:'Luckiest Guy', Arial, sans-serif;">Luckiest Guy</div>
-  <div class="font-option" data-value="'Roboto Condensed', Arial, sans-serif" style="font-family:'Roboto Condensed', Arial, sans-serif;">Roboto Condensed</div>
-  <div class="font-option" data-value="'Lato', Arial, sans-serif" style="font-family:'Lato', Arial, sans-serif;">Lato</div>
-  <div class="font-option" data-value="'Playfair Display', serif" style="font-family:'Playfair Display', serif;">Playfair Display</div>
-  <div class="font-option" data-value="'Unbounded', Arial, sans-serif" style="font-family:'Unbounded', Arial, sans-serif;">Unbounded</div>
-  <div class="font-option" data-value="Copperplate, 'Copperplate Gothic Bold', sans-serif" style="font-family:Copperplate, 'Copperplate Gothic Bold', sans-serif;">Copperplate</div>
-  <div class="font-option" data-value="'Courier Prime', 'American Typewriter', 'Courier New', monospace" style="font-family:'Courier Prime', 'American Typewriter', 'Courier New', monospace;">Typewriter</div>
-  <div class="font-option" data-value="'Ubuntu', Arial, sans-serif" style="font-family:'Ubuntu', Arial, sans-serif;">Ubuntu</div>
-  <div class="font-option" data-value="'Bytesized', 'Ubuntu', system-ui, sans-serif" style="font-family:'Bytesized', 'Ubuntu', system-ui, sans-serif;">Bytesized</div>
-  <div class="font-option" data-value="'Roboto Mono', monospace" style="font-family:'Roboto Mono', monospace;">Monospace</div>
+  <div class="font-picker-display" id="font-display">Luckiest Guy</div>
+  <div class="font-picker-list" id="font-list">
+    <div class="font-option" data-value="'Luckiest Guy', Arial, sans-serif" style="font-family:'Luckiest Guy', Arial, sans-serif;">Luckiest Guy</div>
+    <div class="font-option" data-value="'Roboto Condensed', Arial, sans-serif" style="font-family:'Roboto Condensed', Arial, sans-serif;">Roboto Condensed</div>
+    <div class="font-option" data-value="'Lato', Arial, sans-serif" style="font-family:'Lato', Arial, sans-serif;">Lato</div>
+    <div class="font-option" data-value="'Playfair Display', serif" style="font-family:'Playfair Display', serif;">Playfair Display</div>
+    <div class="font-option" data-value="'Unbounded', Arial, sans-serif" style="font-family:'Unbounded', Arial, sans-serif;">Unbounded</div>
+    <div class="font-option" data-value="Copperplate, 'Copperplate Gothic Bold', sans-serif" style="font-family:Copperplate, 'Copperplate Gothic Bold', sans-serif;">Copperplate</div>
+    <div class="font-option" data-value="'Courier Prime', 'American Typewriter', 'Courier New', monospace" style="font-family:'Courier Prime', 'American Typewriter', 'Courier New', monospace;">Typewriter</div>
+    <div class="font-option" data-value="'Ubuntu', Arial, sans-serif" style="font-family:'Ubuntu', Arial, sans-serif;">Ubuntu</div>
+    <div class="font-option" data-value="'Bytesized', 'Ubuntu', system-ui, sans-serif" style="font-family:'Bytesized', 'Ubuntu', system-ui, sans-serif;">Bytesized</div>
+    <div class="font-option" data-value="'Roboto Mono', monospace" style="font-family:'Roboto Mono', monospace;">Monospace</div>
+  </div>
 </div>
 
     <div id="align-toolbar">
@@ -743,12 +774,26 @@ const imgActionContainer = document.getElementById('image-action-container');
 const btnSave = document.getElementById('setting-save');
 const btnCancel = document.getElementById('setting-cancel');
 
-document.querySelectorAll('#setting-font .font-option').forEach(opt => {
-  opt.addEventListener('click', () => {
-    document.querySelectorAll('#setting-font .font-option')
-      .forEach(o => o.classList.remove('selected'));
-    opt.classList.add('selected');
-  });
+const fontPicker = document.getElementById('setting-font');
+const fontDisplay = document.getElementById('font-display');
+
+fontPicker.addEventListener('click', (e) => {
+  if (e.target === fontDisplay) {
+    fontPicker.classList.toggle('open');
+    return;
+  }
+
+  const opt = e.target.closest('.font-option');
+  if (!opt) return;
+
+  document.querySelectorAll('#setting-font .font-option')
+    .forEach(o => o.classList.remove('selected'));
+  opt.classList.add('selected');
+
+  fontDisplay.textContent = opt.textContent;
+  fontDisplay.style.fontFamily = opt.style.fontFamily;
+
+  fontPicker.classList.remove('open');
 });
 
 document.querySelectorAll('[data-align]').forEach(button => {
@@ -845,6 +890,12 @@ fontOpts.forEach(o => {
 if (!fontMatched && fontOpts[0]) {
   fontOpts[0].classList.add('selected');
 }
+const selOpt = document.querySelector('#setting-font .font-option.selected');
+const fd = document.getElementById('font-display');
+if (selOpt && fd) {
+  fd.textContent = selOpt.textContent;
+  fd.style.fontFamily = selOpt.style.fontFamily;
+}
 
 const savedSize = localStorage.getItem(`q_s_${i}`) || '';
 const sizeOptions = Array.from(selSize.options).map(o => o.value);
@@ -876,7 +927,7 @@ const currentColor =
     } else {
       imgActionContainer.style.display = 'none';
     }
-
+  
     modal.style.display = 'flex';
   }, 1200);
 };
