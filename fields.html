@@ -322,7 +322,6 @@ body {
         <button id="mobileRemoveBtn">−</button>
         <button id="mobileAddBtn">+</button>
     </div>
-<div class="link-picker" id="linkPicker"></div>
     <script>
 
         if ('serviceWorker' in navigator) {
@@ -344,95 +343,11 @@ body {
             'cross.html'
         ];
 
-        const quickLinks = [
-    { title: 'Paramount',  url: 'paramount.html' },
-    { title: 'Jetpack',    url: 'jetpack.html' },
-    { title: 'Capital',    url: 'capital.html' },
-    { title: 'Flash',      url: 'flash.html' },
-    { title: 'Cross',      url: 'cross.html' },
-    { title: 'Match',      url: 'index.html' },
-    { title: 'Bismuth',    url: 'bismuth.html' },
-    { title: 'Spark',      url: 'spark.html' },
-    { title: 'Planet',     url: 'life.html' },
-    { title: 'Moon',       url: 'moon.html' },
-    { title: 'Words',      url: 'words.html' },
-    { title: 'Matrix',     url: 'matrix.html' },
-    { title: 'Cube',       url: 'cube.html' },
-    { title: 'Book',       url: 'book.html' },
-    { title: 'Space',      url: 'research.html' },
-
-];
-
         const panelsContainer = document.getElementById('panels');
         const dotsContainer = document.getElementById('dots');
         const panelControllers = document.getElementById('panelControllers');
         const mobileAddBtn = document.getElementById('mobileAddBtn');
         const mobileRemoveBtn = document.getElementById('mobileRemoveBtn');
-
-const linkPicker = document.getElementById('linkPicker');
-let linkPickerCallback = null;
-
-function pickLink(callback, anchorEl) {
-    linkPickerCallback = callback;
-    linkPicker.innerHTML = '';
-
-    quickLinks.forEach(link => {
-        const btn = document.createElement('button');
-        btn.textContent = link.title;
-    btn.addEventListener('pointerdown', e => {
-    e.stopPropagation();
-    e.preventDefault();
-    const cb = linkPickerCallback;
-    closeLinkPicker();
-    cb && cb(link.url);
-});
-        linkPicker.appendChild(btn);
-    });
-
-    const cancel = document.createElement('button');
-    cancel.className = 'link-picker-cancel';
-    cancel.textContent = '✕ Cancel';
-cancel.addEventListener('pointerdown', e => {
-    e.stopPropagation();
-    e.preventDefault();
-    closeLinkPicker();
-});
-    linkPicker.appendChild(cancel);
-
-    // позиционируем рядом с переданным элементом
-    if (anchorEl) {
-        const r = anchorEl.getBoundingClientRect();
-        let left = r.right + 10;
-        let top  = r.top;
-        // не даём уехать за экран
-        if (left + 180 > window.innerWidth) left = r.left - 190;
-        if (left < 8) left = 8;
-        if (top + 300 > window.innerHeight) top = window.innerHeight - 320;
-        if (top < 8) top = 8;
-        linkPicker.style.left = left + 'px';
-        linkPicker.style.top  = top + 'px';
-    } else {
-        // по центру (для мобильной кнопки)
-        linkPicker.style.left = '50%';
-        linkPicker.style.top  = '50%';
-        linkPicker.style.transform = 'translate(-50%, -50%)';
-    }
-
-    linkPicker.classList.add('open');
-}
-
-function closeLinkPicker() {
-    linkPicker.classList.remove('open');
-    linkPicker.style.transform = '';
-    linkPickerCallback = null;
-}
-
-// закрытие по клику вне меню
-document.addEventListener('pointerdown', e => {
-    if (!e.target.closest('.link-picker') && !e.target.closest('.handle-menu')) {
-        closeLinkPicker();
-    }
-});
 
 function isMobileDevice() {
     const isTablet = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchstart' in document.documentElement;
@@ -697,40 +612,24 @@ removeRight.addEventListener('click', e => {
                 });
             }
 
-            function addPanelLeft(resizer) {
-    pickLink(url => {
-        if (!url) return;
-        updatePanelsList();
-        const allResizers = Array.from(document.querySelectorAll('.resizer'));
-        const index = allResizers.indexOf(resizer);
-        if (index === -1) return;
-
-        const newPanel = createPanel(url);
-        panelsContainer.insertBefore(newPanel, resizer);
-
-        updatePanelsList();
-        rebuildResizers();
-        initializePanelWidths();
-        savePanelsState();
-    }, resizer);
+function addPanelLeft(resizer) {
+    updatePanelsList();
+    const newPanel = createPanel('index.html');
+    panelsContainer.insertBefore(newPanel, resizer);
+    updatePanelsList();
+    rebuildResizers();
+    initializePanelWidths();
+    savePanelsState();
 }
 
-            function addPanelRight(resizer) {
-    pickLink(url => {
-        if (!url) return;
-        updatePanelsList();
-        const allResizers = Array.from(document.querySelectorAll('.resizer'));
-        const index = allResizers.indexOf(resizer);
-        if (index === -1) return;
-
-        const newPanel = createPanel(url);
-        panelsContainer.insertBefore(newPanel, resizer);
-
-        updatePanelsList();
-        rebuildResizers();
-        initializePanelWidths();
-        savePanelsState();
-    }, resizer);
+function addPanelRight(resizer) {
+    updatePanelsList();
+    const newPanel = createPanel('index.html');
+    panelsContainer.insertBefore(newPanel, resizer);
+    updatePanelsList();
+    rebuildResizers();
+    initializePanelWidths();
+    savePanelsState();
 }
 
             function removePanelLeft(resizer) {
@@ -955,15 +854,12 @@ removeRight.addEventListener('click', e => {
             }
 
 mobileAddBtn.addEventListener('click', () => {
-    pickLink(url => {
-        if (!url) return;
-        const newPanel = createPanel(url);
-        panelsContainer.appendChild(newPanel);
-        updatePanelsList();
-        rebuildDots();
-        savePanelsState();
-        newPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
-    }, mobileAddBtn);
+    const newPanel = createPanel('index.html');
+    panelsContainer.appendChild(newPanel);
+    updatePanelsList();
+    rebuildDots();
+    savePanelsState();
+    newPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
 });
 
             mobileRemoveBtn.addEventListener('click', () => {
