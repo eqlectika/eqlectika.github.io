@@ -232,6 +232,15 @@
       -webkit-appearance: none;
       margin: 0;
     }
+    .fade-selector input::-webkit-outer-spin-button,
+.fade-selector input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.fade-selector input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
     .times input {
       width: 84px;
       background: #222;
@@ -458,7 +467,20 @@
         </div>
       </div>
     </div>
-
+<div class="fade-selector" style="display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap; background:#0097ff50; padding:10px 16px; border-radius:8px; width:100%;">
+  <label style="display:flex; align-items:center; gap:6px; flex:1 1 160px; min-width:160px; justify-content:center;">
+    <span>Fade In:</span>
+    <input type="text" id="fadeIn" value="0" inputmode="decimal" style="width:70px; background:#111; border:1px solid #444; color:#eee; padding:6px; border-radius:6px; text-align:center;">
+    <span style="color:#888;">seconds</span>
+  </label>
+  <label style="display:flex; align-items:center; gap:6px; flex:1 1 160px; min-width:160px; justify-content:center;">
+    <span>Fade Out:</span>
+    <input type="text" id="fadeOut" value="0" inputmode="decimal" style="width:70px; background:#111; border:1px solid #444; color:#eee; padding:6px; border-radius:6px; text-align:center;">
+    <span style="color:#888;">seconds</span>
+  </label>
+</div>
+<button id="previewBtn" class="secondary-btn" style="background:#0984e3;">Pre Listen</button>
+<audio id="previewAudio" controls style="width:100%; display:none; margin-top:8px;"></audio>
     <div class="range-container">
       <div class="range-track-bg"></div>
       <div class="range-highlight" id="rangeHighlight"></div>
@@ -995,9 +1017,18 @@
       statusText.textContent = 'Reading file...';
 
       try {
-        const audioBuffer = await decodeAudioFromFile(currentFile);
-        progressFill.style.width = '70%';
-        statusText.textContent = `Converting to ${format.toUpperCase()}...`;
+let audioBuffer = await decodeAudioFromFile(currentFile);
+progressFill.style.width = '60%';
+
+const fadeInVal = parseFloat(document.getElementById('fadeIn').value) || 0;
+const fadeOutVal = parseFloat(document.getElementById('fadeOut').value) || 0;
+if (fadeInVal > 0 || fadeOutVal > 0) {
+  statusText.textContent = 'Applying fade...';
+  audioBuffer = applyFade(audioBuffer, fadeInVal, fadeOutVal);
+}
+
+progressFill.style.width = '70%';
+statusText.textContent = `Converting to ${format.toUpperCase()}...`;
 
         const resultBlob = format === 'mp3' 
           ? await convertBufferToMp3(audioBuffer, bitrate)
@@ -1108,6 +1139,71 @@
       a.click();
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
     }
+
+function applyFade(audioBuffer, fadeInSec, fadeOutSec) {
+  const sampleRate = audioBuffer.sampleRate;
+  const numChannels = audioBuffer.numberOfChannels;
+  const length = audioBuffer.length;
+
+  const newBuffer = new (window.AudioContext || window.webkitAudioContext)()
+    .createBuffer(numChannels, length, sampleRate);
+
+  const fadeInSamples = Math.min(Math.floor(fadeInSec * sampleRate), length);
+  const fadeOutSamples = Math.min(Math.floor(fadeOutSec * sampleRate), length);
+
+  for (let ch = 0; ch < numChannels; ch++) {
+    const src = audioBuffer.getChannelData(ch);
+    const dst = newBuffer.getChannelData(ch);
+    dst.set(src); 
+
+    for (let i = 0; i < fadeInSamples; i++) {
+      dst[i] *= i / fadeInSamples;
+    }
+
+    for (let i = 0; i < fadeOutSamples; i++) {
+      const idx = length - 1 - i;
+      dst[idx] *= i / fadeOutSamples;
+    }
+  }
+
+  return newBuffer;
+}
+
+const previewBtn = document.getElementById('previewBtn');
+const previewAudio = document.getElementById('previewAudio');
+
+previewBtn.onclick = async () => {
+  if (!currentFile) return;
+
+  previewBtn.disabled = true;
+  previewBtn.textContent = 'Processing...';
+
+  try {
+    let audioBuffer = await decodeAudioFromFile(currentFile);
+
+    const fadeInVal = parseFloat(document.getElementById('fadeIn').value) || 0;
+    const fadeOutVal = parseFloat(document.getElementById('fadeOut').value) || 0;
+
+    if (fadeInVal > 0 || fadeOutVal > 0) {
+      audioBuffer = applyFade(audioBuffer, fadeInVal, fadeOutVal);
+    }
+
+    // Кодируем в WAV для быстрого превью
+    const wavBlob = audioBufferToWav(audioBuffer);
+    const url = URL.createObjectURL(wavBlob);
+
+    previewAudio.src = url;
+    previewAudio.style.display = 'block';
+    previewAudio.play();
+
+    previewBtn.textContent = 'Pre Listen';
+    previewBtn.disabled = false;
+  } catch (err) {
+    alert('Ошибка превью: ' + err.message);
+    previewBtn.textContent = 'Pre Listen';
+    previewBtn.disabled = false;
+  }
+};
   </script>
 </body>
 </html>
