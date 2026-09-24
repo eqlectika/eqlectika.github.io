@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"> 
-<head> 
+<head>
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="/auction.png">
 <meta property="og:image" content="/Verge.jpeg">
@@ -1444,6 +1444,7 @@ function ensureGate(peerA, peerB, itemId) {
 
 function isPeerOnline(peerId) {
     if (!peerId) return false;
+    if (peerId === myId) return true; // ← продавец всегда онлайн для самого себя
     const ts = activePeers[peerId];
     if (!ts) return false;
     return (Date.now() - ts) <= 12000;
@@ -2092,6 +2093,7 @@ else if (packet.type === 'BID') {
     updateRankingList();
     log(`[Auction] Bid ${packet.amount} from ${packet.sender} on "${item.title}"`);
 }
+
 else if (packet.type === 'BID_ACCEPT') {
     const item = items.find(i => i.id === packet.itemId);
     if (!item || !item.auction) return;
@@ -2131,6 +2133,33 @@ else if (packet.type === 'BID_ACCEPT') {
     updateRankingList();
     log(`[Auction] Deal delivered: "${item.title}" to ${item.auction.winner} for ${item.auction.finalPrice}`);
 }
+else if (packet.type === 'BUY_NOW_ACK') {
+    if (packet.target !== myId) return;
+    if (packet.sender === myId) return;
+
+    const item = items.find(i => i.id === packet.itemId);
+    if (!item || !item.auction) return;
+
+    // Идемпотентно: если уже delivered — просто убеждаемся, что Gate есть
+    if (item.auction.status !== 'delivered') {
+        item.auction.status = 'delivered';
+        item.auction.winner = myId;
+        item.auction.finalPrice = Number(packet.finalPrice)
+            || Number(item.auction.buyNow)
+            || Number(item.auction.currentBid)
+            || 0;
+        (item.auction.bids || []).forEach(b => {
+            if (b.bidder !== myId && (b.status === 'pending' || b.status === 'pending_saved')) {
+                b.status = 'rejected';
+            }
+        });
+        saveLocal();
+    }
+
+    ensureGate(myId, packet.sender, item.id);
+    updateRankingList();
+    log(`[Auction] Buy Now confirmed by seller: "${item.title}"`);
+}
 else if (packet.type === 'BID_REJECT') {
     const item = items.find(i => i.id === packet.itemId);
     if (!item || !item.auction) return;
@@ -2149,20 +2178,36 @@ else if (packet.type === 'BUY_NOW') {
     if (!item || !item.auction) return;
     if (packet.target !== myId && item.auction.seller !== myId) return;
     if (packet.sender === myId) return;
+    if (item.auction.status === 'delivered') return; // уже закрыто — не дублируем
+
     item.auction.status = 'delivered';
     item.auction.winner = packet.buyer || packet.sender;
-    item.auction.finalPrice = Number(item.auction.buyNow) || Number(item.auction.currentBid) || 0;
+    item.auction.finalPrice = Number(packet.finalPrice)
+        || Number(item.auction.buyNow)
+        || Number(item.auction.currentBid)
+        || 0;
+
     // Все pending -> rejected
     (item.auction.bids || []).forEach(b => {
         if (b.status === 'pending' || b.status === 'pending_saved') b.status = 'rejected';
     });
+
+    // === Открываем Gate со стороны продавца ===
+    ensureGate(myId, item.auction.winner, item.id);
+
     saveLocal();
-
-    const other = packet.sender === myId ? packet.target : packet.sender;
-    ensureGate(myId, other, item.id);
-
     updateRankingList();
-    log(`[Auction] Buy Now: "${item.title}" to ${item.auction.winner} for ${item.auction.finalPrice}`);
+
+    // === Подтверждаем покупателю (чтобы его Gate точно синхронизировался) ===
+    client.publish(TOPIC, JSON.stringify({
+        type: 'BUY_NOW_ACK',
+        sender: myId,
+        target: item.auction.winner,
+        itemId: item.id,
+        finalPrice: item.auction.finalPrice
+    }), { qos: 1 });
+
+    log(`[Auction] Buy Now received: "${item.title}" sold to ${item.auction.winner} for ${item.auction.finalPrice}`);
 }
 else if (packet.type === 'GATE_MSG') {
     if (packet.to !== myId && packet.from !== myId) return;
@@ -2677,20 +2722,40 @@ function buyNow(itemId) {
     const item = items.find(i => i.id === itemId);
     if (!item || !item.auction) return;
     if (item.auction.seller === myId) return alert('You cannot buy your own item.');
-    if (item.auction.buyNow === null) return;
+    if (item.auction.buyNow === null || item.auction.buyNow === undefined) return;
     if (!isPeerOnline(item.auction.seller)) return alert('Seller is offline. Buy Now unavailable.');
 
     if (!confirm('Buy Now for ' + item.auction.buyNow + ' ?')) return;
 
+    // === 1. ЛОКАЛЬНО закрываем сделку у покупателя СРАЗУ ===
+    item.auction.status = 'delivered';
+    item.auction.winner = myId;
+    item.auction.finalPrice = Number(item.auction.buyNow);
+
+    // Все чужие pending-ставки отклоняем
+    (item.auction.bids || []).forEach(b => {
+        if (b.bidder !== myId && (b.status === 'pending' || b.status === 'pending_saved')) {
+            b.status = 'rejected';
+        }
+    });
+
+    // === 2. Открываем Gate со стороны покупателя ===
+    ensureGate(myId, item.auction.seller, item.id);
+
+    saveLocal();
+    updateRankingList();
+
+    // === 3. Уведомляем продавца ===
     client.publish(TOPIC, JSON.stringify({
         type: 'BUY_NOW',
         sender: myId,
         target: item.auction.seller,
         itemId: item.id,
-        buyer: myId
+        buyer: myId,
+        finalPrice: Number(item.auction.buyNow)
     }), { qos: 1 });
 
-    log(`[Auction] Buy Now sent for "${item.title}" at ${item.auction.buyNow}`);
+    log(`[Auction] Buy Now: "${item.title}" purchased for ${item.auction.buyNow}`);
 }
 
 function acceptBid(itemId, bidId) {
