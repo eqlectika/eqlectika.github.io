@@ -1005,51 +1005,60 @@
       }
     }
 
-    extractBtn.onclick = async () => {
-      if (!currentFile) return;
-      const format = document.querySelector('input[name="format"]:checked').value;
-      const bitrate = parseInt(mp3Quality.value);
+extractBtn.onclick = async () => {
+  if (!currentFile) return;
+  const format = document.querySelector('input[name="format"]:checked').value;
+  const bitrate = parseInt(mp3Quality.value);
 
-      extractBtn.disabled = true;
-      progressBar.classList.add('active');
-      statusText.classList.add('active');
-      progressFill.style.width = '10%';
-      statusText.textContent = 'Reading file...';
+  extractBtn.disabled = true;
+  progressBar.classList.add('active');
+  statusText.classList.add('active');
+  progressFill.style.width = '10%';
+  statusText.textContent = 'Reading file...';
 
-      try {
-let audioBuffer = await decodeAudioFromFile(currentFile);
-progressFill.style.width = '60%';
+  try {
+    let audioBuffer = await decodeAudioFromFile(currentFile);
+    progressFill.style.width = '50%';
 
-const fadeInVal = parseFloat(document.getElementById('fadeIn').value) || 0;
-const fadeOutVal = parseFloat(document.getElementById('fadeOut').value) || 0;
-if (fadeInVal > 0 || fadeOutVal > 0) {
-  statusText.textContent = 'Applying fade...';
-  audioBuffer = applyFade(audioBuffer, fadeInVal, fadeOutVal);
-}
+    // ← ОБРЕЗКА ПО МЕТКАМ START/END
+    const startSec = parseFloat(start.value) || 0;
+    const endSec = parseFloat(end.value) || audioBuffer.duration;
+    
+    statusText.textContent = `Trimming ${startSec.toFixed(2)}s – ${endSec.toFixed(2)}s...`;
+    audioBuffer = trimBuffer(audioBuffer, startSec, endSec);
+    progressFill.style.width = '60%';
 
-progressFill.style.width = '70%';
-statusText.textContent = `Converting to ${format.toUpperCase()}...`;
+    // ← fade применяется уже к обрезанному участку
+    const fadeInVal = parseFloat(document.getElementById('fadeIn').value) || 0;
+    const fadeOutVal = parseFloat(document.getElementById('fadeOut').value) || 0;
+    if (fadeInVal > 0 || fadeOutVal > 0) {
+      statusText.textContent = 'Applying fade...';
+      audioBuffer = applyFade(audioBuffer, fadeInVal, fadeOutVal);
+    }
 
-        const resultBlob = format === 'mp3' 
-          ? await convertBufferToMp3(audioBuffer, bitrate)
-          : audioBufferToWav(audioBuffer);
+    progressFill.style.width = '70%';
+    statusText.textContent = `Converting to ${format.toUpperCase()}...`;
 
-        progressFill.style.width = '100%';
-        statusText.textContent = 'Extraction complete!';
+    const resultBlob = format === 'mp3' 
+      ? await convertBufferToMp3(audioBuffer, bitrate)
+      : audioBufferToWav(audioBuffer);
 
-        const ext = format === 'mp3' ? 'mp3' : 'wav';
-        const baseName = currentFile.name.replace(/\.[^/.]+$/, '');
-        downloadBlob(resultBlob, `${baseName}_audio.${ext}`);
-      } catch (err) {
-        alert('Extraction failed: ' + err.message);
-      } finally {
-        setTimeout(() => {
-          extractBtn.disabled = false;
-          progressBar.classList.remove('active');
-          statusText.classList.remove('active');
-        }, 1200);
-      }
-    };
+    progressFill.style.width = '100%';
+    statusText.textContent = 'Extraction complete!';
+
+    const ext = format === 'mp3' ? 'mp3' : 'wav';
+    const baseName = currentFile.name.replace(/\.[^/.]+$/, '');
+    downloadBlob(resultBlob, `${baseName}_${startSec.toFixed(2)}-${endSec.toFixed(2)}.${ext}`);
+  } catch (err) {
+    alert('Extraction failed: ' + err.message);
+  } finally {
+    setTimeout(() => {
+      extractBtn.disabled = false;
+      progressBar.classList.remove('active');
+      statusText.classList.remove('active');
+    }, 1200);
+  }
+};
 
     function audioBufferToWav(buffer) {
       const numOfChan = buffer.numberOfChannels, sampleRate = buffer.sampleRate;
@@ -1140,6 +1149,30 @@ statusText.textContent = `Converting to ${format.toUpperCase()}...`;
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
     }
 
+function trimBuffer(audioBuffer, startSec, endSec) {
+  const sampleRate = audioBuffer.sampleRate;
+  const numChannels = audioBuffer.numberOfChannels;
+  
+  const startSample = Math.max(0, Math.floor(startSec * sampleRate));
+  const endSample = Math.min(audioBuffer.length, Math.floor(endSec * sampleRate));
+  const newLength = endSample - startSample;
+  
+  if (newLength <= 0) throw new Error('Invalid range: start >= end');
+  
+  const newBuffer = new (window.AudioContext || window.webkitAudioContext)()
+    .createBuffer(numChannels, newLength, sampleRate);
+  
+  for (let ch = 0; ch < numChannels; ch++) {
+    const src = audioBuffer.getChannelData(ch);
+    const dst = newBuffer.getChannelData(ch);
+    for (let i = 0; i < newLength; i++) {
+      dst[i] = src[startSample + i];
+    }
+  }
+  
+  return newBuffer;
+}
+
 function applyFade(audioBuffer, fadeInSec, fadeOutSec) {
   const sampleRate = audioBuffer.sampleRate;
   const numChannels = audioBuffer.numberOfChannels;
@@ -1169,9 +1202,6 @@ function applyFade(audioBuffer, fadeInSec, fadeOutSec) {
   return newBuffer;
 }
 
-const previewBtn = document.getElementById('previewBtn');
-const previewAudio = document.getElementById('previewAudio');
-
 previewBtn.onclick = async () => {
   if (!currentFile) return;
 
@@ -1181,6 +1211,11 @@ previewBtn.onclick = async () => {
   try {
     let audioBuffer = await decodeAudioFromFile(currentFile);
 
+    // ← Обрезка по меткам
+    const startSec = parseFloat(start.value) || 0;
+    const endSec = parseFloat(end.value) || audioBuffer.duration;
+    audioBuffer = trimBuffer(audioBuffer, startSec, endSec);
+
     const fadeInVal = parseFloat(document.getElementById('fadeIn').value) || 0;
     const fadeOutVal = parseFloat(document.getElementById('fadeOut').value) || 0;
 
@@ -1188,7 +1223,6 @@ previewBtn.onclick = async () => {
       audioBuffer = applyFade(audioBuffer, fadeInVal, fadeOutVal);
     }
 
-    // Кодируем в WAV для быстрого превью
     const wavBlob = audioBufferToWav(audioBuffer);
     const url = URL.createObjectURL(wavBlob);
 
