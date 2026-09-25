@@ -622,7 +622,7 @@
           const keys = await caches.keys();
           for (let key of keys) { await caches.delete(key); }
         }
-        localStorage.clear();
+
         alert('Updated!');
         window.location.reload(true);
       }, 1500);
@@ -682,7 +682,7 @@
       });
     });
 
-    window.addEventListener('DOMContentLoaded', async () => {
+    (async () => {
       const lastFileName = localStorage.getItem('mediaLoop_lastFile');
       if (lastFileName) {
         const savedDataStr = localStorage.getItem(SETTINGS_PREFIX + lastFileName);
@@ -783,11 +783,18 @@
       const startVal = (savedStart !== undefined && savedStart <= d) ? savedStart : 0;
       const endVal = (savedEnd !== null && savedEnd <= d) ? savedEnd : d;
 
-      start.value = startVal.toFixed(2);
-      end.value = endVal.toFixed(2);
-      
-      s.value = (savedS !== null && savedS <= d) ? savedS.toFixed(2) : startVal.toFixed(2);
-      e.value = (savedE !== null && savedE <= d) ? savedE.toFixed(2) : endVal.toFixed(2);
+if (!start.value || parseFloat(start.value) === 0) {
+  start.value = startVal.toFixed(2);
+}
+if (!end.value || parseFloat(end.value) === 0) {
+  end.value = endVal.toFixed(2);
+}
+if (!s.value || parseFloat(s.value) === 0) {
+  s.value = (savedS !== null && savedS <= d) ? savedS.toFixed(2) : startVal.toFixed(2);
+}
+if (!e.value || parseFloat(e.value) === 0 || parseFloat(e.value) > d) {
+  e.value = (savedE !== null && savedE <= d) ? savedE.toFixed(2) : endVal.toFixed(2);
+}
 
       cueTime = (savedCue !== undefined && savedCue <= d) ? savedCue : startVal;
       updateRangeHighlight();
