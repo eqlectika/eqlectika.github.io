@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-auction'; 
+const CACHE_NAME = 'version-gate'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
