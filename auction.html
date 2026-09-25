@@ -922,13 +922,7 @@ a { color: #448aff; text-decoration: none; }
     <div id="ranking-list"></div>
 </div>
 
-<div id="logArea">
-    <div class="network-status open" style="margin: 20px 0 5px 0;" id="statusToggle">
-        <span id="netStatus">Status: Connecting to node network... (<span id="nodeId">...</span>)</span>
-    </div>
 
-    <div id="logContainer"></div>
-</div>
 
 <div id="disclaimerToggle" style="margin: 30px 0 10px 0; cursor: pointer; display: flex; align-items: center; gap: 12px;">
     <span>
@@ -1002,6 +996,15 @@ a { color: #448aff; text-decoration: none; }
     <p style="color:#e97509;">You can always obtain free "Impacts" for your activity (voting, posting items) in the Claim blue section. However, if needed, additional "Impacts" can be purchased using ETH (ERC-20 standard) via a MetaMask wallet. Before making a purchase, please carefully review the information in the MetaMask orange section.</p>
 </div>
 </div>
+
+<div id="logArea">
+    <div class="network-status open" style="margin: 20px 0 5px 0;" id="statusToggle">
+        <span id="netStatus">Status: Connecting to node network... (<span id="nodeId">...</span>)</span>
+    </div>
+
+    <div id="logContainer"></div>
+</div>
+    
     <span id="broadcast"></span>    
 
 <div class="main-panel">
@@ -3044,11 +3047,22 @@ function updateRankingList() {
                 ? '#ff00cc99'
                 : '#ccc';
 
-const bidsArr = (item.auction && item.auction.bids) ? item.auction.bids : [];
-const bidsList = bidsArr.map(b => b.amount).join(', ');
-const auctionBadge = item.auction
-    ? `<span style="color:#ffd700;font-size:11px;margin-left:6px;">Bid${bidsArr.length === 1 ? '' : 's'} ${bidsArr.length ? bidsList : '0'}</span>`
-    : '';
+const a = item.auction;
+let auctionBadge = '';
+
+if (a) {
+    if (a.status === 'delivered') {
+        // Сделка закрыта (Buy Now или принятая ставка)
+        const price = a.finalPrice ?? a.buyNow ?? a.currentBid ?? 0;
+        const viaBuyNow = a.bids?.some(b => b.status === 'accepted') === false; // если не было accepted-bid, значит Buy Now
+        auctionBadge = `<span style="color:#0097ff;font-size:11px;margin-left:6px;">Sold ${price}${viaBuyNow ? ' (Buy Now)' : ''} – Private Gate are open</span>`;
+    } else {
+        // Ещё идёт аукцион — показываем ставки
+        const bidsArr = a.bids || [];
+        const bidsList = bidsArr.map(b => b.amount).join(', ');
+        auctionBadge = `<span style="color:#ffd700;font-size:11px;margin-left:6px;">Bid${bidsArr.length === 1 ? '' : 's'} ${bidsArr.length ? bidsList : '0'}</span>`;
+    }
+}
 
         html += `
             <div
