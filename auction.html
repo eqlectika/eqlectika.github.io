@@ -1020,8 +1020,8 @@ a { color: #448aff; text-decoration: none; }
 
     <!-- Auction fields (без внешней жёлтой рамки) -->
     <div class="auction-panel" style="margin-bottom: 15px;">
-        <input type="number" id="new-auction-start-bid" class="admin-input" placeholder="Starting / current bid (required)" min="0" step="1" required>
-        <input type="number" id="new-auction-buy-now" class="admin-input" placeholder="Buy Now price (required)" min="0" step="1" required>
+       <input type="number" id="new-auction-start-bid" class="admin-input" placeholder="Starting / current bid (USD)" min="0" step="1" required>
+       <input type="number" id="new-auction-buy-now" class="admin-input" placeholder="Buy Now price (USD)" min="0" step="1" required>
     </div>
 
 <div style="text-align: center; margin: 6px 0 10px 0; font-family: 'Unbounded', monospace; font-size: 14px;">
@@ -2102,7 +2102,7 @@ else if (packet.type === 'BID') {
     }
     saveLocal();
     updateRankingList();
-    log(`[Auction] Bid ${packet.amount} from ${packet.sender} on "${item.title}"`);
+    log(`[Auction] Bid $${packet.amount} from ${packet.sender} on "${item.title}"`);
 }
 
 else if (packet.type === 'BID_ACCEPT') {
@@ -2142,7 +2142,7 @@ else if (packet.type === 'BID_ACCEPT') {
     ensureGate(myId, other, item.id);
 
     updateRankingList();
-    log(`[Auction] Deal delivered: "${item.title}" to ${item.auction.winner} for ${item.auction.finalPrice}`);
+    log(`[Auction] Deal delivered: "${item.title}" to ${item.auction.winner} for $${item.auction.finalPrice}`);
 }
 else if (packet.type === 'BUY_NOW_ACK') {
     if (packet.target !== myId) return;
@@ -2218,7 +2218,7 @@ else if (packet.type === 'BUY_NOW') {
         finalPrice: item.auction.finalPrice
     }), { qos: 1 });
 
-    log(`[Auction] Buy Now received: "${item.title}" sold to ${item.auction.winner} for ${item.auction.finalPrice}`);
+    log(`[Auction] Buy Now received: "${item.title}" sold to ${item.auction.winner} for $${item.auction.finalPrice}`);
 }
 else if (packet.type === 'GATE_MSG') {
     if (packet.to !== myId && packet.from !== myId) return;
@@ -2697,7 +2697,7 @@ function placeBid(itemId) {
         saved: savedFlag
     }), { qos: 1 });
 
-    log(`[Auction] Bid ${amount} on "${item.title}" (${savedFlag ? 'saved' : 'live'})`);
+    log(`[Auction] Bid $${amount} on "${item.title}" (${savedFlag ? 'saved' : 'live'})`);
 }
 
 function reBid(itemId, bidId) {
@@ -2736,7 +2736,7 @@ function buyNow(itemId) {
     if (item.auction.buyNow === null || item.auction.buyNow === undefined) return;
     if (!isPeerOnline(item.auction.seller)) return alert('Seller is offline. Buy Now unavailable.');
 
-    if (!confirm('Buy Now for ' + item.auction.buyNow + ' ?')) return;
+    if (!confirm('Buy Now for $' + item.auction.buyNow + ' ?')) return;
 
     // === 1. ЛОКАЛЬНО закрываем сделку у покупателя СРАЗУ ===
     item.auction.status = 'delivered';
@@ -2766,7 +2766,7 @@ function buyNow(itemId) {
         finalPrice: Number(item.auction.buyNow)
     }), { qos: 1 });
 
-    log(`[Auction] Buy Now: "${item.title}" purchased for ${item.auction.buyNow}`);
+    log(`[Auction] Buy Now: "${item.title}" purchased for $${item.auction.buyNow}`);
 }
 
 function acceptBid(itemId, bidId) {
@@ -2802,7 +2802,7 @@ function acceptBid(itemId, bidId) {
     // Gate
     ensureGate(myId, bid.bidder, item.id);
 
-    log(`[Auction] Accepted bid ${bid.amount} from ${bid.bidder} on "${item.title}"`);
+    log(`[Auction] Accepted bid $${bid.amount} from ${bid.bidder} on "${item.title}"`);
 }
 
 function rejectBid(itemId, bidId) {
@@ -2882,14 +2882,14 @@ function renderAuctionBlock(item) {
     let html = `<div class="auction-block">`;
     html += `<div class="auction-head">Auction <span class="auction-badge ${badgeClass}">${badgeText}</span> <span style="color:#ffd700;font-size:11px;font-weight:normal;">${bidsCount} bid${bidsCount===1?'':'s'}</span></div>`;
     html += `<div class="auction-row">Seller: <span style="color:#ffd700">${a.seller}</span> ${sellerOnline ? '<span style="color:#ff0000">● online</span>' : '<span style="color:#afff00">● offline</span>'}</div>`;
-    html += `<div class="auction-row">Current bid: <span style="color:#afff00">${a.currentBid}</span></div>`;
-    if (a.buyNow !== null && a.buyNow !== undefined) {
-        html += `<div class="auction-row">Buy Now: <span style="color:#de00b2">${a.buyNow}</span></div>`;
-    }
-    if (a.status === 'delivered') {
-        html += `<div class="auction-row">Winner: <span style="color:#0097ff">${a.winner}</span></div>`;
-        html += `<div class="auction-row">Final: <span style="color:#0097ff">${a.finalPrice}</span></div>`;
-    }
+html += `<div class="auction-row">Current bid: <span style="color:#afff00">$${a.currentBid}</span></div>`;
+if (a.buyNow !== null && a.buyNow !== undefined) {
+    html += `<div class="auction-row">Buy Now: <span style="color:#de00b2">$${a.buyNow}</span></div>`;
+}
+if (a.status === 'delivered') {
+    html += `<div class="auction-row">Winner: <span style="color:#0097ff">${a.winner}</span></div>`;
+    html += `<div class="auction-row">Final: <span style="color:#0097ff">$${a.finalPrice}</span></div>`;
+}
 
     // ===== Действия покупателя =====
     if (!isSeller && a.status !== 'delivered' && a.status !== 'ended') {
@@ -2902,7 +2902,7 @@ function renderAuctionBlock(item) {
                 html += `<div class="auction-row" style="color:#ff8b00;">You have a saved bid. Seller is now LIVE — you can Re-bid.</div>`;
                 myPendingSaved.forEach(b => {
                     html += `<div class="auction-actions">
-                        <button class="btn-bid" onclick="event.stopPropagation(); reBid('${item.id}','${b.bidId}')">Re-bid — ${b.amount}</button>
+                        <button class="btn-bid" onclick="event.stopPropagation(); reBid('${item.id}','${b.bidId}')">Re-bid — $${b.amount}</button>
                     </div>`;
                 });
             } else {
@@ -2913,7 +2913,7 @@ function renderAuctionBlock(item) {
                 </div>`;
                 if (a.buyNow !== null && a.buyNow !== undefined) {
                     html += `<div class="auction-actions">
-                        <button class="btn-buy" onclick="event.stopPropagation(); buyNow('${item.id}')">Buy Now — ${a.buyNow}</button>
+                        <button class="btn-buy" onclick="event.stopPropagation(); buyNow('${item.id}')">Buy Now — $${a.buyNow}</button>
                     </div>`;
                 }
             }
@@ -2930,7 +2930,7 @@ function renderAuctionBlock(item) {
             html += `<div style="color:#ffd700;font-size:12px;margin-bottom:4px;">Incoming bids:</div>`;
             incoming.forEach(b => {
                 html += `<div class="bid-row">
-                    <div class="bid-info">${b.bidder} — <span style="color:#afff00">${b.amount}</span> <span style="color:#888;font-size:10px;">(${b.status})</span></div>
+                    <div class="bid-info">${b.bidder} — <span style="color:#afff00">$${b.amount}</span> <span style="color:#888;font-size:10px;">(${b.status})</span></div>
                     <button class="btn-accept" style="background:#0097ff;color:#fff;" onclick="event.stopPropagation(); acceptBid('${item.id}','${b.bidId}')">Accept</button>
                     <button class="btn-reject" style="background:#ff3333;color:#fff;" onclick="event.stopPropagation(); rejectBid('${item.id}','${b.bidId}')">Reject</button>
                 </div>`;
@@ -2950,7 +2950,7 @@ function renderAuctionBlock(item) {
             html += `<div class="auction-bids">
                 <div style="color:#ffd700;font-size:12px;margin-bottom:4px;">Your bids:</div>`;
             recent.forEach(b => {
-                html += `<div class="bid-row"><div class="bid-info">${b.amount} — <span style="color:#888;font-size:10px;">${b.status}</span></div></div>`;
+                html += `<div class="bid-row"><div class="bid-info">$${b.amount} — <span style="color:#888;font-size:10px;">${b.status}</span></div></div>`;
             });
             html += `</div>`;
         }
@@ -3055,13 +3055,12 @@ if (a) {
         // Сделка закрыта (Buy Now или принятая ставка)
         const price = a.finalPrice ?? a.buyNow ?? a.currentBid ?? 0;
         const viaBuyNow = a.bids?.some(b => b.status === 'accepted') === false; // если не было accepted-bid, значит Buy Now
-        auctionBadge = `<span style="color:#0097ff;font-size:11px;margin-left:6px;">Sold ${price}${viaBuyNow ? ' (Buy Now)' : ''} – Direct Gate are open</span>`;
+        auctionBadge = `<span style="color:#0097ff;font-size:11px;margin-left:6px;">Sold $${price}${viaBuyNow ? ' (Buy Now)' : ''} – Direct Gate are open</span>`;
     } else {
         // Ещё идёт аукцион — показываем ставки
         const bidsArr = a.bids || [];
         const bidsList = bidsArr.map(b => b.amount).join(', ');
-        auctionBadge = `<span style="color:#ffd700;font-size:11px;margin-left:6px;">Bid${bidsArr.length === 1 ? '' : 's'} ${bidsArr.length ? bidsList : '0'}</span>`;
-    }
+        auctionBadge = `<span style="color:#ffd700;font-size:11px;margin-left:6px;">Bid${bidsArr.length === 1 ? '' : 's'} ${bidsArr.length ? '$' + bidsList : '$0'}</span>`;    }
 }
 
         html += `
