@@ -1467,6 +1467,12 @@ function isPeerOnline(peerId) {
     return (Date.now() - ts) <= 12000;
 }
 
+function isDemoPeer(peerId) {
+    return peerId === 'System-Genesis';
+}
+
+
+
 function changeMyId() {
     const input = document.getElementById('my-id-input');
     const newId = (input.value || '').trim();
@@ -1878,6 +1884,8 @@ client.on('connect', () => {
                 sender: myId
             }), { qos: 0 });
         }
+        // === DEMO SELLER KEEP-ALIVE ===
+        activePeers['System-Genesis'] = Date.now();
     }, 5000);
 
     setInterval(updateOnlinePeersCount, 5000);
@@ -2842,11 +2850,6 @@ function sendGateMessage(itemId, peerId) {
     const text = textarea ? textarea.value.trim() : '';
     if (!text) return;
 
-    const online = isPeerOnline(peerId);
-    if (!online) {
-        if (!confirm('Peer ' + peerId + ' appears offline. Send anyway?')) return;
-    }
-
     const ts = Date.now();
     gate.messages.push({ from: myId, text: text, ts: ts });
     if (gate.messages.length > 200) gate.messages = gate.messages.slice(-200);
@@ -2864,6 +2867,31 @@ function sendGateMessage(itemId, peerId) {
 
     if (textarea) textarea.value = '';
     updateRankingList();
+
+    // === DEMO AUTO-REPLY ===
+    if (isDemoPeer(peerId)) {
+        setTimeout(() => {
+            const freshGate = auctionGates[gateId];
+            if (!freshGate) return;
+
+            // анти-спам: не чаще 1 раза в 1.5 сек
+            const lastDemoMsg = freshGate.messages
+                .filter(m => m.from === peerId)
+                .slice(-1)[0];
+            if (lastDemoMsg && Date.now() - lastDemoMsg.ts < 1500) return;
+
+            freshGate.messages.push({
+                from: peerId,
+                text: 'hi. I am demo seller to show you how auction works',
+                ts: Date.now()
+            });
+            if (freshGate.messages.length > 200) {
+                freshGate.messages = freshGate.messages.slice(-200);
+            }
+            saveAuctionGates();
+            updateRankingList();
+        }, 800);
+    }
 }
 
 // ============================================
