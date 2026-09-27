@@ -748,11 +748,14 @@ a { color: #448aff; text-decoration: none; }
     margin-top: 8px;
     display: flex;
     gap: 6px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;      /* запрещаем перенос */
+    align-items: stretch;
 }
 
 .auction-block .auction-actions input[type=number] {
-    flex: 1 1 120px;
+    flex: 1 1 auto;
+    min-width: 0;           /* важно: иначе input не сжимается */
+    width: 0;               /* заставляем flex-элемент реально сжиматься */
     padding: 8px;
     background: #001f14;
     border: 1px solid #555;
@@ -764,13 +767,14 @@ a { color: #448aff; text-decoration: none; }
 
 .auction-block .auction-actions button {
     flex: 0 0 auto;
-    padding: 8px 12px;
+    padding: 8px 10px;
     font-family: 'Roboto', monospace;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: bold;
     border: none;
     cursor: pointer;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .auction-block .btn-bid { background: #afff00; color: #000; }
@@ -2909,15 +2913,13 @@ if (a.status === 'delivered') {
                 });
             } else {
                 const minNext = Math.max(Number(a.startBid||0), Number(a.currentBid||0)) + 1;
-                html += `<div class="auction-actions">
-                    <input type="number" id="bid-input-${item.id}" placeholder="Your bid (min ${minNext})" min="${minNext}" step="1">
-                    <button class="btn-bid" onclick="event.stopPropagation(); placeBid('${item.id}')">Bid</button>
-                </div>`;
-                if (a.buyNow !== null && a.buyNow !== undefined) {
-                    html += `<div class="auction-actions">
-                        <button class="btn-buy" onclick="event.stopPropagation(); buyNow('${item.id}')">Buy Now — $${a.buyNow}</button>
-                    </div>`;
-                }
+     html += `<div class="auction-actions">
+    <input type="number" id="bid-input-${item.id}" placeholder="Min ${minNext}" min="${minNext}" step="1">
+    <button class="btn-bid" onclick="event.stopPropagation(); placeBid('${item.id}')">Bid</button>
+    ${(a.buyNow !== null && a.buyNow !== undefined)
+        ? `<button class="btn-buy" onclick="event.stopPropagation(); buyNow('${item.id}')">Buy Now — $${a.buyNow}</button>`
+        : ''}
+</div>`;
             }
         } 
 
