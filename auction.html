@@ -2236,7 +2236,9 @@ else if (packet.type === 'BUY_NOW') {
 }
 else if (packet.type === 'GATE_MSG') {
     if (packet.to !== myId && packet.from !== myId) return;
+    if (packet.from === myId) return;
     const gateId = packet.gateId;
+    
     if (!auctionGates[gateId]) {
         auctionGates[gateId] = {
             participants: [packet.from, packet.to],
@@ -2838,6 +2840,8 @@ function rejectBid(itemId, bidId) {
         bidId: bidId
     }), { qos: 1 });
 }
+    
+let _demoTimers = {};
 
 function sendGateMessage(itemId, peerId) {
     const item = items.find(i => i.id === itemId);
@@ -2846,11 +2850,20 @@ function sendGateMessage(itemId, peerId) {
     const gate = auctionGates[gateId];
     if (!gate) return;
 
-    const textarea = document.getElementById('gate-input-' + gateId);
-    const text = textarea ? textarea.value.trim() : '';
-    if (!text) return;
+const textarea = document.getElementById('gate-input-' + gateId);
+const text = textarea ? textarea.value.trim() : '';
+if (!text) return;
 
-    const ts = Date.now();
+// защита от повторной отправки одинакового текста в течение 1 сек
+const lastMsg = gate.messages[gate.messages.length - 1];
+if (lastMsg && lastMsg.from === myId && lastMsg.text === text
+    && Date.now() - lastMsg.ts < 1000) {
+    if (textarea) textarea.value = '';
+    return;
+}
+
+const ts = Date.now();
+    
     gate.messages.push({ from: myId, text: text, ts: ts });
     if (gate.messages.length > 200) gate.messages = gate.messages.slice(-200);
     saveAuctionGates();
@@ -2869,12 +2882,14 @@ function sendGateMessage(itemId, peerId) {
     updateRankingList();
 
     // === DEMO AUTO-REPLY ===
+    // === DEMO AUTO-REPLY ===
     if (isDemoPeer(peerId)) {
-        setTimeout(() => {
+        if (_demoTimers[gateId]) clearTimeout(_demoTimers[gateId]);
+        _demoTimers[gateId] = setTimeout(() => {
+            delete _demoTimers[gateId];
             const freshGate = auctionGates[gateId];
             if (!freshGate) return;
 
-            // анти-спам: не чаще 1 раза в 1.5 сек
             const lastDemoMsg = freshGate.messages
                 .filter(m => m.from === peerId)
                 .slice(-1)[0];
