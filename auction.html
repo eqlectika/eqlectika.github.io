@@ -888,6 +888,10 @@ a { color: #448aff; text-decoration: none; }
     cursor: pointer;
     text-transform: uppercase;
 }
+
+#guide-chat-log > div {
+    margin-bottom: 8px;
+}
 </style>
 </head>
 <body>
@@ -1147,8 +1151,8 @@ a { color: #448aff; text-decoration: none; }
     
 <div class="exchange-panel" style="border-color: #ccc; background: #001f14; margin-top: 20px;">
     <h3 style="color: #ccc; text-align: center;">Local Guide</h3>
-    <div id="guide-chat-log" style="height: 120px; overflow-y: auto; font-family: 'Roboto', monospace; font-size: 14px; color: #ccc; background: #001f14; padding: 0px; margin-bottom: 10px; scrollbar-width: thin; scrollbar-color: #333 #000; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start;">
-        System: Local Guide initialized. You can simply use words from the content instead of formulating full questions, for example: item, vote, breakthrough.
+    <div id="guide-chat-log" style="min-height: 120px; max-height: 320px; overflow-y: auto; font-family: 'Roboto', monospace; font-size: 14px; color: #ccc; background: #001f14; padding: 0px; margin-bottom: 30px; scrollbar-width: thin; scrollbar-color: #333 #000; display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start;">
+        <div>System: Local Guide initialized. You can simply use words from the content instead of formulating full questions, for example: item, vote, breakthrough.</div>
     </div>
     <div style="display: flex; gap: 5px;">
         <input type="text" id="guide-input" class="admin-input" placeholder="Ask Guide (e.g., inject, vote, impact)..." style="margin-bottom: 0; padding: 8px;">
@@ -3680,33 +3684,84 @@ if (lastMsg) {
 
 function generateGuideResponse(query) {
     const q = query.toLowerCase();
-    
-    if (q.includes('hi') || q.includes('hello') || q.includes('hey') || q.includes('how') || q.includes('what') || q.includes('greetings')) {
-        return 'Hello! This is not an AI agent, and the answer list is limited. The logic in this section is mechanical and is being refined at the developer level. If you don not receive a satisfactory answer, it means the phrases you entered were not predicted by the system. Use simple words from the content. Read the Disclaimer & About section to the end. Try submitting your item in the Broadcast Breakthrough Item section. Vote for items in the Resonance Match section and track their position in the Global Matrix Rank.';
-    }
-    
-    if (q.includes('inject') || q.includes('item') || q.includes('manifest') ||q.includes('matrix') || q.includes('link') || q.includes('description') || q.includes('details') || q.includes('external') || q.includes('post') || q.includes('publish') || q.includes('image') || q.includes('to do') || q.includes('upload') || q.includes('choose')) {
-        return '"Inject Item to Network" is sending your publication (item or creative work) into the general matrix: set a Item Title, Manifestation Details (Description) and External Link, under "Select Item Image" choose your image.';
-    }
-    
-    if (q.includes('vote') || q.includes('match') || q.includes('rating') || q.includes('rank') || q.includes('elo') || q.includes('compare') || q.includes('versus')) {
-        return '"Resonance Match" is a pairwise item comparison using the Elo system. You vote for one of two big items to adjust their rankings, which directly affects their global position in the matrix.';
-    }
-    
-    if (q.includes('impact') || q.includes('score') || q.includes('level') || q.includes('claim') || q.includes('hour') || q.includes('day') || q.includes('convert')) {
-        return 'Impacts are your internal energy and influence points. You can claim them hourly via "Hourly Resonance Claim" or buy them, and then convert them into extra votes or publication slots.';
-    }
-    
-    if (q.includes('nobody') || q.includes('one') || q.includes('people') || q.includes('friend') || q.includes('link') || q.includes('network') || q.includes('peer') || q.includes('see') || q.includes('scroll')) {
-        return 'As the data resides solely within the ephemeral vaults of your browser\'s cache—which one might inadvertently sweep away—each node remains in splendid isolation. To set the items into circulation and expose them to the wider world, one is obliged to transmit the application link unto companions; this is no mere entreaty, but an absolute imperative should you desire the mechanism to function. Yet, in any event, this shall inevitably crystallize as your own private catalog—perhaps a curated register of your most cherished cinematographic works.';
+
+    // === Greetings ===
+    if (q.includes('hi') || q.includes('hello') || q.includes('hey') || q.includes('greetings')) {
+        return 'Hello! This is not an AI agent, and the answer list is limited. Use simple words from the content. Try: item, vote, impact, auction, bid, buy now, gate, deliver.';
     }
 
-    
-    if (q.includes('why') || q.includes('different') || q.includes('change') || q.includes('happen')) {
-        return 'Due to the temporary absence of participants and invisible items, the vote count required for rating updates does not sync across devices automatically. Once parity is reached, then voting pair updates seems spontaneously.';
+    // === How / What ===
+    if (q.includes('how') || q.includes('what')) {
+        return 'Hello! This is not an AI agent, and the answer list is limited. The logic in this section is mechanical and is being refined at the developer level. If you do not receive a satisfactory answer, it means the phrases you entered were not predicted by the system. Use simple words from the content. Read the Disclaimer & About section to the end. Try submitting your item in the Broadcast section. Vote for items in the Resonance Match section and track their position in the Global Matrix Rank.';
     }
-    
-    return 'This is not an AI agent, and the list of responses is limited. You can use keywords instead of detailed questions or refer to the description below for more detailed information. Upload images via item injection, distribute votes in matches, and calibrate the shared matrix.';
+
+    // === Auction / Bid / Buy Now ===
+    if (q.includes('auction') || q.includes('bid') || q.includes('buy') || q.includes('offer') || q.includes('price') || q.includes('sell') || q.includes('sale')) {
+        return 'Every item can be an auction. In Broadcast, set a Starting / current bid and a Buy Now price. As a buyer, open any item in Global Matrix Rank, enter a bid higher than the current bid, and press Bid. Or press Buy Now to close the deal instantly. When the seller is online, your bid is live; when offline, it is saved and can be re-bid later when the seller returns.';
+    }
+
+    // === Direct Gate ===
+    if (q.includes('gate') || q.includes('direct') || q.includes('chat') || q.includes('message') || q.includes('talk')) {
+        return 'Direct Gate is a private chat that opens after a deal is delivered — either by Buy Now or by an accepted bid. Only the seller and the buyer can see it. Messages are stored locally on each device and delivered when the peer is online. Use it to agree on shipping, payment details, or anything else.';
+    }
+
+    // === Deliver / Sold / Winner ===
+    if (q.includes('deliver') || q.includes('sold') || q.includes('winner') || q.includes('deal') || q.includes('close')) {
+        return 'When a deal closes, the item becomes DELIVERED. The winner is the buyer, and the final price is fixed. Both sides get a Direct Gate to finish the deal. If you were outbid, your pending bids are marked as rejected.';
+    }
+
+    // === Demo / System-Genesis ===
+    if (q.includes('demo') || q.includes('genesis') || q.includes('system') || q.includes('fake') || q.includes('test')) {
+        return 'System-Genesis is a demo seller. The items Apple, Dice and Chess belong to it, so you can try Auction and Direct Gate without a second real person. Buy one of them with Buy Now, then send a message in Direct Gate — the demo seller will reply.';
+    }
+
+    // === Inject / Item ===
+    if (q.includes('inject') || q.includes('item') || q.includes('manifest') || q.includes('matrix') || q.includes('link') || q.includes('description') || q.includes('details') || q.includes('external') || q.includes('post') || q.includes('publish') || q.includes('image') || q.includes('to do') || q.includes('upload') || q.includes('choose')) {
+        return '"Inject Item to Network" sends your publication into the general matrix: set a title, details, external link, and choose an image. You can also send it privately to specific Peer IDs in the "Send only to Peer IDs" field.';
+    }
+
+    // === Vote / Rank ===
+    if (q.includes('vote') || q.includes('match') || q.includes('rating') || q.includes('rank') || q.includes('elo') || q.includes('compare') || q.includes('versus')) {
+        return '"Resonance Match" is a pairwise comparison using the Elo system. Tap one of two items to raise its rating and lower the opponent\'s. The result affects the Global Matrix Rank.';
+    }
+
+    // === Impact / Claim / Convert ===
+    if (q.includes('impact') || q.includes('score') || q.includes('level') || q.includes('claim') || q.includes('hour') || q.includes('day') || q.includes('convert')) {
+        return 'Impacts are your internal energy. Claim them hourly via "Hourly Resonance Claim" (+4 per hour, up to +24 per day) or buy them with MetaMask. Convert 1 Impact into +3 Votes, or 3 Impacts into +1 Post slot.';
+    }
+
+    // === Transfer ===
+    if (q.includes('transfer') || q.includes('send') || q.includes('peer') && q.includes('impact')) {
+        return 'Transfer Impact(s) lets you send impacts to another peer by their ID (e.g. Peer-5851 or a custom name). The receiver must be online to confirm; otherwise the transfer is refunded after 15 seconds.';
+    }
+
+    // === Broker / Connection ===
+    if (q.includes('broker') || q.includes('connect') || q.includes('mqtt') || q.includes('network') || q.includes('offline')) {
+        return 'The app uses public MQTT brokers to sync data live. If messages do not sync, switch to another broker in the Disclaimer & About section and press "Connect to Broker". Check the system log for peer count.';
+    }
+
+    // === Data / Cache / Reset ===
+    if (q.includes('data') || q.includes('cache') || q.includes('reset') || q.includes('clear') || q.includes('lose')) {
+        return 'All data is stored in your browser\'s localStorage. Clearing the cache will reset items, stats, and pending transfers. Use "Reset to Default" in the Disclaimer section only if you want to wipe everything. To keep your data safe, add the app to Home Screen and launch from that shortcut.';
+    }
+
+    // === Privacy / Security ===
+    if (q.includes('privacy') || q.includes('secure') || q.includes('safe') || q.includes('encrypt') || q.includes('listener')) {
+        return 'Data is not encrypted. Any peer online in the same live session can see public items and votes. Hidden listeners may also exist. Do not send sensitive personal information.';
+    }
+
+    // === Why / Different ===
+    if (q.includes('why') || q.includes('different') || q.includes('change') || q.includes('happen')) {
+        return 'Due to the temporary absence of participants and invisible items, the vote count required for rating updates does not sync across devices automatically. Once parity is reached, voting pair updates seem spontaneous.';
+    }
+
+    // === Nobody / Isolation ===
+    if (q.includes('nobody') || q.includes('one') || q.includes('people') || q.includes('friend') || q.includes('see') || q.includes('scroll')) {
+        return 'Data lives only in your browser\'s cache. To circulate items to the world, share the app link with others. Otherwise, it stays as your private catalog.';
+    }
+
+    // === Fallback ===
+    return 'This is not an AI agent, and the list of responses is limited. Use keywords: item, vote, impact, auction, bid, buy now, gate, deliver, demo, transfer, broker, reset. Or read the Disclaimer & About section for details.';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
