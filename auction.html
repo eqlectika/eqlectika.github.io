@@ -1790,7 +1790,7 @@ const demoItems = [
         id: 'meme-demo-1',
         sender: 'System-Genesis',
         title: 'Apple',
-        description: 'No registration is needed. You can inject your item to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your item and your voting calculations will save only on your device, but you can always Re-inject your tape mode saved item directly from ranking via Edit And/Or Re-inject Item (free) button to try delivery it again in live mode. The impacts needed for your activity you can claim below. ⚠️ Please check the "Disclaimer & About" for details. Be careful! You cannot delete items on other users\' devices.',
+        description: 'This is a genuine standalone peer-to-peer website. It does not simulate anyone\'s presence. To test Bids, Buy Now, and Direct Gate features, invite someone to open the site at the same time. ⚠️ Please check the "Disclaimer & About" for details. Be careful! You cannot delete items on other users\' devices.',
         externalUrl: '',
         img: 'apple.JPG',
         rating: 1520,
@@ -1811,7 +1811,7 @@ const demoItems = [
         id: 'meme-demo-2',
         sender: 'System-Genesis',
         title: 'Dice',
-        description: 'No registration is needed. You can inject your item to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your item and your voting calculations will save only on your device, but you can always Re-inject your tape mode saved item directly from ranking via Edit And/Or Re-inject Item (free) button to try delivery it again in live mode. The impacts needed for your activity you can claim below. ⚠️ Please check the "Disclaimer & About" for details. Be careful! You cannot delete items on other users\' devices.',
+        description: 'This is a genuine standalone peer-to-peer website. It does not simulate anyone\'s presence. To test Bids, Buy Now, and Direct Gate features, invite someone to open the site at the same time. ⚠️ Please check the "Disclaimer & About" for details. Be careful! You cannot delete items on other users\' devices.',
         externalUrl: '',
         img: 'dice.jpg',
         rating: 1520,
@@ -1832,7 +1832,7 @@ const demoItems = [
         id: 'meme-demo-3',
         sender: 'System-Genesis',
         title: 'Chess',
-        description: 'No registration is needed. You can inject your item to other users\' devices if they are in live session at the same time as you—just keep an eye on your network connection status highlighted in blue. This ensures that voting results are reflected across all users\' devices. If there are no other participants, your item and your voting calculations will save only on your device, but you can always Re-inject your tape mode saved item directly from ranking via Edit And/Or Re-inject Item (free) button to try delivery it again in live mode. The impacts needed for your activity you can claim below. ⚠️ Please check the "Disclaimer & About" for details. Be careful! You cannot delete items on other users\' devices.',
+        description: 'This is a genuine standalone peer-to-peer website. It does not simulate anyone\'s presence. To test Bids, Buy Now, and Direct Gate features, invite someone to open the site at the same time. ⚠️ Please check the "Disclaimer & About" for details. Be careful! You cannot delete items on other users\' devices.',
         externalUrl: '',
         img: 'chess.jpg',
         rating: 1520,
@@ -1896,8 +1896,6 @@ client.on('connect', () => {
                 sender: myId
             }), { qos: 0 });
         }
-        // === DEMO SELLER KEEP-ALIVE ===
-        activePeers['System-Genesis'] = Date.now();
     }, 5000);
 
     setInterval(updateOnlinePeersCount, 5000);
@@ -1908,6 +1906,20 @@ client.on('error', (err) => {
     document.getElementById('netStatus').style.color = '#f00';
     document.getElementById('netStatus').innerHTML = `Network Error`;
     log("MQTT Error: " + JSON.stringify(err));
+    for (let p in activePeers) delete activePeers[p];
+    updateOnlinePeersCount();
+});
+
+client.on('offline', () => {
+    document.getElementById('netStatus').style.color = '#f00';
+    document.getElementById('netStatus').innerHTML = 'Status: Offline';
+    for (let p in activePeers) delete activePeers[p];
+    updateOnlinePeersCount();
+});
+
+client.on('close', () => {
+    for (let p in activePeers) delete activePeers[p];
+    updateOnlinePeersCount();
 });
 
 client.on('message', (topic, payload) => {
@@ -2441,10 +2453,7 @@ async function addItem() {
                 item.auction = null;
             }
 
-const onlineCount = Object.keys(activePeers).filter(peerId => {
-                const ts = activePeers[peerId];
-                return peerId !== myId && (Date.now() - ts) <= 12000;
-            }).length;
+            const onlineCount = getOnlinePeerCount();
 
             if (item.pending_tape) {
                 if (onlineCount > 0) {
@@ -3478,6 +3487,15 @@ setActivityRange(activityRange);
     if (el) el.value = myId;
 })();
 
+function getOnlinePeerCount() {
+    const now = Date.now();
+    return Object.keys(activePeers).filter(peerId => {
+        return peerId !== myId
+            && peerId !== 'System-Genesis'
+            && (now - activePeers[peerId]) <= 12000;
+    }).length;
+}
+
 function updateOnlinePeersCount() {
     const now = Date.now();
     for (let peerId in activePeers) {
@@ -3485,7 +3503,8 @@ function updateOnlinePeersCount() {
             delete activePeers[peerId];
         }
     }
-    const onlineCount = Object.keys(activePeers).length;
+    const onlineCount = getOnlinePeerCount();
+    
     const peerLabel = onlineCount === 1 ? 'peer' : 'peers';
     log(`[Network] Active online: ${onlineCount} ${peerLabel}`);
 
@@ -3537,10 +3556,7 @@ function updateMainActionButton() {
     const btn = document.getElementById('main-action-btn');
     if (!btn) return;
 
-    const onlineCount = Object.keys(activePeers).filter(peerId => {
-        const ts = activePeers[peerId];
-        return peerId !== myId && (Date.now() - ts) <= 12000;
-    }).length;
+    const onlineCount = getOnlinePeerCount();
 
     // Если редактируем — решаем по режиму item'а, а не по onlineCount
     if (editingId !== null) {
