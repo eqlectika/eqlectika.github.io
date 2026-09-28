@@ -2278,9 +2278,14 @@ else if (packet.type === 'GATE_MSG') {
         text: packet.text,
         ts: packet.ts || Date.now()
     });
-    if (msgs.length > 200) auctionGates[gateId].messages = msgs.slice(-200);
     saveAuctionGates();
     updateRankingList();
+
+    // === автоскролл к новому входящему сообщению ===
+    requestAnimationFrame(() => {
+        const msgsEl = document.getElementById('gate-msgs-' + gateId);
+        if (msgsEl) msgsEl.scrollTop = msgsEl.scrollHeight;
+    });
 }
 
     } catch(e) {
@@ -2886,7 +2891,6 @@ if (lastMsg && lastMsg.from === myId && lastMsg.text === text
 const ts = Date.now();
     
     gate.messages.push({ from: myId, text: text, ts: ts });
-    if (gate.messages.length > 200) gate.messages = gate.messages.slice(-200);
     saveAuctionGates();
 
     client.publish(TOPIC, JSON.stringify({
@@ -2902,7 +2906,13 @@ const ts = Date.now();
     if (textarea) textarea.value = '';
     updateRankingList();
 
-    // === DEMO AUTO-REPLY ===
+    // === автоскролл гейта к последнему сообщению ===
+    requestAnimationFrame(() => {
+        const msgsEl = document.getElementById('gate-msgs-' + gateId);
+        if (msgsEl) msgsEl.scrollTop = msgsEl.scrollHeight;
+    });
+
+
     // === DEMO AUTO-REPLY ===
     if (isDemoPeer(peerId)) {
         if (_demoTimers[gateId]) clearTimeout(_demoTimers[gateId]);
@@ -2921,11 +2931,13 @@ const ts = Date.now();
                 text: 'Hi. I am a demo seller here to show you how Auction and Direct Gate work. Invite a real person to try the features live: list an item, set a starting and a sale price, then place bids or use "Buy Now" to see the result. Read Disclaimer & About, and use the Local Guide at the bottom.',
                 ts: Date.now()
             });
-            if (freshGate.messages.length > 200) {
-                freshGate.messages = freshGate.messages.slice(-200);
-            }
             saveAuctionGates();
             updateRankingList();
+
+            requestAnimationFrame(() => {
+                const msgsEl = document.getElementById('gate-msgs-' + gateId);
+                if (msgsEl) msgsEl.scrollTop = msgsEl.scrollHeight;
+            });
         }, 800);
     }
 }
@@ -3043,7 +3055,7 @@ if (a.status === 'delivered') {
             </div>
             <div class="gate-msgs" id="gate-msgs-${gateId}">`;
         if (gate) {
-            const msgs = gate.messages.slice(-10);
+            const msgs = gate.messages;
             msgs.forEach(m => {
                 const authorOnline = isPeerOnline(m.from);
                 const authorColor = authorOnline ? '#ff0000' : '#afff00';
@@ -3071,6 +3083,13 @@ if (a.status === 'delivered') {
 }
 
 function updateRankingList() {
+    // === сохранить позиции скролла гейтов и списка ===
+    const savedScrolls = {};
+    document.querySelectorAll('.gate-msgs').forEach(el => {
+        savedScrolls[el.id] = el.scrollTop;
+    });
+    const listScrollTop = document.getElementById('ranking-list')?.scrollTop || 0;
+
     const sorted = [...items].sort((a, b) => b.rating - a.rating);
     let html = '';
 
@@ -3260,6 +3279,15 @@ ${
         const el = document.getElementById(`details-${id}`);
         if (el) el.style.display = 'block';
     });
+
+    // === восстановить позиции скролла ===
+    document.querySelectorAll('.gate-msgs').forEach(el => {
+        if (savedScrolls[el.id] !== undefined) {
+            el.scrollTop = savedScrolls[el.id];
+        }
+    });
+    const listEl = document.getElementById('ranking-list');
+    if (listEl) listEl.scrollTop = listScrollTop;
 }
 
 function nextPair() {
