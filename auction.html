@@ -944,7 +944,6 @@ a { color: #448aff; text-decoration: none; }
     Update Available
 </span>
 </div>
-        <p style="color:#afff00; font-size:13px;">Before updating, please verify if your current item is ready but was not injected to avoid losing any unsent content.</p>
 
 <div id="disclaimerText" class="collapsed">
     <p>⚠️ <strong>This application uses public broker test infrastructure to sync data between users in real time for demonstration purposes only!
@@ -2553,15 +2552,21 @@ const newItem = {
 };
 
         items.push(newItem);
-        saveLocal();
 
-        client.publish(TOPIC, JSON.stringify({
-            type: 'ADD_ITEM',
-            sender: myId,
-            item: newItem
-        }), { qos: 1 });
-
-        log(`You injected item: "${title}"`);
+        const onlineCount = getOnlinePeerCount();
+        if (onlineCount === 0) {
+            newItem.pending_tape = true;
+            saveLocal();
+            log(`[Tape] Item saved locally (no peers): "${title}"`);
+        } else {
+            saveLocal();
+            client.publish(TOPIC, JSON.stringify({
+                type: 'ADD_ITEM',
+                sender: myId,
+                item: newItem
+            }), { qos: 1 });
+            log(`You injected item: "${title}"`);
+        }
     }
 
     $('#new-title, #new-desc, #new-url, #new-img-file').val('');
@@ -3211,14 +3216,28 @@ auctionBadge = `<span style="
 
 ${
     item.sender === myId
-    ? `
-        <button
-            class="edit-btn"
-            onclick="event.stopPropagation(); editItem('${item.id}')"
-        >
-            Edit and/or Re-inject Item (free)
-        </button>
-    `
+    ? (() => {
+        const isTapeItem = !!item.pending_tape;
+        const onlineCount = getOnlinePeerCount();
+        let btnText;
+
+        if (isTapeItem) {
+            btnText = onlineCount > 0
+                ? 'Re-inject Item to Network (free)'
+                : 'Edit Item';
+        } else {
+            btnText = 'Edit and/or Re-inject Item (free)';
+        }
+
+        return `
+            <button
+                class="edit-btn"
+                onclick="event.stopPropagation(); editItem('${item.id}')"
+            >
+                ${btnText}
+            </button>
+        `;
+      })()
     : ''
 }
 
@@ -3586,25 +3605,9 @@ function updateMainActionButton() {
 
     const onlineCount = getOnlinePeerCount();
 
-    // Если редактируем — решаем по режиму item'а, а не по onlineCount
-    if (editingId !== null) {
-        const item = items.find(i => i.id === editingId);
-        if (item && item.pending_tape) {
-            // Item в Tape. Если пиры появились — можно публиковать.
-            btn.textContent = onlineCount > 0
-                ? 'Inject Item to Network'
-                : 'Save Item';
-        } else {
-            // Item уже опубликован — просто сохраняем изменения
-            btn.textContent = 'Save Changes';
-        }
-        return;
-    }
-
-    // Обычный режим (не редактирование)
     btn.textContent = onlineCount > 0
         ? 'Inject Item to Network'
-        : 'Save Item';
+        : 'Save Changes';
 }
 
 function onBrokerSelectChange(selectEl) {
