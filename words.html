@@ -120,52 +120,28 @@ html{padding-top:env(safe-area-inset-top)}
 #caret-circle.pulse{animation:caretPulse .3s ease}
 @keyframes caretPulse{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
 
-/* ---------- edit popover (full-screen, no padding, no borders) ---------- */
+/* ---------- edit popover ---------- */
 #edit-popover{
-  position:fixed;inset:0;z-index:950;
-  display:none;flex-direction:column;
-  background:#000030;
-  padding:0;
-  border:0;
+  position:fixed;z-index:950;display:none;flex-direction:column;
+  gap:6px;background:#0b0b28;border:1px solid #3d1a99;
+  border-radius:12px;padding:10px;min-width:220px;
+  box-shadow:0 8px 28px rgba(0,0,0,.6);
 }
 #edit-popover.show{display:flex}
-#edit-popover .title{
-  font-size:14px;color:#888;font-family:monospace;
-  padding:14px 16px 10px;
-  border-bottom:1px solid #1e1e4a;
+#edit-popover .title{font-size:12px;color:#888;font-family:monospace;margin-bottom:2px}
+#edit-popover input{
+  font-family:'Roboto Condensed',sans-serif;font-size:16px;
+  padding:8px 10px;border-radius:8px;border:1px solid #444;
+  background:#120a3a;color:#fff;outline:none;user-select:text;-webkit-user-select:text;
 }
-#edit-popover textarea{
-  flex:1;
-  width:100%;
-  border:0;outline:none;resize:none;
-  padding:16px;
-  background:#000030;color:#fff;
-  font-family:'Roboto Condensed',sans-serif;
-  font-size:18px;line-height:1.4;
-  user-select:text;-webkit-user-select:text;
-}
-#edit-popover textarea::placeholder{color:#444}
-#edit-popover .row{
-  display:flex;flex-direction:row;gap:10px;
-  padding:12px 16px;
-  border-top:1px solid #1e1e4a;
-  background:#000030;
-}
+#edit-popover .row{display:flex;gap:6px}
 #edit-popover button{
-  flex:1;
-  font-family:'Roboto Condensed',sans-serif;
-  font-size:16px;font-weight:700;
-  padding:14px 10px;
-  border:0;border-radius:10px;
+  flex:1;font-family:'Roboto Condensed',sans-serif;font-size:14px;
+  font-weight:700;padding:8px 6px;border:none;border-radius:8px;
   cursor:pointer;color:#fff;background:#333;
 }
 #edit-popover .btn-add{background:#3d1a99}
 #edit-popover .btn-cancel{background:#222;color:#aaa}
-#edit-popover .hint{
-  font-size:12px;color:#555;text-align:center;
-  padding:0 16px 14px;font-family:monospace;
-}
-}
 
 /* ---------- footer ---------- */
 .footer-panel{
@@ -215,7 +191,7 @@ html{padding-top:env(safe-area-inset-top)}
   <div class="words-wrapper" id="words-wrapper"></div>
 
   <div class="footer-panel">
-  <!--  <input type="text" id="word-input" placeholder="Enter word(s) and press Enter..."> -->
+    <input type="text" id="word-input" placeholder="Enter word(s) and press Enter...">
     <button class="sync-btn" id="syncBtn" title="Re-send tape edits to network" style="display:none">SYNC TAPE TO LIVE</button>
 
     <div class="note" id="note">
@@ -223,7 +199,7 @@ html{padding-top:env(safe-area-inset-top)}
       <div class="note-text">
         <p style="font-size:18px;font-weight:bold;">War Of The Words — Terminal</p>
         <p><strong>Circle</strong> — single tap shuffles unhighlighted words. Long tap opens the caret (add word). Drag to move.</p>
-        <p><strong>Long tap on the circle</strong> opens a full-screen editor. Type one or more words (space or newline separated), then <em>Ctrl/Cmd + Enter</em> or tap <em>Add</em>. They are inserted before/after the nearest word as plain text.</p>
+        <p><strong>Caret popover</strong> — type a word, tap <em>Add</em>. It is inserted before/after the nearest word as <span style="color:#ff2440">red fresh</span> text.</p>
         <p><strong>Word taps:</strong> fresh > white > green > orange > open ChatGPT definition (and copy to clipboard). Long tap deletes the word.</p>
         <p>In <span style="color:#ff0000">Live</span> mode edits are sent to all peers immediately. In <span style="color:#afff00">Tape</span> mode they're stored locally and flushed when a peer appears (or via the Sync button).</p>
         <p>Shuffle is local only and affects only non-highlighted words.</p>
@@ -237,12 +213,13 @@ html{padding-top:env(safe-area-inset-top)}
 
 <div id="edit-popover">
   <div class="title" id="popoverTitle">Insert word</div>
-  <textarea id="popoverInput" placeholder="Type word(s)…" autocomplete="off" spellcheck="false"></textarea>
+  <input type="text" id="popoverInput" placeholder="Type a word…" autocomplete="off">
   <div class="row">
     <button class="btn-add" id="btnAdd">Add</button>
+  </div>
+  <div class="row">
     <button class="btn-cancel" id="btnCancel">Cancel</button>
   </div>
-  <div class="hint">Ctrl/Cmd + Enter — add · Enter — new line · Esc — cancel</div>
 </div>
 
 <script>
@@ -609,6 +586,9 @@ function openCaret(){
    Popover
    ========================================================= */
 function openPopover(ctx){
+  const rect = caret.getBoundingClientRect();
+  popover.style.left = Math.min(window.innerWidth - 240, rect.left) + 'px';
+  popover.style.top  = Math.min(window.innerHeight - 140, rect.bottom + 8) + 'px';
   popoverTitle.textContent = ctx.index < 0
     ? 'Insert first word'
     : (ctx.side === 'after' ? `After: ${wordsList[ctx.index].word}` : `Before: ${wordsList[ctx.index].word}`);
@@ -628,34 +608,9 @@ document.getElementById('btnCancel').addEventListener('click', hidePopover);
 document.getElementById('btnAdd').addEventListener('click', ()=>{
   const text = popoverInput.value.trim();
   if (!text || !caretContext) return;
-
-  const words = text.split(/\s+/).filter(Boolean);
-  if (words.length === 0) return;
-
-  let ctx = { ...caretContext };
-  words.forEach(w => {
-    const edit = buildAddEdit(ctx, w);
-    submitEdit(edit, true);
-    if (ctx.index >= 0){
-      ctx.index = (ctx.side === 'after') ? ctx.index + 1 : ctx.index;
-      ctx.side = 'after';
-    } else {
-      ctx.index = 0;
-      ctx.side = 'after';
-    }
-  });
-
+  const edit = buildAddEdit(caretContext, text);
+  submitEdit(edit, true);
   hidePopover();
-});
-
-popoverInput.addEventListener('keydown', (e)=>{
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)){
-    e.preventDefault();
-    document.getElementById('btnAdd').click();
-  } else if (e.key === 'Escape'){
-    hidePopover();
-  }
-  // обычный Enter — новая строка
 });
 
 popoverInput.addEventListener('keydown', (e)=>{
@@ -743,24 +698,21 @@ function applyRemoteEdit(p){
 /* =========================================================
    Manual input
    ========================================================= */
-/* =========================================================
-   Manual input — временно отключено (поле скрыто)
-   ========================================================= */
-// document.getElementById('word-input').addEventListener('keydown', (e)=>{
-//   if (e.key === 'Enter'){
-//     e.preventDefault();
-//     const text = e.target.value.trim();
-//     if (!text) return;
-//     const newWords = text.split(/\s+/).filter(Boolean);
-//     newWords.forEach(w=>{
-//       wordsList.push({ id:'w-'+Date.now()+'-'+Math.floor(Math.random()*1000), word:w, highlight:0 });
-//     });
-//     saveWords();
-//     e.target.value = '';
-//     renderWords();
-//     log('Added locally: ' + newWords.join(', '));
-//   }
-// });
+document.getElementById('word-input').addEventListener('keydown', (e)=>{
+  if (e.key === 'Enter'){
+    e.preventDefault();
+    const text = e.target.value.trim();
+    if (!text) return;
+    const newWords = text.split(/\s+/).filter(Boolean);
+    newWords.forEach(w=>{
+      wordsList.push({ id:'w-'+Date.now()+'-'+Math.floor(Math.random()*1000), word:w, highlight:0 });
+    });
+    saveWords();
+    e.target.value = '';
+    renderWords();
+    log('Added locally: ' + newWords.join(', '));
+  }
+});
 
 /* =========================================================
    Sync button
