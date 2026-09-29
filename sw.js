@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-sync'; 
+const CACHE_NAME = 'version-popover'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
