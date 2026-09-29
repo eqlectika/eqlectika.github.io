@@ -316,9 +316,10 @@ client.on('connect', () => {
 
   client.on('error', (e) => { log('MQTT error: ' + e.message); });
 
-  client.on('message', (t, payload) => {
+client.on('message', (t, payload) => {
     let p;
     try{ p = JSON.parse(payload.toString()); }catch(e){ return; }
+    console.log('[WOW] RAW:', p.type, 'from', p.sender);   // ← добавь
     if (p.sender === myId) return;
 
     if (p.type === 'PING'){ activePeers[p.sender] = Date.now(); return; }
