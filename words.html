@@ -215,6 +215,7 @@ html{padding-top:env(safe-area-inset-top)}
         <p>In <span style="color:#ff0000">Live</span> mode edits are sent to all peers immediately. In <span style="color:#afff00">Tape</span> mode they're stored locally and flushed when a peer appears (or via the Sync button).</p>
         <p>Shuffle is local only and affects only non-highlighted words.</p>
         <p><strong>Your peer name</strong> — tap the ID in the top-right corner, type a new name, press Enter. 3–12 chars: letters, digits, dash, underscore. Escape or tap away to cancel.</p>
+        <button class="sync-btn" id="clearBtn" title="Delete all words" style="background:#800;margin-top:6px">CLEAR ALL</button>        
       </div>
     </div>
   </div>
@@ -849,6 +850,25 @@ if (note && noteToggle){
 connectMqtt();
 renderWords();
 log('Init done. myId=' + myId + ', words=' + wordsList.length);
+
+/* =========================================================
+   Clear all
+   ========================================================= */
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  if (!confirm('Delete ALL words on this device?\n\nThis does NOT delete words on other peers.')) return;
+
+  wordsList = [];
+  saveWords();
+
+  // Очищаем tape и applied-логи, чтобы не тянуть старьё
+  pendingEdits = [];
+  savePending();
+  appliedEditIds = new Set();
+  saveApplied();
+
+  renderWords();
+  log('Cleared all words (local only)');
+});
 </script>
 </body>
 </html>
