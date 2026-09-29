@@ -14,7 +14,18 @@ html,body{width:100%;height:100%;background:#000030;font-family:'Roboto Condense
 html{padding-top:env(safe-area-inset-top)}
 
 .container{display:flex;flex-direction:column;justify-content:space-between;height:100vh;padding:0 2px 4px;background:#000030}
-
+/* Скрыть скроллбар, но оставить прокрутку */
+.words-wrapper,
+.note-text {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE / Edge */
+}
+.words-wrapper::-webkit-scrollbar,
+.note-text::-webkit-scrollbar {
+  display: none;                /* Chrome / Safari / Edge */
+  width: 0;
+  height: 0;
+}
 /* ---------- top bar ---------- */
 .top-bar{
   position:fixed;top:0;left:0;right:0;z-index:50;
@@ -283,17 +294,23 @@ function connectMqtt(){
     });
   }catch(e){ log('MQTT init error: ' + e.message); return; }
 
-  client.on('connect', () => {
-    log('MQTT connected');
-    client.subscribe(TOPIC, {qos:1});
-    setInterval(()=>{
-      if (client && client.connected){
-        client.publish(TOPIC, JSON.stringify({type:'PING', sender:myId}), {qos:0});
-      }
-    }, 5000);
-    setInterval(updatePeers, 3000);
-    updatePeers();
-  });
+client.on('connect', () => {
+  log('MQTT connected');
+  client.subscribe(TOPIC, {qos:1});
+
+  // PING сразу, потом каждые 5 сек
+  function sendPing(){
+    if (client && client.connected){
+      client.publish(TOPIC, JSON.stringify({type:'PING', sender:myId}), {qos:0});
+    }
+  }
+  sendPing();
+  setInterval(sendPing, 5000);
+
+  // updatePeers сразу, потом каждые 3 сек
+  updatePeers();
+  setInterval(updatePeers, 3000);
+});
 
   client.on('error', (e) => { log('MQTT error: ' + e.message); });
 
@@ -352,15 +369,14 @@ const popoverTitle = document.getElementById('popoverTitle');
 let caretContext = null;
 let caretOpen = false;
 
-/* =========================================================
-   Render words
-   ========================================================= */
 function renderWords(){
   wrapper.innerHTML = '';
   if (wordsList.length === 0){
     wrapper.innerHTML = '<div style="color:#666;font-family:monospace;padding:20px">Enter your first word below…</div>';
     return;
   }
+
+  const tempCells = [];
 
   wordsList.forEach((item, idx) => {
     const cell = document.createElement('div');
@@ -426,6 +442,30 @@ function renderWords(){
     cell.addEventListener('pointerleave', ()=> clearTimeout(pressTimer));
 
     wrapper.appendChild(cell);
+    tempCells.push(cell);
+  });
+
+  // === АВТОМАСШТАБИРОВАНИЕ ===
+  requestAnimationFrame(() => {
+    const maxSize = 40;
+    const minSize = 8;
+    let size = maxSize;
+
+    function applySize(value) {
+      tempCells.forEach(cell => {
+        cell.style.fontSize = `${value}px`;
+      });
+    }
+
+    applySize(size);
+
+    while (
+      wrapper.scrollHeight > wrapper.clientHeight &&
+      size > minSize
+    ) {
+      size -= 1;
+      applySize(size);
+    }
   });
 }
 
@@ -644,7 +684,10 @@ function submitEdit(edit, applyLocally){
   appliedEditIds.add(edit.editId);
   saveApplied();
 
-  if (isLive && client && client.connected){
+  const canSend = isLive && client && client.connected;
+  log(`submitEdit: isLive=${isLive}, clientConnected=${client && client.connected}, canSend=${canSend}`);
+
+  if (canSend){
     client.publish(TOPIC, JSON.stringify({...edit, sender:myId}), {qos:1});
     log('Sent edit add → network');
   } else {
