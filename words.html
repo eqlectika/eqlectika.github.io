@@ -25,6 +25,7 @@
             height: 100%;
             background-color: #000030;
             font-family: 'Roboto Condensed', sans-serif;
+            overflow: hidden;
         }
 
         .container {
@@ -152,9 +153,46 @@
     margin-bottom: 10px; 
 }
 
-
 .note-text p:last-child {
     margin-bottom: 0;
+}
+
+/* Draggable shuffle circle */
+#shuffle-circle {
+    position: fixed;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #7B4DFF, #3D1A99);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 15px rgba(123, 77, 255, 0.5), inset 0 2px 6px rgba(255, 255, 255, 0.2);
+    z-index: 1000;
+    cursor: grab;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#shuffle-circle:active {
+    cursor: grabbing;
+    transform: scale(1.1);
+    box-shadow: 0 6px 22px rgba(123, 77, 255, 0.8), inset 0 2px 6px rgba(255, 255, 255, 0.3);
+}
+
+#shuffle-circle svg {
+    width: 30px;
+    height: 30px;
+    fill: #FFFFFF;
+    opacity: 0.9;
+    pointer-events: none;
+}
+
+#shuffle-circle.dragging {
+    transition: none;
+    transform: scale(1.15);
 }
 
     </style>
@@ -170,7 +208,7 @@
     <div class="note" id="note">
         <div class="note-toggle" id="note-toggle"><strong>Help</strong></div>
         <div class="note-text">
-            <p style="font-size:20px;font-weight:bold;">War Of The Words</h3>
+            <p style="font-size:20px;font-weight:bold;">War Of The Words</p>
 <p>First tap highlights the word green. Second tap highlights it orange. Third tap opens request for definition via ChatGPT.</p>
 <p>Long tap removes word and highlight.</p>
 <p>External operating system or may retain a previous word for reasons beyond this app's control.</p>
@@ -181,6 +219,13 @@
         </div>
     </div>
 </div>
+    </div>
+
+    <!-- Draggable shuffle circle -->
+    <div id="shuffle-circle" title="Tap to shuffle, drag to move">
+        <svg viewBox="0 0 24 24">
+            <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+        </svg>
     </div>
 
     <script>
@@ -355,6 +400,138 @@ requestAnimationFrame(() => {
         });
 
         updateLayout();
+
+        // ===== DRAGGABLE SHUFFLE CIRCLE =====
+        const circle = document.getElementById('shuffle-circle');
+
+        // Restore saved position
+        const savedPos = localStorage.getItem('shuffle_circle_pos');
+        if (savedPos) {
+            try {
+                const pos = JSON.parse(savedPos);
+                circle.style.left = pos.left + 'px';
+                circle.style.top = pos.top + 'px';
+            } catch (e) { /* ignore */ }
+        } else {
+            // Default position: bottom-right area, above footer
+            circle.style.left = (window.innerWidth - 80) + 'px';
+            circle.style.top = (window.innerHeight - 220) + 'px';
+        }
+
+        let isDragging = false;
+        let hasMoved = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+        let startPointerX = 0;
+        let startPointerY = 0;
+        const MOVE_THRESHOLD = 8; // px before considered a drag
+
+        circle.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            isDragging = true;
+            hasMoved = false;
+
+            const rect = circle.getBoundingClientRect();
+            dragOffsetX = event.clientX - rect.left;
+            dragOffsetY = event.clientY - rect.top;
+
+            startPointerX = event.clientX;
+            startPointerY = event.clientY;
+
+            circle.classList.add('dragging');
+            circle.setPointerCapture(event.pointerId);
+        });
+
+        circle.addEventListener('pointermove', (event) => {
+            if (!isDragging) return;
+            event.preventDefault();
+            event.stopPropagation();
+
+            const dx = event.clientX - startPointerX;
+            const dy = event.clientY - startPointerY;
+
+            if (!hasMoved && Math.sqrt(dx * dx + dy * dy) > MOVE_THRESHOLD) {
+                hasMoved = true;
+            }
+
+            let newLeft = event.clientX - dragOffsetX;
+            let newTop = event.clientY - dragOffsetY;
+
+            // Keep circle within viewport
+            const circleSize = circle.offsetWidth;
+            newLeft = Math.max(0, Math.min(window.innerWidth - circleSize, newLeft));
+            newTop = Math.max(0, Math.min(window.innerHeight - circleSize, newTop));
+
+            circle.style.left = newLeft + 'px';
+            circle.style.top = newTop + 'px';
+        });
+
+        function endDrag(event) {
+            if (!isDragging) return;
+            isDragging = false;
+            circle.classList.remove('dragging');
+
+            if (hasMoved) {
+                // Save position
+                const rect = circle.getBoundingClientRect();
+                localStorage.setItem('shuffle_circle_pos', JSON.stringify({
+                    left: rect.left,
+                    top: rect.top
+                }));
+            } else {
+                // It was a tap, not a drag -> shuffle words
+                shuffleWords();
+            }
+        }
+
+        circle.addEventListener('pointerup', endDrag);
+        circle.addEventListener('pointercancel', (event) => {
+            if (isDragging) {
+                isDragging = false;
+                circle.classList.remove('dragging');
+            }
+        });
+
+        // Prevent scrolling/gestures on the circle
+        circle.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+        circle.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+        // ===== SHUFFLE FUNCTION =====
+        function shuffleWords() {
+            if (wordsList.length < 2) return;
+
+            // Fisher-Yates shuffle
+            for (let i = wordsList.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [wordsList[i], wordsList[j]] = [wordsList[j], wordsList[i]];
+            }
+
+            saveWords();
+            updateLayout();
+
+            // Visual feedback: quick pulse animation
+            circle.animate([
+                { transform: 'scale(1)' },
+                { transform: 'scale(1.25)' },
+                { transform: 'scale(1)' }
+            ], {
+                duration: 300,
+                easing: 'ease-out'
+            });
+        }
+
+        // Keep circle in bounds on window resize
+        window.addEventListener('resize', () => {
+            const rect = circle.getBoundingClientRect();
+            const circleSize = circle.offsetWidth;
+            let newLeft = Math.max(0, Math.min(window.innerWidth - circleSize, rect.left));
+            let newTop = Math.max(0, Math.min(window.innerHeight - circleSize, rect.top));
+            circle.style.left = newLeft + 'px';
+            circle.style.top = newTop + 'px';
+        });
+
     </script>
 </body>
 </html>
