@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-shuffle'; 
+const CACHE_NAME = 'version-sync'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
