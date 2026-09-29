@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-words'; 
+const CACHE_NAME = 'version-shuffle'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
