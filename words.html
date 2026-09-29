@@ -353,7 +353,11 @@ function flushPendingEdits(){
   if (!client || !client.connected) return;
   const toSend = pendingEdits.slice();
   toSend.forEach(edit=>{
-    client.publish(TOPIC, JSON.stringify({...edit, sender:myId}), {qos:1});
+    client.publish(TOPIC, JSON.stringify({
+      ...edit,
+      type: 'WORD_EDIT',
+      sender: myId
+    }), {qos:1});
   });
   pendingEdits = [];
   savePending();
@@ -690,10 +694,14 @@ function submitEdit(edit, applyLocally){
   const canSend = isLive && client && client.connected;
   log(`submitEdit: isLive=${isLive}, clientConnected=${client && client.connected}, canSend=${canSend}`);
 
-  if (canSend){
-    client.publish(TOPIC, JSON.stringify({...edit, sender:myId}), {qos:1});
-    log('Sent edit add → network');
-  } else {
+if (canSend){
+  client.publish(TOPIC, JSON.stringify({
+    ...edit,
+    type: 'WORD_EDIT',
+    sender: myId
+  }), {qos:1});
+  log('Sent edit add → network');
+} else {
     pendingEdits.push(edit);
     savePending();
     log('Edit saved to tape (offline)');
