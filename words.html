@@ -78,15 +78,19 @@ html{padding-top:env(safe-area-inset-top)}
 .words-wrapper{
   flex-grow:1;width:100%;position:relative;
   display:flex;flex-wrap:wrap;align-content:flex-start;
+  align-items:flex-end;       /* ← ячейки в строке выравниваются по низу */
   gap:8px 10px;padding:56px 6px 6px;
   overflow-y:auto;cursor:default;touch-action:pan-y;
 }
 .word-cell{
   position:relative;
   display:inline-flex;align-items:center;justify-content:center;
+  flex-direction:column;
   font-weight:700;white-space:nowrap;background:transparent;border:none;
   padding:2px 4px;line-height:.75;opacity:.95;
   transition:color .3s ease;color:#fff;font-size:40px;
+  justify-content:flex-end;   /* ← прижать слово к низу ячейки */
+  vertical-align:bottom;      /* ← выравнивание ячеек по низу строки */
 }
 .word-cell.hl-fresh{color:#ff2440}
 .word-cell.hl-1{color:#4CAF50}
@@ -190,6 +194,7 @@ html{padding-top:env(safe-area-inset-top)}
 .note.open .note-text{display:block}
 .note-text p{margin-bottom:10px}
 .note-text p:last-child{margin-bottom:0}
+
 </style>
 </head>
 <body>
@@ -479,10 +484,20 @@ function renderWords(){
     else if (item.highlight === 1) cell.classList.add('hl-1');
     else if (item.highlight === 2) cell.classList.add('hl-2');
 
+    if (item.author){
+      const tag = document.createElement('span');
+      tag.textContent = item.author;
+      tag.style.cssText =
+        'display:block;font-size:10px;color:#0097ff;' +
+        'font-family:monospace;line-height:1;margin-bottom:2px;text-align:center';
+      cell.appendChild(tag);
+    }
+
     const main = document.createElement('span');
     main.textContent = item.word;
+    main.style.display = 'block';
     cell.appendChild(main);
-
+    
     let pressTimer, pressStart, longPress = false;
     cell.addEventListener('pointerdown', (e)=>{
       e.stopPropagation();
@@ -776,6 +791,7 @@ function buildAddEdit(ctx, text){
     word: text,
     anchorId: ctx.index >= 0 ? wordsList[ctx.index].id : null,
     anchorSide: ctx.side,
+    author: myId,
     ts: Date.now()
   };
 }
@@ -820,7 +836,8 @@ function applyEditLocally(edit, asFresh){
     word: edit.word,
     highlight: 0,
     fresh: !!asFresh,
-    originEditId: edit.editId || null
+    originEditId: edit.editId || null,
+    author: edit.author || null
   };
 
   // Резолвим позицию по anchorId. Если якорь не найден — кладём В КОНЕЦ,
