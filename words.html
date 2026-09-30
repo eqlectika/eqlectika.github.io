@@ -1011,24 +1011,36 @@ document.getElementById('clearBtn').addEventListener('click', ()=>{
 
 
 if ('serviceWorker' in navigator) {
-    let newWorker;
-    navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
-        if (reg.waiting) {
-            document.getElementById('updateAvailableLine').style.display = 'block';
-        }
-        reg.addEventListener('updatefound', () => {
-            newWorker = reg.installing;
-            if (!newWorker) return;
-            newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    document.getElementById('updateAvailableLine').style.display = 'block';
-                }
-            });
-        });
-    });
+    navigator.serviceWorker.register('./sw.js', { scope: './' });
 }
 
+// Проверка новой версии по CACHE_NAME в sw.js.
+// Работает даже если sw.js сам себя активирует (skipWaiting в install),
+// потому что сравнивает содержимое sw.js на сервере с сохранённым локально.
+async function checkForUpdate() {
+    try {
+        const r = await fetch('./sw.js', { cache: 'no-store' });
+        const text = await r.text();
+        const m = text.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
+        if (!m) return;
+        const serverVersion = m[1];
+
+        const stored = localStorage.getItem('wow_sw_version');
+        if (!stored) {
+            localStorage.setItem('wow_sw_version', serverVersion);
+            return;
+        }
+        if (stored !== serverVersion) {
+            document.getElementById('updateAvailableLine').style.display = 'block';
+        }
+    } catch(e) {}
+}
+setInterval(checkForUpdate, 60000);
+checkForUpdate();
+
 async function syncAndKeepData() {
+      localStorage.removeItem('wow_sw_version');
+
     log('[Update] Applying update, preserving all data...');
     if ('serviceWorker' in navigator) {
         try {
