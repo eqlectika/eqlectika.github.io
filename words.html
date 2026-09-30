@@ -218,8 +218,11 @@ html{padding-top:env(safe-area-inset-top)}
       <div class="note-toggle" id="note-toggle"><strong>Help</strong></div>
  <div class="note-text">
   <button class="sync-btn" id="clearBtn" title="Delete all words" style="background:#800;margin-top:6px">CLEAR ALL</button>
-  <button class="sync-btn" id="update-app" title="Update app" style="background:#ff8700;margin-top:6px;display:none">UPDATE</button>
-
+<span id="updateAvailableLine" 
+      style="display: none; color: #0097ff; font-size: 14px; font-family: 'Roboto Condensed', sans-serif; cursor: pointer;"
+      onclick="event.stopPropagation(); syncAndKeepData()">
+    Update Available
+</span>
   <p style="margin-top:12px;font-size:18px;">War Of The Words — Terminal</p>
 
   <p>Circle — single tap shuffles unhighlighted words. Long tap opens the caret (add word). Drag to move.</p>
@@ -1006,65 +1009,45 @@ document.getElementById('clearBtn').addEventListener('click', ()=>{
   log('Cleared all words (local only)');
 });
 
-let refreshing = false;
-let updateWorker = null;
-const updateBtn = document.getElementById('update-app');
-
-function showUpdateButton(){
-  updateBtn.style.display = 'inline-block';
-}
-function hideUpdateButton(){
-  updateBtn.style.display = 'none';
-}
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').then((registration) => {
-
-    // Если уже есть ждущий SW — значит обновление найдено до перезагрузки
-    if (registration.waiting) {
-      updateWorker = registration.waiting;
-      showUpdateButton();
-    }
-
-    // Новый SW найден
-    registration.addEventListener('updatefound', () => {
-      updateWorker = registration.installing;
-      if (!updateWorker) return;
-      updateWorker.addEventListener('statechange', () => {
-        if (updateWorker.state === 'installed' && navigator.serviceWorker.controller){
-          // установлен и есть старый контроллер — значит это обновление
-          showUpdateButton();
+    let newWorker;
+    navigator.serviceWorker.register('./sw.js', { scope: './' }).then(reg => {
+        if (reg.waiting) {
+            document.getElementById('updateAvailableLine').style.display = 'block';
         }
-      });
+        reg.addEventListener('updatefound', () => {
+            newWorker = reg.installing;
+            if (!newWorker) return;
+            newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    document.getElementById('updateAvailableLine').style.display = 'block';
+                }
+            });
+        });
     });
-
-    // Периодически проверяем обновления (раз в 30 минут)
-    setInterval(() => registration.update().catch(()=>{}), 30*60*1000);
-
-  }).catch((e) => {
-    log('SW registration failed: ' + e.message);
-  });
-
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) {
-      refreshing = true;
-      window.location.reload();
-    }
-  });
 }
 
-updateBtn.addEventListener('click', () => {
-  if (updateWorker) {
-    updateWorker.postMessage({ type: 'SKIP_WAITING' });
-    setTimeout(() => { if (!refreshing) window.location.reload(); }, 500);
-  } else {
+async function syncAndKeepData() {
+    log('[Update] Applying update, preserving all data...');
+    if ('serviceWorker' in navigator) {
+        try {
+            const reg = await navigator.serviceWorker.ready;
+            if (reg.waiting) {
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    window.location.reload();
+                });
+                return;
+            }
+        } catch(e) {
+            console.warn('[Update] SW activation error:', e);
+        }
+    }
     window.location.reload();
-  }
-});
+}
 
-/* =========================================================
-   Init
-   ========================================================= */
+/* Init */
 connectMqtt();
 renderWords();
 refreshChrome();
