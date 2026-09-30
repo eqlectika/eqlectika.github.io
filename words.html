@@ -247,19 +247,20 @@ const DataManager = (() => {
   return {get,set,key};
 })();
 
-/* =========================================================
-   Log (объявлен рано, чтобы был доступен везде)
-   ========================================================= */
 function log(msg){ console.log('[WOW]', msg); }
 
 /* =========================================================
-   Peer identity
+   Peer identity + client id
    ========================================================= */
 let myId = DataManager.get('peer_id');
 if (!myId) {
   myId = 'Peer-' + Math.floor(Math.random()*9000+1000);
   DataManager.set('peer_id', myId);
 }
+
+// Уникальный clientId — генерируется заново при каждой загрузке.
+// Используется для отсечения собственного эха и защиты от коллизий ников.
+const clientId = 'wow_' + Math.random().toString(16).slice(2,10);
 
 const peerIdInput = document.getElementById('peerIdInput');
 peerIdInput.value = myId;
@@ -269,6 +270,9 @@ peerIdInput.value = myId;
    ========================================================= */
 let wordsList = DataManager.get('words', []);
 if (!Array.isArray(wordsList)) wordsList = [];
+
+// Каждое слово теперь имеет originEditId — защита от повторного применения.
+// Старые записи без этого поля просто не отсекаются (совместимость).
 
 let pendingEdits = DataManager.get('pending_edits', []);
 let appliedEditIds = new Set(DataManager.get('applied_edits', []));
@@ -286,41 +290,45 @@ let client = null;
 let activePeers = {};
 let isLive = false;
 
+let pingTimer = null;
+let peersTimer = null;
+
 function connectMqtt(){
   try{
     client = mqtt.connect(BROKER, {
-      clientId: 'wow_' + Math.random().toString(16).slice(2,10),
+      clientId: clientId,
       reconnectPeriod: 5000,
       connectTimeout: 5000,
       keepalive: 60
     });
   }catch(e){ log('MQTT init error: ' + e.message); return; }
 
-client.on('connect', () => {
-  log('MQTT connected');
-  client.subscribe(TOPIC, {qos:1});
+  client.on('connect', () => {
+    log('MQTT connected');
+    client.subscribe(TOPIC, {qos:1});
+    startHeartbeats();
+  });
 
-  // PING сразу, потом каждые 5 сек
-  function sendPing(){
-    if (client && client.connected){
-      client.publish(TOPIC, JSON.stringify({type:'PING', sender:myId}), {qos:0});
-    }
-  }
-  sendPing();
-  setInterval(sendPing, 5000);
+  client.on('close', () => {
+    log('MQTT disconnected');
+    stopHeartbeats();
+    activePeers = {};
+    updatePeers();   // мгновенно переключаем индикатор в Tape
+  });
 
-  // updatePeers сразу, потом каждые 3 сек
-  updatePeers();
-  setInterval(updatePeers, 3000);
-});
+  client.on('offline', () => { stopHeartbeats(); });
 
   client.on('error', (e) => { log('MQTT error: ' + e.message); });
 
-client.on('message', (t, payload) => {
+  client.on('message', (t, payload) => {
     let p;
     try{ p = JSON.parse(payload.toString()); }catch(e){ return; }
-    console.log('[WOW] RAW:', p.type, 'from', p.sender);   // ← добавь
-    if (p.sender === myId) return;
+
+    // Отсекаем только реально своё — по clientId, а не по нику.
+    // Так смена ника не ломает приём, а коллизия имён перестаёт быть смертельной.
+    if (p.sid === clientId) return;
+    // Совместимость со старыми сообщениями без sid:
+    if (p.sid === undefined && p.sender === myId) return;
 
     if (p.type === 'PING'){ activePeers[p.sender] = Date.now(); return; }
     if (p.type === 'WORD_EDIT'){ applyRemoteEdit(p); return; }
@@ -328,10 +336,29 @@ client.on('message', (t, payload) => {
       if (p.editId){
         pendingEdits = pendingEdits.filter(e=>e.editId!==p.editId);
         savePending();
+        refreshChrome();
       }
       return;
     }
   });
+}
+
+function startHeartbeats(){
+  stopHeartbeats();
+  sendPing();
+  updatePeers();
+  pingTimer  = setInterval(sendPing, 5000);
+  peersTimer = setInterval(updatePeers, 3000);
+}
+function stopHeartbeats(){
+  if (pingTimer)  { clearInterval(pingTimer);  pingTimer = null; }
+  if (peersTimer) { clearInterval(peersTimer); peersTimer = null; }
+}
+
+function sendPing(){
+  if (client && client.connected){
+    client.publish(TOPIC, JSON.stringify({type:'PING', sender:myId, sid:clientId}), {qos:0});
+  }
 }
 
 function updatePeers(){
@@ -341,27 +368,59 @@ function updatePeers(){
   }
   const count = Object.keys(activePeers).length;
   isLive = count > 0;
-  document.getElementById('liveIndicator').style.display = isLive ? 'inline' : 'none';
-  document.getElementById('tapeIndicator').style.display = isLive ? 'none' : 'inline';
-  document.getElementById('syncBtn').style.display = isLive ? 'inline-block' : 'none';
-  document.getElementById('livePeerCount').textContent = count;
+
+  // TTL для pendingEdits: если ACK не пришёл за 60 сек — считаем дохлым
+  const before = pendingEdits.length;
+  pendingEdits = pendingEdits.filter(e => (now - (e.ts||0)) < 60000);
+  if (pendingEdits.length !== before) savePending();
+
+  refreshChrome();
 
   if (isLive && pendingEdits.length > 0){ flushPendingEdits(); }
 }
 
+/* =========================================================
+   UI chrome — индикаторы + sync-кнопка
+   ========================================================= */
+const liveIndicator = document.getElementById('liveIndicator');
+const tapeIndicator = document.getElementById('tapeIndicator');
+const syncBtn = document.getElementById('syncBtn');
+const livePeerCount = document.getElementById('livePeerCount');
+
+function refreshChrome(){
+  const count = Object.keys(activePeers).length;
+  liveIndicator.style.display = isLive ? 'inline' : 'none';
+  tapeIndicator.style.display = isLive ? 'none' : 'inline';
+  livePeerCount.textContent = count;
+
+  // Кнопка SYNC показывается ТОЛЬКО когда есть что-то в очереди.
+  const hasPending = pendingEdits.length > 0;
+  if (hasPending){
+    syncBtn.style.display = 'inline-block';
+    syncBtn.textContent = isLive
+      ? `SYNC (${pendingEdits.length})`
+      : `TAPE: ${pendingEdits.length} pending`;
+    syncBtn.disabled = !isLive;
+  } else {
+    syncBtn.style.display = 'none';
+  }
+}
+
 function flushPendingEdits(){
   if (!client || !client.connected) return;
+  if (pendingEdits.length === 0) return;
   const toSend = pendingEdits.slice();
   toSend.forEach(edit=>{
     client.publish(TOPIC, JSON.stringify({
       ...edit,
       type: 'WORD_EDIT',
-      sender: myId
+      sender: myId,
+      sid: clientId
     }), {qos:1});
   });
-  pendingEdits = [];
-  savePending();
-  log('Flushed tape edits to network');
+  // НЕ очищаем здесь — ждём ACK. Если ACK не придёт за 60 сек,
+  // updatePeers() вычистит их по TTL.
+  log('Flushed ' + toSend.length + ' tape edits (awaiting ACK)');
 }
 
 /* =========================================================
@@ -376,6 +435,11 @@ const popoverTitle = document.getElementById('popoverTitle');
 let caretContext = null;
 let caretOpen = false;
 
+let lastFontSize = null;   // запоминаем последний применённый размер
+
+/* =========================================================
+   Render
+   ========================================================= */
 function renderWords(){
   wrapper.innerHTML = '';
   if (wordsList.length === 0){
@@ -452,32 +516,46 @@ function renderWords(){
     tempCells.push(cell);
   });
 
-  // === АВТОМАСШТАБИРОВАНИЕ ===
+  // === АВТОМАСШТАБИРОВАНИЕ (бинарный поиск) ===
   requestAnimationFrame(() => {
     const maxSize = 40;
     const minSize = 8;
-    let size = maxSize;
 
-    function applySize(value) {
-      tempCells.forEach(cell => {
-        cell.style.fontSize = `${value}px`;
-      });
+    function applySize(value){
+      tempCells.forEach(cell => { cell.style.fontSize = `${value}px`; });
     }
 
-    applySize(size);
-
-    while (
-      wrapper.scrollHeight > wrapper.clientHeight &&
-      size > minSize
-    ) {
-      size -= 1;
-      applySize(size);
+    // Если Help открыт — не пересчитываем, оставляем последний размер.
+    // Иначе уменьшится wrapper.clientHeight → шрифт осядет.
+    if (document.getElementById('note').classList.contains('open') && lastFontSize){
+      applySize(lastFontSize);
+      return;
     }
+
+    // Бинарный поиск максимального размера, при котором контент влезает.
+    let lo = minSize, hi = maxSize, best = minSize;
+    applySize(maxSize);
+    if (wrapper.scrollHeight <= wrapper.clientHeight){
+      best = maxSize;
+    } else {
+      while (lo <= hi){
+        const mid = (lo + hi) >> 1;
+        applySize(mid);
+        if (wrapper.scrollHeight <= wrapper.clientHeight){
+          best = mid;
+          lo = mid + 1;
+        } else {
+          hi = mid - 1;
+        }
+      }
+    }
+    applySize(best);
+    lastFontSize = best;
   });
 }
 
 /* =========================================================
-   Caret circle
+   Caret circle — восстановление позиции
    ========================================================= */
 (function restoreCaretPos(){
   const saved = DataManager.get('caret_pos');
@@ -485,12 +563,11 @@ function renderWords(){
     caret.style.left = saved.left + 'px';
     caret.style.top  = saved.top  + 'px';
   } else {
-    caret.style.left = '12px';                                    // ← слева
-    caret.style.top  = (window.innerHeight - 260) + 'px';         // по вертикали как было
+    caret.style.left = '12px';
+    caret.style.top  = (window.innerHeight - 260) + 'px';
   }
 })();
 
-/* ← ВСТАВЬ СЮДА */
 function updateCaretHint(){
   const wr = wrapper.getBoundingClientRect();
   const cr = caret.getBoundingClientRect();
@@ -544,7 +621,7 @@ caret.addEventListener('pointermove', (e)=>{
   nt = Math.max(60, Math.min(window.innerHeight - s, nt));
   caret.style.left = nl + 'px';
   caret.style.top  = nt + 'px';
-  updateCaretHint();   
+  updateCaretHint();
 });
 
 function endCaretDrag(){
@@ -592,7 +669,7 @@ function shuffleUnhighlighted(){
 }
 
 /* =========================================================
-   Open caret
+   Open caret / popover
    ========================================================= */
 function openCaret(){
   caret.classList.add('active');
@@ -629,9 +706,6 @@ function openCaret(){
   openPopover(caretContext);
 }
 
-/* =========================================================
-   Popover
-   ========================================================= */
 function openPopover(ctx){
   const rect = caret.getBoundingClientRect();
   popover.style.left = Math.min(window.innerWidth - 240, rect.left) + 'px';
@@ -666,9 +740,12 @@ popoverInput.addEventListener('keydown', (e)=>{
 });
 
 /* =========================================================
-   Edit builder
+   Edit builder / submit
    ========================================================= */
-function newEditId(){ return 'we-' + Date.now() + '-' + Math.floor(Math.random()*1000); }
+function newEditId(){
+  if (crypto && crypto.randomUUID) return 'we-' + crypto.randomUUID();
+  return 'we-' + Date.now() + '-' + Math.random().toString(16).slice(2,10);
+}
 
 function buildAddEdit(ctx, text){
   const insertAt = ctx.index < 0 ? 0 : (ctx.side === 'after' ? ctx.index + 1 : ctx.index);
@@ -683,29 +760,29 @@ function buildAddEdit(ctx, text){
   };
 }
 
-/* =========================================================
-   Submit
-   ========================================================= */
 function submitEdit(edit, applyLocally){
-  if (applyLocally) applyEditLocally(edit, false);
-  appliedEditIds.add(edit.editId);
-  saveApplied();
+  // Автор тоже видит вставку «свежей» — иначе не понятно, куда она встала.
+  if (applyLocally) applyEditLocally(edit, true);
 
   const canSend = isLive && client && client.connected;
-  log(`submitEdit: isLive=${isLive}, clientConnected=${client && client.connected}, canSend=${canSend}`);
+  log(`submitEdit: isLive=${isLive}, connected=${client && client.connected}, canSend=${canSend}`);
 
-if (canSend){
-  client.publish(TOPIC, JSON.stringify({
-    ...edit,
-    type: 'WORD_EDIT',
-    sender: myId
-  }), {qos:1});
-  log('Sent edit add → network');
-} else {
+  if (canSend){
+    client.publish(TOPIC, JSON.stringify({
+      ...edit,
+      type: 'WORD_EDIT',
+      sender: myId,
+      sid: clientId
+    }), {qos:1});
+    // Не пушим в pending: если ACK не придёт, edit потеряется для других,
+    // но локально уже есть. Для Live это приемлемо.
+    log('Sent edit → network');
+  } else {
     pendingEdits.push(edit);
     savePending();
     log('Edit saved to tape (offline)');
   }
+  refreshChrome();
   renderWords();
 }
 
@@ -714,28 +791,38 @@ if (canSend){
    ========================================================= */
 function applyEditLocally(edit, asFresh){
   if (edit.kind !== 'add') return;
+
+  // Защита от дублей: если editId уже применён к какому-то слову — выходим.
+  if (edit.editId && wordsList.some(w => w.originEditId === edit.editId)) return;
+
   const newItem = {
     id: 'w-' + Date.now() + '-' + Math.floor(Math.random()*1000),
     word: edit.word,
     highlight: 0,
-    fresh: !!asFresh
+    fresh: !!asFresh,
+    originEditId: edit.editId || null
   };
-  let insertAt = edit.insertAt;
+
+  // Резолвим позицию по anchorId. Если якорь не найден — кладём В КОНЕЦ,
+  // а не по insertAt (он у разных пиров разный после shuffle).
+  let insertAt = wordsList.length;
   if (edit.anchorId){
-    const idx = wordsList.findIndex(w=>w.id === edit.anchorId);
+    const idx = wordsList.findIndex(w => w.id === edit.anchorId);
     if (idx !== -1){
       insertAt = edit.anchorSide === 'after' ? idx + 1 : idx;
     }
+  } else if (typeof edit.insertAt === 'number' && edit.insertAt >= 0){
+    insertAt = Math.max(0, Math.min(wordsList.length, edit.insertAt));
   }
-  insertAt = Math.max(0, Math.min(wordsList.length, insertAt));
+
   wordsList.splice(insertAt, 0, newItem);
   saveWords();
 }
 
 function applyRemoteEdit(p){
-  if (appliedEditIds.has(p.editId)) return;
-  appliedEditIds.add(p.editId);
-  saveApplied();
+  if (p.editId && appliedEditIds.has(p.editId)) return;
+  if (p.editId){ appliedEditIds.add(p.editId); saveApplied(); }
+
   applyEditLocally({...p, sender:p.sender}, true);
   renderWords();
   log('Remote edit applied from ' + p.sender);
@@ -744,7 +831,8 @@ function applyRemoteEdit(p){
     client.publish(TOPIC, JSON.stringify({
       type:'WORD_EDIT_ACK',
       editId: p.editId,
-      sender: myId
+      sender: myId,
+      sid: clientId
     }), {qos:1});
   }
 }
@@ -759,7 +847,12 @@ document.getElementById('word-input').addEventListener('keydown', (e)=>{
     if (!text) return;
     const newWords = text.split(/\s+/).filter(Boolean);
     newWords.forEach(w=>{
-      wordsList.push({ id:'w-'+Date.now()+'-'+Math.floor(Math.random()*1000), word:w, highlight:0 });
+      wordsList.push({
+        id:'w-'+Date.now()+'-'+Math.floor(Math.random()*1000),
+        word:w,
+        highlight:0,
+        originEditId: null
+      });
     });
     saveWords();
     e.target.value = '';
@@ -771,13 +864,13 @@ document.getElementById('word-input').addEventListener('keydown', (e)=>{
 /* =========================================================
    Sync button
    ========================================================= */
-document.getElementById('syncBtn').addEventListener('click', ()=>{
+syncBtn.addEventListener('click', ()=>{
   if (!isLive){ log('No peers online — still tape'); return; }
   flushPendingEdits();
 });
 
 /* =========================================================
-   Inline peer ID editing (tap → type → Enter)
+   Inline peer ID editing
    ========================================================= */
 let _idBeforeEdit = myId;
 
@@ -805,7 +898,6 @@ peerIdInput.addEventListener('blur', ()=>{
 
 function commitPeerId(){
   const v = peerIdInput.value.trim();
-
   if (v === myId){ peerIdInput.value = myId; return; }
 
   if (!/^[A-Za-z0-9_\-]{3,12}$/.test(v)){
@@ -814,21 +906,19 @@ function commitPeerId(){
     return;
   }
 
-  if (!confirm('Rename yourself from "' + myId + '" to "' + v + '"?\n\nPeers who saved your old ID will no longer reach you.')){
-    peerIdInput.value = myId;
-    return;
-  }
-
+  // Без блокирующего confirm — просто меняем. Предупреждение убрано,
+  // т.к. sid защищает от коллизий.
   myId = v;
   DataManager.set('peer_id', myId);
   peerIdInput.value = myId;
 
+  // Правки подписаны старым sender — сбрасываем tape, чтобы не путать.
   pendingEdits = [];
   savePending();
+  refreshChrome();
 
   peerIdInput.classList.add('saved');
   setTimeout(()=> peerIdInput.classList.remove('saved'), 800);
-
   log('[ID] Renamed to ' + myId);
 }
 
@@ -843,6 +933,10 @@ if (note && noteToggle){
     note.classList.toggle('open');
     noteToggle.querySelector('strong').textContent =
       note.classList.contains('open') ? 'Hide' : 'Help';
+    // При закрытии — пересчитать шрифт (wrapper снова вырос).
+    if (!note.classList.contains('open')){
+      requestAnimationFrame(() => renderWords());
+    }
   });
   const noteText = note.querySelector('.note-text');
   if (noteText){
@@ -850,16 +944,10 @@ if (note && noteToggle){
       e.stopPropagation();
       note.classList.remove('open');
       noteToggle.querySelector('strong').textContent = 'Help';
+      requestAnimationFrame(() => renderWords());
     });
   }
 }
-
-/* =========================================================
-   Init
-   ========================================================= */
-connectMqtt();
-renderWords();
-log('Init done. myId=' + myId + ', words=' + wordsList.length);
 
 /* =========================================================
    Clear all
@@ -870,13 +958,13 @@ document.getElementById('clearBtn').addEventListener('click', ()=>{
   wordsList = [];
   saveWords();
 
-  // Очищаем tape и applied-логи, чтобы не тянуть старьё
   pendingEdits = [];
   savePending();
   appliedEditIds = new Set();
   saveApplied();
 
   renderWords();
+  refreshChrome();
   log('Cleared all words (local only)');
 });
 
@@ -889,9 +977,7 @@ let updateWorker = null;
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').then((registration) => {
     registration.update();
-    if (registration.waiting) {
-      updateWorker = registration.waiting;
-    }
+    if (registration.waiting) updateWorker = registration.waiting;
     registration.addEventListener('updatefound', () => {
       updateWorker = registration.installing;
     });
@@ -910,13 +996,19 @@ if ('serviceWorker' in navigator) {
 document.getElementById('update-app').addEventListener('click', () => {
   if (updateWorker) {
     updateWorker.postMessage({ type: 'SKIP_WAITING' });
-    setTimeout(() => {
-      if (!refreshing) window.location.reload();
-    }, 500);
+    setTimeout(() => { if (!refreshing) window.location.reload(); }, 500);
   } else {
-    window.location.reload(true);
+    window.location.reload();
   }
 });
+
+/* =========================================================
+   Init
+   ========================================================= */
+connectMqtt();
+renderWords();
+refreshChrome();
+log('Init done. myId=' + myId + ', clientId=' + clientId + ', words=' + wordsList.length);
 </script>
 </body>
 </html>
