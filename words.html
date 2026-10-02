@@ -106,7 +106,7 @@ html{padding-top:env(safe-area-inset-top)}
   position:relative;
   display:inline-flex;
   align-items:center;
-  justify-content:flex-start;   /* подпись сверху → контент от верха */
+  justify-content:center;   /* подпись сверху → контент от верха */
   flex-direction:column;
   flex-shrink: 0;
   background: #0b0b28;
@@ -250,7 +250,7 @@ html{padding-top:env(safe-area-inset-top)}
 #edit-popover{
   position:fixed;z-index:950;display:none;flex-direction:column;
   gap:6px;background:#0b0b28;border:2px solid #ff0000;
-  border-radius:12px;padding:10px;min-width:220px;
+  border-radius:20px;padding:10px;min-width:220px;
   box-shadow:0 8px 28px rgba(0,0,0,.6);
 }
 #edit-popover.show{display:flex}
@@ -290,7 +290,7 @@ html{padding-top:env(safe-area-inset-top)}
 .popover-or {
   text-align: center;
   font-size: 11px;
-  color: #666;
+  color: #ccc;
   font-family: monospace;
   margin: 2px 0;
   letter-spacing: 1px;
@@ -399,13 +399,14 @@ html{padding-top:env(safe-area-inset-top)}
 <div id="edit-popover">
   <div class="title" id="popoverTitle">Insert word</div>
   <input type="text" id="popoverInput" placeholder="Type a word to send…" autocomplete="off">
-  <div class="row">
-    <button class="btn-add" id="btnAdd">Send</button>
-  </div>
-  <div class="popover-or">— or —</div>
+  <div class="popover-or">— OR —</div>
   <div class="row">
     <button class="btn-media" id="btnMedia" title="Attach image or video">📎 Media</button>
   </div>
+  <div class="row">
+    <button class="btn-add" id="btnAdd">Send</button>
+  </div>
+
   <div class="row">
     <button class="btn-cancel" id="btnCancel">Cancel</button>
   </div>
@@ -849,28 +850,27 @@ function renderWords(){
   });
 
   // === РАЗМЕРЫ МЕДИА + АВТОМАСШТАБ ШРИФТА ===
-  requestAnimationFrame(() => {
-    const wrapperRect = wrapper.getBoundingClientRect();
+requestAnimationFrame(() => {
+  const wrapperRect = wrapper.getBoundingClientRect();
 
-    // Размер одной медиа-ячейки: адаптивно, но не гигантский
-    const cellW = Math.max(120, Math.min(wrapperRect.width * 0.45, 320));
-    const cellH = Math.max(120, Math.min(wrapperRect.height * 0.4, 320));
+  // Маленькая иконка — одинаковая на всех устройствах
+  const ICON_SIZE = 56;         // размер самой иконки (медиа)
+  const CELL_PADDING = 4;       // padding ячейки
+  const LABEL_HEIGHT = 14;      // высота подписи (шрифт 10px + margin)
 
-    mediaCells.forEach(mc => {
-      mc.style.width  = cellW + 'px';
-      mc.style.height = cellH + 'px';
-      const mediaEl = mc.querySelector('img, video');
-      if (mediaEl) {
-        mediaEl.style.width     = '100%';
-        mediaEl.style.height    = 'auto';
-        mediaEl.style.maxWidth  = '100%';
-        mediaEl.style.maxHeight = 'calc(100% - 20px)'; // место под подпись
-        mediaEl.style.objectFit = 'contain';
-      }
-    });
-
-    recalcFontScale();
+  mediaCells.forEach(mc => {
+    mc.style.width  = (ICON_SIZE + CELL_PADDING * 2) + 'px';           // 64px
+    mc.style.height = (ICON_SIZE + CELL_PADDING * 2 + LABEL_HEIGHT) + 'px'; // ~78px
+    const mediaEl = mc.querySelector('img, video');
+    if (mediaEl) {
+      mediaEl.style.width     = ICON_SIZE + 'px';
+      mediaEl.style.height    = ICON_SIZE + 'px';
+      mediaEl.style.objectFit = 'cover';   // обрезать по квадрату
+    }
   });
+
+  recalcFontScale();
+});
 }
 
 /* =========================================================
