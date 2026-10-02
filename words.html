@@ -7,7 +7,7 @@
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="1280">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>War Of The Words | Terminal</title>
+<title>War Of The Words | Terminal + Media</title>
 <link rel="manifest" href="manifest-words.json">
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
@@ -17,18 +17,19 @@ html,body{width:100%;height:100%;background:#000030;font-family:'Roboto Condense
 html{padding-top:env(safe-area-inset-top)}
 
 .container{display:flex;flex-direction:column;justify-content:space-between;height:100vh;padding:0 2px 4px;background:#000030}
-/* Скрыть скроллбар, но оставить прокрутку */
+
 .words-wrapper,
 .note-text {
-  scrollbar-width: none;        /* Firefox */
-  -ms-overflow-style: none;     /* IE / Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 .words-wrapper::-webkit-scrollbar,
 .note-text::-webkit-scrollbar {
-  display: none;                /* Chrome / Safari / Edge */
+  display: none;
   width: 0;
   height: 0;
 }
+
 /* ---------- top bar ---------- */
 .top-bar{
   position:fixed;top:0;left:0;right:0;z-index:50;
@@ -46,7 +47,6 @@ html{padding-top:env(safe-area-inset-top)}
   font-weight:700;font-size:16px;color:#afff00}
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* inline ID editor */
 #peerIdInput{
   margin-left:auto;
   color:#0097ff;
@@ -77,14 +77,16 @@ html{padding-top:env(safe-area-inset-top)}
   transition:none;
 }
 
-/* ---------- words ---------- */
+/* ---------- words & media grid ---------- */
 .words-wrapper{
   flex-grow:1;width:100%;position:relative;
   display:flex;flex-wrap:wrap;align-content:flex-start;
-  align-items:flex-end;       /* ← ячейки в строке выравниваются по низу */
+  align-items:flex-end;
   gap:8px 10px;padding:56px 6px 6px;
   overflow-y:auto;cursor:default;touch-action:pan-y;
 }
+
+/* ---------- word cell ---------- */
 .word-cell{
   position:relative;
   display:inline-flex;align-items:center;justify-content:center;
@@ -92,12 +94,119 @@ html{padding-top:env(safe-area-inset-top)}
   font-weight:700;white-space:nowrap;background:transparent;border:none;
   padding:2px 4px;line-height:.75;opacity:.95;
   transition:color .3s ease;color:#fff;font-size:40px;
-  justify-content:flex-end;   /* ← прижать слово к низу ячейки */
-  vertical-align:bottom;      /* ← выравнивание ячеек по низу строки */
+  justify-content:flex-end;
+  vertical-align:bottom;
 }
 .word-cell.hl-fresh{color:#ff2440}
 .word-cell.hl-1{color:#4CAF50}
 .word-cell.hl-2{color:#FF9800}
+
+/* ---------- media cells ---------- */
+.media-cell {
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  background: #0b0b28;
+  border: 2px solid #2a2a5a;
+  border-radius: 10px;
+  padding: 4px;
+  max-width: 100%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  transition: border-color .2s, box-shadow .2s;
+  overflow: hidden;
+  cursor: pointer;
+}
+.media-cell img,
+.media-cell video {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 6px;
+  object-fit: contain;
+  background: #000;
+  pointer-events: none;
+}
+.media-cell .media-author {
+  font-size: 10px;
+  font-family: monospace;
+  color: #0097ff;
+  line-height: 1.1;
+  margin-top: 4px;
+  text-align: center;
+  word-break: break-all;
+  max-width: 100%;
+}
+.media-cell .delete-media {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  background: rgba(255,0,0,0.85);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity .2s;
+  z-index: 5;
+  font-family: monospace;
+  pointer-events: auto;
+}
+.media-cell:hover .delete-media {
+  opacity: 1;
+}
+
+/* ---------- fullscreen media viewer ---------- */
+#media-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,20,0.96);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  cursor: pointer;
+  padding: 20px;
+}
+#media-viewer.show { display: flex; }
+#media-viewer img,
+#media-viewer video {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.8);
+  object-fit: contain;
+  background: #000;
+}
+#media-viewer .viewer-close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,0,0,0.85);
+  color: #fff;
+  border: none;
+  font-size: 22px;
+  font-family: monospace;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2001;
+}
 
 /* ---------- caret circle ---------- */
 #caret-circle{
@@ -164,6 +273,17 @@ html{padding-top:env(safe-area-inset-top)}
 }
 #edit-popover .btn-add{background:#ff2440}
 #edit-popover .btn-cancel{background:#222;color:#aaa}
+#edit-popover .btn-media{
+  background:#120a3a;
+  border-color:#3d1a99;
+  color:#b0a0ff;
+  font-size:13px;
+}
+#edit-popover .btn-media:hover{
+  background:#1e1050;
+  border-color:#7b4dff;
+  color:#fff;
+}
 
 /* ---------- footer ---------- */
 .footer-panel{
@@ -198,6 +318,7 @@ html{padding-top:env(safe-area-inset-top)}
 .note-text p{margin-bottom:10px}
 .note-text p:last-child{margin-bottom:0}
 
+#fileImage, #fileVideo { display: none; }
 </style>
 </head>
 <body>
@@ -219,40 +340,47 @@ html{padding-top:env(safe-area-inset-top)}
 
     <div class="note" id="note">
       <div class="note-toggle" id="note-toggle"><strong>Help</strong></div>
- <div class="note-text">
-  <button class="sync-btn" id="clearBtn" title="Delete all words" style="background:#800;margin-top:6px">CLEAR ALL</button>
-<span id="updateAvailableLine" 
-      style="display: none; margin: 16px auto; color: #0097ff; font-size: 14px; font-family: 'Roboto Condensed', sans-serif; cursor: pointer;"
-      onclick="event.stopPropagation(); syncAndKeepData()">
-    Update Available
-</span>
-  <p style="margin-top:12px;font-size:18px;">War Of The Words — Terminal</p>
+      <div class="note-text">
+        <button class="sync-btn" id="clearBtn" title="Delete all words & media" style="background:#800;margin-top:6px">CLEAR ALL</button>
+        <span id="updateAvailableLine" 
+              style="display: none; margin: 16px auto; color: #0097ff; font-size: 14px; font-family: 'Roboto Condensed', sans-serif; cursor: pointer;"
+              onclick="event.stopPropagation(); syncAndKeepData()">
+            Update Available
+        </span>
+        <p style="margin-top:12px;font-size:18px;">War Of The Words — Terminal</p>
 
-  <p>Circle — single tap shuffles unhighlighted words, long tap opens the caret to add word or phrase, drag to move.</p>
+        <p>Circle — single tap shuffles unhighlighted words, long tap opens the caret to add word or phrase, drag to move.</p>
 
-  <p>Input pop-up — enter a word and click "Add" or tap Enter; the nearest word or phrase will be added before or after by the entered text with author Peer-XXXX or name caption, highlighted in <span style="color:#ff2440">red</span>. This is the only edit that is automatically synced to other devices where the app is open at the same time as yours (Live mode).</p>
-  <p>In <span style="color:#ff0000">Live</span> mode caret edits are sent to all peers immediately. In <span style="color:#afff00">Tape</span> mode they're stored locally and flushed when a peer appears.</p>
+        <p>Input pop-up — enter a word and click "Add" or tap Enter; the nearest word or phrase will be added before or after by the entered text with author Peer-XXXX or name caption, highlighted in <span style="color:#ff2440">red</span>. This is the only edit that is automatically synced to other devices where the app is open at the same time as yours (Live mode).</p>
+        <p>In <span style="color:#ff0000">Live</span> mode caret edits are sent to all peers immediately. In <span style="color:#afff00">Tape</span> mode they're stored locally and flushed when a peer appears.</p>
 
-  <p>Word taps (local only): fresh &rarr; white &rarr; green &rarr; orange &rarr; open ChatGPT definition (and copy to clipboard). Long tap cancels highlight, or deletes the word if it wasn't highlighted. These changes stay on your device — other peers are not notified.</p>
+        <p>Word taps (local only): fresh &rarr; white &rarr; green &rarr; orange &rarr; open ChatGPT definition (and copy to clipboard). Long tap cancels highlight, or deletes the word if it wasn't highlighted. These changes stay on your device — other peers are not notified.</p>
 
-  <p>Input field below adds words to your device only. They are not broadcast to other peers.</p>
-  <p>Shuffle is local only and affects only non-highlighted words.</p>
-  <p>SYNC (red button) appears only when there are edits waiting in Tape. Tap it to force-send them once a peer is online.</p>
+        <p><strong>📎 Media button</strong> in the popover opens a file picker. Selected image or video is added to your local grid, scaled automatically to fit alongside words. Only the author's name appears below media. Tap any media to open full-screen viewer; tap again to close.</p>
+        
+        <p>Input field below adds words to your device only. They are not broadcast to other peers.</p>
+        <p>Shuffle is local only and affects only non-highlighted words.</p>
+        <p>SYNC (red button) appears only when there are edits waiting in Tape. Tap it to force-send them once a peer is online.</p>
 
-  <p>Your peer name — tap the ID in the top-right corner, type a new name, tap Enter. 3–12 chars: letters, digits, dash, underscore. Escape or tap away to cancel.</p>
+        <p>Your peer name — tap the ID in the top-right corner, type a new name, tap Enter. 3–12 chars: letters, digits, dash, underscore. Escape or tap away to cancel.</p>
 
-<a href="support.html" title="Support">
-  <img src="/fleurdelis.png" alt="fleur-de-lis"
-       style="display:block;margin:28px auto;max-width:48px;height:auto;cursor:pointer">
-</a>
- </div>
-      
+        <a href="support.html" title="Support">
+          <img src="/fleurdelis.png" alt="fleur-de-lis"
+               style="display:block;margin:28px auto;max-width:48px;height:auto;cursor:pointer">
+        </a>
+      </div>
     </div>
   </div>
 </div>
 
 <div id="caret-circle" title="Tap = shuffle · Long tap = add word · Drag = move"></div>
 
+<!-- ========== FULLSCREEN MEDIA VIEWER ========== -->
+<div id="media-viewer">
+  <button class="viewer-close" id="viewerClose">×</button>
+</div>
+
+<!-- ========== POPOVER WITH SINGLE MEDIA BUTTON ========== -->
 <div id="edit-popover">
   <div class="title" id="popoverTitle">Insert word</div>
   <input type="text" id="popoverInput" placeholder="Type a word to send…" autocomplete="off">
@@ -260,9 +388,15 @@ html{padding-top:env(safe-area-inset-top)}
     <button class="btn-add" id="btnAdd">Send</button>
   </div>
   <div class="row">
+    <button class="btn-media" id="btnMedia" title="Attach image or video">📎 Media</button>
+  </div>
+  <div class="row">
     <button class="btn-cancel" id="btnCancel">Cancel</button>
   </div>
 </div>
+
+<input type="file" id="fileImage" accept="image/*">
+<input type="file" id="fileVideo" accept="video/*">
 
 <script>
 /* =========================================================
@@ -287,26 +421,26 @@ if (!myId) {
   DataManager.set('peer_id', myId);
 }
 
-// Уникальный clientId — генерируется заново при каждой загрузке.
-// Используется для отсечения собственного эха и защиты от коллизий ников.
 const clientId = 'wow_' + Math.random().toString(16).slice(2,10);
 
 const peerIdInput = document.getElementById('peerIdInput');
 peerIdInput.value = myId;
 
 /* =========================================================
-   State
+   State — элементы могут быть word или media
    ========================================================= */
-let wordsList = DataManager.get('words', []);
-if (!Array.isArray(wordsList)) wordsList = [];
+let itemsList = DataManager.get('words', []);
+if (!Array.isArray(itemsList)) itemsList = [];
 
-// Каждое слово теперь имеет originEditId — защита от повторного применения.
-// Старые записи без этого поля просто не отсекаются (совместимость).
+itemsList = itemsList.map(item => {
+  if (!item.type) item.type = 'word';
+  return item;
+});
 
 let pendingEdits = DataManager.get('pending_edits', []);
 let appliedEditIds = new Set(DataManager.get('applied_edits', []));
 
-function saveWords(){ DataManager.set('words', wordsList); }
+function saveItems(){ DataManager.set('words', itemsList); }
 function savePending(){ DataManager.set('pending_edits', pendingEdits); }
 function saveApplied(){ DataManager.set('applied_edits', Array.from(appliedEditIds).slice(-2000)); }
 
@@ -342,7 +476,7 @@ function connectMqtt(){
     log('MQTT disconnected');
     stopHeartbeats();
     activePeers = {};
-    updatePeers();   // мгновенно переключаем индикатор в Tape
+    updatePeers();
   });
 
   client.on('offline', () => { stopHeartbeats(); });
@@ -353,10 +487,7 @@ function connectMqtt(){
     let p;
     try{ p = JSON.parse(payload.toString()); }catch(e){ return; }
 
-    // Отсекаем только реально своё — по clientId, а не по нику.
-    // Так смена ника не ломает приём, а коллизия имён перестаёт быть смертельной.
     if (p.sid === clientId) return;
-    // Совместимость со старыми сообщениями без sid:
     if (p.sid === undefined && p.sender === myId) return;
 
     if (p.type === 'PING'){ activePeers[p.sender] = Date.now(); return; }
@@ -398,7 +529,6 @@ function updatePeers(){
   const count = Object.keys(activePeers).length;
   isLive = count > 0;
 
-  // TTL для pendingEdits: если ACK не пришёл за 60 сек — считаем дохлым
   const before = pendingEdits.length;
   pendingEdits = pendingEdits.filter(e => (now - (e.ts||0)) < 60000);
   if (pendingEdits.length !== before) savePending();
@@ -409,7 +539,7 @@ function updatePeers(){
 }
 
 /* =========================================================
-   UI chrome — индикаторы + sync-кнопка
+   UI chrome
    ========================================================= */
 const liveIndicator = document.getElementById('liveIndicator');
 const tapeIndicator = document.getElementById('tapeIndicator');
@@ -422,7 +552,6 @@ function refreshChrome(){
   tapeIndicator.style.display = isLive ? 'none' : 'inline';
   livePeerCount.textContent = count;
 
-  // Кнопка SYNC показывается ТОЛЬКО когда есть что-то в очереди.
   const hasPending = pendingEdits.length > 0;
   if (hasPending){
     syncBtn.style.display = 'inline-block';
@@ -447,8 +576,6 @@ function flushPendingEdits(){
       sid: clientId
     }), {qos:1});
   });
-  // НЕ очищаем здесь — ждём ACK. Если ACK не придёт за 60 сек,
-  // updatePeers() вычистит их по TTL.
   log('Flushed ' + toSend.length + ' tape edits (awaiting ACK)');
 }
 
@@ -460,29 +587,141 @@ const caret   = document.getElementById('caret-circle');
 const popover = document.getElementById('edit-popover');
 const popoverInput = document.getElementById('popoverInput');
 const popoverTitle = document.getElementById('popoverTitle');
+const mediaViewer = document.getElementById('media-viewer');
+const viewerClose = document.getElementById('viewerClose');
+const fileImage = document.getElementById('fileImage');
+const fileVideo = document.getElementById('fileVideo');
 
 let caretContext = null;
 let caretOpen = false;
-
-let lastFontSize = null;   // запоминаем последний применённый размер
+let lastFontSize = null;
+let currentViewerMedia = null;
 
 /* =========================================================
-   Render
+   FULLSCREEN MEDIA VIEWER
+   ========================================================= */
+function openMediaViewer(item) {
+  Array.from(mediaViewer.children).forEach(ch => {
+    if (ch !== viewerClose) mediaViewer.removeChild(ch);
+  });
+
+  let el;
+  if (item.mediaType === 'image') {
+    el = document.createElement('img');
+    el.src = item.data;
+    el.alt = '';
+  } else if (item.mediaType === 'video') {
+    el = document.createElement('video');
+    el.src = item.data;
+    el.controls = true;
+    el.autoplay = true;
+    el.playsInline = true;
+  }
+  if (el) mediaViewer.appendChild(el);
+
+  mediaViewer.classList.add('show');
+  currentViewerMedia = item;
+}
+
+function closeMediaViewer() {
+  mediaViewer.classList.remove('show');
+  const v = mediaViewer.querySelector('video');
+  if (v) { try { v.pause(); } catch(e){} }
+  Array.from(mediaViewer.children).forEach(ch => {
+    if (ch !== viewerClose) mediaViewer.removeChild(ch);
+  });
+  currentViewerMedia = null;
+}
+
+mediaViewer.addEventListener('click', (e) => {
+  e.stopPropagation();
+  closeMediaViewer();
+});
+viewerClose.addEventListener('click', (e) => {
+  e.stopPropagation();
+  closeMediaViewer();
+});
+
+/* =========================================================
+   Render — слова + медиа + автомасштаб
    ========================================================= */
 function renderWords(){
   wrapper.innerHTML = '';
-  if (wordsList.length === 0){
+  if (itemsList.length === 0){
     wrapper.innerHTML = '<div style="color:#666;font-family:monospace;padding:20px"></div>';
     return;
   }
 
   const tempCells = [];
+  const mediaCells = [];
 
-  wordsList.forEach((item, idx) => {
+  itemsList.forEach((item, idx) => {
+    // ========== MEDIA CELL ==========
+    if (item.type === 'media') {
+      const cell = document.createElement('div');
+      cell.className = 'media-cell';
+      cell.dataset.idx = idx;
+      cell.dataset.itemId = item.id;
+
+      // delete button
+      const delBtn = document.createElement('button');
+      delBtn.className = 'delete-media';
+      delBtn.textContent = '×';
+      delBtn.title = 'Delete media (local)';
+      delBtn.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        itemsList.splice(idx, 1);
+        saveItems();
+        renderWords();
+      });
+      cell.appendChild(delBtn);
+
+      if (item.mediaType === 'image') {
+        const img = document.createElement('img');
+        img.src = item.data;
+        img.alt = '';
+        img.loading = 'lazy';
+        cell.appendChild(img);
+      } else if (item.mediaType === 'video') {
+        const video = document.createElement('video');
+        video.src = item.data;
+        video.preload = 'metadata';
+        video.playsInline = true;
+        video.muted = true;
+        cell.appendChild(video);
+      }
+
+      // ===== ПОДПИСЬ АВТОРА (только имя автора, без названия файла) =====
+      const author = document.createElement('div');
+      author.className = 'media-author';
+      author.textContent = item.author || myId;
+      cell.appendChild(author);
+
+      // === КЛИК: открыть / закрыть фуллскрин ===
+      cell.addEventListener('pointerup', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (currentViewerMedia && currentViewerMedia.id === item.id) {
+          closeMediaViewer();
+        } else {
+          openMediaViewer(item);
+        }
+      });
+      cell.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+      });
+
+      wrapper.appendChild(cell);
+      mediaCells.push(cell);
+      return;
+    }
+
+    // ========== WORD CELL ==========
     const cell = document.createElement('div');
     cell.className = 'word-cell';
     cell.dataset.idx = idx;
-    cell.dataset.wordId = item.id;
+    cell.dataset.itemId = item.id;
 
     if (item.fresh) cell.classList.add('hl-fresh');
     else if (item.highlight === 1) cell.classList.add('hl-1');
@@ -501,7 +740,7 @@ function renderWords(){
     main.textContent = item.word;
     main.style.display = 'block';
     cell.appendChild(main);
-    
+
     let pressTimer, pressStart, longPress = false;
     cell.addEventListener('pointerdown', (e)=>{
       e.stopPropagation();
@@ -509,13 +748,13 @@ function renderWords(){
       longPress = false;
       pressTimer = setTimeout(()=>{
         longPress = true;
-        if (wordsList[idx].highlight > 0){
-          wordsList[idx].highlight = 0;
-          wordsList[idx].fresh = false;
+        if (itemsList[idx].highlight > 0){
+          itemsList[idx].highlight = 0;
+          itemsList[idx].fresh = false;
         } else {
-          wordsList.splice(idx,1);
+          itemsList.splice(idx,1);
         }
-        saveWords(); renderWords();
+        saveItems(); renderWords();
       }, 600);
     });
     cell.addEventListener('pointerup', (e)=>{
@@ -523,22 +762,22 @@ function renderWords(){
       clearTimeout(pressTimer);
       if (longPress) return;
       if (Date.now() - pressStart < 600){
-        const cur = wordsList[idx];
+        const cur = itemsList[idx];
         if (cur.fresh){
           cur.fresh = false;
           cur.highlight = 0;
-          saveWords();
+          saveItems();
           cell.classList.remove('hl-fresh');
         }
         else if ((cur.highlight|0) === 0){
           cur.highlight = 1;
-          saveWords();
+          saveItems();
           cell.classList.remove('hl-2');
           cell.classList.add('hl-1');
         }
         else if (cur.highlight === 1){
           cur.highlight = 2;
-          saveWords();
+          saveItems();
           cell.classList.remove('hl-1');
           cell.classList.add('hl-2');
         }
@@ -555,8 +794,26 @@ function renderWords(){
     tempCells.push(cell);
   });
 
-  // === АВТОМАСШТАБИРОВАНИЕ (бинарный поиск) ===
+  // === АВТОМАСШТАБИРОВАНИЕ ===
   requestAnimationFrame(() => {
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const maxMediaW = Math.min(wrapperRect.width * 0.9, 400);
+    const maxMediaH = Math.min(wrapperRect.height * 0.5, 400);
+    mediaCells.forEach(mc => {
+      mc.style.maxWidth = maxMediaW + 'px';
+      mc.style.maxHeight = maxMediaH + 'px';
+      const mediaEl = mc.querySelector('img, video');
+      if (mediaEl) {
+        mediaEl.style.maxWidth = (maxMediaW - 16) + 'px';
+        mediaEl.style.maxHeight = (maxMediaH - 40) + 'px';
+      }
+    });
+
+    if (tempCells.length === 0) {
+      lastFontSize = null;
+      return;
+    }
+
     const maxSize = 40;
     const minSize = 8;
 
@@ -564,14 +821,11 @@ function renderWords(){
       tempCells.forEach(cell => { cell.style.fontSize = `${value}px`; });
     }
 
-    // Если Help открыт — не пересчитываем, оставляем последний размер.
-    // Иначе уменьшится wrapper.clientHeight → шрифт осядет.
     if (document.getElementById('note').classList.contains('open') && lastFontSize){
       applySize(lastFontSize);
       return;
     }
 
-    // Бинарный поиск максимального размера, при котором контент влезает.
     let lo = minSize, hi = maxSize, best = minSize;
     applySize(maxSize);
     if (wrapper.scrollHeight <= wrapper.clientHeight){
@@ -686,21 +940,22 @@ caret.addEventListener('pointercancel', ()=>{
 });
 
 /* =========================================================
-   Shuffle
+   Shuffle — только среди word-элементов
    ========================================================= */
 function shuffleUnhighlighted(){
   const indices = [];
-  wordsList.forEach((w,i)=>{
+  itemsList.forEach((w,i)=>{
+    if (w.type === 'media') return;
     if ((w.highlight|0) === 0 && !w.fresh) indices.push(i);
   });
   if (indices.length < 2){ log('Shuffle: nothing to shuffle'); return; }
-  const pool = indices.map(i => wordsList[i]);
+  const pool = indices.map(i => itemsList[i]);
   for (let i = pool.length - 1; i > 0; i--){
     const j = Math.floor(Math.random()*(i+1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  indices.forEach((idx, k) => { wordsList[idx] = pool[k]; });
-  saveWords();
+  indices.forEach((idx, k) => { itemsList[idx] = pool[k]; });
+  saveItems();
   renderWords();
   caret.classList.add('pulse');
   setTimeout(()=>caret.classList.remove('pulse'), 320);
@@ -708,7 +963,7 @@ function shuffleUnhighlighted(){
 }
 
 /* =========================================================
-   Open caret / popover
+   Open caret / popover — ищем ближайший word-элемент
    ========================================================= */
 function openCaret(){
   caret.classList.add('active');
@@ -724,6 +979,9 @@ function openCaret(){
     return;
   }
 
+  const wordIndices = [];
+  itemsList.forEach((it, i) => { if (it.type !== 'media') wordIndices.push(i); });
+
   let best = null;
   cells.forEach((cell, i)=>{
     const r = cell.getBoundingClientRect();
@@ -732,14 +990,15 @@ function openCaret(){
     const midY    = r.top + r.height/2;
     const dA = Math.hypot(cx-afterX,  cy-midY);
     const dB = Math.hypot(cx-beforeX, cy-midY);
-    if (!best || dA < best.d) best = {index:i, side:'after',  d:dA};
-    if (!best || dB < best.d) best = {index:i, side:'before', d:dB};
+    const realIdx = wordIndices[i];
+    if (!best || dA < best.d) best = {index:realIdx, side:'after',  d:dA, cellIdx:i};
+    if (!best || dB < best.d) best = {index:realIdx, side:'before', d:dB, cellIdx:i};
   });
 
   cells.forEach(c=>c.style.outline='');
-  if (best && cells[best.index]){
-    cells[best.index].style.outline = '2px dashed #7b4dff';
-    setTimeout(()=>{ if (cells[best.index]) cells[best.index].style.outline=''; }, 1200);
+  if (best && cells[best.cellIdx]){
+    cells[best.cellIdx].style.outline = '2px dashed #7b4dff';
+    setTimeout(()=>{ if (cells[best.cellIdx]) cells[best.cellIdx].style.outline=''; }, 1200);
   }
   caretContext = best;
   openPopover(caretContext);
@@ -748,10 +1007,12 @@ function openCaret(){
 function openPopover(ctx){
   const rect = caret.getBoundingClientRect();
   popover.style.left = Math.min(window.innerWidth - 240, rect.left) + 'px';
-  popover.style.top  = Math.min(window.innerHeight - 140, rect.bottom + 8) + 'px';
+  popover.style.top  = Math.min(window.innerHeight - 200, rect.bottom + 8) + 'px';
   popoverTitle.textContent = ctx.index < 0
     ? 'Insert first word'
-    : (ctx.side === 'after' ? `After: ${wordsList[ctx.index].word}` : `Before: ${wordsList[ctx.index].word}`);
+    : (ctx.side === 'after'
+        ? `After: ${itemsList[ctx.index].word}`
+        : `Before: ${itemsList[ctx.index].word}`);
   popoverInput.value = '';
   popover.classList.add('show');
   popoverInput.focus();
@@ -765,6 +1026,7 @@ function hidePopover(){
 }
 
 document.getElementById('btnCancel').addEventListener('click', hidePopover);
+
 document.getElementById('btnAdd').addEventListener('click', ()=>{
   const text = popoverInput.value.trim();
   if (!text || !caretContext) return;
@@ -779,7 +1041,68 @@ popoverInput.addEventListener('keydown', (e)=>{
 });
 
 /* =========================================================
-   Edit builder / submit
+   MEDIA INSERT via single button in popover
+   ========================================================= */
+document.getElementById('btnMedia').addEventListener('click', () => {
+  const picker = document.createElement('input');
+  picker.type = 'file';
+  picker.accept = 'image/*,video/*';
+  picker.style.display = 'none';
+  picker.addEventListener('change', () => {
+    const file = picker.files && picker.files[0];
+    if (!file) return;
+    handleMediaFile(file);
+    document.body.removeChild(picker);
+  });
+  document.body.appendChild(picker);
+  picker.click();
+});
+
+function handleMediaFile(file) {
+  const isImage = file.type.startsWith('image/');
+  const isVideo = file.type.startsWith('video/');
+  if (!isImage && !isVideo) {
+    log('Unsupported file type: ' + file.type);
+    return;
+  }
+
+  const MAX_SIZE = 5 * 1024 * 1024;
+  if (file.size > MAX_SIZE) {
+    alert('File too large for local storage (max 5 MB).');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result;
+    const item = {
+      id: 'm-' + Date.now() + '-' + Math.floor(Math.random()*1000),
+      type: 'media',
+      mediaType: isImage ? 'image' : 'video',
+      data: dataUrl,
+      // label больше не используется для отображения
+      label: '',
+      highlight: 0,
+      fresh: false,
+      originEditId: null,
+      author: myId   // ← подпись автора
+    };
+
+    itemsList.push(item);
+    saveItems();
+    hidePopover();
+    renderWords();
+    log('Media added: ' + item.mediaType + ' by ' + item.author);
+  };
+  reader.onerror = () => {
+    log('FileReader error');
+    alert('Failed to read file.');
+  };
+  reader.readAsDataURL(file);
+}
+
+/* =========================================================
+   Edit builder / submit (только для слов)
    ========================================================= */
 function newEditId(){
   if (crypto && crypto.randomUUID) return 'we-' + crypto.randomUUID();
@@ -793,7 +1116,7 @@ function buildAddEdit(ctx, text){
     kind: 'add',
     insertAt: insertAt,
     word: text,
-    anchorId: ctx.index >= 0 ? wordsList[ctx.index].id : null,
+    anchorId: ctx.index >= 0 ? itemsList[ctx.index].id : null,
     anchorSide: ctx.side,
     author: myId,
     ts: Date.now()
@@ -801,7 +1124,6 @@ function buildAddEdit(ctx, text){
 }
 
 function submitEdit(edit, applyLocally){
-  // Автор тоже видит вставку «свежей» — иначе не понятно, куда она встала.
   if (applyLocally) applyEditLocally(edit, true);
 
   const canSend = isLive && client && client.connected;
@@ -814,8 +1136,6 @@ function submitEdit(edit, applyLocally){
       sender: myId,
       sid: clientId
     }), {qos:1});
-    // Не пушим в pending: если ACK не придёт, edit потеряется для других,
-    // но локально уже есть. Для Live это приемлемо.
     log('Sent edit → network');
   } else {
     pendingEdits.push(edit);
@@ -827,16 +1147,16 @@ function submitEdit(edit, applyLocally){
 }
 
 /* =========================================================
-   Apply edit
+   Apply edit (только для слов)
    ========================================================= */
 function applyEditLocally(edit, asFresh){
   if (edit.kind !== 'add') return;
 
-  // Защита от дублей: если editId уже применён к какому-то слову — выходим.
-  if (edit.editId && wordsList.some(w => w.originEditId === edit.editId)) return;
+  if (edit.editId && itemsList.some(w => w.originEditId === edit.editId)) return;
 
   const newItem = {
     id: 'w-' + Date.now() + '-' + Math.floor(Math.random()*1000),
+    type: 'word',
     word: edit.word,
     highlight: 0,
     fresh: !!asFresh,
@@ -844,20 +1164,18 @@ function applyEditLocally(edit, asFresh){
     author: edit.author || null
   };
 
-  // Резолвим позицию по anchorId. Если якорь не найден — кладём В КОНЕЦ,
-  // а не по insertAt (он у разных пиров разный после shuffle).
-  let insertAt = wordsList.length;
+  let insertAt = itemsList.length;
   if (edit.anchorId){
-    const idx = wordsList.findIndex(w => w.id === edit.anchorId);
+    const idx = itemsList.findIndex(w => w.id === edit.anchorId);
     if (idx !== -1){
       insertAt = edit.anchorSide === 'after' ? idx + 1 : idx;
     }
   } else if (typeof edit.insertAt === 'number' && edit.insertAt >= 0){
-    insertAt = Math.max(0, Math.min(wordsList.length, edit.insertAt));
+    insertAt = Math.max(0, Math.min(itemsList.length, edit.insertAt));
   }
 
-  wordsList.splice(insertAt, 0, newItem);
-  saveWords();
+  itemsList.splice(insertAt, 0, newItem);
+  saveItems();
 }
 
 function applyRemoteEdit(p){
@@ -879,7 +1197,7 @@ function applyRemoteEdit(p){
 }
 
 /* =========================================================
-   Manual input
+   Manual input (локально, только слова)
    ========================================================= */
 document.getElementById('word-input').addEventListener('keydown', (e)=>{
   if (e.key === 'Enter'){
@@ -888,14 +1206,17 @@ document.getElementById('word-input').addEventListener('keydown', (e)=>{
     if (!text) return;
     const newWords = text.split(/\s+/).filter(Boolean);
     newWords.forEach(w=>{
-      wordsList.push({
+      itemsList.push({
         id:'w-'+Date.now()+'-'+Math.floor(Math.random()*1000),
+        type: 'word',
         word:w,
         highlight:0,
-        originEditId: null
+        fresh: false,
+        originEditId: null,
+        author: null
       });
     });
-    saveWords();
+    saveItems();
     e.target.value = '';
     renderWords();
     log('Added locally: ' + newWords.join(', '));
@@ -947,13 +1268,10 @@ function commitPeerId(){
     return;
   }
 
-  // Без блокирующего confirm — просто меняем. Предупреждение убрано,
-  // т.к. sid защищает от коллизий.
   myId = v;
   DataManager.set('peer_id', myId);
   peerIdInput.value = myId;
 
-  // Правки подписаны старым sender — сбрасываем tape, чтобы не путать.
   pendingEdits = [];
   savePending();
   refreshChrome();
@@ -974,7 +1292,6 @@ if (note && noteToggle){
     note.classList.toggle('open');
     noteToggle.querySelector('strong').textContent =
       note.classList.contains('open') ? 'Hide' : 'Help';
-    // При закрытии — пересчитать шрифт (wrapper снова вырос).
     if (!note.classList.contains('open')){
       requestAnimationFrame(() => renderWords());
     }
@@ -994,29 +1311,29 @@ if (note && noteToggle){
    Clear all
    ========================================================= */
 document.getElementById('clearBtn').addEventListener('click', ()=>{
-  if (!confirm('Delete ALL words on this device?\n\nThis does NOT delete words on other peers.')) return;
+  if (!confirm('Delete ALL words & media on this device?\n\nThis does NOT delete them on other peers.')) return;
 
-  wordsList = [];
-  saveWords();
+  itemsList = [];
+  saveItems();
 
   pendingEdits = [];
   savePending();
   appliedEditIds = new Set();
   saveApplied();
 
+  closeMediaViewer();
   renderWords();
   refreshChrome();
-  log('Cleared all words (local only)');
+  log('Cleared all items (local only)');
 });
 
-
+/* =========================================================
+   Service Worker + Update
+   ========================================================= */
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js', { scope: './' });
 }
 
-// Проверка новой версии по CACHE_NAME в sw.js.
-// Работает даже если sw.js сам себя активирует (skipWaiting в install),
-// потому что сравнивает содержимое sw.js на сервере с сохранённым локально.
 async function checkForUpdate() {
     try {
         const r = await fetch('./sw.js', { cache: 'no-store' });
@@ -1039,7 +1356,7 @@ setInterval(checkForUpdate, 60000);
 checkForUpdate();
 
 async function syncAndKeepData() {
-      localStorage.removeItem('wow_sw_version');
+    localStorage.removeItem('wow_sw_version');
 
     log('[Update] Applying update, preserving all data...');
     if ('serviceWorker' in navigator) {
@@ -1059,11 +1376,13 @@ async function syncAndKeepData() {
     window.location.reload();
 }
 
-/* Init */
+/* =========================================================
+   Init
+   ========================================================= */
 connectMqtt();
 renderWords();
 refreshChrome();
-log('Init done. myId=' + myId + ', clientId=' + clientId + ', words=' + wordsList.length);
+log('Init done. myId=' + myId + ', clientId=' + clientId + ', items=' + itemsList.length);
 </script>
 </body>
 </html>
