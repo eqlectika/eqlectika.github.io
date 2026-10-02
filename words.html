@@ -106,13 +106,13 @@ html{padding-top:env(safe-area-inset-top)}
   position:relative;
   display:inline-flex;
   align-items:center;
-  justify-content:center;
+  justify-content:flex-start;   /* подпись сверху → контент от верха */
   flex-direction:column;
+  flex-shrink: 0;
   background: #0b0b28;
   border: 2px solid #2a2a5a;
   border-radius: 10px;
   padding: 4px;
-  max-width: 100%;
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   transition: border-color .2s, box-shadow .2s;
   overflow: hidden;
@@ -122,7 +122,6 @@ html{padding-top:env(safe-area-inset-top)}
 .media-cell video {
   display: block;
   max-width: 100%;
-  max-height: 100%;
   border-radius: 6px;
   object-fit: contain;
   background: #000;
@@ -133,7 +132,7 @@ html{padding-top:env(safe-area-inset-top)}
   font-family: monospace;
   color: #0097ff;
   line-height: 1.1;
-  margin-top: 4px;
+  margin-bottom: 4px;   /* подпись сверху */
   text-align: center;
   word-break: break-all;
   max-width: 100%;
@@ -262,6 +261,10 @@ html{padding-top:env(safe-area-inset-top)}
   padding:8px 10px;border-radius:8px;border:2px solid #555;
   background:#120a3a;color:#fff;outline:none;user-select:text;-webkit-user-select:text;
 }
+#edit-popover input:disabled{
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 #edit-popover .row{display:flex;gap:6px}
 #edit-popover button{
   min-height: 42px;
@@ -283,6 +286,20 @@ html{padding-top:env(safe-area-inset-top)}
   background:#1e1050;
   border-color:#7b4dff;
   color:#fff;
+}
+.popover-or {
+  text-align: center;
+  font-size: 11px;
+  color: #666;
+  font-family: monospace;
+  margin: 2px 0;
+  letter-spacing: 1px;
+}
+#edit-popover .btn-media.disabled,
+#edit-popover .btn-add.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* ---------- footer ---------- */
@@ -317,8 +334,6 @@ html{padding-top:env(safe-area-inset-top)}
 .note.open .note-text{display:block}
 .note-text p{margin-bottom:10px}
 .note-text p:last-child{margin-bottom:0}
-
-#fileImage, #fileVideo { display: none; }
 </style>
 </head>
 <body>
@@ -356,7 +371,7 @@ html{padding-top:env(safe-area-inset-top)}
 
         <p>Word taps (local only): fresh &rarr; white &rarr; green &rarr; orange &rarr; open ChatGPT definition (and copy to clipboard). Long tap cancels highlight, or deletes the word if it wasn't highlighted. These changes stay on your device — other peers are not notified.</p>
 
-        <p><strong>📎 Media button</strong> in the popover opens a file picker. Selected image or video is added to your local grid, scaled automatically to fit alongside words. Only the author's name appears below media. Tap any media to open full-screen viewer; tap again to close.</p>
+        <p><strong>📎 Media button</strong> in the popover opens a file picker. Selected image or video is added to your local grid, scaled automatically to fit alongside words. Only the author's name appears above media. Tap any media to open full-screen viewer; tap again to close. The popover accepts either a word OR a media file — not both at once.</p>
         
         <p>Input field below adds words to your device only. They are not broadcast to other peers.</p>
         <p>Shuffle is local only and affects only non-highlighted words.</p>
@@ -380,13 +395,14 @@ html{padding-top:env(safe-area-inset-top)}
   <button class="viewer-close" id="viewerClose">×</button>
 </div>
 
-<!-- ========== POPOVER WITH SINGLE MEDIA BUTTON ========== -->
+<!-- ========== POPOVER: WORD OR MEDIA ========== -->
 <div id="edit-popover">
   <div class="title" id="popoverTitle">Insert word</div>
   <input type="text" id="popoverInput" placeholder="Type a word to send…" autocomplete="off">
   <div class="row">
     <button class="btn-add" id="btnAdd">Send</button>
   </div>
+  <div class="popover-or">— or —</div>
   <div class="row">
     <button class="btn-media" id="btnMedia" title="Attach image or video">📎 Media</button>
   </div>
@@ -394,9 +410,6 @@ html{padding-top:env(safe-area-inset-top)}
     <button class="btn-cancel" id="btnCancel">Cancel</button>
   </div>
 </div>
-
-<input type="file" id="fileImage" accept="image/*">
-<input type="file" id="fileVideo" accept="video/*">
 
 <script>
 /* =========================================================
@@ -427,7 +440,7 @@ const peerIdInput = document.getElementById('peerIdInput');
 peerIdInput.value = myId;
 
 /* =========================================================
-   State — элементы могут быть word или media
+   State
    ========================================================= */
 let itemsList = DataManager.get('words', []);
 if (!Array.isArray(itemsList)) itemsList = [];
@@ -480,7 +493,6 @@ function connectMqtt(){
   });
 
   client.on('offline', () => { stopHeartbeats(); });
-
   client.on('error', (e) => { log('MQTT error: ' + e.message); });
 
   client.on('message', (t, payload) => {
@@ -589,8 +601,6 @@ const popoverInput = document.getElementById('popoverInput');
 const popoverTitle = document.getElementById('popoverTitle');
 const mediaViewer = document.getElementById('media-viewer');
 const viewerClose = document.getElementById('viewerClose');
-const fileImage = document.getElementById('fileImage');
-const fileVideo = document.getElementById('fileVideo');
 
 let caretContext = null;
 let caretOpen = false;
@@ -643,6 +653,44 @@ viewerClose.addEventListener('click', (e) => {
 });
 
 /* =========================================================
+   FONT SCALE — вынесено отдельно, чтобы вызывать без полного рендера
+   ========================================================= */
+function recalcFontScale(){
+  const tempCells = Array.from(wrapper.querySelectorAll('.word-cell'));
+  if (tempCells.length === 0){ lastFontSize = null; return; }
+
+  const maxSize = 40;
+  const minSize = 8;
+
+  function applySize(value){
+    tempCells.forEach(cell => { cell.style.fontSize = `${value}px`; });
+  }
+
+  if (document.getElementById('note').classList.contains('open') && lastFontSize){
+    applySize(lastFontSize);
+    return;
+  }
+
+  let lo = minSize, hi = maxSize, best = minSize;
+  applySize(maxSize);
+  if (wrapper.scrollHeight <= wrapper.clientHeight){
+    best = maxSize;
+  } else {
+    while (lo <= hi){
+      const mid = (lo + hi) >> 1;
+      applySize(mid);
+      if (wrapper.scrollHeight <= wrapper.clientHeight){
+        best = mid; lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+  }
+  applySize(best);
+  lastFontSize = best;
+}
+
+/* =========================================================
    Render — слова + медиа + автомасштаб
    ========================================================= */
 function renderWords(){
@@ -652,7 +700,6 @@ function renderWords(){
     return;
   }
 
-  const tempCells = [];
   const mediaCells = [];
 
   itemsList.forEach((item, idx) => {
@@ -677,11 +724,22 @@ function renderWords(){
       });
       cell.appendChild(delBtn);
 
+      // ===== ПОДПИСЬ АВТОРА — СВЕРХУ =====
+      const author = document.createElement('div');
+      author.className = 'media-author';
+      author.textContent = item.author || myId;
+      cell.appendChild(author);
+
+      // ===== МЕДИА — ПОД ПОДПИСЬЮ =====
       if (item.mediaType === 'image') {
         const img = document.createElement('img');
         img.src = item.data;
         img.alt = '';
         img.loading = 'lazy';
+        // после реальной загрузки — пересчёт шрифта
+        img.addEventListener('load', () => {
+          requestAnimationFrame(recalcFontScale);
+        }, { once: true });
         cell.appendChild(img);
       } else if (item.mediaType === 'video') {
         const video = document.createElement('video');
@@ -689,14 +747,11 @@ function renderWords(){
         video.preload = 'metadata';
         video.playsInline = true;
         video.muted = true;
+        video.addEventListener('loadedmetadata', () => {
+          requestAnimationFrame(recalcFontScale);
+        }, { once: true });
         cell.appendChild(video);
       }
-
-      // ===== ПОДПИСЬ АВТОРА (только имя автора, без названия файла) =====
-      const author = document.createElement('div');
-      author.className = 'media-author';
-      author.textContent = item.author || myId;
-      cell.appendChild(author);
 
       // === КЛИК: открыть / закрыть фуллскрин ===
       cell.addEventListener('pointerup', (e) => {
@@ -791,59 +846,30 @@ function renderWords(){
     cell.addEventListener('pointerleave', ()=> clearTimeout(pressTimer));
 
     wrapper.appendChild(cell);
-    tempCells.push(cell);
   });
 
-  // === АВТОМАСШТАБИРОВАНИЕ ===
+  // === РАЗМЕРЫ МЕДИА + АВТОМАСШТАБ ШРИФТА ===
   requestAnimationFrame(() => {
     const wrapperRect = wrapper.getBoundingClientRect();
-    const maxMediaW = Math.min(wrapperRect.width * 0.9, 400);
-    const maxMediaH = Math.min(wrapperRect.height * 0.5, 400);
+
+    // Размер одной медиа-ячейки: адаптивно, но не гигантский
+    const cellW = Math.max(120, Math.min(wrapperRect.width * 0.45, 320));
+    const cellH = Math.max(120, Math.min(wrapperRect.height * 0.4, 320));
+
     mediaCells.forEach(mc => {
-      mc.style.maxWidth = maxMediaW + 'px';
-      mc.style.maxHeight = maxMediaH + 'px';
+      mc.style.width  = cellW + 'px';
+      mc.style.height = cellH + 'px';
       const mediaEl = mc.querySelector('img, video');
       if (mediaEl) {
-        mediaEl.style.maxWidth = (maxMediaW - 16) + 'px';
-        mediaEl.style.maxHeight = (maxMediaH - 40) + 'px';
+        mediaEl.style.width     = '100%';
+        mediaEl.style.height    = 'auto';
+        mediaEl.style.maxWidth  = '100%';
+        mediaEl.style.maxHeight = 'calc(100% - 20px)'; // место под подпись
+        mediaEl.style.objectFit = 'contain';
       }
     });
 
-    if (tempCells.length === 0) {
-      lastFontSize = null;
-      return;
-    }
-
-    const maxSize = 40;
-    const minSize = 8;
-
-    function applySize(value){
-      tempCells.forEach(cell => { cell.style.fontSize = `${value}px`; });
-    }
-
-    if (document.getElementById('note').classList.contains('open') && lastFontSize){
-      applySize(lastFontSize);
-      return;
-    }
-
-    let lo = minSize, hi = maxSize, best = minSize;
-    applySize(maxSize);
-    if (wrapper.scrollHeight <= wrapper.clientHeight){
-      best = maxSize;
-    } else {
-      while (lo <= hi){
-        const mid = (lo + hi) >> 1;
-        applySize(mid);
-        if (wrapper.scrollHeight <= wrapper.clientHeight){
-          best = mid;
-          lo = mid + 1;
-        } else {
-          hi = mid - 1;
-        }
-      }
-    }
-    applySize(best);
-    lastFontSize = best;
+    recalcFontScale();
   });
 }
 
@@ -963,7 +989,7 @@ function shuffleUnhighlighted(){
 }
 
 /* =========================================================
-   Open caret / popover — ищем ближайший word-элемент
+   Open caret / popover
    ========================================================= */
 function openCaret(){
   caret.classList.add('active');
@@ -1007,15 +1033,17 @@ function openCaret(){
 function openPopover(ctx){
   const rect = caret.getBoundingClientRect();
   popover.style.left = Math.min(window.innerWidth - 240, rect.left) + 'px';
-  popover.style.top  = Math.min(window.innerHeight - 200, rect.bottom + 8) + 'px';
+  popover.style.top  = Math.min(window.innerHeight - 220, rect.bottom + 8) + 'px';
   popoverTitle.textContent = ctx.index < 0
     ? 'Insert first word'
     : (ctx.side === 'after'
         ? `After: ${itemsList[ctx.index].word}`
         : `Before: ${itemsList[ctx.index].word}`);
   popoverInput.value = '';
+  popoverInput.disabled = false;
   popover.classList.add('show');
   popoverInput.focus();
+  updatePopoverState();
 }
 
 function hidePopover(){
@@ -1023,7 +1051,21 @@ function hidePopover(){
   caret.classList.remove('active');
   caretContext = null;
   caretOpen = false;
+  popoverInput.disabled = false;
+  document.getElementById('btnMedia').classList.remove('disabled');
+  document.getElementById('btnAdd').classList.remove('disabled');
 }
+
+/* =========================================================
+   POPOVER: логика «или» — input гасит Media, Media гасит input
+   ========================================================= */
+function updatePopoverState(){
+  const hasText = popoverInput.value.trim().length > 0;
+  const mediaBtn = document.getElementById('btnMedia');
+  mediaBtn.classList.toggle('disabled', hasText);
+}
+
+popoverInput.addEventListener('input', updatePopoverState);
 
 document.getElementById('btnCancel').addEventListener('click', hidePopover);
 
@@ -1044,16 +1086,41 @@ popoverInput.addEventListener('keydown', (e)=>{
    MEDIA INSERT via single button in popover
    ========================================================= */
 document.getElementById('btnMedia').addEventListener('click', () => {
+  // Пока идёт выбор файла — гасим input и btnAdd
+  popoverInput.disabled = true;
+  document.getElementById('btnAdd').classList.add('disabled');
+
   const picker = document.createElement('input');
   picker.type = 'file';
   picker.accept = 'image/*,video/*';
   picker.style.display = 'none';
+
+  const cleanup = () => {
+    if (picker.parentNode) picker.parentNode.removeChild(picker);
+    popoverInput.disabled = false;
+    document.getElementById('btnAdd').classList.remove('disabled');
+    updatePopoverState();
+  };
+
   picker.addEventListener('change', () => {
     const file = picker.files && picker.files[0];
-    if (!file) return;
-    handleMediaFile(file);
-    document.body.removeChild(picker);
+    if (file) {
+      handleMediaFile(file);   // сам вызовет hidePopover
+    }
+    cleanup();
   });
+
+  // Safari/iOS: если пользователь отменил выбор — change может не прийти.
+  // Пробуем вернуть состояние, когда окно снова получит фокус.
+  window.addEventListener('focus', function onFocus(){
+    setTimeout(() => {
+      if (picker.parentNode && (!picker.files || picker.files.length === 0)) {
+        cleanup();
+      }
+      window.removeEventListener('focus', onFocus);
+    }, 400);
+  }, { once: true });
+
   document.body.appendChild(picker);
   picker.click();
 });
@@ -1080,12 +1147,11 @@ function handleMediaFile(file) {
       type: 'media',
       mediaType: isImage ? 'image' : 'video',
       data: dataUrl,
-      // label больше не используется для отображения
       label: '',
       highlight: 0,
       fresh: false,
       originEditId: null,
-      author: myId   // ← подпись автора
+      author: myId
     };
 
     itemsList.push(item);
