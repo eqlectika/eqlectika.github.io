@@ -682,83 +682,50 @@ polarity === 1
 });
 
 let undoTimer = null;
-
 let isLongPress = false;
+let undoPressStart = 0;
 
-const undoBtn =
-document.getElementById('undoBtn');
+const undoBtn = document.getElementById('undoBtn');
 
-undoBtn.addEventListener(
-'mousedown',
-e => {
-
-e.stopPropagation();
-
-isLongPress = false;
-
-undoTimer = setTimeout(() => {
-
-reset();
-
-isLongPress = true;
-
-}, 3000);
-
-}
-);
-
-undoBtn.addEventListener(
-'touchstart',
-e => {
-
-e.stopPropagation();
-
-isLongPress = false;
-
-undoTimer = setTimeout(() => {
-
-reset();
-
-isLongPress = true;
-
-}, 3000);
-
-},
-{ passive: true }
-);
-
-window.addEventListener('mouseup', () => {
-
-if (undoTimer) {
-
-clearTimeout(undoTimer);
-
-undoTimer = null;
-
-}
-
+undoBtn.addEventListener('pointerdown', e => {
+  e.stopPropagation();
+  isLongPress = false;
+  undoPressStart = Date.now();
+  undoTimer = setTimeout(() => {
+    reset();
+    isLongPress = true;
+  }, 1200);
 });
 
-window.addEventListener('touchend', () => {
-
-if (undoTimer) {
-
-clearTimeout(undoTimer);
-
-undoTimer = null;
-
-}
-
+undoBtn.addEventListener('pointerup', e => {
+  e.stopPropagation();
+  if (undoTimer) {
+    clearTimeout(undoTimer);
+    undoTimer = null;
+  }
+  if (!isLongPress && undoPressStart && Date.now() - undoPressStart < 1200) {
+    undo();
+  }
+  isLongPress = false;
+  undoPressStart = 0;
 });
 
-undoBtn.addEventListener('click', e => {
+undoBtn.addEventListener('pointercancel', e => {
+  if (undoTimer) {
+    clearTimeout(undoTimer);
+    undoTimer = null;
+  }
+  isLongPress = false;
+  undoPressStart = 0;
+});
 
-e.stopPropagation();
-
-if (!isLongPress) undo();
-
-isLongPress = false;
-
+undoBtn.addEventListener('pointerleave', e => {
+  if (undoTimer) {
+    clearTimeout(undoTimer);
+    undoTimer = null;
+  }
+  isLongPress = false;
+  undoPressStart = 0;
 });
 
 function toggleDonate() {
