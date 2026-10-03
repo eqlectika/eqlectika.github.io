@@ -138,31 +138,6 @@ html{padding-top:env(safe-area-inset-top)}
   word-break: break-all;
   max-width: 100%;
 }
-.media-cell .delete-media {
-  position: absolute;
-  top: 2px;
-  right: 6px;
-  background: rgba(255,0,0,0.85);
-  color: #fff;
-  border: none;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity .2s;
-  z-index: 5;
-  font-family: monospace;
-  pointer-events: auto;
-}
-.media-cell:hover .delete-media {
-  opacity: 1;
-}
 
 /* ---------- fullscreen media viewer ---------- */
 #media-viewer {
@@ -372,7 +347,7 @@ html{padding-top:env(safe-area-inset-top)}
 
         <p>Word taps (local only): fresh &rarr; white &rarr; green &rarr; orange &rarr; open ChatGPT definition (and copy to clipboard). Long tap cancels highlight, or deletes the word if it wasn't highlighted. These changes stay on your device — other peers are not notified.</p>
 
-        <p><strong>📎 Media button</strong> in the popover opens a file picker. Selected image or video is added to your local grid, scaled automatically to fit alongside words. Only the author's name appears above media. Tap any media to open full-screen viewer; tap again to close. The popover accepts either a word OR a media file — not both at once.</p>
+        <p><strong>Media button</strong> in the popover opens a file picker. Selected image or video is added to your local grid, scaled automatically to fit alongside words. Only the author's name appears above media. Tap any media to open full-screen viewer; tap again to close. The popover accepts either a word OR a media file — not both at once.</p>
         
         <p>Input field below adds words to your device only. They are not broadcast to other peers.</p>
         <p>Shuffle is local only and affects only non-highlighted words.</p>
@@ -712,20 +687,6 @@ function renderWords(){
       cell.dataset.idx = idx;
       cell.dataset.itemId = item.id;
 
-      // delete button
-      const delBtn = document.createElement('button');
-      delBtn.className = 'delete-media';
-      delBtn.textContent = '×';
-      delBtn.title = 'Delete media (local)';
-      delBtn.addEventListener('pointerdown', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        itemsList.splice(idx, 1);
-        saveItems();
-        renderWords();
-      });
-      cell.appendChild(delBtn);
-
       // ===== ПОДПИСЬ АВТОРА — СВЕРХУ =====
       const author = document.createElement('div');
       author.className = 'media-author';
@@ -755,19 +716,49 @@ function renderWords(){
         cell.appendChild(video);
       }
 
-      // === КЛИК: открыть / закрыть фуллскрин ===
+// === ТАП = открыть/закрыть fullscreen · ДОЛГИЙ ТАП = удалить ===
+      let mediaPressTimer = null;
+      let mediaPressStart = 0;
+      let mediaLongFired = false;
+
+      cell.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        mediaLongFired = false;
+        mediaPressStart = Date.now();
+
+        clearTimeout(mediaPressTimer);
+        mediaPressTimer = setTimeout(() => {
+          mediaLongFired = true;
+          const itemId = cell.dataset.itemId;
+          const realIdx = itemsList.findIndex(it => it.id === itemId);
+          if (realIdx === -1) return;
+
+          if (currentViewerMedia && currentViewerMedia.id === itemId) {
+            closeMediaViewer();
+          }
+          itemsList.splice(realIdx, 1);
+          saveItems();
+          renderWords();
+          log('Media deleted by long tap: ' + itemId);
+        }, 600);
+      });
+
       cell.addEventListener('pointerup', (e) => {
         e.stopPropagation();
         e.preventDefault();
-        if (currentViewerMedia && currentViewerMedia.id === item.id) {
-          closeMediaViewer();
-        } else {
-          openMediaViewer(item);
+        clearTimeout(mediaPressTimer);
+        if (mediaLongFired) return;
+        if (Date.now() - mediaPressStart < 600) {
+          if (currentViewerMedia && currentViewerMedia.id === item.id) {
+            closeMediaViewer();
+          } else {
+            openMediaViewer(item);
+          }
         }
       });
-      cell.addEventListener('pointerdown', (e) => {
-        e.stopPropagation();
-      });
+
+      cell.addEventListener('pointercancel', () => clearTimeout(mediaPressTimer));
+      cell.addEventListener('pointerleave', () => clearTimeout(mediaPressTimer));
 
       wrapper.appendChild(cell);
       mediaCells.push(cell);
