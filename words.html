@@ -82,7 +82,7 @@ html{padding-top:env(safe-area-inset-top)}
   flex-grow:1;width:100%;position:relative;
   display:flex;flex-wrap:wrap;align-content:flex-start;
   align-items:flex-end;
-  gap:0.2em 0.15em;      /* ← было 8px 10px — теперь привязано к шрифту */
+  gap:0.2em 0.15em;
   padding:56px 6px 6px;
   overflow-y:auto;cursor:default;touch-action:pan-y;
 }
@@ -107,7 +107,7 @@ html{padding-top:env(safe-area-inset-top)}
   position:relative;
   display:inline-flex;
   align-items:center;
-  justify-content:center;   /* подпись сверху → контент от верха */
+  justify-content:center;
   flex-direction:column;
   flex-shrink: 0;
   background: #0b0b28;
@@ -118,6 +118,7 @@ html{padding-top:env(safe-area-inset-top)}
   transition: border-color .2s, box-shadow .2s;
   overflow: hidden;
   cursor: pointer;
+  touch-action: manipulation;
 }
 .media-cell img,
 .media-cell video {
@@ -133,7 +134,7 @@ html{padding-top:env(safe-area-inset-top)}
   font-family: monospace;
   color: #0097ff;
   line-height: 1.1;
-  margin-bottom: 4px;   /* подпись сверху */
+  margin-bottom: 4px;
   text-align: center;
   word-break: break-all;
   max-width: 100%;
@@ -333,7 +334,7 @@ html{padding-top:env(safe-area-inset-top)}
       <div class="note-toggle" id="note-toggle"><strong>Help</strong></div>
       <div class="note-text">
         <button class="sync-btn" id="clearBtn" title="Delete all words & media" style="background:#800;margin-top:6px">CLEAR ALL</button>
-        <span id="updateAvailableLine" 
+        <span id="updateAvailableLine"
               style="display: none; margin: 16px auto; color: #0097ff; font-size: 14px; font-family: 'Roboto Condensed', sans-serif; cursor: pointer;"
               onclick="event.stopPropagation(); syncAndKeepData()">
             Update Available
@@ -342,18 +343,18 @@ html{padding-top:env(safe-area-inset-top)}
 
         <p>Circle — single tap shuffles unhighlighted words, long tap opens the caret to add word or phrase, drag to move.</p>
 
-        <p>Input pop-up — enter a word and click "Add" or tap Enter; the nearest word or phrase will be added before or after by the entered text with author Peer-XXXX or name caption, highlighted in <span style="color:#ff2440">red</span>. This is the only edit that is automatically synced to other devices where the app is open at the same time as yours (Live mode).</p>
-        <p>In <span style="color:#ff0000">Live</span> mode caret edits are sent to all peers immediately. In <span style="color:#afff00">Tape</span> mode they're stored locally and flushed when a peer appears.</p>
+        <p>Popover — type a word and tap "Send" (or Enter) to insert it right where the caret points (before/after the nearest cell, word or media). Tap 📎 Media to pick an image or video — it lands in that same caret position. The popover accepts either a word OR a media file, not both at once.</p>
+        <p>In <span style="color:#ff0000">Live</span> mode caret word edits are sent to all peers immediately. In <span style="color:#afff00">Tape</span> mode they're stored locally and flushed when a peer appears. Media is local-only on this device.</p>
 
-        <p>Word taps (local only): fresh &rarr; white &rarr; green &rarr; orange &rarr; open ChatGPT definition (and copy to clipboard). Long tap cancels highlight, or deletes the word if it wasn't highlighted. These changes stay on your device — other peers are not notified.</p>
+        <p>Word taps (local only): fresh &rarr; white &rarr; green &rarr; orange &rarr; open ChatGPT definition (and copy to clipboard). Long tap cancels highlight, or deletes the word if it wasn't highlighted.</p>
 
-        <p><strong>Media button</strong> in the popover opens a file picker. Selected image or video is added to your local grid, scaled automatically to fit alongside words. Only the author's name appears above media. Tap any media to open full-screen viewer; tap again to close. The popover accepts either a word OR a media file — not both at once.</p>
-        
-        <p>Input field below adds words to your device only. They are not broadcast to other peers.</p>
+        <p><strong>Media</strong> — tap any media to open the full-screen viewer; tap again to close. Long tap any media to delete it (same gesture as deleting a word).</p>
+
+        <p>Input field below adds words to your device only.</p>
         <p>Shuffle is local only and affects only non-highlighted words.</p>
-        <p>SYNC (red button) appears only when there are edits waiting in Tape. Tap it to force-send them once a peer is online.</p>
+        <p>SYNC (red button) appears only when there are edits waiting in Tape.</p>
 
-        <p>Your peer name — tap the ID in the top-right corner, type a new name, tap Enter. 3–12 chars: letters, digits, dash, underscore. Escape or tap away to cancel.</p>
+        <p>Your peer name — tap the ID in the top-right corner, type a new name, tap Enter. 3–12 chars: letters, digits, dash, underscore.</p>
 
         <a href="support.html" title="Support">
           <img src="/fleurdelis.png" alt="fleur-de-lis"
@@ -366,12 +367,10 @@ html{padding-top:env(safe-area-inset-top)}
 
 <div id="caret-circle" title="Tap = shuffle · Long tap = add word · Drag = move"></div>
 
-<!-- ========== FULLSCREEN MEDIA VIEWER ========== -->
 <div id="media-viewer">
   <button class="viewer-close" id="viewerClose">×</button>
 </div>
 
-<!-- ========== POPOVER: WORD OR MEDIA ========== -->
 <div id="edit-popover">
   <div class="title" id="popoverTitle">Insert word</div>
   <input type="text" id="popoverInput" placeholder="Type a word to send…" autocomplete="off">
@@ -382,7 +381,6 @@ html{padding-top:env(safe-area-inset-top)}
   <div class="row">
     <button class="btn-add" id="btnAdd">Send</button>
   </div>
-
   <div class="row">
     <button class="btn-cancel" id="btnCancel">Cancel</button>
   </div>
@@ -630,14 +628,16 @@ viewerClose.addEventListener('click', (e) => {
 });
 
 /* =========================================================
-   FONT SCALE — вынесено отдельно, чтобы вызывать без полного рендера
+   FONT SCALE
    ========================================================= */
 function recalcFontScale(){
+  wrapper.style.fontSize = '';
+
   const tempCells = Array.from(wrapper.querySelectorAll('.word-cell'));
   if (tempCells.length === 0){ lastFontSize = null; return; }
 
   const maxSize = 40;
-  const minSize = 8;
+  const minSize = 14;
 
   function applySize(value){
     wrapper.style.fontSize = `${value}px`;
@@ -668,6 +668,23 @@ function recalcFontScale(){
 }
 
 /* =========================================================
+   Универсальный расчёт позиции вставки по anchorId
+   ========================================================= */
+function resolveInsertAt(anchorId, side, fallbackIndex){
+  if (anchorId){
+    const realIdx = itemsList.findIndex(it => it.id === anchorId);
+    if (realIdx !== -1){
+      return side === 'after' ? realIdx + 1 : realIdx;
+    }
+  }
+  if (typeof fallbackIndex === 'number'){
+    if (fallbackIndex < 0) return 0;
+    return Math.max(0, Math.min(itemsList.length, fallbackIndex));
+  }
+  return itemsList.length;
+}
+
+/* =========================================================
    Render — слова + медиа + автомасштаб
    ========================================================= */
 function renderWords(){
@@ -687,22 +704,16 @@ function renderWords(){
       cell.dataset.idx = idx;
       cell.dataset.itemId = item.id;
 
-      // ===== ПОДПИСЬ АВТОРА — СВЕРХУ =====
       const author = document.createElement('div');
       author.className = 'media-author';
       author.textContent = item.author || myId;
       cell.appendChild(author);
 
-      // ===== МЕДИА — ПОД ПОДПИСЬЮ =====
       if (item.mediaType === 'image') {
         const img = document.createElement('img');
         img.src = item.data;
         img.alt = '';
         img.loading = 'lazy';
-        // после реальной загрузки — пересчёт шрифта
-        img.addEventListener('load', () => {
-          requestAnimationFrame(recalcFontScale);
-        }, { once: true });
         cell.appendChild(img);
       } else if (item.mediaType === 'video') {
         const video = document.createElement('video');
@@ -710,13 +721,10 @@ function renderWords(){
         video.preload = 'metadata';
         video.playsInline = true;
         video.muted = true;
-        video.addEventListener('loadedmetadata', () => {
-          requestAnimationFrame(recalcFontScale);
-        }, { once: true });
         cell.appendChild(video);
       }
 
-// === ТАП = открыть/закрыть fullscreen · ДОЛГИЙ ТАП = удалить ===
+      // ТАП = открыть/закрыть fullscreen · ДОЛГИЙ ТАП = удалить
       let mediaPressTimer = null;
       let mediaPressStart = 0;
       let mediaLongFired = false;
@@ -796,11 +804,14 @@ function renderWords(){
       longPress = false;
       pressTimer = setTimeout(()=>{
         longPress = true;
-        if (itemsList[idx].highlight > 0){
-          itemsList[idx].highlight = 0;
-          itemsList[idx].fresh = false;
+        const itemId = cell.dataset.itemId;
+        const realIdx = itemsList.findIndex(it => it.id === itemId);
+        if (realIdx === -1) return;
+        if (itemsList[realIdx].highlight > 0){
+          itemsList[realIdx].highlight = 0;
+          itemsList[realIdx].fresh = false;
         } else {
-          itemsList.splice(idx,1);
+          itemsList.splice(realIdx, 1);
         }
         saveItems(); renderWords();
       }, 600);
@@ -810,7 +821,10 @@ function renderWords(){
       clearTimeout(pressTimer);
       if (longPress) return;
       if (Date.now() - pressStart < 600){
-        const cur = itemsList[idx];
+        const itemId = cell.dataset.itemId;
+        const realIdx = itemsList.findIndex(it => it.id === itemId);
+        if (realIdx === -1) return;
+        const cur = itemsList[realIdx];
         if (cur.fresh){
           cur.fresh = false;
           cur.highlight = 0;
@@ -841,28 +855,24 @@ function renderWords(){
     wrapper.appendChild(cell);
   });
 
-  // === РАЗМЕРЫ МЕДИА + АВТОМАСШТАБ ШРИФТА ===
-requestAnimationFrame(() => {
-  const wrapperRect = wrapper.getBoundingClientRect();
+  requestAnimationFrame(() => {
+    const ICON_SIZE = 56;
+    const CELL_PADDING = 4;
+    const LABEL_HEIGHT = 14;
 
-  // Маленькая иконка — одинаковая на всех устройствах
-  const ICON_SIZE = 56;         // размер самой иконки (медиа)
-  const CELL_PADDING = 4;       // padding ячейки
-  const LABEL_HEIGHT = 14;      // высота подписи (шрифт 10px + margin)
+    mediaCells.forEach(mc => {
+      mc.style.width  = (ICON_SIZE + CELL_PADDING * 2) + 'px';
+      mc.style.height = (ICON_SIZE + CELL_PADDING * 2 + LABEL_HEIGHT) + 'px';
+      const mediaEl = mc.querySelector('img, video');
+      if (mediaEl) {
+        mediaEl.style.width     = ICON_SIZE + 'px';
+        mediaEl.style.height    = ICON_SIZE + 'px';
+        mediaEl.style.objectFit = 'cover';
+      }
+    });
 
-  mediaCells.forEach(mc => {
-    mc.style.width  = (ICON_SIZE + CELL_PADDING * 2) + 'px';           // 64px
-    mc.style.height = (ICON_SIZE + CELL_PADDING * 2 + LABEL_HEIGHT) + 'px'; // ~78px
-    const mediaEl = mc.querySelector('img, video');
-    if (mediaEl) {
-      mediaEl.style.width     = ICON_SIZE + 'px';
-      mediaEl.style.height    = ICON_SIZE + 'px';
-      mediaEl.style.objectFit = 'cover';   // обрезать по квадрату
-    }
+    recalcFontScale();
   });
-
-  recalcFontScale();
-});
 }
 
 /* =========================================================
@@ -989,16 +999,21 @@ function openCaret(){
   const cr = caret.getBoundingClientRect();
   const cx = cr.left + cr.width/2;
   const cy = cr.top  + cr.height/2;
-  const cells = Array.from(wrapper.querySelectorAll('.word-cell'));
+
+  // Берём ВСЕ ячейки — слова и медиа
+  const cells = Array.from(wrapper.querySelectorAll('.word-cell, .media-cell'));
 
   if (cells.length === 0){
-    caretContext = { index:-1, side:'after' };
+    caretContext = { anchorId: null, side: 'after', index: -1 };
     openPopover(caretContext);
     return;
   }
 
-  const wordIndices = [];
-  itemsList.forEach((it, i) => { if (it.type !== 'media') wordIndices.push(i); });
+  // DOM-ячейка → реальный индекс в itemsList
+  const realIndices = cells.map(cell => {
+    const id = cell.dataset.itemId;
+    return itemsList.findIndex(it => it.id === id);
+  });
 
   let best = null;
   cells.forEach((cell, i)=>{
@@ -1008,17 +1023,23 @@ function openCaret(){
     const midY    = r.top + r.height/2;
     const dA = Math.hypot(cx-afterX,  cy-midY);
     const dB = Math.hypot(cx-beforeX, cy-midY);
-    const realIdx = wordIndices[i];
-    if (!best || dA < best.d) best = {index:realIdx, side:'after',  d:dA, cellIdx:i};
-    if (!best || dB < best.d) best = {index:realIdx, side:'before', d:dB, cellIdx:i};
+    const realIdx = realIndices[i];
+    if (realIdx === -1) return;
+    if (!best || dA < best.d) best = { index: realIdx, side:'after',  d:dA, cellIdx:i };
+    if (!best || dB < best.d) best = { index: realIdx, side:'before', d:dB, cellIdx:i };
   });
 
-  cells.forEach(c=>c.style.outline='');
+  cells.forEach(c => c.style.outline='');
   if (best && cells[best.cellIdx]){
     cells[best.cellIdx].style.outline = '2px dashed #7b4dff';
     setTimeout(()=>{ if (cells[best.cellIdx]) cells[best.cellIdx].style.outline=''; }, 1200);
   }
-  caretContext = best;
+
+  caretContext = {
+    anchorId: best ? itemsList[best.index].id : null,
+    side:     best ? best.side : 'after',
+    index:    best ? best.index : -1
+  };
   openPopover(caretContext);
 }
 
@@ -1026,11 +1047,23 @@ function openPopover(ctx){
   const rect = caret.getBoundingClientRect();
   popover.style.left = Math.min(window.innerWidth - 240, rect.left) + 'px';
   popover.style.top  = Math.min(window.innerHeight - 220, rect.bottom + 8) + 'px';
-  popoverTitle.textContent = ctx.index < 0
-    ? 'Insert first word'
-    : (ctx.side === 'after'
-        ? `After: ${itemsList[ctx.index].word}`
-        : `Before: ${itemsList[ctx.index].word}`);
+
+  let anchorItem = null;
+  if (ctx.anchorId){
+    anchorItem = itemsList.find(it => it.id === ctx.anchorId) || null;
+  } else if (typeof ctx.index === 'number' && ctx.index >= 0){
+    anchorItem = itemsList[ctx.index] || null;
+  }
+
+  if (!anchorItem){
+    popoverTitle.textContent = 'Insert first item';
+  } else {
+    const label = anchorItem.type === 'media' ? '[media]' : anchorItem.word;
+    popoverTitle.textContent = (ctx.side === 'after')
+      ? `After: ${label}`
+      : `Before: ${label}`;
+  }
+
   popoverInput.value = '';
   popoverInput.disabled = false;
   popover.classList.add('show');
@@ -1049,7 +1082,7 @@ function hidePopover(){
 }
 
 /* =========================================================
-   POPOVER: логика «или» — input гасит Media, Media гасит input
+   POPOVER: логика «или»
    ========================================================= */
 function updatePopoverState(){
   const hasText = popoverInput.value.trim().length > 0;
@@ -1075,10 +1108,16 @@ popoverInput.addEventListener('keydown', (e)=>{
 });
 
 /* =========================================================
-   MEDIA INSERT via single button in popover
+   MEDIA INSERT — вставка в позицию каретки
    ========================================================= */
 document.getElementById('btnMedia').addEventListener('click', () => {
-  // Пока идёт выбор файла — гасим input и btnAdd
+  // Замораживаем контекст каретки — сохраняем anchorId
+  const frozenCtx = caretContext ? {
+    anchorId: caretContext.anchorId || null,
+    side:     caretContext.side || 'after',
+    index:    typeof caretContext.index === 'number' ? caretContext.index : -1
+  } : { anchorId: null, side: 'after', index: -1 };
+
   popoverInput.disabled = true;
   document.getElementById('btnAdd').classList.add('disabled');
 
@@ -1097,13 +1136,12 @@ document.getElementById('btnMedia').addEventListener('click', () => {
   picker.addEventListener('change', () => {
     const file = picker.files && picker.files[0];
     if (file) {
-      handleMediaFile(file);   // сам вызовет hidePopover
+      handleMediaFile(file, frozenCtx);
+    } else {
+      cleanup();
     }
-    cleanup();
   });
 
-  // Safari/iOS: если пользователь отменил выбор — change может не прийти.
-  // Пробуем вернуть состояние, когда окно снова получит фокус.
   window.addEventListener('focus', function onFocus(){
     setTimeout(() => {
       if (picker.parentNode && (!picker.files || picker.files.length === 0)) {
@@ -1117,7 +1155,7 @@ document.getElementById('btnMedia').addEventListener('click', () => {
   picker.click();
 });
 
-function handleMediaFile(file) {
+function handleMediaFile(file, ctx) {
   const isImage = file.type.startsWith('image/');
   const isVideo = file.type.startsWith('video/');
   if (!isImage && !isVideo) {
@@ -1146,11 +1184,18 @@ function handleMediaFile(file) {
       author: myId
     };
 
-    itemsList.push(item);
+    // ВСТАВКА В ПОЗИЦИЮ КАРЕТКИ
+    const insertAt = resolveInsertAt(
+      ctx ? ctx.anchorId : null,
+      ctx ? ctx.side : 'after',
+      ctx ? ctx.index : -1
+    );
+
+    itemsList.splice(insertAt, 0, item);
     saveItems();
     hidePopover();
     renderWords();
-    log('Media added: ' + item.mediaType + ' by ' + item.author);
+    log('Media added at ' + insertAt + ': ' + item.mediaType + ' by ' + item.author);
   };
   reader.onerror = () => {
     log('FileReader error');
@@ -1168,14 +1213,13 @@ function newEditId(){
 }
 
 function buildAddEdit(ctx, text){
-  const insertAt = ctx.index < 0 ? 0 : (ctx.side === 'after' ? ctx.index + 1 : ctx.index);
   return {
     editId: newEditId(),
     kind: 'add',
-    insertAt: insertAt,
+    insertAt: typeof ctx.index === 'number' && ctx.index >= 0 ? ctx.index : 0,
     word: text,
-    anchorId: ctx.index >= 0 ? itemsList[ctx.index].id : null,
-    anchorSide: ctx.side,
+    anchorId: ctx.anchorId || null,
+    anchorSide: ctx.side || 'after',
     author: myId,
     ts: Date.now()
   };
@@ -1222,15 +1266,11 @@ function applyEditLocally(edit, asFresh){
     author: edit.author || null
   };
 
-  let insertAt = itemsList.length;
-  if (edit.anchorId){
-    const idx = itemsList.findIndex(w => w.id === edit.anchorId);
-    if (idx !== -1){
-      insertAt = edit.anchorSide === 'after' ? idx + 1 : idx;
-    }
-  } else if (typeof edit.insertAt === 'number' && edit.insertAt >= 0){
-    insertAt = Math.max(0, Math.min(itemsList.length, edit.insertAt));
-  }
+  const insertAt = resolveInsertAt(
+    edit.anchorId || null,
+    edit.anchorSide || 'after',
+    typeof edit.insertAt === 'number' ? edit.insertAt : undefined
+  );
 
   itemsList.splice(insertAt, 0, newItem);
   saveItems();
