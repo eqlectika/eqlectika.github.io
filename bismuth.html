@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="loop.png">
-
+<link rel="icon" type="image/png" href="loop.png">
 <link rel="manifest" href="manifest-bismuth.json">
-<title>Bismuth Laboratory Persistent</title>
+<title>Bismuth Laboratory Persistent · Translucent</title>
 <style>
 .snap-section, .logo-container, .logo-container img, .mode-toggle, a {
 -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
@@ -37,36 +36,31 @@ canvas { display: block; }
   justify-content: center;
   padding: 20px 0;
 }
-
 .logo-container { 
   display: flex; 
   justify-content: center; 
   align-items: center;
   pointer-events: auto; 
 }
-
 .logo-container img { 
   height: 35px; 
   width: auto; 
   display: block; 
   pointer-events: auto;
 }
-
-  .footer-logo {
-  position: fixed; /* Фиксация относительно окна браузера */
-  left: 50%;       /* Центрирование */
+.footer-logo {
+  position: fixed;
+  left: 50%;
   transform: translateX(-50%);
-  z-index: 9999;   /* Самый высокий слой, выше canvas */
-  pointer-events: auto; /* Чтобы ссылка работала */
+  z-index: 9999;
+  pointer-events: auto;
   bottom: 20px;
 }
-
 .footer-logo a {
   display: block;
 }
-
 .footer-logo img {
-  height: 35px;    /* Размер логотипа */
+  height: 35px;
   width: auto;
   display: block;
 }
@@ -74,7 +68,7 @@ canvas { display: block; }
 .scroll-container { display: flex; flex-direction: column; width: 100%; }
 .snap-section { height: 100px; width: 100%; flex-shrink: 0; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; justify-content: center; background: transparent; }
 .logo-container a {
-  pointer-events: auto; /* Включаем события только для ссылки/картинки */
+  pointer-events: auto;
 }
 footer { width: 100%; background: transparent; }
 .donate-box { display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center; }
@@ -107,21 +101,21 @@ let history = [];
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(
-75,
-window.innerWidth / window.innerHeight,
-0.1,
-1000
+  75,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
 );
 
 const renderer = new THREE.WebGLRenderer({
-  antialias: true
+  antialias: true,
+  alpha: false
 });
 
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
-// Включаем тональную компрессию для красивых и ярких бликов
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.NoToneMapping;
 
 document.body.appendChild(renderer.domElement);
 
@@ -129,834 +123,437 @@ const controls = new THREE.OrbitControls(
   camera,
   renderer.domElement
 );
-
 controls.enableDamping = true;
 
 const group = new THREE.Group();
 scene.add(group);
 
-// Используем MeshPhysicalMaterial вместо MeshPhongMaterial для эффекта полировки и прозрачности
+// === ОКРУЖЕНИЕ: без него прозрачность не видна ===
+// Генерируем простую градиентную cubemap прямо в коде.
+// Именно отражения в envMap делают прозрачный материал «стеклянным».
+function makeEnvMap() {
+  const size = 128;
+  const faces = [];
+  // Цвета для 6 граней: тёплый верх, холодный низ, нейтральные бока
+  const faceColors = [
+    [0x223355, 0x112244], // +X
+    [0x553322, 0x442211], // -X
+    [0xffe8cc, 0xaaccff], // +Y (верх — светлый)
+    [0x111122, 0x000008], // -Y (низ — тёмный)
+    [0x334466, 0x223355], // +Z
+    [0x664433, 0x332211]  // -Z
+  ];
+
+  faceColors.forEach(([top, bottom]) => {
+    const c = document.createElement('canvas');
+    c.width = size;
+    c.height = size;
+    const ctx = c.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, size);
+    grad.addColorStop(0, '#' + top.toString(16).padStart(6, '0'));
+    grad.addColorStop(1, '#' + bottom.toString(16).padStart(6, '0'));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    faces.push(c);
+  });
+
+  const cube = new THREE.CubeTexture(faces);
+  cube.needsUpdate = true;
+  cube.encoding = THREE.sRGBEncoding;
+  return cube;
+}
+
+const envMap = makeEnvMap();
+scene.environment = envMap;   // для MeshPhysicalMaterial
+scene.background = null;       // фон остаётся чёрным
+
+// === МАТЕРИАЛ: настоящая полупрозрачность ===
+// В three.js r128 transmission работает ТОЛЬКО при transparent:true
+// и только при наличии envMap. Иначе кристалл просто непрозрачный.
 const material = new THREE.MeshPhysicalMaterial({
   color: 0xffffff,
-  roughness: 0.08,      // Очень низкая шероховатость = зеркальная полировка
-  metalness: 0.51,       // Легкий металлический отблеск
-  transmission: 0.1,   // Степень прозрачности (эффект стекла/кристалла)
-  ior: 2.4,             // Преломление света (похоже на настоящий висмут/драгоценные камни)
-  thickness: 1.2,       // Толщина объема для преломления
-  specularIntensity: 1, // Интенсивность бликов
-  transparent: true,
-  opacity: 0.7,
+  roughness: 0.08,
+  metalness: 0.35,
+  transparent: true,        // ← обязательно для transmission в r128
+  opacity: 0.72,            // ← вот она, реальная прозрачность
+  transmission: 0.0,        // отключён: в r128 глючит без полноценного envMap
+  ior: 1.8,
+  reflectivity: 0.7,
+  envMap: envMap,
+  envMapIntensity: 1.4,     // усиленные отражения — «стеклянный» блеск
+  clearcoat: 0.6,           // дополнительный слой глянца
+  clearcoatRoughness: 0.1,
   side: THREE.DoubleSide,
-  flatShading: true,    // Сохраняет грани кристаллической структуры
-  depthWrite: false     // Важно для корректного отображения полупрозрачных объектов друг за другом
+  flatShading: true,
+  depthWrite: false         // ← ключ к корректной прозрачности при наложении
 });
 
+// === СВЕТ: чуть ярче, чтобы прозрачные грани не гасли ===
+const hemi = new THREE.HemisphereLight(0xffffff, 0x0a0a18, 0.6);
+scene.add(hemi);
 
-const hemi = new THREE.HemisphereLight(
-0xffffff,
-0x000000,
-0.8
-);
+const keyLight = new THREE.PointLight(0xffffff, 1.1, 80);
+keyLight.position.set(12, 14, 10);
+scene.add(keyLight);
 
-const light = new THREE.PointLight(
-0xffffff,
-0.5
-);
-
-light.position.set(10,10,10);
-
-scene.add(hemi, light);
-
-const backLight = new THREE.PointLight(
-0xffffff,
-1,
-50
-);
-
-backLight.position.set(-15,-20,-15);
-
+const backLight = new THREE.PointLight(0x88aaff, 0.9, 80);
+backLight.position.set(-14, -12, -16);
 scene.add(backLight);
 
-const bottomLight = new THREE.DirectionalLight(
-0xffffff,
-0.4
-);
+const rimLight = new THREE.PointLight(0xffccaa, 0.7, 80);
+rimLight.position.set(-6, 18, -8);
+scene.add(rimLight);
 
-bottomLight.position.set(0,-20,0);
+const edgeLight = new THREE.PointLight(0xffffff, 0.6, 60);
+edgeLight.position.set(-15, 5, 10);
+scene.add(edgeLight);
 
-scene.add(bottomLight);
-
-camera.position.set(12,12,12);
+camera.position.set(12, 12, 12);
 
 let currentMode = 'tree';
-
 let isDeleteMode = false;
-
 let polarity = 1;
-
 let isMirror = false;
 
-const currentCenter = new THREE.Vector3(0,0,0);
-
+const currentCenter = new THREE.Vector3(0, 0, 0);
 let holdTimer = null;
-
 let isFlying = false;
-
 let startTime = 0;
-
 const flyDirection = new THREE.Vector3();
-
 let currentSpeed = 0;
-
 const maxSpeed = 0.1;
-
 const acceleration = 0.001;
 
 const raycaster = new THREE.Raycaster();
-
 const mouse = new THREE.Vector2();
-
 const startMouse = new THREE.Vector2();
 
 function saveState() {
+  const data = group.children.map(m => ({
+    depth: m.userData.depth,
+    normalSteps: m.userData.normalSteps,
+    mirrorSteps: m.userData.mirrorSteps,
+    corners: m.userData.corners.map(c => ({
+      x: c.x, y: c.y, z: c.z
+    }))
+  }));
 
-const data = group.children.map(m => ({
+  const snapshot = JSON.stringify(data);
 
-depth: m.userData.depth,
+  if (history.length === 0 || history[history.length - 1] !== snapshot) {
+    history.push(snapshot);
+    if (history.length > 30) history.shift();
+  }
 
-normalSteps: m.userData.normalSteps,
-
-mirrorSteps: m.userData.mirrorSteps,
-
-corners: m.userData.corners.map(c => ({
-x: c.x,
-y: c.y,
-z: c.z
-}))
-
-}));
-
-const snapshot = JSON.stringify(data);
-
-if (
-history.length === 0 ||
-history[history.length - 1] !== snapshot
-) {
-
-history.push(snapshot);
-
-if (history.length > 30) {
-history.shift();
-}
-
-}
-
-localStorage.setItem(
-'bismuth_state',
-snapshot
-);
-
+  localStorage.setItem('bismuth_state', snapshot);
 }
 
 function loadState() {
+  const saved = localStorage.getItem('bismuth_state');
+  if (!saved) {
+    initBase();
+    return;
+  }
 
-const saved =
-localStorage.getItem('bismuth_state');
+  history = [saved];
 
-if (!saved) {
-
-initBase();
-
-return;
-
-}
-
-history = [saved];
-
-JSON.parse(saved).forEach(d => {
-
-const c = d.corners.map(p =>
-new THREE.Vector3(p.x,p.y,p.z)
-);
-
-createRect(
-c[0],
-c[1],
-c[2],
-c[3],
-d.depth,
-d.normalSteps,
-d.mirrorSteps,
-false
-);
-
-});
-
+  JSON.parse(saved).forEach(d => {
+    const c = d.corners.map(p => new THREE.Vector3(p.x, p.y, p.z));
+    createRect(c[0], c[1], c[2], c[3], d.depth, d.normalSteps, d.mirrorSteps, false);
+  });
 }
 
 function undo() {
+  if (history.length <= 1) return;
+  history.pop();
+  const previous = JSON.parse(history[history.length - 1]);
 
-if (history.length <= 1) return;
+  while (group.children.length > 0) group.remove(group.children[0]);
 
-history.pop();
+  previous.forEach(d => {
+    const c = d.corners.map(p => new THREE.Vector3(p.x, p.y, p.z));
+    createRect(c[0], c[1], c[2], c[3], d.depth, d.normalSteps, d.mirrorSteps, false);
+  });
 
-const previous =
-JSON.parse(history[history.length - 1]);
-
-while (group.children.length > 0) {
-
-group.remove(group.children[0]);
-
-}
-
-previous.forEach(d => {
-
-const c = d.corners.map(p =>
-new THREE.Vector3(p.x,p.y,p.z)
-);
-
-createRect(
-c[0],
-c[1],
-c[2],
-c[3],
-d.depth,
-d.normalSteps,
-d.mirrorSteps,
-false
-);
-
-});
-
-localStorage.setItem(
-'bismuth_state',
-JSON.stringify(previous)
-);
-
+  localStorage.setItem('bismuth_state', JSON.stringify(previous));
 }
 
 function reset() {
-
-while(group.children.length > 0) {
-
-group.remove(group.children[0]);
-
-}
-
-history = [];
-
-initBase();
-
+  while (group.children.length > 0) group.remove(group.children[0]);
+  history = [];
+  initBase();
 }
 
 function initBase() {
+  const s = 4;
+  const pts = [
+    new THREE.Vector3(-s, s, s),
+    new THREE.Vector3(s, s, s),
+    new THREE.Vector3(s, -s, s),
+    new THREE.Vector3(-s, -s, s),
+    new THREE.Vector3(-s, s, -s),
+    new THREE.Vector3(s, s, -s),
+    new THREE.Vector3(s, -s, -s),
+    new THREE.Vector3(-s, -s, -s)
+  ];
 
-const s = 4;
+  [
+    [pts[0], pts[1], pts[2], pts[3]],
+    [pts[1], pts[5], pts[6], pts[2]],
+    [pts[5], pts[4], pts[7], pts[6]],
+    [pts[4], pts[0], pts[3], pts[7]],
+    [pts[4], pts[5], pts[1], pts[0]],
+    [pts[3], pts[2], pts[6], pts[7]]
+  ].forEach(f => {
+    createRect(f[0], f[1], f[2], f[3], 0, 0, 0, false);
+  });
 
-const pts = [
-
-new THREE.Vector3(-s,s,s),
-new THREE.Vector3(s,s,s),
-new THREE.Vector3(s,-s,s),
-new THREE.Vector3(-s,-s,s),
-
-new THREE.Vector3(-s,s,-s),
-new THREE.Vector3(s,s,-s),
-new THREE.Vector3(s,-s,-s),
-new THREE.Vector3(-s,-s,-s)
-
-];
-
-[
-[pts[0],pts[1],pts[2],pts[3]],
-[pts[1],pts[5],pts[6],pts[2]],
-[pts[5],pts[4],pts[7],pts[6]],
-[pts[4],pts[0],pts[3],pts[7]],
-[pts[4],pts[5],pts[1],pts[0]],
-[pts[3],pts[2],pts[6],pts[7]]
-
-].forEach(f => {
-
-createRect(
-f[0],
-f[1],
-f[2],
-f[3],
-0,
-0,
-0,
-false
-);
-
-});
-
-saveState();
-
+  saveState();
 }
 
-function createRect(
-p1,
-p2,
-p3,
-p4,
-depth,
-normalSteps = 0,
-mirrorSteps = 0,
-save = true
-) {
+function createRect(p1, p2, p3, p4, depth, normalSteps = 0, mirrorSteps = 0, save = true) {
+  const geo = new THREE.BufferGeometry();
+  const v = [
+    p1.x, p1.y, p1.z,
+    p2.x, p2.y, p2.z,
+    p3.x, p3.y, p3.z,
+    p3.x, p3.y, p3.z,
+    p4.x, p4.y, p4.z,
+    p1.x, p1.y, p1.z
+  ];
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+  geo.computeVertexNormals();
 
-const geo = new THREE.BufferGeometry();
+  const mesh = new THREE.Mesh(geo, material.clone());
 
-const v = [
+  // Высокая насыщенность + средняя светлота = сочный цвет,
+  // который при opacity 0.72 остаётся ярким, а не белёсым.
+  mesh.material.color.setHSL(
+    (depth * 0.17) % 1,
+    0.95,
+    0.5
+  );
 
-p1.x,p1.y,p1.z,
-p2.x,p2.y,p2.z,
-p3.x,p3.y,p3.z,
+  // Каждый экземпляр получает собственную копию envMap-настроек
+  mesh.material.envMap = envMap;
+  mesh.material.envMapIntensity = 1.4;
 
-p3.x,p3.y,p3.z,
-p4.x,p4.y,p4.z,
-p1.x,p1.y,p1.z
+  mesh.userData = {
+    isBismuth: true,
+    depth,
+    normalSteps,
+    mirrorSteps,
+    corners: [p1.clone(), p2.clone(), p3.clone(), p4.clone()]
+  };
 
-];
-
-geo.setAttribute(
-'position',
-new THREE.Float32BufferAttribute(v,3)
-);
-
-geo.computeVertexNormals();
-
-const mesh = new THREE.Mesh(
-geo,
-material.clone()
-);
-
-mesh.material.color.setHSL(
-(depth * 0.15) % 1,
-0.6,
-0.4
-);
-
-mesh.userData = {
-
-isBismuth: true,
-
-depth,
-
-normalSteps,
-
-mirrorSteps,
-
-corners: [
-p1.clone(),
-p2.clone(),
-p3.clone(),
-p4.clone()
-]
-
-};
-
-group.add(mesh);
-
-if (save) saveState();
-
+  group.add(mesh);
+  if (save) saveState();
 }
 
 function grow(mesh) {
+  const c = mesh.userData.corners;
+  const d = mesh.userData.depth;
+  const normalSteps = mesh.userData.normalSteps;
+  const mirrorSteps = mesh.userData.mirrorSteps;
 
-const c = mesh.userData.corners;
+  if (!isMirror && normalSteps >= 10) return;
+  if (isMirror && mirrorSteps >= 10) return;
 
-const d = mesh.userData.depth;
+  const v1 = new THREE.Vector3().subVectors(c[1], c[0]);
+  const normal = new THREE.Vector3()
+    .crossVectors(v1, new THREE.Vector3().subVectors(c[3], c[0]))
+    .normalize();
+  const center = new THREE.Vector3()
+    .add(c[0]).add(c[1]).add(c[2]).add(c[3])
+    .divideScalar(4);
 
-const normalSteps =
-mesh.userData.normalSteps;
+  const lerpFactor = isMirror ? -0.2 : 0.2;
+  const stepPolarity = isMirror ? -polarity : polarity;
 
-const mirrorSteps =
-mesh.userData.mirrorSteps;
+  const offset = normal
+    .multiplyScalar(currentMode === 'tree' ? 1.2 : v1.length() * 0.15)
+    .multiplyScalar(stepPolarity);
 
-if (!isMirror && normalSteps >= 10) return;
+  const inner = c.map(p =>
+    p.clone().lerp(center, lerpFactor).sub(offset)
+  );
 
-if (isMirror && mirrorSteps >= 10) return;
+  const nextDepth = isMirror ? d - 1 : d + 1;
+  const nextNormalSteps = isMirror ? normalSteps : normalSteps + 1;
+  const nextMirrorSteps = isMirror ? mirrorSteps + 1 : mirrorSteps;
 
-const v1 = new THREE.Vector3()
-.subVectors(c[1], c[0]);
+  group.remove(mesh);
 
-const normal = new THREE.Vector3()
-.crossVectors(
-v1,
-new THREE.Vector3()
-.subVectors(c[3], c[0])
-)
-.normalize();
+  createRect(c[0], c[1], inner[1], inner[0], nextDepth, nextNormalSteps, nextMirrorSteps, false);
+  createRect(c[1], c[2], inner[2], inner[1], nextDepth, nextNormalSteps, nextMirrorSteps, false);
+  createRect(c[2], c[3], inner[3], inner[2], nextDepth, nextNormalSteps, nextMirrorSteps, false);
+  createRect(c[3], c[0], inner[0], inner[3], nextDepth, nextNormalSteps, nextMirrorSteps, false);
+  createRect(inner[0], inner[1], inner[2], inner[3], nextDepth, nextNormalSteps, nextMirrorSteps, false);
 
-const center = new THREE.Vector3()
-.add(c[0])
-.add(c[1])
-.add(c[2])
-.add(c[3])
-.divideScalar(4);
-
-const lerpFactor =
-isMirror ? -0.2 : 0.2;
-
-const stepPolarity =
-isMirror ? -polarity : polarity;
-
-const offset = normal
-.multiplyScalar(
-currentMode === 'tree'
-? 1.2
-: v1.length() * 0.15
-)
-.multiplyScalar(stepPolarity);
-
-const inner = c.map(p =>
-p.clone()
-.lerp(center, lerpFactor)
-.sub(offset)
-);
-
-const nextDepth =
-isMirror ? d - 1 : d + 1;
-
-const nextNormalSteps =
-isMirror
-? normalSteps
-: normalSteps + 1;
-
-const nextMirrorSteps =
-isMirror
-? mirrorSteps + 1
-: mirrorSteps;
-
-group.remove(mesh);
-
-createRect(
-c[0],
-c[1],
-inner[1],
-inner[0],
-nextDepth,
-nextNormalSteps,
-nextMirrorSteps,
-false
-);
-
-createRect(
-c[1],
-c[2],
-inner[2],
-inner[1],
-nextDepth,
-nextNormalSteps,
-nextMirrorSteps,
-false
-);
-
-createRect(
-c[2],
-c[3],
-inner[3],
-inner[2],
-nextDepth,
-nextNormalSteps,
-nextMirrorSteps,
-false
-);
-
-createRect(
-c[3],
-c[0],
-inner[0],
-inner[3],
-nextDepth,
-nextNormalSteps,
-nextMirrorSteps,
-false
-);
-
-createRect(
-inner[0],
-inner[1],
-inner[2],
-inner[3],
-nextDepth,
-nextNormalSteps,
-nextMirrorSteps,
-false
-);
-
-saveState();
-
+  saveState();
 }
 
 function startFly() {
-
-isFlying = true;
-
-flyDirection
-.subVectors(
-currentCenter,
-camera.position
-)
-.normalize();
-
+  isFlying = true;
+  flyDirection.subVectors(currentCenter, camera.position).normalize();
 }
 
-document
-.getElementById('deleteMode')
-.addEventListener('click', e => {
-
-e.stopPropagation();
-
-isDeleteMode = !isDeleteMode;
-
-e.target.innerText =
-isDeleteMode
-? 'Delete'
-: 'Build';
-
-e.target.style.color =
-isDeleteMode
-? '#ff0000'
-: '#00ff00';
-
+document.getElementById('deleteMode').addEventListener('click', e => {
+  e.stopPropagation();
+  isDeleteMode = !isDeleteMode;
+  e.target.innerText = isDeleteMode ? 'Delete' : 'Build';
+  e.target.style.color = isDeleteMode ? '#ff0000' : '#00ff00';
 });
 
-document
-.getElementById('toggleMode')
-.addEventListener('click', e => {
-
-e.stopPropagation();
-
-currentMode =
-currentMode === 'tree'
-? 'hopper'
-: 'tree';
-
-e.target.innerText =
-currentMode === 'tree'
-? 'Tree'
-: 'Hopper';
-
+document.getElementById('toggleMode').addEventListener('click', e => {
+  e.stopPropagation();
+  currentMode = currentMode === 'tree' ? 'hopper' : 'tree';
+  e.target.innerText = currentMode === 'tree' ? 'Tree' : 'Hopper';
 });
 
-document
-.getElementById('mirrorBtn')
-.addEventListener('click', e => {
-
-e.stopPropagation();
-
-isMirror = !isMirror;
-
-e.target.innerText =
-isMirror
-? 'Mirror'
-: 'Normal';
-
-e.target.style.color =
-isMirror
-? '#ffa500'
-: '#00ff00';
-
+document.getElementById('mirrorBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  isMirror = !isMirror;
+  e.target.innerText = isMirror ? 'Mirror' : 'Normal';
+  e.target.style.color = isMirror ? '#ffa500' : '#00ff00';
 });
 
-document
-.getElementById('polarityBtn')
-.addEventListener('click', e => {
-
-e.stopPropagation();
-
-polarity *= -1;
-
-e.target.innerText =
-polarity === 1
-? 'External'
-: 'Internal';
-
-e.target.style.color =
-polarity === 1
-? '#00ff00'
-: '#ff1493';
-
+document.getElementById('polarityBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  polarity *= -1;
+  e.target.innerText = polarity === 1 ? 'External' : 'Internal';
+  e.target.style.color = polarity === 1 ? '#00ff00' : '#ff1493';
 });
 
 let undoTimer = null;
 let isLongPress = false;
 let undoPressStart = 0;
-
 const undoBtn = document.getElementById('undoBtn');
 
 undoBtn.addEventListener('pointerdown', e => {
   e.stopPropagation();
   isLongPress = false;
   undoPressStart = Date.now();
-  undoTimer = setTimeout(() => {
-    reset();
-    isLongPress = true;
-  }, 1200);
+  undoTimer = setTimeout(() => { reset(); isLongPress = true; }, 1200);
 });
 
 undoBtn.addEventListener('pointerup', e => {
   e.stopPropagation();
-  if (undoTimer) {
-    clearTimeout(undoTimer);
-    undoTimer = null;
-  }
-  if (!isLongPress && undoPressStart && Date.now() - undoPressStart < 1200) {
-    undo();
-  }
+  if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
+  if (!isLongPress && undoPressStart && Date.now() - undoPressStart < 1200) undo();
   isLongPress = false;
   undoPressStart = 0;
 });
 
 undoBtn.addEventListener('pointercancel', e => {
-  if (undoTimer) {
-    clearTimeout(undoTimer);
-    undoTimer = null;
-  }
+  if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
   isLongPress = false;
   undoPressStart = 0;
 });
 
 undoBtn.addEventListener('pointerleave', e => {
-  if (undoTimer) {
-    clearTimeout(undoTimer);
-    undoTimer = null;
-  }
+  if (undoTimer) { clearTimeout(undoTimer); undoTimer = null; }
   isLongPress = false;
   undoPressStart = 0;
 });
 
 function toggleDonate() {
-
-const info =
-document.getElementById('cryptoInfo');
-
-info.style.display =
-info.style.display !== 'flex'
-? 'flex'
-: 'none';
-
+  const info = document.getElementById('cryptoInfo');
+  info.style.display = info.style.display !== 'flex' ? 'flex' : 'none';
 }
 
 function copyToClipboard() {
-
-const addr =
-document.getElementById('cryptoAddr');
-
-const text = addr.innerText;
-
-navigator.clipboard
-.writeText(text)
-.then(() => {
-
-addr.innerText = 'Copied!';
-
-setTimeout(() => {
-
-addr.innerText = text;
-
-},1500);
-
-});
-
+  const addr = document.getElementById('cryptoAddr');
+  const text = addr.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    addr.innerText = 'Copied!';
+    setTimeout(() => { addr.innerText = text; }, 1500);
+  });
 }
 
 function onDown(e) {
+  if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) return;
 
-if (
-e.target.tagName === 'BUTTON' ||
-e.target.closest('#basement')
-) return;
+  const x = e.clientX || (e.touches && e.touches[0].clientX);
+  const y = e.clientY || (e.touches && e.touches[0].clientY);
 
-const x =
-e.clientX ||
-(e.touches && e.touches[0].clientX);
+  mouse.x = (x / window.innerWidth) * 2 - 1;
+  mouse.y = -(y / window.innerHeight) * 2 + 1;
+  startMouse.set(x, y);
+  startTime = Date.now();
 
-const y =
-e.clientY ||
-(e.touches && e.touches[0].clientY);
-
-mouse.x =
-(x / window.innerWidth) * 2 - 1;
-
-mouse.y =
--(y / window.innerHeight) * 2 + 1;
-
-startMouse.set(x,y);
-
-startTime = Date.now();
-
-clearTimeout(holdTimer);
-
-holdTimer = setTimeout(
-startFly,
-1800
-);
-
+  clearTimeout(holdTimer);
+  holdTimer = setTimeout(startFly, 1800);
 }
 
 function onUp(e) {
+  if (e.target.tagName === 'BUTTON' || e.target.closest('#basement')) {
+    clearTimeout(holdTimer);
+    startTime = 0;
+    return;
+  }
 
-if (
-e.target.tagName === 'BUTTON' ||
-e.target.closest('#basement')
-) {
+  clearTimeout(holdTimer);
 
-clearTimeout(holdTimer);
+  if (startTime !== 0 && Date.now() - startTime < 1800 && !isFlying) {
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObjects(group.children);
 
-startTime = 0;
+    if (hits.length > 0) {
+      if (isDeleteMode) {
+        group.remove(hits[0].object);
+        saveState();
+      } else {
+        grow(hits[0].object);
+      }
+    }
+  }
 
-return;
-
-}
-
-clearTimeout(holdTimer);
-
-if (
-startTime !== 0 &&
-Date.now() - startTime < 1800 &&
-!isFlying
-) {
-
-raycaster.setFromCamera(
-mouse,
-camera
-);
-
-const hits =
-raycaster.intersectObjects(
-group.children
-);
-
-if (hits.length > 0) {
-
-if (isDeleteMode) {
-
-group.remove(hits[0].object);
-
-saveState();
-
-} else {
-
-grow(hits[0].object);
-
-}
-
-}
-
-}
-
-isFlying = false;
-
-startTime = 0;
-
+  isFlying = false;
+  startTime = 0;
 }
 
 function onMove(e) {
+  if (!startTime) return;
+  const x = e.clientX || (e.touches && e.touches[0].clientX);
+  const y = e.clientY || (e.touches && e.touches[0].clientY);
 
-if (!startTime) return;
-
-const x =
-e.clientX ||
-(e.touches && e.touches[0].clientX);
-
-const y =
-e.clientY ||
-(e.touches && e.touches[0].clientY);
-
-if (
-Math.hypot(
-x - startMouse.x,
-y - startMouse.y
-) > 5 &&
-!isFlying
-) {
-
-clearTimeout(holdTimer);
-
-startTime = 0;
-
+  if (Math.hypot(x - startMouse.x, y - startMouse.y) > 5 && !isFlying) {
+    clearTimeout(holdTimer);
+    startTime = 0;
+  }
 }
 
-}
-
-renderer.domElement.addEventListener(
-'pointerdown',
-onDown
-);
-
-renderer.domElement.addEventListener(
-'pointermove',
-onMove
-);
-
-renderer.domElement.addEventListener(
-'pointerup',
-onUp
-);
+renderer.domElement.addEventListener('pointerdown', onDown);
+renderer.domElement.addEventListener('pointermove', onMove);
+renderer.domElement.addEventListener('pointerup', onUp);
 
 function animate() {
+  requestAnimationFrame(animate);
 
-requestAnimationFrame(animate);
+  if (isFlying) {
+    currentSpeed = Math.min(currentSpeed + acceleration, maxSpeed);
+  } else {
+    currentSpeed = Math.max(currentSpeed - acceleration, 0);
+  }
 
-if (isFlying) {
+  if (currentSpeed > 0) {
+    camera.position.addScaledVector(flyDirection, currentSpeed);
+    controls.target.addScaledVector(flyDirection, currentSpeed);
+  }
 
-currentSpeed = Math.min(
-currentSpeed + acceleration,
-maxSpeed
-);
-
-} else {
-
-currentSpeed = Math.max(
-currentSpeed - acceleration,
-0
-);
-
-}
-
-if (currentSpeed > 0) {
-
-camera.position.addScaledVector(
-flyDirection,
-currentSpeed
-);
-
-controls.target.addScaledVector(
-flyDirection,
-currentSpeed
-);
-
-}
-
-controls.update();
-
-renderer.render(scene,camera);
-
+  controls.update();
+  renderer.render(scene, camera);
 }
 
 loadState();
-
 animate();
 
-window.addEventListener(
-'resize',
-() => {
-
-camera.aspect =
-window.innerWidth / window.innerHeight;
-
-camera.updateProjectionMatrix();
-
-renderer.setSize(
-window.innerWidth,
-window.innerHeight
-);
-
-}
-);
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 </script>
 </body>
 </html>
