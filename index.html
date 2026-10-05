@@ -361,10 +361,9 @@ p {margin: 8px 0 0 0;}
 }
 
 .progress-fill {
-  width: 21%;
+  width: 34%;
   height: 8px;
   background: #fff;
-  transition: width 200ms ease-out; 
 }
 
 * {
@@ -504,7 +503,7 @@ p {margin: 8px 0 0 0;}
 <div style="margin: -20px 0 80px 0; display: flex; flex-direction: column; align-items: center; gap: 4px;">
     <p style="font-family:monospace;font-size:12px;margin:10px">Happiness loading... Please wait</p>
 <div style="width: 160px; background: #444; overflow: hidden;">
-    <div id="happiness-bar" class="progress-fill" style="width: 21%;"></div>
+    <div id="happiness-bar" class="progress-fill"></div>
   </div>
 
 </div>
@@ -967,37 +966,6 @@ function deleteItem(id) {
 
 updateRankingList();
 nextPair();
-
-const bar = document.getElementById('happiness-bar');
-
-if (bar) {
-  let currentProgress = 21; 
-  const maxTarget = 88;    
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        setTimeout(scheduleNextStep, 1000); // Запуск через 1 сек после появления
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.5 }); 
-
-  observer.observe(bar);
-
-  function scheduleNextStep() {
-    if (currentProgress < maxTarget) {
-      const remaining = maxTarget - currentProgress;
-      const stepSize = Math.floor(Math.random() * Math.min(remaining, 7)) + 1;
-      currentProgress = Math.min(currentProgress + stepSize, maxTarget);
-      
-      bar.style.width = currentProgress + '%'; 
-
-      const randomDelay = Math.floor(Math.random() * (300 - 100 + 1)) + 100;
-      setTimeout(scheduleNextStep, randomDelay);
-    }
-  }
-}
 
 const $toggleBtn = $('#toggle-btn');
 const $content = $('#collapsible-content');
