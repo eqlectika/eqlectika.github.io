@@ -7,7 +7,7 @@
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="1280">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>War Of The Words | Terminal + Media</title>
+<title>Net Word | Terminal + Media</title>
 <link rel="manifest" href="manifest-words.json">
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
@@ -30,35 +30,43 @@ html{padding-top:env(safe-area-inset-top)}
   height: 0;
 }
 
-/* ---------- top bar ---------- */
 .top-bar{
-  position:fixed;top:0;left:0;right:0;z-index:50;
-  display:flex;align-items:center;gap:10px;
-  padding:8px 12px;background:#000030ee;
-  font-size:13px;color:#aaa;font-family:monospace;
-}
-.top-bar .brand{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  z-index:50;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  padding:8px 12px;
+  background:#000030ee;
+
+  font-size:16px;
+  color:#aaa;
+
   font-family:'Roboto Condensed',sans-serif;
-  font-weight:700;font-size:16px;letter-spacing:.5px;color:#FF5349;
+  font-weight:700;font-size:16px;
 }
-.top-bar .live{font-family:'Roboto Condensed',sans-serif;
-  font-weight:700;font-size:16px;color:#ff0000;animation:livePulse 1.5s infinite}
-.top-bar .tape{font-family:'Roboto Condensed',sans-serif;
-  font-weight:700;font-size:16px;color:#afff00}
+.top-bar .brand{color:#FF5349;}
+.top-bar .live{color:#ff0000;animation:livePulse 1.5s infinite}
+.top-bar .tape{color:#afff00}
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 #peerIdInput{
-  margin-left:auto;
+
   color:#0097ff;
-  background:#0b0b28;
-  border:1px solid #1e1e4a;
+  background:transparent;
+
   outline:none;
   font-family:monospace;
   font-size:14px;
   text-align:right;
-  width:120px;
-  padding:3px 6px;
-  border-radius:6px;
+  width:84px;
+  padding:3px 0;
+
   user-select:text;
   -webkit-user-select:text;
   cursor:text;
@@ -103,31 +111,65 @@ html{padding-top:env(safe-area-inset-top)}
 .word-cell.hl-2{color:#FFB300}
 
 /* ---------- media cells ---------- */
-.media-cell {
+.media-cell{
   position:relative;
   display:inline-flex;
   align-items:center;
-  justify-content:center;
+  justify-content:flex-end;
   flex-direction:column;
-  flex-shrink: 0;
-  background: #0b0b28;
-  border: 2px solid #2a2a5a;
-  border-radius: 10px;
-  padding: 4px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-  transition: border-color .2s, box-shadow .2s;
-  overflow: hidden;
-  cursor: pointer;
-  touch-action: manipulation;
+
+  flex-shrink:0;
+
+  background:#0b0b28;
+  border:2px solid #2a2a5a;
+  border-radius:10px;
+
+  padding:.12em;
+
+  box-shadow:0 4px 12px rgba(0,0,0,.5);
+
+  transition:border-color .2s,box-shadow .2s;
+  overflow:hidden;
+
+  cursor:pointer;
+  touch-action:manipulation;
+
+  /* размер теперь зависит от текущего размера текста */
+  width:4em;
+  height:4.8em;
 }
+
 .media-cell img,
-.media-cell video {
-  display: block;
-  max-width: 100%;
-  border-radius: 6px;
-  object-fit: contain;
-  background: #000;
-  pointer-events: none;
+.media-cell video{
+  display:block;
+
+  width:3.5em;
+  height:3.5em;
+
+  max-width:none;
+  max-height:none;
+
+  border-radius:.4em;
+
+  object-fit:cover;
+
+  background:#000;
+  pointer-events:none;
+}
+
+.media-cell .media-author{
+  font-size:.625em;
+  font-family:monospace;
+  color:#0097ff;
+  line-height:1.1;
+
+  margin-bottom:.15em;
+
+  text-align:center;
+  word-break:break-all;
+
+  max-width:100%;
+}
 }
 .media-cell .media-author {
   font-size: 10px;
@@ -308,7 +350,7 @@ html{padding-top:env(safe-area-inset-top)}
 .footer-panel{
   display:flex;flex-direction:column;align-items:center;gap:10px;
   width:100%;flex-shrink:0;z-index:10;
-  padding:5px 8px 15px;background:#000030;
+  padding:5px 8px 0;background:#000030;
 }
 #word-input{
   width:100%;max-width:500px;padding:12px;font-family:'Roboto Condensed',sans-serif;
@@ -329,8 +371,8 @@ html{padding-top:env(safe-area-inset-top)}
 }
 .note-toggle{cursor:pointer;color:#999;margin:10px;user-select:none;-webkit-user-select:none}
 .note-text{
-  display:none;margin-top:6px;padding:0 10px;color:#fff;line-height:1.35;
-  max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:none;margin-top:6px;padding:56px 6px 6px;color:#fff;line-height:1.35;
+  max-height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;text-align:center;
 }
 .note.open .note-text{display:block}
@@ -341,22 +383,19 @@ html{padding-top:env(safe-area-inset-top)}
 <body>
 
 <div class="top-bar">
-  <span class="brand">War Of The Words</span>
+  <span class="brand">Net Word</span>
   <span id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
-  <span id="tapeIndicator" class="tape">Tape</span>
-  <input type="text" id="peerIdInput" autocomplete="off" spellcheck="false"
-         placeholder="Peer-XXXX" title="Tap to rename yourself">
+<span id="tapeIndicator" class="tape">Tape</span>
+
+<div class="top-help" id="note-toggle">
+  <strong>Help</strong>
 </div>
 
+<input type="text" id="peerIdInput" autocomplete="off" spellcheck="false"
+       placeholder="Peer-XXXX" title="Tap to rename yourself">
+</div>
 <div class="container">
-  <div class="words-wrapper" id="words-wrapper"></div>
-
-  <div class="footer-panel">
-    <input type="text" id="word-input" placeholder="Add word(s) locally and press Enter...">
-    <button class="sync-btn" id="syncBtn" title="Re-send tape edits to network" style="display:none">SYNC TAPE TO LIVE</button>
-
     <div class="note" id="note">
-      <div class="note-toggle" id="note-toggle"><strong>Help</strong></div>
       <div class="note-text">
         <button class="sync-btn" id="clearBtn" title="Delete all words & media" style="background:#800;margin-top:6px">CLEAR ALL</button>
         <span id="updateAvailableLine"
@@ -364,7 +403,7 @@ html{padding-top:env(safe-area-inset-top)}
               onclick="event.stopPropagation(); syncAndKeepData()">
             Update Available
         </span>
-        <p style="margin-top:12px;font-size:18px;">War Of The Words — Terminal</p>
+        <p style="margin-top:12px;font-size:18px;">Net Word — Terminal</p>
 
         <p>Circle — single tap shuffles unhighlighted words, long tap opens the caret to add word or phrase, drag to move.</p>
 
@@ -379,7 +418,7 @@ html{padding-top:env(safe-area-inset-top)}
         <p>Shuffle is local only and affects only non-highlighted words.</p>
         <p>SYNC (red button) appears only when there are edits waiting in Tape.</p>
 
-        <p>Your peer name — tap the ID in the top-right corner, type a new name, tap Enter. 3–12 chars: letters, digits, dash, underscore.</p>
+        <p>Your peer name — tap the ID in the top-right corner, type a new name, tap Enter. 3–9 chars: letters, digits, dash, underscore.</p>
 
         <a href="support.html" title="Support">
           <img src="/fleurdelis.png" alt="fleur-de-lis"
@@ -387,6 +426,13 @@ html{padding-top:env(safe-area-inset-top)}
         </a>
       </div>
     </div>
+
+  <div class="words-wrapper" id="words-wrapper"></div>
+
+  <div class="footer-panel">
+    <input type="text" id="word-input" placeholder="Add word(s) locally and press Enter...">
+    <button class="sync-btn" id="syncBtn" title="Re-send tape edits to network" style="display:none">SYNC TAPE TO LIVE</button>
+
   </div>
 </div>
 
@@ -880,24 +926,9 @@ function renderWords(){
     wrapper.appendChild(cell);
   });
 
-  requestAnimationFrame(() => {
-    const ICON_SIZE = 56;
-    const CELL_PADDING = 4;
-    const LABEL_HEIGHT = 14;
-
-    mediaCells.forEach(mc => {
-      mc.style.width  = (ICON_SIZE + CELL_PADDING * 2) + 'px';
-      mc.style.height = (ICON_SIZE + CELL_PADDING * 2 + LABEL_HEIGHT) + 'px';
-      const mediaEl = mc.querySelector('img, video');
-      if (mediaEl) {
-        mediaEl.style.width     = ICON_SIZE + 'px';
-        mediaEl.style.height    = ICON_SIZE + 'px';
-        mediaEl.style.objectFit = 'cover';
-      }
-    });
-
-    recalcFontScale();
-  });
+requestAnimationFrame(() => {
+  recalcFontScale();
+});
 }
 
 /* =========================================================
@@ -1385,9 +1416,9 @@ function commitPeerId(){
   const v = peerIdInput.value.trim();
   if (v === myId){ peerIdInput.value = myId; return; }
 
-  if (!/^[A-Za-z0-9_\-]{3,12}$/.test(v)){
+  if (!/^[A-Za-z0-9_\-]{3,9}$/.test(v)){
     peerIdInput.value = myId;
-    log('ID must be 3–12 chars: letters, digits, dash, underscore.');
+    log('ID must be 3–9 chars: letters, digits, dash, underscore.');
     return;
   }
 
