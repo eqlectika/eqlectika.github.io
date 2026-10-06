@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-media'; 
+const CACHE_NAME = 'version-steam'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
