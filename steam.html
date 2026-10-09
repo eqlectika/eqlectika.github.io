@@ -1146,7 +1146,6 @@ function openPopover(ctx){
   popoverInput.value = '';
   popoverInput.disabled = false;
   popover.classList.add('show');
-  popoverInput.focus();
   updatePopoverState();
 }
 
@@ -1160,6 +1159,12 @@ function hidePopover(){
   document.getElementById('btnAdd').classList.remove('disabled');
 }
 
+document.addEventListener('pointerdown', (e) => {
+  if (!popover.classList.contains('show')) return;
+  // Тап внутри popover или по каретке не закрывает окно
+  if (popover.contains(e.target) || caret.contains(e.target)) return;
+  hidePopover();
+});
 /* =========================================================
    POPOVER: логика «или»
    ========================================================= */
