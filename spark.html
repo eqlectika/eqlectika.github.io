@@ -212,19 +212,14 @@ user-select: none;
 
 <pre id="savedDataView"></pre>
 
-<div style="display: flex; flex-direction: column; align-items: left; margin: 20px 0 30px 0;">
+<div style="display: flex; flex-direction: column; align-items: left; margin: 20px 0 120px 0;">
 
   <h2 style="font-family: monospace, sans-serif; margin: 0 0 0 0; font-weight: bold;">
     <a href="support.html" class="cinzel-text" style="color: inherit; text-decoration: none; transition: color 0.4s;">Made in Space</a>
   </h2>
   <p class="cinzel-text" style="margin: 0; font-family: monospace, sans-serif; transition: color 0.4s;">Web Terminals That Come Alive</p>
 </div>
-<div style="margin: 0 0 100px 0; display: flex; flex-direction: column; align-items: left; gap: 4px;">
-  <p id="happiness-text" style="margin: 15px 0 3px 0; color: var(--text-color); font-size: 12px;">Happiness loading… Please wait</p>
-  <div id="happiness-track" style="width: 160px; background: var(--bar-bg); overflow: hidden;">
-    <div id="happiness-bar" class="progress-fill" style="width: 34%; background: var(--text-color);"></div>
-  </div>
-</div>
+
 
 <script>
   const rows = ['time', 'breath', 'pulse', 'emotion', 'dopamine', 'load', 'tension', 'energy', 'focus', 'creativity', 'vision', 'hearing', 'smell', 'boomerang', 'problem', 'subject'];
@@ -471,23 +466,6 @@ async function forceAppUpdate() {
         window.location.reload(true);
     }
 }
-
-  const bar = document.getElementById('happiness-bar');
-
-if (bar) {
-  let currentProgress = 21; 
-  const maxTarget = 88;     
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        scheduleNextStep();
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.5 }); 
-
-  observer.observe(bar);
 
   function scheduleNextStep() {
     if (currentProgress < maxTarget) {
