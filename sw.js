@@ -2,6 +2,7 @@ const CACHE_NAME = 'version-refresh';
 const CORE_ASSETS = [
     '/',
     './index.html',
+    './blueprint.html', 
     './auction.html', 
     './poster.html',
     './cross.html',
@@ -22,7 +23,7 @@ const CORE_ASSETS = [
 
     './manifest-index.json',
     './manifest-auction.json',
-
+    './manifest-blueprint.json',
     './manifest-essence.json',
     './manifest-cross.json',
     './manifest-flash.json',
