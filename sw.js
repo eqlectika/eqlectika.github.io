@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-blueprint'; 
+const CACHE_NAME = 'version-refresh'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
