@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-popover'; 
+const CACHE_NAME = 'version-blueprint'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
