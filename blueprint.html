@@ -240,22 +240,26 @@ function saveAll() {
     const memInput = document.getElementById('memories-input').value.trim();
     const perInput = document.getElementById('perceptions-input').value.trim();
 
+    // Добавление новых воспоминаний к существующим
     if (memInput) {
-        memories = memInput.split('\n').filter(line => line.trim() !== "");
+        const newMemories = memInput.split('\n').filter(line => line.trim() !== "");
+        memories = [...newMemories, ...memories]; // добавляем новые в конец списка
         localStorage.setItem('myMemories', JSON.stringify(memories));
         document.getElementById('memories-input').value = "";
-        currentIndex = 0;
-        updateDisplay();
     }
 
+    // Добавление новых ощущений к существующим
     if (perInput) {
-        perceptions = perInput.split('\n').filter(line => line.trim() !== "");
+        const newPerceptions = perInput.split('\n').filter(line => line.trim() !== "");
+        perceptions = [...newPerceptions, ...perceptions]; // добавляем новые в конец списка
         localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
         document.getElementById('perceptions-input').value = "";
-        currentPerceptionIndex = 0;
-        updatePerceptionDisplay();
     }
+
+    updateDisplay();
+    updatePerceptionDisplay();
 }
+
 
 function resetAll() {
     memories = [...defaultMemories];
