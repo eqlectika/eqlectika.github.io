@@ -1,488 +1,431 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-<link rel="icon" type="image/png" href="/blueprint.png">
-<meta property="og:image" content="/Verge.jpeg">
-<meta property="og:image:width" content="1280">
-<meta property="og:image:height" content="1280">
+  <link rel="icon" type="image/png" href="/blueprint.png">
+  <meta property="og:image" content="/Verge.jpeg">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="1280">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="manifest" href="manifest-blueprint.json">
 
-<title>The Blueprint | Core</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>The Blueprint | Core</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
+
   <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: sans-serif;
+      font-size: 18px;
+      padding: 4px;
+    }
 
+    details p {
+      color: #999;
+      font-size: 16px;
+      font-family: monospace;
+    }
 
-  body { 
-    background-color: #000; 
-color: #fff;
-    font-family: sans-serif; 
-font-size: 18px;
-    padding: 4px; 
-  }
-details p {
-  color: #999;
-  font-size: 16px;
-font-family: monospace;
-}
+    summary {
+      cursor: pointer;
+      color: #999;
+      font-size: 16px;
+      font-family: monospace;
+    }
 
-  summary {
-    cursor: pointer;
-    color: #999;
-    font-size: 16px;
-    font-family: monospace;
-  }
+    summary a {
+      text-decoration: none;
+      color: inherit;
+    }
 
-  summary a { 
-    text-decoration: none; 
-    color: inherit;
-  }
+    .controls button,
+    .controls-row button {
+      width: 120px;
+      padding: 8px;
+      cursor: pointer;
+      background-color: #000;
+      color: #888;
+      border: 1px solid #888;
+      border-radius: 0;
+      font-size: 15px;
+      font-family: monospace;
+      transition: 0.3s;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-  .select-group {
-    margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
+    .controls button:hover,
+    .controls-row button:hover,
+    .donate-btn:hover {
+      background-color: #888;
+      color: #000;
+    }
 
-  select {
-    padding: 8px;
-    border-radius: 0px;
-  }
+    .edit-section {
+      margin-top: 30px;
+      border-top: 2px solid #222;
+      padding-top: 20px;
+    }
 
+    textarea {
+      width: 100%;
+      background: #111;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 10px;
+      box-sizing: border-box;
+      font-size: inherit;
+    }
 
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
 
-  .controls button, .controls-row button {
-    width: 120px;
-    padding: 8px;
-    cursor: pointer;
-    background-color: #000;
-    color: #888;
-    border: 1px solid #888;
-    font-family: inherit;
-border-radius: 0px;
-font-size: 15px;
+    footer {
+      margin-top: 50px;
+      padding: 20px 0;
+      border-top: 1px solid #222;
+    }
 
-    font-family: monospace;
-
-    transition: 0.3s;
-    -webkit-user-select: none; 
-    -ms-user-select: none;   
-    user-select: none;      
-    -webkit-tap-highlight-color: transparent;
-  }
-
-
-  .controls button:hover, .controls-row button:hover, .donate-btn:hover {
-    background-color: #888;
-    color: #000;
-  }
-
-
-  .edit-section {
-    margin-top: 30px;
-    border-top: 2px solid #222;
-    padding-top: 20px;
-  }
-
-  textarea {
-    width: 100%;
-    background: #111;
-    color: #fff;
-    border: 1px solid #555;
-    padding: 10px;
-    box-sizing: border-box;
-    font-size: inherit;
-  }
-
-.controls {
-  display: flex;
-  flex-wrap: wrap;          /* разрешаем перенос */
-  align-items: center;
-  gap: 15px;
-  margin-top: 20px;
-}
-
-    footer { margin-top: 50px; padding: 20px 0; border-top: 1px solid #222; }
-
+    /* Индикатор pull-to-refresh */
+    #ptr-indicator {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      text-align: center;
+      padding: 10px 0;
+      color: #888;
+      font-family: monospace;
+      font-size: 14px;
+      transform: translateY(0);
+      transition: transform 0.2s ease;
+      pointer-events: none;
+      z-index: 999;
+      background: rgba(0, 0, 0, 0.7);
+    }
   </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <body>
 
-<script src="pwa-init.js"></script>
-<header> 
+  <!-- Индикатор pull-to-refresh -->
+  <div id="ptr-indicator"></div>
 
+  <header>
+    <h1 onclick="location.reload()" style="cursor:pointer; font-family:'UnifrakturCook', cursive; font-weight:700; margin-bottom:5px;">
+      The Blueprint
+    </h1>
+    <p style="opacity:0.9; font-size:16px; margin-top:-30px;">Actualise Ownership Core</p>
+  </header>
 
-
-    <h1 onclick="location.reload()" style="cursor: pointer;font-family: 'UnifrakturCook', cursive;font-weight: 700;}margin-bottom: 5px;">The Blueprint</h1>
-    <p style="opacity: 0.9; font-size:16px;margin-top: -30px;">Actualise Ownership Core</p>
-</header>
-
-
-<details style="margin:0 0 40px 0">
+  <details style="margin:0 0 40px 0">
     <summary>Help mindset</summary>
-<p>Go back through the list again and again to earlier, similar moments, alternating data from the memories with a single sensation from the list of perceptions—one at a time.
-  This rhythm allows your attention to re-examine your world (universe), identifying and smoothing over forgotten incidents that are currently affecting you. 
-  A mutual calibration occurs: memories are verified by the current state, and perceptions gain depth. 
-  This strengthens ownership, synchronizes experience, transforming the disparate list into a living, conscious structure.</p>
-<p>Write down and save any ideas that may occur to you while performing the exercise.</p>
-<p>Data is stored only on your device.</p>
-<p>For best results, approach this responsibly. You are the only one who controls what happens.</p>
-</details>
+    <p>Go back through the list again and again to earlier, similar moments, alternating data from the memories with a single sensation from the list of perceptions—one at a time.
+      This rhythm allows your attention to re-examine your world (universe), identifying and smoothing over forgotten incidents that are currently affecting you.
+      A mutual calibration occurs: memories are verified by the current state, and perceptions gain depth.
+      This strengthens ownership, synchronizes experience, transforming the disparate list into a living, conscious structure.</p>
+    <p>Write down and save any ideas that may occur to you while performing the exercise.</p>
+    <p>Data is stored only on your device.</p>
+    <p>For best results, approach this responsibly. You are the only one who controls what happens.</p>
+  </details>
 
-<div class="memory-section">
-  <p>Go back to the moment when:</p>
-  <span style="color:#00ff00" id="memory-display">You created something worthwhile.</span>
-  <div class="controls" id="memory-controls">
-    <button type="button" onclick="changeMemory(-1)">Previous</button>
-    <button type="button" onclick="changeMemory(1)">Next</button>
-    <button type="button" onclick="askDeleteMemory()" style="border-color: #A62C17; color: #D03A20;">Delete</button>
-  </div>
-</div>
-
-<div class="perception-section">
-  <p>Try to recall and feel this perception in that moment:</p>
-  <span style="color:#00ff00" id="perception-display"></span>
-  <div class="controls" id="perception-controls">
-    <button type="button" onclick="changePerception(-1)">Previous</button>
-    <button type="button" onclick="changePerception(1)">Next</button>
-    <button type="button" onclick="askDeletePerception()" style="border-color: #A62C17; color: #D03A20;">Delete</button>
-  </div>
-</div>
-
-
-
-<div class="edit-section">
-
-<textarea id="memories-input" rows="5" placeholder="Add memories..." style="margin-bottom: 10px;"></textarea>
-<textarea id="perceptions-input" rows="5" placeholder="Add perceptions..."></textarea>
-
-
-    <div class="controls-row">
-        <button type="button" onclick="resetAll()" style="border-color: #A62C17; color: #D03A20;">Reset</button>
-        <button type="button" onclick="saveAll()">Save</button>
-        <button type="button" onclick="exportToFile()" style="border-color: #2355CE; color: #285FF5;">Export</button>
-        <button type="button" onclick="document.getElementById('file-input').click()" style="border-color: #2355CE; color: #285FF5;">Import</button>
-        <input type="file" id="file-input" style="display: none;" onchange="importFromFile(this)">
+  <div class="memory-section">
+    <p>Go back to the moment when:</p>
+    <span style="color:#00ff00" id="memory-display">You created something worthwhile.</span>
+    <div class="controls" id="memory-controls">
+      <button type="button" onclick="changeMemory(-1)">Previous</button>
+      <button type="button" onclick="changeMemory(1)">Next</button>
+      <button type="button" onclick="askDeleteMemory()" style="border-color:#A62C17; color:#D03A20;">Delete</button>
     </div>
-        <a href="support.html">
-        <img src="fleurdelis.png" alt="Logo" style="max-width: 48px; margin: 30px 0;height: auto;">
+  </div>
+
+  <div class="perception-section">
+    <p>Try to recall and feel this perception in that moment:</p>
+    <span style="color:#00ff00" id="perception-display"></span>
+    <div class="controls" id="perception-controls">
+      <button type="button" onclick="changePerception(-1)">Previous</button>
+      <button type="button" onclick="changePerception(1)">Next</button>
+      <button type="button" onclick="askDeletePerception()" style="border-color:#A62C17; color:#D03A20;">Delete</button>
+    </div>
+  </div>
+
+  <div class="edit-section">
+    <textarea id="memories-input" rows="5" placeholder="Add memories..." style="margin-bottom:10px;"></textarea>
+    <textarea id="perceptions-input" rows="5" placeholder="Add perceptions..."></textarea>
+
+    <div class="controls-row" style="display:flex; flex-wrap:wrap; gap:15px; margin-top:20px;">
+      <button type="button" onclick="resetAll()" style="border-color:#A62C17; color:#D03A20;">Reset</button>
+      <button type="button" onclick="saveAll()">Save</button>
+      <button type="button" onclick="exportToFile()" style="border-color:#2355CE; color:#285FF5;">Export</button>
+      <button type="button" onclick="document.getElementById('file-input').click()" style="border-color:#2355CE; color:#285FF5;">Import</button>
+      <input type="file" id="file-input" style="display:none;" onchange="importFromFile(this)">
+    </div>
+
+    <a href="support.html">
+      <img src="fleurdelis.png" alt="Logo" style="max-width:48px; margin:30px 0; height:auto;">
     </a>
-</div>
+  </div>
 
+  <script>
+    /* ========= Pull-to-refresh ========= */
+    let touchStartY = 0;
+    const ptrIndicator = document.getElementById('ptr-indicator');
+    const pullThreshold = 80;
 
-
-
-
-<script>
-let touchStartY = 0;
-const ptrIndicator = document.getElementById('ptr-indicator');
-const pullThreshold = 80;
-
-window.addEventListener('touchstart', (e) => {
-    if (window.scrollY === 0) {
+    window.addEventListener('touchstart', (e) => {
+      if (window.scrollY === 0) {
         touchStartY = e.touches[0].clientY;
-    }
-}, { passive: true });
+      }
+    }, { passive: true });
 
-window.addEventListener('touchmove', (e) => {
-    if (window.scrollY === 0 && touchStartY > 0) {
+    window.addEventListener('touchmove', (e) => {
+      if (window.scrollY === 0 && touchStartY > 0) {
         const touchY = e.touches[0].clientY;
         const diff = touchY - touchStartY;
-        
-        if (diff > 0 && diff < 200) {
-            ptrIndicator.style.transform = `translateY(${Math.min(diff, pullThreshold)}px)`;
-            if (diff >= pullThreshold) {
-                ptrIndicator.textContent = "Release to refresh";
-            } else {
-                ptrIndicator.textContent = "Pull down to refresh...";
-            }
-        }
-    }
-}, { passive: true });
 
-window.addEventListener('touchend', (e) => {
-    if (window.scrollY === 0 && touchStartY > 0) {
+        if (diff > 0 && diff < 200) {
+          ptrIndicator.style.transform = `translateY(${Math.min(diff, pullThreshold)}px)`;
+          ptrIndicator.textContent = diff >= pullThreshold
+            ? "Release to refresh"
+            : "Pull down to refresh...";
+        }
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', (e) => {
+      if (window.scrollY === 0 && touchStartY > 0) {
         const touchY = e.changedTouches[0].clientY;
         const diff = touchY - touchStartY;
-        
+
         if (diff >= pullThreshold) {
-            ptrIndicator.textContent = "Refreshing...";
-            ptrIndicator.style.transform = `translateY(${pullThreshold}px)`;
-            setTimeout(() => {
-                location.reload();
-            }, 400);
+          ptrIndicator.textContent = "Refreshing...";
+          ptrIndicator.style.transform = `translateY(${pullThreshold}px)`;
+          setTimeout(() => location.reload(), 400);
         } else {
-            ptrIndicator.style.transform = 'translateY(0)';
+          ptrIndicator.style.transform = 'translateY(0)';
         }
         touchStartY = 0;
+      }
+    });
+
+    /* ========= Данные по умолчанию ========= */
+    const defaultMemories = [
+      "You created something valuable.",
+      "You felt happy.",
+      "You showed interest in the world around you.",
+      "You felt hungry.",
+      "You realized that you exist.",
+      "You understood the words.",
+      "You spoke the words.",
+      "You hadn't been born yet.",
+      "You realized that you would live.",
+      "You did not exist."
+    ];
+
+    const defaultPerceptions = [
+      "Smell",
+      "Color",
+      "Sound",
+      "Gravity",
+      "External movement",
+      "Touch",
+      "Emotion",
+      "Visual perception",
+      "Timbre",
+      "Weight",
+      "Body position",
+      "Proper motion"
+    ];
+
+    /* ========= Состояние ========= */
+    let memories = JSON.parse(localStorage.getItem('myMemories')) || [...defaultMemories];
+    let perceptions = JSON.parse(localStorage.getItem('myPerceptions')) || [...defaultPerceptions];
+    let currentIndex = 0;
+    let currentPerceptionIndex = 0;
+
+    /* ========= Отображение памяти ========= */
+    function updateDisplay() {
+      document.getElementById('memory-display').textContent = memories[currentIndex];
     }
-});
 
-const defaultMemories = [
-    "You created something valuable.",
-    "You felt happy.",
-    "You showed interest in the world around you.",
-    "You felt hungry.",
-    "You realized that you exist.",
-    "You understood the words.",
-    "You spoke the words.",
-    "You hadn't been born yet.",
-    "You realized that you would live.",
-    "You did not exist."
-];
+    function changeMemory(direction) {
+      currentIndex += direction;
+      if (currentIndex < 0) currentIndex = memories.length - 1;
+      if (currentIndex >= memories.length) currentIndex = 0;
+      updateDisplay();
+    }
 
-let memories = JSON.parse(localStorage.getItem('myMemories')) || defaultMemories;
-let currentIndex = 0;
-
-function updateDisplay() {
-    document.getElementById('memory-display').textContent = memories[currentIndex];
-}
-
-function changeMemory(direction) {
-    currentIndex += direction;
-    if (currentIndex < 0) currentIndex = memories.length - 1;
-    if (currentIndex >= memories.length) currentIndex = 0;
-    updateDisplay();
-}
-
-function saveMemories() {
-    const input = document.getElementById('memories-input').value.trim();
-    if (!input) return;
-
-    memories = input.split('\n').filter(line => line.trim() !== "");
-    localStorage.setItem('myMemories', JSON.stringify(memories));
-    
-    document.getElementById('memories-input').value = ""; 
-    currentIndex = 0;
-    updateDisplay();
-}
-
-function resetMemories() {
-    memories = [...defaultMemories];
-    localStorage.removeItem('myMemories');
-    document.getElementById('memories-input').value = ""; 
-    currentIndex = 0;
-    updateDisplay();
-}
-
-updateDisplay();
-
-const defaultPerceptions = [
-    "Smell",
-    "Color",
-    "Sound",
-    "Gravity",
-    "External movement",
-    "Touch",
-    "Emotion",
-    "Visual perception",
-    "Timbre",
-    "Weight",
-    "Body position",
-    "Proper motion"
-];
-
-let perceptions = JSON.parse(localStorage.getItem('myPerceptions')) || defaultPerceptions;
-let currentPerceptionIndex = 0;
-
-function updatePerceptionDisplay() {
-    const display = document.getElementById('perception-display');
-    if (display) {
+    /* ========= Отображение восприятий ========= */
+    function updatePerceptionDisplay() {
+      const display = document.getElementById('perception-display');
+      if (display) {
         display.textContent = perceptions[currentPerceptionIndex] || "No perceptions";
+      }
     }
-}
 
-function changePerception(direction) {
-    if (perceptions.length === 0) return;
-    currentPerceptionIndex += direction;
-    if (currentPerceptionIndex < 0) currentPerceptionIndex = perceptions.length - 1;
-    if (currentPerceptionIndex >= perceptions.length) currentPerceptionIndex = 0;
-    updatePerceptionDisplay();
-}
+    function changePerception(direction) {
+      if (perceptions.length === 0) return;
+      currentPerceptionIndex += direction;
+      if (currentPerceptionIndex < 0) currentPerceptionIndex = perceptions.length - 1;
+      if (currentPerceptionIndex >= perceptions.length) currentPerceptionIndex = 0;
+      updatePerceptionDisplay();
+    }
 
-function saveAll() {
-    const memInput = document.getElementById('memories-input').value.trim();
-    const perInput = document.getElementById('perceptions-input').value.trim();
+    /* ========= Сохранение ========= */
+    function saveAll() {
+      const memInput = document.getElementById('memories-input').value.trim();
+      const perInput = document.getElementById('perceptions-input').value.trim();
 
-    // Добавление новых воспоминаний к существующим
-    if (memInput) {
+      if (memInput) {
         const newMemories = memInput.split('\n').filter(line => line.trim() !== "");
-        memories = [...newMemories, ...memories]; // добавляем новые в конец списка
+        memories = [...newMemories, ...memories];
         localStorage.setItem('myMemories', JSON.stringify(memories));
         document.getElementById('memories-input').value = "";
-    }
+      }
 
-    // Добавление новых ощущений к существующим
-    if (perInput) {
+      if (perInput) {
         const newPerceptions = perInput.split('\n').filter(line => line.trim() !== "");
-        perceptions = [...newPerceptions, ...perceptions]; // добавляем новые в конец списка
+        perceptions = [...newPerceptions, ...perceptions];
         localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
         document.getElementById('perceptions-input').value = "";
+      }
+
+      updateDisplay();
+      updatePerceptionDisplay();
     }
 
-    updateDisplay();
-    updatePerceptionDisplay();
-}
-
-// --- Удаление воспоминаний ---
-
-function askDeleteMemory() {
-    if (memories.length <= 1) {
+    /* ========= Удаление воспоминаний ========= */
+    function askDeleteMemory() {
+      if (memories.length <= 1) {
         alert("Cannot delete the last remaining memory.");
         return;
+      }
+      const controls = document.getElementById('memory-controls');
+      controls.innerHTML = `
+        <button type="button" onclick="cancelDeleteMemory()" style="border-color:#888;">Cancel</button>
+        <button type="button" onclick="confirmDeleteMemory()" style="background-color:#888; color:#000;">Confirm</button>
+      `;
     }
-    const controls = document.getElementById('memory-controls');
-    controls.innerHTML = `
-        <button type="button" onclick="cancelDeleteMemory()" style="border-color: #888;">Cancel</button>
-        <button type="button" onclick="confirmDeleteMemory()" style="background-color: #888; color: #000;">Confirm</button>
-    `;
-}
 
-function cancelDeleteMemory() {
-    restoreMemoryControls();
-}
-
-function confirmDeleteMemory() {
-    memories.splice(currentIndex, 1);
-    if (currentIndex >= memories.length) {
-        currentIndex = memories.length - 1;
+    function cancelDeleteMemory() {
+      restoreMemoryControls();
     }
-    localStorage.setItem('myMemories', JSON.stringify(memories));
-    restoreMemoryControls();
-    updateDisplay();
-}
 
-function restoreMemoryControls() {
-    const controls = document.getElementById('memory-controls');
-    controls.innerHTML = `
+    function confirmDeleteMemory() {
+      memories.splice(currentIndex, 1);
+      if (currentIndex >= memories.length) currentIndex = memories.length - 1;
+      localStorage.setItem('myMemories', JSON.stringify(memories));
+      restoreMemoryControls();
+      updateDisplay();
+    }
+
+    function restoreMemoryControls() {
+      const controls = document.getElementById('memory-controls');
+      controls.innerHTML = `
         <button type="button" onclick="changeMemory(-1)">Previous</button>
         <button type="button" onclick="changeMemory(1)">Next</button>
-        <button type="button" onclick="askDeleteMemory()" style="border-color: #555; color: #aaa;">Delete</button>
-    `;
-}
+        <button type="button" onclick="askDeleteMemory()" style="border-color:#555; color:#aaa;">Delete</button>
+      `;
+    }
 
-
-// --- Удаление ощущений ---
-
-function askDeletePerception() {
-    if (perceptions.length <= 1) {
+    /* ========= Удаление восприятий ========= */
+    function askDeletePerception() {
+      if (perceptions.length <= 1) {
         alert("Cannot delete the last remaining perception.");
         return;
+      }
+      const controls = document.getElementById('perception-controls');
+      controls.innerHTML = `
+        <button type="button" onclick="cancelDeletePerception()" style="border-color:#888;">Cancel</button>
+        <button type="button" onclick="confirmDeletePerception()" style="background-color:#888; color:#000;">Confirm</button>
+      `;
     }
-    const controls = document.getElementById('perception-controls');
-    controls.innerHTML = `
-        <button type="button" onclick="cancelDeletePerception()" style="border-color: #888;">Cancel</button>
-        <button type="button" onclick="confirmDeletePerception()" style="background-color: #888; color: #000;">Confirm</button>
-    `;
-}
 
-function cancelDeletePerception() {
-    restorePerceptionControls();
-}
+    function cancelDeletePerception() {
+      restorePerceptionControls();
+    }
 
-function confirmDeletePerception() {
-    perceptions.splice(currentPerceptionIndex, 1);
-    if (currentPerceptionIndex >= perceptions.length) {
+    function confirmDeletePerception() {
+      perceptions.splice(currentPerceptionIndex, 1);
+      if (currentPerceptionIndex >= perceptions.length) {
         currentPerceptionIndex = perceptions.length - 1;
+      }
+      localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
+      restorePerceptionControls();
+      updatePerceptionDisplay();
     }
-    localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
-    restorePerceptionControls();
-    updatePerceptionDisplay();
-}
 
-function restorePerceptionControls() {
-    const controls = document.getElementById('perception-controls');
-    controls.innerHTML = `
+    function restorePerceptionControls() {
+      const controls = document.getElementById('perception-controls');
+      controls.innerHTML = `
         <button type="button" onclick="changePerception(-1)">Previous</button>
         <button type="button" onclick="changePerception(1)">Next</button>
-        <button type="button" onclick="askDeletePerception()" style="border-color: #555; color: #aaa;">Delete</button>
-    `;
-}
+        <button type="button" onclick="askDeletePerception()" style="border-color:#555; color:#aaa;">Delete</button>
+      `;
+    }
 
+    /* ========= Сброс ========= */
+    function resetAll() {
+      memories = [...defaultMemories];
+      perceptions = [...defaultPerceptions];
+      localStorage.removeItem('myMemories');
+      localStorage.removeItem('myPerceptions');
+      document.getElementById('memories-input').value = "";
+      document.getElementById('perceptions-input').value = "";
+      currentIndex = 0;
+      currentPerceptionIndex = 0;
+      updateDisplay();
+      updatePerceptionDisplay();
+    }
 
+    /* ========= Экспорт / импорт ========= */
+    function exportToFile() {
+      const data = { memories, perceptions };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "blueprint_core.json";
+      a.click();
+    }
 
-function resetAll() {
-    memories = [...defaultMemories];
-    perceptions = [...defaultPerceptions];
-    localStorage.removeItem('myMemories');
-    localStorage.removeItem('myPerceptions');
-    document.getElementById('memories-input').value = "";
-    document.getElementById('perceptions-input').value = "";
-    currentIndex = 0;
-    currentPerceptionIndex = 0;
+    function importFromFile(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data.memories) memories = data.memories;
+          if (data.perceptions) perceptions = data.perceptions;
+          localStorage.setItem('myMemories', JSON.stringify(memories));
+          localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
+          currentIndex = 0;
+          currentPerceptionIndex = 0;
+          updateDisplay();
+          updatePerceptionDisplay();
+        } catch (err) {
+          alert("Error importing file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /* ========= Инициализация ========= */
     updateDisplay();
     updatePerceptionDisplay();
-}
-
-function exportToFile() {
-    const data = { memories, perceptions };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "blueprint_core.json";
-    a.click();
-}
-
-function importFromFile(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            if (data.memories) memories = data.memories;
-            if (data.perceptions) perceptions = data.perceptions;
-            localStorage.setItem('myMemories', JSON.stringify(memories));
-            localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
-            currentIndex = 0;
-            currentPerceptionIndex = 0;
-            updateDisplay();
-            updatePerceptionDisplay();
-        } catch (err) {
-            alert("Error importing file.");
-        }
-    };
-    reader.readAsText(file);
-}
-
-updatePerceptionDisplay();
-
-
-function toggleDonate() { 
-    const info = document.getElementById("cryptoInfo"); 
-    const isOpening = info.style.display !== "flex";
-    info.style.display = isOpening ? "flex" : "none"; 
-    if (isOpening) {
-        setTimeout(() => info.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
-    }
-}
-
-function copyToClipboard() {
-    const addr = document.getElementById("cryptoAddr");
-    const hint = document.getElementById("copyHint");
-    const text = addr.innerText;
-    navigator.clipboard.writeText(text).then(() => {
-        addr.innerText = "Copied!";
-        addr.style.color = "#00ff00";
-        if (hint) hint.innerText = "Address saved to clipboard";
-        
-        setTimeout(() => {
-            addr.innerText = text;
-            addr.style.color = "#fff";
-            if (hint) hint.innerText = "Click address to copy";
-        }, 1500);
-    });
-}
-
-
-
-</script>
+  </script>
 
 </body>
 </html>
