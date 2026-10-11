@@ -96,32 +96,11 @@
       padding: 20px 0;
       border-top: 1px solid #222;
     }
-
-    /* Индикатор pull-to-refresh */
-    #ptr-indicator {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      text-align: center;
-      padding: 10px 0;
-      color: #888;
-      font-family: monospace;
-      font-size: 14px;
-      transform: translateY(0);
-      transition: transform 0.2s ease;
-      pointer-events: none;
-      z-index: 999;
-      background: rgba(0, 0, 0, 0.7);
-    }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-
-  <!-- Индикатор pull-to-refresh -->
-  <div id="ptr-indicator"></div>
 
   <header>
     <h1 onclick="location.reload()" style="cursor:pointer; font-family:'UnifrakturCook', cursive; font-weight:700; margin-bottom:5px;">
@@ -181,26 +160,11 @@
   <script>
     /* ========= Pull-to-refresh ========= */
     let touchStartY = 0;
-    const ptrIndicator = document.getElementById('ptr-indicator');
     const pullThreshold = 80;
 
     window.addEventListener('touchstart', (e) => {
       if (window.scrollY === 0) {
         touchStartY = e.touches[0].clientY;
-      }
-    }, { passive: true });
-
-    window.addEventListener('touchmove', (e) => {
-      if (window.scrollY === 0 && touchStartY > 0) {
-        const touchY = e.touches[0].clientY;
-        const diff = touchY - touchStartY;
-
-        if (diff > 0 && diff < 200) {
-          ptrIndicator.style.transform = `translateY(${Math.min(diff, pullThreshold)}px)`;
-          ptrIndicator.textContent = diff >= pullThreshold
-            ? "Release to refresh"
-            : "Pull down to refresh...";
-        }
       }
     }, { passive: true });
 
@@ -210,11 +174,7 @@
         const diff = touchY - touchStartY;
 
         if (diff >= pullThreshold) {
-          ptrIndicator.textContent = "Refreshing...";
-          ptrIndicator.style.transform = `translateY(${pullThreshold}px)`;
-          setTimeout(() => location.reload(), 400);
-        } else {
-          ptrIndicator.style.transform = 'translateY(0)';
+          location.reload();
         }
         touchStartY = 0;
       }
