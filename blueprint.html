@@ -122,28 +122,35 @@ font-size: 15px;
 
 <details style="margin:0 0 40px 0">
     <summary>Help mindset</summary>
-<p> Go through the entire list again and again, alternating data from memories with one sensation from the list of perceptions, one at a time. This rhythm allows your attention to re-examine your world (universe), identifying and smoothing over forgotten incidents that are currently affecting you. A mutual calibration occurs: memories are verified by the current state, and perceptions gain depth. This strengthens ownership, synchronizes experience, transforming the disparate list into a living, conscious structure.
-
-For best results, approach this responsibly. You are the only one who controls what happens.</p>
+<p>Go back through the list again and again to earlier, similar moments, alternating data from the memories with a single sensation from the list of perceptions—one at a time.
+  This rhythm allows your attention to re-examine your world (universe), identifying and smoothing over forgotten incidents that are currently affecting you. 
+  A mutual calibration occurs: memories are verified by the current state, and perceptions gain depth. 
+  This strengthens ownership, synchronizes experience, transforming the disparate list into a living, conscious structure.</p>
+<p>Write down and save any ideas that may occur to you while performing the exercise.</p>
+<p>Data is stored only on your device.</p>
+<p>For best results, approach this responsibly. You are the only one who controls what happens.</p>
 </details>
 
 <div class="memory-section">
   <p>Think back to a moment when:</p>
   <span style="color:#00ff00" id="memory-display">You created something worthwhile.</span>
-  <div class="controls">
+  <div class="controls" id="memory-controls">
     <button type="button" onclick="changeMemory(-1)">Previous</button>
     <button type="button" onclick="changeMemory(1)">Next</button>
+    <button type="button" onclick="askDeleteMemory()" style="border-color: #555; color: #aaa;">Delete</button>
   </div>
 </div>
 
 <div class="perception-section">
   <p>Try to recall and feel this perception in that moment:</p>
   <span style="color:#00ff00" id="perception-display"></span>
-  <div class="controls">
+  <div class="controls" id="perception-controls">
     <button type="button" onclick="changePerception(-1)">Previous</button>
     <button type="button" onclick="changePerception(1)">Next</button>
+    <button type="button" onclick="askDeletePerception()" style="border-color: #555; color: #aaa;">Delete</button>
   </div>
 </div>
+
 
 
 <div class="edit-section">
@@ -171,9 +178,11 @@ For best results, approach this responsibly. You are the only one who controls w
 <script>
 
 const defaultMemories = [
-    "You created something worthwhile.",
-    "Life sparkled with pleasure.",
-    "Your wallet was replenished with a pleasant amount."
+    "Go back to the moment when you created something valuable.",
+    "Go back to the moment when you felt happy.",
+    "Go back to the moment when you showed interest in the world around you.",
+    "Go back to the moment when you felt hungry.",
+    "Go back to the moment when you realized that you exist."
 ];
 
 let memories = JSON.parse(localStorage.getItem('myMemories')) || defaultMemories;
@@ -259,6 +268,82 @@ function saveAll() {
     updateDisplay();
     updatePerceptionDisplay();
 }
+
+// --- Удаление воспоминаний ---
+
+function askDeleteMemory() {
+    if (memories.length <= 1) {
+        alert("Cannot delete the last remaining memory.");
+        return;
+    }
+    const controls = document.getElementById('memory-controls');
+    controls.innerHTML = `
+        <button type="button" onclick="cancelDeleteMemory()" style="border-color: #888;">Cancel</button>
+        <button type="button" onclick="confirmDeleteMemory()" style="background-color: #888; color: #000;">Confirm</button>
+    `;
+}
+
+function cancelDeleteMemory() {
+    restoreMemoryControls();
+}
+
+function confirmDeleteMemory() {
+    memories.splice(currentIndex, 1);
+    if (currentIndex >= memories.length) {
+        currentIndex = memories.length - 1;
+    }
+    localStorage.setItem('myMemories', JSON.stringify(memories));
+    restoreMemoryControls();
+    updateDisplay();
+}
+
+function restoreMemoryControls() {
+    const controls = document.getElementById('memory-controls');
+    controls.innerHTML = `
+        <button type="button" onclick="changeMemory(-1)">Previous</button>
+        <button type="button" onclick="changeMemory(1)">Next</button>
+        <button type="button" onclick="askDeleteMemory()" style="border-color: #555; color: #aaa;">Delete</button>
+    `;
+}
+
+
+// --- Удаление ощущений ---
+
+function askDeletePerception() {
+    if (perceptions.length <= 1) {
+        alert("Cannot delete the last remaining perception.");
+        return;
+    }
+    const controls = document.getElementById('perception-controls');
+    controls.innerHTML = `
+        <button type="button" onclick="cancelDeletePerception()" style="border-color: #888;">Cancel</button>
+        <button type="button" onclick="confirmDeletePerception()" style="background-color: #888; color: #000;">Confirm</button>
+    `;
+}
+
+function cancelDeletePerception() {
+    restorePerceptionControls();
+}
+
+function confirmDeletePerception() {
+    perceptions.splice(currentPerceptionIndex, 1);
+    if (currentPerceptionIndex >= perceptions.length) {
+        currentPerceptionIndex = perceptions.length - 1;
+    }
+    localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
+    restorePerceptionControls();
+    updatePerceptionDisplay();
+}
+
+function restorePerceptionControls() {
+    const controls = document.getElementById('perception-controls');
+    controls.innerHTML = `
+        <button type="button" onclick="changePerception(-1)">Previous</button>
+        <button type="button" onclick="changePerception(1)">Next</button>
+        <button type="button" onclick="askDeletePerception()" style="border-color: #555; color: #aaa;">Delete</button>
+    `;
+}
+
 
 
 function resetAll() {
