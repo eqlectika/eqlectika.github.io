@@ -177,6 +177,49 @@ font-size: 15px;
 
 
 <script>
+let touchStartY = 0;
+const ptrIndicator = document.getElementById('ptr-indicator');
+const pullThreshold = 80;
+
+window.addEventListener('touchstart', (e) => {
+    if (window.scrollY === 0) {
+        touchStartY = e.touches[0].clientY;
+    }
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (window.scrollY === 0 && touchStartY > 0) {
+        const touchY = e.touches[0].clientY;
+        const diff = touchY - touchStartY;
+        
+        if (diff > 0 && diff < 200) {
+            ptrIndicator.style.transform = `translateY(${Math.min(diff, pullThreshold)}px)`;
+            if (diff >= pullThreshold) {
+                ptrIndicator.textContent = "Release to refresh";
+            } else {
+                ptrIndicator.textContent = "Pull down to refresh...";
+            }
+        }
+    }
+}, { passive: true });
+
+window.addEventListener('touchend', (e) => {
+    if (window.scrollY === 0 && touchStartY > 0) {
+        const touchY = e.changedTouches[0].clientY;
+        const diff = touchY - touchStartY;
+        
+        if (diff >= pullThreshold) {
+            ptrIndicator.textContent = "Refreshing...";
+            ptrIndicator.style.transform = `translateY(${pullThreshold}px)`;
+            setTimeout(() => {
+                location.reload();
+            }, 400);
+        } else {
+            ptrIndicator.style.transform = 'translateY(0)';
+        }
+        touchStartY = 0;
+    }
+});
 
 const defaultMemories = [
     "you created something valuable.",
