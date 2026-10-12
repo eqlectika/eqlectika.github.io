@@ -15,15 +15,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
 
-  <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
-
   <style>
     body {
       background-color: #000;
       color: #fff;
-      font-family: monospace;
+      font-family: sans-serif;
       font-size: 18px;
-      padding: 2px;
+      padding: 4px;
     }
 
     details p {
@@ -69,16 +67,6 @@
       color: #000;
     }
 
-    /* ---------- Save button state colors ---------- */
-    #saveBtn.tape {
-      border-color: #afff00 !important;
-      color: #afff00 !important;
-    }
-    #saveBtn.live {
-      border-color: #fff000 !important;
-      color: #fff000 !important;
-    }
-
     .edit-section {
       margin-top: 30px;
       border-top: 2px solid #222;
@@ -108,102 +96,28 @@
       padding: 20px 0;
       border-top: 1px solid #222;
     }
-
-    /* ---------- top status bar (from steam) ---------- */
-    .top-bar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 50;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 4px 8px;
-      background: #000;
-      font-size: 16px;
-      color: #aaa;
-      font-family: monospace;
-      font-weight: 700;
-      border-bottom: 1px solid #111;
-    }
-    .top-bar .brand { color: #fff; }
-    .top-bar .live  { color: #ff0000; animation: livePulse 1.5s infinite; }
-    .top-bar .tape  { color: #afff00; }
-    @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-    #peerIdInput {
-      color: #0097ff;
-      background: transparent;
-      outline: none;
-      font-family: monospace;
-      font-size: 14px;
-      text-align: right;
-      width: 96px;
-      padding: 3px 0;
-      border: 1px solid transparent;
-      user-select: text;
-      -webkit-user-select: text;
-      cursor: text;
-      transition: background .2s, color .2s, border-color .2s, box-shadow .2s;
-    }
-    #peerIdInput::placeholder { color: #444; }
-    #peerIdInput:focus {
-      background: #111;
-      color: #fff;
-      border-color: #3d1a99;
-      box-shadow: 0 0 0 2px rgba(123,77,255,.25);
-    }
-    #peerIdInput.saved {
-      color: #afff00 !important;
-      border-color: #afff00 !important;
-      transition: none;
-    }
-
-    .spacer-for-topbar { height: 34px; }
-
-    #syncBtn {
-      display: none;
-      margin-top: 10px;
-      border: 1px solid #ff2440;
-      color: #ff2440;
-      background: #000;
-      font-family: monospace;
-      font-size: 14px;
-      padding: 8px 14px;
-      cursor: pointer;
-    }
-    #syncBtn:disabled { opacity: .4; cursor: default; }
   </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-  <div class="top-bar">
-    <span style="cursor:pointer; font-size:24px;font-family:'UnifrakturCook', cursive; font-weight:700;" class="brand">Blueprint</span>
-    <span style="cursor:pointer; font-size:22px;font-family:'UnifrakturCook', cursive; font-weight:700;" id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
-    <span style="cursor:pointer; font-size:22px;font-family:'UnifrakturCook', cursive; font-weight:700;" id="tapeIndicator" class="tape">Tape</span>
-    <input style="cursor:pointer; font-size:22px;font-family:'UnifrakturCook', cursive; font-weight:700;" type="text" id="peerIdInput" autocomplete="off" spellcheck="false"
-           placeholder="Peer-XXXX" title="Tap to rename yourself">
-  </div>
-  <div class="spacer-for-topbar"></div>
-
   <header>
-    <p onclick="location.reload()"
-       style="opacity:0.9; font-size:14px; margin:0 0 10px 0; color:#0097ff;cursor:pointer; -webkit-user-select:none; user-select:none;">
-      Actualise Ownership Core (Update)
-    </p>
+    <h1 onclick="location.reload()" style="cursor:pointer; font-family:'UnifrakturCook', cursive; font-weight:700; margin-bottom:5px;">
+      The Blueprint
+    </h1>
+    <p style="opacity:0.9; font-size:16px; margin-top: 0;">Actualise Ownership Core</p>
   </header>
 
   <details style="margin:0 0 40px 0">
     <summary>Help mindset</summary>
    <p>You don’t actually know when you were born. Someone told you, and you believed them. Ever since, you’ve believed everything—parents, architecture, the news, friends—while filtering out whatever doesn't fit your reality model.</p>
-    <p>For best results, approach this responsibly. You are the only one who controls what happens.</p>
-     <p>Go back through the list again and again to earlier, similar moments, alternating data from the memories with a single sensation from the list of perceptions—one at a time.
-      This rhythm allows your attention to re-examine your world (universe), identifying and smoothing over forgotten incidents that are currently affecting you.
-      A mutual calibration occurs: memories are verified by the current state, and perceptions gain depth.
-      This strengthens ownership, synchronizes experience, transforming the disparate list into a living, conscious structure.</p>
-    <p>Write down and save any ideas that may occur to you while performing the exercise.</p>
-    <p>Data is stored on your device. In <span style="color:#ff0000">Live</span> mode all changes are also streamed to every peer on the same topic. In <span style="color:#afff00">Tape</span> mode changes are queued locally and flushed when a peer appears.</p>
+   <p>For best results, approach this responsibly. You are the only one who controls what happens.</p>
+   <p>Go back through the list again and again to earlier, similar moments, alternating data from the memories with a single sensation from the list of perceptions—one at a time.</p>
+   <p>This rhythm allows your attention to re-examine your world (universe), identifying and smoothing over forgotten incidents that are currently affecting you.</p>
+   <p>A mutual calibration occurs: memories are verified by the current state, and perceptions gain depth.</p>
+   <p>This strengthens ownership, synchronizes experience, transforming the disparate list into a living, conscious structure.</p>
+   <p>Write down and save any ideas that may occur to you while performing the exercise.</p>
 
   </details>
 
@@ -233,52 +147,42 @@
 
     <div class="controls-row" style="display:flex; flex-wrap:wrap; gap:15px; margin-top:20px;">
       <button type="button" onclick="resetAll()" style="border-color:#A62C17; color:#D03A20;">Reset</button>
-      <button type="button" id="saveBtn" onclick="saveAll()">Save</button>
+      <button type="button" onclick="saveAll()">Save</button>
       <button type="button" onclick="exportToFile()" style="border-color:#2355CE; color:#285FF5;">Export</button>
       <button type="button" onclick="document.getElementById('file-input').click()" style="border-color:#2355CE; color:#285FF5;">Import</button>
       <input type="file" id="file-input" style="display:none;" onchange="importFromFile(this)">
     </div>
 
-    <button type="button" id="syncBtn" title="Re-send tape edits to network">SYNC TAPE TO LIVE</button>
-<p style="margin: 50px 0 -20px 0">More returns</p>
+    <p style="margin: 50px 0 -20px 0">More returns</p>
     <a href="support.html">
       <img src="fleurdelis.png" alt="Logo" style="max-width:48px; margin:30px 0; height:auto;">
     </a>
   </div>
 
   <script>
-    /* =========================================================
-       DataManager
-       ========================================================= */
-    const DataManager = (() => {
-      const PREFIX = 'bp_';
-      function key(n){ return PREFIX + n; }
-      function get(n, fb = null){
-        try { const r = localStorage.getItem(key(n)); return r === null ? fb : JSON.parse(r); }
-        catch(e){ return fb; }
+    /* ========= Pull-to-refresh ========= */
+    let touchStartY = 0;
+    const pullThreshold = 80;
+
+    window.addEventListener('touchstart', (e) => {
+      if (window.scrollY === 0) {
+        touchStartY = e.touches[0].clientY;
       }
-      function set(n, v){ try { localStorage.setItem(key(n), JSON.stringify(v)); } catch(e){} }
-      return { get, set, key };
-    })();
+    }, { passive: true });
 
-    function log(msg){ console.log('[BP]', msg); }
+    window.addEventListener('touchend', (e) => {
+      if (window.scrollY === 0 && touchStartY > 0) {
+        const touchY = e.changedTouches[0].clientY;
+        const diff = touchY - touchStartY;
 
-    /* =========================================================
-       Peer identity + client id
-       ========================================================= */
-    let myId = DataManager.get('peer_id');
-    if (!myId){
-      myId = 'Peer-' + Math.floor(Math.random()*9000 + 1000);
-      DataManager.set('peer_id', myId);
-    }
-    const clientId = 'bp_' + Math.random().toString(16).slice(2,10);
+        if (diff >= pullThreshold) {
+          location.reload();
+        }
+        touchStartY = 0;
+      }
+    });
 
-    const peerIdInput = document.getElementById('peerIdInput');
-    peerIdInput.value = myId;
-
-    /* =========================================================
-       State
-       ========================================================= */
+    /* ========= Данные по умолчанию ========= */
     const defaultMemories = [
       "You created something valuable.",
       "You felt happy.",
@@ -289,402 +193,105 @@
       "You spoke the words.",
       "You realized that you would live."
     ];
+
     const defaultPerceptions = [
-      "Smell", "Color", "Sound", "Gravity", "External movement",
-      "Touch", "Emotion", "Visual perception", "Timbre", "Weight",
-      "Body position", "Proper motion"
+      "Smell",
+      "Color",
+      "Sound",
+      "Gravity",
+      "External movement",
+      "Touch",
+      "Emotion",
+      "Visual perception",
+      "Timbre",
+      "Weight",
+      "Body position",
+      "Proper motion"
     ];
 
-    let memories   = DataManager.get('memories', [...defaultMemories]);
-    let perceptions = DataManager.get('perceptions', [...defaultPerceptions]);
-    let currentIndex = DataManager.get('currentIndex', 0);
-    let currentPerceptionIndex = DataManager.get('currentPerceptionIndex', 0);
+    /* ========= Состояние ========= */
+    let memories = JSON.parse(localStorage.getItem('myMemories')) || [...defaultMemories];
+    let perceptions = JSON.parse(localStorage.getItem('myPerceptions')) || [...defaultPerceptions];
+    let currentIndex = 0;
+    let currentPerceptionIndex = 0;
 
-    if (!Array.isArray(memories)    || memories.length    === 0) memories    = [...defaultMemories];
-    if (!Array.isArray(perceptions) || perceptions.length === 0) perceptions = [...defaultPerceptions];
-    if (currentIndex < 0 || currentIndex >= memories.length) currentIndex = 0;
-    if (currentPerceptionIndex < 0 || currentPerceptionIndex >= perceptions.length) currentPerceptionIndex = 0;
-
-    let pendingEdits = DataManager.get('pending_edits', []);
-    let appliedEditIds = new Set(DataManager.get('applied_edits', []));
-
-    function saveMemories(){ DataManager.set('memories', memories); }
-    function savePerceptions(){ DataManager.set('perceptions', perceptions); }
-    function saveIndices(){
-      DataManager.set('currentIndex', currentIndex);
-      DataManager.set('currentPerceptionIndex', currentPerceptionIndex);
-    }
-    function savePending(){ DataManager.set('pending_edits', pendingEdits); }
-    function saveApplied(){ DataManager.set('applied_edits', Array.from(appliedEditIds).slice(-2000)); }
-
-    /* =========================================================
-       MQTT
-       ========================================================= */
-    const BROKER = DataManager.get('broker', 'wss://broker.emqx.io:8084/mqtt');
-    const TOPIC  = 'breakthrough/blueprint/v1';
-    let client = null;
-    let activePeers = {};
-    let isLive = false;
-    let pingTimer = null;
-    let peersTimer = null;
-
-    function connectMqtt(){
-      try {
-        client = mqtt.connect(BROKER, {
-          clientId: clientId,
-          reconnectPeriod: 5000,
-          connectTimeout: 5000,
-          keepalive: 60
-        });
-      } catch(e){ log('MQTT init error: ' + e.message); return; }
-
-      client.on('connect', () => {
-        log('MQTT connected');
-        client.subscribe(TOPIC, { qos: 1 });
-        startHeartbeats();
-      });
-
-      client.on('close', () => {
-        log('MQTT disconnected');
-        stopHeartbeats();
-        activePeers = {};
-        updatePeers();
-      });
-
-      client.on('offline', () => { stopHeartbeats(); });
-      client.on('error', (e) => { log('MQTT error: ' + e.message); });
-
-      client.on('message', (t, payload) => {
-        let p;
-        try { p = JSON.parse(payload.toString()); } catch(e){ return; }
-
-        if (p.sid === clientId) return;
-        if (p.sid === undefined && p.sender === myId) return;
-
-        if (p.type === 'PING'){ activePeers[p.sender] = Date.now(); return; }
-        if (p.type === 'EDIT'){ applyRemoteEdit(p); return; }
-        if (p.type === 'EDIT_ACK'){
-          if (p.editId){
-            pendingEdits = pendingEdits.filter(e => e.editId !== p.editId);
-            savePending();
-            refreshChrome();
-          }
-          return;
-        }
-      });
+    /* ========= Отображение памяти ========= */
+    function updateDisplay() {
+      document.getElementById('memory-display').textContent = memories[currentIndex];
     }
 
-    function startHeartbeats(){
-      stopHeartbeats();
-      sendPing();
-      updatePeers();
-      pingTimer  = setInterval(sendPing, 5000);
-      peersTimer = setInterval(updatePeers, 3000);
-    }
-    function stopHeartbeats(){
-      if (pingTimer)  { clearInterval(pingTimer);  pingTimer  = null; }
-      if (peersTimer) { clearInterval(peersTimer); peersTimer = null; }
+    function changeMemory(direction) {
+      currentIndex += direction;
+      if (currentIndex < 0) currentIndex = memories.length - 1;
+      if (currentIndex >= memories.length) currentIndex = 0;
+      updateDisplay();
     }
 
-    function sendPing(){
-      if (client && client.connected){
-        client.publish(TOPIC, JSON.stringify({ type:'PING', sender: myId, sid: clientId }), { qos: 0 });
+    /* ========= Отображение восприятий ========= */
+    function updatePerceptionDisplay() {
+      const display = document.getElementById('perception-display');
+      if (display) {
+        display.textContent = perceptions[currentPerceptionIndex] || "No perceptions";
       }
     }
 
-    function updatePeers(){
-      const now = Date.now();
-      for (const id in activePeers){
-        if (now - activePeers[id] > 12000) delete activePeers[id];
-      }
-      const count = Object.keys(activePeers).length;
-      isLive = count > 0;
-
-      const before = pendingEdits.length;
-      pendingEdits = pendingEdits.filter(e => (now - (e.ts || 0)) < 60000);
-      if (pendingEdits.length !== before) savePending();
-
-      refreshChrome();
-
+    function changePerception(direction) {
+      if (perceptions.length === 0) return;
+      currentPerceptionIndex += direction;
+      if (currentPerceptionIndex < 0) currentPerceptionIndex = perceptions.length - 1;
+      if (currentPerceptionIndex >= perceptions.length) currentPerceptionIndex = 0;
+      updatePerceptionDisplay();
     }
 
-    /* =========================================================
-       UI chrome
-       ========================================================= */
-    const liveIndicator  = document.getElementById('liveIndicator');
-    const tapeIndicator  = document.getElementById('tapeIndicator');
-    const syncBtn        = document.getElementById('syncBtn');
-    const livePeerCount  = document.getElementById('livePeerCount');
-    const saveBtn        = document.getElementById('saveBtn');
+    /* ========= Сохранение ========= */
+    function saveAll() {
+      const memInput = document.getElementById('memories-input').value.trim();
+      const perInput = document.getElementById('perceptions-input').value.trim();
 
-    function refreshChrome(){
-      const count = Object.keys(activePeers).length;
-      isLive = count > 0;
-
-      if (isLive){
-        liveIndicator.style.display = 'inline';
-        tapeIndicator.style.display = 'none';
-      } else {
-        liveIndicator.style.display = 'none';
-        tapeIndicator.style.display = 'inline';
-      }
-      livePeerCount.textContent = count;
-
-      // --- Save button state color ---
-      if (saveBtn){
-        if (isLive){
-          saveBtn.classList.remove('tape');
-          saveBtn.classList.add('live');
-        } else {
-          saveBtn.classList.remove('live');
-          saveBtn.classList.add('tape');
-        }
+      if (memInput) {
+        const newMemories = memInput.split('\n').filter(line => line.trim() !== "");
+        memories = [...newMemories, ...memories];
+        localStorage.setItem('myMemories', JSON.stringify(memories));
+        document.getElementById('memories-input').value = "";
       }
 
-      const hasPending = pendingEdits.length > 0;
-        if (hasPending){
-          syncBtn.style.display = 'none';   // было: 'inline-block'
-        } else {
-          syncBtn.style.display = 'none';
-      }
-    }
-
-    function flushPendingEdits(){
-      if (!client || !client.connected) return;
-      if (pendingEdits.length === 0) return;
-      const toSend = pendingEdits.slice();
-      toSend.forEach(edit => {
-        client.publish(TOPIC, JSON.stringify({
-          ...edit,
-          type: 'EDIT',
-          sender: myId,
-          sid: clientId
-        }), { qos: 1 });
-      });
-      log('Flushed ' + toSend.length + ' tape edits (awaiting ACK)');
-    }
-
-    /* =========================================================
-       Display
-       ========================================================= */
-    function updateDisplay(){
-      const d = document.getElementById('memory-display');
-      if (d) d.textContent = memories[currentIndex] || '';
-    }
-    function updatePerceptionDisplay(){
-      const d = document.getElementById('perception-display');
-      if (d) d.textContent = perceptions[currentPerceptionIndex] || 'No perceptions';
-    }
-
-    /* =========================================================
-       Edit builder / submit
-       ========================================================= */
-    function newEditId(){
-      if (crypto && crypto.randomUUID) return 'be-' + crypto.randomUUID();
-      return 'be-' + Date.now() + '-' + Math.random().toString(16).slice(2,10);
-    }
-
-    function submitEdit(edit, applyLocally){
-      edit.editId = edit.editId || newEditId();
-      edit.author = myId;
-      edit.ts     = Date.now();
-
-      if (applyLocally) applyEdit(edit, false);
-
-      const canSend = isLive && client && client.connected;
-      log(`submitEdit: kind=${edit.kind}, isLive=${isLive}, connected=${client && client.connected}`);
-
-      if (canSend){
-        client.publish(TOPIC, JSON.stringify({
-          ...edit,
-          type: 'EDIT',
-          sender: myId,
-          sid: clientId
-        }), { qos: 1 });
-        log('Sent edit → network');
-        } else {
-            // pendingEdits.push(edit); // отключено
-          log('Edit dropped (tape disabled)');
-        }
-      refreshChrome();
-    }
-
-    /* =========================================================
-       Apply edit (single source of truth)
-       ========================================================= */
-    function applyEdit(edit, isRemote){
-      if (!edit || !edit.kind) return;
-
-      if (isRemote && edit.editId && appliedEditIds.has(edit.editId)) return;
-      if (isRemote && edit.editId){ appliedEditIds.add(edit.editId); saveApplied(); }
-
-      switch (edit.kind) {
-
-        case 'set_current': {
-          if (typeof edit.memoryIndex === 'number' && memories.length){
-            let idx = edit.memoryIndex % memories.length;
-            if (idx < 0) idx += memories.length;
-            currentIndex = idx;
-          }
-          if (typeof edit.perceptionIndex === 'number' && perceptions.length){
-            let idx = edit.perceptionIndex % perceptions.length;
-            if (idx < 0) idx += perceptions.length;
-            currentPerceptionIndex = idx;
-          }
-          saveIndices();
-          break;
-        }
-
-        case 'add_memories': {
-          if (Array.isArray(edit.items) && edit.items.length){
-            memories = [...edit.items, ...memories];
-            saveMemories();
-            currentIndex = 0;
-            saveIndices();
-          }
-          break;
-        }
-
-        case 'add_perceptions': {
-          if (Array.isArray(edit.items) && edit.items.length){
-            perceptions = [...edit.items, ...perceptions];
-            savePerceptions();
-            currentPerceptionIndex = 0;
-            saveIndices();
-          }
-          break;
-        }
-
-        case 'delete_memory': {
-          if (memories.length > 1 && typeof edit.index === 'number'){
-            const i = ((edit.index % memories.length) + memories.length) % memories.length;
-            memories.splice(i, 1);
-            if (currentIndex >= memories.length) currentIndex = memories.length - 1;
-            saveMemories();
-            saveIndices();
-          }
-          break;
-        }
-
-        case 'delete_perception': {
-          if (perceptions.length > 1 && typeof edit.index === 'number'){
-            const i = ((edit.index % perceptions.length) + perceptions.length) % perceptions.length;
-            perceptions.splice(i, 1);
-            if (currentPerceptionIndex >= perceptions.length) currentPerceptionIndex = perceptions.length - 1;
-            savePerceptions();
-            saveIndices();
-          }
-          break;
-        }
-
-        case 'reset': {
-          memories = [...defaultMemories];
-          perceptions = [...defaultPerceptions];
-          currentIndex = 0;
-          currentPerceptionIndex = 0;
-          saveMemories();
-          savePerceptions();
-          saveIndices();
-          break;
-        }
-
-        case 'import': {
-          if (Array.isArray(edit.memories) && edit.memories.length) memories = [...edit.memories];
-          if (Array.isArray(edit.perceptions) && edit.perceptions.length) perceptions = [...edit.perceptions];
-          currentIndex = 0;
-          currentPerceptionIndex = 0;
-          saveMemories();
-          savePerceptions();
-          saveIndices();
-          break;
-        }
-
-        default:
-          log('Unknown edit kind: ' + edit.kind);
-          return;
+      if (perInput) {
+        const newPerceptions = perInput.split('\n').filter(line => line.trim() !== "");
+        perceptions = [...newPerceptions, ...perceptions];
+        localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
+        document.getElementById('perceptions-input').value = "";
       }
 
       updateDisplay();
       updatePerceptionDisplay();
     }
 
-    function applyRemoteEdit(p){
-      applyEdit({ ...p, sender: p.sender }, true);
-      log('Remote edit applied: ' + p.kind + ' from ' + p.sender);
-
-      if (client && client.connected){
-        client.publish(TOPIC, JSON.stringify({
-          type: 'EDIT_ACK',
-          editId: p.editId,
-          sender: myId,
-          sid: clientId
-        }), { qos: 1 });
+    /* ========= Удаление воспоминаний ========= */
+    function askDeleteMemory() {
+      if (memories.length <= 1) {
+        alert("Cannot delete the last remaining memory.");
+        return;
       }
-    }
-
-    /* =========================================================
-       UI actions — memories
-       ========================================================= */
-    function changeMemory(direction){
-      if (!memories.length) return;
-      const next = currentIndex + direction;
-      submitEdit({
-        kind: 'set_current',
-        memoryIndex: next,
-        perceptionIndex: currentPerceptionIndex
-      }, true);
-    }
-
-    function changePerception(direction){
-      if (!perceptions.length) return;
-      const next = currentPerceptionIndex + direction;
-      submitEdit({
-        kind: 'set_current',
-        memoryIndex: currentIndex,
-        perceptionIndex: next
-      }, true);
-    }
-
-    /* =========================================================
-       Save
-       ========================================================= */
-    function saveAll(){
-      const memInput = document.getElementById('memories-input').value.trim();
-      const perInput = document.getElementById('perceptions-input').value.trim();
-
-      if (memInput){
-        const items = memInput.split('\n').map(l => l.trim()).filter(Boolean);
-        if (items.length){
-          submitEdit({ kind: 'add_memories', items }, true);
-          document.getElementById('memories-input').value = '';
-        }
-      }
-      if (perInput){
-        const items = perInput.split('\n').map(l => l.trim()).filter(Boolean);
-        if (items.length){
-          submitEdit({ kind: 'add_perceptions', items }, true);
-          document.getElementById('perceptions-input').value = '';
-        }
-      }
-    }
-
-    /* =========================================================
-       Delete
-       ========================================================= */
-    function askDeleteMemory(){
-      if (memories.length <= 1){ alert("Cannot delete the last remaining memory."); return; }
       const controls = document.getElementById('memory-controls');
       controls.innerHTML = `
         <button type="button" onclick="cancelDeleteMemory()" style="border-color:#888;">Cancel</button>
         <button type="button" onclick="confirmDeleteMemory()" style="background-color:#888; color:#000;">Confirm</button>
       `;
     }
-    function cancelDeleteMemory(){ restoreMemoryControls(); }
-    function confirmDeleteMemory(){
-      submitEdit({ kind: 'delete_memory', index: currentIndex }, true);
+
+    function cancelDeleteMemory() {
       restoreMemoryControls();
     }
-    function restoreMemoryControls(){
+
+    function confirmDeleteMemory() {
+      memories.splice(currentIndex, 1);
+      if (currentIndex >= memories.length) currentIndex = memories.length - 1;
+      localStorage.setItem('myMemories', JSON.stringify(memories));
+      restoreMemoryControls();
+      updateDisplay();
+    }
+
+    function restoreMemoryControls() {
       const controls = document.getElementById('memory-controls');
       controls.innerHTML = `
         <button type="button" onclick="changeMemory(-1)">Previous</button>
@@ -693,20 +300,34 @@
       `;
     }
 
-    function askDeletePerception(){
-      if (perceptions.length <= 1){ alert("Cannot delete the last remaining perception."); return; }
+    /* ========= Удаление восприятий ========= */
+    function askDeletePerception() {
+      if (perceptions.length <= 1) {
+        alert("Cannot delete the last remaining perception.");
+        return;
+      }
       const controls = document.getElementById('perception-controls');
       controls.innerHTML = `
         <button type="button" onclick="cancelDeletePerception()" style="border-color:#888;">Cancel</button>
         <button type="button" onclick="confirmDeletePerception()" style="background-color:#888; color:#000;">Confirm</button>
       `;
     }
-    function cancelDeletePerception(){ restorePerceptionControls(); }
-    function confirmDeletePerception(){
-      submitEdit({ kind: 'delete_perception', index: currentPerceptionIndex }, true);
+
+    function cancelDeletePerception() {
       restorePerceptionControls();
     }
-    function restorePerceptionControls(){
+
+    function confirmDeletePerception() {
+      perceptions.splice(currentPerceptionIndex, 1);
+      if (currentPerceptionIndex >= perceptions.length) {
+        currentPerceptionIndex = perceptions.length - 1;
+      }
+      localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
+      restorePerceptionControls();
+      updatePerceptionDisplay();
+    }
+
+    function restorePerceptionControls() {
       const controls = document.getElementById('perception-controls');
       controls.innerHTML = `
         <button type="button" onclick="changePerception(-1)">Previous</button>
@@ -715,19 +336,22 @@
       `;
     }
 
-    /* =========================================================
-       Reset
-       ========================================================= */
-    function resetAll(){
-      document.getElementById('memories-input').value = '';
-      document.getElementById('perceptions-input').value = '';
-      submitEdit({ kind: 'reset' }, true);
+    /* ========= Сброс ========= */
+    function resetAll() {
+      memories = [...defaultMemories];
+      perceptions = [...defaultPerceptions];
+      localStorage.removeItem('myMemories');
+      localStorage.removeItem('myPerceptions');
+      document.getElementById('memories-input').value = "";
+      document.getElementById('perceptions-input').value = "";
+      currentIndex = 0;
+      currentPerceptionIndex = 0;
+      updateDisplay();
+      updatePerceptionDisplay();
     }
 
-    /* =========================================================
-       Export / Import
-       ========================================================= */
-    function exportToFile(){
+    /* ========= Экспорт / импорт ========= */
+    function exportToFile() {
       const data = { memories, perceptions };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
@@ -736,82 +360,31 @@
       a.click();
     }
 
-    function importFromFile(input){
+    function importFromFile(input) {
       const file = input.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(e){
+      reader.onload = function (e) {
         try {
           const data = JSON.parse(e.target.result);
-          submitEdit({
-            kind: 'import',
-            memories: Array.isArray(data.memories) ? data.memories : undefined,
-            perceptions: Array.isArray(data.perceptions) ? data.perceptions : undefined
-          }, true);
-        } catch(err){
+          if (data.memories) memories = data.memories;
+          if (data.perceptions) perceptions = data.perceptions;
+          localStorage.setItem('myMemories', JSON.stringify(memories));
+          localStorage.setItem('myPerceptions', JSON.stringify(perceptions));
+          currentIndex = 0;
+          currentPerceptionIndex = 0;
+          updateDisplay();
+          updatePerceptionDisplay();
+        } catch (err) {
           alert("Error importing file.");
         }
       };
       reader.readAsText(file);
-      input.value = '';
     }
 
-    /* =========================================================
-       Sync button
-       ========================================================= */
-    syncBtn.addEventListener('click', () => {
-        return; // отправка отложенного отключена
-    });
-    /* =========================================================
-       Inline peer ID editing
-       ========================================================= */
-    let _idBeforeEdit = myId;
-
-    peerIdInput.addEventListener('focus', () => {
-      _idBeforeEdit = myId;
-      requestAnimationFrame(() => peerIdInput.select());
-    });
-
-    peerIdInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter'){ e.preventDefault(); commitPeerId(); peerIdInput.blur(); }
-      if (e.key === 'Escape'){ peerIdInput.value = _idBeforeEdit; peerIdInput.blur(); }
-    });
-
-    peerIdInput.addEventListener('blur', () => {
-      const v = peerIdInput.value.trim();
-      if (v !== myId){ peerIdInput.value = myId; }
-    });
-
-    function commitPeerId(){
-      const v = peerIdInput.value.trim();
-      if (v === myId){ peerIdInput.value = myId; return; }
-      if (!/^[A-Za-z0-9_\-]{3,9}$/.test(v)){
-        peerIdInput.value = myId;
-        log('ID must be 3–9 chars: letters, digits, dash, underscore.');
-        return;
-      }
-      myId = v;
-      DataManager.set('peer_id', myId);
-      peerIdInput.value = myId;
-
-      pendingEdits = [];
-      savePending();
-      refreshChrome();
-
-      peerIdInput.classList.add('saved');
-      setTimeout(() => peerIdInput.classList.remove('saved'), 800);
-      log('[ID] Renamed to ' + myId);
-    }
-
-    /* =========================================================
-       Init
-       ========================================================= */
-    connectMqtt();
+    /* ========= Инициализация ========= */
     updateDisplay();
     updatePerceptionDisplay();
-    refreshChrome();
-    log('Init done. myId=' + myId + ', clientId=' + clientId +
-        ', memories=' + memories.length + ', perceptions=' + perceptions.length);
   </script>
 
 </body>
