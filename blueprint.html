@@ -69,6 +69,16 @@
       color: #000;
     }
 
+    /* ---------- Save button state colors ---------- */
+    #saveBtn.tape {
+      border-color: #afff00 !important;
+      color: #afff00 !important;
+    }
+    #saveBtn.live {
+      border-color: #fff000 !important;
+      color: #fff000 !important;
+    }
+
     .edit-section {
       margin-top: 30px;
       border-top: 2px solid #222;
@@ -117,7 +127,7 @@
       font-weight: 700;
       border-bottom: 1px solid #111;
     }
-    .top-bar .brand { color: #ff5700; }
+    .top-bar .brand { color: #fff; }
     .top-bar .live  { color: #ff0000; animation: livePulse 1.5s infinite; }
     .top-bar .tape  { color: #afff00; }
     @keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:.3} }
@@ -169,10 +179,10 @@
 <body>
 
   <div class="top-bar">
-    <span style="cursor:pointer; font-size:18px;font-family:'UnifrakturCook', cursive; font-weight:700;" class="brand">Blueprint</span>
-    <span style="cursor:pointer; font-size:18px;font-family:'UnifrakturCook', cursive; font-weight:700;" id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
-    <span style="cursor:pointer; font-size:18px;font-family:'UnifrakturCook', cursive; font-weight:700;" id="tapeIndicator" class="tape">Tape</span>
-    <input style="cursor:pointer; font-size:18px;font-family:'UnifrakturCook', cursive; font-weight:700;" type="text" id="peerIdInput" autocomplete="off" spellcheck="false"
+    <span style="cursor:pointer; font-size:24px;font-family:'UnifrakturCook', cursive; font-weight:700;" class="brand">Blueprint</span>
+    <span style="cursor:pointer; font-size:22px;font-family:'UnifrakturCook', cursive; font-weight:700;" id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
+    <span style="cursor:pointer; font-size:22px;font-family:'UnifrakturCook', cursive; font-weight:700;" id="tapeIndicator" class="tape">Tape</span>
+    <input style="cursor:pointer; font-size:22px;font-family:'UnifrakturCook', cursive; font-weight:700;" type="text" id="peerIdInput" autocomplete="off" spellcheck="false"
            placeholder="Peer-XXXX" title="Tap to rename yourself">
   </div>
   <div class="spacer-for-topbar"></div>
@@ -221,7 +231,7 @@
 
     <div class="controls-row" style="display:flex; flex-wrap:wrap; gap:15px; margin-top:20px;">
       <button type="button" onclick="resetAll()" style="border-color:#A62C17; color:#D03A20;">Reset</button>
-      <button type="button" onclick="saveAll()">Save</button>
+      <button type="button" id="saveBtn" onclick="saveAll()">Save</button>
       <button type="button" onclick="exportToFile()" style="border-color:#2355CE; color:#285FF5;">Export</button>
       <button type="button" onclick="document.getElementById('file-input').click()" style="border-color:#2355CE; color:#285FF5;">Import</button>
       <input type="file" id="file-input" style="display:none;" onchange="importFromFile(this)">
@@ -404,6 +414,7 @@
     const tapeIndicator  = document.getElementById('tapeIndicator');
     const syncBtn        = document.getElementById('syncBtn');
     const livePeerCount  = document.getElementById('livePeerCount');
+    const saveBtn        = document.getElementById('saveBtn');
 
     function refreshChrome(){
       const count = Object.keys(activePeers).length;
@@ -417,6 +428,17 @@
         tapeIndicator.style.display = 'inline';
       }
       livePeerCount.textContent = count;
+
+      // --- Save button state color ---
+      if (saveBtn){
+        if (isLive){
+          saveBtn.classList.remove('tape');
+          saveBtn.classList.add('live');
+        } else {
+          saveBtn.classList.remove('live');
+          saveBtn.classList.add('tape');
+        }
+      }
 
       const hasPending = pendingEdits.length > 0;
       if (hasPending){
