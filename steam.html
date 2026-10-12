@@ -58,7 +58,7 @@ html{padding-top:env(safe-area-inset-top)}
 
   color:#0097ff;
   background:transparent;
-
+border: 1px solid transparent;
   outline:none;
   font-family:monospace;
   font-size:14px;
@@ -357,6 +357,7 @@ html{padding-top:env(safe-area-inset-top)}
   z-index:10;
   padding:4px 8px 0;
   background:#000;
+  margin-bottom: 4px;
 }
 
 #word-input{
@@ -602,7 +603,7 @@ function updatePeers(){
 
   refreshChrome();
 
-//  if (isLive && pendingEdits.length > 0){ flushPendingEdits(); }
+  if (isLive && pendingEdits.length > 0){ flushPendingEdits(); }
 }
 
 /* =========================================================
@@ -621,7 +622,11 @@ function refreshChrome(){
 
   const hasPending = pendingEdits.length > 0;
   if (hasPending){
-    syncBtn.style.display = 'none';   // было: 'inline-block'
+    syncBtn.style.display = 'inline-block';
+    syncBtn.textContent = isLive
+      ? `SYNC (${pendingEdits.length})`
+      : `TAPE: ${pendingEdits.length} pending`;
+    syncBtn.disabled = !isLive;
   } else {
     syncBtn.style.display = 'none';
   }
@@ -1306,8 +1311,9 @@ function submitEdit(edit, applyLocally){
     }), {qos:1});
     log('Sent edit → network');
   } else {
-    // pendingEdits.push(edit); // tape отключён
-    log('Edit dropped (tape disabled)');
+    pendingEdits.push(edit);
+    savePending();
+    log('Edit saved to tape (offline)');
   }
   refreshChrome();
   renderWords();
@@ -1390,7 +1396,8 @@ document.getElementById('word-input').addEventListener('keydown', (e)=>{
    Sync button
    ========================================================= */
 syncBtn.addEventListener('click', ()=>{
-  return; // отправка отложенного отключена
+  if (!isLive){ log('No peers online — still tape'); return; }
+  flushPendingEdits();
 });
 
 /* =========================================================
