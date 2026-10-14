@@ -25,7 +25,7 @@
 
 <style>
 html {
-    background: linear-gradient(180deg, #0f172a 0%, #0f172a 30%, #6B45D0 60%, #6B45D0 120%);
+    background: #0f172a;
     scrollbar-width: none; 
 }
 
@@ -486,13 +486,11 @@ p {margin: 8px 0 0 0;}
 </div>
 
 <script>
-let refreshing = false;
 let updateWorker = null;
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').then((registration) => {
-      registration.update();
       if (registration.waiting) updateWorker = registration.waiting;
 
       registration.addEventListener('updatefound', () => {
@@ -508,12 +506,15 @@ if ('serviceWorker' in navigator) {
   });
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) {
-      refreshing = true;
-      window.location.reload();
-    }
+    if (sessionStorage.getItem('sw_reloading')) return;
+    sessionStorage.setItem('sw_reloading', '1');
+    window.location.reload();
   });
 }
+
+window.addEventListener('load', () => {
+  setTimeout(() => sessionStorage.removeItem('sw_reloading'), 1000);
+});
 
 const defaultItems = [
     { 
