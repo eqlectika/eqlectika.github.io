@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-index'; 
+const CACHE_NAME = 'version-margin'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
