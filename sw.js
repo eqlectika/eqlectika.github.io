@@ -20,6 +20,7 @@ const CORE_ASSETS = [
     './cube.html',
     './bismuth.html',
     './essence.html',
+    './support.html',
 
     './manifest-index.json',
     './manifest-auction.json',
