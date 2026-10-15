@@ -505,16 +505,13 @@ if ('serviceWorker' in navigator) {
     }).catch(err => console.error('SW_REG_FAIL', err));
   });
 
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (sessionStorage.getItem('sw_reloading')) return;
-    sessionStorage.setItem('sw_reloading', '1');
+let refreshing = false;
+navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
     window.location.reload();
-  });
-}
-
-window.addEventListener('load', () => {
-  setTimeout(() => sessionStorage.removeItem('sw_reloading'), 1000);
 });
+}
 
 const defaultItems = [
     { 
