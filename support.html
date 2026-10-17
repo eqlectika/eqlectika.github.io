@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Trust Fibonacci | Support</title>
-    
-    <!-- Подключение шрифтов -->
+
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Ubuntu:wght@400;500;700&family=Unbounded:wght@200;300;400;500;600;700;800;900&family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
 
     <style>
@@ -28,6 +27,12 @@
             -webkit-font-smoothing: antialiased;
             padding: 0px;
             padding-bottom: 80px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .container {
@@ -136,6 +141,25 @@
         .toast {
             display: none;
         }
+
+        /* === Стили для выделяемых слов === */
+        .clickable-word {
+            transition: color 0.3s ease;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .clickable-word.state-0 {
+            color: #d1d5db;
+        }
+
+        .clickable-word.state-1 {
+            color: #00ff00 !important;
+        }
+
+        .clickable-word.state-2 {
+            color: #ffa500 !important;
+        }
     </style>
 </head>
 <body>
@@ -151,38 +175,39 @@
             <p class="subtitle">Web terminals that come alive</p>
         </div>
 
-        <div class="content-text">
+        <div class="content-text" id="content-text-main">
             If you find the interface and included applications useful and would like to support the project using ETH (ERC20), please use the address below.
         </div>
-        
+
         <div class="address-box" id="addressBox" title="Click to copy">
             0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8
         </div>
 
         <div class="hint" id="hint">Click to copy address</div>
-        
-        <div class="toast" id="toast"></div>
-        
-        <div class="content-text">
-            <p>We don’t actually know when we were born. Someone told us, and we believed them. Ever since, we’ve believed everything—parents, architecture, the news, friends—while filtering out whatever doesn’t fit our reality model.</p>
 
-            <p>Yet, you can't deny two exponential truths: Earth’s booming population and the evolution of communication, racing from cave paintings into virtual hyperspace via today's two-way pocket interactive TVs.</p>
+        <div class="toast" id="toast"></div>
+
+        <div class="content-text" id="content-text-story">
+            <p>We don’t actually know when we were born. Someone told us, and we believed them. Ever since, we’ve believed everything—parents, architecture, the news, friends.</p>
 
             <p>I build web terminals that come alive, make you happy, and wear your logo.</p>
 
             <p style="margin-bottom: 24px;">And one more thing: The best logo or web terminal someone else makes for you is already twice as effective.</p>
-<p style="margin:24px;">★</p>
+            <p style="margin:24px;">★</p>
             <div style="text-align: center; font-size:16px; font-family: 'Cinzel', serif; color: #fff;">
-                
+
                 Fibonacci=Ratio Agency Fees<br>
                 &amp;<br>
                 More returns<br>
                 <a href="https://t.me/eugenebox/" style="color: #60a5fa; text-decoration: none;">@eugenebox</a>
             </div>
         </div>
-    </div> <!-- Закрывающий тег контейнера -->
+    </div>
 
     <script>
+        // ============================================================
+        //  1. Копирование ETH-адреса (как было)
+        // ============================================================
         const ethAddress = "0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8";
         const addressBox = document.getElementById("addressBox");
         const hint = document.getElementById("hint");
@@ -192,11 +217,11 @@
             navigator.clipboard.writeText(ethAddress).then(() => {
                 hint.textContent = "Address copied!";
                 hint.classList.add("copied");
-                
+
                 if (timeoutId) {
                     clearTimeout(timeoutId);
                 }
-                
+
                 timeoutId = setTimeout(() => {
                     hint.textContent = "Click to copy address";
                     hint.classList.remove("copied");
@@ -206,11 +231,11 @@
                 console.error('Failed to copy: ', err);
                 hint.textContent = "❌ Failed to copy";
                 hint.style.color = "#ef4444";
-                
+
                 if (timeoutId) {
                     clearTimeout(timeoutId);
                 }
-                
+
                 timeoutId = setTimeout(() => {
                     hint.textContent = "Click to copy address";
                     hint.style.color = "#9ca3af";
@@ -221,6 +246,245 @@
 
         addressBox.addEventListener("click", copyAddress);
         hint.addEventListener("click", copyAddress);
+
+        // ============================================================
+        //  2. Логика выделения слов и отправки в ChatGPT
+        //     (аналогично Fb2 Reader)
+        // ============================================================
+
+        const STORAGE_KEY = 'trust_fibonacci_words_content';
+
+        /**
+         * Сброс состояния слова.
+         */
+        function resetWordState(wordElement) {
+            wordElement.dataset.state = '0';
+            wordElement.classList.remove('state-0', 'state-1', 'state-2');
+            wordElement.classList.add('state-0');
+            wordElement._tapCount = 0;
+            saveWordStates();
+        }
+
+        /**
+         * Обработка клика по слову:
+         *  - state 2 → сразу ChatGPT (без смены цвета)
+         *  - иначе: 0 → 1 (green) → 2 (orange)
+         */
+        function handleWordClick(wordElement) {
+            const word = wordElement.textContent.trim();
+            if (!word) return;
+
+            let currentState = parseInt(wordElement.dataset.state || '0');
+
+            // Если уже оранжевое — открываем ChatGPT, цвет не трогаем
+            if (currentState === 2) {
+                navigator.clipboard.writeText(word).catch(() => {});
+                const query = `What is the definition of the word "${word}" in the interface language?`;
+                window.open(
+                    `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
+                    '_blank'
+                );
+                return;
+            }
+
+            // Иначе переключаем цвет: 0 → 1 → 2
+            currentState = currentState + 1;
+            wordElement.dataset.state = currentState;
+            wordElement.classList.remove('state-0', 'state-1', 'state-2');
+            wordElement.classList.add(`state-${currentState}`);
+
+            saveWordStates();
+        }
+
+        /**
+         * Сохраняем состояния слов в localStorage.
+         * Сохраняем не весь HTML, а массив [wordId => state],
+         * чтобы не ломать структуру страницы.
+         */
+        function saveWordStates() {
+            const states = [];
+            document.querySelectorAll('#content-text-main .clickable-word, #content-text-story .clickable-word')
+                .forEach(el => {
+                    states.push(el.dataset.state || '0');
+                });
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
+            } catch (e) {
+                /* ignore */
+            }
+        }
+
+        /**
+         * Восстанавливаем состояния слов из localStorage.
+         */
+        function restoreWordStates() {
+            let states;
+            try {
+                states = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+            } catch (e) {
+                states = null;
+            }
+            if (!Array.isArray(states)) return;
+
+            const words = document.querySelectorAll('#content-text-main .clickable-word, #content-text-story .clickable-word');
+            words.forEach((el, i) => {
+                const state = states[i] || '0';
+                el.dataset.state = state;
+                el.classList.remove('state-0', 'state-1', 'state-2');
+                el.classList.add(`state-${state}`);
+            });
+        }
+
+        /**
+         * Разбиваем текст в указанных контейнерах на слова-спаны.
+         * Не трогаем ссылки, .address-box, .hint и пр.
+         */
+        function wrapWordsInContainer(container) {
+            if (!container) return;
+
+            // Берём только прямые текстовые узлы и <p>-параграфы,
+            // чтобы не затронуть <a>, <div> с адресом и т.п.
+            const paragraphs = container.querySelectorAll('p');
+
+            if (paragraphs.length === 0) {
+                // Просто текст внутри контейнера
+                wrapTextNodeChildren(container);
+            } else {
+                paragraphs.forEach(p => wrapTextNodeChildren(p));
+            }
+        }
+
+        /**
+         * Заменяет текстовые узлы внутри элемента на спаны слов.
+         * Пропускает содержимое <a>, <script>, <style>.
+         */
+        function wrapTextNodeChildren(element) {
+            const childNodes = Array.from(element.childNodes);
+            childNodes.forEach(node => {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent;
+                    if (!text || !text.trim()) return;
+
+                    const fragment = document.createDocumentFragment();
+                    const parts = text.split(/(\s+)/);
+
+                    parts.forEach(part => {
+                        if (part.trim().length === 0) {
+                            fragment.appendChild(document.createTextNode(part));
+                        } else {
+                            const span = document.createElement('span');
+                            span.className = 'clickable-word state-0';
+                            span.dataset.state = '0';
+                            span.textContent = part;
+                            fragment.appendChild(span);
+                        }
+                    });
+
+                    element.replaceChild(fragment, node);
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tag = node.tagName.toLowerCase();
+                    // Пропускаем ссылки и служебные теги
+                    if (tag === 'a' || tag === 'script' || tag === 'style') return;
+                    // Рекурсивно обрабатываем вложенные элементы (например, <strong>, <em>)
+                    if (tag !== 'br') {
+                        wrapTextNodeChildren(node);
+                    }
+                }
+            });
+        }
+
+        /**
+         * Навешиваем обработчики на все .clickable-word.
+         */
+        function attachWordListeners() {
+            const wordElements = document.querySelectorAll('.clickable-word');
+
+            wordElements.forEach(wordEl => {
+                if (!wordEl.dataset.state) {
+                    wordEl.dataset.state = '0';
+                    wordEl.classList.add('state-0');
+                }
+                if (!wordEl._tapCount) {
+                    wordEl._tapCount = 0;
+                }
+
+                wordEl.removeEventListener('click', wordClickHandler);
+                wordEl.removeEventListener('pointerdown', wordPointerDownHandler);
+                wordEl.removeEventListener('pointerup', wordPointerUpHandler);
+                wordEl.removeEventListener('pointercancel', wordPointerCancelHandler);
+                wordEl.removeEventListener('pointerleave', wordPointerLeaveHandler);
+
+                wordEl.addEventListener('click', wordClickHandler);
+
+                let pressStartTime = 0;
+
+                function wordPointerDownHandler(event) {
+                    event.stopPropagation();
+                    pressStartTime = Date.now();
+                    wordEl._isLongPress = false;
+
+                    // Таймер долгого нажатия (600 мс) — сброс цвета
+                    clearTimeout(wordEl._longPressTimer);
+                    wordEl._longPressTimer = setTimeout(() => {
+                        wordEl._isLongPress = true;
+                        resetWordState(wordEl);
+                    }, 600);
+                }
+
+                function wordPointerUpHandler(event) {
+                    event.stopPropagation();
+                    clearTimeout(wordEl._longPressTimer);
+
+                    if (wordEl._isLongPress) {
+                        wordEl._isLongPress = false;
+                        return;
+                    }
+
+                    const pressDuration = Date.now() - pressStartTime;
+
+                    if (pressDuration < 300) {
+                        handleWordClick(wordEl);
+                    }
+                }
+
+                function wordPointerCancelHandler(event) {
+                    event.stopPropagation();
+                    clearTimeout(wordEl._longPressTimer);
+                    wordEl._isLongPress = false;
+                }
+
+                function wordPointerLeaveHandler(event) {
+                    event.stopPropagation();
+                    clearTimeout(wordEl._longPressTimer);
+                    wordEl._isLongPress = false;
+                }
+
+                wordEl.addEventListener('pointerdown', wordPointerDownHandler);
+                wordEl.addEventListener('pointerup', wordPointerUpHandler);
+                wordEl.addEventListener('pointercancel', wordPointerCancelHandler);
+                wordEl.addEventListener('pointerleave', wordPointerLeaveHandler);
+            });
+        }
+
+        function wordClickHandler(event) {
+            // Обработка в pointerup — оставляем пустым,
+            // чтобы не было двойного срабатывания.
+        }
+
+        // ============================================================
+        //  3. Инициализация
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Разбиваем текст на слова в двух блоках
+            wrapWordsInContainer(document.getElementById('content-text-main'));
+            wrapWordsInContainer(document.getElementById('content-text-story'));
+
+            // Восстанавливаем сохранённые состояния
+            restoreWordStates();
+
+            // Навешиваем обработчики
+            attachWordListeners();
+        });
     </script>
 
 </body>
