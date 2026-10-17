@@ -2,10 +2,10 @@
 <html> 
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-      <link rel="icon" type="image/png" href="loop.png">
-<meta property="og:image" content="/IMG_3290.jpeg">
-<meta property="og:image:width" content="640">
-<meta property="og:image:height" content="640">
+    <link rel="icon" type="image/png" href="loop.png">
+    <meta property="og:image" content="/IMG_3290.jpeg">
+    <meta property="og:image:width" content="640">
+    <meta property="og:image:height" content="640">
     <link rel="manifest" href="manifest-jetpack.json">
     <title>Jetpack</title>
 <style>
@@ -152,7 +152,9 @@ canvas {
         <div><b>Left side</b> — thrust up / down</div>
         <div><b>Right side</b> — steer and tilt</div>
         <div><b>Space</b> — forward thrust</div>
-        <div><b>Double Space</b> — reverse thrust</div>
+        <div><b>Double Space</b> — speed-up</div>
+        <div><b>B (key)</b> — reverse thrust</div>
+        <div><b>Double B</b> — reverse boost</div>
         <div><b>Arrow keys</b> — steer and tilt</div>
         <a href="research.html" id="logoLink">
             <img src="fleurdelis.png" draggable="false">
@@ -1436,8 +1438,6 @@ function generateChunk(chunkX, chunkZ) {
 
     // =========================================================
     // ARCHES
-    // Existing simple arches are preserved,
-    // but transformed into eclectic Greek portals.
     // =========================================================
 
     for (let i = 0; i < 3; i++) {
@@ -1712,8 +1712,6 @@ function generateChunk(chunkX, chunkZ) {
 
     // =========================================================
     // ROADS
-    // Existing roads preserved.
-    // Added architectural borders and occasional columns.
     // =========================================================
 
     const roadWidth = 14;
@@ -1987,19 +1985,23 @@ function generateChunk(chunkX, chunkZ) {
     scene.add(infiniteGrid);
 
     // ==========================================
-    // ИСПРАВЛЕННЫЙ БЛОК С КЛАВИШАМИ
-    // Стрелки работают! Двойной Space вместо Shift!
+    // КЛАВИАТУРА: Space — вперёд, B — назад
+    // Двойной тап для ускорения в обе стороны
     // ==========================================
     const keys = { 
         ArrowLeft: false, 
         ArrowRight: false, 
         ArrowUp: false, 
         ArrowDown: false,
-        Space: false 
+        Space: false,
+        KeyB: false
     };
     
     let lastSpaceTime = 0;
     let superThrust = false;
+
+    let lastBTime = 0;
+    let superReverse = false;
     
     window.addEventListener('keydown', (e) => {
         // Обработка стрелок
@@ -2012,11 +2014,22 @@ function generateChunk(chunkX, chunkZ) {
         if (e.code === 'Space') {
             e.preventDefault();
             const currentTime = performance.now();
-            if (currentTime - lastSpaceTime < 300) { // 300ms для двойного тапа
+            if (currentTime - lastSpaceTime < 300) {
                 superThrust = true;
             }
             lastSpaceTime = currentTime;
             keys['Space'] = true;
+        }
+
+        // Обработка B с двойным тапом (обратная тяга)
+        if (e.code === 'KeyB') {
+            e.preventDefault();
+            const currentTime = performance.now();
+            if (currentTime - lastBTime < 300) {
+                superReverse = true;
+            }
+            lastBTime = currentTime;
+            keys['KeyB'] = true;
         }
     });
     
@@ -2029,6 +2042,11 @@ function generateChunk(chunkX, chunkZ) {
             e.preventDefault();
             keys['Space'] = false;
             superThrust = false;
+        }
+        if (e.code === 'KeyB') {
+            e.preventDefault();
+            keys['KeyB'] = false;
+            superReverse = false;
         }
     });
     
@@ -2043,16 +2061,22 @@ function generateChunk(chunkX, chunkZ) {
         let tY = 0;
         let vrThrust = 0;
 
-        // Управление стрелками (теперь работают!)
+        // Управление стрелками
         if (keys['ArrowLeft']) tY = -1;
         if (keys['ArrowRight']) tY = 1;
         if (keys['ArrowUp']) tX = -1;
         if (keys['ArrowDown']) tX = 1;
 
-        // Тяга: обычная или супер (двойной тап Space)
+        // Тяга вперёд: обычная или супер (двойной тап Space)
         if (keys['Space']) {
             const thrustMultiplier = superThrust ? 2.5 : 1.0;
             vrThrust = FLY_SPEED * thrustMultiplier;
+        }
+
+        // Обратная тяга: обычная или супер (двойной тап B)
+        if (keys['KeyB']) {
+            const reverseMultiplier = superReverse ? 2.5 : 1.0;
+            vrThrust = -FLY_SPEED * reverseMultiplier;
         }
 
         if (touchJoystick.active) {
@@ -2085,20 +2109,21 @@ function generateChunk(chunkX, chunkZ) {
         
         player.quaternion.multiply(deltaQuaternion);
 
-let thrustForce = 0;
+        // --- ИСПРАВЛЕНО: отрицательная тяга тоже работает ---
+        let thrustForce = 0;
 
-if (vrThrust > 0) {
-    thrustForce = vrThrust;
-} else if (Math.abs(currentThrottle) > 0.05) {
-    thrustForce = FLY_SPEED * (currentThrottle * 2.0);
-}
+        if (Math.abs(vrThrust) > 0) {
+            thrustForce = vrThrust;
+        } else if (Math.abs(currentThrottle) > 0.05) {
+            thrustForce = FLY_SPEED * (currentThrottle * 2.0);
+        }
 
-let localUp = new THREE.Vector3(0, 1, 0)
-    .applyQuaternion(player.quaternion);
+        let localUp = new THREE.Vector3(0, 1, 0)
+            .applyQuaternion(player.quaternion);
 
-if (Math.abs(thrustForce) > 0) {
-    velocity.add(localUp.clone().multiplyScalar(thrustForce));
-}
+        if (Math.abs(thrustForce) > 0) {
+            velocity.add(localUp.clone().multiplyScalar(thrustForce));
+        }
 
         velocity.y -= GRAVITY;
 
