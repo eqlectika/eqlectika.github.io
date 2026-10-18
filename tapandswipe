@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -35,7 +35,13 @@ html,body{
   display:flex;align-items:center;gap:8px;
   flex-shrink:0;
 }
-.top-bar .brand{color:var(--accent);white-space:nowrap}
+.top-bar .brand{
+  color:var(--accent);
+  white-space:nowrap;
+  text-decoration:none;
+}
+.top-bar .brand:hover{ text-decoration:underline; }
+.top-bar .brand:visited{ color:var(--accent); }
 .top-bar .live{color:#f00;animation:livePulse 1.5s infinite;white-space:nowrap}
 .top-bar .tape{color:var(--user);white-space:nowrap}
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
@@ -106,7 +112,7 @@ html,body{
 
 <div class="top-bar">
   <div class="left">
-    <span class="brand">Tap &amp; Swipe</span>
+<a class="brand" href="research.html">Tap &amp; Swipe</a>
     <span id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
     <span id="tapeIndicator" class="tape">Tape</span>
   </div>
@@ -135,8 +141,6 @@ const PLACEHOLDER = {
   en: 'Reply and press Enter…'
 }[LANG];
 
-// Мой текст. Каждое предложение — с новой строки.
-// \n внутри строки означает принудительный перенос.
 const MY_TEXT = {
   ru: [
     'Вот так просто можно теперь набирать то, что исходит из ниоткуда.',
@@ -157,26 +161,12 @@ const MY_TEXT = {
     'It seems that a logo or web terminal made by someone else is already twice as effective.',
     'Do you like what is happening?',
     'Would you like to continue the imagination game?',
-    'Type your response in the field below and press Enter to send.' 
+    'Type your response in the field below and press Enter to send.'
   ]
 };
 
-// Превращаем массив предложений в последовательность символов,
-// где между предложениями стоит \n (принудительный перенос).
 const mySentences = MY_TEXT[LANG];
 const myText = mySentences.join('\n');
-// Индексы, после которых нужен принудительный перенос
-const newlineSet = new Set();
-{
-  let idx = 0;
-  for (let i = 0; i < mySentences.length; i++){
-    idx += mySentences[i].length;
-    if (i < mySentences.length - 1) newlineSet.add(idx);
-    idx += 1; // сам \n
-  }
-}
-// функция для проверки, кончилось ли предложение на позиции myCursor
-function isNewlineAt(pos){ return newlineSet.has(pos); }
 
 /* =========================================================
    1. ХРАНИЛИЩЕ
@@ -232,7 +222,6 @@ function connectMqtt(){
     if (p.type === 'TEXT_ADD'){
       if (p.editId && applied.has(p.editId)) return;
       if (p.editId){ applied.add(p.editId); saveApplied(); }
-      // Входящее от пира: с новой строки + печатаем сразу
       appendUserText('\n' + p.text, p.author, true);
       if (client && client.connected){
         client.publish(TOPIC, JSON.stringify({
@@ -368,7 +357,6 @@ function wrapLine(){
   lastX = null; lastY = null;
 }
 
-// Принудительный перенос: завершаем строку и переходим на новую.
 function forceNewline(){
   layoutCurrentLine();
   currentLine = [];
@@ -403,7 +391,6 @@ function spin(el){
    7. Добавление символа
    ========================================================= */
 function addChar(ch, kind, author, animateSpin){
-  // \n — принудительный перенос
   if (ch === '\n'){
     forceNewline();
     autoScroll();
@@ -458,12 +445,27 @@ function typeUserChar(){
   return false;
 }
 
+// Печать одного символа в рамках текущего свайпа.
+// Стоп на границе предложения (на \n) — следующий свайп продолжит.
 function printOne(){
+  if (myCursor < myText.length && myText[myCursor] === '\n'){
+    return false;
+  }
   if (typeMyChar()) return true;
-  if (typeUserChar()) return true;
+
+  for (const u of userChars){
+    if (!u.printed){
+      if (u.ch === '\n') return false;
+      u.printed = true;
+      addChar(u.ch, 'user', u.author, true);
+      saveUserChars();
+      return true;
+    }
+  }
   return false;
 }
 
+// Входящие от пиров печатаем сразу целиком, включая \n
 function appendUserText(text, author, autoPrint){
   const shouldPrintNow = !!autoPrint;
   for (const ch of text){
@@ -471,7 +473,12 @@ function appendUserText(text, author, autoPrint){
   }
   saveUserChars();
   if (shouldPrintNow){
-    while (typeUserChar()){}
+    for (const u of userChars){
+      if (!u.printed){
+        u.printed = true;
+        addChar(u.ch, 'user', u.author, true);
+      }
+    }
   }
 }
 
@@ -490,7 +497,30 @@ function stagePoint(e){
 }
 
 function moveTo(x, y){
-  if (lastX === null){ lastX = x; lastY = y; printOne(); return; }
+  if (lastX === null){
+    lastX = x; lastY = y;
+
+    // На первом движении нового свайпа «съедаем» \n,
+    // чтобы перейти к следующему предложению.
+    if (myCursor < myText.length && myText[myCursor] === '\n'){
+      myCursor++;
+      saveMyCursor();
+      addChar('\n', 'mine', null, false);
+    } else {
+      for (const u of userChars){
+        if (!u.printed && u.ch === '\n'){
+          u.printed = true;
+          saveUserChars();
+          addChar('\n', 'user', u.author, false);
+          break;
+        }
+      }
+    }
+
+    printOne();
+    return;
+  }
+
   let dx = x - lastX, dy = y - lastY, d = Math.hypot(dx, dy);
   while (d >= STEP_PX){
     const t = STEP_PX / d;
@@ -564,7 +594,6 @@ function submitInput(){
     ts: Date.now()
   };
 
-  // С новой строки, в очередь — печать после свайпа
   appendUserText('\n' + text + ' ', myId, false);
 
   if (isLive && client && client.connected){
