@@ -221,7 +221,10 @@ if (!myId){ myId = 'Guest-' + Math.floor(1000+Math.random()*9000); store.set('pe
 
 // Как в Steam — новый clientId при каждой загрузке.
 // Никогда не сохраняется, поэтому два устройства не могут совпасть.
-const clientId = 'st_' + Math.random().toString(16).slice(2,10);
+const clientId = 'st_' + (
+  (crypto && crypto.randomUUID && crypto.randomUUID().replace(/-/g, '')) ||
+  (Date.now() + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 12))
+);
 
 const peerIdInput = document.getElementById('peerIdInput');
 peerIdInput.value = myId;
@@ -256,7 +259,7 @@ function connectMqtt(){
       clientId,
       reconnectPeriod: 5000,
       connectTimeout: 5000,
-      keepalive: 60
+      keepalive: 30
     });
   }catch(e){ return; }
 
@@ -267,6 +270,9 @@ function connectMqtt(){
 
   client.on('close', () => { stopHB(); activePeers = {}; updateChrome(); });
   client.on('offline', () => stopHB());
+  client.on('error', (e) => {
+    // Ничего не делаем — просто чтобы mqtt.js не падал молча
+  });
 
   client.on('message', (t, payload) => {
     let p; try{ p = JSON.parse(payload.toString()); }catch(e){ return; }
@@ -285,6 +291,7 @@ if (p.type === 'TEXT_ADD'){
   });
 }
 
+let lastFlushTime = 0;
 let hbPing = null, hbPeers = null;
 function startHB(){
   stopHB();
@@ -316,7 +323,11 @@ function updatePeers(){
   updateChrome();
 
   // Появился пир — досылаем всё, что накопилось
-  if (isLive && pending.length) flushPending();
+// Досылаем не чаще раза в 5 секунд
+  if (isLive && pending.length && now - lastFlushTime > 5000){
+    lastFlushTime = now;
+    flushPending();
+  }
 }
 function flushPending(){
   if (!client || !client.connected || !pending.length) return;
