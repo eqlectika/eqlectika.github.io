@@ -3,14 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Swipe | Map of the words</title>
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+<title>Swipe</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#000; --fg:#f2f2f2;
-  --me:#7dd3fc; --user:#afff00;
-  --accent:#ff5700;
+  --bg:#000; --fg:#f2f2f2; --me:#7dd3fc;
 }
 *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
 html,body{
@@ -18,75 +15,17 @@ html,body{
   overflow:hidden;font-family:'JetBrains Mono','Fira Code',monospace;
 }
 
-/* ---------- шапка ---------- */
-.top-bar{
-  position:fixed;top:0;left:0;right:0;z-index:50;
-  display:flex;align-items:center;justify-content:space-between;
-  gap:8px;
-  padding:6px 8px;background:#000;
-  font-family:'Roboto Condensed',sans-serif;font-weight:700;font-size:16px;color:#aaa;
-  border-bottom:1px solid #1a1a1a;
-}
-.top-bar .left{
-  display:flex;align-items:center;gap:8px;
-  min-width:0;flex-shrink:1;overflow:hidden;
-}
-.top-bar .right{
-  display:flex;align-items:center;gap:8px;
-  flex-shrink:0;
-}
-.top-bar .brand{
-  color:var(--accent);
-  white-space:nowrap;
-  text-decoration:none;
-}
-.top-bar .brand:hover{ text-decoration:underline; }
-.top-bar .brand:visited{ color:var(--accent); }
-.top-bar .live{color:#f00;animation:livePulse 1.5s infinite;white-space:nowrap}
-.top-bar .tape{color:var(--user);white-space:nowrap}
-@keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
-
-.btn-clear{
-  background:transparent;border:1px solid #444;color:#aaa;
-  font-family:'Roboto Condensed',sans-serif;font-weight:700;font-size:13px;
-  padding:4px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;
-}
-.btn-clear:hover{border-color:#f00;color:#f00}
-
-.sync-btn{
-  font-family:'Roboto Condensed',sans-serif;font-size:13px;font-weight:700;
-  padding:10px 14px;border:none;border-radius:10px;
-  background:#f00;color:#fff;cursor:pointer;white-space:nowrap;
-  flex-shrink:0;
-}
-.sync-btn:disabled{opacity:.4;cursor:default}
-
-#peerIdInput{
-  color:#0097ff;background:transparent;outline:none;
-  font-family:monospace;font-size:14px;text-align:right;
-  width:90px;padding:3px 6px;border:1px solid transparent;border-radius:6px;
-  user-select:text;-webkit-user-select:text;cursor:text;
-  transition:background .2s,color .2s,border-color .2s;
-}
-#peerIdInput::placeholder{color:#444}
-#peerIdInput:focus{background:#111;color:#fff;border-color:#3d1a99}
-#peerIdInput.saved{color:var(--user)!important;border-color:var(--user)!important}
-
-/* ---------- скролл ---------- */
 #scroller{
-  position:fixed;left:0;right:0;
-  top:44px;bottom:64px;
+  position:fixed;inset:0;
   overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
-  z-index:1;
   touch-action:pan-y;
 }
 #scroller::-webkit-scrollbar{display:none}
 
 #stage{position:relative;width:100%;min-height:100%}
 
-/* ---------- буквы ---------- */
 .ch{
   position:absolute;
   font-family:'JetBrains Mono','Fira Code',monospace;
@@ -95,284 +34,64 @@ html,body{
   white-space:pre;
   pointer-events:none;user-select:none;
   transform-origin:50% 50%;
-}
-.ch.mine{color:var(--me);text-shadow:0 0 8px rgba(125,211,252,.35)}
-.ch.user{color:var(--user);text-shadow:0 0 8px rgba(175,255,0,.35)}
-
-/* ---------- подвал ---------- */
-.footer-panel{
-  position:fixed;left:0;right:0;bottom:20px;z-index:10;
-  display:flex;align-items:center;justify-content:center;
-  gap:8px;
-  padding:8px 10px calc(8px + env(safe-area-inset-bottom));
-  background:#000;border-top:1px solid #1a1a1a;
-}
-#word-input{
-  flex:1;
-  max-width:600px;padding:10px 12px;
-  font-family:'JetBrains Mono',monospace;font-size:16px;
-  border:1px solid #444;border-radius:10px;
-  background:linear-gradient(to bottom,#000,#0b1a2b);color:#fff;outline:none;
-  user-select:text;-webkit-user-select:text;
-}
-#word-input::placeholder{color:#888}
-
-#hint{
-  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  text-align:center;
-  font-size:clamp(16px,3.6vw,20px);
-  line-height:1.4;
-  color:#f2f2f2;
-  font-family:'JetBrains Mono','Fira Code',monospace;
-  text-shadow:0 0 10px rgba(0,0,0,.95);
-  pointer-events:none;
-  z-index:5;
-  transition:opacity .6s ease;
-  padding:0 16px;
-  letter-spacing:.02em;
-}
-#hint.hidden{opacity:0}
-
-.author-tag{
-  position:absolute;
-  font-family:monospace;
-  font-size:13px;
-  line-height:1;
-  color:#0097ff;
-  white-space:nowrap;
-  pointer-events:none;
-  transform:translateX(-50%);
-  opacity:.9;
+  color:var(--me);
+  text-shadow:0 0 8px rgba(125,211,252,.35);
 }
 </style>
 </head>
 <body>
 
-<div class="top-bar">
-  <div class="left">
-    <a class="brand" href="support.html">Swipe</a>
-    <span id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
-    <span id="tapeIndicator" class="tape">Tape</span>
-  </div>
-  <div class="right">
-    <button class="btn-clear" id="btnClear">Clear</button>
-    <input type="text" id="peerIdInput" autocomplete="off" spellcheck="false"
-           maxlength="9" placeholder="Your name">
-  </div>
-</div>
-<div id="hint">Swipe here</div>
 <div id="scroller"><div id="stage"></div></div>
-
-<div class="footer-panel">
-  <input type="text" id="word-input"
-         autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false">
-  <button class="sync-btn" id="syncBtn" style="display:none">SYNC</button>
-</div>
 
 <script>
 /* =========================================================
-   0. ЯЗЫК + ТЕКСТ
+   ТЕКСТ — массив предложений
    ========================================================= */
 const LANG = (navigator.language || 'en').toLowerCase().startsWith('ru') ? 'ru' : 'en';
-
-const PLACEHOLDER = {
-  ru: 'Ответь и нажми Enter…',
-  en: 'Reply and press Enter…'
-}[LANG];
 
 const MY_TEXT = {
   ru: [
     'Мы не знаем точно, когда родились...',
-    'Нам рассказали об этом...',
-    'И мы поверили...',
-    'Теперь вы можете придумать и написать свое имя справа вверху...',
+    'Мы информированы...',
+    'Нам дали имя и научили жить...',
+    'Пока мы учимся, мы продолжаем жить...',
+    'Мы создаем время событиями...',
+    'Супер-интеллект хороший собеседник и помощник...',
+    'Однако для создания реальности нам нужен настоящий партнёр: наставник, ученик...',
+    'Музыка, дизайн, строительство, искусство, инвестиции, йога, код...',
+    'Мы эволюционируем благодаря вниманию...',
+    'От наскальных рисунков через виртуальную реальность внимание нацелено в гиперпространство будущего...',
     'Я строю веб-терминалы с вашим логотипом, которые оживают и приносят радость...',
     'Я знаю, что, логотип или веб-терминал, который сделал для вас кто-то другой, уже эффективнее вдвойне...',
+    'Что ты думаешь об этом?...',
     'Нравится ли тебе то, что происходит?..',
     'Хочешь продолжить игру воображения?..',
-    'Введите свой ответ в поле ниже, нажмите Enter для отправки, а затем снова проведите по экрану.',
-    'Если я здесь, к отвечу сразу, если нет - попробуем связаться потом...',
-    'Может быть тебе ответит кто-то другой...',
-    'Красный индикатор "Live" наверху значит, кто-то здесь есть прямо сейчас...',
+    'Найди меня по этому Telegram-адресу @eugenebox, если захочешь поделиться своими наблюдениями, мыслями, идеями... ',
   ],
   en: [
     'We don\'t actually know when we were born...',
     'We were informed...',
-    'Now you can come up with a name and type it in the top-right corner...',
+    'We were given a name and taught how to live...',
+    'While we learn, we continue to live...',
+    'We create time through events...',
+    'A superintelligence is a good conversationalist and assistant...',
+    'However, to create reality, we need a genuine partner: a mentor, a student...',
+    'Music, design, construction, art, investments, yoga, code...',
+    'We evolve through attention...',
+    'From cave paintings to virtual reality, attention is now directed toward the hyperspace of the future...',
     'I build web terminals that come alive, make you happy, and wear your logo...',
     'I know that a logo or web terminal made by someone else is already twice as effective...',
+    'What do you think about this?..',
     'Do you like what is happening?..',
     'Would you like to continue the imagination game?..',
-    'Type your response in the field below, press Enter to send and then swipe again.',
-    'If I’m here, I’ll answer right away; if not, we can try to connect later...',
-    'Maybe someone else will answer you...',
-    'The red "Live" indicator at the top means someone is here right now...',  ]
+    'Find me at this Telegram address: @eugenebox, if you’d like to share your observations, thoughts, ideas...', ]
 };
 
-const mySentences = MY_TEXT[LANG];
-const myText = mySentences.join('\n');
+const sentences = MY_TEXT[LANG];
+const fullText = sentences.join('\n');
 
 /* =========================================================
-   1. ХРАНИЛИЩЕ
-   ========================================================= */
-const store = {
-  get(k, fb=null){ try{ const v=localStorage.getItem('st_'+k); return v===null?fb:JSON.parse(v);}catch(e){return fb;} },
-  set(k, v){ try{ localStorage.setItem('st_'+k, JSON.stringify(v)); }catch(e){} },
-  del(k){ try{ localStorage.removeItem('st_'+k); }catch(e){} }
-};
-
-let myId = store.get('peer_id', '');
-if (!myId){ myId = 'Guest-' + Math.floor(1000+Math.random()*9000); store.set('peer_id', myId); }
-
-// Как в Steam — новый clientId при каждой загрузке.
-// Никогда не сохраняется, поэтому два устройства не могут совпасть.
-const clientId = 'st_' + (
-  (crypto && crypto.randomUUID && crypto.randomUUID().replace(/-/g, '')) ||
-  (Date.now() + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 12))
-);
-
-const peerIdInput = document.getElementById('peerIdInput');
-peerIdInput.value = myId;
-
-let myCursor = store.get('my_cursor', 0);
-let userChars = store.get('user_chars', []);
-
-function saveMyCursor(){ store.set('my_cursor', myCursor); }
-function saveUserChars(){
-  store.set('user_chars', userChars.map(u => ({ch:u.ch, author:u.author, printed:!!u.printed})));
-}
-
-let pending = store.get('pending', []);
-function savePending(){ store.set('pending', pending); }
-const applied = new Set(store.get('applied', []));
-function saveApplied(){ store.set('applied', Array.from(applied).slice(-2000)); }
-
-/* =========================================================
-   2. MQTT
-   ========================================================= */
-const BROKER = 'wss://broker.emqx.io:8084/mqtt';
-// Топик как в Steam — если оба устройства на этой версии, они видят друг друга.
-const TOPIC  = 'breakthrough/swipe/v1';
-
-let client = null;
-let activePeers = {};
-let isLive = false;
-
-function connectMqtt(){
-  try{
-    client = mqtt.connect(BROKER, {
-      clientId,
-      reconnectPeriod: 5000,
-      connectTimeout: 5000,
-      keepalive: 30
-    });
-  }catch(e){ return; }
-
-  client.on('connect', () => {
-    client.subscribe(TOPIC, {qos:1});
-    startHB();
-  });
-
-  client.on('close', () => { stopHB(); activePeers = {}; updateChrome(); });
-  client.on('offline', () => stopHB());
-  client.on('error', (e) => {
-    // Ничего не делаем — просто чтобы mqtt.js не падал молча
-  });
-
-  client.on('message', (t, payload) => {
-    let p; try{ p = JSON.parse(payload.toString()); }catch(e){ return; }
-    if (p.sid === clientId) return;
-
-    if (p.type === 'PING'){ activePeers[p.sender] = Date.now(); return; }
-
-if (p.type === 'TEXT_ADD'){
-      if (p.editId && applied.has(p.editId)) return;
-      if (p.editId){ applied.add(p.editId); saveApplied(); }
-
-      appendUserText('\n' + p.text, p.author, true);
-      return;
-    }
-
-  });
-}
-
-let lastFlushTime = 0;
-let hbPing = null, hbPeers = null;
-function startHB(){
-  stopHB();
-  sendPing();
-  updatePeers();
-  hbPing  = setInterval(sendPing, 5000);
-  hbPeers = setInterval(updatePeers, 3000);
-}
-function stopHB(){
-  if (hbPing){ clearInterval(hbPing); hbPing = null; }
-  if (hbPeers){ clearInterval(hbPeers); hbPeers = null; }
-}
-function sendPing(){
-  if (client && client.connected){
-    client.publish(TOPIC, JSON.stringify({type:'PING', sender:myId, sid:clientId}), {qos:0});
-  }
-}
-function updatePeers(){
-  const now = Date.now();
-  for (const id in activePeers) if (now - activePeers[id] > 12000) delete activePeers[id];
-
-  isLive = Object.keys(activePeers).length > 0;
-
-  // Старые pending (> 60 сек) — в утиль
-  const before = pending.length;
-  pending = pending.filter(e => (now - (e.ts || 0)) < 60000);
-  if (pending.length !== before) savePending();
-
-  updateChrome();
-
-  // Появился пир — досылаем всё, что накопилось
-// Досылаем не чаще раза в 5 секунд
-  if (isLive && pending.length && now - lastFlushTime > 5000){
-    lastFlushTime = now;
-    flushPending();
-  }
-}
-function flushPending(){
-  if (!client || !client.connected || !pending.length) return;
-  pending.slice().forEach(edit => {
-    client.publish(TOPIC, JSON.stringify({
-      ...edit,
-      type: 'TEXT_ADD',
-      sender: myId,
-      sid: clientId
-    }), {qos:0});
-  });
-}
-
-/* =========================================================
-   3. UI Chrome
-   ========================================================= */
-const liveInd = document.getElementById('liveIndicator');
-const tapeInd = document.getElementById('tapeIndicator');
-const liveCount = document.getElementById('livePeerCount');
-const syncBtn = document.getElementById('syncBtn');
-
-function updateChrome(){
-  const n = Object.keys(activePeers).length;
-  liveInd.style.display = isLive ? 'inline' : 'none';
-  tapeInd.style.display = isLive ? 'none' : 'inline';
-  liveCount.textContent = n;
-
-  if (pending.length){
-    syncBtn.style.display = 'inline-block';
-    syncBtn.textContent = isLive ? `SYNC (${pending.length})` : `TAPE: ${pending.length}`;
-    syncBtn.disabled = !isLive;
-  } else {
-    syncBtn.style.display = 'none';
-  }
-}
-
-syncBtn.addEventListener('click', () => { if (isLive) flushPending(); });
-
-/* =========================================================
-   4. Метрики
+   Метрики
    ========================================================= */
 const stage = document.getElementById('stage');
 const scroller = document.getElementById('scroller');
@@ -397,10 +116,11 @@ recalcMetrics();
 window.addEventListener('resize', recalcMetrics);
 
 /* =========================================================
-   5. Раскладка
+   Раскладка
    ========================================================= */
-let cursorY = marginY;
-let currentLine = [];
+let myCursor = 0;         // текущая позиция в fullText
+const TOP_OFFSET = 80;   // ← сколько пикселей отступить сверху
+let cursorY = marginY + TOP_OFFSET;let currentLine = [];
 let currentLineWidth = 0;
 
 function maxLineWidth(){ return window.innerWidth - marginX*2; }
@@ -443,7 +163,6 @@ function wrapLine(){
     currentLineWidth += charW;
   }
   layoutCurrentLine();
-  lastX = null; lastY = null;
 }
 
 function forceNewline(){
@@ -451,17 +170,16 @@ function forceNewline(){
   currentLine = [];
   currentLineWidth = 0;
   cursorY += lineH;
-  lastX = null; lastY = null;
   updateStageHeight();
 }
 
 function updateStageHeight(){
   const needed = cursorY + lineH + 80;
-  stage.style.height = Math.max(window.innerHeight - 120, needed) + 'px';
+  stage.style.height = Math.max(window.innerHeight, needed) + 'px';
 }
 
 /* =========================================================
-   6. Оборот буквы
+   Оборот буквы
    ========================================================= */
 function spin(el){
   const DUR = 600;
@@ -477,24 +195,9 @@ function spin(el){
 }
 
 /* =========================================================
-   7. Добавление символа
+   Добавление символа
    ========================================================= */
-function addChar(ch, kind, author, animateSpin){
-  // Подпись автора — на своей строке, с отступом сверху
-  if (author && currentLine.length === 0 && ch !== '\n' && ch !== ' '){
-    cursorY += lineH * 0.5;
-
-    const tag = document.createElement('span');
-    tag.className = 'author-tag';
-    tag.textContent = author;
-    tag.style.left = (window.innerWidth / 2) + 'px';
-    tag.style.top  = cursorY + 'px';
-    stage.appendChild(tag);
-
-    cursorY += lineH;
-    updateStageHeight();
-  }
-
+function addChar(ch, animateSpin){
   if (ch === '\n'){
     forceNewline();
     autoScroll();
@@ -505,7 +208,7 @@ function addChar(ch, kind, author, animateSpin){
     wrapLine();
   }
   if (ch === ' '){
-    currentLine.push({el:null, ch:' ', kind, author});
+    currentLine.push({el:null, ch:' '});
     currentLineWidth += charW;
     layoutCurrentLine();
     updateStageHeight();
@@ -513,11 +216,11 @@ function addChar(ch, kind, author, animateSpin){
     return;
   }
   const el = document.createElement('span');
-  el.className = 'ch ' + kind;
+  el.className = 'ch';
   el.textContent = ch;
   el.style.top = cursorY + 'px';
   stage.appendChild(el);
-  const entry = {el, ch, kind, author};
+  const entry = {el, ch};
   currentLine.push(entry);
   layoutCurrentLine();
   if (animateSpin) spin(el);
@@ -528,64 +231,39 @@ function addChar(ch, kind, author, animateSpin){
 }
 
 /* =========================================================
-   8. Печать
+   Печать одного предложения
    ========================================================= */
-function typeMyChar(){
-  if (myCursor >= myText.length) return false;
-  const ch = myText[myCursor++];
-  saveMyCursor();
-  addChar(ch, 'mine', null, true);
-  return true;
-}
+let printing = false; // true, пока идёт печать предложения
 
-function typeUserChar(){
-  for (const u of userChars){
-    if (!u.printed){
-      u.printed = true;
-      addChar(u.ch, 'user', u.author, true);
-      saveUserChars();
-      return true;
-    }
-  }
-  return false;
-}
+function printSentence(){
+  if (printing) return;
+  if (myCursor >= fullText.length) return;
 
-function printOne(){
-  if (myCursor < myText.length && myText[myCursor] === '\n'){
-    return false;
-  }
-  if (typeMyChar()) return true;
+  printing = true;
 
-  for (const u of userChars){
-    if (!u.printed){
-      if (u.ch === '\n') return false;
-      u.printed = true;
-      addChar(u.ch, 'user', u.author, true);
-      saveUserChars();
-      return true;
-    }
-  }
-  return false;
-}
+  // ищем конец текущего предложения в fullText
+  let end = fullText.indexOf('\n', myCursor);
+  if (end === -1) end = fullText.length;
 
-function appendUserText(text, author, autoPrint){
-  const shouldPrintNow = !!autoPrint;
-  for (const ch of text){
-    userChars.push({ch, author: author || 'You', printed: shouldPrintNow});
-  }
-  saveUserChars();
-  if (shouldPrintNow){
-    for (const u of userChars){
-      if (!u.printed){
-        u.printed = true;
-        addChar(u.ch, 'user', u.author, true);
+  // печатаем по одному символу
+  function step(){
+    if (myCursor >= end){
+      if (myCursor < fullText.length && fullText[myCursor] === '\n'){
+        myCursor++;
+        addChar('\n', false);
       }
+      printing = false;
+      return;
     }
+    const ch = fullText[myCursor++];
+    addChar(ch, true);
+    requestAnimationFrame(step);
   }
+  step();
 }
 
 /* =========================================================
-   9. Палец → печать
+   Палец → печать
    ========================================================= */
 const STEP_PX = 18;
 let lastX = null, lastY = null;
@@ -599,27 +277,9 @@ function stagePoint(e){
 }
 
 function moveTo(x, y){
-  document.getElementById('hint').classList.add('hidden');
-
   if (lastX === null){
     lastX = x; lastY = y;
-
-    if (myCursor < myText.length && myText[myCursor] === '\n'){
-      myCursor++;
-      saveMyCursor();
-      addChar('\n', 'mine', null, false);
-    } else {
-      for (const u of userChars){
-        if (!u.printed && u.ch === '\n'){
-          u.printed = true;
-          saveUserChars();
-          addChar('\n', 'user', u.author, false);
-          break;
-        }
-      }
-    }
-
-    printOne();
+    printSentence(); // первый свайп — печатаем одно предложение
     return;
   }
 
@@ -628,7 +288,10 @@ function moveTo(x, y){
     const t = STEP_PX / d;
     lastX += dx * t; lastY += dy * t;
     dx = x - lastX; dy = y - lastY; d = Math.hypot(dx, dy);
-    if (!printOne()) break;
+
+    // проверяем, что ещё можно напечатать следующее предложение —
+    // но НЕ печатаем его в этом же жесте
+    if (myCursor >= fullText.length) break;
   }
 }
 
@@ -668,7 +331,7 @@ stage.addEventListener('touchcancel', () => {
 stage.addEventListener('mousedown', (e) => {
   const p = stagePoint(e);
   lastX = p.x; lastY = p.y;
-  printOne();
+  printSentence();
 });
 stage.addEventListener('mousemove', (e) => {
   if (!e.buttons) return;
@@ -678,102 +341,7 @@ stage.addEventListener('mousemove', (e) => {
 window.addEventListener('mouseup', () => { lastX = null; lastY = null; });
 
 /* =========================================================
-   10. Поле ввода — только Enter
-   ========================================================= */
-const wordInput = document.getElementById('word-input');
-wordInput.placeholder = PLACEHOLDER;
-document.getElementById('btnClear').title = LANG === 'ru' ? 'Очистить экран' : 'Clear screen';
-
-function submitInput(){
-  const text = wordInput.value.trim();
-  if (!text) return;
-  wordInput.value = '';
-
-  const edit = {
-    editId: 'tx-' + Date.now() + '-' + Math.random().toString(16).slice(2,8),
-    text,
-    author: myId,
-    ts: Date.now()
-  };
-
-  appendUserText('\n' + text + ' ', myId, false);
-
-  if (isLive && client && client.connected){
-    client.publish(TOPIC, JSON.stringify({
-      ...edit, type:'TEXT_ADD', sender:myId, sid:clientId
-    }), {qos:0});
-  } else {
-    pending.push(edit);
-    savePending();
-    updateChrome();
-  }
-}
-
-wordInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.keyCode === 13){
-    e.preventDefault();
-    submitInput();
-  }
-});
-
-/* =========================================================
-   11. Clear
-   ========================================================= */
-document.getElementById('btnClear').addEventListener('click', () => {
-  if (!confirm(LANG === 'ru' ? 'Очистить экран и весь текст на этом устройстве?' : 'Clear screen and all text on this device?')) return;
-
-  myCursor = 0;
-  userChars = [];
-  pending = [];
-  applied.clear();
-
-  store.del('my_cursor');
-  store.del('user_chars');
-  store.del('pending');
-  store.del('applied');
-
-  stage.innerHTML = '';
-  cursorY = marginY;
-  currentLine = [];
-  currentLineWidth = 0;
-  lastX = null; lastY = null;
-  updateStageHeight();
-  updateChrome();
-
-  document.getElementById('hint').classList.remove('hidden');
-});
-
-/* =========================================================
-   12. Rename (2–9 символов)
-   ========================================================= */
-let beforeId = myId;
-peerIdInput.addEventListener('focus', () => {
-  beforeId = myId;
-  requestAnimationFrame(() => peerIdInput.select());
-});
-peerIdInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter'){ e.preventDefault(); commitId(); peerIdInput.blur(); }
-  if (e.key === 'Escape'){ peerIdInput.value = beforeId; peerIdInput.blur(); }
-});
-peerIdInput.addEventListener('blur', () => {
-  if (peerIdInput.value.trim() !== myId) peerIdInput.value = myId;
-});
-function commitId(){
-  const v = peerIdInput.value.trim();
-  if (v === myId) return;
-  if (!/^[A-Za-zА-Яа-я0-9_\- ]{2,9}$/.test(v)){
-    peerIdInput.value = myId;
-    return;
-  }
-  myId = v;
-  store.set('peer_id', myId);
-  peerIdInput.value = myId;
-  peerIdInput.classList.add('saved');
-  setTimeout(() => peerIdInput.classList.remove('saved'), 800);
-}
-
-/* =========================================================
-   13. Автоскролл
+   Автоскролл
    ========================================================= */
 let userScrolling = false;
 let userScrollTimer = null;
@@ -793,27 +361,10 @@ function autoScroll(){
 }
 
 /* =========================================================
-   14. Восстановление
-   ========================================================= */
-function restorePrinted(){
-  for (let i = 0; i < myCursor; i++){
-    addChar(myText[i], 'mine', null, false);
-  }
-  for (const u of userChars){
-    if (u.printed){
-      addChar(u.ch, 'user', u.author, false);
-    }
-  }
-}
-
-/* =========================================================
-   15. Init
+   Init
    ========================================================= */
 recalcMetrics();
-restorePrinted();
 updateStageHeight();
-updateChrome();
-connectMqtt();
 </script>
 </body>
 </html>
