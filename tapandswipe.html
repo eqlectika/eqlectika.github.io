@@ -106,6 +106,21 @@ html,body{
   user-select:text;-webkit-user-select:text;
 }
 #word-input::placeholder{color:#888}
+#hint{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;
+  font-size:clamp(16px,3.6vw,20px);
+  line-height:1.4;
+  color:#f2f2f2;
+  font-family:'JetBrains Mono','Fira Code',monospace;
+  text-shadow:0 0 10px rgba(0,0,0,.95);
+  pointer-events:none;
+  z-index:5;
+  transition:opacity .6s ease;
+  padding:0 16px;
+  letter-spacing:.02em;
+}
+#hint.hidden{opacity:0}
 </style>
 </head>
 <body>
@@ -122,7 +137,7 @@ html,body{
            maxlength="9" placeholder="Your name">
   </div>
 </div>
-
+<div id="hint">Swipe here</div>
 <div id="scroller"><div id="stage"></div></div>
 
 <div class="footer-panel">
@@ -154,13 +169,13 @@ const MY_TEXT = {
     'Хочешь продолжить игру воображения?'
   ],
   en: [
-    'We don\'t actually know when we were born.',
-    'We were informed.',
-    'Now you can come up with a name and type it in the top-right corner.',
-    'I build web terminals that come alive, make you happy, and wear your logo.',
-    'It seems that a logo or web terminal made by someone else is already twice as effective.',
-    'Do you like what is happening?',
-    'Would you like to continue the imagination game?',
+    'We don\'t actually know when we were born...',
+    'We were informed...',
+    'Now you can come up with a name and type it in the top-right corner...',
+    'I build web terminals that come alive, make you happy, and wear your logo...',
+    'It seems that a logo or web terminal made by someone else is already twice as effective...',
+    'Do you like what is happening?..',
+    'Would you like to continue the imagination game?..',
     'Type your response in the field below and press Enter to send.'
   ]
 };
@@ -497,6 +512,8 @@ function stagePoint(e){
 }
 
 function moveTo(x, y){
+  document.getElementById('hint').classList.add('hidden');
+
   if (lastX === null){
     lastX = x; lastY = y;
 
@@ -637,6 +654,8 @@ document.getElementById('btnClear').addEventListener('click', () => {
   lastX = null; lastY = null;
   updateStageHeight();
   updateChrome();
+  
+  document.getElementById('hint').classList.remove('hidden');
 });
 
 /* =========================================================
