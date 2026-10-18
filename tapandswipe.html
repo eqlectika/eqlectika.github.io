@@ -219,16 +219,9 @@ const store = {
 let myId = store.get('peer_id', '');
 if (!myId){ myId = 'Guest-' + Math.floor(1000+Math.random()*9000); store.set('peer_id', myId); }
 
-// Стабильный clientId — сохраняется в localStorage, чтобы при перезагрузке
-// сессия оставалась той же. Каждое устройство получает свой.
-let clientId = store.get('client_id', '');
-if (!clientId){
-  clientId = 'st_' + (
-    (crypto && crypto.randomUUID && crypto.randomUUID()) ||
-    (Date.now() + '-' + Math.random().toString(16).slice(2,10))
-  );
-  store.set('client_id', clientId);
-}
+// Как в Steam — новый clientId при каждой загрузке.
+// Никогда не сохраняется, поэтому два устройства не могут совпасть.
+const clientId = 'st_' + Math.random().toString(16).slice(2,10);
 
 const peerIdInput = document.getElementById('peerIdInput');
 peerIdInput.value = myId;
