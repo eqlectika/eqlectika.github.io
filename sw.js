@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-back'; 
+const CACHE_NAME = 'version-swipe'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
@@ -21,6 +21,7 @@ const CORE_ASSETS = [
     './bismuth.html',
     './essence.html',
     './support.html',
+    './tapandswipe.html',
 
     './manifest-index.json',
     './manifest-auction.json',
@@ -40,6 +41,7 @@ const CORE_ASSETS = [
     './manifest-fields.json',
     './manifest-cube.json',
     './manifest-bismuth.json',
+    './manifest-tapandswipe.json',
     
     './handle.png',
     './ladybug-icon-10.png',
