@@ -62,12 +62,39 @@ position: relative;
 width: 100%;
 height: 100%;
 overflow: hidden;
+isolation: isolate;
+}
+
+/* Слой 1 — тайл */
+.editor-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--bg-tile, none);
+  background-repeat: repeat;
+  background-size: auto;
+  background-position: top left;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Слой 2 — цвет с прозрачностью (тинт) */
+.editor-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--bg, #ff8700);
+  opacity: var(--bg-tint, 1);
+  z-index: 1;
+  pointer-events: none;
 }
 
 .editor {
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 100%;
-  background: var(--bg);
+  background: transparent;
   color: var(--color);
   box-sizing: border-box;
   padding: 34px 15px 15px 15px;
@@ -107,6 +134,7 @@ overflow: hidden;
   opacity: 0.7;
   line-height: 1.2;
   word-break: break-word;
+  z-index: 3;
 }
 .ph::-webkit-scrollbar { display: none; }
 .ph.hidden { display: none; }
@@ -115,11 +143,6 @@ overflow: hidden;
 .ph p + p { margin-top: 0.5em !important; }
 
 .editor:not(:empty) ~ .ph { display: none; }
-
-/* Прячем подсказку, когда в редакторе есть текст */
-.editor:not(:empty) ~ .ph {
-  display: none;
-}
 
 .img-preview {
   position: absolute;
@@ -131,6 +154,11 @@ overflow: hidden;
   display: none;
   opacity: 0.7;
   z-index: 10;
+  touch-action: manipulation;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .handle {
@@ -289,6 +317,89 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .font-option:hover { background: #444; }
 .font-option.selected { background: #00f; color: #fff; }
+
+/* Range slider */
+#setting-tint {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: #444;
+  outline: none;
+  cursor: pointer;
+}
+#setting-tint::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ff8700;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-sizing: border-box;
+}
+#setting-tint::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ff8700;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-sizing: border-box;
+}
+
+/* Tile UI */
+.tile-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 10px;
+}
+
+.tile-preview-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  border: 2px solid #555;
+  background: #111;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.tile-input {
+  display: none;
+}
+
+.tile-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #ff8700;
+  color: #000;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.tile-btn:active {
+  background: #e07a00;
+}
+
+.tile-name {
+  font-size: 13px;
+  color: #aaa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
 </style>
 </head>
 <body>
@@ -399,6 +510,27 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       </div>
     </div>
 
+    <!-- TILE -->
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Tile (background image):</label>
+    <div class="tile-row">
+      <img id="tile-thumb" class="tile-preview-thumb" alt="" style="display:none;">
+      <label for="setting-tile" class="tile-btn">Choose tile</label>
+      <input type="file" id="setting-tile" accept="image/*" class="tile-input">
+      <span id="tile-name" class="tile-name">No file</span>
+    </div>
+    <label style="display:flex; align-items:center; font-size:15px; cursor:pointer; color:#ff758f; padding:4px 0; margin-bottom:16px;">
+      <input type="checkbox" id="setting-del-tile" style="width:20px; height:20px; margin-right:10px; accent-color:#ff758f; cursor:pointer;"> Delete tile
+    </label>
+
+    <!-- TINT -->
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">
+      Tint opacity: <span id="tint-val" style="color:#ff8700; font-weight:bold;">100</span>%
+    </label>
+    <input type="range" id="setting-tint" min="0" max="100" value="100" style="width:100%; margin-bottom:20px;">
+    <div style="font-size:12px; color:#888; margin-top:-12px; margin-bottom:16px;">
+      0% — tile fully visible, 100% — color fully covers tile
+    </div>
+
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Image Position:</label>
     <select id="setting-pos" style="margin-bottom:20px;">
       <option value="bottom right">Bottom Right</option>
@@ -422,7 +554,7 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     </div>
     <div style="margin: -10px 0 40px; text-align: center;">
         <a href="support.html" style="font-family:'Cinzel', sans-serif; color: #ccc; font-weight: bold; font-size: 18px; text-decoration: none;">Made in Space</a>
-    <div>
+    </div>
   </div>
 </div>
 
@@ -431,6 +563,13 @@ const inpBg = document.getElementById('setting-bg');
 const inpColor = document.getElementById('setting-color');
 const bgPickerBtn = document.getElementById('bg-picker-btn');
 const colorPickerBtn = document.getElementById('color-picker-btn');
+
+const inpTile = document.getElementById('setting-tile');
+const tileThumb = document.getElementById('tile-thumb');
+const tileName = document.getElementById('tile-name');
+const chkDelTile = document.getElementById('setting-del-tile');
+const inpTint = document.getElementById('setting-tint');
+const tintVal = document.getElementById('tint-val');
 
 inpBg.addEventListener('input', (e) => {
   bgPickerBtn.style.background = e.target.value;
@@ -502,14 +641,15 @@ const magicPalettes = [
   { bg: ['#e2efe0', '#bccbaf', '#96a788', '#708264'], co: ['#283618', '#283618', '#fefae0', '#fefae0'] }
 ];
 
-const dbRequest = indexedDB.open("QuadEditorDB", 3);
+// --- IndexedDB setup ---
+const dbRequest = indexedDB.open("QuadEditorDB", 4);
 dbRequest.onupgradeneeded = e => {
   db = e.target.result;
   if (!db.objectStoreNames.contains("texts")) db.createObjectStore("texts", { keyPath: "id" });
 };
 dbRequest.onsuccess = e => { db = e.target.result; loadData(); };
 
-async function saveToDB(id, content, img = null, clearImg = false) {
+async function saveToDB(id, content, img = null, clearImg = false, tile = null, clearTile = false) {
   return new Promise((resolve) => {
     const tx = db.transaction("texts", "readwrite");
     const store = tx.objectStore("texts");
@@ -521,6 +661,11 @@ async function saveToDB(id, content, img = null, clearImg = false) {
         delete data.img;
       } else if (img) {
         data.img = img;
+      }
+      if (clearTile) {
+        delete data.tile;
+      } else if (tile) {
+        data.tile = tile;
       }
       store.put(data);
       tx.oncomplete = () => resolve();
@@ -548,37 +693,45 @@ function loadData() {
     { top: '10px', bottom: 'auto', left: '10px', right: 'auto' }
   ];
 
-textareas.forEach((ta, i) => {
-  const pos = imgPositions[i];
-  const img = images[i];
+  textareas.forEach((ta, i) => {
+    const pos = imgPositions[i];
+    const img = images[i];
 
-  img.style.top = pos.top;
-  img.style.bottom = pos.bottom;
-  img.style.left = pos.left;
-  img.style.right = pos.right;
+    img.style.top = pos.top;
+    img.style.bottom = pos.bottom;
+    img.style.left = pos.left;
+    img.style.right = pos.right;
 
-  const wrap = ta.parentElement;
+    const wrap = ta.parentElement;
 
-  const bg = localStorage.getItem(`q_b_${i}`) || defBgs[i];
-  const co = localStorage.getItem(`q_c_${i}`) || defColors[i];
-  const fn = localStorage.getItem(`q_f_${i}`) || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
-  const fs = localStorage.getItem(`q_s_${i}`) || '18px';
+    const bg = localStorage.getItem(`q_b_${i}`) || defBgs[i];
+    const co = localStorage.getItem(`q_c_${i}`) || defColors[i];
+    const fn = localStorage.getItem(`q_f_${i}`) || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    const fs = localStorage.getItem(`q_s_${i}`) || '18px';
+    const tint = localStorage.getItem(`q_tint_${i}`);
 
-  wrap.style.setProperty('--bg', bg);
-  wrap.style.setProperty('--color', co);
-  wrap.style.setProperty('--fn', fn);
-  wrap.style.setProperty('--fs', fs);
+    wrap.style.setProperty('--bg', bg);
+    wrap.style.setProperty('--color', co);
+    wrap.style.setProperty('--fn', fn);
+    wrap.style.setProperty('--fs', fs);
+    wrap.style.setProperty('--bg-tint', tint !== null ? tint : '1');
 
-  const tx = db.transaction("texts", "readonly");
-  const req = tx.objectStore("texts").get(i);
-  req.onsuccess = () => {
-    if (req.result) {
-      ta.innerHTML = req.result.content || '';
-      if (req.result.img) { images[i].src = req.result.img; images[i].style.display = 'block'; }
-      else { images[i].removeAttribute('src'); images[i].style.display = 'none'; }
-    }
-  };
-});
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(i);
+    req.onsuccess = () => {
+      if (req.result) {
+        ta.innerHTML = req.result.content || '';
+        if (req.result.img) { images[i].src = req.result.img; images[i].style.display = 'block'; }
+        else { images[i].removeAttribute('src'); images[i].style.display = 'none'; }
+
+        if (req.result.tile) {
+          wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+        } else {
+          wrap.style.setProperty('--bg-tile', 'none');
+        }
+      }
+    };
+  });
 }
 
 textareas.forEach((ta) => {
@@ -665,22 +818,22 @@ window.addEventListener('pointerup', (e) => {
 
     const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
 
-const fontValues = Array.from(
-  document.querySelectorAll('#setting-font .font-option')
-).map(o => o.dataset.value);
+    const fontValues = Array.from(
+      document.querySelectorAll('#setting-font .font-option')
+    ).map(o => o.dataset.value);
 
-textareas.forEach((ta, i) => {
-  const wrap = ta.parentElement;
-  const randomFont = fontValues[Math.floor(Math.random() * fontValues.length)];
+    textareas.forEach((ta, i) => {
+      const wrap = ta.parentElement;
+      const randomFont = fontValues[Math.floor(Math.random() * fontValues.length)];
 
-  wrap.style.setProperty('--fn', randomFont);
-  wrap.style.setProperty('--bg', palette.bg[i]);
-  wrap.style.setProperty('--color', palette.co[i]);
+      wrap.style.setProperty('--fn', randomFont);
+      wrap.style.setProperty('--bg', palette.bg[i]);
+      wrap.style.setProperty('--color', palette.co[i]);
 
-  localStorage.setItem(`q_f_${i}`, randomFont);
-  localStorage.setItem(`q_b_${i}`, palette.bg[i]);
-  localStorage.setItem(`q_c_${i}`, palette.co[i]);
-});
+      localStorage.setItem(`q_f_${i}`, randomFont);
+      localStorage.setItem(`q_b_${i}`, palette.bg[i]);
+      localStorage.setItem(`q_c_${i}`, palette.co[i]);
+    });
   }
 });
 
@@ -749,6 +902,54 @@ document.querySelectorAll('[data-align]').forEach(button => {
 let activeIndex = null;
 let textareaLongPressTimer;
 
+// Превью тайла в реальном времени
+inpTint.addEventListener('input', (e) => {
+  tintVal.textContent = e.target.value;
+  if (activeIndex !== null) {
+    const wrap = textareas[activeIndex].parentElement;
+    wrap.style.setProperty('--bg-tint', e.target.value / 100);
+  }
+});
+
+// Загрузка тайла в превью
+inpTile.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file || activeIndex === null) return;
+
+  tileName.textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    const wrap = textareas[activeIndex].parentElement;
+    wrap.style.setProperty('--bg-tile', `url(${dataUrl})`);
+    tileThumb.src = dataUrl;
+    tileThumb.style.display = 'block';
+    textareas[activeIndex]._pendingTile = dataUrl;
+    chkDelTile.checked = false;
+  };
+  reader.readAsDataURL(file);
+});
+
+// Снятие чекбокса удаления тайла — вернуть превью, если был
+chkDelTile.addEventListener('change', (e) => {
+  if (activeIndex === null) return;
+  if (e.target.checked) {
+    textareas[activeIndex].parentElement.style.setProperty('--bg-tile', 'none');
+  } else {
+    const pending = textareas[activeIndex]._pendingTile;
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(activeIndex);
+    req.onsuccess = () => {
+      if (pending) {
+        textareas[activeIndex].parentElement.style.setProperty('--bg-tile', `url(${pending})`);
+      } else if (req.result && req.result.tile) {
+        textareas[activeIndex].parentElement.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+      }
+    };
+  }
+});
+
 textareas.forEach((ta, i) => {
   ta.addEventListener('input', () => {
   if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
@@ -803,8 +1004,7 @@ const startLongPress = (e) => {
 textareaLongPressTimer = setTimeout(() => {
 
   const hasText = ta.textContent.trim() !== '';
-  const hasImage = ta.querySelector('img') !== null || images[i].style.display === 'block';
-  if (hasText || hasImage) return;
+  if (hasText) return;
 
 const savedFont = localStorage.getItem(`q_f_${i}`) || '';
 const fontOpts = document.querySelectorAll('#setting-font .font-option');
@@ -854,7 +1054,30 @@ const currentColor =
     } else {
       imgActionContainer.style.display = 'none';
     }
-  
+
+    // --- Загрузка существующего тайла ---
+    ta._pendingTile = null;
+    inpTile.value = '';
+    tileName.textContent = 'No file';
+    chkDelTile.checked = false;
+    tileThumb.style.display = 'none';
+    tileThumb.removeAttribute('src');
+
+    const tileTx = db.transaction("texts", "readonly");
+    const tileReq = tileTx.objectStore("texts").get(i);
+    tileReq.onsuccess = () => {
+      if (tileReq.result && tileReq.result.tile) {
+        tileThumb.src = tileReq.result.tile;
+        tileThumb.style.display = 'block';
+      }
+    };
+
+    // --- Тинт ---
+    const savedTint = localStorage.getItem(`q_tint_${i}`);
+    const tintNum = savedTint !== null ? parseFloat(savedTint) : 1;
+    inpTint.value = Math.round(tintNum * 100);
+    tintVal.textContent = inpTint.value;
+
     modal.style.display = 'flex';
   }, 600);
 };
@@ -868,36 +1091,44 @@ const currentColor =
   ta.addEventListener('touchend', stopLongPress);
   ta.addEventListener('touchmove', stopLongPress);
 
+  // === ОБРАБОТЧИКИ КАРТИНКИ (pointer events) ===
   const img = images[i];
-  let imgLongPressTimer;
+  let imgLongPressTimer = null;
+  let imgStartX = 0, imgStartY = 0;
+  let imgDeleted = false;
 
-  img.addEventListener('click', (e) => {
+  img.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
-    if (img.classList.contains('fullscreen')) {
-      img.classList.remove('fullscreen');
-    } else {
-      img.classList.add('fullscreen');
-    }
-  });
-
-  const startImgLongPress = (e) => {
-    e.stopPropagation();
+    imgDeleted = false;
+    imgStartX = e.clientX;
+    imgStartY = e.clientY;
+    clearTimeout(imgLongPressTimer);
     imgLongPressTimer = setTimeout(() => {
+      imgDeleted = true;
       img.classList.remove('fullscreen');
       img.removeAttribute('src');
       img.style.display = 'none';
       localStorage.removeItem(`q_pos_${i}`);
-      saveToDB(activeIndex, ta.innerHTML, null, true);
+      saveToDB(i, ta.innerHTML, null, true);
     }, 1000);
-  };
+  });
 
-  const stopImgLongPress = () => clearTimeout(imgLongPressTimer);
+  img.addEventListener('pointerup', () => clearTimeout(imgLongPressTimer));
+  img.addEventListener('pointercancel', () => clearTimeout(imgLongPressTimer));
+  img.addEventListener('pointerleave', () => clearTimeout(imgLongPressTimer));
 
-  img.addEventListener('mousedown', startImgLongPress);
-  img.addEventListener('mouseup', stopImgLongPress);
-  img.addEventListener('mouseleave', stopImgLongPress);
-  img.addEventListener('touchstart', startImgLongPress, { passive: true });
-  img.addEventListener('touchend', stopImgLongPress);
+  img.addEventListener('pointermove', (e) => {
+    if (Math.abs(e.clientX - imgStartX) > 8 ||
+        Math.abs(e.clientY - imgStartY) > 8) {
+      clearTimeout(imgLongPressTimer);
+    }
+  });
+
+  img.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (imgDeleted) return;
+    img.classList.toggle('fullscreen');
+  });
 });
 
 btnSave.onclick = () => {
@@ -923,6 +1154,21 @@ btnSave.onclick = () => {
   wrap.style.setProperty('--color', inpColor.value);
   localStorage.setItem(`q_c_${activeIndex}`, inpColor.value);
 
+  // --- TINT ---
+  const tintNum = parseInt(inpTint.value, 10) / 100;
+  wrap.style.setProperty('--bg-tint', tintNum);
+  localStorage.setItem(`q_tint_${activeIndex}`, tintNum);
+
+  // --- TILE ---
+  if (chkDelTile.checked) {
+    wrap.style.setProperty('--bg-tile', 'none');
+    saveToDB(activeIndex, targetTa.innerHTML, null, false, null, true);
+  } else if (targetTa._pendingTile) {
+    wrap.style.setProperty('--bg-tile', `url(${targetTa._pendingTile})`);
+    saveToDB(activeIndex, targetTa.innerHTML, null, false, targetTa._pendingTile);
+  }
+  delete targetTa._pendingTile;
+
   localStorage.setItem(`q_pos_${activeIndex}`, selPos.value);
   const [v, h] = selPos.value.split(' ');
   images[activeIndex].style.top    = v === 'top'    ? '10px' : 'auto';
@@ -942,6 +1188,24 @@ btnSave.onclick = () => {
 };
 
 btnCancel.onclick = () => {
+  // Откатываем превью тинта и тайла для активного редактора
+  if (activeIndex !== null) {
+    const wrap = textareas[activeIndex].parentElement;
+    const savedTint = localStorage.getItem(`q_tint_${activeIndex}`);
+    wrap.style.setProperty('--bg-tint', savedTint !== null ? savedTint : '1');
+
+    // Восстановить тайл из БД
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(activeIndex);
+    req.onsuccess = () => {
+      if (req.result && req.result.tile) {
+        wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+      } else {
+        wrap.style.setProperty('--bg-tile', 'none');
+      }
+    };
+    delete textareas[activeIndex]._pendingTile;
+  }
   modal.style.display = 'none';
   activeIndex = null;
 };
