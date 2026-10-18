@@ -53,6 +53,14 @@ html,body{
 }
 .btn-clear:hover{border-color:#f00;color:#f00}
 
+.sync-btn{
+  font-family:'Roboto Condensed',sans-serif;font-size:13px;font-weight:700;
+  padding:10px 14px;border:none;border-radius:10px;
+  background:#f00;color:#fff;cursor:pointer;white-space:nowrap;
+  flex-shrink:0;
+}
+.sync-btn:disabled{opacity:.4;cursor:default}
+
 #peerIdInput{
   color:#0097ff;background:transparent;outline:none;
   font-family:monospace;font-size:14px;text-align:right;
@@ -95,17 +103,20 @@ html,body{
 .footer-panel{
   position:fixed;left:0;right:0;bottom:0;z-index:10;
   display:flex;align-items:center;justify-content:center;
+  gap:8px;
   padding:8px 10px calc(8px + env(safe-area-inset-bottom));
   background:#000;border-top:1px solid #1a1a1a;
 }
 #word-input{
-  width:100%;max-width:600px;padding:10px 12px;
+  flex:1;
+  max-width:600px;padding:10px 12px;
   font-family:'JetBrains Mono',monospace;font-size:16px;
   border:1px solid #444;border-radius:10px;
   background:linear-gradient(to bottom,#000,#0b1a2b);color:#fff;outline:none;
   user-select:text;-webkit-user-select:text;
 }
 #word-input::placeholder{color:#888}
+
 #hint{
   position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
   text-align:center;
@@ -121,13 +132,25 @@ html,body{
   letter-spacing:.02em;
 }
 #hint.hidden{opacity:0}
+
+.author-tag{
+  position:absolute;
+  font-family:monospace;
+  font-size:13px;
+  line-height:1;
+  color:#0097ff;
+  white-space:nowrap;
+  pointer-events:none;
+  transform:translateX(-50%);
+  opacity:.9;
+}
 </style>
 </head>
 <body>
 
 <div class="top-bar">
   <div class="left">
-<a class="brand" href="research.html">Tap &amp; Swipe</a>
+    <a class="brand" href="research.html">Tap &amp; Swipe</a>
     <span id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
     <span id="tapeIndicator" class="tape">Tape</span>
   </div>
@@ -143,6 +166,7 @@ html,body{
 <div class="footer-panel">
   <input type="text" id="word-input"
          autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false">
+  <button class="sync-btn" id="syncBtn" style="display:none">SYNC</button>
 </div>
 
 <script>
@@ -273,6 +297,7 @@ function updatePeers(){
   for (const id in activePeers) if (now-activePeers[id] > 12000) delete activePeers[id];
   isLive = Object.keys(activePeers).length > 0;
   updateChrome();
+  if (isLive && pending.length) flushPending();
 }
 function flushPending(){
   if (!client || !client.connected || !pending.length) return;
@@ -289,13 +314,24 @@ function flushPending(){
 const liveInd = document.getElementById('liveIndicator');
 const tapeInd = document.getElementById('tapeIndicator');
 const liveCount = document.getElementById('livePeerCount');
+const syncBtn = document.getElementById('syncBtn');
 
 function updateChrome(){
   const n = Object.keys(activePeers).length;
   liveInd.style.display = isLive ? 'inline' : 'none';
   tapeInd.style.display = isLive ? 'none' : 'inline';
   liveCount.textContent = n;
+
+  if (pending.length){
+    syncBtn.style.display = 'inline-block';
+    syncBtn.textContent = isLive ? `SYNC (${pending.length})` : `TAPE: ${pending.length}`;
+    syncBtn.disabled = !isLive;
+  } else {
+    syncBtn.style.display = 'none';
+  }
 }
+
+syncBtn.addEventListener('click', () => { if (isLive) flushPending(); });
 
 /* =========================================================
    4. Метрики
@@ -406,11 +442,32 @@ function spin(el){
    7. Добавление символа
    ========================================================= */
 function addChar(ch, kind, author, animateSpin){
+  // Если начинается новое предложение пользователя —
+  // ставим подпись автора на отдельной строке, а сообщение
+  // уходит строкой ниже. Подпись с отступом сверху, чтобы
+  // не прижималась к предыдущей строке.
+  if (author && currentLine.length === 0 && ch !== '\n' && ch !== ' '){
+    // отступ сверху — половина строки, чтобы отделить от предыдущей
+    cursorY += lineH * 0.5;
+
+    const tag = document.createElement('span');
+    tag.className = 'author-tag';
+    tag.textContent = author;
+    tag.style.left = (window.innerWidth / 2) + 'px';
+    tag.style.top = cursorY + 'px';
+    stage.appendChild(tag);
+
+    // сообщение начнётся ниже подписи
+    cursorY += lineH;
+    updateStageHeight();
+  }
+
   if (ch === '\n'){
     forceNewline();
     autoScroll();
     return;
   }
+
   if (currentLineWidth + charW > maxLineWidth() && currentLine.length > 0){
     wrapLine();
   }
@@ -517,8 +574,6 @@ function moveTo(x, y){
   if (lastX === null){
     lastX = x; lastY = y;
 
-    // На первом движении нового свайпа «съедаем» \n,
-    // чтобы перейти к следующему предложению.
     if (myCursor < myText.length && myText[myCursor] === '\n'){
       myCursor++;
       saveMyCursor();
@@ -654,7 +709,7 @@ document.getElementById('btnClear').addEventListener('click', () => {
   lastX = null; lastY = null;
   updateStageHeight();
   updateChrome();
-  
+
   document.getElementById('hint').classList.remove('hidden');
 });
 
