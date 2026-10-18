@@ -274,33 +274,14 @@ function connectMqtt(){
 
     if (p.type === 'PING'){ activePeers[p.sender] = Date.now(); return; }
 
-    if (p.type === 'TEXT_ADD'){
+if (p.type === 'TEXT_ADD'){
       if (p.editId && applied.has(p.editId)) return;
       if (p.editId){ applied.add(p.editId); saveApplied(); }
 
-      // Пришло от пира — печатаем сразу, с новой строки
       appendUserText('\n' + p.text, p.author, true);
-
-      // Подтверждаем получение — чтобы автор убрал из pending
-      if (client && client.connected){
-        client.publish(TOPIC, JSON.stringify({
-          type: 'TEXT_ACK',
-          editId: p.editId,
-          sender: myId,
-          sid: clientId
-        }), {qos:1});
-      }
       return;
     }
 
-    if (p.type === 'TEXT_ACK'){
-      if (p.editId){
-        pending = pending.filter(e => e.editId !== p.editId);
-        savePending();
-        updateChrome();
-      }
-      return;
-    }
   });
 }
 
@@ -345,7 +326,7 @@ function flushPending(){
       type: 'TEXT_ADD',
       sender: myId,
       sid: clientId
-    }), {qos:1});
+    }), {qos:0});
   });
 }
 
@@ -704,7 +685,7 @@ function submitInput(){
   if (isLive && client && client.connected){
     client.publish(TOPIC, JSON.stringify({
       ...edit, type:'TEXT_ADD', sender:myId, sid:clientId
-    }), {qos:1});
+    }), {qos:0});
   } else {
     pending.push(edit);
     savePending();
