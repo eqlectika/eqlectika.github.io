@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-swipe'; 
+const CACHE_NAME = 'version-topic'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
