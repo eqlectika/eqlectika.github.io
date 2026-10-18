@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-gos'; 
+const CACHE_NAME = 'version-backup'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
