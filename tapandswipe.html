@@ -218,7 +218,17 @@ const store = {
 
 let myId = store.get('peer_id', '');
 if (!myId){ myId = 'Guest-' + Math.floor(1000+Math.random()*9000); store.set('peer_id', myId); }
-const clientId = 'st_' + Math.random().toString(16).slice(2,10);
+
+// Стабильный clientId — сохраняется в localStorage, чтобы при перезагрузке
+// сессия оставалась той же. Каждое устройство получает свой.
+let clientId = store.get('client_id', '');
+if (!clientId){
+  clientId = 'st_' + (
+    (crypto && crypto.randomUUID && crypto.randomUUID()) ||
+    (Date.now() + '-' + Math.random().toString(16).slice(2,10))
+  );
+  store.set('client_id', clientId);
+}
 
 const peerIdInput = document.getElementById('peerIdInput');
 peerIdInput.value = myId;
@@ -240,70 +250,108 @@ function saveApplied(){ store.set('applied', Array.from(applied).slice(-2000)); 
    2. MQTT
    ========================================================= */
 const BROKER = 'wss://broker.emqx.io:8084/mqtt';
-const TOPIC = 'breakthrough/words/v2';
+// Топик как в Steam — если оба устройства на этой версии, они видят друг друга.
+const TOPIC  = 'breakthrough/words/v2';
+
 let client = null;
 let activePeers = {};
 let isLive = false;
 
 function connectMqtt(){
   try{
-    client = mqtt.connect(BROKER, { clientId, reconnectPeriod:5000, connectTimeout:5000, keepalive:60 });
+    client = mqtt.connect(BROKER, {
+      clientId,
+      reconnectPeriod: 5000,
+      connectTimeout: 5000,
+      keepalive: 60
+    });
   }catch(e){ return; }
 
-  client.on('connect', () => { client.subscribe(TOPIC,{qos:1}); startHB(); });
-  client.on('close', () => { stopHB(); activePeers={}; updateChrome(); });
+  client.on('connect', () => {
+    client.subscribe(TOPIC, {qos:1});
+    startHB();
+  });
+
+  client.on('close', () => { stopHB(); activePeers = {}; updateChrome(); });
   client.on('offline', () => stopHB());
 
   client.on('message', (t, payload) => {
     let p; try{ p = JSON.parse(payload.toString()); }catch(e){ return; }
     if (p.sid === clientId) return;
+
     if (p.type === 'PING'){ activePeers[p.sender] = Date.now(); return; }
+
     if (p.type === 'TEXT_ADD'){
       if (p.editId && applied.has(p.editId)) return;
       if (p.editId){ applied.add(p.editId); saveApplied(); }
+
+      // Пришло от пира — печатаем сразу, с новой строки
       appendUserText('\n' + p.text, p.author, true);
+
+      // Подтверждаем получение — чтобы автор убрал из pending
       if (client && client.connected){
         client.publish(TOPIC, JSON.stringify({
-          type:'TEXT_ACK', editId:p.editId, sender:myId, sid:clientId
+          type: 'TEXT_ACK',
+          editId: p.editId,
+          sender: myId,
+          sid: clientId
         }), {qos:1});
       }
       return;
     }
+
     if (p.type === 'TEXT_ACK'){
       if (p.editId){
         pending = pending.filter(e => e.editId !== p.editId);
-        savePending(); updateChrome();
+        savePending();
+        updateChrome();
       }
+      return;
     }
   });
 }
 
-let hbPing=null, hbPeers=null;
+let hbPing = null, hbPeers = null;
 function startHB(){
-  stopHB(); sendPing(); updatePeers();
-  hbPing = setInterval(sendPing, 5000);
+  stopHB();
+  sendPing();
+  updatePeers();
+  hbPing  = setInterval(sendPing, 5000);
   hbPeers = setInterval(updatePeers, 3000);
 }
 function stopHB(){
-  if (hbPing){clearInterval(hbPing);hbPing=null;}
-  if (hbPeers){clearInterval(hbPeers);hbPeers=null;}
+  if (hbPing){ clearInterval(hbPing); hbPing = null; }
+  if (hbPeers){ clearInterval(hbPeers); hbPeers = null; }
 }
 function sendPing(){
-  if (client && client.connected)
+  if (client && client.connected){
     client.publish(TOPIC, JSON.stringify({type:'PING', sender:myId, sid:clientId}), {qos:0});
+  }
 }
 function updatePeers(){
   const now = Date.now();
-  for (const id in activePeers) if (now-activePeers[id] > 12000) delete activePeers[id];
+  for (const id in activePeers) if (now - activePeers[id] > 12000) delete activePeers[id];
+
   isLive = Object.keys(activePeers).length > 0;
+
+  // Старые pending (> 60 сек) — в утиль
+  const before = pending.length;
+  pending = pending.filter(e => (now - (e.ts || 0)) < 60000);
+  if (pending.length !== before) savePending();
+
   updateChrome();
+
+  // Появился пир — досылаем всё, что накопилось
   if (isLive && pending.length) flushPending();
 }
 function flushPending(){
   if (!client || !client.connected || !pending.length) return;
   pending.slice().forEach(edit => {
     client.publish(TOPIC, JSON.stringify({
-      ...edit, type:'TEXT_ADD', sender:myId, sid:clientId
+      ...edit,
+      type: 'TEXT_ADD',
+      sender: myId,
+      sid: clientId
     }), {qos:1});
   });
 }
@@ -347,8 +395,8 @@ measure.style.cssText =
 measure.textContent = 'M';
 document.body.appendChild(measure);
 
-let charW=0, lineH=0;
-const marginX=20, marginY=20;
+let charW = 0, lineH = 0;
+const marginX = 20, marginY = 20;
 
 function recalcMetrics(){
   charW = measure.getBoundingClientRect().width;
@@ -442,22 +490,17 @@ function spin(el){
    7. Добавление символа
    ========================================================= */
 function addChar(ch, kind, author, animateSpin){
-  // Если начинается новое предложение пользователя —
-  // ставим подпись автора на отдельной строке, а сообщение
-  // уходит строкой ниже. Подпись с отступом сверху, чтобы
-  // не прижималась к предыдущей строке.
+  // Подпись автора — на своей строке, с отступом сверху
   if (author && currentLine.length === 0 && ch !== '\n' && ch !== ' '){
-    // отступ сверху — половина строки, чтобы отделить от предыдущей
     cursorY += lineH * 0.5;
 
     const tag = document.createElement('span');
     tag.className = 'author-tag';
     tag.textContent = author;
     tag.style.left = (window.innerWidth / 2) + 'px';
-    tag.style.top = cursorY + 'px';
+    tag.style.top  = cursorY + 'px';
     stage.appendChild(tag);
 
-    // сообщение начнётся ниже подписи
     cursorY += lineH;
     updateStageHeight();
   }
@@ -517,8 +560,6 @@ function typeUserChar(){
   return false;
 }
 
-// Печать одного символа в рамках текущего свайпа.
-// Стоп на границе предложения (на \n) — следующий свайп продолжит.
 function printOne(){
   if (myCursor < myText.length && myText[myCursor] === '\n'){
     return false;
@@ -537,7 +578,6 @@ function printOne(){
   return false;
 }
 
-// Входящие от пиров печатаем сразу целиком, включая \n
 function appendUserText(text, author, autoPrint){
   const shouldPrintNow = !!autoPrint;
   for (const ch of text){
