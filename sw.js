@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-carry'; 
+const CACHE_NAME = 'version-broker'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
