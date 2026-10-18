@@ -21,6 +21,7 @@ const CORE_ASSETS = [
     './bismuth.html',
     './essence.html',
     './support.html',
+    './swipe.html',
 
     './manifest-index.json',
     './manifest-auction.json',
