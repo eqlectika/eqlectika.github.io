@@ -66,7 +66,7 @@ const MY_TEXT = {
     'Что ты думаешь об этом?...',
     'Нравится ли тебе то, что происходит?..',
     'Хочешь продолжить игру воображения?..',
-    'Найди меня по этому Telegram-адресу @eugenebox, если захочешь поделиться своими наблюдениями, мыслями, идеями... ',
+    'Найди меня по этому Telegram-адресу @eugenebox, если захочешь поделиться своими наблюдениями, мыслями, идеями... '
   ],
   en: [
     'We don\'t actually know when we were born...',
@@ -84,7 +84,8 @@ const MY_TEXT = {
     'What do you think about this?..',
     'Do you like what is happening?..',
     'Would you like to continue the imagination game?..',
-    'Find me at this Telegram address: @eugenebox, if you’d like to share your observations, thoughts, ideas...', ]
+    'Find me at this Telegram address: @eugenebox, if you’d like to share your observations, thoughts, ideas...'
+  ]
 };
 
 const sentences = MY_TEXT[LANG];
@@ -118,9 +119,10 @@ window.addEventListener('resize', recalcMetrics);
 /* =========================================================
    Раскладка
    ========================================================= */
-let myCursor = 0;         // текущая позиция в fullText
-const TOP_OFFSET = 80;   // ← сколько пикселей отступить сверху
-let cursorY = marginY + TOP_OFFSET;let currentLine = [];
+let myCursor = 0;          // текущая позиция в fullText
+const TOP_OFFSET = 80;     // отступ сверху
+let cursorY = marginY + TOP_OFFSET;
+let currentLine = [];
 let currentLineWidth = 0;
 
 function maxLineWidth(){ return window.innerWidth - marginX*2; }
@@ -163,6 +165,7 @@ function wrapLine(){
     currentLineWidth += charW;
   }
   layoutCurrentLine();
+  lastX = null; lastY = null;
 }
 
 function forceNewline(){
@@ -170,6 +173,7 @@ function forceNewline(){
   currentLine = [];
   currentLineWidth = 0;
   cursorY += lineH;
+  lastX = null; lastY = null;
   updateStageHeight();
 }
 
@@ -231,35 +235,18 @@ function addChar(ch, animateSpin){
 }
 
 /* =========================================================
-   Печать одного предложения
+   Печать одного символа
    ========================================================= */
-let printing = false; // true, пока идёт печать предложения
-
-function printSentence(){
-  if (printing) return;
-  if (myCursor >= fullText.length) return;
-
-  printing = true;
-
-  // ищем конец текущего предложения в fullText
-  let end = fullText.indexOf('\n', myCursor);
-  if (end === -1) end = fullText.length;
-
-  // печатаем по одному символу
-  function step(){
-    if (myCursor >= end){
-      if (myCursor < fullText.length && fullText[myCursor] === '\n'){
-        myCursor++;
-        addChar('\n', false);
-      }
-      printing = false;
-      return;
-    }
-    const ch = fullText[myCursor++];
-    addChar(ch, true);
-    requestAnimationFrame(step);
+// Печатаем по одному символу. Остановка на \n — следующий свайп продолжит.
+function printOne(){
+  if (myCursor >= fullText.length) return false;
+  if (fullText[myCursor] === '\n'){
+    // граница предложения — стоп, следующий свайп съест \n в moveTo
+    return false;
   }
-  step();
+  const ch = fullText[myCursor++];
+  addChar(ch, true);
+  return true;
 }
 
 /* =========================================================
@@ -279,7 +266,14 @@ function stagePoint(e){
 function moveTo(x, y){
   if (lastX === null){
     lastX = x; lastY = y;
-    printSentence(); // первый свайп — печатаем одно предложение
+
+    // На первом движении нового свайпа «съедаем» \n,
+    // чтобы перейти к следующему предложению.
+    if (myCursor < fullText.length && fullText[myCursor] === '\n'){
+      myCursor++;
+      addChar('\n', false);
+    }
+    printOne();
     return;
   }
 
@@ -288,10 +282,7 @@ function moveTo(x, y){
     const t = STEP_PX / d;
     lastX += dx * t; lastY += dy * t;
     dx = x - lastX; dy = y - lastY; d = Math.hypot(dx, dy);
-
-    // проверяем, что ещё можно напечатать следующее предложение —
-    // но НЕ печатаем его в этом же жесте
-    if (myCursor >= fullText.length) break;
+    if (!printOne()) break;
   }
 }
 
@@ -331,7 +322,7 @@ stage.addEventListener('touchcancel', () => {
 stage.addEventListener('mousedown', (e) => {
   const p = stagePoint(e);
   lastX = p.x; lastY = p.y;
-  printSentence();
+  printOne();
 });
 stage.addEventListener('mousemove', (e) => {
   if (!e.buttons) return;
