@@ -130,6 +130,23 @@ html,body{
   transform:translateX(-50%);
   opacity:.9;
 }
+
+/* ---------- подсказка ---------- */
+#hint{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;
+  font-size:clamp(16px,3.6vw,20px);
+  line-height:1.4;
+  color:#f2f2f2;
+  font-family:'JetBrains Mono','Fira Code',monospace;
+  text-shadow:0 0 10px rgba(0,0,0,.95);
+  pointer-events:none;
+  z-index:5;
+  transition:opacity .6s ease;
+  padding: 0;
+  letter-spacing:.02em;
+}
+#hint.hidden{opacity:0}
 </style>
 </head>
 <body>
@@ -146,6 +163,8 @@ html,body{
            maxlength="9" placeholder="Your name">
   </div>
 </div>
+
+<div id="hint">Swipe here to see the message</div>
 
 <div id="scroller"><div id="stage"></div></div>
 
@@ -164,6 +183,11 @@ const LANG = (navigator.language || 'en').toLowerCase().startsWith('ru') ? 'ru' 
 const PLACEHOLDER = {
   ru: 'Ответь и нажми Enter…',
   en: 'Reply and press Enter…'
+}[LANG];
+
+const HINT_TEXT = {
+  ru: 'Проведи пальцем здесь, чтобы увидеть сообщение',
+  en: 'Swipe field to see the message'
 }[LANG];
 
 const MY_TEXT = {
@@ -205,8 +229,6 @@ const store = {
 let myId = store.get('peer_id', '');
 if (!myId){ myId = 'Guest-' + Math.floor(1000+Math.random()*9000); store.set('peer_id', myId); }
 
-// Как в Steam: 'wow_' + 8 hex. Ничего не сохраняем, каждый раз новый.
-// Именно этот паттерн в Steam работает стабильно.
 const clientId = 'swp_' + Math.random().toString(16).slice(2,10);
 
 const peerIdInput = document.getElementById('peerIdInput');
@@ -220,14 +242,13 @@ function saveUserChars(){
   store.set('user_chars', userChars.map(u => ({ch:u.ch, author:u.author, printed:!!u.printed})));
 }
 
-// Steam-style очередь
 let pendingEdits = store.get('pending_edits', []);
 function savePending(){ store.set('pending_edits', pendingEdits); }
 const appliedEditIds = new Set(store.get('applied_edits', []));
 function saveApplied(){ store.set('applied_edits', Array.from(appliedEditIds).slice(-2000)); }
 
 /* =========================================================
-   2. MQTT — точно как в Steam
+   2. MQTT
    ========================================================= */
 const BROKER = 'wss://broker.emqx.io:8084/mqtt';
 const TOPIC  = 'breakthrough/swipe/v1';
@@ -574,6 +595,8 @@ function stagePoint(e){
 }
 
 function moveTo(x, y){
+  document.getElementById('hint').classList.add('hidden');
+
   if (lastX === null){
     lastX = x; lastY = y;
 
@@ -651,10 +674,11 @@ stage.addEventListener('mousemove', (e) => {
 window.addEventListener('mouseup', () => { lastX = null; lastY = null; });
 
 /* =========================================================
-   10. Поле ввода — Steam-style submitEdit
+   10. Поле ввода
    ========================================================= */
 const wordInput = document.getElementById('word-input');
 wordInput.placeholder = PLACEHOLDER;
+document.getElementById('hint').textContent = HINT_TEXT;
 document.getElementById('btnClear').title = LANG === 'ru' ? 'Очистить экран' : 'Clear screen';
 
 function newEditId(){
@@ -675,12 +699,8 @@ function submitInput(){
     ts: Date.now()
   };
 
-  // Локально — сразу печатаем, без ожидания свайпа.
-  // \n перед ответом = перенос на новую строку (после текущего предложения).
-  // \n после ответа = следующий свайп начнёт новое предложение с новой строки.
   appendUserText('\n' + text + '\n', myId, true);
 
-  // Сеть — как submitEdit в Steam popover
   const canSend = isLive && client && client.connected;
   if (canSend){
     client.publish(TOPIC, JSON.stringify({
@@ -704,13 +724,12 @@ wordInput.addEventListener('keydown', (e) => {
 });
 
 /* =========================================================
-   11. Приём WORD_EDIT + ACK — как в Steam
+   11. Приём WORD_EDIT + ACK
    ========================================================= */
 function applyRemoteEdit(p){
   if (p.editId && appliedEditIds.has(p.editId)) return;
   if (p.editId){ appliedEditIds.add(p.editId); saveApplied(); }
 
-  // Пришло от пира — печатаем сразу, с новой строки
   appendUserText('\n' + p.text, p.author, true);
 
   if (client && client.connected){
@@ -746,10 +765,12 @@ document.getElementById('btnClear').addEventListener('click', () => {
   lastX = null; lastY = null;
   updateStageHeight();
   refreshChrome();
+
+  document.getElementById('hint').classList.remove('hidden');
 });
 
 /* =========================================================
-   13. Rename (2–9 символов)
+   13. Rename
    ========================================================= */
 let beforeId = myId;
 peerIdInput.addEventListener('focus', () => {
@@ -826,4 +847,4 @@ refreshChrome();
 connectMqtt();
 </script>
 </body>
-</html> 
+</html>
