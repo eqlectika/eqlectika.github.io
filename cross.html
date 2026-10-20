@@ -89,6 +89,23 @@ isolation: isolate;
   pointer-events: none;
 }
 
+/* === Режимы тайла === */
+.editor-wrapper[data-tilemode="fit"]::before {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.editor-wrapper[data-tilemode="fill"]::before {
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.editor-wrapper[data-tilemode="pan"]::before {
+  background-size: var(--pan-scale, auto);
+  background-repeat: no-repeat;
+  background-position: var(--pan-x, 0px) var(--pan-y, 0px);
+}
+
 .editor {
   position: relative;
   z-index: 2;
@@ -250,6 +267,70 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 .format-btn:active {
   background: #555;
 }
+
+/* Кнопки режима тайла */
+#tile-mode-toolbar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+#tile-mode-toolbar .format-btn.active {
+  background: #00f;
+  border-color: #00f;
+  color: #fff;
+}
+
+/* Pan preview modal */
+#pan-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 2000;
+  flex-direction: column;
+}
+#pan-modal.open { display: flex; }
+#pan-stage {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  touch-action: none;
+  background: #111;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+#pan-stage:active { cursor: grabbing; }
+#pan-image {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  will-change: transform;
+  transform-origin: center center;
+}
+#pan-controls {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: #222;
+}
+#pan-controls button {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+#pan-cancel { background: #ff000050; }
+#pan-done   { background: #00ff0050; }
+
 #settings-modal {
   height: 100dvh !important;
   overflow-y: auto !important;
@@ -400,6 +481,15 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   flex: 1;
   min-width: 0;
 }
+#settings-modal,
+#settings-modal * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
 </style>
 </head>
 <body>
@@ -522,6 +612,15 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       <input type="checkbox" id="setting-del-tile" style="width:20px; height:20px; margin-right:10px; accent-color:#ff758f; cursor:pointer;"> Delete tile
     </label>
 
+    <!-- TILE MODE -->
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Tile Mode:</label>
+    <div id="tile-mode-toolbar">
+      <button type="button" class="format-btn" data-tilemode="repeat">Repeat</button>
+      <button type="button" class="format-btn" data-tilemode="pan">Pan</button>
+      <button type="button" class="format-btn" data-tilemode="fit">Fit</button>
+      <button type="button" class="format-btn" data-tilemode="fill">Fill</button>
+    </div>
+
     <!-- TINT -->
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">
       Tint opacity: <span id="tint-val" style="color:#ff8700; font-weight:bold;">100</span>%
@@ -558,6 +657,15 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   </div>
 </div>
 
+<!-- PAN PREVIEW MODAL -->
+<div id="pan-modal">
+  <div id="pan-stage"><img id="pan-image" alt=""></div>
+  <div id="pan-controls">
+    <button type="button" id="pan-cancel">Cancel</button>
+    <button type="button" id="pan-done">Done</button>
+  </div>
+</div>
+
 <script>
 const inpBg = document.getElementById('setting-bg');
 const inpColor = document.getElementById('setting-color');
@@ -570,6 +678,13 @@ const tileName = document.getElementById('tile-name');
 const chkDelTile = document.getElementById('setting-del-tile');
 const inpTint = document.getElementById('setting-tint');
 const tintVal = document.getElementById('tint-val');
+
+const tileModeToolbar = document.getElementById('tile-mode-toolbar');
+const panModal = document.getElementById('pan-modal');
+const panStage = document.getElementById('pan-stage');
+const panImage = document.getElementById('pan-image');
+const panCancelBtn = document.getElementById('pan-cancel');
+const panDoneBtn = document.getElementById('pan-done');
 
 inpBg.addEventListener('input', (e) => {
   bgPickerBtn.style.background = e.target.value;
@@ -681,6 +796,36 @@ function updateHandleImage(index) {
   }
 }
 
+function getTileMode(i) {
+  return localStorage.getItem(`q_tilemode_${i}`) || 'repeat';
+}
+
+function setTileModeUI(i, mode) {
+  const wrap = textareas[i].parentElement;
+  wrap.dataset.tilemode = mode;
+  tileModeToolbar.querySelectorAll('[data-tilemode]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tilemode === mode);
+  });
+}
+
+function applyPanTransform(i) {
+  const wrap = textareas[i].parentElement;
+  const x = localStorage.getItem(`q_panx_${i}`) || '0';
+  const y = localStorage.getItem(`q_pany_${i}`) || '0';
+  const s = parseFloat(localStorage.getItem(`q_panscale_${i}`) || '1');
+  wrap.style.setProperty('--pan-x', `${x}px`);
+  wrap.style.setProperty('--pan-y', `${y}px`);
+  wrap.style.setProperty('--pan-scale', `${s * 100}%`);
+}
+
+function loadTileUrl(i) {
+  return new Promise(resolve => {
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(i);
+    req.onsuccess = () => resolve(req.result && req.result.tile ? req.result.tile : null);
+  });
+}
+
 function loadData() {
   container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
   container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
@@ -715,6 +860,10 @@ function loadData() {
     wrap.style.setProperty('--fn', fn);
     wrap.style.setProperty('--fs', fs);
     wrap.style.setProperty('--bg-tint', tint !== null ? tint : '1');
+
+    // Применяем режим тайла и pan
+    setTileModeUI(i, getTileMode(i));
+    applyPanTransform(i);
 
     const tx = db.transaction("texts", "readonly");
     const req = tx.objectStore("texts").get(i);
@@ -884,6 +1033,9 @@ fontPicker.addEventListener('click', (e) => {
   fontPicker.classList.remove('open');
 });
 
+let activeIndex = null;
+let textareaLongPressTimer;
+
 document.querySelectorAll('[data-align]').forEach(button => {
   button.addEventListener('click', () => {
     if (activeIndex === null) return;
@@ -899,10 +1051,120 @@ document.querySelectorAll('[data-align]').forEach(button => {
   });
 });
 
-let activeIndex = null;
-let textareaLongPressTimer;
+// === Tile mode toolbar ===
+let panBefore = null;
 
-// Превью тайла в реальном времени
+tileModeToolbar.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-tilemode]');
+  if (!btn || activeIndex === null) return;
+  const mode = btn.dataset.tilemode;
+
+  setTileModeUI(activeIndex, mode);
+  localStorage.setItem(`q_tilemode_${activeIndex}`, mode);
+
+  if (mode === 'pan') {
+    // Тайл должен уже быть — либо pending, либо из БД
+    let url = textareas[activeIndex]._pendingTile || null;
+    if (!url) url = await loadTileUrl(activeIndex);
+
+    if (!url) {
+      // Нет тайла — откатываем на repeat
+      setTileModeUI(activeIndex, 'repeat');
+      localStorage.setItem(`q_tilemode_${activeIndex}`, 'repeat');
+      return;
+    }
+    openPanPreview(url);
+  }
+});
+
+// === Pan preview ===
+let panState = { x: 0, y: 0, s: 1 };
+let panPointers = new Map();
+let panStart = null;
+let panStartDist = 0;
+let panStartScale = 1;
+
+function openPanPreview(url) {
+  panBefore = {
+    x: parseFloat(localStorage.getItem(`q_panx_${activeIndex}`) || '0'),
+    y: parseFloat(localStorage.getItem(`q_pany_${activeIndex}`) || '0'),
+    s: parseFloat(localStorage.getItem(`q_panscale_${activeIndex}`) || '1')
+  };
+  panState = { ...panBefore };
+  panImage.src = url;
+  panImage.onload = () => {
+    renderPan();
+    panModal.classList.add('open');
+  };
+}
+
+function renderPan() {
+  panImage.style.transform =
+    `translate(calc(-50% + ${panState.x}px), calc(-50% + ${panState.y}px)) scale(${panState.s})`;
+}
+
+panStage.addEventListener('pointerdown', (e) => {
+  panStage.setPointerCapture(e.pointerId);
+  panPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (panPointers.size === 1) {
+    panStart = { x: e.clientX, y: e.clientY, ox: panState.x, oy: panState.y };
+  } else if (panPointers.size === 2) {
+    const pts = [...panPointers.values()];
+    panStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    panStartScale = panState.s;
+  }
+});
+
+panStage.addEventListener('pointermove', (e) => {
+  if (!panPointers.has(e.pointerId)) return;
+  panPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (panPointers.size === 1 && panStart) {
+    panState.x = panStart.ox + (e.clientX - panStart.x);
+    panState.y = panStart.oy + (e.clientY - panStart.y);
+    renderPan();
+  } else if (panPointers.size === 2 && panStartDist > 0) {
+    const pts = [...panPointers.values()];
+    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    panState.s = Math.min(8, Math.max(0.2, panStartScale * (dist / panStartDist)));
+    renderPan();
+  }
+});
+
+function endPanPointer(e) {
+  panPointers.delete(e.pointerId);
+  if (panPointers.size === 0) panStart = null;
+  if (panPointers.size < 2) panStartDist = 0;
+}
+panStage.addEventListener('pointerup', endPanPointer);
+panStage.addEventListener('pointercancel', endPanPointer);
+panStage.addEventListener('pointerleave', endPanPointer);
+
+panStage.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.1 : 0.9;
+  panState.s = Math.min(8, Math.max(0.2, panState.s * factor));
+  renderPan();
+}, { passive: false });
+
+panCancelBtn.addEventListener('click', () => {
+  panState = { ...panBefore };
+  panModal.classList.remove('open');
+});
+
+panDoneBtn.addEventListener('click', () => {
+  if (activeIndex === null) {
+    panModal.classList.remove('open');
+    return;
+  }
+  localStorage.setItem(`q_panx_${activeIndex}`, panState.x);
+  localStorage.setItem(`q_pany_${activeIndex}`, panState.y);
+  localStorage.setItem(`q_panscale_${activeIndex}`, panState.s);
+  applyPanTransform(activeIndex);
+  panModal.classList.remove('open');
+});
+
+// Превью тинта в реальном времени
 inpTint.addEventListener('input', (e) => {
   tintVal.textContent = e.target.value;
   if (activeIndex !== null) {
@@ -1048,6 +1310,9 @@ const currentColor =
 
     selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
 
+    // Инициализация режима тайла
+    setTileModeUI(i, getTileMode(i));
+
     if (images[i].style.display === 'block') {
       imgActionContainer.style.display = 'block';
       chkDelImg.checked = false;
@@ -1163,11 +1428,19 @@ btnSave.onclick = () => {
   if (chkDelTile.checked) {
     wrap.style.setProperty('--bg-tile', 'none');
     saveToDB(activeIndex, targetTa.innerHTML, null, false, null, true);
+    // Если тайл удалён — сбрасываем режим на repeat
+    setTileModeUI(activeIndex, 'repeat');
+    localStorage.setItem(`q_tilemode_${activeIndex}`, 'repeat');
   } else if (targetTa._pendingTile) {
     wrap.style.setProperty('--bg-tile', `url(${targetTa._pendingTile})`);
     saveToDB(activeIndex, targetTa.innerHTML, null, false, targetTa._pendingTile);
   }
   delete targetTa._pendingTile;
+
+  // --- TILE MODE / PAN ---
+  const modeToSave = getTileMode(activeIndex);
+  setTileModeUI(activeIndex, modeToSave);
+  applyPanTransform(activeIndex);
 
   localStorage.setItem(`q_pos_${activeIndex}`, selPos.value);
   const [v, h] = selPos.value.split(' ');
@@ -1193,6 +1466,10 @@ btnCancel.onclick = () => {
     const wrap = textareas[activeIndex].parentElement;
     const savedTint = localStorage.getItem(`q_tint_${activeIndex}`);
     wrap.style.setProperty('--bg-tint', savedTint !== null ? savedTint : '1');
+
+    // Откат режима тайла
+    setTileModeUI(activeIndex, localStorage.getItem(`q_tilemode_${activeIndex}`) || 'repeat');
+    applyPanTransform(activeIndex);
 
     // Восстановить тайл из БД
     const tx = db.transaction("texts", "readonly");
