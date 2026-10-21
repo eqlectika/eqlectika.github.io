@@ -490,6 +490,13 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
 }
+body.img-fullscreen .handle,
+body.img-fullscreen .ph {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
 </style>
 </head>
 <body>
@@ -1371,6 +1378,8 @@ const currentColor =
     imgLongPressTimer = setTimeout(() => {
       imgDeleted = true;
       img.classList.remove('fullscreen');
+      const anyFullscreen = document.querySelector('.img-preview.fullscreen');
+      document.body.classList.toggle('img-fullscreen', !!anyFullscreen);
       img.removeAttribute('src');
       img.style.display = 'none';
       localStorage.removeItem(`q_pos_${i}`);
@@ -1389,11 +1398,14 @@ const currentColor =
     }
   });
 
-  img.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (imgDeleted) return;
-    img.classList.toggle('fullscreen');
-  });
+img.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (imgDeleted) return;
+
+  img.classList.toggle('fullscreen');
+
+  const anyFullscreen = document.querySelector('.img-preview.fullscreen');
+  document.body.classList.toggle('img-fullscreen', !!anyFullscreen);
 });
 
 btnSave.onclick = () => {
