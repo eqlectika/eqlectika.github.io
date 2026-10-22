@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"> 
+<meta charset="UTF-8">
 <link rel="icon" type="image/png" href="/words.png">
 <meta property="og:image" content="/Verge.jpeg">
 <meta property="og:image:width" content="1280">
@@ -10,12 +10,13 @@
 <title>Steam | Map of the words</title>
 <link rel="manifest" href="manifest-steam.json">
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;background:#000;font-family:'Roboto Condensed',sans-serif;overflow:hidden}
 html{padding-top:env(safe-area-inset-top)}
-
 
 .words-wrapper,
 .note-text {
@@ -43,11 +44,10 @@ html{padding-top:env(safe-area-inset-top)}
   padding:4px 8px;
   background:#000;
 
+  font-family:'Unbounded',sans-serif;
+  font-weight:700;
   font-size:16px;
   color:#aaa;
-
-  font-family:'Roboto Condensed',sans-serif;
-  font-weight:700;font-size:16px;
 }
 .top-bar .brand{color:#ff5700;}
 .top-bar .live{color:#ff0000;animation:livePulse 1.5s infinite}
@@ -55,15 +55,17 @@ html{padding-top:env(safe-area-inset-top)}
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 #peerIdInput{
-
   color:#0097ff;
   background:transparent;
-border: 1px solid transparent;
+  border:1px solid transparent;
   outline:none;
-  font-family:monospace;
+
+  font-family:'Unbounded',sans-serif;
   font-size:14px;
+  font-weight:400;
+
   text-align:right;
-  width:84px;
+  width:108px;
   padding:3px 0;
 
   user-select:text;
@@ -83,9 +85,6 @@ border: 1px solid transparent;
   border-color:#afff00 !important;
   transition:none;
 }
-
-
-
 
 /* ---------- word cell ---------- */
 .word-cell{
@@ -126,7 +125,6 @@ border: 1px solid transparent;
   cursor:pointer;
   touch-action:manipulation;
 
-  /* размер теперь зависит от текущего размера текста */
   width:4em;
   height:4.8em;
 }
@@ -134,17 +132,12 @@ border: 1px solid transparent;
 .media-cell img,
 .media-cell video{
   display:block;
-
   width:3.5em;
   height:3.5em;
-
   max-width:none;
   max-height:none;
-
   border-radius:.4em;
-
   object-fit:cover;
-
   background:#000;
   pointer-events:none;
 }
@@ -232,7 +225,6 @@ border: 1px solid transparent;
   opacity:0;
   transition:transform .15s ease, opacity .15s ease;
 }
-
 #caret-circle::after{
   content:"";
   position:absolute;
@@ -246,16 +238,13 @@ border: 1px solid transparent;
   opacity:0;
   transition:transform .15s ease, opacity .15s ease;
 }
-
 #caret-circle.hint::before{
   transform:translate(-50%,-50%) scaleX(1);
   opacity:.9;
 }
-
 #caret-circle.hint::after{
   transform:translate(-50%,-50%) scaleY(1);
   opacity:.9;
-}
 }
 #caret-circle.active{
   border-color:#ff2440;
@@ -323,15 +312,25 @@ border: 1px solid transparent;
   cursor: not-allowed;
   pointer-events: none;
 }
+#edit-popover #popoverRecipients{
+  min-height:38px;
+  font-family:'Roboto',sans-serif;
+  font-size:13px;
+  padding:8px 10px;
+  border-radius:8px;
+  border:2px dotted #555;
+  background:#120a3a;
+  color:#fff;
+  outline:none;
+  user-select:text;-webkit-user-select:text;
+}
 
 .container{
   display:flex;
   flex-direction:column;
-  height:100vh; /* Меняем 100dvh на 100vh */
-  max-height:100vh; /* Добавляем ограничение */
+  height:100dvh;
   padding:0 2px 4px;
   background:#000;
-  position: relative; /* Добавляем для правильного позиционирования */
 }
 
 .words-wrapper{
@@ -347,7 +346,6 @@ border: 1px solid transparent;
   overflow-y:auto;
   cursor:default;
   touch-action:pan-y;
-  padding-bottom: 140px; /* Оставляем место под нижнюю панель */
 }
 
 .footer-panel{
@@ -358,40 +356,78 @@ border: 1px solid transparent;
   width:100%;
   flex-shrink:0;
   z-index:10;
+  padding:4px 8px 0;
   background:#000;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 10px 8px calc(10px + env(safe-area-inset-bottom, 0px)) 8px;
-  margin-bottom: 0;
+  margin-bottom: 4px;
+}
+
+.footer-row{
+  display:flex;
+  gap:8px;
+  width:100%;
+  align-items:stretch;
+  box-sizing:border-box;
 }
 
 #word-input{
-  width:100%;max-width:500px;padding:12px;font-family:'Roboto Condensed',sans-serif;
-  font-size:18px;outline:none;margin:0;border:1px solid #999;border-radius:12px;
-  background: linear-gradient(to bottom, #000, #223355);color:#fff;user-select:text;-webkit-user-select:text;
+  width:100%;
+  max-width:100%;
+  padding:12px;
+  font-family:'Roboto Condensed',sans-serif;
+  font-size:18px;outline:none;margin:0;
+  border:1px solid #999;border-radius:12px;
+  background: linear-gradient(to bottom, #000, #223355);
+  color:#fff;user-select:text;-webkit-user-select:text;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 #word-input::placeholder{color:#999}
+
+.footer-icon-btn{
+  flex:0 0 auto;
+  width:48px;
+  min-width:48px;
+  padding:0;
+  font-size:22px;
+  line-height:1;
+  border:1px solid #999;
+  border-radius:12px;
+  background: linear-gradient(to bottom, #000, #223355);
+  color:#fff;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.footer-icon-btn:active{transform:scale(.96)}
+
 .sync-btn{
   font-family:'Roboto Condensed',sans-serif;font-size:13px;font-weight:700;
   padding:6px 14px;border:none;border-radius:8px;background:#f00;color:#fff;cursor:pointer;
 }
 .sync-btn:disabled{opacity:.4;cursor:default}
 
-/* ---------- help ---------- */
+/* ---------- help note (full-screen overlay) ---------- */
 .note{
-  width:100%;max-width:500px;text-align:center;margin:2px auto 0;
-  font-family:sans-serif;font-size:16px;
+  position:fixed;
+  inset:0;
+  z-index:1500;
+  display:none;
+  width:100%;
+  background:#000;
+  text-align:center;
+  font-family:sans-serif;
+  font-size:16px;
 }
-.note-toggle{cursor:pointer;color:#999;margin:10px;user-select:none;-webkit-user-select:none}
+.note.open{display:block}
 .note-text{
   font-family:monospace, sans-serif;font-size:12px;
-  display:none;margin-top:6px;padding:44px 6px 6px;color:#fff;line-height:1.35;
+  display:block;
+  padding:44px 6px 24px;color:#fff;line-height:1.35;
+  height:100%;
   max-height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;text-align:center;
 }
-.note.open .note-text{display:block}
 .note-text p{margin-bottom:10px}
 .note-text p:last-child{margin-bottom:0}
 </style>
@@ -401,59 +437,58 @@ border: 1px solid transparent;
 <div class="top-bar">
   <span class="brand">Steam</span>
   <span id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
-<span id="tapeIndicator" class="tape">Tape</span>
-
-<div class="top-help" id="note-toggle">
-  <strong>Help</strong>
+  <span id="tapeIndicator" class="tape">Tape</span>
+  <input type="text" id="peerIdInput" autocomplete="off" spellcheck="false"
+         placeholder="Peer-XXXX" title="Tap to rename yourself">
 </div>
 
-<input type="text" id="peerIdInput" autocomplete="off" spellcheck="false"
-       placeholder="Peer-XXXX" title="Tap to rename yourself">
-</div>
 <div class="container">
-    <div class="note" id="note">
-      <div class="note-text">
-        <button class="sync-btn" id="clearBtn" title="Delete all words & media" style="background:#800;margin-top:6px">CLEAR ALL</button>
-        <span id="updateAvailableLine"
-              style="display: none; margin: 16px auto; color: #0097ff; font-size: 14px; font-family: 'Roboto Condensed', sans-serif; cursor: pointer;"
-              onclick="event.stopPropagation(); syncAndKeepData()">
-            Update Available
-        </span>
-        <p style="font-size:14px;margin-top:12px"><strong>Steam — Map of the words</strong></p>
-        <p>Input field below adds words to your device only.</p>
-        <p>Broadcast data to all devices using this terminal at the same time by performing a long tap on the circle.</p>
-        <p>Circle — single tap shuffles unhighlighted words, long tap opens the caret to add word or phrase, drag to move.</p>
-        <p>Shuffle is local only and affects only non-highlighted words.</p>
-        <p>Popover — type a word and tap "Send" (or Enter) to insert it right where the caret points (before/after the nearest cell, word or media). Tap 📎 Media to pick an image or video — it lands in that same caret position. The popover accepts either a word OR a media file, not both at once.</p>
-        <p>In <span style="color:#ff0000">Live</span> mode caret word edits are sent to all peers immediately. In <span style="color:#afff00">Tape</span> mode they're stored locally and flushed when a peer appears. Media is local-only on this device.</p>
+  <div class="note" id="note">
+    <div class="note-text">
+      <button class="sync-btn" id="help-close-btn" style="background:#444;margin-top:6px">CLOSE HELP</button>
+      <button class="sync-btn" id="clearBtn" title="Delete all words & media" style="background:#800;margin-top:6px">CLEAR ALL</button>
+      <span id="updateAvailableLine"
+            style="display: none; margin: 16px auto; color: #0097ff; font-size: 14px; font-family: 'Roboto Condensed', sans-serif; cursor: pointer;"
+            onclick="event.stopPropagation(); syncAndKeepData()">
+          Update Available
+      </span>
+      <p style="font-size:16px;"><strong>No Compass Word Geography</strong></p>
+      <p style="font-size:14px;margin:0 0 12px 0"><strong>Live luck in your pocket</strong></p>
+      <p>Input field below adds words to your device only.</p>
+      <p>Broadcast data to all devices using this terminal at the same time by performing a long tap on the circle.</p>
+      <p>Circle — single tap opens this help, long tap opens the caret to add word or phrase, drag to move.</p>
+      <p>Popover — type a word and tap "Send" (or Enter) to insert it right where the caret points (before/after the nearest cell, word or media). Tap 📎 Media to pick an image or video — it lands in that same caret position. The popover accepts either a word OR a media file, not both at once. An optional recipients field lets you send only to specific Peer IDs (empty = public).</p>
+      <p>In <span style="color:#ff0000">Live</span> mode caret word and media edits are sent to all peers (or to recipients) immediately. In <span style="color:#afff00">Tape</span> mode they're stored locally and flushed when a peer appears.</p>
 
-        <p>Word taps (local only): fresh &rarr; white &rarr; green &rarr; orange &rarr; open ChatGPT definition (and copy to clipboard). Long tap cancels highlight, or deletes the word if it wasn't highlighted.</p>
+      <p>Word taps (local only): fresh &rarr; white &rarr; green &rarr; orange &rarr; open ChatGPT definition (and copy to clipboard). Long tap cancels highlight, or deletes the word if it wasn't highlighted.</p>
 
-        <p>Media — tap any media to open the full-screen viewer; tap again to close. Long tap any media to delete it (same gesture as deleting a word).</p>
+      <p>Media — tap any media to open the full-screen viewer; tap again to close. Long tap any media to delete it (same gesture as deleting a word).</p>
 
+      <p>Footer 📎 button adds local-only media directly from your device (not published to peers).</p>
 
+      <p>SYNC (red button) appears only when there are edits waiting in Tape.</p>
 
-        <p>SYNC (red button) appears only when there are edits waiting in Tape.</p>
+      <p>Your peer name — tap the ID in the top-right corner, type a new name, tap Enter. 3–9 chars: letters, digits, dash, underscore.</p>
 
-        <p>Your peer name — tap the ID in the top-right corner, type a new name, tap Enter. 3–9 chars: letters, digits, dash, underscore.</p>
-
-        <a href="support.html" title="Support">
-          <img src="/fleurdelis.png" alt="fleur-de-lis"
-               style="display:block;margin:28px auto 120px auto;max-width:48px;height:auto;cursor:pointer">
-        </a>
-      </div>
+      <a href="support.html" title="Support">
+        <img src="/fleurdelis.png" alt="fleur-de-lis"
+             style="display:block;margin:28px auto 54px auto;max-width:48px;height:auto;cursor:pointer">
+      </a>
     </div>
+  </div>
 
   <div class="words-wrapper" id="words-wrapper"></div>
 
   <div class="footer-panel">
-    <input type="text" id="word-input" placeholder="Add word(s) locally and press Enter...">
+    <div class="footer-row">
+      <input type="text" id="word-input" placeholder="Add word(s) locally and press Enter...">
+      <button id="local-media-btn" class="footer-icon-btn" title="Upload local media">📎</button>
+    </div>
     <button class="sync-btn" id="syncBtn" title="Re-send tape edits to network" style="display:none">SYNC TAPE TO LIVE</button>
-
   </div>
 </div>
 
-<div id="caret-circle" title="Tap = shuffle · Long tap = add word · Drag = move"></div>
+<div id="caret-circle" title="Tap = help · Long tap = add word/media · Drag = move"></div>
 
 <div id="media-viewer">
   <button class="viewer-close" id="viewerClose">×</button>
@@ -462,6 +497,7 @@ border: 1px solid transparent;
 <div id="edit-popover">
   <div class="title" id="popoverTitle">Insert word</div>
   <input type="text" id="popoverInput" placeholder="Type a word to send…" autocomplete="off">
+  <input type="text" id="popoverRecipients" placeholder="Recipients (comma-separated, empty = public)" autocomplete="off">
   <div class="popover-or">— OR —</div>
   <div class="row">
     <button class="btn-media" id="btnMedia" title="Attach image or video">📎 Media</button>
@@ -661,9 +697,11 @@ const wrapper = document.getElementById('words-wrapper');
 const caret   = document.getElementById('caret-circle');
 const popover = document.getElementById('edit-popover');
 const popoverInput = document.getElementById('popoverInput');
+const popoverRecipients = document.getElementById('popoverRecipients');
 const popoverTitle = document.getElementById('popoverTitle');
 const mediaViewer = document.getElementById('media-viewer');
 const viewerClose = document.getElementById('viewerClose');
+const note = document.getElementById('note');
 
 let caretContext = null;
 let caretOpen = false;
@@ -716,6 +754,26 @@ viewerClose.addEventListener('click', (e) => {
 });
 
 /* =========================================================
+   HELP NOTE (full screen)
+   ========================================================= */
+function openHelpNote(){
+  if (!note) return;
+  note.classList.add('open');
+  requestAnimationFrame(() => renderWords());
+}
+
+function closeHelpNote(){
+  if (!note) return;
+  note.classList.remove('open');
+  requestAnimationFrame(() => renderWords());
+}
+
+document.getElementById('help-close-btn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  closeHelpNote();
+});
+
+/* =========================================================
    FONT SCALE
    ========================================================= */
 function recalcFontScale(){
@@ -731,7 +789,7 @@ function recalcFontScale(){
     wrapper.style.fontSize = `${value}px`;
   }
 
-  if (document.getElementById('note').classList.contains('open') && lastFontSize){
+  if (note && note.classList.contains('open') && lastFontSize){
     applySize(lastFontSize);
     return;
   }
@@ -756,7 +814,7 @@ function recalcFontScale(){
 }
 
 /* =========================================================
-   Универсальный расчёт позиции вставки по anchorId
+   resolveInsertAt
    ========================================================= */
 function resolveInsertAt(anchorId, side, fallbackIndex){
   if (anchorId){
@@ -782,10 +840,7 @@ function renderWords(){
     return;
   }
 
-  const mediaCells = [];
-
   itemsList.forEach((item, idx) => {
-    // ========== MEDIA CELL ==========
     if (item.type === 'media') {
       const cell = document.createElement('div');
       cell.className = 'media-cell';
@@ -812,7 +867,6 @@ function renderWords(){
         cell.appendChild(video);
       }
 
-      // ТАП = открыть/закрыть fullscreen · ДОЛГИЙ ТАП = удалить
       let mediaPressTimer = null;
       let mediaPressStart = 0;
       let mediaLongFired = false;
@@ -857,11 +911,9 @@ function renderWords(){
       cell.addEventListener('pointerleave', () => clearTimeout(mediaPressTimer));
 
       wrapper.appendChild(cell);
-      mediaCells.push(cell);
       return;
     }
 
-    // ========== WORD CELL ==========
     const cell = document.createElement('div');
     cell.className = 'word-cell';
     cell.dataset.idx = idx;
@@ -943,22 +995,31 @@ function renderWords(){
     wrapper.appendChild(cell);
   });
 
-requestAnimationFrame(() => {
-  recalcFontScale();
-});
+  requestAnimationFrame(() => {
+    recalcFontScale();
+  });
 }
 
 /* =========================================================
-   Caret circle — восстановление позиции
+   Caret circle — восстановление позиции + защита от футера
    ========================================================= */
+function getFooterTop(){
+  const footer = document.querySelector('.footer-panel');
+  if (!footer) return window.innerHeight;
+  return footer.getBoundingClientRect().top;
+}
+
 (function restoreCaretPos(){
   const saved = DataManager.get('caret_pos');
+  const size = caret.offsetWidth || 56;
+  const maxTop = Math.max(0, getFooterTop() - size - 4);
+
   if (saved && typeof saved.left === 'number'){
     caret.style.left = saved.left + 'px';
-    caret.style.top  = saved.top  + 'px';
+    caret.style.top  = Math.min(saved.top, maxTop) + 'px';
   } else {
     caret.style.left = '12px';
-    caret.style.top  = (window.innerHeight - 260) + 'px';
+    caret.style.top  = Math.max(0, maxTop - 200) + 'px';
   }
 })();
 
@@ -1011,8 +1072,9 @@ caret.addEventListener('pointermove', (e)=>{
   let nl = e.clientX - dragOffX;
   let nt = e.clientY - dragOffY;
   const s = caret.offsetWidth;
+  const maxTop = Math.max(0, getFooterTop() - s - 4);
   nl = Math.max(0, Math.min(window.innerWidth  - s, nl));
-  nt = Math.max(0, Math.min(window.innerHeight - s, nt));
+  nt = Math.max(0, Math.min(maxTop, nt));
   caret.style.left = nl + 'px';
   caret.style.top  = nt + 'px';
   updateCaretHint();
@@ -1031,7 +1093,7 @@ function endCaretDrag(){
   }
   if (caretLongFired) return;
 
-  shuffleUnhighlighted();
+  openHelpNote();
 }
 caret.addEventListener('pointerup', endCaretDrag);
 caret.addEventListener('pointercancel', ()=>{
@@ -1039,29 +1101,6 @@ caret.addEventListener('pointercancel', ()=>{
   caret.classList.remove('dragging');
   clearTimeout(caretPressTimer);
 });
-
-/* =========================================================
-   Shuffle — только среди word-элементов
-   ========================================================= */
-function shuffleUnhighlighted(){
-  const indices = [];
-  itemsList.forEach((w,i)=>{
-    if (w.type === 'media') return;
-    if ((w.highlight|0) === 0 && !w.fresh) indices.push(i);
-  });
-  if (indices.length < 2){ log('Shuffle: nothing to shuffle'); return; }
-  const pool = indices.map(i => itemsList[i]);
-  for (let i = pool.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  indices.forEach((idx, k) => { itemsList[idx] = pool[k]; });
-  saveItems();
-  renderWords();
-  caret.classList.add('pulse');
-  setTimeout(()=>caret.classList.remove('pulse'), 320);
-  log('Shuffled ' + pool.length + ' unhighlighted word(s) locally');
-}
 
 /* =========================================================
    Open caret / popover
@@ -1073,7 +1112,6 @@ function openCaret(){
   const cx = cr.left + cr.width/2;
   const cy = cr.top  + cr.height/2;
 
-  // Берём ВСЕ ячейки — слова и медиа
   const cells = Array.from(wrapper.querySelectorAll('.word-cell, .media-cell'));
 
   if (cells.length === 0){
@@ -1082,7 +1120,6 @@ function openCaret(){
     return;
   }
 
-  // DOM-ячейка → реальный индекс в itemsList
   const realIndices = cells.map(cell => {
     const id = cell.dataset.itemId;
     return itemsList.findIndex(it => it.id === id);
@@ -1138,6 +1175,7 @@ function openPopover(ctx){
   }
 
   popoverInput.value = '';
+  popoverRecipients.value = '';
   popoverInput.disabled = false;
   popover.classList.add('show');
   updatePopoverState();
@@ -1149,23 +1187,32 @@ function hidePopover(){
   caretContext = null;
   caretOpen = false;
   popoverInput.disabled = false;
+  popoverInput.value = '';
+  popoverRecipients.value = '';
   document.getElementById('btnMedia').classList.remove('disabled');
   document.getElementById('btnAdd').classList.remove('disabled');
 }
 
 document.addEventListener('pointerdown', (e) => {
   if (!popover.classList.contains('show')) return;
-  // Тап внутри popover или по каретке не закрывает окно
   if (popover.contains(e.target) || caret.contains(e.target)) return;
   hidePopover();
 });
+
 /* =========================================================
-   POPOVER: логика «или»
+   POPOVER
    ========================================================= */
 function updatePopoverState(){
   const hasText = popoverInput.value.trim().length > 0;
   const mediaBtn = document.getElementById('btnMedia');
   mediaBtn.classList.toggle('disabled', hasText);
+}
+
+function getPopoverRecipients(){
+  const raw = (popoverRecipients.value || '').trim();
+  return raw
+    ? raw.split(',').map(s => s.trim()).filter(Boolean)
+    : [];
 }
 
 popoverInput.addEventListener('input', updatePopoverState);
@@ -1186,10 +1233,9 @@ popoverInput.addEventListener('keydown', (e)=>{
 });
 
 /* =========================================================
-   MEDIA INSERT — вставка в позицию каретки
+   MEDIA INSERT (popover → сжатие + публикация)
    ========================================================= */
 document.getElementById('btnMedia').addEventListener('click', () => {
-  // Замораживаем контекст каретки — сохраняем anchorId
   const frozenCtx = caretContext ? {
     anchorId: caretContext.anchorId || null,
     side:     caretContext.side || 'after',
@@ -1233,57 +1279,202 @@ document.getElementById('btnMedia').addEventListener('click', () => {
   picker.click();
 });
 
-function handleMediaFile(file, ctx) {
+async function compressImage(file){
+  return new Promise((resolve)=>{
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e)=>{
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = ()=>{
+        const canvas = document.createElement('canvas');
+        const maxWidth = 400;
+        let width = img.width, height = img.height;
+        if (width > maxWidth){
+          height = (maxWidth / width) * height;
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = ()=> resolve(e.target.result);
+    };
+    reader.onerror = ()=> resolve(null);
+  });
+}
+
+function readFileAsDataURL(file){
+  return new Promise((resolve, reject)=>{
+    const r = new FileReader();
+    r.onload = ()=> resolve(r.result);
+    r.onerror = ()=> reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+async function handleMediaFile(file, ctx){
   const isImage = file.type.startsWith('image/');
   const isVideo = file.type.startsWith('video/');
-  if (!isImage && !isVideo) {
+  if (!isImage && !isVideo){
     log('Unsupported file type: ' + file.type);
     return;
   }
 
-  const MAX_SIZE = 5 * 1024 * 1024;
-  if (file.size > MAX_SIZE) {
-    alert('File too large for local storage (max 5 MB).');
+  let dataUrl;
+  try {
+    if (isImage){
+      dataUrl = await compressImage(file);
+    } else {
+      dataUrl = await readFileAsDataURL(file);
+      if (dataUrl.length > 5 * 1024 * 1024){
+        alert('Video too large (max 5 MB).');
+        hidePopover();
+        return;
+      }
+    }
+  } catch(e){
+    log('File read error: ' + e.message);
+    alert('Failed to read file.');
+    hidePopover();
     return;
   }
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    const dataUrl = reader.result;
-    const item = {
-      id: 'm-' + Date.now() + '-' + Math.floor(Math.random()*1000),
-      type: 'media',
-      mediaType: isImage ? 'image' : 'video',
-      data: dataUrl,
-      label: '',
-      highlight: 0,
-      fresh: false,
-      originEditId: null,
-      author: myId
-    };
-
-    // ВСТАВКА В ПОЗИЦИЮ КАРЕТКИ
-    const insertAt = resolveInsertAt(
-      ctx ? ctx.anchorId : null,
-      ctx ? ctx.side : 'after',
-      ctx ? ctx.index : -1
-    );
-
-    itemsList.splice(insertAt, 0, item);
-    saveItems();
+  if (!dataUrl){
+    alert('Failed to process file.');
     hidePopover();
-    renderWords();
-    log('Media added at ' + insertAt + ': ' + item.mediaType + ' by ' + item.author);
+    return;
+  }
+
+  const recipients = getPopoverRecipients();
+
+  const item = {
+    id: 'm-' + Date.now() + '-' + Math.floor(Math.random()*1000),
+    type: 'media',
+    mediaType: isImage ? 'image' : 'video',
+    data: dataUrl,
+    label: '',
+    highlight: 0,
+    fresh: true,
+    originEditId: null,
+    author: myId,
+    recipients: recipients.slice()
   };
-  reader.onerror = () => {
-    log('FileReader error');
-    alert('Failed to read file.');
+
+  const insertAt = resolveInsertAt(
+    ctx ? ctx.anchorId : null,
+    ctx ? ctx.side : 'after',
+    ctx ? ctx.index : -1
+  );
+
+  itemsList.splice(insertAt, 0, item);
+  saveItems();
+
+  const editId = newEditId();
+  item.originEditId = editId;
+  saveItems();
+
+  const editPayload = {
+    editId: editId,
+    kind: 'add_media',
+    insertAt: insertAt,
+    anchorId: ctx ? (ctx.anchorId || null) : null,
+    anchorSide: ctx ? (ctx.side || 'after') : 'after',
+    author: myId,
+    ts: Date.now(),
+    recipients: recipients.slice(),
+    mediaType: item.mediaType,
+    data: dataUrl
   };
-  reader.readAsDataURL(file);
+
+  const canSend = isLive && client && client.connected;
+  if (canSend){
+    client.publish(TOPIC, JSON.stringify({
+      ...editPayload,
+      type: 'WORD_EDIT',
+      sender: myId,
+      sid: clientId
+    }), {qos:1});
+    log('Media published → network');
+  } else {
+    pendingEdits.push(editPayload);
+    savePending();
+    log('Media saved to tape');
+  }
+
+  refreshChrome();
+  hidePopover();
+  renderWords();
 }
 
 /* =========================================================
-   Edit builder / submit (только для слов)
+   Local media (footer button)
+   ========================================================= */
+document.getElementById('local-media-btn').addEventListener('click', ()=>{
+  const picker = document.createElement('input');
+  picker.type = 'file';
+  picker.accept = 'image/*,video/*';
+  picker.style.display = 'none';
+
+  picker.addEventListener('change', ()=>{
+    const file = picker.files && picker.files[0];
+    if (file) handleLocalMediaFile(file);
+    if (picker.parentNode) picker.parentNode.removeChild(picker);
+  });
+
+  document.body.appendChild(picker);
+  picker.click();
+});
+
+async function handleLocalMediaFile(file){
+  const isImage = file.type.startsWith('image/');
+  const isVideo = file.type.startsWith('video/');
+  if (!isImage && !isVideo){
+    log('Unsupported file type: ' + file.type);
+    return;
+  }
+
+  let dataUrl;
+  try {
+    if (isImage){
+      dataUrl = await compressImage(file);
+    } else {
+      dataUrl = await readFileAsDataURL(file);
+      if (dataUrl.length > 5 * 1024 * 1024){
+        alert('Video too large for local storage (max 5 MB).');
+        return;
+      }
+    }
+  } catch(e){
+    log('Local media read error: ' + e.message);
+    return;
+  }
+
+  if (!dataUrl) return;
+
+  const item = {
+    id: 'm-' + Date.now() + '-' + Math.floor(Math.random()*1000),
+    type: 'media',
+    mediaType: isImage ? 'image' : 'video',
+    data: dataUrl,
+    label: '',
+    highlight: 0,
+    fresh: false,
+    originEditId: null,
+    author: myId,
+    recipients: []
+  };
+
+  itemsList.push(item);
+  saveItems();
+  renderWords();
+  log('Local media added (device only)');
+}
+
+/* =========================================================
+   Edit builder / submit
    ========================================================= */
 function newEditId(){
   if (crypto && crypto.randomUUID) return 'we-' + crypto.randomUUID();
@@ -1299,7 +1490,8 @@ function buildAddEdit(ctx, text){
     anchorId: ctx.anchorId || null,
     anchorSide: ctx.side || 'after',
     author: myId,
-    ts: Date.now()
+    ts: Date.now(),
+    recipients: getPopoverRecipients()
   };
 }
 
@@ -1327,31 +1519,62 @@ function submitEdit(edit, applyLocally){
 }
 
 /* =========================================================
-   Apply edit (только для слов)
+   Apply edit — с фильтром по recipients
    ========================================================= */
 function applyEditLocally(edit, asFresh){
-  if (edit.kind !== 'add') return;
+  const rec = edit.recipients || [];
+  const isPublic = rec.length === 0;
+  const isForMe = rec.includes(myId);
+  if (!isPublic && !isForMe && edit.author !== myId) {
+    log('Edit skipped: not addressed to this peer');
+    return;
+  }
 
   if (edit.editId && itemsList.some(w => w.originEditId === edit.editId)) return;
 
-  const newItem = {
-    id: 'w-' + Date.now() + '-' + Math.floor(Math.random()*1000),
-    type: 'word',
-    word: edit.word,
-    highlight: 0,
-    fresh: !!asFresh,
-    originEditId: edit.editId || null,
-    author: edit.author || null
-  };
+  if (edit.kind === 'add'){
+    const newItem = {
+      id: 'w-' + Date.now() + '-' + Math.floor(Math.random()*1000),
+      type: 'word',
+      word: edit.word,
+      highlight: 0,
+      fresh: !!asFresh,
+      originEditId: edit.editId || null,
+      author: edit.author || null,
+      recipients: rec.slice()
+    };
+    const insertAt = resolveInsertAt(
+      edit.anchorId || null,
+      edit.anchorSide || 'after',
+      typeof edit.insertAt === 'number' ? edit.insertAt : undefined
+    );
+    itemsList.splice(insertAt, 0, newItem);
+    saveItems();
+    return;
+  }
 
-  const insertAt = resolveInsertAt(
-    edit.anchorId || null,
-    edit.anchorSide || 'after',
-    typeof edit.insertAt === 'number' ? edit.insertAt : undefined
-  );
-
-  itemsList.splice(insertAt, 0, newItem);
-  saveItems();
+  if (edit.kind === 'add_media'){
+    const newItem = {
+      id: 'm-' + Date.now() + '-' + Math.floor(Math.random()*1000),
+      type: 'media',
+      mediaType: edit.mediaType,
+      data: edit.data,
+      label: '',
+      highlight: 0,
+      fresh: !!asFresh,
+      originEditId: edit.editId || null,
+      author: edit.author || null,
+      recipients: rec.slice()
+    };
+    const insertAt = resolveInsertAt(
+      edit.anchorId || null,
+      edit.anchorSide || 'after',
+      typeof edit.insertAt === 'number' ? edit.insertAt : undefined
+    );
+    itemsList.splice(insertAt, 0, newItem);
+    saveItems();
+    return;
+  }
 }
 
 function applyRemoteEdit(p){
@@ -1389,7 +1612,8 @@ document.getElementById('word-input').addEventListener('keydown', (e)=>{
         highlight:0,
         fresh: false,
         originEditId: null,
-        author: null
+        author: null,
+        recipients: []
       });
     });
     saveItems();
@@ -1455,32 +1679,6 @@ function commitPeerId(){
   peerIdInput.classList.add('saved');
   setTimeout(()=> peerIdInput.classList.remove('saved'), 800);
   log('[ID] Renamed to ' + myId);
-}
-
-/* =========================================================
-   Help toggle
-   ========================================================= */
-const note = document.getElementById('note');
-const noteToggle = document.getElementById('note-toggle');
-if (note && noteToggle){
-  noteToggle.addEventListener('click', (e)=>{
-    e.stopPropagation();
-    note.classList.toggle('open');
-    noteToggle.querySelector('strong').textContent =
-      note.classList.contains('open') ? 'Hide' : 'Help';
-    if (!note.classList.contains('open')){
-      requestAnimationFrame(() => renderWords());
-    }
-  });
-  const noteText = note.querySelector('.note-text');
-  if (noteText){
-    noteText.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      note.classList.remove('open');
-      noteToggle.querySelector('strong').textContent = 'Help';
-      requestAnimationFrame(() => renderWords());
-    });
-  }
 }
 
 /* =========================================================
