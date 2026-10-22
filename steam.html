@@ -82,28 +82,24 @@ html{padding-top:env(safe-area-inset-top)}
 
 /* ---------- word cell ---------- */
 .word-cell{
-  position:relative;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  flex-direction:column;
-  font-weight:700;
-  background:transparent;
-  border:none;
-  padding:0.02em 0.1em;
-  line-height:1.1;
-  opacity:.95;
-  transition:color .3s ease;
-  color:#fff;
-  font-size:1em;
-  justify-content:flex-end;
-  vertical-align:bottom;
+  display: inline-block;
+  vertical-align: top;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  padding: 0.1em 0.2em;
+  margin: 0 0.2em 0.2em 0;
+  opacity: .95;
+  transition: color .3s ease;
+  color: #fff;
+  font-size: 1em;
+  line-height: 1.3;
   
-  /* Исправление для длинного текста */
-  white-space: normal;
+  max-width: 85vw;
+  white-space: normal; 
   word-break: break-word;
-  text-align: center;
-  max-width: 90vw;
+  text-align: left;
+  border-radius: 6px;
 }
 .word-cell.hl-fresh{color:#ff2440}
 .word-cell.hl-1{color:#afff00}
@@ -111,21 +107,23 @@ html{padding-top:env(safe-area-inset-top)}
 
 /* ---------- media cells ---------- */
 .media-cell{
-  position:relative;
-  display:inline-flex;
-  align-items:center;
-  justify-content:flex-end;
-  flex-direction:column;
-  flex-shrink:0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-direction: column;
+  vertical-align: middle;
+  
   background:#0b0b28;
   border:2px solid #2a2a5a;
   border-radius:10px;
   padding:.12em;
+  margin: 0.2em;
   box-shadow:0 4px 12px rgba(0,0,0,.5);
   transition:border-color .2s,box-shadow .2s;
   overflow:hidden;
   cursor:pointer;
   touch-action:manipulation;
+  
   width:4em;
   height:4.8em;
   max-width: 100%;
@@ -245,7 +243,7 @@ html{padding-top:env(safe-area-inset-top)}
   box-shadow:0 8px 28px rgba(0,0,0,.6);
 }
 #edit-popover.show{display:flex}
-#edit-popover .title{font-size:12px;color:#888;font-family:monospace;margin-bottom:2px}
+
 #edit-popover input{
   min-height:42px;
   font-family:'Roboto Condensed',sans-serif;font-size:16px;
@@ -297,18 +295,18 @@ html{padding-top:env(safe-area-inset-top)}
   flex: 1 1 auto;
   width:100%;
   position:relative;
-  display:flex;
-  flex-wrap:wrap;
-  align-content:flex-start;
-  align-items:center;
-  gap:0.2em 0.15em;
-  padding:44px 6px 120px 6px; /* 120px снизу, чтобы слова не залезали под футер */
+  padding:50px 8px 120px 8px; /* 50px сверху под шапку, 120px снизу под футер */
   overflow-y:auto;
   cursor:default;
   touch-action:pan-y;
+  
+  display: flex;
+  flex-wrap: wrap; 
+  align-content: flex-start;
+  gap: 0.5em; 
 }
 
-/* Футер теперь ФИКСИРОВАН */
+/* Футер ФИКСИРОВАН */
 .footer-panel{
   position: fixed;
   bottom: 0;
@@ -321,7 +319,6 @@ html{padding-top:env(safe-area-inset-top)}
   align-items:center;
   gap:6px;
   
-  /* Отступ снизу для безопасной зоны Android */
   padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)) 8px;
   background:#000;
   border-top: 1px solid #223355;
@@ -452,7 +449,7 @@ html{padding-top:env(safe-area-inset-top)}
 </div>
 
 <div id="edit-popover">
-  <div class="title" id="popoverTitle">Insert word</div>
+
   <input type="text" id="popoverInput" placeholder="Type a word to send…" autocomplete="off" enterkeyhint="send">
   <input type="text" id="popoverRecipients" placeholder="Recipients (comma-separated, empty = public)" autocomplete="off">
   <div class="popover-or">— OR —</div>
@@ -655,7 +652,7 @@ const caret   = document.getElementById('caret-circle');
 const popover = document.getElementById('edit-popover');
 const popoverInput = document.getElementById('popoverInput');
 const popoverRecipients = document.getElementById('popoverRecipients');
-const popoverTitle = document.getElementById('popoverTitle');
+
 const mediaViewer = document.getElementById('media-viewer');
 const viewerClose = document.getElementById('viewerClose');
 const note = document.getElementById('note');
@@ -884,14 +881,14 @@ function renderWords(){
       const tag = document.createElement('span');
       tag.textContent = item.author;
       tag.style.cssText =
-        'display:block;font-size:10px;color:#0097ff;' +
-        'font-family:monospace;line-height:1;margin-bottom:2px;text-align:center';
+        'display:inline-block;font-size:10px;color:#0097ff;' +
+        'font-family:monospace;line-height:1;margin-right:4px;vertical-align:middle;';
       cell.appendChild(tag);
     }
 
     const main = document.createElement('span');
     main.textContent = item.word;
-    main.style.display = 'block';
+    main.style.display = 'inline';
     cell.appendChild(main);
 
     let pressTimer, pressStart, longPress = false;
@@ -1114,22 +1111,6 @@ function openPopover(ctx){
   const rect = caret.getBoundingClientRect();
   popover.style.left = Math.min(window.innerWidth - 240, rect.left) + 'px';
   popover.style.top  = Math.min(window.innerHeight - 220, rect.bottom + 8) + 'px';
-
-  let anchorItem = null;
-  if (ctx.anchorId){
-    anchorItem = itemsList.find(it => it.id === ctx.anchorId) || null;
-  } else if (typeof ctx.index === 'number' && ctx.index >= 0){
-    anchorItem = itemsList[ctx.index] || null;
-  }
-
-  if (!anchorItem){
-    popoverTitle.textContent = 'Insert first item';
-  } else {
-    const label = anchorItem.type === 'media' ? '[media]' : anchorItem.word;
-    popoverTitle.textContent = (ctx.side === 'after')
-      ? `After: ${label}`
-      : `Before: ${label}`;
-  }
 
   popoverInput.value = '';
   popoverRecipients.value = '';
