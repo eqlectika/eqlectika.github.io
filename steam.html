@@ -36,16 +36,13 @@ html{padding-top:env(safe-area-inset-top)}
   left:0;
   right:0;
   z-index:50;
-
   display:flex;
   align-items:center;
   justify-content:space-between;
-
   padding:4px 8px;
   background:#000;
-
   font-family:'Unbounded',sans-serif;
-
+  font-weight:700;
   font-size:16px;
   color:#aaa;
 }
@@ -59,15 +56,12 @@ html{padding-top:env(safe-area-inset-top)}
   background:transparent;
   border:1px solid transparent;
   outline:none;
-
   font-family:'Unbounded',sans-serif;
   font-size:14px;
   font-weight:400;
-
   text-align:right;
   width:108px;
   padding:3px 0;
-
   user-select:text;
   -webkit-user-select:text;
   cursor:text;
@@ -89,13 +83,27 @@ html{padding-top:env(safe-area-inset-top)}
 /* ---------- word cell ---------- */
 .word-cell{
   position:relative;
-  display:inline-flex;align-items:center;justify-content:center;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
   flex-direction:column;
-  font-weight:700;white-space:nowrap;background:transparent;border:none;
-  padding:0.02em 0.1em;  line-height:.75;opacity:.95;
-  transition:color .3s ease;color:#fff;font-size:1em;
+  font-weight:700;
+  background:transparent;
+  border:none;
+  padding:0.02em 0.1em;
+  line-height:1.1;
+  opacity:.95;
+  transition:color .3s ease;
+  color:#fff;
+  font-size:1em;
   justify-content:flex-end;
   vertical-align:bottom;
+  
+  /* Исправление для длинного текста */
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
+  max-width: 90vw;
 }
 .word-cell.hl-fresh{color:#ff2440}
 .word-cell.hl-1{color:#afff00}
@@ -108,25 +116,19 @@ html{padding-top:env(safe-area-inset-top)}
   align-items:center;
   justify-content:flex-end;
   flex-direction:column;
-
   flex-shrink:0;
-
   background:#0b0b28;
   border:2px solid #2a2a5a;
   border-radius:10px;
-
   padding:.12em;
-
   box-shadow:0 4px 12px rgba(0,0,0,.5);
-
   transition:border-color .2s,box-shadow .2s;
   overflow:hidden;
-
   cursor:pointer;
   touch-action:manipulation;
-
   width:4em;
   height:4.8em;
+  max-width: 100%;
 }
 
 .media-cell img,
@@ -213,45 +215,23 @@ html{padding-top:env(safe-area-inset-top)}
   -webkit-tap-highlight-color:transparent;
 }
 #caret-circle::before{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:28px;
-  height:2px;
-  background:#f00;
-  transform:translate(-50%,-50%) scaleX(0);
-  transform-origin:center;
-  opacity:0;
-  transition:transform .15s ease, opacity .15s ease;
+  content:"";position:absolute;left:50%;top:50%;
+  width:28px;height:2px;background:#f00;
+  transform:translate(-50%,-50%) scaleX(0);transform-origin:center;
+  opacity:0;transition:transform .15s ease, opacity .15s ease;
 }
 #caret-circle::after{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:2px;
-  height:28px;
-  background:#f00;
-  transform:translate(-50%,-50%) scaleY(0);
-  transform-origin:center;
-  opacity:0;
-  transition:transform .15s ease, opacity .15s ease;
+  content:"";position:absolute;left:50%;top:50%;
+  width:2px;height:28px;background:#f00;
+  transform:translate(-50%,-50%) scaleY(0);transform-origin:center;
+  opacity:0;transition:transform .15s ease, opacity .15s ease;
 }
-#caret-circle.hint::before{
-  transform:translate(-50%,-50%) scaleX(1);
-  opacity:.9;
-}
-#caret-circle.hint::after{
-  transform:translate(-50%,-50%) scaleY(1);
-  opacity:.9;
-}
+#caret-circle.hint::before{transform:translate(-50%,-50%) scaleX(1);opacity:.9;}
+#caret-circle.hint::after{transform:translate(-50%,-50%) scaleY(1);opacity:.9;}
 #caret-circle.active{
   border-color:#ff2440;
   background:radial-gradient(circle at 35% 35%,rgba(255,36,64,.65),rgba(153,26,40,.35));
-  box-shadow:0 0 0 3px rgba(255,36,64,.25),
-             0 6px 22px rgba(255,36,64,.5),
-             inset 0 2px 6px rgba(255,255,255,.20);
+  box-shadow:0 0 0 3px rgba(255,36,64,.25), 0 6px 22px rgba(255,36,64,.5), inset 0 2px 6px rgba(255,255,255,.20);
 }
 #caret-circle.dragging{transition:none;transform:scale(1.15)}
 #caret-circle.pulse{animation:caretPulse .3s ease}
@@ -272,10 +252,7 @@ html{padding-top:env(safe-area-inset-top)}
   padding:8px 10px;border-radius:8px;border:2px solid #555;
   background:#120a3a;color:#fff;outline:none;user-select:text;-webkit-user-select:text;
 }
-#edit-popover input:disabled{
-  opacity: 0.4;
-  cursor: not-allowed;
-}
+#edit-popover input:disabled{opacity: 0.4;cursor: not-allowed;}
 #edit-popover .row{display:flex;gap:6px}
 #edit-popover button{
   min-height: 42px;
@@ -288,53 +265,36 @@ html{padding-top:env(safe-area-inset-top)}
 #edit-popover .btn-add{background:#ff2440}
 #edit-popover .btn-cancel{background:#222;color:#aaa}
 #edit-popover .btn-media{
-  background:#120a3a;
-  border-color:#3d1a99;
-  color:#b0a0ff;
-  font-size:13px;
+  background:#120a3a;border-color:#3d1a99;color:#b0a0ff;font-size:13px;
 }
 #edit-popover .btn-media:hover{
-  background:#1e1050;
-  border-color:#7b4dff;
-  color:#fff;
+  background:#1e1050;border-color:#7b4dff;color:#fff;
 }
 .popover-or {
-  text-align: center;
-  font-size: 11px;
-  color: #ccc;
-  font-family: monospace;
-  margin: 2px 0;
-  letter-spacing: 1px;
+  text-align: center;font-size: 11px;color: #ccc;
+  font-family: monospace;margin: 2px 0;letter-spacing: 1px;
 }
 #edit-popover .btn-media.disabled,
 #edit-popover .btn-add.disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-  pointer-events: none;
+  opacity: 0.35;cursor: not-allowed;pointer-events: none;
 }
 #edit-popover #popoverRecipients{
-  min-height:38px;
-  font-family:'Roboto',sans-serif;
-  font-size:13px;
-  padding:8px 10px;
-  border-radius:8px;
-  border:2px dotted #555;
-  background:#120a3a;
-  color:#fff;
-  outline:none;
-  user-select:text;-webkit-user-select:text;
+  min-height:38px;font-family:'Roboto',sans-serif;font-size:13px;
+  padding:8px 10px;border-radius:8px;border:2px dotted #555;
+  background:#120a3a;color:#fff;outline:none;user-select:text;-webkit-user-select:text;
 }
 
+/* ---------- Layout & Footer ---------- */
 .container{
   display:flex;
   flex-direction:column;
+  height:100vh;
   height:100dvh;
-  padding:0 2px 4px;
   background:#000;
 }
 
 .words-wrapper{
-  flex: 1 1 0%;
+  flex: 1 1 auto;
   width:100%;
   position:relative;
   display:flex;
@@ -342,17 +302,16 @@ html{padding-top:env(safe-area-inset-top)}
   align-content:flex-start;
   align-items:center;
   gap:0.2em 0.15em;
-  padding:44px 6px 6px;
+  padding:44px 6px 120px 6px; /* 120px снизу, чтобы слова не залезали под футер */
   overflow-y:auto;
   cursor:default;
   touch-action:pan-y;
-  
-  padding-bottom: 80px; 
 }
 
+/* Футер теперь ФИКСИРОВАН */
 .footer-panel{
-  position: fixed;      /* Жестко фиксируем */
-  bottom: 0;            /* Прижимаем к самому низу */
+  position: fixed;
+  bottom: 0;
   left: 0;
   right: 0;
   z-index: 10;
@@ -361,12 +320,11 @@ html{padding-top:env(safe-area-inset-top)}
   flex-direction:column;
   align-items:center;
   gap:6px;
-  width:100%;
   
-  padding: 4px 8px calc(8px + env(safe-area-inset-bottom, 0px));
-  
+  /* Отступ снизу для безопасной зоны Android */
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)) 8px;
   background:#000;
-  margin-bottom: 0;
+  border-top: 1px solid #223355;
 }
 
 .footer-row{
@@ -392,20 +350,12 @@ html{padding-top:env(safe-area-inset-top)}
 #word-input::placeholder{color:#999}
 
 .footer-icon-btn{
-  flex:0 0 auto;
-  width:48px;
-  min-width:48px;
-  padding:0;
-  font-size:22px;
-  line-height:1;
-  border:1px solid #999;
-  border-radius:12px;
+  flex:0 0 auto;width:48px;min-width:48px;padding:0;
+  font-size:22px;line-height:1;
+  border:1px solid #999;border-radius:12px;
   background: linear-gradient(to bottom, #000, #223355);
-  color:#fff;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
 }
 .footer-icon-btn:active{transform:scale(.96)}
 
@@ -446,7 +396,7 @@ html{padding-top:env(safe-area-inset-top)}
   <span class="brand">Steam</span>
   <span id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
   <span id="tapeIndicator" class="tape">Tape</span>
-  <input type="text" id="peerIdInput" autocomplete="off" spellcheck="false"
+  <input type="text" id="peerIdInput" autocomplete="off" spellcheck="false" enterkeyhint="done"
          placeholder="Peer-XXXX" title="Tap to rename yourself">
 </div>
 
@@ -460,24 +410,23 @@ html{padding-top:env(safe-area-inset-top)}
             onclick="event.stopPropagation(); syncAndKeepData()">
           Update Available
       </span>
-      <p style="font-size:16px;margin:18px 0 0 0"><strong>No Compass Word Geography</strong></p>
-      <p style="font-size:14px;margin:0 0 12px 0"><strong>Live luck in your pocket</strong></p>
-      <p>Input field below adds words to your device only</p>
-      <p>Broadcast data to all devices using this terminal at the same time by performing a long tap on the circle</p>
-      <p>Circle — single tap opens this help, long tap opens the caret to add word or phrase, drag to move</p>
-      <p>Popover — type a word and tap "Send" (or Enter) to insert it right where the caret points (before/after the nearest cell, word or media). Tap 📎 Media to pick an image or video — it lands in that same caret position. The popover accepts either a word OR a media file, not both at once. An optional recipients field lets you send only to specific Peer IDs (empty = public)</p>
-      <p>In <span style="color:#ff0000">Live</span> mode caret word and media edits are sent to all peers (or to recipients) immediately. In <span style="color:#afff00">Tape</span> mode they're stored locally and flushed when a peer appears</p>
+      <p style="font-size:14px;margin-top:12px"><strong>Steam — Map of the words</strong></p>
+      <p>Input field below adds words to your device only.</p>
+      <p>Broadcast data to all devices using this terminal at the same time by performing a long tap on the circle.</p>
+      <p>Circle — single tap opens this help, long tap opens the caret to add word or phrase, drag to move.</p>
+      <p>Popover — type a word and tap "Send" (or Enter) to insert it right where the caret points (before/after the nearest cell, word or media). Tap 📎 Media to pick an image or video — it lands in that same caret position. The popover accepts either a word OR a media file, not both at once. An optional recipients field lets you send only to specific Peer IDs (empty = public).</p>
+      <p>In <span style="color:#ff0000">Live</span> mode caret word and media edits are sent to all peers (or to recipients) immediately. In <span style="color:#afff00">Tape</span> mode they're stored locally and flushed when a peer appears.</p>
 
-      <p>Word taps (local only): fresh &rarr; white &rarr; green &rarr; orange &rarr; open ChatGPT definition (and copy to clipboard). Long tap cancels highlight, or deletes the word if it wasn't highlighted</p>
+      <p>Word taps (local only): fresh &rarr; white &rarr; green &rarr; orange &rarr; open ChatGPT definition (and copy to clipboard). Long tap cancels highlight, or deletes the word if it wasn't highlighted.</p>
 
-      <p>Media — tap any media to open the full-screen viewer; tap again to close. Long tap any media to delete it (same gesture as deleting a word)</p>
+      <p>Media — tap any media to open the full-screen viewer; tap again to close. Long tap any media to delete it (same gesture as deleting a word).</p>
 
-      <p>Footer 📎 button adds local-only media directly from your device (not published to peers)</p>
+      <p>Footer 📎 button adds local-only media directly from your device (not published to peers).</p>
 
-      <p>SYNC (red button) appears only when there are edits waiting in Tape</p>
+      <p>SYNC (red button) appears only when there are edits waiting in Tape.</p>
 
-      <p>Your peer name — tap the ID in the top-right corner, type a new name, tap Enter. 3–9 chars: letters, digits, dash, underscore</p>
-<p>To protest your syntax map add this page to your Home Screen via the browser menu and launch from that shortcut to launch</p>
+      <p>Your peer name — tap the ID in the top-right corner, type a new name, tap Enter. 3–9 chars: letters, digits, dash, underscore.</p>
+
       <a href="support.html" title="Support">
         <img src="/fleurdelis.png" alt="fleur-de-lis"
              style="display:block;margin:28px auto 54px auto;max-width:48px;height:auto;cursor:pointer">
@@ -489,7 +438,7 @@ html{padding-top:env(safe-area-inset-top)}
 
   <div class="footer-panel">
     <div class="footer-row">
-      <input type="text" id="word-input" placeholder="Add word(s) locally and press Enter...">
+      <input type="text" id="word-input" enterkeyhint="send" placeholder="Add word(s) locally and press Enter...">
       <button id="local-media-btn" class="footer-icon-btn" title="Upload local media">📎</button>
     </div>
     <button class="sync-btn" id="syncBtn" title="Re-send tape edits to network" style="display:none">SYNC TAPE TO LIVE</button>
@@ -504,7 +453,7 @@ html{padding-top:env(safe-area-inset-top)}
 
 <div id="edit-popover">
   <div class="title" id="popoverTitle">Insert word</div>
-  <input type="text" id="popoverInput" placeholder="Type a word to send…" autocomplete="off">
+  <input type="text" id="popoverInput" placeholder="Type a word to send…" autocomplete="off" enterkeyhint="send">
   <input type="text" id="popoverRecipients" placeholder="Recipients (comma-separated, empty = public)" autocomplete="off">
   <div class="popover-or">— OR —</div>
   <div class="row">
@@ -1235,9 +1184,13 @@ document.getElementById('btnAdd').addEventListener('click', ()=>{
   hidePopover();
 });
 
-popoverInput.addEventListener('keydown', (e)=>{
-  if (e.key === 'Enter'){ e.preventDefault(); document.getElementById('btnAdd').click(); }
-  if (e.key === 'Escape') hidePopover();
+// Обработка Enter в popover (работает и с кнопкой Send/Go)
+popoverInput.addEventListener('keyup', (e)=>{
+  if (e.key === 'Enter' || e.keyCode === 13){ 
+    e.preventDefault(); 
+    document.getElementById('btnAdd').click(); 
+  }
+  if (e.key === 'Escape' || e.keyCode === 27) hidePopover();
 });
 
 /* =========================================================
@@ -1606,8 +1559,8 @@ function applyRemoteEdit(p){
 /* =========================================================
    Manual input (локально, только слова)
    ========================================================= */
-document.getElementById('word-input').addEventListener('keydown', (e)=>{
-  if (e.key === 'Enter'){
+document.getElementById('word-input').addEventListener('keyup', (e)=>{
+  if (e.key === 'Enter' || e.keyCode === 13){
     e.preventDefault();
     const text = e.target.value.trim();
     if (!text) return;
@@ -1649,13 +1602,14 @@ peerIdInput.addEventListener('focus', ()=>{
   requestAnimationFrame(()=> peerIdInput.select());
 });
 
-peerIdInput.addEventListener('keydown', (e)=>{
-  if (e.key === 'Enter'){
+peerIdInput.addEventListener('keyup', (e)=>{
+  // Сохранение по кнопке Enter или Done (Next)
+  if (e.key === 'Enter' || e.keyCode === 13){
     e.preventDefault();
     commitPeerId();
     peerIdInput.blur();
   }
-  if (e.key === 'Escape'){
+  if (e.key === 'Escape' || e.keyCode === 27){
     peerIdInput.value = _idBeforeEdit;
     peerIdInput.blur();
   }
