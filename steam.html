@@ -393,20 +393,39 @@ html{padding-top:env(safe-area-inset-top)}
   border: 2px solid rgba(255,255,255,.35);
   box-shadow: 0 4px 15px rgba(123,77,255,.35),
              inset 0 2px 6px rgba(255,255,255,.10);
-  color: #fff;
+
   font-family: 'Unbounded', sans-serif;
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1;
+
   display: none;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  text-shadow: 0 0 8px rgba(255,255,255,.5);
+
   -webkit-tap-highlight-color: transparent;
   padding: 0;
 }
 .help-close-circle.show{ display: flex; }
+.help-close-circle .close-icon{
+  position: relative;
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+}
+.help-close-circle .close-icon::before,
+.help-close-circle .close-icon::after{
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  background: #f00;
+}
+.help-close-circle .close-icon::before{
+  width: 28px; height: 2px;
+  transform: translate(-50%,-50%) rotate(45deg);
+}
+.help-close-circle .close-icon::after{
+  width: 2px; height: 28px;
+  transform: translate(-50%,-50%) rotate(45deg);
+}
 .help-close-circle:active{
   transform: scale(.95);
   border-color:#ff2440;
@@ -492,7 +511,9 @@ html{padding-top:env(safe-area-inset-top)}
   </div>
 </div>
 
-<button class="help-close-circle" id="helpCloseCircle" title="Close help">×</button>
+<button class="help-close-circle" id="helpCloseCircle" title="Close help">
+  <span class="close-icon" aria-hidden="true"></span>
+</button>
 
 <div id="caret-circle" title="Tap = help · Long tap = add word/media · Drag = move">
   <span class="caret-question">?</span>
