@@ -207,21 +207,35 @@ html{padding-top:env(safe-area-inset-top)}
   cursor:grab;touch-action:none;
   transition:transform .15s ease, box-shadow .15s ease, background .2s ease, border-color .15s ease;
   -webkit-tap-highlight-color:transparent;
+  font-family:'Unbounded',sans-serif;
+  font-size:26px;
+  font-weight:700;
+  color:#fff;
+  text-shadow:0 0 8px rgba(255,255,255,.5);
 }
-#caret-circle::before{
+/* «?» виден всегда, прицел — только после закрытия help */
+#caret-circle .caret-icon{
+  display:none;
+  position:absolute;
+  left:50%;top:50%;
+  width:100%;height:100%;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+#caret-circle .caret-icon::before{
   content:"";position:absolute;left:50%;top:50%;
   width:28px;height:2px;background:#f00;
-  transform:translate(-50%,-50%) scaleX(0);transform-origin:center;
-  opacity:0;transition:transform .15s ease, opacity .15s ease;
+  transform:translate(-50%,-50%);
 }
-#caret-circle::after{
+#caret-circle .caret-icon::after{
   content:"";position:absolute;left:50%;top:50%;
   width:2px;height:28px;background:#f00;
-  transform:translate(-50%,-50%) scaleY(0);transform-origin:center;
-  opacity:0;transition:transform .15s ease, opacity .15s ease;
+  transform:translate(-50%,-50%);
 }
-#caret-circle.hint::before{transform:translate(-50%,-50%) scaleX(1);opacity:.9;}
-#caret-circle.hint::after{transform:translate(-50%,-50%) scaleY(1);opacity:.9;}
+#caret-circle.show-caret .caret-question{ display:none; }
+#caret-circle.show-caret .caret-icon{ display:block; }
+/* тонкая подсказка (крестик) при наведении в зону — оставляем, но не мешает «?» */
+#caret-circle.hint:not(.show-caret) .caret-question{ color:#fff; }
 #caret-circle.active{
   border-color:#ff2440;
   background:radial-gradient(circle at 35% 35%,rgba(255,36,64,.65),rgba(153,26,40,.35));
@@ -355,6 +369,39 @@ html{padding-top:env(safe-area-inset-top)}
 }
 .sync-btn:disabled{opacity:.4;cursor:default}
 
+/* ---------- кнопка CLOSE HELP в стиле кружка (внизу перед футером) ---------- */
+.help-close-circle{
+  position: fixed;
+  right: 16px;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  z-index: 1600;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(123,77,255,.35), rgba(61,26,153,.15));
+  border: 2px solid rgba(255,255,255,.35);
+  box-shadow: 0 4px 15px rgba(123,77,255,.35),
+             inset 0 2px 6px rgba(255,255,255,.10);
+  color: #fff;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-shadow: 0 0 8px rgba(255,255,255,.5);
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+.help-close-circle.show{ display: flex; }
+.help-close-circle:active{
+  transform: scale(.95);
+  border-color:#ff2440;
+  background: radial-gradient(circle at 35% 35%,rgba(255,36,64,.65),rgba(153,26,40,.35));
+}
+
 /* ---------- help note (full-screen overlay) ---------- */
 .note{
   position:fixed;
@@ -393,7 +440,6 @@ html{padding-top:env(safe-area-inset-top)}
 <div class="container">
   <div class="note" id="note">
     <div class="note-text">
-      <button class="sync-btn" id="help-close-btn" style="background:#444;margin-top:6px">CLOSE HELP</button>
       <button class="sync-btn" id="clearBtn" title="Delete all words & media" style="background:#800;margin-top:6px">CLEAR ALL</button>
       <span id="updateAvailableLine"
             style="display: none; margin: 16px auto; color: #0097ff; font-size: 14px; font-family: 'Roboto Condensed', sans-serif; cursor: pointer;"
@@ -435,7 +481,12 @@ html{padding-top:env(safe-area-inset-top)}
   </div>
 </div>
 
-<div id="caret-circle" title="Tap = help · Long tap = add word/media · Drag = move"></div>
+<button class="help-close-circle" id="helpCloseCircle" title="Close help">×</button>
+
+<div id="caret-circle" title="Tap = help · Long tap = add word/media · Drag = move">
+  <span class="caret-question">?</span>
+  <span class="caret-icon" aria-hidden="true"></span>
+</div>
 
 <div id="media-viewer">
   <button class="viewer-close" id="viewerClose">×</button>
@@ -644,6 +695,7 @@ const caret   = document.getElementById('caret-circle');
 const popover = document.getElementById('edit-popover');
 const popoverInput = document.getElementById('popoverInput');
 const popoverRecipients = document.getElementById('popoverRecipients');
+const helpCloseCircle = document.getElementById('helpCloseCircle');
 
 const mediaViewer = document.getElementById('media-viewer');
 const viewerClose = document.getElementById('viewerClose');
@@ -700,23 +752,52 @@ viewerClose.addEventListener('click', (e) => {
 });
 
 /* =========================================================
-   HELP NOTE (full screen)
+   HELP NOTE (full screen) + caret «?» / прицел
    ========================================================= */
+function setCaretQuestionMode(){
+  // «?» — всегда до закрытия help
+  caret.classList.remove('show-caret');
+}
+function setCaretCrosshairMode(){
+  // прицел — только после закрытия help
+  caret.classList.add('show-caret');
+}
+
 function openHelpNote(){
   if (!note) return;
+  setCaretQuestionMode();
   note.classList.add('open');
+  helpCloseCircle.classList.add('show');
   requestAnimationFrame(() => renderWords());
 }
 
 function closeHelpNote(){
   if (!note) return;
   note.classList.remove('open');
+  helpCloseCircle.classList.remove('show');
+  setCaretCrosshairMode();
   requestAnimationFrame(() => renderWords());
 }
 
-document.getElementById('help-close-btn').addEventListener('click', (e)=>{
+// Верхняя кнопка внутри help больше не нужна, но оставим обработчик,
+// если кто-то её вернёт:
+const oldHelpCloseBtn = document.getElementById('help-close-btn');
+if (oldHelpCloseBtn) {
+  oldHelpCloseBtn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    closeHelpNote();
+  });
+}
+
+// Новая кнопка-кружок «×» внизу перед футером
+helpCloseCircle.addEventListener('click', (e)=>{
   e.stopPropagation();
+  e.preventDefault();
   closeHelpNote();
+});
+helpCloseCircle.addEventListener('pointerdown', (e)=>{
+  // чтобы клик не уходил в document и не закрывал что-то ещё
+  e.stopPropagation();
 });
 
 /* =========================================================
@@ -864,10 +945,8 @@ function renderWords(){
     const block = document.createElement('div');
     block.className = 'word-block';
     block.dataset.itemId = item.id;
-    // Делаем блок строчным, чтобы он шел в потоке текста, но переносы работали
-block.style.cssText = 'display:inline-block; vertical-align:top; max-width:100%; margin:0 0.4em 0 0; word-break:normal; overflow-wrap:break-word; line-height:1.5;';
+    block.style.cssText = 'display:inline-block; vertical-align:top; max-width:100%; margin:0 0.4em 0 0; word-break:normal; overflow-wrap:break-word; line-height:1.5;';
 
-    // Если у элемента нет массива состояний слов, инициализируем его
     if (!item.wordsData && item.word) {
       const rawWords = item.word.split(/(\s+)/);
       item.wordsData = rawWords.map(w => ({
@@ -875,28 +954,21 @@ block.style.cssText = 'display:inline-block; vertical-align:top; max-width:100%;
         highlight: 0, 
         fresh: !!item.fresh 
       }));
-      // Сбрасываем старые флаги, чтобы не дублировались
       item.fresh = false;
       saveItems();
     }
 
-    // Имя автора (сверху)
-// Имя автора (сверху, отдельной строкой)
     if (item.author) {
       const authorDiv = document.createElement('div');
       authorDiv.textContent = item.author;
-      // 0.5em делает подпись в 2 раза меньше основного текста
-      // display:block выносит её на отдельную строку
-      // text-align:left прижимает к левому краю
       authorDiv.style.cssText = 'display:block; font-size:1em; color:#0097ff; font-family:inherit; line-height:1.1; margin-bottom:0.2em; text-align:left; user-select:none;';
       block.appendChild(authorDiv);
     }
 
-    // Рендерим слова с их индивидуальными состояниями
     if (item.wordsData) {
       item.wordsData.forEach((wObj, wIdx) => {
         if (!wObj.text.trim()) {
-          block.appendChild(document.createTextNode(wObj.text)); // Пробел
+          block.appendChild(document.createTextNode(wObj.text));
         } else {
           const span = document.createElement('span');
           span.textContent = wObj.text;
@@ -917,7 +989,6 @@ block.style.cssText = 'display:inline-block; vertical-align:top; max-width:100%;
               longPress = true;
               const realIdx = itemsList.findIndex(it => it.id === item.id);
               if (realIdx !== -1) {
-                // Удаление абзаца целиком при долгом нажатии на слово
                 itemsList.splice(realIdx, 1);
                 saveItems(); renderWords();
               }
@@ -934,7 +1005,6 @@ block.style.cssText = 'display:inline-block; vertical-align:top; max-width:100%;
               const curItem = itemsList[realIdx];
               const curWord = curItem.wordsData[wIdx];
               
-              // Меняем состояние КОНКРЕТНОГО слова
               if (curWord.fresh){
                 curWord.fresh = false;
                 curWord.highlight = 0;
@@ -948,7 +1018,6 @@ block.style.cssText = 'display:inline-block; vertical-align:top; max-width:100%;
               }
               
               saveItems();
-              // Меняем цвет только этого спана
               if (curWord.fresh) span.style.color = '#ff2440';
               else if (curWord.highlight === 1) span.style.color = '#afff00';
               else if (curWord.highlight === 2) span.style.color = '#FFB300';
@@ -1182,7 +1251,6 @@ document.getElementById('btnAdd').addEventListener('click', ()=>{
   hidePopover();
 });
 
-// Обработка Enter в popover (работает и с кнопкой Send/Go)
 popoverInput.addEventListener('keyup', (e)=>{
   if (e.key === 'Enter' || e.keyCode === 13){ 
     e.preventDefault(); 
@@ -1601,7 +1669,6 @@ peerIdInput.addEventListener('focus', ()=>{
 });
 
 peerIdInput.addEventListener('keyup', (e)=>{
-  // Сохранение по кнопке Enter или Done (Next)
   if (e.key === 'Enter' || e.keyCode === 13){
     e.preventDefault();
     commitPeerId();
@@ -1716,6 +1783,8 @@ async function syncAndKeepData() {
 connectMqtt();
 renderWords();
 refreshChrome();
+// Круг всегда стартует с «?» — прицел появится только после закрытия help
+setCaretQuestionMode();
 log('Init done. myId=' + myId + ', clientId=' + clientId + ', items=' + itemsList.length);
 </script>
 </body>
