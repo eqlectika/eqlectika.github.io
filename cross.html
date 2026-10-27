@@ -853,13 +853,15 @@ function loadData() {
   ];
 
   textareas.forEach((ta, i) => {
-    const pos = imgPositions[i];
-    const img = images[i];
+const img = images[i];
 
-    img.style.top = pos.top;
-    img.style.bottom = pos.bottom;
-    img.style.left = pos.left;
-    img.style.right = pos.right;
+const savedPos = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
+const [v, h] = savedPos.split(' ');
+
+img.style.top    = v === 'top'    ? '10px' : 'auto';
+img.style.bottom = v === 'bottom' ? '10px' : 'auto';
+img.style.left   = h === 'left'   ? '10px' : 'auto';
+img.style.right  = h === 'right'  ? '10px' : 'auto';
 
     const wrap = ta.parentElement;
 
