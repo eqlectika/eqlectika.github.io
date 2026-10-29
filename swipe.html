@@ -16,6 +16,7 @@
   --bg:#000; --fg:#f2f2f2;
   --me:#7dd3fc; --user:#afff00;
   --accent:#ff5700;
+  --link:#4ea8ff;
 }
 *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
 html,body{
@@ -104,6 +105,17 @@ html,body{
 }
 .ch.mine{color:var(--me);text-shadow:0 0 8px rgba(125,211,252,.35)}
 .ch.user{color:var(--user);text-shadow:0 0 8px rgba(175,255,0,.35)}
+
+/* ---------- ссылки ---------- */
+.ch.link{
+  color:var(--link);
+  text-decoration:underline;
+  text-underline-offset:2px;
+  pointer-events:auto;
+  cursor:pointer;
+  text-shadow:0 0 8px rgba(78,168,255,.45);
+}
+.ch.link:hover{ color:#8cc7ff; }
 
 /* ---------- подвал ---------- */
 .footer-panel{
@@ -197,18 +209,22 @@ const HINT_TEXT = {
 
 const MY_TEXT = {
   ru: [
-    'Это демонстрационный одноранговый публичный мессенджер.',
-    '"Live" наверху значит присутствует кто-то еще. "Tape" значит вы один на странице.',
-    'Я создаю программное обеспечение, веб-сайты, интерактивные приложения, а также автономные, многофункциональные децентрализованные одноранговые веб-терминалы — решения, разработанные для самых разных устройств, способные адаптироваться к будущим изменениям.',
-    'Вы можете ввести своё имя в правом верхнем углу.',
-    'Введите свой текст в поле ниже, нажмите Enter для публикации, а затем снова выполните свайп.',
+    'Это демонстрационный одноранговый публичный мессенджер',
+    '"Live" наверху значит, что данный момент присутствует кто-то еще. "Tape" значит вы один на странице',
+    'Я создаю программное обеспечение, веб-сайты, интерактивные приложения, а также автономные, многофункциональные децентрализованные одноранговые веб-терминалы — решения, разработанные для самых разных устройств, способные адаптироваться к будущим изменениям',
+    'Вы можете ввести своё имя в правом верхнем углу',
+    'Введите свой текст в поле ниже и нажмите Enter для публикации',
+    'Используйте https://, http:// и www. для активации ссылок',
+    'https://eqlectika.github.io',
   ],
   en: [
-    'This is a demonstration peer public messenger.',
-    '"Live" at the top means someone else is present. "Tape" means you are alone on the page.',
-    'I create software, websites, interactive applications, and independent, multifunctional, decentralized peer-to-peer web terminals—designed for a variety of devices, capable of adapting to future changes.',
-    'You can type your name in the top-right corner.',
-    'Type your text in the field below, press Enter to publish and then swipe again.',
+    'This is a demonstration peer public messenger',
+    '"Live" at the top means someone else is present. "Tape" means you are alone on the page',
+    'I create software, websites, interactive applications, and independent, multifunctional, decentralized peer-to-peer web terminals—designed for a variety of devices, capable of adapting to future changes',
+    'You can type your name in the top-right corner',
+    'Type your text in the field below and press Enter to publish',
+    'Use https://, http://, and www. to activate links',
+    'https://eqlectika.github.io',
   ]
 };
 
@@ -216,7 +232,79 @@ const mySentences = MY_TEXT[LANG];
 const myText = mySentences.join('\n');
 
 /* =========================================================
-   1. ХРАНИЛИЩЕ
+   1. РАСПОЗНАВАНИЕ ССЫЛОК
+   ========================================================= */
+const URL_RE = /\b((?:https?:\/\/|www\.)[^\s]+)/gi;
+const MD_LINK_RE = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+
+function trimUrl(u){
+  return u.replace(/[.,;:!?)\]}]+$/, '');
+}
+function normalizeUrl(u){
+  if (/^www\./i.test(u)) return 'https://' + u;
+  return u;
+}
+
+function autoUrlSplit(text){
+  const out = [];
+  let last = 0;
+  URL_RE.lastIndex = 0;
+  let m;
+  while ((m = URL_RE.exec(text))){
+    const raw = m[0];
+    const cleaned = trimUrl(raw);
+    const start = m.index;
+    const end = start + cleaned.length;
+    if (start > last) out.push({text: text.slice(last, start), link: null});
+    out.push({text: cleaned, link: normalizeUrl(cleaned)});
+    last = end;
+    if (end < start + raw.length){
+      out.push({text: text.slice(end, start + raw.length), link: null});
+      last = start + raw.length;
+    }
+  }
+  if (last < text.length) out.push({text: text.slice(last), link: null});
+  return out;
+}
+
+function splitTextWithLinks(text){
+  const parts = [];
+  let last = 0;
+  MD_LINK_RE.lastIndex = 0;
+  let m;
+  while ((m = MD_LINK_RE.exec(text))){
+    if (m.index > last){
+      parts.push({text: text.slice(last, m.index), link: null, autoUrl: true});
+    }
+    parts.push({text: m[1], link: normalizeUrl(m[2]), autoUrl: false});
+    last = m.index + m[0].length;
+  }
+  if (last < text.length){
+    parts.push({text: text.slice(last), link: null, autoUrl: true});
+  }
+  const out = [];
+  for (const p of parts){
+    if (p.link !== null || !p.autoUrl){
+      out.push(p);
+    } else {
+      for (const seg of autoUrlSplit(p.text)) out.push(seg);
+    }
+  }
+  return out;
+}
+
+function flattenWithLinks(text){
+  const chars = [];
+  for (const seg of splitTextWithLinks(text)){
+    for (const ch of seg.text){
+      chars.push({ch, link: seg.link});
+    }
+  }
+  return chars;
+}
+
+/* =========================================================
+   2. ХРАНИЛИЩЕ
    ========================================================= */
 const store = {
   get(k, fb=null){ try{ const v=localStorage.getItem('st_'+k); return v===null?fb:JSON.parse(v);}catch(e){return fb;} },
@@ -237,7 +325,12 @@ let userChars = store.get('user_chars', []);
 
 function saveMyCursor(){ store.set('my_cursor', myCursor); }
 function saveUserChars(){
-  store.set('user_chars', userChars.map(u => ({ch:u.ch, author:u.author, printed:!!u.printed})));
+  store.set('user_chars', userChars.map(u => ({
+    ch: u.ch,
+    author: u.author,
+    printed: !!u.printed,
+    link: u.link || null
+  })));
 }
 
 let pendingEdits = store.get('pending_edits', []);
@@ -246,7 +339,7 @@ const appliedEditIds = new Set(store.get('applied_edits', []));
 function saveApplied(){ store.set('applied_edits', Array.from(appliedEditIds).slice(-2000)); }
 
 /* =========================================================
-   2. MQTT
+   3. MQTT
    ========================================================= */
 const BROKER = 'wss://broker.emqx.io:8084/mqtt';
 const TOPIC  = 'breakthrough/swipe/v1';
@@ -288,12 +381,7 @@ function connectMqtt(){
     if (p.sid === clientId) return;
 
     if (p.type === 'PING'){ activePeers[p.sender] = Date.now(); return; }
-
-    if (p.type === 'WORD_EDIT'){
-      applyRemoteEdit(p);
-      return;
-    }
-
+    if (p.type === 'WORD_EDIT'){ applyRemoteEdit(p); return; }
     if (p.type === 'WORD_EDIT_ACK'){
       if (p.editId){
         pendingEdits = pendingEdits.filter(e => e.editId !== p.editId);
@@ -333,7 +421,6 @@ function updatePeers(){
   if (pendingEdits.length !== before) savePending();
 
   refreshChrome();
-
   if (isLive && pendingEdits.length > 0) flushPendingEdits();
 }
 
@@ -351,7 +438,7 @@ function flushPendingEdits(){
 }
 
 /* =========================================================
-   3. UI Chrome
+   4. UI Chrome
    ========================================================= */
 const liveInd = document.getElementById('liveIndicator');
 const tapeInd = document.getElementById('tapeIndicator');
@@ -376,7 +463,7 @@ function refreshChrome(){
 syncBtn.addEventListener('click', () => { if (isLive) flushPendingEdits(); });
 
 /* =========================================================
-   4. Метрики
+   5. Метрики
    ========================================================= */
 const stage = document.getElementById('stage');
 const scroller = document.getElementById('scroller');
@@ -401,7 +488,7 @@ recalcMetrics();
 window.addEventListener('resize', recalcMetrics);
 
 /* =========================================================
-   5. Раскладка
+   6. Раскладка
    ========================================================= */
 let cursorY = marginY;
 let currentLine = [];
@@ -465,7 +552,7 @@ function updateStageHeight(){
 }
 
 /* =========================================================
-   6. Оборот буквы
+   7. Оборот буквы
    ========================================================= */
 function spin(el){
   const DUR = 600;
@@ -481,9 +568,9 @@ function spin(el){
 }
 
 /* =========================================================
-   7. Добавление символа
+   8. Добавление символа (с поддержкой ссылок)
    ========================================================= */
-function addChar(ch, kind, author, animateSpin){
+function addChar(ch, kind, author, animateSpin, href){
   if (author && currentLine.length === 0 && ch !== '\n' && ch !== ' '){
     cursorY += lineH * 0.5;
 
@@ -508,7 +595,7 @@ function addChar(ch, kind, author, animateSpin){
     wrapLine();
   }
   if (ch === ' '){
-    currentLine.push({el:null, ch:' ', kind, author});
+    currentLine.push({el:null, ch:' ', kind, author, href:null});
     currentLineWidth += charW;
     layoutCurrentLine();
     updateStageHeight();
@@ -517,10 +604,16 @@ function addChar(ch, kind, author, animateSpin){
   }
   const el = document.createElement('span');
   el.className = 'ch ' + kind;
+  if (href){
+    el.classList.add('link');
+    el.dataset.href = href;
+    el.setAttribute('role', 'link');
+    el.setAttribute('tabindex', '0');
+  }
   el.textContent = ch;
   el.style.top = cursorY + 'px';
   stage.appendChild(el);
-  const entry = {el, ch, kind, author};
+  const entry = {el, ch, kind, author, href: href || null};
   currentLine.push(entry);
   layoutCurrentLine();
   if (animateSpin) spin(el);
@@ -531,13 +624,13 @@ function addChar(ch, kind, author, animateSpin){
 }
 
 /* =========================================================
-   8. Печать
+   9. Печать
    ========================================================= */
 function typeMyChar(){
   if (myCursor >= myText.length) return false;
   const ch = myText[myCursor++];
   saveMyCursor();
-  addChar(ch, 'mine', null, true);
+  addChar(ch, 'mine', null, true, null);
   return true;
 }
 
@@ -551,7 +644,7 @@ function printOne(){
     if (!u.printed){
       if (u.ch === '\n') return false;
       u.printed = true;
-      addChar(u.ch, 'user', u.author, true);
+      addChar(u.ch, 'user', u.author, true, u.link || null);
       saveUserChars();
       return true;
     }
@@ -560,18 +653,18 @@ function printOne(){
 }
 
 function appendUserText(text, author, autoPrint){
-  const shouldPrintNow = !!autoPrint;
+  const flat = flattenWithLinks(text);
   const startIdx = userChars.length;
-  for (const ch of text){
-    userChars.push({ch, author: author || 'You', printed: false});
+  for (const c of flat){
+    userChars.push({ch: c.ch, author: author || 'You', printed: false, link: c.link});
   }
   saveUserChars();
-  if (shouldPrintNow){
+  if (autoPrint){
     for (let i = startIdx; i < userChars.length; i++){
       const u = userChars[i];
       if (!u.printed){
         u.printed = true;
-        addChar(u.ch, 'user', u.author, true);
+        addChar(u.ch, 'user', u.author, true, u.link || null);
       }
     }
     saveUserChars();
@@ -579,7 +672,7 @@ function appendUserText(text, author, autoPrint){
 }
 
 /* =========================================================
-   9. Палец → печать
+   10. Палец → печать
    ========================================================= */
 const STEP_PX = 18;
 let lastX = null, lastY = null;
@@ -601,13 +694,13 @@ function moveTo(x, y){
     if (myCursor < myText.length && myText[myCursor] === '\n'){
       myCursor++;
       saveMyCursor();
-      addChar('\n', 'mine', null, false);
+      addChar('\n', 'mine', null, false, null);
     } else {
       for (const u of userChars){
         if (!u.printed && u.ch === '\n'){
           u.printed = true;
           saveUserChars();
-          addChar('\n', 'user', u.author, false);
+          addChar('\n', 'user', u.author, false, null);
           break;
         }
       }
@@ -636,6 +729,10 @@ stage.addEventListener('touchstart', (e) => {
 
 stage.addEventListener('touchmove', (e) => {
   if (e.touches.length !== 1) return;
+  if (gestureMode === null){
+    const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+    if (el && el.closest('.ch.link')) return;
+  }
   const p = stagePoint(e);
   const dx = p.cx - startClientX;
   const dy = p.cy - startClientY;
@@ -660,19 +757,45 @@ stage.addEventListener('touchcancel', () => {
 }, { passive: true });
 
 stage.addEventListener('mousedown', (e) => {
+  if (e.target.closest && e.target.closest('.ch.link')) return;
   const p = stagePoint(e);
   lastX = p.x; lastY = p.y;
   printOne();
 });
 stage.addEventListener('mousemove', (e) => {
   if (!e.buttons) return;
+  if (e.target.closest && e.target.closest('.ch.link')) return;
   const p = stagePoint(e);
   moveTo(p.x, p.y);
 });
 window.addEventListener('mouseup', () => { lastX = null; lastY = null; });
 
 /* =========================================================
-   10. Поле ввода
+   11. Клик по ссылке
+   ========================================================= */
+function openHref(href){
+  if (!href) return;
+  try{ window.open(href, '_blank', 'noopener'); }catch(e){}
+}
+
+stage.addEventListener('click', (e) => {
+  const el = e.target.closest && e.target.closest('.ch.link');
+  if (!el) return;
+  e.preventDefault();
+  e.stopPropagation();
+  openHref(el.dataset.href);
+});
+
+stage.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const el = e.target.closest && e.target.closest('.ch.link');
+  if (!el) return;
+  e.preventDefault();
+  openHref(el.dataset.href);
+});
+
+/* =========================================================
+   12. Поле ввода
    ========================================================= */
 const wordInput = document.getElementById('word-input');
 wordInput.placeholder = PLACEHOLDER;
@@ -722,7 +845,7 @@ wordInput.addEventListener('keydown', (e) => {
 });
 
 /* =========================================================
-   11. Приём WORD_EDIT + ACK
+   13. Приём WORD_EDIT + ACK
    ========================================================= */
 function applyRemoteEdit(p){
   if (p.editId && appliedEditIds.has(p.editId)) return;
@@ -741,7 +864,7 @@ function applyRemoteEdit(p){
 }
 
 /* =========================================================
-   12. Clear
+   14. Clear
    ========================================================= */
 document.getElementById('btnClear').addEventListener('click', () => {
   if (!confirm(LANG === 'ru' ? 'Очистить экран и весь текст на этом устройстве?' : 'Clear screen and all text on this device?')) return;
@@ -768,7 +891,7 @@ document.getElementById('btnClear').addEventListener('click', () => {
 });
 
 /* =========================================================
-   13. Rename
+   15. Rename
    ========================================================= */
 let beforeId = myId;
 peerIdInput.addEventListener('focus', () => {
@@ -802,7 +925,7 @@ function commitId(){
 }
 
 /* =========================================================
-   14. Автоскролл
+   16. Автоскролл
    ========================================================= */
 let userScrolling = false;
 let userScrollTimer = null;
@@ -822,21 +945,24 @@ function autoScroll(){
 }
 
 /* =========================================================
-   15. Восстановление
+   17. Восстановление
    ========================================================= */
 function restorePrinted(){
+  // Мой ввод: теперь тоже прогоняем через распознаватель ссылок
+  const mineFlat = flattenWithLinks(myText);
   for (let i = 0; i < myCursor; i++){
-    addChar(myText[i], 'mine', null, false);
+    const c = mineFlat[i] || {ch: myText[i], link: null};
+    addChar(c.ch, 'mine', null, false, c.link);
   }
   for (const u of userChars){
     if (u.printed){
-      addChar(u.ch, 'user', u.author, false);
+      addChar(u.ch, 'user', u.author, false, u.link || null);
     }
   }
 }
 
 /* =========================================================
-   16. Init
+   18. Init
    ========================================================= */
 recalcMetrics();
 restorePrinted();
