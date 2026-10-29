@@ -6,13 +6,9 @@
   <link rel="manifest" href="manifest-book.json">
   <title>Fb2 Reader</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
-
   <style>
     body {
-      font-family: 'Ubuntu', system-ui, -apple-system, sans-serif; 
+      font-family: monospace;
       background-color: #000;
       color: #fff;
       margin: 20px;
@@ -56,7 +52,7 @@
 
     #loadFileButton, #changeFontButton {
       padding: 10px 20px;
-      font-family: 'Ubuntu', sans-serif;
+      font-family: monospace;
       font-size: 16px;
       font-weight: bold;
       border-radius: 0px;
@@ -114,7 +110,7 @@
 #controls button,
 .help-content,
 .help-content * {
-  font-family: 'Ubuntu', system-ui, -apple-system, sans-serif !important;
+  font-family: monospace !important;
 }
 
     #leftMenuSelectMenu button {
@@ -281,6 +277,43 @@
     .update-link:hover {
       text-decoration: underline;
     }
+
+    /* ===== Language selector under example heading ===== */
+    .lang-selector-wrapper {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0 15px 0;
+      flex-wrap: wrap;
+    }
+
+    .lang-btn {
+      background: #1a1a1a;
+      color: #ffa500;
+      border: 1px solid #ffa500;
+      padding: 6px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s;
+      font-family: monospace;
+    }
+
+    .lang-btn:hover {
+      background: #ffa500;
+      color: #000;
+    }
+
+    .lang-btn.active {
+      background: #ffa500;
+      color: #000;
+      border-color: #ffa500;
+    }
+
+    .lang-btn:active {
+      transform: scale(0.95);
+    }
   </style>
 </head>
 <body>
@@ -294,12 +327,13 @@
 
   <div id="leftMenuSelectMenu" style="display: none;">
     <button id="loadBookMenuItem">Load book</button>
+    <button id="exampleMenuItem">Example</button>
     <button id="helpMenuItem">Help</button>
   </div>
 
   <div id="fontSelectMenu" style="display: none;">
     <button data-font="Courier New">Courier</button>
-    <button data-font="Ubuntu">Ubuntu</button>
+    <button data-font="Monospace">Monospace</button>
     <button data-font="San Francisco">System</button>
   </div>
   
@@ -332,13 +366,213 @@
     
     const leftMenuSelectMenu = document.getElementById('leftMenuSelectMenu');
     const loadBookMenuItem = document.getElementById('loadBookMenuItem');
+    const exampleMenuItem = document.getElementById('exampleMenuItem');
     const helpMenuItem = document.getElementById('helpMenuItem');
     
     const helpPopup = document.getElementById('helpPopup');
     const helpCloseBtn = document.getElementById('helpCloseBtn');
     const updateLink = document.getElementById('updateLink');
     
-function resetWordState(wordElement) {
+    // ================================================================
+    // EXAMPLE TEXTS — verbatim translations
+    // ================================================================
+
+    const exampleTextRU = `Эскроу — постулат взаимодействия
+
+Мир состоит из языка, а виртуальная реальность — это шлюз в поле синтаксиса
+
+Явление первично. Синтаксис вторичен. Он не создаёт явление, а возникает как поле, в котором взаимодействия приобретают различимость, последовательность и значение
+
+Эскроу — имя, данное исходному явлению: неизменному условию, которое не обязано участвовать в изменениях, чтобы делать их возможными. Это статическая точка соотнесения, посредник между двумя исходными элементами, позволяющий взаимодействию сохранять целостность без требования абсолютного равновесия
+
+Два элемента создают взаимодействие, третий обеспечивает соотнесение, четвёртый обнаруживает динамику целого. Так формируется кватернионная конструкция, в которой значение имеет не изолированный элемент, а конфигурация отношений
+
+Летающее насекомое становится моделью мироздания в малом масштабе. Его конструкция объединяет массу, вращение, инерцию, реактивный импульс, аэродинамику, ориентацию и синхронизацию. Крылья создают подъёмную силу, нервная система координирует движения, а механические сочленения и обратная связь согласовывают импульсы. У некоторых насекомых, например у нимф Issus, существуют настоящие зубчатые структуры, синхронизирующие движения задних конечностей
+
+Реактивный импульс обозначает здесь ответное движение, возникающее при взаимодействии системы со средой или при перераспределении движения внутри неё. Его направление, интенсивность и момент возникновения определяют следующую конфигурацию системы. Движение становится не просто перемещением, а последовательностью взаимосвязанных реакций
+
+Аналитическая задержка — интервал между возникновением взаимодействия и его различением, интерпретацией или включением в последующее действие. Она определяет, насколько далеко реакция отстоит от исходного события и сколько промежуточных состояний успевает возникнуть до следующего импульса. В механике этот интервал может выражаться временем отклика системы, в нервной деятельности — обработкой сигнала, в языке — переходом от восприятия к значению
+
+Устойчивость возникает не из неподвижности частей, а из согласованности их динамики. Система сохраняет целостность не потому, что каждое движение предсказуемо, а потому, что взаимодействия ограничивают и перенаправляют друг друга
+
+Та же конструкция обнаруживается в планетарной механике. Масса участвует в гравитационном взаимодействии, планеты движутся по орбитам, вращаются вокруг собственных осей и сохраняют динамическую историю благодаря импульсу и угловому моменту. Орбитальное движение не создаётся одним лишь вращением планеты, а инерция не отменяет гравитацию. Однако планетарная система и летающее насекомое позволяют рассматривать мир через общие понятия движения, соотнесения, устойчивости и реакции
+
+Притяжение, вращение, инерция, масса и индукция получают имена, но имя не тождественно явлению. Когда разные процессы описываются одним словом, возникает конфликт значений: язык удерживает в одном понятии различные механизмы. Синтаксис становится полем этой игры — не её источником, а формой организации отношений между понятиями
+
+Каждое новое понятие вводит собственный код, собственную аналитическую задержку и собственный рисунок реактивного импульса. Взаимодействия не обязаны приводить к заранее определённому результату. Из их сочетания возникают новые свойства, а последовательность изменений образует время как порядок событий
+
+Эскроу обозначает неизменное условие соотнесения. Реактивный импульс выражает переход взаимодействия в движение. Аналитическая задержка задаёт интервал между событием и его различением. Синтаксис организует отношения, язык делает их различимыми, а виртуальная реальность открывает шлюз в поле синтаксиса, где элементы, значения и события могут получать новые конфигурации
+
+Явление → взаимодействие → соотнесение → масса → притяжение → вращение → инерция → реактивный импульс → аналитическая задержка → синхронизация → устойчивость → отклонение → индукция → синтаксис → значение → время → новое явление
+
+Эта последовательность фиксирует архитектуру взаимодействия: явление допускает отношения, отношения формируют динамику, динамика становится различимой, различимость организуется языком, а язык открывает пространство новых конфигураций
+
+Эскроу — не участник игры, а имя неизменного условия, относительно которого игра изменений становится возможной`;
+
+    const exampleTextEN = `Escrow — the postulate of interaction
+
+The world consists of language, and virtual reality is a gateway into the field of syntax
+
+Phenomenon is primary. Syntax is secondary. It does not create the phenomenon but arises as a field in which interactions acquire distinctness, sequence, and meaning
+
+Escrow is the name given to the original phenomenon: an unchanging condition that need not participate in changes in order to make them possible. It is a static point of reference, a mediator between two original elements, allowing interaction to preserve integrity without requiring absolute equilibrium
+
+Two elements create interaction, a third provides correlation, a fourth reveals the dynamics of the whole. Thus a quaternionic construction is formed, in which what matters is not an isolated element but the configuration of relations
+
+A flying insect becomes a model of the universe on a small scale. Its construction combines mass, rotation, inertia, reactive impulse, aerodynamics, orientation, and synchronization. The wings create lift, the nervous system coordinates movements, and mechanical joints and feedback harmonize impulses. Some insects, such as Issus nymphs, possess true gear structures that synchronize the movements of their hind limbs
+
+Reactive impulse here denotes a responsive motion arising from the interaction of the system with the environment or from the redistribution of motion within it. Its direction, intensity, and moment of occurrence determine the next configuration of the system. Motion becomes not merely displacement but a sequence of interconnected reactions
+
+Analytical delay is the interval between the emergence of an interaction and its discernment, interpretation, or inclusion in subsequent action. It determines how far the reaction stands from the original event and how many intermediate states manage to arise before the next impulse. In mechanics this interval may be expressed as the system's response time, in nervous activity — as signal processing, in language — as the transition from perception to meaning
+
+Stability arises not from the immobility of parts but from the coherence of their dynamics. A system preserves integrity not because every movement is predictable but because interactions constrain and redirect one another
+
+The same construction is found in planetary mechanics. Mass participates in gravitational interaction, planets move in orbits, rotate around their own axes, and preserve dynamic history through impulse and angular momentum. Orbital motion is not created by the planet's rotation alone, and inertia does not cancel gravity. However, the planetary system and the flying insect allow us to consider the world through the common concepts of motion, correlation, stability, and reaction
+
+Attraction, rotation, inertia, mass, and induction receive names, but a name is not identical to the phenomenon. When different processes are described by a single word, a conflict of meanings arises: language holds different mechanisms within one concept. Syntax becomes the field of this play — not its source but the form of organizing relations between concepts
+
+Each new concept introduces its own code, its own analytical delay, and its own pattern of reactive impulse. Interactions are not obliged to lead to a predetermined result. From their combination new properties arise, and the sequence of changes forms time as the order of events
+
+Escrow denotes the unchanging condition of correlation. Reactive impulse expresses the transition of interaction into motion. Analytical delay sets the interval between an event and its discernment. Syntax organizes relations, language makes them distinguishable, and virtual reality opens a gateway into the field of syntax, where elements, meanings, and events can acquire new configurations
+
+Phenomenon → interaction → correlation → mass → attraction → rotation → inertia → reactive impulse → analytical delay → synchronization → stability → deviation → induction → syntax → meaning → time → new phenomenon
+
+This sequence fixes the architecture of interaction: phenomenon permits relations, relations form dynamics, dynamics becomes discernible, discernibility is organized by language, and language opens the space of new configurations
+
+Escrow is not a participant in the game but the name of the unchanging condition relative to which the game of changes becomes possible`;
+
+    const exampleTextJA = `エスクロー — 相互作用の公準
+
+世界は言語から成り立ち、仮想現実は構文の場への門である
+
+現象は一次的である。構文は二次的である。構文は現象を創造するのではなく、相互作用が識別性、順序、そして意味を獲得する場として生じる
+
+エスクローとは、元の現象に与えられた名である。それは変化を可能にするために変化に関与する必要のない不変の条件である。それは二つの元の要素の間の静的な照応点であり、絶対的平衡を要求することなく相互作用が全体性を保つことを可能にする媒介者である
+
+二つの要素が相互作用を生み、第三の要素が照応を確保し、第四の要素が全体の動態を明らかにする。こうして四元数的構造が形成され、そこでは孤立した要素ではなく関係の配置が意味を持つ
+
+飛翔する昆虫は、小規模な宇宙のモデルとなる。その構造は質量、回転、慣性、反動インパルス、空気力学、配向、同期を統合する。翅は揚力を生み、神経系は動きを調整し、機械的関節とフィードバックがインパルスを調和させる。一部の昆虫、例えばIssusの幼虫には、後肢の動きを同期させる真の歯車構造が存在する
+
+反動インパルスとはここでは、系と環境との相互作用、または系内部での運動の再分配によって生じる応答運動を指す。その方向、強度、発生の瞬間が系の次の配置を決定する。運動は単なる変位ではなく、相互に関連する反応の連続となる
+
+分析的遅延とは、相互作用の発生とその識別、解釈、または後続の行為への組み込みとの間の間隔である。それは反応が元の事象からどれだけ離れているか、次のインパルスまでにいくつの中間状態が生じるかを決定する。力学ではこの間隔は系の応答時間として、神経活動では信号処理として、言語では知覚から意味への移行として表れる
+
+安定性は部分の不動性からではなく、それらの動態の整合性から生じる。系が全体性を保つのは、すべての動きが予測可能だからではなく、相互作用が互いを制約し方向転換させるからである
+
+同じ構造は惑星力学にも見出される。質量は重力相互作用に関与し、惑星は軌道を運動し、自軸の周りを回転し、インパルスと角運動量によって動的な歴史を保存する。軌道運動は惑星の回転だけによって創造されるのではなく、慣性は重力を打ち消さない。しかし惑星系と飛翔する昆虫は、運動、照応、安定性、反応という共通の概念を通じて世界を考察することを可能にする
+
+引力、回転、慣性、質量、誘導は名を与えられるが、名は現象と同一ではない。異なる過程が一つの言葉で記述されるとき、意味の衝突が生じる。言語は一つの概念の中に異なるメカニズムを保持する。構文はこの遊びの場となる — その源泉ではなく、概念間の関係を組織する形式として
+
+それぞれの新しい概念は固有のコード、固有の分析的遅延、固有の反動インパルスのパターンを持ち込む。相互作用はあらかじめ定められた結果をもたらす義務はない。それらの組み合わせから新しい性質が生じ、変化の連続が事象の順序としての時間を形成する
+
+エスクローは照応の不変条件を指す。反動インパルスは相互作用の運動への移行を表現する。分析的遅延は事象とその識別との間の間隔を設定する。構文は関係を組織し、言語はそれらを識別可能にし、仮想現実は要素、意味、事象が新しい配置を獲得しうる構文の場への門を開く
+
+現象 → 相互作用 → 照応 → 質量 → 引力 → 回転 → 慣性 → 反動インパルス → 分析的遅延 → 同期 → 安定性 → 偏差 → 誘導 → 構文 → 意味 → 時間 → 新しい現象
+
+この順序は相互作用の建築を固定する。現象は関係を許容し、関係は動態を形成し、動態は識別可能となり、識別性は言語によって組織され、言語は新しい配置の空間を開く
+
+エスクローは遊びの参加者ではなく、変化の遊びが可能となる相対的な不変の条件の名である`;
+
+    // ================================================================
+    // Language resolution
+    // ================================================================
+
+    function getBrowserLanguage() {
+      const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+      if (lang.startsWith('ru')) return 'ru';
+      if (lang.startsWith('ja')) return 'ja';
+      return 'en';
+    }
+
+    let currentExampleLang = getBrowserLanguage();
+
+    // ================================================================
+    // Build example content with language selector
+    // ================================================================
+
+    function buildExampleHTML(lang) {
+      const textMap = {
+        ru: exampleTextRU,
+        en: exampleTextEN,
+        ja: exampleTextJA
+      };
+      const text = textMap[lang] || exampleTextEN;
+      const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+
+      let html = '';
+
+      // Title + language selector
+      if (paragraphs.length > 0) {
+        html += `<div class="title">${paragraphs[0].trim()}</div>`;
+      }
+
+      // Language selector under the heading
+      html += `<div class="lang-selector-wrapper">`;
+      html += `<button class="lang-btn${lang === 'ru' ? ' active' : ''}" data-lang="ru">Русский</button>`;
+      html += `<button class="lang-btn${lang === 'en' ? ' active' : ''}" data-lang="en">English</button>`;
+      html += `<button class="lang-btn${lang === 'ja' ? ' active' : ''}" data-lang="ja">日本語</button>`;
+      html += `</div>`;
+
+      // Body paragraphs
+      for (let i = 1; i < paragraphs.length; i++) {
+        const textPart = paragraphs[i].trim();
+        if (!textPart) continue;
+
+        const parts = textPart.split(/(\s+)/);
+        let pContent = '';
+        parts.forEach(part => {
+          if (part.trim().length === 0) {
+            pContent += part;
+          } else {
+            pContent += `<span class="clickable-word state-0" data-state="0">${part}</span>`;
+          }
+        });
+
+        html += `<div class="paragraph">${pContent}</div>`;
+      }
+
+      return html;
+    }
+
+    function renderExample(lang) {
+      currentExampleLang = lang;
+      contentDiv.innerHTML = buildExampleHTML(lang);
+      attachWordListeners();
+      attachLangListeners();
+      localStorage.setItem('fb2_book_content', contentDiv.innerHTML);
+      localStorage.setItem('fb2_example_lang', lang);
+    }
+
+    function attachLangListeners() {
+      const langBtns = contentDiv.querySelectorAll('.lang-btn');
+      langBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const lang = this.getAttribute('data-lang');
+          if (lang && lang !== currentExampleLang) {
+            renderExample(lang);
+          }
+        });
+      });
+    }
+
+    // ================================================================
+    // Example menu item
+    // ================================================================
+
+    exampleMenuItem.addEventListener('click', () => {
+      // Restore saved language preference if any, otherwise use browser language
+      const savedLang = localStorage.getItem('fb2_example_lang');
+      const lang = savedLang || getBrowserLanguage();
+      renderExample(lang);
+      leftMenuSelectMenu.style.display = 'none';
+    });
+
+    // ================================================================
+    // Word state / click handling
+    // ================================================================
+
+    function resetWordState(wordElement) {
       wordElement.dataset.state = '0';
       wordElement.classList.remove('state-0', 'state-1', 'state-2');
       wordElement.classList.add('state-0');
@@ -346,31 +580,29 @@ function resetWordState(wordElement) {
       localStorage.setItem('fb2_book_content', contentDiv.innerHTML);
     }
 
-function handleWordClick(wordElement) {
-  const word = wordElement.textContent.trim();
-  if (!word) return;
-  
-  let currentState = parseInt(wordElement.dataset.state || '0');
+    function handleWordClick(wordElement) {
+      const word = wordElement.textContent.trim();
+      if (!word) return;
 
-  // Если уже оранжевый (state-2) — просто открываем ChatGPT, цвет не трогаем
-  if (currentState === 2) {
-    navigator.clipboard.writeText(word).catch(() => {});
-    const query = `What is the definition of the word "${word}" in the interface language?`;
-    window.open(
-      `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
-      '_blank'
-    );
-    return;
-  }
+      let currentState = parseInt(wordElement.dataset.state || '0');
 
-  // Иначе переключаем цвет: 0 → 1 → 2
-  currentState = currentState + 1;
-  wordElement.dataset.state = currentState;
-  wordElement.classList.remove('state-0', 'state-1', 'state-2');
-  wordElement.classList.add(`state-${currentState}`);
-  
-  localStorage.setItem('fb2_book_content', contentDiv.innerHTML);
-}
+      if (currentState === 2) {
+        navigator.clipboard.writeText(word).catch(() => {});
+        const query = `What is the definition of the word "${word}" in the interface language?`;
+        window.open(
+          `https://chatgpt.com/?q=${encodeURIComponent(query)}`,
+          '_blank'
+        );
+        return;
+      }
+
+      currentState = currentState + 1;
+      wordElement.dataset.state = currentState;
+      wordElement.classList.remove('state-0', 'state-1', 'state-2');
+      wordElement.classList.add(`state-${currentState}`);
+
+      localStorage.setItem('fb2_book_content', contentDiv.innerHTML);
+    }
 
     function setMenuWidth() {
       const leftButtonWidth = loadFileButton.offsetWidth; 
@@ -386,6 +618,12 @@ function handleWordClick(wordElement) {
       if (savedBook) {
         contentDiv.innerHTML = savedBook;
         attachWordListeners();
+        // Re-attach language listeners if the saved content contains the example
+        if (contentDiv.querySelector('.lang-btn')) {
+          attachLangListeners();
+          const savedLang = localStorage.getItem('fb2_example_lang');
+          if (savedLang) currentExampleLang = savedLang;
+        }
       }
     });
 
@@ -408,10 +646,10 @@ function handleWordClick(wordElement) {
         leftMenuSelectMenu.style.display = 'none';
     });
 
-helpMenuItem.addEventListener('click', () => {
-  helpPopup.classList.add('active');
-  leftMenuSelectMenu.style.display = 'none';
-});
+    helpMenuItem.addEventListener('click', () => {
+      helpPopup.classList.add('active');
+      leftMenuSelectMenu.style.display = 'none';
+    });
 
     helpCloseBtn.addEventListener('click', () => {
       helpPopup.classList.remove('active');
@@ -443,10 +681,8 @@ helpMenuItem.addEventListener('click', () => {
         location.reload(true);
       }
     });
-    
 
-    
-function attachWordListeners() {
+    function attachWordListeners() {
       const wordElements = document.querySelectorAll('.clickable-word');
       
       wordElements.forEach(wordEl => {
@@ -473,7 +709,6 @@ function attachWordListeners() {
           pressStartTime = Date.now();
           wordEl._isLongPress = false;
           
-          // Запускаем таймер длинного нажатия (600 мс) для сброса цвета
           clearTimeout(wordEl._longPressTimer);
           wordEl._longPressTimer = setTimeout(() => {
             wordEl._isLongPress = true;
@@ -485,7 +720,6 @@ function attachWordListeners() {
           event.stopPropagation();
           clearTimeout(wordEl._longPressTimer);
           
-          // Если сработало длинное нажатие, отменяем обычный клик
           if (wordEl._isLongPress) {
             wordEl._isLongPress = false;
             return;
@@ -588,8 +822,8 @@ function attachWordListeners() {
         const selectedFont = this.getAttribute('data-font');
         let fontCSS;
 
-        if (selectedFont === 'Ubuntu') {
-          fontCSS = "'Ubuntu', sans-serif";
+        if (selectedFont === 'Monospace') {
+          fontCSS = 'monospace';
         } else if (selectedFont === 'San Francisco') {
           fontCSS = 'system-ui, -apple-system, sans-serif';
         } else {
