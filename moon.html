@@ -3,8 +3,7 @@
 <head> 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/png" href="loop.png">
-
+  <link rel="icon" type="image/png" href="loop.png">
   <title>Solar System Orbital Trajectories Animation</title>
   <link rel="manifest" href="manifest-moon.json">
   <style>
@@ -14,39 +13,14 @@
       user-select: none;
     }
 
-    /* ===== УЛУЧШЕННЫЕ СКРОЛЛ-БАРЫ ===== */
-    /* Для WebKit-браузеров (Chrome, Safari, Edge) */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; transition: background 0.3s; }
+    ::-webkit-scrollbar-thumb:hover { background: #888; }
+    ::-webkit-scrollbar-thumb:active { background: #aaa; }
 
-    ::-webkit-scrollbar-track {
-      background: #1a1a1a;
-      border-radius: 4px;
-    }
+    * { scrollbar-width: thin; scrollbar-color: #555 #1a1a1a; }
 
-    ::-webkit-scrollbar-thumb {
-      background: #555;
-      border-radius: 4px;
-      transition: background 0.3s;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: #888;
-    }
-
-    ::-webkit-scrollbar-thumb:active {
-      background: #aaa;
-    }
-
-    /* Для Firefox */
-    * {
-      scrollbar-width: thin;
-      scrollbar-color: #555 #1a1a1a;
-    }
-
-    /* Остальные стили */
     body {
       margin: 0;
       padding: 0;
@@ -76,11 +50,7 @@
       margin-top: 0; 
     }
 
-    h1 {
-      margin: 15px;
-      font-size: 1.2rem;
-      text-align: center;
-    }
+    h1 { margin: 15px; font-size: 1.2rem; text-align: center; }
 
     .logo-image {
       display: inline-block;
@@ -89,11 +59,7 @@
       transition: opacity 0.3s, transform 0.3s;
       vertical-align: middle;
     }
-
-    .logo-image:hover {
-      opacity: 0.8;
-      transform: scale(1.1);
-    }
+    .logo-image:hover { opacity: 0.8; transform: scale(1.1); }
     
     #controls {
       display: flex;
@@ -104,21 +70,17 @@
       flex-wrap: wrap;
       margin-bottom: 5px;
     }
-    #controls label {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 0.9rem;
-      cursor: pointer;
-    }
+    #controls label { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; cursor: pointer; }
 
+    /* КЛЮЧЕВОЕ: разрешаем вертикальный скролл одним пальцем */
     #orbitCanvas {
       background-color: #000;
       display: block;
       max-width: 100%;
       max-height: 100%;
-      touch-action: none;
+      touch-action: pan-y;
     }
+
     #legend {
       display: flex;
       flex-wrap: wrap;
@@ -128,84 +90,22 @@
       margin-bottom: 20px;
       font-size: 0.8rem;
     }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      cursor: pointer;
-    }
-    .color-box {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      position: relative;
-    }
-    .color-box input {
-      position: absolute;
-      opacity: 0;
-      width: 100%;
-      height: 100%;
-      cursor: pointer;
-    }
-    #info {
-      text-align: center;
-      font-size: 0.8rem;
-      margin: 0px;
-      padding: 0 10px;
-    }
-    .hidden-planet {
-      opacity: 0.3;
-    }
-    .speed-control {
-      width: 100%;
-      padding: 0 0px;
-      margin-top: 5px;
-      text-align: center;
-    }
-    .speed-control label {
-      display: block;
-      margin-bottom: 5px;
-    }
+    .legend-item { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+    .color-box { width: 12px; height: 12px; border-radius: 50%; position: relative; }
+    .color-box input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+    #info { text-align: center; font-size: 0.8rem; margin: 0px; padding: 0 10px; }
+    .hidden-planet { opacity: 0.3; }
+    .speed-control { width: 100%; padding: 0 0px; margin-top: 5px; text-align: center; }
+    .speed-control label { display: block; margin-bottom: 5px; }
     #pause-btn {
-      margin-bottom: 5px;
-      padding: 5px 10px;
-      background: #333;
-      color: white;
-      border: none;
-      border-radius: 0px;
-      cursor: pointer;
+      margin-bottom: 5px; padding: 5px 10px; background: #333; color: white;
+      border: none; border-radius: 0px; cursor: pointer;
     }
-    #date-picker {
-      margin: 5px 5px;
-      background: #333;
-      color: white;
-      border: none;
-      padding: 5px;
-      font-family: monospace;
-    }
-    .control-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 5px;
-    }
-    .direction-container {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      margin-top: 5px;
-      font-size: 0.9rem;
-    }
-    .direction-container label {
-      cursor: pointer;
-    }
-    footer { 
-      margin-top: auto; 
-      padding: 20px 0; 
-      display: flex; 
-      justify-content: center; 
-    }
+    #date-picker { margin: 5px 5px; background: #333; color: white; border: none; padding: 5px; font-family: monospace; }
+    .control-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 5px; }
+    .direction-container { display: flex; justify-content: center; gap: 15px; margin-top: 5px; font-size: 0.9rem; }
+    .direction-container label { cursor: pointer; }
+    footer { margin-top: auto; padding: 20px 0; display: flex; justify-content: center; }
   </style>
 </head>
 <body>
@@ -231,11 +131,10 @@
     <label><input type="radio" name="frame" value="earth"> Earth</label>
   </div>
   <div id="legend"></div>
-
   <div id="info"></div>
   
   <div style="padding-bottom: 40px;" class="footer-logo-container">
-    <a href="research.html">
+    <a href="support.html">
       <img src="fleurdelis.png" alt="Logo" class="logo-image">
     </a>
   </div>
@@ -281,14 +180,10 @@
         const colorBox = document.createElement('div');
         colorBox.className = 'color-box';
         colorBox.style.backgroundColor = planet.color; 
-        if (!planetVisibility[index]) {
-          colorBox.classList.add('hidden-planet');
-        }
+        if (!planetVisibility[index]) colorBox.classList.add('hidden-planet');
         const label = document.createElement('span');
         label.textContent = planet.name;
-        if (!planetVisibility[index]) {
-          label.classList.add('hidden-planet');
-        }
+        if (!planetVisibility[index]) label.classList.add('hidden-planet');
         item.append(colorBox, label);
         legendDiv.appendChild(item);
         item.addEventListener('click', () => {
@@ -317,12 +212,9 @@
     const margin = 40;
     let maxOrbitRadius;
     
-    function orbitRadius(ae) {
-      return (ae / maxDistance) * maxOrbitRadius;
-    }
+    function orbitRadius(ae) { return (ae / maxDistance) * maxOrbitRadius; }
     
     const J2000 = new Date('2000-01-01T12:00:00Z');
-    
     const today = new Date();
     const datePicker = document.getElementById('date-picker');
     datePicker.value = today.toISOString().split('T')[0];
@@ -345,21 +237,25 @@
     const pauseBtn = document.getElementById('pause-btn');
 
     let isDraggingVector = false;
-    let isDragging = false;
+    let isDragging = false;          // панорамирование (мышь / два пальца)
     let lastX = 0, lastY = 0;
     let lastVectorAngle = 0;
     let lastCalculatedPositions = []; 
 
+    // Для мультитач-панорамирования и зума
+    let pinchStartDist = null;
+    let pinchStartScale = 1;
+    let panStartX = 0, panStartY = 0;
+    let panStartOffsetX = 0, panStartOffsetY = 0;
+    let twoFingerActive = false;
+
     function updateView() {
-      if (isPaused) {
-        animate();
-      }
+      if (isPaused) animate();
     }
     
     document.getElementById('controls').addEventListener('change', (e) => {
       if (e.target.name === 'frame') {
         frame = e.target.value;
-
         if (frame === 'earth') {
           const earthIdx = planets.findIndex(p => p.name === 'Earth');
           if (!planetVisibility[earthIdx]) {
@@ -367,7 +263,6 @@
             createLegend(); 
           }
         }
-
         trajectories.forEach(arr => arr.length = 0);
         offsetX = 0;
         offsetY = 0;
@@ -378,11 +273,7 @@
 
     document.querySelector('.direction-container').addEventListener('change', (e) => {
       if (e.target.name === 'direction') {
-        if (e.target.value === 'backward') {
-          dt = -baseSpeed;
-        } else {
-          dt = baseSpeed;
-        }
+        dt = e.target.value === 'backward' ? -baseSpeed : baseSpeed;
       }
     });
     
@@ -397,121 +288,98 @@
     pauseBtn.addEventListener('click', () => {
       isPaused = !isPaused;
       pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
-      if (!isPaused) {
-        animate();
-      }
+      if (!isPaused) animate();
     });
     
-    function getEventPos(e) {
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    function getEventPos(e, touchIndex = 0) {
+      const touch = e.touches ? e.touches[touchIndex] : e;
+      const clientX = touch.clientX;
+      const clientY = touch.clientY;
       const rect = canvas.getBoundingClientRect();
       return { x: clientX - rect.left, y: clientY - rect.top };
     }
 
-    function handleDragStart(e) {
-      const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-      const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-      lastX = clientX;
-      lastY = clientY;
-
+    // Проверяем попадание в зону Луны (для перетаскивания вектора)
+    function isOnMoon(e) {
       const pos = getEventPos(e);
       const moonPos = lastCalculatedPositions[moonIndex];
-
-      if (moonPos && planetVisibility[moonIndex]) {
-        const dx = pos.x - moonPos.drawX;
-        const dy = pos.y - moonPos.drawY;
-        
-        if (Math.sqrt(dx * dx + dy * dy) < 60) {
-          isDraggingVector = true;
-          isDragging = false;
-          
-          const centerX = canvas.width / 2 + offsetX;
-          const centerY = canvas.height / 2 + offsetY;
-          const earthPos = lastCalculatedPositions[earthIndex];
-          if (earthPos) {
-            let targetX = pos.x;
-            let targetY = pos.y;
-            if (frame === 'earth') {
-              targetX = centerX + (pos.x - centerX);
-              targetY = centerY + (pos.y - centerY);
-            }
-            lastVectorAngle = Math.atan2(targetY - earthPos.drawY, targetX - earthPos.drawX);
-          }
-          return;
-        }
-      }
-
-      isDraggingVector = false;
-      isDragging = true;
+      if (!moonPos || !planetVisibility[moonIndex]) return false;
+      const dx = pos.x - moonPos.drawX;
+      const dy = pos.y - moonPos.drawY;
+      return Math.sqrt(dx * dx + dy * dy) < 60;
     }
 
-    canvas.addEventListener('mousedown', handleDragStart);
-    canvas.addEventListener('touchstart', (e) => {
-      handleDragStart(e);
-    }, {passive: false});
+    function startVectorDrag(e) {
+      isDraggingVector = true;
+      isDragging = false;
+      const pos = getEventPos(e);
+      const centerX = canvas.width / 2 + offsetX;
+      const centerY = canvas.height / 2 + offsetY;
+      const earthPos = lastCalculatedPositions[earthIndex];
+      if (earthPos) {
+        let targetX = pos.x, targetY = pos.y;
+        if (frame === 'earth') {
+          targetX = centerX + (pos.x - centerX);
+          targetY = centerY + (pos.y - centerY);
+        }
+        lastVectorAngle = Math.atan2(targetY - earthPos.drawY, targetX - earthPos.drawX);
+      }
+    }
 
-    function handleDragMove(e) {
-      const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-      const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+    // ===== МЫШЬ =====
+    canvas.addEventListener('mousedown', (e) => {
+      lastX = e.clientX;
+      lastY = e.clientY;
+      if (isOnMoon(e)) {
+        startVectorDrag(e);
+      } else {
+        isDragging = true;
+        isDraggingVector = false;
+      }
+    });
 
+    window.addEventListener('mousemove', (e) => {
       if (isDraggingVector) {
-        e.preventDefault();
         const pos = getEventPos(e);
         const centerX = canvas.width / 2 + offsetX;
         const centerY = canvas.height / 2 + offsetY;
-        
         const earthPos = lastCalculatedPositions[earthIndex];
         if (earthPos) {
-          let targetX = pos.x;
-          let targetY = pos.y;
+          let targetX = pos.x, targetY = pos.y;
           if (frame === 'earth') {
             targetX = centerX + (pos.x - centerX);
             targetY = centerY + (pos.y - centerY);
           }
-          
           const currentAngle = Math.atan2(targetY - earthPos.drawY, targetX - earthPos.drawX);
-          
-          // Вычисляем разницу с защитой от скачков через границу -PI / PI
           let diff = currentAngle - lastVectorAngle;
           if (diff > Math.PI) diff -= 2 * Math.PI;
           if (diff < -Math.PI) diff += 2 * Math.PI;
-          
           lastVectorAngle = currentAngle;
-          
           const moonData = planets[moonIndex];
-          // Плавное добавление/убавление дней в зависимости от изменения угла
           t += (diff / (2 * Math.PI)) * moonData.period;
-          
           datePicker.value = getCurrentDate();
           trajectories.forEach(arr => arr.length = 0);
           updateView();
         }
         return;
       }
-
       if (!isDragging) return;
-      const dx = clientX - lastX;
-      const dy = clientY - lastY;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
       offsetX += dx;
       offsetY += dy;
-      lastX = clientX;
-      lastY = clientY;
+      lastX = e.clientX;
+      lastY = e.clientY;
       trajectories.forEach(arr => arr.length = 0);
       updateView();
-    }
+    });
 
-    window.addEventListener('mousemove', handleDragMove);
-    window.addEventListener('touchmove', handleDragMove, {passive: false});
-
-    function handleDragEnd() {
+    window.addEventListener('mouseup', () => {
       isDragging = false;
       isDraggingVector = false;
-    }
+    });
 
-    window.addEventListener('mouseup', handleDragEnd);
-    window.addEventListener('touchend', handleDragEnd);
-
+    // Колесо мыши — зум
     canvas.addEventListener('wheel', e => {
       e.preventDefault();
       const zoomSpeed = 0.001;
@@ -525,31 +393,102 @@
       updateView();
     }, {passive: false});
     
-    let lastTouchDistance = null;
-    canvas.addEventListener('touchmove', function (e) {
+    // ===== TOUCH =====
+    canvas.addEventListener('touchstart', (e) => {
+      // Один палец — либо перетаскивание вектора Луны, либо НИЧЕГО (скролл страницы)
+      if (e.touches.length === 1) {
+        if (isOnMoon(e)) {
+          e.preventDefault();
+          startVectorDrag(e);
+        }
+        // иначе — не мешаем странице скроллиться
+        return;
+      }
+      // Два пальца — панорамирование + зум
       if (e.touches.length === 2) {
+        e.preventDefault();
+        twoFingerActive = true;
+        isDraggingVector = false;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        pinchStartDist = Math.sqrt(dx * dx + dy * dy);
+        pinchStartScale = scale;
+        panStartX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        panStartY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        panStartOffsetX = offsetX;
+        panStartOffsetY = offsetY;
+      }
+    }, {passive: false});
+
+    canvas.addEventListener('touchmove', (e) => {
+      // Перетаскивание вектора Луны
+      if (isDraggingVector && e.touches.length === 1) {
+        e.preventDefault();
+        const pos = getEventPos(e);
+        const centerX = canvas.width / 2 + offsetX;
+        const centerY = canvas.height / 2 + offsetY;
+        const earthPos = lastCalculatedPositions[earthIndex];
+        if (earthPos) {
+          let targetX = pos.x, targetY = pos.y;
+          if (frame === 'earth') {
+            targetX = centerX + (pos.x - centerX);
+            targetY = centerY + (pos.y - centerY);
+          }
+          const currentAngle = Math.atan2(targetY - earthPos.drawY, targetX - earthPos.drawX);
+          let diff = currentAngle - lastVectorAngle;
+          if (diff > Math.PI) diff -= 2 * Math.PI;
+          if (diff < -Math.PI) diff += 2 * Math.PI;
+          lastVectorAngle = currentAngle;
+          const moonData = planets[moonIndex];
+          t += (diff / (2 * Math.PI)) * moonData.period;
+          datePicker.value = getCurrentDate();
+          trajectories.forEach(arr => arr.length = 0);
+          updateView();
+        }
+        return;
+      }
+
+      // Два пальца — панорама + зум
+      if (e.touches.length === 2 && twoFingerActive) {
         e.preventDefault();
         const dx = e.touches[0].clientX - e.touches[1].clientX;
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        if (lastTouchDistance !== null) {
-          const zoomIntensity = 0.001;
-          const delta = distance - lastTouchDistance;
-          const prevScale = scale;
-          scale *= (1 + zoomIntensity * delta);
-          scale = Math.max(0.1, Math.min(scale, 50));
-          const scaleChange = scale / prevScale;
+
+        // Зум
+        if (pinchStartDist !== null && pinchStartDist > 0) {
+          const newScale = Math.max(0.1, Math.min(50, pinchStartScale * (distance / pinchStartDist)));
+          const scaleChange = newScale / scale;
+          scale = newScale;
           offsetX = offsetX * scaleChange;
           offsetY = offsetY * scaleChange;
-          trajectories.forEach(arr => arr.length = 0);
-          updateView();
         }
-        lastTouchDistance = distance;
+
+        // Панорама по центру между пальцами
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        offsetX = panStartOffsetX + (midX - panStartX);
+        offsetY = panStartOffsetY + (midY - panStartY);
+
+        trajectories.forEach(arr => arr.length = 0);
+        updateView();
       }
     }, { passive: false });
-    
-    canvas.addEventListener('touchend', () => {
-      lastTouchDistance = null;
+
+    canvas.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2) {
+        pinchStartDist = null;
+        twoFingerActive = false;
+      }
+      if (e.touches.length === 0) {
+        isDraggingVector = false;
+      }
+    });
+
+    canvas.addEventListener('touchcancel', () => {
+      pinchStartDist = null;
+      twoFingerActive = false;
+      isDraggingVector = false;
     });
     
     function drawPoint(x, y, color, size = 4) {
@@ -588,11 +527,7 @@
       const centerX = canvas.width / 2 + offsetX;
       const centerY = canvas.height / 2 + offsetY;
       
-      if (isPaused) {
-        ctx.fillStyle = '#000000';
-      } else {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-      }
+      ctx.fillStyle = isPaused ? '#000000' : 'rgba(0, 0, 0, 0.1)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const earthData = planets[earthIndex];
@@ -606,31 +541,25 @@
 
       const positions = planets.map(planet => {
         let x, y;
-
         if (planet.name === 'Moon') {
           const moonM = (2 * Math.PI * t) / planet.period;
           const moonE = solveKepler(moonM, planet.eccentricity);
           const moonTheta = getTrueAnomaly(moonE, planet.eccentricity);
-          
           const moonR = orbitRadius(0.05) * 2; 
           const localX = moonR * Math.cos(moonTheta);
           const localY = moonR * Math.sin(moonTheta) * Math.cos(planet.inclination);
-          
           x = earthX + localX;
           y = earthY + localY;
-        } 
-        else {
+        } else {
           const a = orbitRadius(planet.distance);
           const e = planet.eccentricity;
           const M = (2 * Math.PI * t) / planet.period;
           const E = solveKepler(M, e);
           const theta = getTrueAnomaly(E, e);
           const r = a * (1 - e * e) / (1 + e * Math.cos(theta));
-          
           x = r * Math.cos(theta);
           y = r * Math.sin(theta) * Math.cos(planet.inclination);
         }
-
         return { x: centerX + x * scale, y: centerY + y * scale, color: planet.color, name: planet.name };
       });
 
@@ -683,7 +612,7 @@
         ctx.beginPath();
         ctx.strokeStyle = planets[i].color;
         for (let j = 0; j < trajectories[i].length; j++) {
-            const p = trajectories[i].length > j ? trajectories[i][j] : null;
+            const p = trajectories[i][j];
             if (!p) continue;
             j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
         }
