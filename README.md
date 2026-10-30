@@ -1,4 +1,4 @@
-##The world is made of language
+## The world is made of language
 
 We do not know when we were born; we were informed
 
