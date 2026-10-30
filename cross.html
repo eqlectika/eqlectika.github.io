@@ -24,14 +24,28 @@
 <link href="https://fonts.googleapis.com/css2?family=Micro+5+Charted&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Aubrey&family=Barriecito&display=swap" rel="stylesheet">
 <style>
-* { scrollbar-width: thin; scrollbar-color: transparent transparent; }
-*::-webkit-scrollbar { width: 4px; height: 4px; background: transparent; }
-*::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 8px; }
-*::-webkit-scrollbar-track { background: transparent; }
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
 
 body, html {
-  margin: 0; padding: 0;
-  height: 100dvh; width: 100vw;
+  margin: 0;
+  padding: 0;
+  height: 100dvh;
+  width: 100vw;
   overflow: hidden;
   background: #000;
   touch-action: none;
@@ -41,21 +55,22 @@ body, html {
   display: grid;
   grid-template-columns: var(--x, 50%) 1fr;
   grid-template-rows: var(--y, 50%) 1fr;
-  height: 100%; width: 100%;
+  height: 100%;
+  width: 100%;
 }
 .editor-wrapper {
-  position: relative;
-  width: 100%; height: 100%;
-  overflow: hidden;
-  isolation: isolate;
+position: relative;
+width: 100%;
+height: 100%;
+overflow: hidden;
+isolation: isolate;
 }
 .editor-wrapper:has(.img-preview.fullscreen) {
   z-index: 9998;
   isolation: auto;
   overflow: visible;
 }
-
-/* Слой 1 — фоновая картинка */
+/* Слой 1 — тайл */
 .editor-wrapper::before {
   content: '';
   position: absolute;
@@ -68,7 +83,7 @@ body, html {
   pointer-events: none;
 }
 
-/* Слой 2 — тинт */
+/* Слой 2 — цвет с прозрачностью (тинт) */
 .editor-wrapper::after {
   content: '';
   position: absolute;
@@ -79,32 +94,28 @@ body, html {
   pointer-events: none;
 }
 
-/* === Режимы фоновой картинки === */
-.editor-wrapper[data-tilemode="tile"]::before {
-  background-repeat: repeat;
-  background-size: auto;
-  background-position: top left;
-}
+/* === Режимы тайла === */
 .editor-wrapper[data-tilemode="fit"]::before {
-  background-repeat: no-repeat;
   background-size: contain;
-  background-position: center center;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 .editor-wrapper[data-tilemode="fill"]::before {
-  background-repeat: no-repeat;
   background-size: cover;
-  background-position: center center;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 .editor-wrapper[data-tilemode="pan"]::before {
+  background-size: var(--pan-scale, auto);
   background-repeat: no-repeat;
-  background-size: var(--pan-scale, 100%);
   background-position: var(--pan-x, 0px) var(--pan-y, 0px);
 }
 
 .editor {
   position: relative;
   z-index: 2;
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
   background: transparent;
   color: var(--color);
   box-sizing: border-box;
@@ -120,12 +131,19 @@ body, html {
   word-break: break-word;
   line-height: 1.2;
 }
-.editor div, .editor p { margin: 0.5em 0 !important; }
+
+.editor div, .editor p {
+  margin: 0.5em 0 !important;
+}
+
 .editor:empty::before { content: none; }
 
 .ph {
   position: absolute;
-  top: 34px; left: 15px; right: 15px; bottom: 15px;
+  top: 34px;
+  left: 15px;
+  right: 15px;
+  bottom: 15px;
   pointer-events: auto;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -142,13 +160,16 @@ body, html {
 }
 .ph::-webkit-scrollbar { display: none; }
 .ph.hidden { display: none; }
+
 .ph p { margin: 0 !important; }
 .ph p + p { margin-top: 0.5em !important; }
+
 .editor:not(:empty) ~ .ph { display: none; }
 
 .img-preview {
   position: absolute;
-  max-width: 30%; max-height: 30%;
+  max-width: 30%;
+  max-height: 30%;
   border-radius: 4px;
   pointer-events: auto;
   cursor: pointer;
@@ -163,45 +184,64 @@ body, html {
 }
 
 .handle {
-  z-index: 999;
-  position: absolute;
-  top: var(--y, 50%);
-  left: var(--x, 50%);
-  width: 32px; height: 32px;
-  transform: translate(-50%, -50%) scale(1);
-  touch-action: none;
-  cursor: pointer;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-  display: flex; align-items: center; justify-content: center;
-  transition: transform 0.1s ease, filter 0.3s ease;
+position: absolute;
+top: var(--y, 50%);
+left: var(--x, 50%);
+width: 32px;
+height: 32px;
+transform: translate(-50%, -50%) scale(1);
+z-index: 100;
+touch-action: none;
+cursor: pointer;
+-webkit-user-select: none;
+user-select: none;
+-webkit-touch-callout: none;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: transform 0.1s ease, filter 0.3s ease;
 }
-.handle:active { transform: translate(-50%, -50%) scale(0.85); }
+
+.handle:active {
+transform: translate(-50%, -50%) scale(0.85);
+}
+
 .handle img {
-  width: 100%; height: 100%;
-  object-fit: contain;
-  pointer-events: none;
-  -webkit-user-drag: none;
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+width: 100%;
+height: 100%;
+object-fit: contain;
+pointer-events: none;
+-webkit-user-drag: none;
+transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 #settings-modal select {
-  -webkit-appearance: none; -moz-appearance: none; appearance: none;
-  background-color: #333 !important; color: #fff !important;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: #333 !important;
+  color: #fff !important;
   border: 1px solid #555 !important;
-  padding: 12px 16px !important; font-size: 16px !important;
-  border-radius: 8px !important; width: 100% !important;
-  box-sizing: border-box !important; cursor: pointer;
+  padding: 12px 16px !important;
+  font-size: 16px !important;
+  border-radius: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  cursor: pointer;
 }
-#settings-modal select::-ms-expand { display: none; }
+#settings-modal select::-ms-expand {
+  display: none;
+}
 
 .img-preview.fullscreen {
   position: fixed !important;
-  top: 50% !important; left: 50% !important;
+  top: 50% !important;
+  left: 50% !important;
   transform: translate(-50%, -50%) !important;
-  max-width: 90vw !important; max-height: 90vh !important;
-  width: auto !important; height: auto !important;
+  max-width: 90vw !important;
+  max-height: 90vh !important;
+  width: auto !important;
+  height: auto !important;
   object-fit: contain !important;
   z-index: 9999 !important;
   opacity: 1 !important;
@@ -213,61 +253,84 @@ body, html {
 #align-toolbar {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px; margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 20px;
 }
+
 .format-btn {
   padding: 10px 6px;
   border: 1px solid #555;
   border-radius: 8px;
-  background: #333; color: #fff;
-  font-size: 14px; font-weight: bold;
-  cursor: pointer; min-width: 0;
+  background: #333;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  min-width: 0;
 }
-.format-btn:active { background: #555; }
 
+.format-btn:active {
+  background: #555;
+}
+
+/* Кнопки режима тайла */
 #tile-mode-toolbar {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px; margin-bottom: 20px;
+  gap: 8px;
+  margin-bottom: 20px;
 }
 #tile-mode-toolbar .format-btn.active {
-  background: #00f; border-color: #00f; color: #fff;
+  background: #00f;
+  border-color: #00f;
+  color: #fff;
 }
 
+/* Pan preview modal */
 #pan-modal {
   display: none;
-  position: fixed; inset: 0;
+  position: fixed;
+  inset: 0;
   background: rgba(0,0,0,0.92);
   z-index: 2000;
   flex-direction: column;
 }
 #pan-modal.open { display: flex; }
 #pan-stage {
-  position: relative; flex: 1;
+  position: relative;
+  flex: 1;
   overflow: hidden;
   touch-action: none;
   background: #111;
-  user-select: none; -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-select: none;
   cursor: grab;
 }
 #pan-stage:active { cursor: grabbing; }
 #pan-image {
   position: absolute;
-  top: 50%; left: 50%;
+  top: 50%;
+  left: 50%;
   pointer-events: none;
-  user-select: none; -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-drag: none;
   will-change: transform;
   transform-origin: center center;
 }
 #pan-controls {
-  display: flex; gap: 12px;
+  display: flex;
+  gap: 12px;
   padding: 16px;
   background: #222;
 }
 #pan-controls button {
-  flex: 1; padding: 14px;
-  border: none; border-radius: 8px;
-  color: #fff; font-size: 16px; font-weight: bold;
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
   cursor: pointer;
 }
 #pan-cancel { background: #ff000050; }
@@ -281,6 +344,7 @@ body, html {
   box-sizing: border-box;
   padding: 12px;
 }
+
 #settings-modal > div {
   max-height: calc(100dvh - 24px);
   overflow-y: auto;
@@ -288,7 +352,11 @@ body, html {
   touch-action: pan-y !important;
   box-sizing: border-box;
 }
-.editor:focus { -webkit-user-select: text; user-select: text; }
+
+.editor:focus {
+  -webkit-user-select: text;
+  user-select: text;
+}
 
 .font-picker {
   position: relative;
@@ -297,15 +365,20 @@ body, html {
   border-radius: 8px;
   padding: 0;
 }
+
 .font-picker-display {
   padding: 12px 16px;
-  color: #fff; font-size: 16px;
+  color: #fff;
+  font-size: 16px;
   cursor: pointer;
 }
+
 .font-picker-list {
   display: none;
   position: absolute;
-  top: 100%; left: 0; right: 0;
+  top: 100%;
+  left: 0;
+  right: 0;
   background: #333;
   border: 1px solid #555;
   border-radius: 0 0 8px 8px;
@@ -316,9 +389,14 @@ body, html {
   z-index: 1001;
   box-shadow: 0 8px 20px rgba(0,0,0,0.5);
 }
-.font-picker.open .font-picker-list { display: block; }
+
+.font-picker.open .font-picker-list {
+  display: block;
+}
+
 .font-option {
   padding: 8px 16px;
+  border-radius: 0;
   color: #fff;
   cursor: pointer;
   font-size: 16px;
@@ -326,14 +404,21 @@ body, html {
 .font-option:hover { background: #444; }
 .font-option.selected { background: #00f; color: #fff; }
 
+/* Range slider */
 #setting-tint {
-  -webkit-appearance: none; appearance: none;
-  height: 8px; border-radius: 4px;
-  background: #444; outline: none; cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: #444;
+  outline: none;
+  cursor: pointer;
 }
 #setting-tint::-webkit-slider-thumb {
-  -webkit-appearance: none; appearance: none;
-  width: 22px; height: 22px;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: #ff8700;
   cursor: pointer;
@@ -341,7 +426,8 @@ body, html {
   box-sizing: border-box;
 }
 #setting-tint::-moz-range-thumb {
-  width: 22px; height: 22px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: #ff8700;
   cursor: pointer;
@@ -349,40 +435,57 @@ body, html {
   box-sizing: border-box;
 }
 
+/* Tile UI */
 .tile-row {
-  display: flex; align-items: center;
-  margin-bottom: 12px; gap: 10px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 10px;
 }
+
 .tile-preview-thumb {
-  width: 48px; height: 48px;
+  width: 48px;
+  height: 48px;
   border-radius: 6px;
   border: 2px solid #555;
   background: #111;
   object-fit: cover;
   flex-shrink: 0;
 }
-.tile-input { display: none; }
+
+.tile-input {
+  display: none;
+}
+
 .tile-btn {
   display: inline-flex;
-  align-items: center; justify-content: center;
+  align-items: center;
+  justify-content: center;
   padding: 10px 16px;
   border-radius: 8px;
-  background: #ff8700; color: #000;
-  font-weight: bold; font-size: 14px;
-  cursor: pointer; border: none;
+  background: #ff8700;
+  color: #000;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
-.tile-btn:active { background: #e07a00; }
+.tile-btn:active {
+  background: #e07a00;
+}
+
 .tile-name {
-  font-size: 13px; color: #aaa;
+  font-size: 13px;
+  color: #aaa;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1; min-width: 0;
+  flex: 1;
+  min-width: 0;
 }
-
 #settings-modal,
 #settings-modal * {
   -webkit-user-select: none;
@@ -396,85 +499,85 @@ body, html {
 </head>
 <body>
 <div class="container" id="app">
-  <div class="editor-wrapper">
-    <div class="editor" id="t0" contenteditable="true"></div>
-    <div class="ph">
-      <p>1. Type or paste text and image here.</p>
-      <p>2. Move handle (crosshair) to resize fields.</p>
-      <p>3. Tap handle to change design.</p>
-      <p>4. Very long tap empty field to format (delete image).</p>
-      <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
-      <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
-   <!--   <p>7. Long tap handle to go to the developer's page.</p> -->
-    </div>
-    <img class="img-preview" alt="">
+<div class="editor-wrapper">
+  <div class="editor" id="t0" contenteditable="true"></div>
+  <div class="ph">
+    <p>1. Type or paste text and image here.</p>
+    <p>2. Move handle (crosshair) to resize fields.</p>
+    <p>3. Tap handle to change design.</p>
+    <p>4. Very long tap empty field to format (delete image).</p>
+    <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
+    <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+<!--<p>7. Long tap handle to go to the developer's page.</p>-->
   </div>
-  <div class="editor-wrapper">
-    <div class="editor" id="t1" contenteditable="true"></div>
-    <div class="ph">
-      <p>1. Type or paste text and image here.</p>
-      <p>2. Move handle (crosshair) to resize fields.</p>
-      <p>3. Tap handle to change design.</p>
-      <p>4. Very long tap empty field to format (delete image).</p>
-      <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
-      <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
-   <!--   <p>7. Long tap handle to go to the developer's page.</p> -->
-    </div>
-    <img class="img-preview" alt="">
+  <img class="img-preview">
+</div>
+<div class="editor-wrapper">
+  <div class="editor" id="t1" contenteditable="true"></div>
+  <div class="ph">
+    <p>1. Type or paste text and image here.</p>
+    <p>2. Move handle (crosshair) to resize fields.</p>
+    <p>3. Tap handle to change design.</p>
+    <p>4. Very long tap empty field to format (delete image).</p>
+    <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
+    <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+<!--<p>7. Long tap handle to go to the developer's page.</p>-->
   </div>
-  <div class="editor-wrapper">
-    <div class="editor" id="t2" contenteditable="true"></div>
-    <div class="ph">
-      <p>1. Type or paste text and image here.</p>
-      <p>2. Move handle (crosshair) to resize fields.</p>
-      <p>3. Tap handle to change design.</p>
-      <p>4. Very long tap empty field to format (delete image).</p>
-      <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
-      <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
-   <!--   <p>7. Long tap handle to go to the developer's page.</p> -->
-    </div>
-    <img class="img-preview" alt="">
+  <img class="img-preview">
+</div>
+<div class="editor-wrapper">
+  <div class="editor" id="t2" contenteditable="true"></div>
+  <div class="ph">
+    <p>1. Type or paste text and image here.</p>
+    <p>2. Move handle (crosshair) to resize fields.</p>
+    <p>3. Tap handle to change design.</p>
+    <p>4. Very long tap empty field to format (delete image).</p>
+    <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
+    <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+<!--<p>7. Long tap handle to go to the developer's page.</p>-->
   </div>
-  <div class="editor-wrapper">
-    <div class="editor" id="t3" contenteditable="true"></div>
-    <div class="ph">
-      <p>1. Type or paste text and image here.</p>
-      <p>2. Move handle (crosshair) to resize fields.</p>
-      <p>3. Tap handle to change design.</p>
-      <p>4. Very long tap empty field to format (delete image).</p>
-      <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
-      <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
-   <!--   <p>7. Long tap handle to go to the developer's page.</p> -->
-    </div>
-    <img class="img-preview" alt="">
+  <img class="img-preview">
+</div>
+<div class="editor-wrapper">
+  <div class="editor" id="t3" contenteditable="true"></div>
+  <div class="ph">
+    <p>1. Type or paste text and image here.</p>
+    <p>2. Move handle (crosshair) to resize fields.</p>
+    <p>3. Tap handle to change design.</p>
+    <p>4. Very long tap empty field to format (delete image).</p>
+    <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
+    <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+<!--<p>7. Long tap handle to go to the developer's page.</p>-->
   </div>
-  <a href="#" class="handle" id="handle" draggable="false"><img src="handle.png" alt="Logo" draggable="false"></a>
+  <img class="img-preview">
+</div>
+<a href="#" class="handle" id="handle" draggable="false"><img src="handle.png" alt="Logo" draggable="false"></a>
 </div>
 
 <div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
   <div style="background:#222; color:#fff; padding:16px; border-radius:16px; width:96%; max-width:470px; font-family:sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
     <h3 style="margin-top:0; margin-bottom:20px; font-size:20px; text-align:center; font-weight:bold;">Field Settings</h3>
     
-    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font:</label>
-    <div id="setting-font" class="font-picker" style="margin-bottom:16px;">
-      <div class="font-picker-display" id="font-display">Luckiest Guy</div>
-      <div class="font-picker-list" id="font-list">
-        <div class="font-option" data-value="'Luckiest Guy', Arial, sans-serif" style="font-family:'Luckiest Guy', Arial, sans-serif;">Luckiest Guy</div>
-        <div class="font-option" data-value="'Roboto Condensed', Arial, sans-serif" style="font-family:'Roboto Condensed', Arial, sans-serif;">Roboto Condensed</div>
-        <div class="font-option" data-value="'Lato', Arial, sans-serif" style="font-family:'Lato', Arial, sans-serif;">Lato</div>
-        <div class="font-option" data-value="'Playfair Display', serif" style="font-family:'Playfair Display', serif;">Playfair Display</div>
-        <div class="font-option" data-value="'Unbounded', Arial, sans-serif" style="font-family:'Unbounded', Arial, sans-serif;">Unbounded</div>
-        <div class="font-option" data-value="Copperplate, 'Copperplate Gothic Bold', sans-serif" style="font-family:Copperplate, 'Copperplate Gothic Bold', sans-serif;">Copperplate</div>
-        <div class="font-option" data-value="'Courier Prime', 'American Typewriter', 'Courier New', monospace" style="font-family:'Courier Prime', 'American Typewriter', 'Courier New', monospace;">Typewriter</div>
-        <div class="font-option" data-value="'Ubuntu', Arial, sans-serif" style="font-family:'Ubuntu', Arial, sans-serif;">Ubuntu</div>
-        <div class="font-option" data-value="'Bytesized', 'Ubuntu', system-ui, sans-serif" style="font-family:'Bytesized', 'Ubuntu', system-ui, sans-serif;">Bytesized</div>
-        <div class="font-option" data-value="'Roboto Mono', monospace" style="font-family:'Roboto Mono', monospace;">Monospace</div>
-        <div class="font-option" data-value="'UnifrakturCook', Copperplate, serif" style="font-family:'UnifrakturCook', serif;">UnifrakturCook</div>
-        <div class="font-option" data-value="'Aubrey', serif" style="font-family:'Aubrey', serif;">Aubrey</div>
-        <div class="font-option" data-value="'Micro 5 Charted', sans-serif" style="font-family:'Micro 5 Charted', sans-serif;">Micro 5 Charted</div>
-        <div class="font-option" data-value="'Barriecito', cursive" style="font-family:'Barriecito', cursive;">Barriecito</div>
-      </div>
-    </div>
+<label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font:</label>
+<div id="setting-font" class="font-picker" style="margin-bottom:16px;">
+  <div class="font-picker-display" id="font-display">Luckiest Guy</div>
+  <div class="font-picker-list" id="font-list">
+    <div class="font-option" data-value="'Luckiest Guy', Arial, sans-serif" style="font-family:'Luckiest Guy', Arial, sans-serif;">Luckiest Guy</div>
+    <div class="font-option" data-value="'Roboto Condensed', Arial, sans-serif" style="font-family:'Roboto Condensed', Arial, sans-serif;">Roboto Condensed</div>
+    <div class="font-option" data-value="'Lato', Arial, sans-serif" style="font-family:'Lato', Arial, sans-serif;">Lato</div>
+    <div class="font-option" data-value="'Playfair Display', serif" style="font-family:'Playfair Display', serif;">Playfair Display</div>
+    <div class="font-option" data-value="'Unbounded', Arial, sans-serif" style="font-family:'Unbounded', Arial, sans-serif;">Unbounded</div>
+    <div class="font-option" data-value="Copperplate, 'Copperplate Gothic Bold', sans-serif" style="font-family:Copperplate, 'Copperplate Gothic Bold', sans-serif;">Copperplate</div>
+    <div class="font-option" data-value="'Courier Prime', 'American Typewriter', 'Courier New', monospace" style="font-family:'Courier Prime', 'American Typewriter', 'Courier New', monospace;">Typewriter</div>
+    <div class="font-option" data-value="'Ubuntu', Arial, sans-serif" style="font-family:'Ubuntu', Arial, sans-serif;">Ubuntu</div>
+    <div class="font-option" data-value="'Bytesized', 'Ubuntu', system-ui, sans-serif" style="font-family:'Bytesized', 'Ubuntu', system-ui, sans-serif;">Bytesized</div>
+    <div class="font-option" data-value="'Roboto Mono', monospace" style="font-family:'Roboto Mono', monospace;">Monospace</div>
+    <div class="font-option" data-value="'UnifrakturCook', Copperplate, serif" style="font-family:'UnifrakturCook', serif;">UnifrakturCook</div>
+<div class="font-option" data-value="'Aubrey', serif" style="font-family:'Aubrey', serif;">Aubrey</div>
+<div class="font-option" data-value="'Micro 5 Charted', sans-serif" style="font-family:'Micro 5 Charted', sans-serif;">Micro 5 Charted</div>
+<div class="font-option" data-value="'Barriecito', cursive" style="font-family:'Barriecito', cursive;">Barriecito</div>
+  </div>
+</div>
 
     <div id="align-toolbar">
       <button type="button" style="padding: 6px 16px" class="format-btn" data-align="left">Left</button>
@@ -493,16 +596,19 @@ body, html {
     <div style="display:flex; gap:12px; margin-bottom:16px;">
       <div style="flex:1; position:relative;">
         <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Background:</label>
-        <button type="button" id="bg-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#ff8700; cursor:pointer; border:2px solid #555; padding:0; display:flex; align-items:center; justify-content:center;"></button>
+        <button type="button" id="bg-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#ff8700; cursor:pointer; border:2px solid #555; padding:0; display:flex; align-items:center; justify-content:center;">
+        </button>
         <input type="color" id="setting-bg" style="position:absolute; bottom:0; left:0; width:100%; height:100%; opacity:0; pointer-events:auto; cursor:pointer;">
       </div>
       <div style="flex:1; position:relative;">
         <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Text color:</label>
-        <button type="button" id="color-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#000000; cursor:pointer; border:2px solid #555; padding:0; display:flex; align-items:center; justify-content:center;"></button>
+        <button type="button" id="color-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#000000; cursor:pointer; border:2px solid #555; padding:0; display:flex; align-items:center; justify-content:center;">
+        </button>
         <input type="color" id="setting-color" style="position:absolute; bottom:0; left:0; width:100%; height:100%; opacity:0; pointer-events:auto; cursor:pointer;">
       </div>
     </div>
 
+    <!-- TILE -->
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Background image:</label>
     <div class="tile-row">
       <img id="tile-thumb" class="tile-preview-thumb" alt="" style="display:none;">
@@ -514,14 +620,16 @@ body, html {
       <input type="checkbox" id="setting-del-tile" style="width:20px; height:20px; margin-right:10px; accent-color:#ff758f; cursor:pointer;"> Delete background
     </label>
 
+    <!-- TILE MODE -->
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Background (image) mode:</label>
     <div id="tile-mode-toolbar">
-      <button type="button" class="format-btn" data-tilemode="tile">Tile</button>
+      <button type="button" class="format-btn" data-tilemode="repeat">Tile</button>
       <button type="button" class="format-btn" data-tilemode="pan">Pan</button>
       <button type="button" class="format-btn" data-tilemode="fit">Fit</button>
       <button type="button" class="format-btn" data-tilemode="fill">Fill</button>
     </div>
 
+    <!-- TINT -->
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">
       Tint opacity: <span id="tint-val" style="color:#ff8700; font-weight:bold;">100</span>%
     </label>
@@ -548,16 +656,22 @@ body, html {
       <button type="button" id="setting-cancel" style="flex:1; padding:12px; border:none; border-radius:8px; background:#ff000050; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Cancel</button>
       <button type="button" id="setting-save" style="flex:1; padding:12px; border:none; border-radius:8px; background:#00ff0050; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Save</button>
     </div>
-
-    <div id="update-app" style="font-family:'Ubuntu', sans-serif; text-align:center; margin:50px 0; color:#ff8700; font-size:16px; font-weight:bold; cursor:pointer;">Update</div>
-    <div style="margin: 0 0 40px; text-align: center;">
-      <a href="support.html" style="display: inline-block;">
-        <img src="fleurdelis.png" alt="Fleur de lis" class="no-invert" style="display: block; height: 64px; width: auto; max-width: 100%;">
-      </a>
+    <div id="update-app" style="font-family:'Ubuntu', sans-serif;text-align:center; margin:50px 0; color:#ff8700; font-size:16px; font-weight: bold; cursor:pointer;">
+       Update
     </div>
+<div style="margin: 0 0 40px; text-align: center;">
+    <a href="support.html" style="display: inline-block;">
+        <img 
+            src="fleurdelis.png" 
+            alt="Fleur de lis" 
+            class="no-invert"
+            style="display: block; height: 64px; width: auto; max-width: 100%;">
+    </a>
+</div>
   </div>
 </div>
 
+<!-- PAN PREVIEW MODAL -->
 <div id="pan-modal">
   <div id="pan-stage"><img id="pan-image" alt=""></div>
   <div id="pan-controls">
@@ -567,131 +681,137 @@ body, html {
 </div>
 
 <script>
-/* ===================== DOM ===================== */
-const inpBg          = document.getElementById('setting-bg');
-const inpColor       = document.getElementById('setting-color');
-const bgPickerBtn    = document.getElementById('bg-picker-btn');
+const inpBg = document.getElementById('setting-bg');
+const inpColor = document.getElementById('setting-color');
+const bgPickerBtn = document.getElementById('bg-picker-btn');
 const colorPickerBtn = document.getElementById('color-picker-btn');
-const inpTile        = document.getElementById('setting-tile');
-const tileThumb      = document.getElementById('tile-thumb');
-const tileName       = document.getElementById('tile-name');
-const chkDelTile     = document.getElementById('setting-del-tile');
-const inpTint        = document.getElementById('setting-tint');
-const tintVal        = document.getElementById('tint-val');
-const tileModeToolbar= document.getElementById('tile-mode-toolbar');
 
-const panModal     = document.getElementById('pan-modal');
-const panStage     = document.getElementById('pan-stage');
-const panImage     = document.getElementById('pan-image');
+const inpTile = document.getElementById('setting-tile');
+const tileThumb = document.getElementById('tile-thumb');
+const tileName = document.getElementById('tile-name');
+const chkDelTile = document.getElementById('setting-del-tile');
+const inpTint = document.getElementById('setting-tint');
+const tintVal = document.getElementById('tint-val');
+
+const tileModeToolbar = document.getElementById('tile-mode-toolbar');
+const panModal = document.getElementById('pan-modal');
+const panStage = document.getElementById('pan-stage');
+const panImage = document.getElementById('pan-image');
 const panCancelBtn = document.getElementById('pan-cancel');
-const panDoneBtn   = document.getElementById('pan-done');
+const panDoneBtn = document.getElementById('pan-done');
 
-const container = document.getElementById('app');
-const handle    = document.getElementById('handle');
-const textareas = document.querySelectorAll('.editor');
-const images    = document.querySelectorAll('.img-preview');
+inpBg.addEventListener('input', (e) => {
+  bgPickerBtn.style.background = e.target.value;
+});
 
-const modal              = document.getElementById('settings-modal');
-const selSize            = document.getElementById('setting-size');
-const selPos             = document.getElementById('setting-pos');
-const chkDelImg          = document.getElementById('setting-del-img');
-const imgActionContainer = document.getElementById('image-action-container');
-const btnSave            = document.getElementById('setting-save');
-const btnCancel          = document.getElementById('setting-cancel');
+inpColor.addEventListener('input', (e) => {
+  colorPickerBtn.style.background = e.target.value;
+});
 
-const fontPicker  = document.getElementById('setting-font');
-const fontDisplay = document.getElementById('font-display');
-
-/* ===================== State ===================== */
-let db;
-let activeIndex = null;
-let textareaLongPressTimer;
-let isDragging = false;
-let dragStartTime = 0;
-let startX = 0, startY = 0;
-
-const designs = ['handle.png','handle-black.png','logo.png','fleurdelis.png','loop.png','delis.png','break.png','paw.png','handle-cross-transparent.png'];
-let currentDesign = parseInt(localStorage.getItem('q_handle_design') || '0', 10);
-
-const defBgs    = ['#ff8700','#005f00','#870000','#000080'];
-const defColors = ['#000000','#E1BEE7','#81C784','#FFD54F'];
-
-const magicPalettes = [
-  { bg: defBgs, co: defColors },
-  { bg: ['#2b2d42','#8d99ae','#edf2f4','#ef233c'], co: ['#fff','#000','#000','#fff'] },
-  { bg: ['#1a5b8c','#143d59','#f4b41a','#fbcbc9'], co: ['#fff','#fff','#000','#000'] },
-  { bg: ['#0f172a','#1e293b','#334155','#475569'], co: ['#38bdf8','#818cf8','#fb7185','#34d399'] },
-  { bg: ['#111111','#222222','#333333','#444444'], co: ['#eee','#eee','#eee','#eee'] },
-  { bg: ['#ffccd5','#ffb3c1','#ff8fa3','#ff758f'], co: ['#590d22','#590d22','#fff','#fff'] },
-  { bg: ['#e2efe0','#bccbaf','#96a788','#708264'], co: ['#283618','#283618','#fefae0','#fefae0'] }
-];
-
-const DEF_FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
-
-/* ===================== SW ===================== */
 let refreshing = false;
 let updateWorker = null;
+
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').then(registration => {
+  navigator.serviceWorker.register('/sw.js').then((registration) => {
     registration.update();
-    if (registration.waiting) updateWorker = registration.waiting;
+    if (registration.waiting) {
+      updateWorker = registration.waiting;
+    }
     registration.addEventListener('updatefound', () => {
       updateWorker = registration.installing;
       updateWorker.addEventListener('statechange', () => {
         if (updateWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          const el = document.getElementById('update-app');
-          if (el) el.style.color = '#ff8700';
+          const updateEl = document.getElementById('update-app');
+          if (updateEl) updateEl.style.color = '#ff8700';
         }
       });
     });
   });
+
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) { refreshing = true; window.location.reload(); }
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
   });
 }
+
 document.getElementById('update-app').onclick = () => {
-  if (updateWorker) updateWorker.postMessage({ type: 'SKIP_WAITING' });
-  else window.location.reload();
+  if (updateWorker) {
+    updateWorker.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+    window.location.reload(true);
+  }
 };
 
-/* ===================== IndexedDB ===================== */
-const dbRequest = indexedDB.open('QuadEditorDB', 4);
+const container = document.getElementById('app');
+const handle = document.getElementById('handle');
+const textareas = document.querySelectorAll('.editor');
+const images = document.querySelectorAll('.img-preview');
+
+let isDragging = false;
+let dragStartTime = 0;
+let db;
+
+const designs = ['handle.png', 'handle-black.png', 'logo.png', 'fleurdelis.png', 'loop.png', 'delis.png', 'break.png', 'paw.png', 'handle-cross-transparent.png'];
+let currentDesign = parseInt(localStorage.getItem('q_handle_design') || '0');
+
+const defBgs = ['#ff8700', '#005f00', '#870000', '#000080'];
+const defColors = ['#000000', '#E1BEE7', '#81C784', '#FFD54F'];
+const DEF = defBgs.map((bg, i) => ({ bg, co: defColors[i] }));
+  
+const magicPalettes = [
+  { bg: defBgs, co: defColors },
+  { bg: ['#2b2d42', '#8d99ae', '#edf2f4', '#ef233c'], co: ['#fff', '#000', '#000', '#fff'] },
+  { bg: ['#1a5b8c', '#143d59', '#f4b41a', '#fbcbc9'], co: ['#fff', '#fff', '#000', '#000'] },
+  { bg: ['#0f172a', '#1e293b', '#334155', '#475569'], co: ['#38bdf8', '#818cf8', '#fb7185', '#34d399'] },
+  { bg: ['#111111', '#222222', '#333333', '#444444'], co: ['#eee', '#eee', '#eee', '#eee'] },
+  { bg: ['#ffccd5', '#ffb3c1', '#ff8fa3', '#ff758f'], co: ['#590d22', '#590d22', '#fff', '#fff'] },
+  { bg: ['#e2efe0', '#bccbaf', '#96a788', '#708264'], co: ['#283618', '#283618', '#fefae0', '#fefae0'] }
+];
+
+// --- IndexedDB setup ---
+const dbRequest = indexedDB.open("QuadEditorDB", 4);
 dbRequest.onupgradeneeded = e => {
   db = e.target.result;
-  if (!db.objectStoreNames.contains('texts')) db.createObjectStore('texts', { keyPath: 'id' });
+  if (!db.objectStoreNames.contains("texts")) db.createObjectStore("texts", { keyPath: "id" });
 };
 dbRequest.onsuccess = e => { db = e.target.result; loadData(); };
 
-function saveToDB(id, content, img = null, clearImg = false, tile = null, clearTile = false) {
-  return new Promise(resolve => {
-    const tx = db.transaction('texts', 'readwrite');
-    const store = tx.objectStore('texts');
+async function saveToDB(id, content, img = null, clearImg = false, tile = null, clearTile = false) {
+  return new Promise((resolve) => {
+    const tx = db.transaction("texts", "readwrite");
+    const store = tx.objectStore("texts");
     const req = store.get(id);
     req.onsuccess = () => {
       const data = req.result || { id };
       data.content = content;
-      if (clearImg) delete data.img;
-      else if (img) data.img = img;
-      if (clearTile) delete data.tile;
-      else if (tile) data.tile = tile;
+      if (clearImg) {
+        delete data.img;
+      } else if (img) {
+        data.img = img;
+      }
+      if (clearTile) {
+        delete data.tile;
+      } else if (tile) {
+        data.tile = tile;
+      }
       store.put(data);
       tx.oncomplete = () => resolve();
     };
   });
 }
 
-function getTileUrl(i) {
-  return new Promise(resolve => {
-    const tx = db.transaction('texts', 'readonly');
-    const req = tx.objectStore('texts').get(i);
-    req.onsuccess = () => resolve(req.result && req.result.tile ? req.result.tile : null);
-    req.onerror = () => resolve(null);
-  });
+function updateHandleImage(index) {
+  const imgEl = handle.querySelector('img');
+  imgEl.src = designs[index];
+  if (index === 3) {
+    imgEl.style.transform = 'rotate(0deg)';
+  }
 }
 
-/* ===================== Tile mode helpers ===================== */
 function getTileMode(i) {
-  return localStorage.getItem(`q_tilemode_${i}`) || 'tile';
+  return localStorage.getItem(`q_tilemode_${i}`) || 'repeat';
 }
 
 function setTileModeUI(i, mode) {
@@ -704,47 +824,51 @@ function setTileModeUI(i, mode) {
 
 function applyPanTransform(i) {
   const wrap = textareas[i].parentElement;
-  const x = parseFloat(localStorage.getItem(`q_panx_${i}`) || '0');
-  const y = parseFloat(localStorage.getItem(`q_pany_${i}`) || '0');
+  const x = localStorage.getItem(`q_panx_${i}`) || '0';
+  const y = localStorage.getItem(`q_pany_${i}`) || '0';
   const s = parseFloat(localStorage.getItem(`q_panscale_${i}`) || '1');
   wrap.style.setProperty('--pan-x', `${x}px`);
   wrap.style.setProperty('--pan-y', `${y}px`);
   wrap.style.setProperty('--pan-scale', `${s * 100}%`);
 }
 
-/* Централизованно выставляет фон-картинку и пересчитывает трансформ */
-async function applyBackgroundImage(i) {
-  const wrap = textareas[i].parentElement;
-  const ta = textareas[i];
-  let url = ta._pendingTile || null;
-  if (!url) url = await getTileUrl(i);
-  if (url) wrap.style.setProperty('--bg-tile', `url("${url}")`);
-  else     wrap.style.setProperty('--bg-tile', 'none');
-  applyPanTransform(i);
-  setTileModeUI(i, getTileMode(i));
+function loadTileUrl(i) {
+  return new Promise(resolve => {
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(i);
+    req.onsuccess = () => resolve(req.result && req.result.tile ? req.result.tile : null);
+  });
 }
 
-/* ===================== Load ===================== */
 function loadData() {
   container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
   container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
   updateHandleImage(currentDesign);
 
+  const imgPositions = [
+    { top: 'auto', bottom: '10px', left: 'auto', right: '10px' },
+    { top: 'auto', bottom: '10px', left: '10px', right: 'auto' },
+    { top: '10px', bottom: 'auto', left: 'auto', right: '10px' },
+    { top: '10px', bottom: 'auto', left: '10px', right: 'auto' }
+  ];
+
   textareas.forEach((ta, i) => {
-    const img = images[i];
+const img = images[i];
+
+const savedPos = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
+const [v, h] = savedPos.split(' ');
+
+img.style.top    = v === 'top'    ? '10px' : 'auto';
+img.style.bottom = v === 'bottom' ? '10px' : 'auto';
+img.style.left   = h === 'left'   ? '10px' : 'auto';
+img.style.right  = h === 'right'  ? '10px' : 'auto';
+
     const wrap = ta.parentElement;
 
-    const savedPos = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
-    const [v, h] = savedPos.split(' ');
-    img.style.top    = v === 'top'    ? '10px' : 'auto';
-    img.style.bottom = v === 'bottom' ? '10px' : 'auto';
-    img.style.left   = h === 'left'   ? '10px' : 'auto';
-    img.style.right  = h === 'right'  ? '10px' : 'auto';
-
-    const bg   = localStorage.getItem(`q_b_${i}`) || defBgs[i];
-    const co   = localStorage.getItem(`q_c_${i}`) || defColors[i];
-    const fn   = localStorage.getItem(`q_f_${i}`) || DEF_FONT;
-    const fs   = localStorage.getItem(`q_s_${i}`) || '18px';
+    const bg = localStorage.getItem(`q_b_${i}`) || defBgs[i];
+    const co = localStorage.getItem(`q_c_${i}`) || defColors[i];
+    const fn = localStorage.getItem(`q_f_${i}`) || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    const fs = localStorage.getItem(`q_s_${i}`) || '18px';
     const tint = localStorage.getItem(`q_tint_${i}`);
 
     wrap.style.setProperty('--bg', bg);
@@ -753,106 +877,141 @@ function loadData() {
     wrap.style.setProperty('--fs', fs);
     wrap.style.setProperty('--bg-tint', tint !== null ? tint : '1');
 
+    // Применяем режим тайла и pan
     setTileModeUI(i, getTileMode(i));
     applyPanTransform(i);
 
-    const tx = db.transaction('texts', 'readonly');
-    const req = tx.objectStore('texts').get(i);
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(i);
     req.onsuccess = () => {
-      if (!req.result) return;
-      ta.innerHTML = req.result.content || '';
-      if (req.result.img) { images[i].src = req.result.img; images[i].style.display = 'block'; }
-      else { images[i].removeAttribute('src'); images[i].style.display = 'none'; }
-      if (req.result.tile) wrap.style.setProperty('--bg-tile', `url("${req.result.tile}")`);
-      else wrap.style.setProperty('--bg-tile', 'none');
-      applyPanTransform(i);
+      if (req.result) {
+        ta.innerHTML = req.result.content || '';
+        if (req.result.img) { images[i].src = req.result.img; images[i].style.display = 'block'; }
+        else { images[i].removeAttribute('src'); images[i].style.display = 'none'; }
+
+        if (req.result.tile) {
+          wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+        } else {
+          wrap.style.setProperty('--bg-tile', 'none');
+        }
+      }
     };
   });
 }
 
-/* ===================== Placeholder tap ===================== */
-textareas.forEach(ta => {
+textareas.forEach((ta) => {
   const ph = ta.parentElement.querySelector('.ph');
   if (!ph) return;
-  ph.addEventListener('pointerdown', e => { ph._x = e.clientX; ph._y = e.clientY; });
-  ph.addEventListener('pointerup', e => {
+
+  ph.addEventListener('pointerdown', (e) => {
+    ph._x = e.clientX;
+    ph._y = e.clientY;
+  });
+
+  ph.addEventListener('pointerup', (e) => {
     const dx = Math.abs(e.clientX - ph._x);
     const dy = Math.abs(e.clientY - ph._y);
-    if (dx < 8 && dy < 8) { ph.classList.add('hidden'); ta.focus(); }
+    if (dx < 8 && dy < 8) {
+      ph.classList.add('hidden');
+      ta.focus();
+    }
   });
 });
+  
+let handleLongPressTimer;
+let startX = 0, startY = 0;
 
-/* ===================== Handle drag / tap ===================== */
-handle.addEventListener('pointerdown', e => {
+handle.addEventListener('pointerdown', (e) => {
   isDragging = true;
   dragStartTime = Date.now();
-  const t = e.touches ? e.touches[0] : e;
-  startX = t.clientX;
-  startY = t.clientY;
+  const touch = e.touches ? e.touches[0] : e;
+  startX = touch.clientX;
+  startY = touch.clientY;
+
+  // handleLongPressTimer = setTimeout(() => {
+    // if (isDragging) {
+      // isDragging = false;
+      // window.location.href = 'research.html';
+  //  }
+ // }, 1000); 
 });
-window.addEventListener('pointermove', e => {
+
+window.addEventListener('pointermove', (e) => {
   if (!isDragging) return;
-  const t = e.touches ? e.touches[0] : e;
-  const moveX = Math.abs(t.clientX - startX);
-  const moveY = Math.abs(t.clientY - startY);
-  if (moveX > 5 || moveY > 5) clearTimeout(textareaLongPressTimer);
+  const touch = e.touches ? e.touches[0] : e;
+
+  const moveX = Math.abs(touch.clientX - startX);
+  const moveY = Math.abs(touch.clientY - startY);
+
+  if (moveX > 5 || moveY > 5) {
+    clearTimeout(handleLongPressTimer);
+  }
 
   const padding = 10;
-  const rawX = (t.clientX / window.innerWidth) * 100;
-  const rawY = (t.clientY / window.innerHeight) * 100;
-  const cx = Math.max(padding, Math.min(100 - padding, rawX));
-  const cy = Math.max(padding, Math.min(100 - padding, rawY));
-  container.style.setProperty('--x', `${cx}%`);
-  container.style.setProperty('--y', `${cy}%`);
-  localStorage.setItem('q_x', `${cx}%`);
-  localStorage.setItem('q_y', `${cy}%`);
+  const rawX = (touch.clientX / window.innerWidth) * 100;
+  const rawY = (touch.clientY / window.innerHeight) * 100;
+  const clampedX = Math.max(padding, Math.min(100 - padding, rawX));
+  const clampedY = Math.max(padding, Math.min(100 - padding, rawY));
+  const x = `${clampedX}%`;
+  const y = `${clampedY}%`;
+  container.style.setProperty('--x', x);
+  container.style.setProperty('--y', y);
+  localStorage.setItem('q_x', x);
+  localStorage.setItem('q_y', y);
 });
-window.addEventListener('pointerup', () => {
+
+window.addEventListener('pointerup', (e) => {
+  clearTimeout(handleLongPressTimer);
   if (!isDragging) return;
   const duration = Date.now() - dragStartTime;
   isDragging = false;
-  if (duration >= 250) return;
 
-  currentDesign = (currentDesign + 1) % designs.length;
-  localStorage.setItem('q_handle_design', currentDesign);
-  updateHandleImage(currentDesign);
+  if (duration < 250) {
+    currentDesign = (currentDesign + 1) % designs.length;
+    localStorage.setItem('q_handle_design', currentDesign);
+    updateHandleImage(currentDesign);
 
-  if (currentDesign === 3) {
-    handle.style.filter = 'drop-shadow(0 4px 4px rgba(0,0,0,0.5)) drop-shadow(0 4px 4px rgba(255,255,255,0.3))';
-  } else {
-    const deg = Math.floor(Math.random() * 4) * 90;
-    handle.querySelector('img').style.transform = `rotate(${deg}deg)`;
-    handle.style.filter = `hue-rotate(${Math.floor(Math.random() * 360)}deg) drop-shadow(0 6px 6px rgba(255,255,255,0.4))`;
+    const randomHue = Math.floor(Math.random() * 360);
+
+    if (currentDesign === 3) {
+      handle.style.filter = `drop-shadow(0 4px 4px rgba(0,0,0,0.5)) drop-shadow(0 4px 4px rgba(255,255,255,0.3))`;
+    } else {
+      const randomDegrees = Math.floor(Math.random() * 4) * 90;
+      handle.querySelector('img').style.transform = `rotate(${randomDegrees}deg)`;
+      handle.style.filter = `hue-rotate(${randomHue}deg) drop-shadow(0 6px 6px rgba(255,255,255,0.4))`;
+    }
+
+    const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
+
+    const fontValues = Array.from(
+      document.querySelectorAll('#setting-font .font-option')
+    ).map(o => o.dataset.value);
+
+    textareas.forEach((ta, i) => {
+      const wrap = ta.parentElement;
+      const randomFont = fontValues[Math.floor(Math.random() * fontValues.length)];
+
+      wrap.style.setProperty('--fn', randomFont);
+      wrap.style.setProperty('--bg', palette.bg[i]);
+      wrap.style.setProperty('--color', palette.co[i]);
+
+      localStorage.setItem(`q_f_${i}`, randomFont);
+      localStorage.setItem(`q_b_${i}`, palette.bg[i]);
+      localStorage.setItem(`q_c_${i}`, palette.co[i]);
+    });
   }
-
-  const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
-  const fontValues = Array.from(document.querySelectorAll('#setting-font .font-option')).map(o => o.dataset.value);
-
-  textareas.forEach((ta, i) => {
-    const wrap = ta.parentElement;
-    const randomFont = fontValues[Math.floor(Math.random() * fontValues.length)];
-    wrap.style.setProperty('--fn', randomFont);
-    wrap.style.setProperty('--bg', palette.bg[i]);
-    wrap.style.setProperty('--color', palette.co[i]);
-    localStorage.setItem(`q_f_${i}`, randomFont);
-    localStorage.setItem(`q_b_${i}`, palette.bg[i]);
-    localStorage.setItem(`q_c_${i}`, palette.co[i]);
-  });
 });
-handle.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
-handle.addEventListener('click', e => e.preventDefault());
-handle.addEventListener('contextmenu', e => e.preventDefault());
 
-function updateHandleImage(index) {
-  const imgEl = handle.querySelector('img');
-  imgEl.src = designs[index];
-  if (index === 3) imgEl.style.transform = 'rotate(0deg)';
-}
+handle.addEventListener('touchstart', (e) => {
+  if (e.cancelable) e.preventDefault();
+}, { passive: false });
 
-/* ===================== Image insert ===================== */
+handle.addEventListener('click', (e) => e.preventDefault());
+handle.addEventListener('contextmenu', (e) => e.preventDefault());
+
 function handleImageFile(file, index, ta) {
   const reader = new FileReader();
-  reader.onload = ev => {
+  reader.onload = (ev) => {
     images[index].src = ev.target.result;
     images[index].style.display = 'block';
     saveToDB(index, ta.innerHTML, ev.target.result);
@@ -860,68 +1019,88 @@ function handleImageFile(file, index, ta) {
   reader.readAsDataURL(file);
 }
 
-/* ===================== Font picker ===================== */
-fontPicker.addEventListener('click', e => {
-  if (e.target === fontDisplay) { fontPicker.classList.toggle('open'); return; }
+const modal = document.getElementById('settings-modal');
+const selSize = document.getElementById('setting-size');
+const selPos = document.getElementById('setting-pos');
+const chkDelImg = document.getElementById('setting-del-img');
+const imgActionContainer = document.getElementById('image-action-container');
+const btnSave = document.getElementById('setting-save');
+const btnCancel = document.getElementById('setting-cancel');
+
+const fontPicker = document.getElementById('setting-font');
+const fontDisplay = document.getElementById('font-display');
+
+fontPicker.addEventListener('click', (e) => {
+  if (e.target === fontDisplay) {
+    fontPicker.classList.toggle('open');
+    return;
+  }
+
   const opt = e.target.closest('.font-option');
   if (!opt) return;
-  document.querySelectorAll('#setting-font .font-option').forEach(o => o.classList.remove('selected'));
+
+  document.querySelectorAll('#setting-font .font-option')
+    .forEach(o => o.classList.remove('selected'));
   opt.classList.add('selected');
+
   fontDisplay.textContent = opt.textContent;
   fontDisplay.style.fontFamily = opt.style.fontFamily;
+
   fontPicker.classList.remove('open');
 });
 
-/* ===================== Align ===================== */
+let activeIndex = null;
+let textareaLongPressTimer;
+
 document.querySelectorAll('[data-align]').forEach(button => {
   button.addEventListener('click', () => {
     if (activeIndex === null) return;
     const ta = textareas[activeIndex];
     ta.focus();
-    document.execCommand('justify' + button.dataset.align.charAt(0).toUpperCase() + button.dataset.align.slice(1), false, null);
+    document.execCommand(
+      'justify' + button.dataset.align.charAt(0).toUpperCase() +
+      button.dataset.align.slice(1),
+      false,
+      null
+    );
     saveToDB(activeIndex, ta.innerHTML);
   });
 });
 
-/* ===================== Tile mode toolbar ===================== */
-tileModeToolbar.addEventListener('click', async e => {
+// === Tile mode toolbar ===
+let panBefore = null;
+
+tileModeToolbar.addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-tilemode]');
   if (!btn || activeIndex === null) return;
   const mode = btn.dataset.tilemode;
 
-  if (mode === 'pan') {
-    let url = textareas[activeIndex]._pendingTile || null;
-    if (!url) url = await getTileUrl(activeIndex);
-    if (!url) {
-      // нет картинки — вернуть в tile
-      setTileModeUI(activeIndex, 'tile');
-      localStorage.setItem(`q_tilemode_${activeIndex}`, 'tile');
-      return;
-    }
-    // гарантируем, что фон стоит
-    textareas[activeIndex].parentElement.style.setProperty('--bg-tile', `url("${url}")`);
-    setTileModeUI(activeIndex, 'pan');
-    localStorage.setItem(`q_tilemode_${activeIndex}`, 'pan');
-    openPanPreview(url);
-    return;
-  }
-
   setTileModeUI(activeIndex, mode);
   localStorage.setItem(`q_tilemode_${activeIndex}`, mode);
-  applyPanTransform(activeIndex);
+
+  if (mode === 'pan') {
+    // Тайл должен уже быть — либо pending, либо из БД
+    let url = textareas[activeIndex]._pendingTile || null;
+    if (!url) url = await loadTileUrl(activeIndex);
+
+    if (!url) {
+      // Нет тайла — откатываем на repeat
+      setTileModeUI(activeIndex, 'repeat');
+      localStorage.setItem(`q_tilemode_${activeIndex}`, 'repeat');
+      return;
+    }
+    openPanPreview(url);
+  }
 });
 
-/* ===================== Pan preview ===================== */
+// === Pan preview ===
 let panState = { x: 0, y: 0, s: 1 };
-let panBefore = null;
-let panTargetIndex = null;
 let panPointers = new Map();
 let panStart = null;
 let panStartDist = 0;
 let panStartScale = 1;
 
 function openPanPreview(url) {
-  panTargetIndex = activeIndex;
   panBefore = {
     x: parseFloat(localStorage.getItem(`q_panx_${activeIndex}`) || '0'),
     y: parseFloat(localStorage.getItem(`q_pany_${activeIndex}`) || '0'),
@@ -929,13 +1108,18 @@ function openPanPreview(url) {
   };
   panState = { ...panBefore };
   panImage.src = url;
-  panImage.onload = () => { renderPan(); panModal.classList.add('open'); };
+  panImage.onload = () => {
+    renderPan();
+    panModal.classList.add('open');
+  };
 }
+
 function renderPan() {
   panImage.style.transform =
     `translate(calc(-50% + ${panState.x}px), calc(-50% + ${panState.y}px)) scale(${panState.s})`;
 }
-panStage.addEventListener('pointerdown', e => {
+
+panStage.addEventListener('pointerdown', (e) => {
   panStage.setPointerCapture(e.pointerId);
   panPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (panPointers.size === 1) {
@@ -946,9 +1130,11 @@ panStage.addEventListener('pointerdown', e => {
     panStartScale = panState.s;
   }
 });
-panStage.addEventListener('pointermove', e => {
+
+panStage.addEventListener('pointermove', (e) => {
   if (!panPointers.has(e.pointerId)) return;
   panPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
   if (panPointers.size === 1 && panStart) {
     panState.x = panStart.ox + (e.clientX - panStart.x);
     panState.y = panStart.oy + (e.clientY - panStart.y);
@@ -960,6 +1146,7 @@ panStage.addEventListener('pointermove', e => {
     renderPan();
   }
 });
+
 function endPanPointer(e) {
   panPointers.delete(e.pointerId);
   if (panPointers.size === 0) panStart = null;
@@ -968,9 +1155,11 @@ function endPanPointer(e) {
 panStage.addEventListener('pointerup', endPanPointer);
 panStage.addEventListener('pointercancel', endPanPointer);
 panStage.addEventListener('pointerleave', endPanPointer);
-panStage.addEventListener('wheel', e => {
+
+panStage.addEventListener('wheel', (e) => {
   e.preventDefault();
-  panState.s = Math.min(8, Math.max(0.2, panState.s * (e.deltaY < 0 ? 1.1 : 0.9)));
+  const factor = e.deltaY < 0 ? 1.1 : 0.9;
+  panState.s = Math.min(8, Math.max(0.2, panState.s * factor));
   renderPan();
 }, { passive: false });
 
@@ -980,105 +1169,200 @@ panCancelBtn.addEventListener('click', () => {
 });
 
 panDoneBtn.addEventListener('click', () => {
-  if (panTargetIndex === null) { panModal.classList.remove('open'); return; }
-
-  localStorage.setItem(`q_panx_${panTargetIndex}`, panState.x);
-  localStorage.setItem(`q_pany_${panTargetIndexIndex}`, panState.y);
-  localStorage.setItem(`q_pans].cale_${panTarget_Index}`, panState.s);
-
-  const idxpending = panTargetIndex;
-  panTargetIndex = nullTile;
-  panModal.classList.remove('open;
-');
-
-  // Гарантированный показ фона в поле — сразу, без ожидания Save
-  const wrap = textareas[idx].parentElement;
-  const pending = textareas[idx]._pendingTile;
-  if (pending) {
-    wrap.style.setProperty('--bg-tile', `url("${pending}")`);
-    applyPanTransform(idx);
-  } else {
-    getTileUrl(idx).then(url => {
-      if (url) wrap.style.setProperty('--bg-tile', `url("${url}")`);
-      applyPanTransform(idx);
-    });
+  if (activeIndex === null) {
+    panModal.classList.remove('open');
+    return;
   }
+  localStorage.setItem(`q_panx_${activeIndex}`, panState.x);
+  localStorage.setItem(`q_pany_${activeIndex}`, panState.y);
+  localStorage.setItem(`q_panscale_${activeIndex}`, panState.s);
+  applyPanTransform(activeIndex);
+  panModal.classList.remove('open');
 });
 
-/* ===================== Tint ===================== */
-inpTint.addEventListener('input', e => {
+// Превью тинта в реальном времени
+inpTint.addEventListener('input', (e) => {
   tintVal.textContent = e.target.value;
   if (activeIndex !== null) {
-    textareas[activeIndex].parentElement.style.setProperty('--bg-tint', e.target.value / 100);
+    const wrap = textareas[activeIndex].parentElement;
+    wrap.style.setProperty('--bg-tint', e.target.value / 100);
   }
 });
 
-/* ===================== Tile file ===================== */
-inpTile.addEventListener('change', e => {
+// Загрузка тайла в превью
+inpTile.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file || activeIndex === null) return;
+
   tileName.textContent = file.name;
+
   const reader = new FileReader();
-  reader.onload = ev => {
+  reader.onload = (ev) => {
     const dataUrl = ev.target.result;
-    textareas[activeIndex]._pendingTile = dataUrl;
-    textareas[activeIndex].parentElement.style.setProperty('--bg-tile', `url("${dataUrl}")`);
+    const wrap = textareas[activeIndex].parentElement;
+    wrap.style.setProperty('--bg-tile', `url(${dataUrl})`);
     tileThumb.src = dataUrl;
     tileThumb.style.display = 'block';
+    textareas[activeIndex]._pendingTile = dataUrl;
     chkDelTile.checked = false;
   };
   reader.readAsDataURL(file);
 });
 
-chkDelTile.addEventListener('change', e => {
+// Снятие чекбокса удаления тайла — вернуть превью, если был
+chkDelTile.addEventListener('change', (e) => {
   if (activeIndex === null) return;
   if (e.target.checked) {
     textareas[activeIndex].parentElement.style.setProperty('--bg-tile', 'none');
-    return;
+  } else {
+    const pending = textareas[activeIndex]._pendingTile;
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(activeIndex);
+    req.onsuccess = () => {
+      if (pending) {
+        textareas[activeIndex].parentElement.style.setProperty('--bg-tile', `url(${pending})`);
+      } else if (req.result && req.result.tile) {
+        textareas[activeIndex].parentElement.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+      }
+    };
   }
-  getTileUrl(activeIndex).then(url => {
-    const pending = textareas[active    const show = pending || url;
-    if (show) textareas[activeIndex].parentElement.style.setProperty('--bg-tile', `url("${show}")`);
-  });
 });
 
-/* ===================== Editors ===================== */
 textareas.forEach((ta, i) => {
   ta.addEventListener('input', () => {
-    if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
-      ta.innerHTML = '';
-      const ph = ta.parentElement.querySelector('.ph');
-      if (ph) ph.classList.remove('hidden');
-    }
-    saveToDB(i, ta.innerHTML);
-  });
+  if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
+    ta.innerHTML = '';
+    const ph = ta.parentElement.querySelector('.ph');
+    if (ph) ph.classList.remove('hidden');
+  }
+  saveToDB(i, ta.innerHTML);
+});
 
-  ta.addEventListener('paste', e => {
+  ta.addEventListener('paste', (e) => {
     e.preventDefault();
     const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
-    if (item) handleImageFile(item.getAsFile(), i, ta);
-    else document.execCommand('insertText', false, e.clipboardData.getData('text/plain'));
+    if (item) {
+      handleImageFile(item.getAsFile(), i, ta);
+    } else {
+      const text = e.clipboardData.getData('text/plain');
+      document.execCommand('insertText', false, text);
+    }
   });
 
-  ta.addEventListener('dragover', e => e.preventDefault());
-  ta.addEventListener('drop', e => {
+  ta.addEventListener('dragover', (e) => { e.preventDefault(); });
+
+  ta.addEventListener('drop', (e) => {
     e.preventDefault();
-    const files = e.dataTransfer.files && e.dataTransfer.files.length > 0
-      ? Array.from(e.dataTransfer.files)
-      : Array.from(e.dataTransfer.items).map(x => x.getAsFile()).filter(Boolean);
-    const file = files.find(x => x.type.indexOf('image') !== -1);
-    if (file) handleImageFile(file, i, ta);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = Array.from(e.dataTransfer.files).find(x => x.type.indexOf('image') !== -1);
+      if (file) { handleImageFile(file, i, ta); }
+    } else {
+      const item = Array.from(e.dataTransfer.items).find(x => x.type.indexOf('image') !== -1);
+      if (item) { handleImageFile(item.getAsFile(), i, ta); }
+    }
   });
-  ta.addEventListener('contextmenu', e => e.preventDefault());
 
-  const startLongPress = e => {
-    activeIndex = i;
-    clearTimeout(textareaLongPressTimer);
-    textareaLongPressTimer = setTimeout(() => {
-      if (ta.textContent.trim() !== '') return;
-      openSettingsFor(i);
-    }, 600);
-  };
+  ta.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+  });
+
+let longPressStartX = 0;
+let longPressStartY = 0;
+
+const startLongPress = (e) => {
+  const touch = e.touches ? e.touches[0] : e;
+
+  longPressStartX = touch.clientX;
+  longPressStartY = touch.clientY;
+
+  activeIndex = i;
+
+  clearTimeout(textareaLongPressTimer);
+
+textareaLongPressTimer = setTimeout(() => {
+
+  const hasText = ta.textContent.trim() !== '';
+  if (hasText) return;
+
+const savedFont = localStorage.getItem(`q_f_${i}`) || '';
+const fontOpts = document.querySelectorAll('#setting-font .font-option');
+let fontMatched = false;
+fontOpts.forEach(o => {
+  const isMatch = o.dataset.value === savedFont;
+  o.classList.toggle('selected', isMatch);
+  if (isMatch) fontMatched = true;
+});
+if (!fontMatched && fontOpts[0]) {
+  fontOpts[0].classList.add('selected');
+}
+const selOpt = document.querySelector('#setting-font .font-option.selected');
+const fd = document.getElementById('font-display');
+if (selOpt && fd) {
+  fd.textContent = selOpt.textContent;
+  fd.style.fontFamily = selOpt.style.fontFamily;
+}
+
+const savedSize = localStorage.getItem(`q_s_${i}`) || '';
+const sizeOptions = Array.from(selSize.options).map(o => o.value);
+selSize.selectedIndex = sizeOptions.indexOf(savedSize) >= 0
+  ? sizeOptions.indexOf(savedSize)
+  : 0;
+
+const currentBg =
+  localStorage.getItem(`q_b_${i}`) ||
+  getComputedStyle(ta.parentElement).getPropertyValue('--bg').trim() ||
+  defBgs[i];
+
+const currentColor =
+  localStorage.getItem(`q_c_${i}`) ||
+  getComputedStyle(ta.parentElement).getPropertyValue('--color').trim() ||
+  defColors[i];
+
+    inpBg.value = currentBg;
+    bgPickerBtn.style.background = currentBg;
+
+    inpColor.value = currentColor;
+    colorPickerBtn.style.background = currentColor;
+
+    selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
+
+    // Инициализация режима тайла
+    setTileModeUI(i, getTileMode(i));
+
+    if (images[i].style.display === 'block') {
+      imgActionContainer.style.display = 'block';
+      chkDelImg.checked = false;
+    } else {
+      imgActionContainer.style.display = 'none';
+    }
+
+    // --- Загрузка существующего тайла ---
+    ta._pendingTile = null;
+    inpTile.value = '';
+    tileName.textContent = 'No file';
+    chkDelTile.checked = false;
+    tileThumb.style.display = 'none';
+    tileThumb.removeAttribute('src');
+
+    const tileTx = db.transaction("texts", "readonly");
+    const tileReq = tileTx.objectStore("texts").get(i);
+    tileReq.onsuccess = () => {
+      if (tileReq.result && tileReq.result.tile) {
+        tileThumb.src = tileReq.result.tile;
+        tileThumb.style.display = 'block';
+      }
+    };
+
+    // --- Тинт ---
+    const savedTint = localStorage.getItem(`q_tint_${i}`);
+    const tintNum = savedTint !== null ? parseFloat(savedTint) : 1;
+    inpTint.value = Math.round(tintNum * 100);
+    tintVal.textContent = inpTint.value;
+
+    modal.style.display = 'flex';
+  }, 600);
+};
+
   const stopLongPress = () => clearTimeout(textareaLongPressTimer);
 
   ta.addEventListener('mousedown', startLongPress);
@@ -1088,13 +1372,13 @@ textareas.forEach((ta, i) => {
   ta.addEventListener('touchend', stopLongPress);
   ta.addEventListener('touchmove', stopLongPress);
 
-  /* Image handlers */
+  // === ОБРАБОТЧИКИ КАРТИНКИ (pointer events) ===
   const img = images[i];
   let imgLongPressTimer = null;
   let imgStartX = 0, imgStartY = 0;
   let imgDeleted = false;
 
-  img.addEventListener('pointerdown', e => {
+  img.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     imgDeleted = false;
     imgStartX = e.clientX;
@@ -1109,167 +1393,115 @@ textareas.forEach((ta, i) => {
       saveToDB(i, ta.innerHTML, null, true);
     }, 1000);
   });
+
   img.addEventListener('pointerup', () => clearTimeout(imgLongPressTimer));
   img.addEventListener('pointercancel', () => clearTimeout(imgLongPressTimer));
   img.addEventListener('pointerleave', () => clearTimeout(imgLongPressTimer));
-  img.addEventListener('pointermove', e => {
-    if (Math.abs(e.clientX - imgStartX) > 8 || Math.abs(e.clientY - imgStartY) > 8) clearTimeout(imgLongPressTimer);
+
+  img.addEventListener('pointermove', (e) => {
+    if (Math.abs(e.clientX - imgStartX) > 8 ||
+        Math.abs(e.clientY - imgStartY) > 8) {
+      clearTimeout(imgLongPressTimer);
+    }
   });
-  img.addEventListener('click', e => {
+
+  img.addEventListener('click', (e) => {
     e.stopPropagation();
     if (imgDeleted) return;
     img.classList.toggle('fullscreen');
   });
 });
 
-/* ===================== Settings modal ===================== */
-function openSettingsFor(i) {
-  const ta = textareas[i];
-  const currentBg =
-    localStorage.getItem(`q_b_${i}`) ||
-    getComputedStyle(ta.parentElement).getPropertyValue('--bg').trim() ||
-    defBgs[i];
-  const currentColor =
-    localStorage.getItem(`q_c_${i}`) ||
-    getComputedStyle(ta.parentElement).getPropertyValue('--color').trim() ||
-    defColors[i];
-
-  inpBg.value = currentBg;
-  bgPickerBtn.style.background = currentBg;
-  inpColor.value = currentColor;
-  colorPickerBtn.style.background = currentColor;
-
-  selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
-
-  const savedFont = localStorage.getItem(`q_f_${i}`) || '';
-  const fontOpts = document.querySelectorAll('#setting-font .font-option');
-  let fontMatched = false;
-  fontOpts.forEach(o => {
-    const m = o.dataset.value === savedFont;
-    o.classList.toggle('selected', m);
-    if (m) fontMatched = true;
-  });
-  if (!fontMatched && fontOpts[0]) fontOpts[0].classList.add('selected');
-  const selOpt = document.querySelector('#setting-font .font-option.selected');
-  if (selOpt) {
-    fontDisplay.textContent = selOpt.textContent;
-    fontDisplay.style.fontFamily = selOpt.style.fontFamily;
-  }
-
-  const savedSize = localStorage.getItem(`q_s_${i}`) || '';
-  const sizeVals = Array.from(selSize.options).map(o => o.value);
-  selSize.selectedIndex = sizeVals.indexOf(savedSize) >= 0 ? sizeVals.indexOf(savedSize) : 0;
-
-  setTileModeUI(i, getTileMode(i));
-
-  imgActionContainer.style.display = images[i].style.display === 'block' ? 'block' : 'none';
-  chkDelImg.checked = false;
-
-  ta._pendingTile = null;
-  inpTile.value = '';
-  tileName.textContent = 'No file';
-  chkDelTile.checked = false;
-  tileThumb.style.display = 'none';
-  tileThumb.removeAttribute('src');
-
-  getTileUrl(i).then(url => {
-    if (url) {
-      tileThumb.src = url;
-      tileThumb.style.display = 'block';
-    }
-  });
-
-  const savedTint = localStorage.getItem(`q_tint_${i}`);
-  const tintNum = savedTint !== null ? parseFloat(savedTint) : 1;
-  inpTint.value = Math.round(tintNum * 100);
-  tintVal.textContent = inpTint.value;
-
-  applyPanTransform(i);
-  modal.style.display = 'flex';
-}
-
-btnSave.onclick = async () => {
+btnSave.onclick = () => {
   if (activeIndex === null) return;
-  const idx = activeIndex;
-  const ta = textareas[idx];
-  const wrap = ta.parentElement;
+  const targetTa = textareas[activeIndex];
+  const wrap = targetTa.parentElement;
 
-  const fontOpt = document.querySelector('#setting-font .font-option.selected');
-  const fontValue = fontOpt ? fontOpt.dataset.value : "'Luckiest Guy', Arial, sans-serif";
+  // --- FONT ---
+  const fontOption = document.querySelector('#setting-font .font-option.selected');
+  const fontValue = fontOption
+    ? fontOption.dataset.value
+    : "'Luckiest Guy', Arial, sans-serif"; 
+
   wrap.style.setProperty('--fn', fontValue);
-  localStorage.setItem(`q_f_${idx}`, fontValue);
+  localStorage.setItem(`q_f_${activeIndex}`, fontValue);
 
   wrap.style.setProperty('--fs', selSize.value);
-  localStorage.setItem(`q_s_${idx}`, selSize.value);
+  localStorage.setItem(`q_s_${activeIndex}`, selSize.value);
 
   wrap.style.setProperty('--bg', inpBg.value);
-  localStorage.setItem(`q_b_${idx}`, inpBg.value);
+  localStorage.setItem(`q_b_${activeIndex}`, inpBg.value);
 
   wrap.style.setProperty('--color', inpColor.value);
-  localStorage.setItem(`q_c_${idx}`, inpColor.value);
+  localStorage.setItem(`q_c_${activeIndex}`, inpColor.value);
 
+  // --- TINT ---
   const tintNum = parseInt(inpTint.value, 10) / 100;
   wrap.style.setProperty('--bg-tint', tintNum);
-  localStorage.setItem(`q_tint_${idx}`, tintNum);
+  localStorage.setItem(`q_tint_${activeIndex}`, tintNum);
 
-  // === СОХРАНЕНИЕ ФОНА-КАРТИНКИ ===
+  // --- TILE ---
   if (chkDelTile.checked) {
     wrap.style.setProperty('--bg-tile', 'none');
-    await saveToDB(idx, ta.innerHTML, null, false, null, true);
-    setTileModeUI(idx, 'tile');
-    localStorage.setItem(`q_tilemode_${idx}`, 'tile');
-  } else if (ta._pendingTile) {
-    wrap.style.setProperty('--bg-tile', `url("${ta._pendingTile}")`);
-    await saveToDB(idx, ta.innerHTML, null, false, ta._pendingTile);
-  } else {
-    const url = await getTileUrl(idx);
-    if (url) wrap.style.setProperty('--bg-tile', `url("${url}")`);
+    saveToDB(activeIndex, targetTa.innerHTML, null, false, null, true);
+    // Если тайл удалён — сбрасываем режим на repeat
+    setTileModeUI(activeIndex, 'repeat');
+    localStorage.setItem(`q_tilemode_${activeIndex}`, 'repeat');
+  } else if (targetTa._pendingTile) {
+    wrap.style.setProperty('--bg-tile', `url(${targetTa._pendingTile})`);
+    saveToDB(activeIndex, targetTa.innerHTML, null, false, targetTa._pendingTile);
   }
-  delete ta._pendingTile;
+  delete targetTa._pendingTile;
 
-  // === РЕЖИМ + PAN ===
-  const finalMode = getTileMode(idx);
-  setTileModeUI(idx, finalMode);
-  applyPanTransform(idx);
+  // --- TILE MODE / PAN ---
+  const modeToSave = getTileMode(activeIndex);
+  setTileModeUI(activeIndex, modeToSave);
+  applyPanTransform(activeIndex);
 
-  // === ПОЗИЦИЯ МИНИ-КАРТИНКИ ===
-  localStorage.setItem(`q_pos_${idx}`, selPos.value);
+  localStorage.setItem(`q_pos_${activeIndex}`, selPos.value);
   const [v, h] = selPos.value.split(' ');
-  images[idx].style.top    = v === 'top'    ? '10px' : 'auto';
-  images[idx].style.bottom = v === 'bottom' ? '10px' : 'auto';
-  images[idx].style.left   = h === 'left'   ? '10px' : 'auto';
-  images[idx].style.right  = h === 'right'  ? '10px' : 'auto';
+  images[activeIndex].style.top    = v === 'top'    ? '10px' : 'auto';
+  images[activeIndex].style.bottom = v === 'bottom' ? '10px' : 'auto';
+  images[activeIndex].style.left   = h === 'left'   ? '10px' : 'auto';
+  images[activeIndex].style.right  = h === 'right'  ? '10px' : 'auto';
 
   if (chkDelImg.checked) {
-    images[idx].removeAttribute('src');
-    images[idx].style.display = 'none';
-    localStorage.removeItem(`q_pos_${idx}`);
-    saveToDB(idx, ta.innerHTML, null, true);
+    images[activeIndex].removeAttribute('src');
+    images[activeIndex].style.display = 'none';
+    localStorage.removeItem(`q_pos_${activeIndex}`);
+    saveToDB(activeIndex, targetTa.innerHTML, null, true);
   }
 
   modal.style.display = 'none';
   activeIndex = null;
 };
 
-btnCancel.onclick = async () => {
+btnCancel.onclick = () => {
+  // Откатываем превью тинта и тайла для активного редактора
   if (activeIndex !== null) {
-    const idx = activeIndex;
-    const wrap = textareas[idx].parentElement;
-    const savedTint = localStorage.getItem(`q_tint_${idx}`);
+    const wrap = textareas[activeIndex].parentElement;
+    const savedTint = localStorage.getItem(`q_tint_${activeIndex}`);
     wrap.style.setProperty('--bg-tint', savedTint !== null ? savedTint : '1');
-    setTileModeUI(idx, getTileMode(idx));
-    applyPanTransform(idx);
 
-    const url = await getTileUrl(idx);
-    if (url) wrap.style.setProperty('--bg-tile', `url("${url}")`);
-    else wrap.style.setProperty('--bg-tile', 'none');
+    // Откат режима тайла
+    setTileModeUI(activeIndex, localStorage.getItem(`q_tilemode_${activeIndex}`) || 'repeat');
+    applyPanTransform(activeIndex);
 
-    delete textareas[idx]._pendingTile;
+    // Восстановить тайл из БД
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(activeIndex);
+    req.onsuccess = () => {
+      if (req.result && req.result.tile) {
+        wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+      } else {
+        wrap.style.setProperty('--bg-tile', 'none');
+      }
+    };
+    delete textareas[activeIndex]._pendingTile;
   }
   modal.style.display = 'none';
   activeIndex = null;
 };
 </script>
-
 </body>
 </html>
