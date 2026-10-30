@@ -973,14 +973,13 @@ document.querySelectorAll('[data-align]').forEach(button => {
   });
 });
 
-// === Tile mode toolbar ===
 tileModeToolbar.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-tilemode]');
   if (!btn || activeIndex === null) return;
   const mode = btn.dataset.tilemode;
 
   setTileModeUI(activeIndex, mode);
-  localStorage.setItem(`q_tilemode_${activeIndex}`, mode);
+  // НЕ сохраняем в localStorage — сохраним только при Save
 });
 
 // Превью тинта в реальном времени
@@ -1162,6 +1161,8 @@ const currentColor =
     inpTint.value = Math.round(tintNum * 100);
     tintVal.textContent = inpTint.value;
 
+    if (window.getSelection) window.getSelection().removeAllRanges();
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     modal.style.display = 'flex';
   }, 600);
 };
@@ -1257,8 +1258,9 @@ btnSave.onclick = () => {
   delete targetTa._pendingTile;
 
   // --- TILE MODE ---
-  const modeToSave = getTileMode(activeIndex);
-  setTileModeUI(activeIndex, modeToSave);
+  const currentMode = textareas[activeIndex].parentElement.dataset.tilemode || 'repeat';
+  localStorage.setItem(`q_tilemode_${activeIndex}`, currentMode);
+  setTileModeUI(activeIndex, currentMode);
 
   localStorage.setItem(`q_pos_${activeIndex}`, selPos.value);
   const [v, h] = selPos.value.split(' ');
@@ -1279,11 +1281,28 @@ btnSave.onclick = () => {
 };
 
 btnCancel.onclick = () => {
-  // Откатываем превью тинта и тайла для активного редактора
   if (activeIndex !== null) {
     const wrap = textareas[activeIndex].parentElement;
+
+    // Откат тинта
     const savedTint = localStorage.getItem(`q_tint_${activeIndex}`);
     wrap.style.setProperty('--bg-tint', savedTint !== null ? savedTint : '1');
+
+    // Откат цвета фона
+    const savedBg = localStorage.getItem(`q_b_${activeIndex}`);
+    if (savedBg !== null) wrap.style.setProperty('--bg', savedBg);
+
+    // Откат цвета текста
+    const savedColor = localStorage.getItem(`q_c_${activeIndex}`);
+    if (savedColor !== null) wrap.style.setProperty('--color', savedColor);
+
+    // Откат шрифта
+    const savedFont = localStorage.getItem(`q_f_${activeIndex}`);
+    if (savedFont !== null) wrap.style.setProperty('--fn', savedFont);
+
+    // Откат размера шрифта
+    const savedSize = localStorage.getItem(`q_s_${activeIndex}`);
+    if (savedSize !== null) wrap.style.setProperty('--fs', savedSize);
 
     // Откат режима тайла
     setTileModeUI(activeIndex, getTileMode(activeIndex));
@@ -1303,6 +1322,15 @@ btnCancel.onclick = () => {
   modal.style.display = 'none';
   activeIndex = null;
 };
+
+document.addEventListener('contextmenu', (e) => {
+  const modal = document.getElementById('settings-modal');
+  if (modal.style.display === 'flex') {
+    e.preventDefault();
+  }
+}, { capture: true });
+
+document.getElementById('settings-modal').addEventListener('contextmenu', (e) => e.preventDefault(), { capture: true });
 </script>
 </body>
 </html>
