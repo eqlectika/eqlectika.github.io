@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>iDesign | Веб-терминалы, которые делают счастливее</title>
+    <title>iDesign | Web terminals that make you happy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Ubuntu:wght@400;500;700&family=Unbounded:wght@200;300;400;500;600;700;800;900&family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
@@ -113,7 +113,6 @@
         }
 
         .lang-switch button.active {
-
             color: #fff;
         }
 
@@ -213,13 +212,13 @@
                 <img src="fleurdelis.png" alt="Fleur de lis" class="no-invert">
             </a>
 
-            <p class="subtitle" data-i18n="subtitle">Веб-терминалы, которые делают счастливее</p>
+            <p class="subtitle" data-i18n="subtitle">Web terminals that make you happy</p>
 
             <!-- Переключатель языка -->
             <div class="lang-switch" role="group" aria-label="Language switch / Переключатель языка">
-                <button type="button" data-lang="ru" class="active" aria-pressed="true">RU</button>
+                <button type="button" data-lang="ru" aria-pressed="false">RU</button>
 
-                <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                <button type="button" data-lang="en" class="active" aria-pressed="true">EN</button>
             </div>
         </div>
 
@@ -228,7 +227,7 @@
         <!-- === ИСТОРИЯ / STORY === -->
         <div class="content-text" id="content-text-story">
             <!-- Русская версия -->
-            <div data-lang-block="ru">
+            <div data-lang-block="ru" style="display:none;">
                 <p>Мы не знаем, когда родились. Нам об этом сообщили. Мир состоит из языка.</p>
 
                 <p>Я рассматриваю дизайн как способ преобразования среды. Это процесс, в котором интуиция направляет воображение.</p>
@@ -245,7 +244,7 @@
             </div>
 
             <!-- Английская версия -->
-            <div data-lang-block="en" style="display:none;">
+            <div data-lang-block="en">
                 <p>We do not know when we were born; we were informed. The world is made of language.</p>
 
                 <p>I believe in design as a way to reshape the environment, allowing intuition to guide our fantasy direction.</p>
@@ -268,27 +267,34 @@
 
         <!-- === ПОДДЕРЖКА / SUPPORT === -->
         <div class="content-text" style="font-size:12px; margin-top:48px;" id="content-text-main">
-            <div data-lang-block="ru">
+            <div data-lang-block="ru" style="display:none;">
                 Если вы находите <a href="match.html" style="color: #60a5fa; text-decoration: none;">интерфейс и приложения</a> полезными, и хотели бы поддержать проект с помощью ETH (ERC20), пожалуйста, используйте адрес ниже.
             </div>
-            <div data-lang-block="en" style="display:none;">
+            <div data-lang-block="en">
                 If you find <a href="match.html" style="color: #60a5fa; text-decoration: none;">the interface and included applications</a> useful and would like to support the project using ETH (ERC20), please use the address below.
             </div>
         </div>
 
-        <div class="address-box" id="addressBox" title="Нажмите, чтобы скопировать">
+        <div class="address-box" id="addressBox" title="Click to copy">
             0xF5367CF8187Ab1C405c495dC05fCa0434d76c1B8
         </div>
 
-        <div class="hint" style="font-size:12px;" id="hint" data-i18n="hint">Нажмите, чтобы скопировать адрес</div>
+        <div class="hint" style="font-size:12px;" id="hint" data-i18n="hint">Click to copy address</div>
 
     </div>
 
     <script>
         // ============================================================
-        //  0. Локализация (RU / EN)
+        //  0. ЯЗЫК + ТЕКСТ  (та же логика, что в Swipe)
         // ============================================================
+
         const LANG_KEY = 'idesign_lang';
+
+        // Определяем язык так же, как в Swipe: navigator.language → ru/en
+        function detectLang() {
+            const nav = (navigator.language || 'en').toLowerCase();
+            return nav.startsWith('ru') ? 'ru' : 'en';
+        }
 
         const I18N = {
             ru: {
@@ -311,17 +317,17 @@
             }
         };
 
-        let currentLang = 'ru';
+        let currentLang = detectLang();
 
         function getI18n() {
-            return I18N[currentLang] || I18N.ru;
+            return I18N[currentLang] || I18N.en;
         }
 
         /**
          * Применяет выбранный язык ко всем элементам страницы.
          */
         function applyLanguage(lang) {
-            if (!I18N[lang]) lang = 'ru';
+            if (!I18N[lang]) lang = detectLang();
             currentLang = lang;
 
             // 1. <html lang="...">
@@ -376,12 +382,12 @@
                 });
             });
 
-            // Восстанавливаем сохранённый язык
+            // Восстанавливаем сохранённый язык, иначе — из браузера
             let saved = null;
             try {
                 saved = localStorage.getItem(LANG_KEY);
             } catch (e) { /* ignore */ }
-            const initialLang = (saved && I18N[saved]) ? saved : 'ru';
+            const initialLang = (saved && I18N[saved]) ? saved : detectLang();
             applyLanguage(initialLang);
         }
 
@@ -427,7 +433,7 @@
         //  2. Логика выделения слов и отправки в ChatGPT
         // ============================================================
 
-        // Ключ хранилища теперь зависит от языка,
+        // Ключ хранилища зависит от языка,
         // чтобы состояния слов не путались между RU и EN.
         function getStorageKey() {
             return 'trust_fibonacci_words_content_' + currentLang;
@@ -475,13 +481,18 @@
 
         /**
          * Сохраняем состояния слов в localStorage.
+         * Храним раздельно по контейнерам (main / story),
+         * чтобы индексы не разъезжались между языками.
          */
         function saveWordStates() {
-            const states = [];
-            document.querySelectorAll('#content-text-main .clickable-word, #content-text-story .clickable-word')
-                .forEach(el => {
-                    states.push(el.dataset.state || '0');
+            const states = { main: [], story: [] };
+            ['main', 'story'].forEach(key => {
+                const root = document.getElementById('content-text-' + key);
+                if (!root) return;
+                root.querySelectorAll('.clickable-word').forEach(el => {
+                    states[key].push(el.dataset.state || '0');
                 });
+            });
             try {
                 localStorage.setItem(getStorageKey(), JSON.stringify(states));
             } catch (e) { /* ignore */ }
@@ -497,14 +508,32 @@
             } catch (e) {
                 states = null;
             }
-            if (!Array.isArray(states)) return;
+            if (!states) return;
 
-            const words = document.querySelectorAll('#content-text-main .clickable-word, #content-text-story .clickable-word');
-            words.forEach((el, i) => {
-                const state = states[i] || '0';
-                el.dataset.state = state;
-                el.classList.remove('state-0', 'state-1', 'state-2');
-                el.classList.add(`state-${state}`);
+            // Поддержка старого формата (плоский массив) — на всякий случай
+            if (Array.isArray(states)) {
+                const all = document.querySelectorAll(
+                    '#content-text-main .clickable-word, #content-text-story .clickable-word'
+                );
+                all.forEach((el, i) => {
+                    const state = states[i] || '0';
+                    el.dataset.state = state;
+                    el.classList.remove('state-0', 'state-1', 'state-2');
+                    el.classList.add('state-' + state);
+                });
+                return;
+            }
+
+            ['main', 'story'].forEach(key => {
+                const root = document.getElementById('content-text-' + key);
+                if (!root) return;
+                const arr = states[key] || [];
+                root.querySelectorAll('.clickable-word').forEach((el, i) => {
+                    const state = arr[i] || '0';
+                    el.dataset.state = state;
+                    el.classList.remove('state-0', 'state-1', 'state-2');
+                    el.classList.add('state-' + state);
+                });
             });
         }
 
@@ -558,8 +587,11 @@
                     if (tag === 'br') return;
                     // Не обёртываем повторно уже обработанные слова
                     if (node.classList && node.classList.contains('clickable-word')) return;
-                    // Не трогаем скрытые языковые блоки
-                    if (node.hasAttribute && node.hasAttribute('data-lang-block')) return;
+                    // Не трогаем скрытые языковые блоки — их обработаем при переключении
+                    if (node.hasAttribute && node.hasAttribute('data-lang-block')) {
+                        // но только если блок скрыт; видимый обработаем
+                        if (node.style.display === 'none') return;
+                    }
                     wrapTextNodeChildren(node);
                 }
             });
@@ -580,6 +612,7 @@
                     wordEl._tapCount = 0;
                 }
 
+                // Снимаем старые обработчики, чтобы не дублировать
                 wordEl.removeEventListener('click', wordClickHandler);
                 wordEl.removeEventListener('pointerdown', wordPointerDownHandler);
                 wordEl.removeEventListener('pointerup', wordPointerUpHandler);
@@ -637,9 +670,14 @@
             });
         }
 
+        /**
+         * click — только для клавиатуры (Enter/Space).
+         * На мыши и тач-устройствах обработка идёт через pointerup.
+         */
         function wordClickHandler(event) {
-            // Обработка в pointerup — оставляем пустым,
-            // чтобы не было двойного срабатывания.
+            if (event.detail === 0) {
+                handleWordClick(event.currentTarget);
+            }
         }
 
         // ============================================================
@@ -649,8 +687,18 @@
         /**
          * Разбивает текст на слова, восстанавливает состояния
          * и навешивает обработчики — для текущего языка.
+         * Перед этим сбрасывает таймеры long-press у старых слов.
          */
         function reinitWordWrapping() {
+            // Сбрасываем возможные таймеры long-press
+            document.querySelectorAll('.clickable-word').forEach(el => {
+                if (el._longPressTimer) {
+                    clearTimeout(el._longPressTimer);
+                    el._longPressTimer = null;
+                }
+                el._isLongPress = false;
+            });
+
             // Разбиваем текст на слова в двух блоках
             wrapWordsInContainer(document.getElementById('content-text-main'));
             wrapWordsInContainer(document.getElementById('content-text-story'));
