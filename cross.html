@@ -403,9 +403,9 @@ body, html {
       <p>2. Move handle (crosshair) to resize fields.</p>
       <p>3. Tap handle to change design.</p>
       <p>4. Very long tap empty field to format (delete image).</p>
-      <p>5. Long tap handle to go to the developer's page.</p>
-      <p>6. Tap image to toggle expand (close) or long tap to delete.</p>
-      <p>7. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+      <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
+      <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+   <!--   <p>7. Long tap handle to go to the developer's page.</p> -->
     </div>
     <img class="img-preview" alt="">
   </div>
@@ -416,9 +416,9 @@ body, html {
       <p>2. Move handle (crosshair) to resize fields.</p>
       <p>3. Tap handle to change design.</p>
       <p>4. Very long tap empty field to format (delete image).</p>
-      <p>5. Long tap handle to go to the developer's page.</p>
-      <p>6. Tap image to toggle expand (close) or long tap to delete.</p>
-      <p>7. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+      <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
+      <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+   <!--   <p>7. Long tap handle to go to the developer's page.</p> -->
     </div>
     <img class="img-preview" alt="">
   </div>
@@ -429,9 +429,9 @@ body, html {
       <p>2. Move handle (crosshair) to resize fields.</p>
       <p>3. Tap handle to change design.</p>
       <p>4. Very long tap empty field to format (delete image).</p>
-      <p>5. Long tap handle to go to the developer's page.</p>
-      <p>6. Tap image to toggle expand (close) or long tap to delete.</p>
-      <p>7. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+      <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
+      <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+   <!--   <p>7. Long tap handle to go to the developer's page.</p> -->
     </div>
     <img class="img-preview" alt="">
   </div>
@@ -442,9 +442,9 @@ body, html {
       <p>2. Move handle (crosshair) to resize fields.</p>
       <p>3. Tap handle to change design.</p>
       <p>4. Very long tap empty field to format (delete image).</p>
-      <p>5. Long tap handle to go to the developer's page.</p>
-      <p>6. Tap image to toggle expand (close) or long tap to delete.</p>
-      <p>7. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+      <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
+      <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+   <!--   <p>7. Long tap handle to go to the developer's page.</p> -->
     </div>
     <img class="img-preview" alt="">
   </div>
@@ -711,8 +711,8 @@ function setTileModeUI(i, mode) {
 }
 function applyPanTransform(i) {
   const wrap = textareas[i].parentElement;
-  const x = localStorage.getItem(`q_panx_${i}`) || '0';
-  const y = localStorage.getItem(`q_pany_${i}`) || '0';
+  const x = parseFloat(localStorage.getItem(`q_panx_${i}`) || '0');
+  const y = parseFloat(localStorage.getItem(`q_pany_${i}`) || '0');
   const s = parseFloat(localStorage.getItem(`q_panscale_${i}`) || '1');
   wrap.style.setProperty('--pan-x', `${x}px`);
   wrap.style.setProperty('--pan-y', `${y}px`);
@@ -960,10 +960,27 @@ panCancelBtn.addEventListener('click', () => {
 });
 panDoneBtn.addEventListener('click', () => {
   if (panTargetIndex === null) { panModal.classList.remove('open'); return; }
+
   localStorage.setItem(`q_panx_${panTargetIndex}`, panState.x);
   localStorage.setItem(`q_pany_${panTargetIndex}`, panState.y);
   localStorage.setItem(`q_panscale_${panTargetIndex}`, panState.s);
+
   applyPanTransform(panTargetIndex);
+
+  const wrap = textareas[panTargetIndex].parentElement;
+  const pending = textareas[panTargetIndex]._pendingTile;
+  if (pending) {
+    wrap.style.setProperty('--bg-tile', `url(${pending})`);
+  } else {
+    const tx = db.transaction('texts', 'readonly');
+    const req = tx.objectStore('texts').get(panTargetIndex);
+    req.onsuccess = () => {
+      if (req.result && req.result.tile) {
+        wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+      }
+    };
+  }
+
   panTargetIndex = null;
   panModal.classList.remove('open');
 });
@@ -1155,6 +1172,7 @@ function openSettingsFor(i) {
   inpTint.value = Math.round(tintNum * 100);
   tintVal.textContent = inpTint.value;
 
+  applyPanTransform(i);
   modal.style.display = 'flex';
 }
 
@@ -1184,15 +1202,23 @@ btnSave.onclick = () => {
   if (chkDelTile.checked) {
     wrap.style.setProperty('--bg-tile', 'none');
     saveToDB(activeIndex, ta.innerHTML, null, false, null, true);
-    setTileModeUI(activeIndex, 'tile');
-    localStorage.setItem(`q_tilemode_${activeIndex}`, 'tile');
   } else if (ta._pendingTile) {
     wrap.style.setProperty('--bg-tile', `url(${ta._pendingTile})`);
     saveToDB(activeIndex, ta.innerHTML, null, false, ta._pendingTile);
+  } else {
+    const tx2 = db.transaction('texts', 'readonly');
+    const req2 = tx2.objectStore('texts').get(activeIndex);
+    req2.onsuccess = () => {
+      if (req2.result && req2.result.tile) {
+        wrap.style.setProperty('--bg-tile', `url(${req2.result.tile})`);
+      }
+    };
   }
   delete ta._pendingTile;
 
-  setTileModeUI(activeIndex, getTileMode(activeIndex));
+  const finalMode = chkDelTile.checked ? 'tile' : getTileMode(activeIndex);
+  setTileModeUI(activeIndex, finalMode);
+  localStorage.setItem(`q_tilemode_${activeIndex}`, finalMode);
   applyPanTransform(activeIndex);
 
   localStorage.setItem(`q_pos_${activeIndex}`, selPos.value);
