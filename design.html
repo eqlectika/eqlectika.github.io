@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="icon" type="image/png" href="loop.png"> 
+<link rel="manifest" href="manifest-cross.json">
+<title>Cross | Note Editor</title>
+<script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+<link href="https://fonts.cdnfonts.com/css/copperplate-gothic-std" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/bytesized@5.2.4/index.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Micro+5+Charted&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Aubrey&family=Barriecito&display=swap" rel="stylesheet">
+<style>
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+  background: #000;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.container {
+  display: grid;
+  grid-template-columns: var(--x, 50%) 1fr;
+  grid-template-rows: var(--y, 50%) 1fr;
+  height: 100%;
+  width: 100%;
+}
+.editor-wrapper {
+position: relative;
+width: 100%;
+height: 100%;
+overflow: hidden;
+isolation: isolate;
+container-type: size;
+container-name: field;
+}
+/* Слой 1 — тайл */
+.editor-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--bg-tile, none);
+  background-repeat: repeat;
+  background-size: auto;
+  background-position: top left;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Слой 2 — цвет с прозрачностью (тинт) */
+.editor-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--bg, #ff8700);
+  opacity: var(--bg-tint, 1);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* === Режимы тайла === */
+.editor-wrapper[data-tilemode="fit"]::before {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.editor-wrapper[data-tilemode="fill"]::before {
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.editor {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  color: var(--color);
+  box-sizing: border-box;
+  padding: 34px 15px 15px 15px;
+  font-size: var(--fs, 4cqw);
+  outline: none;
+  touch-action: auto;
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: none;
+  overflow-y: auto;
+  font-family: var(--fn, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+.editor div, .editor p {
+  margin: 0.5em 0 !important;
+}
+
+.editor:empty::before { content: none; }
+
+.ph {
+  position: absolute;
+  top: 34px;
+  left: 15px;
+  right: 15px;
+  bottom: 15px;
+  pointer-events: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  color: var(--color);
+  font-family: var(--fn, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+  font-size: var(--fs, 4cqw);
+  opacity: 0.7;
+  line-height: 1.2;
+  word-break: break-word;
+  z-index: 3;
+}
+.ph::-webkit-scrollbar { display: none; }
+.ph.hidden { display: none; }
+
+.ph p { margin: 0 !important; }
+.ph p + p { margin-top: 0.5em !important; }
+
+.editor:not(:empty) ~ .ph { display: none; }
+
+.img-preview {
+  position: absolute;
+  max-width: 30%;
+  max-height: 30%;
+  border-radius: 4px;
+  pointer-events: auto;
+  cursor: pointer;
+  display: none;
+  opacity: 0.7;
+  z-index: 10;
+  touch-action: manipulation;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.handle {
+position: absolute;
+top: var(--y, 50%);
+left: var(--x, 50%);
+width: 32px;
+height: 32px;
+transform: translate(-50%, -50%) scale(1);
+z-index: 100;
+touch-action: none;
+cursor: pointer;
+-webkit-user-select: none;
+user-select: none;
+-webkit-touch-callout: none;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: transform 0.1s ease, filter 0.3s ease;
+}
+
+.handle:active {
+transform: translate(-50%, -50%) scale(0.85);
+}
+
+.handle img {
+width: 100%;
+height: 100%;
+object-fit: contain;
+pointer-events: none;
+-webkit-user-drag: none;
+transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#settings-modal select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: #333 !important;
+  color: #fff !important;
+  border: 1px solid #555 !important;
+  padding: 12px 16px !important;
+  font-size: 16px !important;
+  border-radius: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  cursor: pointer;
+}
+#settings-modal select::-ms-expand {
+  display: none;
+}
+
+.img-preview.fullscreen {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  max-width: 90vw !important;
+  max-height: 90vh !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  z-index: 99 !important;
+  opacity: 1 !important;
+  cursor: pointer;
+  box-shadow: 0 0 50px rgba(0,0,0,0.8);
+  border-radius: 8px;
+}
+
+#align-toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.format-btn {
+  padding: 10px 6px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background: #333;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.format-btn:active {
+  background: #555;
+}
+
+/* Кнопки режима тайла */
+#tile-mode-toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+#tile-mode-toolbar .format-btn.active {
+  background: #00f;
+  border-color: #00f;
+  color: #fff;
+}
+
+#settings-modal {
+  height: 100dvh !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  touch-action: auto !important;
+  box-sizing: border-box;
+  padding: 12px;
+}
+
+#settings-modal > div {
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y !important;
+  box-sizing: border-box;
+}
+
+.editor:focus {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.font-picker {
+  position: relative;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 0;
+}
+
+.font-picker-display {
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.font-picker-list {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 0 0 8px 8px;
+  max-height: 50vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  z-index: 1001;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+}
+
+.font-picker.open .font-picker-list {
+  display: block;
+}
+
+.font-option {
+  padding: 8px 16px;
+  border-radius: 0;
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+}
+.font-option:hover { background: #444; }
+.font-option.selected { background: #00f; color: #fff; }
+
+/* Range slider */
+#setting-tint {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: #444;
+  outline: none;
+  cursor: pointer;
+}
+#setting-tint::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ff8700;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-sizing: border-box;
+}
+#setting-tint::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ff8700;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-sizing: border-box;
+}
+
+/* Tile UI */
+.tile-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 10px;
+}
+
+.tile-preview-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  border: 2px solid #555;
+  background: #111;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.tile-input {
+  display: none;
+}
+
+.tile-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #ff8700;
+  color: #000;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.tile-btn:active {
+  background: #e07a00;
+}
+
+.tile-name {
+  font-size: 13px;
+  color: #aaa;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+#settings-modal,
+#settings-modal * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+<div class="editor-wrapper">
+  <div class="editor" id="t0" contenteditable="true"></div>
+  <div class="ph">
+<p>1. Type or paste text and image here.</p>
+<p>2. Move handle (crosshair) to resize fields.</p>
+<p>3. Tap handle to change logo.</p>
+<p>4. Long tap handle to change design & palette.</p>
+<p>5. Very long tap empty field to format (delete image).</p>
+<p>6. Tap image to toggle expand (close) or long tap to delete.</p>
+<p>7. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+  </div>
+  <img class="img-preview">
+</div>
+<div class="editor-wrapper">
+  <div class="editor" id="t1" contenteditable="true"></div>
+  <div class="ph">
+<p>1. Type or paste text and image here.</p>
+<p>2. Move handle (crosshair) to resize fields.</p>
+<p>3. Tap handle to change logo.</p>
+<p>4. Long tap handle to change design & palette.</p>
+<p>5. Very long tap empty field to format (delete image).</p>
+<p>6. Tap image to toggle expand (close) or long tap to delete.</p>
+<p>7. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+  </div>
+  <img class="img-preview">
+</div>
+<div class="editor-wrapper">
+  <div class="editor" id="t2" contenteditable="true"></div>
+  <div class="ph">
+<p>1. Type or paste text and image here.</p>
+<p>2. Move handle (crosshair) to resize fields.</p>
+<p>3. Tap handle to change logo.</p>
+<p>4. Long tap handle to change design & palette.</p>
+<p>5. Very long tap empty field to format (delete image).</p>
+<p>6. Tap image to toggle expand (close) or long tap to delete.</p>
+<p>7. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+  </div>
+  <img class="img-preview">
+</div>
+<div class="editor-wrapper">
+  <div class="editor" id="t3" contenteditable="true"></div>
+  <div class="ph">
+<p>1. Type or paste text and image here.</p>
+<p>2. Move handle (crosshair) to resize fields.</p>
+<p>3. Tap handle to change logo.</p>
+<p>4. Long tap handle to change design & palette.</p>
+<p>5. Very long tap empty field to format (delete image).</p>
+<p>6. Tap image to toggle expand (close) or long tap to delete.</p>
+<p>7. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
+  </div>
+  <img class="img-preview">
+</div>
+<a href="#" class="handle" id="handle" draggable="false"><img src="handle.png" alt="Logo" draggable="false"></a>
+</div>
+
+<div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:#222; color:#fff; padding:16px; border-radius:16px; width:96%; max-width:470px; font-family:sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+    <h3 style="margin-top:0; margin-bottom:20px; font-size:20px; text-align:center; font-weight:bold;">Field Settings</h3>
+    
+<label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font:</label>
+<div id="setting-font" class="font-picker" style="margin-bottom:16px;">
+  <div class="font-picker-display" id="font-display">Luckiest Guy</div>
+  <div class="font-picker-list" id="font-list">
+    <div class="font-option" data-value="'Luckiest Guy', Arial, sans-serif" style="font-family:'Luckiest Guy', Arial, sans-serif;">Luckiest Guy</div>
+    <div class="font-option" data-value="'Roboto Condensed', Arial, sans-serif" style="font-family:'Roboto Condensed', Arial, sans-serif;">Roboto Condensed</div>
+    <div class="font-option" data-value="'Lato', Arial, sans-serif" style="font-family:'Lato', Arial, sans-serif;">Lato</div>
+    <div class="font-option" data-value="'Playfair Display', serif" style="font-family:'Playfair Display', serif;">Playfair Display</div>
+    <div class="font-option" data-value="'Unbounded', Arial, sans-serif" style="font-family:'Unbounded', Arial, sans-serif;">Unbounded</div>
+    <div class="font-option" data-value="Copperplate, 'Copperplate Gothic Bold', sans-serif" style="font-family:Copperplate, 'Copperplate Gothic Bold', sans-serif;">Copperplate</div>
+    <div class="font-option" data-value="'Courier Prime', 'American Typewriter', 'Courier New', monospace" style="font-family:'Courier Prime', 'American Typewriter', 'Courier New', monospace;">Typewriter</div>
+    <div class="font-option" data-value="'Ubuntu', Arial, sans-serif" style="font-family:'Ubuntu', Arial, sans-serif;">Ubuntu</div>
+    <div class="font-option" data-value="'Bytesized', 'Ubuntu', system-ui, sans-serif" style="font-family:'Bytesized', 'Ubuntu', system-ui, sans-serif;">Bytesized</div>
+    <div class="font-option" data-value="'Roboto Mono', monospace" style="font-family:'Roboto Mono', monospace;">Monospace</div>
+    <div class="font-option" data-value="'UnifrakturCook', Copperplate, serif" style="font-family:'UnifrakturCook', serif;">UnifrakturCook</div>
+<div class="font-option" data-value="'Aubrey', serif" style="font-family:'Aubrey', serif;">Aubrey</div>
+<div class="font-option" data-value="'Micro 5 Charted', sans-serif" style="font-family:'Micro 5 Charted', sans-serif;">Micro 5 Charted</div>
+<div class="font-option" data-value="'Barriecito', cursive" style="font-family:'Barriecito', cursive;">Barriecito</div>
+  </div>
+</div>
+
+    <div id="align-toolbar">
+      <button type="button" style="padding: 6px 16px" class="format-btn" data-align="left">Left</button>
+      <button type="button" style="padding: 6px 16px" class="format-btn" data-align="center">Center</button>
+      <button type="button" style="padding: 6px 16px" class="format-btn" data-align="right">Right</button>
+    </div>
+
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font size:</label>
+<select id="setting-size" style="margin-bottom:16px;">
+  <option value="2.5cqmin">Small (2.5cqmin)</option>
+  <option value="4cqmin">Normal (4cqmin)</option>
+  <option value="6.5cqmin">Large (6.5cqmin)</option>
+  <option value="10cqmin">Extra Large (10cqmin)</option>
+</select>
+
+    <div style="display:flex; gap:12px; margin-bottom:16px;">
+      <div style="flex:1; position:relative;">
+        <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Background:</label>
+        <button type="button" id="bg-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#ff8700; cursor:pointer; border:2px solid #555; padding:0; display:flex; align-items:center; justify-content:center;">
+        </button>
+        <input type="color" id="setting-bg" style="position:absolute; bottom:0; left:0; width:100%; height:100%; opacity:0; pointer-events:auto; cursor:pointer;">
+      </div>
+      <div style="flex:1; position:relative;">
+        <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Text color:</label>
+        <button type="button" id="color-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#000000; cursor:pointer; border:2px solid #555; padding:0; display:flex; align-items:center; justify-content:center;">
+        </button>
+        <input type="color" id="setting-color" style="position:absolute; bottom:0; left:0; width:100%; height:100%; opacity:0; pointer-events:auto; cursor:pointer;">
+      </div>
+    </div>
+
+    <!-- TILE -->
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Background image:</label>
+    <div class="tile-row">
+      <img id="tile-thumb" class="tile-preview-thumb" alt="" style="display:none;">
+      <label for="setting-tile" class="tile-btn">Choose media</label>
+      <input type="file" id="setting-tile" accept="image/*" class="tile-input">
+      <span id="tile-name" class="tile-name">No file</span>
+    </div>
+    <label style="display:flex; align-items:center; font-size:15px; cursor:pointer; color:#ff758f; padding:4px 0; margin-bottom:16px;">
+      <input type="checkbox" id="setting-del-tile" style="width:20px; height:20px; margin-right:10px; accent-color:#ff758f; cursor:pointer;"> Delete background
+    </label>
+
+    <!-- TILE MODE -->
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Background (image) mode:</label>
+<div id="tile-mode-toolbar">
+  <button type="button" class="format-btn" data-tilemode="repeat">Tile</button>
+  <button type="button" class="format-btn" data-tilemode="fit">Fit</button>
+  <button type="button" class="format-btn" data-tilemode="fill">Fill</button>
+</div>
+
+    <!-- TINT -->
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">
+      Tint opacity: <span id="tint-val" style="color:#ff8700; font-weight:bold;">100</span>%
+    </label>
+    <input type="range" id="setting-tint" min="0" max="100" value="100" style="width:100%; margin-bottom:20px;">
+    <div style="font-size:12px; color:#888; margin-top:-12px; margin-bottom:16px;">
+      0% — tile fully visible, 100% — color fully covers tile
+    </div>
+
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Image position:</label>
+    <select id="setting-pos" style="margin-bottom:20px;">
+      <option value="bottom right">Bottom Right</option>
+      <option value="bottom left">Bottom Left</option>
+      <option value="top right">Top Right</option>
+      <option value="top left">Top Left</option>
+    </select>
+
+    <div id="image-action-container" style="margin-bottom:20px; display:none;">
+      <label style="display:flex; align-items:center; font-size:16px; cursor:pointer; color:#ff758f; padding:4px 0;">
+        <input type="checkbox" id="setting-del-img" style="width:20px; height:20px; margin-right:10px; accent-color:#ff758f; cursor:pointer;"> Delete image
+      </label>
+    </div>
+
+<label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">MQTT Broker:</label>
+<select id="setting-broker" style="margin-bottom:16px;">
+  <option value="wss://broker.emqx.io:8084/mqtt">EMQX (Global)</option>
+  <option value="wss://broker-cn.emqx.io:8084/mqtt">EMQX (China)</option>
+  <option value="wss://test.mosquitto.org:8081/mqtt">Mosquitto (Test)</option>
+  <option value="custom">Custom…</option>
+</select>
+<input type="text" id="setting-broker-custom" placeholder="wss://your-broker:port/mqtt"
+       style="display:none; width:100%; padding:10px; margin-bottom:16px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box;">
+    
+    <div style="display:flex; gap:12px;">
+      <button type="button" id="setting-cancel" style="flex:1; padding:12px; border:none; border-radius:8px; background:#ff000050; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Cancel</button>
+      <button type="button" id="setting-save" style="flex:1; padding:12px; border:none; border-radius:8px; background:#00ff0050; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Save</button>
+    </div>
+    <div id="update-app" style="font-family:'Ubuntu', sans-serif;text-align:center; margin:50px 0; color:#ff8700; font-size:16px; font-weight: bold; cursor:pointer;">
+       Update
+    </div>
+<div style="margin: 0 0 40px; text-align: center;">
+    <a href="index.html" style="display: inline-block;">
+        <img 
+            src="fleurdelis.png" 
+            alt="Fleur de lis" 
+            class="no-invert"
+            style="display: block; height: 64px; width: auto; max-width: 100%;">
+    </a>
+    <p style="letter-spacing: 3px; margin:10px;font-size: 12px; color: #fff; font-family: 'Cinzel', sans-serif; margin: 0 0 20px 0;">
+        Web terminals that make you happy
+    </p>
+</div>
+
+  </div>
+</div>
+
+<script>
+const inpBg = document.getElementById('setting-bg');
+const inpColor = document.getElementById('setting-color');
+const bgPickerBtn = document.getElementById('bg-picker-btn');
+const colorPickerBtn = document.getElementById('color-picker-btn');
+
+const inpTile = document.getElementById('setting-tile');
+const tileThumb = document.getElementById('tile-thumb');
+const tileName = document.getElementById('tile-name');
+const chkDelTile = document.getElementById('setting-del-tile');
+const inpTint = document.getElementById('setting-tint');
+const tintVal = document.getElementById('tint-val');
+
+const tileModeToolbar = document.getElementById('tile-mode-toolbar');
+
+inpBg.addEventListener('input', (e) => {
+  bgPickerBtn.style.background = e.target.value;
+});
+
+inpColor.addEventListener('input', (e) => {
+  colorPickerBtn.style.background = e.target.value;
+});
+
+let refreshing = false;
+let updateWorker = null;
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then((registration) => {
+    registration.update();
+    if (registration.waiting) {
+      updateWorker = registration.waiting;
+    }
+    registration.addEventListener('updatefound', () => {
+      updateWorker = registration.installing;
+      updateWorker.addEventListener('statechange', () => {
+        if (updateWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          const updateEl = document.getElementById('update-app');
+          if (updateEl) updateEl.style.color = '#ff8700';
+        }
+      });
+    });
+  });
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
+}
+
+document.getElementById('update-app').onclick = () => {
+  if (updateWorker) {
+    updateWorker.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+    window.location.reload(true);
+  }
+};
+
+const container = document.getElementById('app');
+const handle = document.getElementById('handle');
+const textareas = document.querySelectorAll('.editor');
+const images = document.querySelectorAll('.img-preview');
+
+let isDragging = false;
+let dragStartTime = 0;
+let db;
+
+const designs = ['handle.png', 'handle-black.png', 'logo.png', 'fleurdelis.png', 'loop.png', 'delis.png', 'watch.png', 'break.png', 'paw.png', 'handle-cross-transparent.png'];
+let currentDesign = parseInt(localStorage.getItem('q_handle_design') || '0');
+
+const defBgs = ['#ff8700', '#005f00', '#870000', '#000080'];
+const defColors = ['#000000', '#E1BEE7', '#81C784', '#FFD54F'];
+  
+const magicPalettes = [
+  { bg: defBgs, co: defColors },
+  { bg: ['#2b2d42', '#8d99ae', '#edf2f4', '#ef233c'], co: ['#fff', '#000', '#000', '#fff'] },
+  { bg: ['#1a5b8c', '#143d59', '#f4b41a', '#fbcbc9'], co: ['#fff', '#fff', '#000', '#000'] },
+  { bg: ['#0f172a', '#1e293b', '#334155', '#475569'], co: ['#38bdf8', '#818cf8', '#fb7185', '#34d399'] },
+  { bg: ['#111111', '#222222', '#333333', '#444444'], co: ['#eee', '#eee', '#eee', '#eee'] },
+  { bg: ['#ffccd5', '#ffb3c1', '#ff8fa3', '#ff758f'], co: ['#590d22', '#590d22', '#fff', '#fff'] },
+  { bg: ['#e2efe0', '#bccbaf', '#96a788', '#708264'], co: ['#283618', '#283618', '#fefae0', '#fefae0'] }
+];
+
+// --- IndexedDB setup ---
+const dbRequest = indexedDB.open("QuadEditorDB", 4);
+dbRequest.onupgradeneeded = e => {
+  db = e.target.result;
+  if (!db.objectStoreNames.contains("texts")) db.createObjectStore("texts", { keyPath: "id" });
+};
+dbRequest.onsuccess = e => { db = e.target.result; loadData(); };
+
+async function saveToDB(id, content, img = null, clearImg = false, tile = null, clearTile = false) {
+  return new Promise((resolve) => {
+    const tx = db.transaction("texts", "readwrite");
+    const store = tx.objectStore("texts");
+    const req = store.get(id);
+    req.onsuccess = () => {
+      const data = req.result || { id };
+      data.content = content;
+      if (clearImg) {
+        delete data.img;
+      } else if (img) {
+        data.img = img;
+      }
+      if (clearTile) {
+        delete data.tile;
+      } else if (tile) {
+        data.tile = tile;
+      }
+      store.put(data);
+      tx.oncomplete = () => resolve();
+    };
+  });
+}
+
+function updateHandleImage(index) {
+  const imgEl = handle.querySelector('img');
+  imgEl.src = designs[index];
+  if (index === 3) {
+    imgEl.style.transform = 'rotate(0deg)';
+  }
+}
+
+function getTileMode(i) {
+  const mode = localStorage.getItem(`q_tilemode_${i}`) || 'repeat';
+  if (mode === 'pan') return 'repeat';
+  return mode;
+}
+
+function setTileModeUI(i, mode) {
+  const wrap = textareas[i].parentElement;
+  wrap.dataset.tilemode = mode;
+  tileModeToolbar.querySelectorAll('[data-tilemode]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tilemode === mode);
+  });
+}
+
+function loadData() {
+  container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
+  container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
+  updateHandleImage(currentDesign);
+
+  textareas.forEach((ta, i) => {
+const img = images[i];
+
+const savedPos = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
+const [v, h] = savedPos.split(' ');
+
+img.style.top    = v === 'top'    ? '10px' : 'auto';
+img.style.bottom = v === 'bottom' ? '10px' : 'auto';
+img.style.left   = h === 'left'   ? '10px' : 'auto';
+img.style.right  = h === 'right'  ? '10px' : 'auto';
+
+    const wrap = ta.parentElement;
+
+    const bg = localStorage.getItem(`q_b_${i}`) || defBgs[i];
+    const co = localStorage.getItem(`q_c_${i}`) || defColors[i];
+    const fn = localStorage.getItem(`q_f_${i}`) || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+let fs = localStorage.getItem(`q_s_${i}`) || '4cqmin';
+if (fs.endsWith('px')) {
+  const px = parseFloat(fs);
+  fs = (px / 4.5).toFixed(2) + 'cqmin'; // 18px ≈ 4cqmin
+  localStorage.setItem(`q_s_${i}`, fs);
+}    const tint = localStorage.getItem(`q_tint_${i}`);
+
+    wrap.style.setProperty('--bg', bg);
+    wrap.style.setProperty('--color', co);
+    wrap.style.setProperty('--fn', fn);
+    wrap.style.setProperty('--fs', fs);
+    wrap.style.setProperty('--bg-tint', tint !== null ? tint : '1');
+
+    // Применяем режим тайла
+    setTileModeUI(i, getTileMode(i));
+
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(i);
+    req.onsuccess = () => {
+      if (req.result) {
+        ta.innerHTML = req.result.content || '';
+        if (req.result.img) { images[i].src = req.result.img; images[i].style.display = 'block'; }
+        else { images[i].removeAttribute('src'); images[i].style.display = 'none'; }
+
+        if (req.result.tile) {
+          wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+        } else {
+          // демо-фон только для первого поля (t0) при первом запуске
+          if (i === 0 && !localStorage.getItem('q_demo_shown')) {
+            wrap.style.setProperty('--bg-tile', `url(demo-tile.png)`);
+            wrap.style.setProperty('--bg-tint', '0.35');
+            localStorage.setItem('q_demo_shown', '1');
+            localStorage.setItem('q_tint_0', '0.35');
+          } else {
+            wrap.style.setProperty('--bg-tile', 'none');
+          }
+        }
+      }
+    };
+  });
+}
+
+textareas.forEach((ta) => {
+  const ph = ta.parentElement.querySelector('.ph');
+  if (!ph) return;
+
+  ph.addEventListener('pointerdown', (e) => {
+    ph._x = e.clientX;
+    ph._y = e.clientY;
+  });
+
+  ph.addEventListener('pointerup', (e) => {
+    const dx = Math.abs(e.clientX - ph._x);
+    const dy = Math.abs(e.clientY - ph._y);
+    if (dx < 8 && dy < 8) {
+      ph.classList.add('hidden');
+      ta.focus();
+    }
+  });
+});
+  
+let handleLongPressTimer;
+let startX = 0, startY = 0;
+
+let handleLongPressFired = false;
+
+handle.addEventListener('pointerdown', (e) => {
+  isDragging = true;
+  handleLongPressFired = false;
+  dragStartTime = Date.now();
+  const touch = e.touches ? e.touches[0] : e;
+  startX = touch.clientX;
+  startY = touch.clientY;
+
+  clearTimeout(handleLongPressTimer);
+  handleLongPressTimer = setTimeout(() => {
+    if (!isDragging) return;
+    handleLongPressFired = true;
+    isDragging = false;
+
+    currentDesign = (currentDesign + 1) % designs.length;
+    localStorage.setItem('q_handle_design', currentDesign);
+    updateHandleImage(currentDesign);
+
+    const randomHue = Math.floor(Math.random() * 360);
+
+    if (currentDesign === 3) {
+      handle.style.filter = `drop-shadow(0 4px 4px rgba(0,0,0,0.5)) drop-shadow(0 4px 4px rgba(255,255,255,0.3))`;
+    } else {
+      const randomDegrees = Math.floor(Math.random() * 4) * 90;
+      handle.querySelector('img').style.transform = `rotate(${randomDegrees}deg)`;
+      handle.style.filter = `hue-rotate(${randomHue}deg) drop-shadow(0 6px 6px rgba(255,255,255,0.4))`;
+    }
+
+    const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
+    const fontValues = Array.from(
+      document.querySelectorAll('#setting-font .font-option')
+    ).map(o => o.dataset.value);
+
+    textareas.forEach((ta, i) => {
+      const wrap = ta.parentElement;
+      const randomFont = fontValues[Math.floor(Math.random() * fontValues.length)];
+      wrap.style.setProperty('--fn', randomFont);
+      wrap.style.setProperty('--bg', palette.bg[i]);
+      wrap.style.setProperty('--color', palette.co[i]);
+      localStorage.setItem(`q_f_${i}`, randomFont);
+      localStorage.setItem(`q_b_${i}`, palette.bg[i]);
+      localStorage.setItem(`q_c_${i}`, palette.co[i]);
+    });
+
+    if (navigator.vibrate) navigator.vibrate(30);
+  }, 600);
+});
+
+window.addEventListener('pointermove', (e) => {
+  if (!isDragging) return;
+  const touch = e.touches ? e.touches[0] : e;
+
+  const moveX = Math.abs(touch.clientX - startX);
+  const moveY = Math.abs(touch.clientY - startY);
+
+  if (moveX > 5 || moveY > 5) {
+    clearTimeout(handleLongPressTimer);
+  }
+
+  const padding = 10;
+  const rawX = (touch.clientX / window.innerWidth) * 100;
+  const rawY = (touch.clientY / window.innerHeight) * 100;
+  const clampedX = Math.max(padding, Math.min(100 - padding, rawX));
+  const clampedY = Math.max(padding, Math.min(100 - padding, rawY));
+  const x = `${clampedX}%`;
+  const y = `${clampedY}%`;
+  container.style.setProperty('--x', x);
+  container.style.setProperty('--y', y);
+  localStorage.setItem('q_x', x);
+  localStorage.setItem('q_y', y);
+  scheduleBroadcastLayout();
+});
+
+window.addEventListener('pointerup', (e) => {
+  clearTimeout(handleLongPressTimer);
+  if (handleLongPressFired) { handleLongPressFired = false; return; }
+  if (!isDragging) return;
+  isDragging = false;
+
+  const duration = Date.now() - dragStartTime;
+  if (duration < 250) {
+    // Одиночный тап — меняем ТОЛЬКО логотип handle
+    currentDesign = (currentDesign + 1) % designs.length;
+    localStorage.setItem('q_handle_design', currentDesign);
+    updateHandleImage(currentDesign);
+  }
+});
+
+handle.addEventListener('pointercancel', () => {
+  clearTimeout(handleLongPressTimer);
+  isDragging = false;
+});
+  
+handle.addEventListener('touchstart', (e) => {
+  if (e.cancelable) e.preventDefault();
+}, { passive: false });
+
+handle.addEventListener('click', (e) => e.preventDefault());
+handle.addEventListener('contextmenu', (e) => e.preventDefault());
+
+function handleImageFile(file, index, ta) {
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    images[index].src = ev.target.result;
+    images[index].style.display = 'block';
+    saveToDB(index, ta.innerHTML, ev.target.result);
+    broadcastFieldUpdate(index);
+  };
+  reader.readAsDataURL(file);
+}
+
+const modal = document.getElementById('settings-modal');
+const selSize = document.getElementById('setting-size');
+const selPos = document.getElementById('setting-pos');
+const chkDelImg = document.getElementById('setting-del-img');
+const imgActionContainer = document.getElementById('image-action-container');
+const btnSave = document.getElementById('setting-save');
+const btnCancel = document.getElementById('setting-cancel');
+
+const fontPicker = document.getElementById('setting-font');
+const fontDisplay = document.getElementById('font-display');
+
+fontPicker.addEventListener('click', (e) => {
+  if (e.target === fontDisplay) {
+    fontPicker.classList.toggle('open');
+    return;
+  }
+
+  const opt = e.target.closest('.font-option');
+  if (!opt) return;
+
+  document.querySelectorAll('#setting-font .font-option')
+    .forEach(o => o.classList.remove('selected'));
+  opt.classList.add('selected');
+
+  fontDisplay.textContent = opt.textContent;
+  fontDisplay.style.fontFamily = opt.style.fontFamily;
+
+  fontPicker.classList.remove('open');
+});
+
+let activeIndex = null;
+let textareaLongPressTimer;
+
+document.querySelectorAll('[data-align]').forEach(button => {
+  button.addEventListener('click', () => {
+    if (activeIndex === null) return;
+    const ta = textareas[activeIndex];
+    ta.focus();
+    document.execCommand(
+      'justify' + button.dataset.align.charAt(0).toUpperCase() +
+      button.dataset.align.slice(1),
+      false,
+      null
+    );
+    saveToDB(activeIndex, ta.innerHTML);
+  });
+});
+
+tileModeToolbar.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-tilemode]');
+  if (!btn || activeIndex === null) return;
+  const mode = btn.dataset.tilemode;
+
+  setTileModeUI(activeIndex, mode);
+  // НЕ сохраняем в localStorage — сохраним только при Save
+});
+
+// Превью тинта в реальном времени
+inpTint.addEventListener('input', (e) => {
+  tintVal.textContent = e.target.value;
+  if (activeIndex !== null) {
+    const wrap = textareas[activeIndex].parentElement;
+    wrap.style.setProperty('--bg-tint', e.target.value / 100);
+  }
+});
+
+inpTile.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file || activeIndex === null) return;
+
+  tileName.textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    const wrap = textareas[activeIndex].parentElement;
+    wrap.style.setProperty('--bg-tile', `url(${dataUrl})`);
+
+    // автотинт 0.35 при загрузке фона
+    wrap.style.setProperty('--bg-tint', '0.35');
+    inpTint.value = 35;
+    tintVal.textContent = '35';
+
+    tileThumb.src = dataUrl;
+    tileThumb.style.display = 'block';
+    textareas[activeIndex]._pendingTile = dataUrl;
+    chkDelTile.checked = false;
+  };
+  reader.readAsDataURL(file);
+});
+
+chkDelTile.addEventListener('change', (e) => {
+  if (activeIndex === null) return;
+  const wrap = textareas[activeIndex].parentElement;
+
+  if (e.target.checked) {
+    wrap.style.setProperty('--bg-tile', 'none');
+
+    // вернуть тинт на 100% (цвет снова полностью перекрывает поле)
+    wrap.style.setProperty('--bg-tint', '1');
+    inpTint.value = 100;
+    tintVal.textContent = '100';
+  } else {
+    const pending = textareas[activeIndex]._pendingTile;
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(activeIndex);
+    req.onsuccess = () => {
+      if (pending) {
+        wrap.style.setProperty('--bg-tile', `url(${pending})`);
+      } else if (req.result && req.result.tile) {
+        wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+      }
+      // при возврате фона — снова 0.35, чтобы картинку было видно
+      wrap.style.setProperty('--bg-tint', '0.35');
+      inpTint.value = 35;
+      tintVal.textContent = '35';
+    };
+  }
+});
+
+textareas.forEach((ta, i) => {
+  ta.addEventListener('input', () => {
+  if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
+    ta.innerHTML = '';
+    const ph = ta.parentElement.querySelector('.ph');
+    if (ph) ph.classList.remove('hidden');
+  }
+  saveToDB(i, ta.innerHTML);
+  scheduleFieldBroadcast(i);
+});
+
+  ta.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
+    if (item) {
+      handleImageFile(item.getAsFile(), i, ta);
+    } else {
+      const text = e.clipboardData.getData('text/plain');
+      document.execCommand('insertText', false, text);
+    }
+  });
+
+  ta.addEventListener('dragover', (e) => { e.preventDefault(); });
+
+  ta.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = Array.from(e.dataTransfer.files).find(x => x.type.indexOf('image') !== -1);
+      if (file) { handleImageFile(file, i, ta); }
+    } else {
+      const item = Array.from(e.dataTransfer.items).find(x => x.type.indexOf('image') !== -1);
+      if (item) { handleImageFile(item.getAsFile(), i, ta); }
+    }
+  });
+
+  ta.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+  });
+
+let longPressStartX = 0;
+let longPressStartY = 0;
+
+const startLongPress = (e) => {
+  const touch = e.touches ? e.touches[0] : e;
+
+  longPressStartX = touch.clientX;
+  longPressStartY = touch.clientY;
+
+  activeIndex = i;
+
+  clearTimeout(textareaLongPressTimer);
+
+textareaLongPressTimer = setTimeout(() => {
+
+  const hasText = ta.textContent.trim() !== '';
+  if (hasText) return;
+
+const savedFont = localStorage.getItem(`q_f_${i}`) || '';
+const fontOpts = document.querySelectorAll('#setting-font .font-option');
+let fontMatched = false;
+fontOpts.forEach(o => {
+  const isMatch = o.dataset.value === savedFont;
+  o.classList.toggle('selected', isMatch);
+  if (isMatch) fontMatched = true;
+});
+if (!fontMatched && fontOpts[0]) {
+  fontOpts[0].classList.add('selected');
+}
+const selOpt = document.querySelector('#setting-font .font-option.selected');
+const fd = document.getElementById('font-display');
+if (selOpt && fd) {
+  fd.textContent = selOpt.textContent;
+  fd.style.fontFamily = selOpt.style.fontFamily;
+}
+
+const savedSize = localStorage.getItem(`q_s_${i}`) || '';
+const sizeOptions = Array.from(selSize.options).map(o => o.value);
+selSize.selectedIndex = sizeOptions.indexOf(savedSize) >= 0
+  ? sizeOptions.indexOf(savedSize)
+  : 0;
+
+const currentBg =
+  localStorage.getItem(`q_b_${i}`) ||
+  getComputedStyle(ta.parentElement).getPropertyValue('--bg').trim() ||
+  defBgs[i];
+
+const currentColor =
+  localStorage.getItem(`q_c_${i}`) ||
+  getComputedStyle(ta.parentElement).getPropertyValue('--color').trim() ||
+  defColors[i];
+
+    inpBg.value = currentBg;
+    bgPickerBtn.style.background = currentBg;
+
+    inpColor.value = currentColor;
+    colorPickerBtn.style.background = currentColor;
+
+    selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
+
+    // Инициализация режима тайла
+    setTileModeUI(i, getTileMode(i));
+
+    if (images[i].style.display === 'block') {
+      imgActionContainer.style.display = 'block';
+      chkDelImg.checked = false;
+    } else {
+      imgActionContainer.style.display = 'none';
+    }
+
+    // --- Загрузка существующего тайла ---
+    ta._pendingTile = null;
+    inpTile.value = '';
+    tileName.textContent = 'No file';
+    chkDelTile.checked = false;
+    tileThumb.style.display = 'none';
+    tileThumb.removeAttribute('src');
+
+    const tileTx = db.transaction("texts", "readonly");
+    const tileReq = tileTx.objectStore("texts").get(i);
+    tileReq.onsuccess = () => {
+      if (tileReq.result && tileReq.result.tile) {
+        tileThumb.src = tileReq.result.tile;
+        tileThumb.style.display = 'block';
+      }
+    };
+
+    // --- Тинт ---
+    const savedTint = localStorage.getItem(`q_tint_${i}`);
+    const tintNum = savedTint !== null ? parseFloat(savedTint) : 1;
+    inpTint.value = Math.round(tintNum * 100);
+    tintVal.textContent = inpTint.value;
+
+    if (window.getSelection) window.getSelection().removeAllRanges();
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    modal.style.display = 'flex';
+  }, 600);
+};
+
+  const stopLongPress = () => clearTimeout(textareaLongPressTimer);
+
+  ta.addEventListener('mousedown', startLongPress);
+  ta.addEventListener('mouseup', stopLongPress);
+  ta.addEventListener('mouseleave', stopLongPress);
+  ta.addEventListener('touchstart', startLongPress, { passive: true });
+  ta.addEventListener('touchend', stopLongPress);
+  ta.addEventListener('touchmove', stopLongPress);
+
+  // === ОБРАБОТЧИКИ КАРТИНКИ (pointer events) ===
+  const img = images[i];
+  let imgLongPressTimer = null;
+  let imgStartX = 0, imgStartY = 0;
+  let imgDeleted = false;
+
+  img.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    imgDeleted = false;
+    imgStartX = e.clientX;
+    imgStartY = e.clientY;
+    clearTimeout(imgLongPressTimer);
+    imgLongPressTimer = setTimeout(() => {
+      imgDeleted = true;
+      img.classList.remove('fullscreen');
+      img.removeAttribute('src');
+      img.style.display = 'none';
+      localStorage.removeItem(`q_pos_${i}`);
+      saveToDB(i, ta.innerHTML, null, true);
+    }, 1000);
+  });
+
+  img.addEventListener('pointerup', () => clearTimeout(imgLongPressTimer));
+  img.addEventListener('pointercancel', () => clearTimeout(imgLongPressTimer));
+  img.addEventListener('pointerleave', () => clearTimeout(imgLongPressTimer));
+
+  img.addEventListener('pointermove', (e) => {
+    if (Math.abs(e.clientX - imgStartX) > 8 ||
+        Math.abs(e.clientY - imgStartY) > 8) {
+      clearTimeout(imgLongPressTimer);
+    }
+  });
+
+  img.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (imgDeleted) return;
+    img.classList.toggle('fullscreen');
+  });
+});
+
+btnSave.onclick = () => {
+  if (activeIndex === null) return;
+  const targetTa = textareas[activeIndex];
+  const wrap = targetTa.parentElement;
+
+  // --- FONT ---
+  const fontOption = document.querySelector('#setting-font .font-option.selected');
+  const fontValue = fontOption
+    ? fontOption.dataset.value
+    : "'Luckiest Guy', Arial, sans-serif"; 
+
+  wrap.style.setProperty('--fn', fontValue);
+  localStorage.setItem(`q_f_${activeIndex}`, fontValue);
+
+  wrap.style.setProperty('--fs', selSize.value);
+  localStorage.setItem(`q_s_${activeIndex}`, selSize.value);
+
+  wrap.style.setProperty('--bg', inpBg.value);
+  localStorage.setItem(`q_b_${activeIndex}`, inpBg.value);
+
+  wrap.style.setProperty('--color', inpColor.value);
+  localStorage.setItem(`q_c_${activeIndex}`, inpColor.value);
+
+  // --- TINT ---
+  const tintNum = parseInt(inpTint.value, 10) / 100;
+  wrap.style.setProperty('--bg-tint', tintNum);
+  localStorage.setItem(`q_tint_${activeIndex}`, tintNum);
+
+  // --- TILE ---
+  if (chkDelTile.checked) {
+    wrap.style.setProperty('--bg-tile', 'none');
+    saveToDB(activeIndex, targetTa.innerHTML, null, false, null, true);
+    // Если тайл удалён — сбрасываем режим на repeat
+    setTileModeUI(activeIndex, 'repeat');
+    localStorage.setItem(`q_tilemode_${activeIndex}`, 'repeat');
+  } else if (targetTa._pendingTile) {
+    wrap.style.setProperty('--bg-tile', `url(${targetTa._pendingTile})`);
+    saveToDB(activeIndex, targetTa.innerHTML, null, false, targetTa._pendingTile);
+  }
+  delete targetTa._pendingTile;
+
+  // --- TILE MODE ---
+  const currentMode = textareas[activeIndex].parentElement.dataset.tilemode || 'repeat';
+  localStorage.setItem(`q_tilemode_${activeIndex}`, currentMode);
+  setTileModeUI(activeIndex, currentMode);
+
+  localStorage.setItem(`q_pos_${activeIndex}`, selPos.value);
+  const [v, h] = selPos.value.split(' ');
+  images[activeIndex].style.top    = v === 'top'    ? '10px' : 'auto';
+  images[activeIndex].style.bottom = v === 'bottom' ? '10px' : 'auto';
+  images[activeIndex].style.left   = h === 'left'   ? '10px' : 'auto';
+  images[activeIndex].style.right  = h === 'right'  ? '10px' : 'auto';
+
+  if (chkDelImg.checked) {
+    images[activeIndex].removeAttribute('src');
+    images[activeIndex].style.display = 'none';
+    localStorage.removeItem(`q_pos_${activeIndex}`);
+    saveToDB(activeIndex, targetTa.innerHTML, null, true);
+  }
+
+  broadcastFieldUpdate(activeIndex);
+  localStorage.setItem('q_broker', selBroker.value);
+  if (selBroker.value === 'custom') localStorage.setItem('q_broker_custom', brokerCustom.value.trim());
+  connectCrossMqtt();
+
+  modal.style.display = 'none';
+  activeIndex = null;
+};
+
+btnCancel.onclick = () => {
+  if (activeIndex !== null) {
+    const wrap = textareas[activeIndex].parentElement;
+
+    // Откат тинта
+    const savedTint = localStorage.getItem(`q_tint_${activeIndex}`);
+    wrap.style.setProperty('--bg-tint', savedTint !== null ? savedTint : '1');
+
+    // Откат цвета фона
+    const savedBg = localStorage.getItem(`q_b_${activeIndex}`);
+    if (savedBg !== null) wrap.style.setProperty('--bg', savedBg);
+
+    // Откат цвета текста
+    const savedColor = localStorage.getItem(`q_c_${activeIndex}`);
+    if (savedColor !== null) wrap.style.setProperty('--color', savedColor);
+
+    // Откат шрифта
+    const savedFont = localStorage.getItem(`q_f_${activeIndex}`);
+    if (savedFont !== null) wrap.style.setProperty('--fn', savedFont);
+
+    // Откат размера шрифта
+    const savedSize = localStorage.getItem(`q_s_${activeIndex}`);
+    if (savedSize !== null) wrap.style.setProperty('--fs', savedSize);
+
+    // Откат режима тайла
+    setTileModeUI(activeIndex, getTileMode(activeIndex));
+
+    // Восстановить тайл из БД
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(activeIndex);
+    req.onsuccess = () => {
+      if (req.result && req.result.tile) {
+        wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+      } else {
+        wrap.style.setProperty('--bg-tile', 'none');
+      }
+    };
+    delete textareas[activeIndex]._pendingTile;
+  }
+  modal.style.display = 'none';
+  activeIndex = null;
+};
+
+document.addEventListener('contextmenu', (e) => {
+  const modal = document.getElementById('settings-modal');
+  if (modal.style.display === 'flex') {
+    e.preventDefault();
+  }
+}, { capture: true });
+
+document.getElementById('settings-modal').addEventListener('contextmenu', (e) => e.preventDefault(), { capture: true });
+
+// === MQTT синхронизация ===
+let mqttClient = null;
+const CROSS_TOPIC = 'cross/editor/sync/v1';
+const CROSS_CLIENT_ID = 'cross_' + Math.random().toString(16).slice(2, 10);
+
+function getBrokerUrl() {
+  const sel = localStorage.getItem('q_broker') || 'wss://broker.emqx.io:8084/mqtt';
+  if (sel === 'custom') return localStorage.getItem('q_broker_custom') || 'wss://broker.emqx.io:8084/mqtt';
+  return sel;
+}
+
+function connectCrossMqtt() {
+  if (mqttClient) { try { mqttClient.end(true); } catch(e) {} mqttClient = null; }
+  mqttClient = mqtt.connect(getBrokerUrl(), {
+    clientId: CROSS_CLIENT_ID, reconnectPeriod: 3000, connectTimeout: 8000, clean: true
+  });
+  mqttClient.on('connect', () => {
+    mqttClient.subscribe(CROSS_TOPIC, { qos: 1 });
+    mqttClient.publish(CROSS_TOPIC, JSON.stringify({
+      type: 'REQUEST_STATE', sid: CROSS_CLIENT_ID
+    }), { qos: 1 });
+  });
+  mqttClient.on('message', (t, payload) => {
+    let msg; try { msg = JSON.parse(payload.toString()); } catch(e) { return; }
+    if (msg.sid === CROSS_CLIENT_ID) return;
+    applyRemoteState(msg);
+  });
+  mqttClient.on('error', () => {});
+}
+
+function captureState() {
+  return {
+    x: localStorage.getItem('q_x') || '50%',
+    y: localStorage.getItem('q_y') || '50%',
+    handleDesign: parseInt(localStorage.getItem('q_handle_design') || '0'),
+    fields: Array.from({ length: 4 }, (_, i) => ({
+      content: document.getElementById('t' + i).innerHTML,
+      bg: localStorage.getItem(`q_b_${i}`),
+      co: localStorage.getItem(`q_c_${i}`),
+      fn: localStorage.getItem(`q_f_${i}`),
+      fs: localStorage.getItem(`q_s_${i}`),
+      tint: localStorage.getItem(`q_tint_${i}`),
+      tilemode: localStorage.getItem(`q_tilemode_${i}`),
+      pos: localStorage.getItem(`q_pos_${i}`)
+    }))
+  };
+}
+
+function broadcastFullState() {
+  if (!mqttClient || !mqttClient.connected) return;
+  mqttClient.publish(CROSS_TOPIC, JSON.stringify({ type: 'FULL_STATE', sid: CROSS_CLIENT_ID, state: captureState() }), { qos: 1 });
+}
+
+function broadcastFieldUpdate(i) {
+  if (!mqttClient || !mqttClient.connected) return;
+  const ta = document.getElementById('t' + i);
+  mqttClient.publish(CROSS_TOPIC, JSON.stringify({
+    type: 'FIELD_UPDATE', sid: CROSS_CLIENT_ID, index: i,
+    data: {
+      content: ta.innerHTML,
+      bg: localStorage.getItem(`q_b_${i}`),
+      co: localStorage.getItem(`q_c_${i}`),
+      fn: localStorage.getItem(`q_f_${i}`),
+      fs: localStorage.getItem(`q_s_${i}`),
+      tint: localStorage.getItem(`q_tint_${i}`),
+      tilemode: localStorage.getItem(`q_tilemode_${i}`),
+      pos: localStorage.getItem(`q_pos_${i}`)
+    }
+  }), { qos: 1 });
+}
+
+function broadcastLayout() {
+  if (!mqttClient || !mqttClient.connected) return;
+  mqttClient.publish(CROSS_TOPIC, JSON.stringify({
+    type: 'LAYOUT_UPDATE', sid: CROSS_CLIENT_ID,
+    x: container.style.getPropertyValue('--x') || '50%',
+    y: container.style.getPropertyValue('--y') || '50%'
+  }), { qos: 1 });
+}
+
+let layoutTimer;
+function scheduleBroadcastLayout() { clearTimeout(layoutTimer); layoutTimer = setTimeout(broadcastLayout, 100); }
+
+let fieldTimers = {};
+function scheduleFieldBroadcast(i) { clearTimeout(fieldTimers[i]); fieldTimers[i] = setTimeout(() => broadcastFieldUpdate(i), 200); }
+
+function applyRemoteState(msg) {
+  if (msg.type === 'REQUEST_STATE') { broadcastFullState(); return; }
+  if (msg.type === 'FULL_STATE') {
+    const s = msg.state;
+    container.style.setProperty('--x', s.x); localStorage.setItem('q_x', s.x);
+    container.style.setProperty('--y', s.y); localStorage.setItem('q_y', s.y);
+    currentDesign = s.handleDesign; localStorage.setItem('q_handle_design', currentDesign); updateHandleImage(currentDesign);
+    s.fields.forEach((f, i) => {
+      const ta = document.getElementById('t' + i); const wrap = ta.parentElement;
+      if (f.content !== undefined) ta.innerHTML = f.content;
+      if (f.bg) { wrap.style.setProperty('--bg', f.bg); localStorage.setItem(`q_b_${i}`, f.bg); }
+      if (f.co) { wrap.style.setProperty('--color', f.co); localStorage.setItem(`q_c_${i}`, f.co); }
+      if (f.fn) { wrap.style.setProperty('--fn', f.fn); localStorage.setItem(`q_f_${i}`, f.fn); }
+      if (f.fs) { wrap.style.setProperty('--fs', f.fs); localStorage.setItem(`q_s_${i}`, f.fs); }
+      if (f.tint) { wrap.style.setProperty('--bg-tint', f.tint); localStorage.setItem(`q_tint_${i}`, f.tint); }
+      if (f.tilemode) { setTileModeUI(i, f.tilemode); localStorage.setItem(`q_tilemode_${i}`, f.tilemode); }
+    });
+  } else if (msg.type === 'FIELD_UPDATE') {
+    const ta = document.getElementById('t' + msg.index); const wrap = ta.parentElement;
+    const d = msg.data;
+    if (d.content !== undefined) ta.innerHTML = d.content;
+    if (d.bg) { wrap.style.setProperty('--bg', d.bg); localStorage.setItem(`q_b_${msg.index}`, d.bg); }
+    if (d.co) { wrap.style.setProperty('--color', d.co); localStorage.setItem(`q_c_${msg.index}`, d.co); }
+    if (d.fn) { wrap.style.setProperty('--fn', d.fn); localStorage.setItem(`q_f_${msg.index}`, d.fn); }
+    if (d.fs) { wrap.style.setProperty('--fs', d.fs); localStorage.setItem(`q_s_${msg.index}`, d.fs); }
+    if (d.tint) { wrap.style.setProperty('--bg-tint', d.tint); localStorage.setItem(`q_tint_${msg.index}`, d.tint); }
+    if (d.tilemode) { setTileModeUI(msg.index, d.tilemode); localStorage.setItem(`q_tilemode_${msg.index}`, d.tilemode); }
+    if (d.pos) {
+      const [v, h] = d.pos.split(' ');
+      const im = document.querySelectorAll('.img-preview')[msg.index];
+      im.style.top    = v === 'top'    ? '10px' : 'auto';
+      im.style.bottom = v === 'bottom' ? '10px' : 'auto';
+      im.style.left   = h === 'left'   ? '10px' : 'auto';
+      im.style.right  = h === 'right'  ? '10px' : 'auto';
+      localStorage.setItem(`q_pos_${msg.index}`, d.pos);
+    }
+  } else if (msg.type === 'LAYOUT_UPDATE') {
+    container.style.setProperty('--x', msg.x); localStorage.setItem('q_x', msg.x);
+    container.style.setProperty('--y', msg.y); localStorage.setItem('q_y', msg.y);
+  }
+}
+
+// select брокера
+const selBroker = document.getElementById('setting-broker');
+const brokerCustom = document.getElementById('setting-broker-custom');
+const savedBroker = localStorage.getItem('q_broker') || 'wss://broker.emqx.io:8084/mqtt';
+if (savedBroker === 'custom') { selBroker.value = 'custom'; brokerCustom.style.display = 'block'; brokerCustom.value = localStorage.getItem('q_broker_custom') || ''; }
+else selBroker.value = savedBroker;
+selBroker.addEventListener('change', () => { brokerCustom.style.display = selBroker.value === 'custom' ? 'block' : 'none'; });
+
+// запуск
+connectCrossMqtt();
+</script>
+</body>
+</html>
