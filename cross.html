@@ -803,7 +803,15 @@ if (fs.endsWith('px')) {
         if (req.result.tile) {
           wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
         } else {
-          wrap.style.setProperty('--bg-tile', 'none');
+          // демо-фон только для первого поля (t0) при первом запуске
+          if (i === 0 && !localStorage.getItem('q_demo_shown')) {
+            wrap.style.setProperty('--bg-tile', `url(demo-tile.png)`);
+            wrap.style.setProperty('--bg-tint', '0.35');
+            localStorage.setItem('q_demo_shown', '1');
+            localStorage.setItem('q_tint_0', '0.35');
+          } else {
+            wrap.style.setProperty('--bg-tile', 'none');
+          }
         }
       }
     };
@@ -1009,7 +1017,6 @@ inpTint.addEventListener('input', (e) => {
   }
 });
 
-// Загрузка тайла в превью
 inpTile.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file || activeIndex === null) return;
@@ -1021,6 +1028,12 @@ inpTile.addEventListener('change', (e) => {
     const dataUrl = ev.target.result;
     const wrap = textareas[activeIndex].parentElement;
     wrap.style.setProperty('--bg-tile', `url(${dataUrl})`);
+
+    // автотинт 0.35 при загрузке фона
+    wrap.style.setProperty('--bg-tint', '0.35');
+    inpTint.value = 35;
+    tintVal.textContent = '35';
+
     tileThumb.src = dataUrl;
     tileThumb.style.display = 'block';
     textareas[activeIndex]._pendingTile = dataUrl;
@@ -1029,21 +1042,31 @@ inpTile.addEventListener('change', (e) => {
   reader.readAsDataURL(file);
 });
 
-// Снятие чекбокса удаления тайла — вернуть превью, если был
 chkDelTile.addEventListener('change', (e) => {
   if (activeIndex === null) return;
+  const wrap = textareas[activeIndex].parentElement;
+
   if (e.target.checked) {
-    textareas[activeIndex].parentElement.style.setProperty('--bg-tile', 'none');
+    wrap.style.setProperty('--bg-tile', 'none');
+
+    // вернуть тинт на 100% (цвет снова полностью перекрывает поле)
+    wrap.style.setProperty('--bg-tint', '1');
+    inpTint.value = 100;
+    tintVal.textContent = '100';
   } else {
     const pending = textareas[activeIndex]._pendingTile;
     const tx = db.transaction("texts", "readonly");
     const req = tx.objectStore("texts").get(activeIndex);
     req.onsuccess = () => {
       if (pending) {
-        textareas[activeIndex].parentElement.style.setProperty('--bg-tile', `url(${pending})`);
+        wrap.style.setProperty('--bg-tile', `url(${pending})`);
       } else if (req.result && req.result.tile) {
-        textareas[activeIndex].parentElement.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+        wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
       }
+      // при возврате фона — снова 0.35, чтобы картинку было видно
+      wrap.style.setProperty('--bg-tint', '0.35');
+      inpTint.value = 35;
+      tintVal.textContent = '35';
     };
   }
 });
