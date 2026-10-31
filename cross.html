@@ -441,6 +441,72 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   -webkit-tap-highlight-color: transparent;
   pointer-events: auto;
 }
+
+/* === Logo modal === */
+#logo-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100dvh;
+  background: rgba(0,0,0,0.7);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  box-sizing: border-box;
+}
+#logo-modal > div {
+  background: #222;
+  color: #fff;
+  padding: 16px;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 470px;
+  font-family: sans-serif;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  box-sizing: border-box;
+}
+#logo-modal h3 {
+  margin: 0 0 16px;
+  font-size: 20px;
+  text-align: center;
+  font-weight: bold;
+}
+.logo-current-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  min-height: 64px;
+}
+.logo-current-preview img {
+  max-width: 64px;
+  max-height: 64px;
+  object-fit: contain;
+}
+.logo-btns {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+.logo-btns button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #fff;
+}
+#logo-cancel {
+  background: #ff000050;
+}
+#logo-reset {
+  background: #ff870050;
+}
 </style>
 </head>
 <body>
@@ -454,7 +520,7 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     <p>4. Very long tap empty field to format (delete image).</p>
     <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
     <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
-<!--<p>7. Long tap handle to go to the developer's page.</p>-->
+    <p>7. Long tap handle to replace the logo.</p>
   </div>
   <img class="img-preview">
 </div>
@@ -467,7 +533,7 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     <p>4. Very long tap empty field to format (delete image).</p>
     <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
     <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
-<!--<p>7. Long tap handle to go to the developer's page.</p>-->
+    <p>7. Long tap handle to replace the logo.</p>
   </div>
   <img class="img-preview">
 </div>
@@ -480,7 +546,7 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     <p>4. Very long tap empty field to format (delete image).</p>
     <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
     <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
-<!--<p>7. Long tap handle to go to the developer's page.</p>-->
+    <p>7. Long tap handle to replace the logo.</p>
   </div>
   <img class="img-preview">
 </div>
@@ -493,7 +559,7 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     <p>4. Very long tap empty field to format (delete image).</p>
     <p>5. Tap image to toggle expand (close) or long tap to delete.</p>
     <p>6. Add the page to your Home Screen via the browser menu and use that shortcut to launch.</p>
-<!--<p>7. Long tap handle to go to the developer's page.</p>-->
+    <p>7. Long tap handle to replace the logo.</p>
   </div>
   <img class="img-preview">
 </div>
@@ -620,6 +686,22 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   </div>
 </div>
 
+<!-- ===== LOGO REPLACE MODAL ===== -->
+<div id="logo-modal">
+  <div>
+    <h3>Replace Logo</h3>
+    <div class="logo-current-preview">
+      <img id="logo-preview" src="handle.png" alt="Current logo">
+    </div>
+    <label for="logo-file-input" class="tile-btn" style="display:flex; width:100%; box-sizing:border-box; margin-bottom:16px; height:48px; font-size:16px;">Choose media</label>
+    <input type="file" id="logo-file-input" accept="image/*" class="tile-input">
+    <div class="logo-btns">
+      <button type="button" id="logo-reset">Reset</button>
+      <button type="button" id="logo-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const inpBg = document.getElementById('setting-bg');
 const inpColor = document.getElementById('setting-color');
@@ -691,6 +773,19 @@ let db;
 const designs = ['handle.png', 'handle-black.png', 'logo.png', 'fleurdelis.png', 'loop.png', 'delis.png', 'break.png', 'paw.png', 'handle-cross-transparent.png'];
 let currentDesign = parseInt(localStorage.getItem('q_handle_design') || '0');
 
+// === CUSTOM LOGO SUPPORT ===
+const LOGO_STORAGE_KEY = 'q_custom_logo';
+let customLogoData = localStorage.getItem(LOGO_STORAGE_KEY) || null;
+
+function applyLogo() {
+  const imgEl = handle.querySelector('img');
+  if (customLogoData) {
+    imgEl.src = customLogoData;
+  } else {
+    imgEl.src = designs[currentDesign];
+  }
+}
+
 const defBgs = ['#ff8700', '#005f00', '#870000', '#000080'];
 const defColors = ['#000000', '#E1BEE7', '#81C784', '#FFD54F'];
   
@@ -701,7 +796,8 @@ const magicPalettes = [
   { bg: ['#0f172a', '#1e293b', '#334155', '#475569'], co: ['#38bdf8', '#818cf8', '#fb7185', '#34d399'] },
   { bg: ['#111111', '#222222', '#333333', '#444444'], co: ['#eee', '#eee', '#eee', '#eee'] },
   { bg: ['#ffccd5', '#ffb3c1', '#ff8fa3', '#ff758f'], co: ['#590d22', '#590d22', '#fff', '#fff'] },
-  { bg: ['#e2efe0', '#bccbaf', '#96a788', '#708264'], co: ['#283618', '#283618', '#fefae0', '#fefae0'] }
+  {
+{ bg: ['#e2efe0', '#bccbaf', '#96a788', '#708264'], co: ['#283618', '#283618', '#fefae0', '#fefae0'] }
 ];
 
 // --- IndexedDB setup ---
@@ -737,6 +833,11 @@ async function saveToDB(id, content, img = null, clearImg = false, tile = null, 
 }
 
 function updateHandleImage(index) {
+  // Если установлен кастомный логотип — показываем его
+  if (customLogoData) {
+    applyLogo();
+    return;
+  }
   const imgEl = handle.querySelector('img');
   imgEl.src = designs[index];
   if (index === 3) {
@@ -764,15 +865,15 @@ function loadData() {
   updateHandleImage(currentDesign);
 
   textareas.forEach((ta, i) => {
-const img = images[i];
+    const img = images[i];
 
-const savedPos = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
-const [v, h] = savedPos.split(' ');
+    const savedPos = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
+    const [v, h] = savedPos.split(' ');
 
-img.style.top    = v === 'top'    ? '10px' : 'auto';
-img.style.bottom = v === 'bottom' ? '10px' : 'auto';
-img.style.left   = h === 'left'   ? '10px' : 'auto';
-img.style.right  = h === 'right'  ? '10px' : 'auto';
+    img.style.top    = v === 'top'    ? '10px' : 'auto';
+    img.style.bottom = v === 'bottom' ? '10px' : 'auto';
+    img.style.left   = h === 'left'   ? '10px' : 'auto';
+    img.style.right  = h === 'right'  ? '10px' : 'auto';
 
     const wrap = ta.parentElement;
 
@@ -788,7 +889,6 @@ img.style.right  = h === 'right'  ? '10px' : 'auto';
     wrap.style.setProperty('--fs', fs);
     wrap.style.setProperty('--bg-tint', tint !== null ? tint : '1');
 
-    // Применяем режим тайла
     setTileModeUI(i, getTileMode(i));
 
     const tx = db.transaction("texts", "readonly");
@@ -827,23 +927,30 @@ textareas.forEach((ta) => {
     }
   });
 });
-  
+
+// ===== HANDLE: drag + tap + LONG PRESS для замены логотипа =====
 let handleLongPressTimer;
+let handleLongPressFired = false;
 let startX = 0, startY = 0;
+
+const LONG_PRESS_MS = 900;
 
 handle.addEventListener('pointerdown', (e) => {
   isDragging = true;
+  handleLongPressFired = false;
   dragStartTime = Date.now();
   const touch = e.touches ? e.touches[0] : e;
   startX = touch.clientX;
   startY = touch.clientY;
 
-  // handleLongPressTimer = setTimeout(() => {
-    // if (isDragging) {
-      // isDragging = false;
-      // window.location.href = 'research.html';
-  //  }
- // }, 1000); 
+  clearTimeout(handleLongPressTimer);
+  handleLongPressTimer = setTimeout(() => {
+    if (isDragging) {
+      handleLongPressFired = true;
+      isDragging = false;
+      openLogoModal();
+    }
+  }, LONG_PRESS_MS);
 });
 
 window.addEventListener('pointermove', (e) => {
@@ -876,7 +983,21 @@ window.addEventListener('pointerup', (e) => {
   const duration = Date.now() - dragStartTime;
   isDragging = false;
 
+  // Если сработал long press — не переключаем дизайн
+  if (handleLongPressFired) {
+    handleLongPressFired = false;
+    return;
+  }
+
   if (duration < 250) {
+    // Если стоит кастомный логотип — короткий тап переключает на стандартные дизайны
+    // (сбрасываем кастомный, чтобы можно было вернуться к пресетам)
+    if (customLogoData) {
+      // короткий тап по кастомному логотипу — просто переключаем на следующий стандартный
+      customLogoData = null;
+      localStorage.removeItem(LOGO_STORAGE_KEY);
+    }
+
     currentDesign = (currentDesign + 1) % designs.length;
     localStorage.setItem('q_handle_design', currentDesign);
     updateHandleImage(currentDesign);
@@ -918,6 +1039,60 @@ handle.addEventListener('touchstart', (e) => {
 
 handle.addEventListener('click', (e) => e.preventDefault());
 handle.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// ===== LOGO MODAL LOGIC =====
+const logoModal = document.getElementById('logo-modal');
+const logoPreview = document.getElementById('logo-preview');
+const logoFileInput = document.getElementById('logo-file-input');
+const logoResetBtn = document.getElementById('logo-reset');
+const logoCancelBtn = document.getElementById('logo-cancel');
+
+function openLogoModal() {
+  logoPreview.src = customLogoData || designs[currentDesign];
+  logoFileInput.value = '';
+  logoModal.style.display = 'flex';
+}
+
+function closeLogoModal() {
+  logoModal.style.display = 'none';
+}
+
+logoFileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    customLogoData = dataUrl;
+    localStorage.setItem(LOGO_STORAGE_KEY, dataUrl);
+    applyLogo();
+    logoPreview.src = dataUrl;
+    // Сбрасываем фильтры, чтобы кастомный логотип отображался как есть
+    handle.style.filter = 'drop-shadow(0 4px 4px rgba(0,0,0,0.5))';
+    handle.querySelector('img').style.transform = 'rotate(0deg)';
+    closeLogoModal();
+  };
+  reader.readAsDataURL(file);
+});
+
+logoResetBtn.addEventListener('click', () => {
+  customLogoData = null;
+  localStorage.removeItem(LOGO_STORAGE_KEY);
+  // Возврат к текущему стандартному дизайну
+  const imgEl = handle.querySelector('img');
+  imgEl.src = designs[currentDesign];
+  imgEl.style.transform = 'rotate(0deg)';
+  handle.style.filter = 'none';
+  closeLogoModal();
+});
+
+logoCancelBtn.addEventListener('click', closeLogoModal);
+
+// Закрытие по клику вне окна
+logoModal.addEventListener('click', (e) => {
+  if (e.target === logoModal) closeLogoModal();
+});
 
 function handleImageFile(file, index, ta) {
   const reader = new FileReader();
@@ -983,10 +1158,8 @@ tileModeToolbar.addEventListener('click', (e) => {
   const mode = btn.dataset.tilemode;
 
   setTileModeUI(activeIndex, mode);
-  // НЕ сохраняем в localStorage — сохраним только при Save
 });
 
-// Превью тинта в реальном времени
 inpTint.addEventListener('input', (e) => {
   tintVal.textContent = e.target.value;
   if (activeIndex !== null) {
@@ -995,7 +1168,6 @@ inpTint.addEventListener('input', (e) => {
   }
 });
 
-// Загрузка тайла в превью
 inpTile.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file || activeIndex === null) return;
@@ -1015,7 +1187,6 @@ inpTile.addEventListener('change', (e) => {
   reader.readAsDataURL(file);
 });
 
-// Снятие чекбокса удаления тайла — вернуть превью, если был
 chkDelTile.addEventListener('change', (e) => {
   if (activeIndex === null) return;
   if (e.target.checked) {
@@ -1036,13 +1207,13 @@ chkDelTile.addEventListener('change', (e) => {
 
 textareas.forEach((ta, i) => {
   ta.addEventListener('input', () => {
-  if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
-    ta.innerHTML = '';
-    const ph = ta.parentElement.querySelector('.ph');
-    if (ph) ph.classList.remove('hidden');
-  }
-  saveToDB(i, ta.innerHTML);
-});
+    if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
+      ta.innerHTML = '';
+      const ph = ta.parentElement.querySelector('.ph');
+      if (ph) ph.classList.remove('hidden');
+    }
+    saveToDB(i, ta.innerHTML);
+  });
 
   ta.addEventListener('paste', (e) => {
     e.preventDefault();
@@ -1072,104 +1243,100 @@ textareas.forEach((ta, i) => {
     e.preventDefault();
   });
 
-let longPressStartX = 0;
-let longPressStartY = 0;
+  let longPressStartX = 0;
+  let longPressStartY = 0;
 
-const startLongPress = (e) => {
-  const touch = e.touches ? e.touches[0] : e;
+  const startLongPress = (e) => {
+    const touch = e.touches ? e.touches[0] : e;
 
-  longPressStartX = touch.clientX;
-  longPressStartY = touch.clientY;
+    longPressStartX = touch.clientX;
+    longPressStartY = touch.clientY;
 
-  activeIndex = i;
+    activeIndex = i;
 
-  clearTimeout(textareaLongPressTimer);
+    clearTimeout(textareaLongPressTimer);
 
-textareaLongPressTimer = setTimeout(() => {
+    textareaLongPressTimer = setTimeout(() => {
+      const hasText = ta.textContent.trim() !== '';
+      if (hasText) return;
 
-  const hasText = ta.textContent.trim() !== '';
-  if (hasText) return;
-
-const savedFont = localStorage.getItem(`q_f_${i}`) || '';
-const fontOpts = document.querySelectorAll('#setting-font .font-option');
-let fontMatched = false;
-fontOpts.forEach(o => {
-  const isMatch = o.dataset.value === savedFont;
-  o.classList.toggle('selected', isMatch);
-  if (isMatch) fontMatched = true;
-});
-if (!fontMatched && fontOpts[0]) {
-  fontOpts[0].classList.add('selected');
-}
-const selOpt = document.querySelector('#setting-font .font-option.selected');
-const fd = document.getElementById('font-display');
-if (selOpt && fd) {
-  fd.textContent = selOpt.textContent;
-  fd.style.fontFamily = selOpt.style.fontFamily;
-}
-
-const savedSize = localStorage.getItem(`q_s_${i}`) || '';
-const sizeOptions = Array.from(selSize.options).map(o => o.value);
-selSize.selectedIndex = sizeOptions.indexOf(savedSize) >= 0
-  ? sizeOptions.indexOf(savedSize)
-  : 0;
-
-const currentBg =
-  localStorage.getItem(`q_b_${i}`) ||
-  getComputedStyle(ta.parentElement).getPropertyValue('--bg').trim() ||
-  defBgs[i];
-
-const currentColor =
-  localStorage.getItem(`q_c_${i}`) ||
-  getComputedStyle(ta.parentElement).getPropertyValue('--color').trim() ||
-  defColors[i];
-
-    inpBg.value = currentBg;
-    bgPickerBtn.style.background = currentBg;
-
-    inpColor.value = currentColor;
-    colorPickerBtn.style.background = currentColor;
-
-    selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
-
-    // Инициализация режима тайла
-    setTileModeUI(i, getTileMode(i));
-
-    if (images[i].style.display === 'block') {
-      imgActionContainer.style.display = 'block';
-      chkDelImg.checked = false;
-    } else {
-      imgActionContainer.style.display = 'none';
-    }
-
-    // --- Загрузка существующего тайла ---
-    ta._pendingTile = null;
-    inpTile.value = '';
-    tileName.textContent = 'No file';
-    chkDelTile.checked = false;
-    tileThumb.style.display = 'none';
-    tileThumb.removeAttribute('src');
-
-    const tileTx = db.transaction("texts", "readonly");
-    const tileReq = tileTx.objectStore("texts").get(i);
-    tileReq.onsuccess = () => {
-      if (tileReq.result && tileReq.result.tile) {
-        tileThumb.src = tileReq.result.tile;
-        tileThumb.style.display = 'block';
+      const savedFont = localStorage.getItem(`q_f_${i}`) || '';
+      const fontOpts = document.querySelectorAll('#setting-font .font-option');
+      let fontMatched = false;
+      fontOpts.forEach(o => {
+        const isMatch = o.dataset.value === savedFont;
+        o.classList.toggle('selected', isMatch);
+        if (isMatch) fontMatched = true;
+      });
+      if (!fontMatched && fontOpts[0]) {
+        fontOpts[0].classList.add('selected');
       }
-    };
+      const selOpt = document.querySelector('#setting-font .font-option.selected');
+      const fd = document.getElementById('font-display');
+      if (selOpt && fd) {
+        fd.textContent = selOpt.textContent;
+        fd.style.fontFamily = selOpt.style.fontFamily;
+      }
 
-    // --- Тинт ---
-    const savedTint = localStorage.getItem(`q_tint_${i}`);
-    const tintNum = savedTint !== null ? parseFloat(savedTint) : 1;
-    inpTint.value = Math.round(tintNum * 100);
-    tintVal.textContent = inpTint.value;
+      const savedSize = localStorage.getItem(`q_s_${i}`) || '';
+      const sizeOptions = Array.from(selSize.options).map(o => o.value);
+      selSize.selectedIndex = sizeOptions.indexOf(savedSize) >= 0
+        ? sizeOptions.indexOf(savedSize)
+        : 0;
 
-    if (window.getSelection) window.getSelection().removeAllRanges();
-    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-    modal.style.display = 'flex';
-  }, 600);
-};
+      const currentBg =
+        localStorage.getItem(`q_b_${i}`) ||
+        getComputedStyle(ta.parentElement).getPropertyValue('--bg').trim() ||
+        defBgs[i];
+
+      const currentColor =
+        localStorage.getItem(`q_c_${i}`) ||
+        getComputedStyle(ta.parentElement).getPropertyValue('--color').trim() ||
+        defColors[i];
+
+      inpBg.value = currentBg;
+      bgPickerBtn.style.background = currentBg;
+
+      inpColor.value = currentColor;
+      colorPickerBtn.style.background = currentColor;
+
+      selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
+
+      setTileModeUI(i, getTileMode(i));
+
+      if (images[i].style.display === 'block') {
+        imgActionContainer.style.display = 'block';
+        chkDelImg.checked = false;
+      } else {
+        imgActionContainer.style.display = 'none';
+      }
+
+      ta._pendingTile = null;
+      inpTile.value = '';
+      tileName.textContent = 'No file';
+      chkDelTile.checked = false;
+      tileThumb.style.display = 'none';
+      tileThumb.removeAttribute('src');
+
+      const tileTx = db.transaction("texts", "readonly");
+      const tileReq = tileTx.objectStore("texts").get(i);
+      tileReq.onsuccess = () => {
+        if (tileReq.result && tileReq.result.tile) {
+          tileThumb.src = tileReq.result.tile;
+          tileThumb.style.display = 'block';
+        }
+      };
+
+      const savedTint = localStorage.getItem(`q_tint_${i}`);
+      const tintNum = savedTint !== null ? parseFloat(savedTint) : 1;
+      inpTint.value = Math.round(tintNum * 100);
+      tintVal.textContent = inpTint.value;
+
+      if (window.getSelection) window.getSelection().removeAllRanges();
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      modal.style.display = 'flex';
+    }, 600);
+  };
 
   const stopLongPress = () => clearTimeout(textareaLongPressTimer);
 
@@ -1225,11 +1392,10 @@ btnSave.onclick = () => {
   const targetTa = textareas[activeIndex];
   const wrap = targetTa.parentElement;
 
-  // --- FONT ---
   const fontOption = document.querySelector('#setting-font .font-option.selected');
   const fontValue = fontOption
     ? fontOption.dataset.value
-    : "'Luckiest Guy', Arial, sans-serif"; 
+    : "'Luckiest Guy', Arial, sans-serif";
 
   wrap.style.setProperty('--fn', fontValue);
   localStorage.setItem(`q_f_${activeIndex}`, fontValue);
@@ -1243,16 +1409,13 @@ btnSave.onclick = () => {
   wrap.style.setProperty('--color', inpColor.value);
   localStorage.setItem(`q_c_${activeIndex}`, inpColor.value);
 
-  // --- TINT ---
   const tintNum = parseInt(inpTint.value, 10) / 100;
   wrap.style.setProperty('--bg-tint', tintNum);
   localStorage.setItem(`q_tint_${activeIndex}`, tintNum);
 
-  // --- TILE ---
   if (chkDelTile.checked) {
     wrap.style.setProperty('--bg-tile', 'none');
     saveToDB(activeIndex, targetTa.innerHTML, null, false, null, true);
-    // Если тайл удалён — сбрасываем режим на repeat
     setTileModeUI(activeIndex, 'repeat');
     localStorage.setItem(`q_tilemode_${activeIndex}`, 'repeat');
   } else if (targetTa._pendingTile) {
@@ -1261,7 +1424,6 @@ btnSave.onclick = () => {
   }
   delete targetTa._pendingTile;
 
-  // --- TILE MODE ---
   const currentMode = textareas[activeIndex].parentElement.dataset.tilemode || 'repeat';
   localStorage.setItem(`q_tilemode_${activeIndex}`, currentMode);
   setTileModeUI(activeIndex, currentMode);
@@ -1288,30 +1450,23 @@ btnCancel.onclick = () => {
   if (activeIndex !== null) {
     const wrap = textareas[activeIndex].parentElement;
 
-    // Откат тинта
     const savedTint = localStorage.getItem(`q_tint_${activeIndex}`);
     wrap.style.setProperty('--bg-tint', savedTint !== null ? savedTint : '1');
 
-    // Откат цвета фона
     const savedBg = localStorage.getItem(`q_b_${activeIndex}`);
     if (savedBg !== null) wrap.style.setProperty('--bg', savedBg);
 
-    // Откат цвета текста
     const savedColor = localStorage.getItem(`q_c_${activeIndex}`);
     if (savedColor !== null) wrap.style.setProperty('--color', savedColor);
 
-    // Откат шрифта
     const savedFont = localStorage.getItem(`q_f_${activeIndex}`);
     if (savedFont !== null) wrap.style.setProperty('--fn', savedFont);
 
-    // Откат размера шрифта
     const savedSize = localStorage.getItem(`q_s_${activeIndex}`);
     if (savedSize !== null) wrap.style.setProperty('--fs', savedSize);
 
-    // Откат режима тайла
     setTileModeUI(activeIndex, getTileMode(activeIndex));
 
-    // Восстановить тайл из БД
     const tx = db.transaction("texts", "readonly");
     const req = tx.objectStore("texts").get(activeIndex);
     req.onsuccess = () => {
@@ -1337,4 +1492,4 @@ document.addEventListener('contextmenu', (e) => {
 document.getElementById('settings-modal').addEventListener('contextmenu', (e) => e.preventDefault(), { capture: true });
 </script>
 </body>
-</html>
+</html> 
