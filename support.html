@@ -26,39 +26,52 @@ html,body{
 
 /* ---------- шапка с тенью ---------- */
 .top-bar{
-  position:fixed;top:0;left:0;right:0;z-index:50;
+  z-index:50;
   display:flex;align-items:center;justify-content:space-between;
-  gap:8px;
+  gap:8px; 
   padding:6px 8px;background:#000;
   font-family:'Roboto Condensed',sans-serif;font-weight:700;font-size:16px;color:#aaa;
   box-shadow:0 2px 10px rgba(0,0,0,0.9);
   border-bottom:1px solid #1a1a1a;
 }
+
 .top-bar .left{
   display:flex;align-items:center;gap:8px;
   min-width:0;flex-shrink:1;overflow:hidden;
+  justify-content:space-between;   /* ← добавить */
+  flex:1;                          /* ← чтобы группа заняла всё свободное место */
 }
 .top-bar .right{
   display:flex;align-items:center;gap:8px;
   flex-shrink:0;
+  justify-content:space-between;   /* ← добавить */
+  flex:1;                          /* ← добавить */
 }
+
 .top-bar .brand{
   color:var(--accent);
   white-space:nowrap;
   text-decoration:none;
 }
-.top-bar .brand:hover{ text-decoration:underline; }
 .top-bar .brand:visited{ color:var(--accent); }
 .top-bar .live{color:#f00;animation:livePulse 1.5s infinite;white-space:nowrap}
 .top-bar .tape{color:var(--user);white-space:nowrap}
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 .btn-clear{
-  background:transparent;border:1px solid #444;color:#aaa;
+  background:transparent;border:1px solid #aaa;color:#aaa;
   font-family:'Roboto Condensed',sans-serif;font-weight:700;font-size:13px;
   padding:4px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;
 }
 .btn-clear:hover{border-color:#f00;color:#f00}
+
+.btn-match{
+  text-decoration: none;
+  background:transparent;border:1px solid #97f;color:#97f;
+  font-family:'Roboto Condensed',sans-serif;font-weight:700;font-size:13px;
+  padding:4px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;
+}
+.btn-match:hover{border-color:#00f;color:#00f}
 
 .sync-btn{
   font-family:'Roboto Condensed',sans-serif;font-size:13px;font-weight:700;
@@ -170,9 +183,11 @@ html,body{
 
 <div class="top-bar">
   <div class="left">
-    <a class="brand" href="support.html">Support</a>
     <span id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
     <span id="tapeIndicator" class="tape">Tape</span>
+
+    <a class="btn-match" href="match.html">Match</a>
+
   </div>
   <div class="right">
     <button class="btn-clear" id="btnClear">Clear</button>
