@@ -806,15 +806,16 @@ if (fs.endsWith('px')) {
         if (req.result.tile) {
           wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
         } else {
-          // демо-фон только для первого поля (t0) при первом запуске
-          if (i === 0 && !localStorage.getItem('q_demo_shown')) {
-            wrap.style.setProperty('--bg-tile', `url(demo-tile.png)`);
-            wrap.style.setProperty('--bg-tint', '0.35');
-            localStorage.setItem('q_demo_shown', '1');
-            localStorage.setItem('q_tint_0', '0.35');
-          } else {
-            wrap.style.setProperty('--bg-tile', 'none');
-          }
+if (i === 0 && !localStorage.getItem('q_demo_shown')) {
+  wrap.style.setProperty('--bg-tile', `url(demo-tile.png)`);
+  wrap.style.setProperty('--bg-tint', '0.35');
+  setTileModeUI(0, 'fill');                          // ← добавить
+  localStorage.setItem('q_tilemode_0', 'fill');      // ← добавить
+  localStorage.setItem('q_demo_shown', '1');
+  localStorage.setItem('q_tint_0', '0.35');
+} else {
+  wrap.style.setProperty('--bg-tile', 'none');
+}
         }
       }
     };
