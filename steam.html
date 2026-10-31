@@ -2,598 +2,366 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" type="image/png" href="/words.png">
+<link rel="icon" type="image/png" href="loop.png">
 <meta property="og:image" content="/Verge.jpeg">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="1280">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Steam | Map of the words</title>
-<link rel="manifest" href="manifest-steam.json">
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest-swipe.json">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Swipe | Public messenger that come alive</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
 <style>
+:root{
+  --bg:#000; --fg:#f2f2f2;
+  --me:#7dd3fc; --user:#afff00;
+  --accent:#ff5700;
+  --link:#4ea8ff;
+}
 *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
-html,body{width:100%;height:100%;background:#000;font-family:'Roboto Condensed',sans-serif;overflow:hidden}
-html{padding-top:env(safe-area-inset-top)}
-
-.words-wrapper,
-.note-text {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.words-wrapper::-webkit-scrollbar,
-.note-text::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
+html,body{
+  width:100%;height:100%;background:var(--bg);color:var(--fg);
+  overflow:hidden;font-family:'JetBrains Mono','Fira Code',monospace;
 }
 
+/* ---------- safe area сверху ---------- */
+html{
+  padding-top: env(safe-area-inset-top);
+}
+
+/* ---------- шапка ---------- */
 .top-bar{
   position:fixed;
-  top:0;
-  left:0;
-  right:0;
+  top:0;left:0;right:0;
   z-index:50;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:4px 8px;
-  background:#000;
-  font-family:'Unbounded',sans-serif;
-  font-weight:700;
-  font-size:16px;
-  color:#aaa;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px; 
+  padding:6px 8px;background:#000;
+  font-family:'Roboto Condensed',sans-serif;font-weight:700;font-size:16px;color:#aaa;
+  box-shadow:0 2px 10px rgba(0,0,0,0.9);
+  border-bottom:1px solid #1a1a1a;
 }
-.top-bar .brand{color:#999;}
-.top-bar .live{color:#ff0000;animation:livePulse 1.5s infinite}
-.top-bar .tape{color:#afff00}
+.top-bar .left{
+  display:flex;align-items:center;gap:8px;
+  min-width:0;flex-shrink:1;overflow:hidden;
+}
+.top-bar .right{
+  display:flex;align-items:center;gap:8px;
+  flex-shrink:0;
+}
+.top-bar .brand{
+  color:var(--accent);
+  white-space:nowrap;
+  text-decoration:none;
+}
+.top-bar .brand:visited{ color:var(--accent); }
+.top-bar .live{color:#f00;animation:livePulse 1.5s infinite;white-space:nowrap}
+.top-bar .tape{color:var(--user);white-space:nowrap}
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-#peerIdInput{
-  color:#0097ff;
-  background:transparent;
-  border:1px solid transparent;
-  outline:none;
-  font-family:'Roboto Condensed',sans-serif;
-  font-size:14px;
-  font-weight:400;
-  text-align:right;
-  width:108px;
-  padding:3px 0;
-  user-select:text;
-  -webkit-user-select:text;
-  cursor:text;
-  transition:background .2s, color .2s, border-color .2s, box-shadow .2s;
+.btn-clear{
+  background:transparent;border:1px solid #aaa;color:#aaa;
+  font-family:'Roboto Condensed',sans-serif;font-weight:700;font-size:13px;
+  padding:4px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;
 }
-#peerIdInput::placeholder{color:#444}
-#peerIdInput:focus{
-  background:#111;
-  color:#fff;
-  border-color:#3d1a99;
-  box-shadow:0 0 0 2px rgba(123,77,255,.25);
-}
-#peerIdInput.saved{
-  color:#afff00 !important;
-  border-color:#afff00 !important;
-  transition:none;
-}
+.btn-clear:hover{border-color:#f00;color:#f00}
 
-/* ---------- word cell ---------- */
-.word-cell{
-  display: inline;
-  font-weight: 700;
-  background: transparent;
-  border: none;
-  padding: 0;
-  margin: 0;
-  opacity: .95;
-  transition: color .3s ease;
-  color: #fff;
-  font-size: 1em;
-  line-height: 1.5;
-  word-break: break-word;
-  text-align: left;
-  cursor: pointer;
+.btn-match{
+  text-decoration: none;
+  background:transparent;border:1px solid #97f;color:#97f;
+  font-family:'Roboto Condensed',sans-serif;font-weight:700;font-size:13px;
+  padding:4px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;
 }
-.word-cell.hl-fresh{color:#ff2440}
-.word-cell.hl-1{color:#afff00}
-.word-cell.hl-2{color:#FFB300}
-
-/* ---------- media cells ---------- */
-.media-cell{
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-direction: column;
-  vertical-align: middle;
-  
-  background:#0b0b28;
-  border:2px solid #2a2a5a;
-  border-radius:10px;
-  padding:.12em;
-  margin: 0.2em;
-  box-shadow:0 4px 12px rgba(0,0,0,.5);
-  transition:border-color .2s,box-shadow .2s;
-  overflow:hidden;
-  cursor:pointer;
-  touch-action:manipulation;
-  
-  width:4em;
-  height:4.8em;
-  max-width: 100%;
-}
-
-.media-cell img,
-.media-cell video{
-  display:block;
-  width:3.5em;
-  height:3.5em;
-  max-width:none;
-  max-height:none;
-  border-radius:.4em;
-  object-fit:cover;
-  background:#000;
-  pointer-events:none;
-}
-
-.media-cell .media-author {
-  font-size: 10px;
-  font-family: monospace;
-  color: #0097ff;
-  line-height: 1.1;
-  margin-bottom: 4px;
-  text-align: center;
-  word-break: break-all;
-  max-width: 100%;
-}
-
-/* ---------- fullscreen media viewer ---------- */
-#media-viewer {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,20,0.96);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  cursor: pointer;
-  padding: 20px;
-}
-#media-viewer.show { display: flex; }
-#media-viewer img,
-#media-viewer video {
-  max-width: 100%;
-  max-height: 100%;
-  border-radius: 10px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.8);
-  object-fit: contain;
-  background: #000;
-}
-#media-viewer .viewer-close {
-  position: absolute;
-  top: 16px;
-  right: 20px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255,0,0,0.85);
-  color: #fff;
-  border: none;
-  font-size: 22px;
-  font-family: monospace;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2001;
-}
-
-/* ---------- caret circle ---------- */
-#caret-circle{
-  position:fixed;
-  width:56px;height:56px;border-radius:50%;
-  background:radial-gradient(circle at 35% 35%,rgba(123,77,255,.35),rgba(61,26,153,.15));
-  border:2px solid rgba(255,255,255,.35);
-  box-shadow:0 4px 15px rgba(123,77,255,.35),
-             inset 0 2px 6px rgba(255,255,255,.10);
-  z-index:900;
-  display:flex;
-  align-items:center;justify-content:center;
-  cursor:grab;touch-action:none;
-  transition:transform .15s ease, box-shadow .15s ease, background .2s ease, border-color .15s ease;
-  -webkit-tap-highlight-color:transparent;
-  font-family:'Unbounded',sans-serif;
-  font-size:26px;
-  font-weight:700;
-  color:#fff;
-  text-shadow:0 0 8px rgba(255,255,255,.5);
-}
-/* «?» — всегда виден, почти прозрачный, позади прицела */
-#caret-circle .caret-question{
-  position:absolute;
-  left:50%;top:50%;
-  transform:translate(-50%,-50%);
-  font-family:'Unbounded',sans-serif;
-  font-size:26px;
-  font-weight:700;
-  color:#fff;
-  opacity:0.38;
-  text-shadow:none;
-  pointer-events:none;
-  z-index:0;
-}
-
-/* Прицел — всегда виден, поверх «?» */
-#caret-circle .caret-icon{
-  position:absolute;
-  left:50%;top:50%;
-  width:100%;height:100%;
-  transform:translate(-50%,-50%);
-  pointer-events:none;
-  z-index:1;
-}
-#caret-circle .caret-icon::before{
-  content:"";position:absolute;left:50%;top:50%;
-  width:28px;height:2px;background:#f00;
-  transform:translate(-50%,-50%);
-}
-#caret-circle .caret-icon::after{
-  content:"";position:absolute;left:50%;top:50%;
-  width:2px;height:28px;background:#f00;
-  transform:translate(-50%,-50%);
-}
-#caret-circle.active{
-  border-color:#ff2440;
-  background:radial-gradient(circle at 35% 35%,rgba(255,36,64,.65),rgba(153,26,40,.35));
-  box-shadow:0 0 0 3px rgba(255,36,64,.25), 0 6px 22px rgba(255,36,64,.5), inset 0 2px 6px rgba(255,255,255,.20);
-}
-#caret-circle.dragging{transition:none;transform:scale(1.15)}
-#caret-circle.pulse{animation:caretPulse .3s ease}
-@keyframes caretPulse{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
-
-/* ---------- edit popover ---------- */
-#edit-popover{
-  position:fixed;z-index:950;display:none;flex-direction:column;
-  gap:6px;background:#0b0b28;border:2px solid #ff0000;
-  border-radius:20px;padding:10px;min-width:220px;
-  box-shadow:0 8px 28px rgba(0,0,0,.6);
-}
-#edit-popover.show{display:flex}
-
-#edit-popover input{
-  min-height:42px;
-  font-family:'Roboto Condensed',sans-serif;font-size:16px;
-  padding:8px 10px;border-radius:8px;border:2px solid #555;
-  background:#120a3a;color:#fff;outline:none;user-select:text;-webkit-user-select:text;
-}
-#edit-popover input:disabled{opacity: 0.4;cursor: not-allowed;}
-#edit-popover .row{display:flex;gap:6px}
-#edit-popover button{
-  min-height: 42px;
-  flex:1;font-family:'Roboto Condensed',sans-serif;font-size:14px;
-  font-weight:700;padding:8px 6px;
-  border:2px solid #ff0000;
-  border-radius:8px;
-  cursor:pointer;color:#fff;background:#333;
-}
-#edit-popover .btn-add{background:#ff2440}
-#edit-popover .btn-cancel{background:#222;color:#aaa}
-#edit-popover .btn-media{
-  background:#120a3a;border-color:#3d1a99;color:#b0a0ff;font-size:13px;
-}
-#edit-popover .btn-media:hover{
-  background:#1e1050;border-color:#7b4dff;color:#fff;
-}
-.popover-or {
-  text-align: center;font-size: 11px;color: #ccc;
-  font-family: monospace;margin: 2px 0;letter-spacing: 1px;
-}
-#edit-popover .btn-media.disabled,
-#edit-popover .btn-add.disabled {
-  opacity: 0.35;cursor: not-allowed;pointer-events: none;
-}
-#edit-popover #popoverRecipients{
-  min-height:38px;font-family:'Roboto',sans-serif;font-size:13px;
-  padding:8px 10px;border-radius:8px;border:2px dotted #555;
-  background:#120a3a;color:#fff;outline:none;user-select:text;-webkit-user-select:text;
-}
-
-/* ---------- Layout & Footer ---------- */
-.container{
-  display:flex;
-  flex-direction:column;
-  height:100vh;
-  height:100dvh;
-  background:#000;
-}
-
-.words-wrapper{
-  flex: 1 1 auto;
-  width:100%;
-  position:relative;
-  padding:50px 12px 120px 12px;
-  overflow-y:auto;
-  cursor:default;
-  touch-action:pan-y;
-  display: block; 
-  text-align: left;
-  font-size: 20px;
-  line-height: 1.5;
-}
-
-/* Футер ФИКСИРОВАН */
-.footer-panel{
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:6px;
-  padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)) 8px;
-  background:#000;
-  border-top: 1px solid #223355;
-}
-
-.footer-row{
-  display:flex;
-  gap:8px;
-  width:100%;
-  align-items:stretch;
-  box-sizing:border-box;
-}
-
-#word-input{
-  width:100%;
-  max-width:100%;
-  padding:12px;
-  font-family:'Roboto Condensed',sans-serif;
-  font-size:18px;outline:none;margin:0;
-  border:1px solid #999;border-radius:12px;
-  background: linear-gradient(to bottom, #000, #223355);
-  color:#fff;user-select:text;-webkit-user-select:text;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-#word-input::placeholder{color:#999}
-
-.footer-icon-btn{
-  flex:0 0 auto;width:48px;min-width:48px;padding:0;
-  font-size:22px;line-height:1;
-  border:1px solid #999;border-radius:12px;
-  background: linear-gradient(to bottom, #000, #223355);
-  color:#fff;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-}
-.footer-icon-btn:active{transform:scale(.96)}
+.btn-match:hover{border-color:#00f;color:#00f}
 
 .sync-btn{
   font-family:'Roboto Condensed',sans-serif;font-size:13px;font-weight:700;
-  padding:6px 14px;border:none;border-radius:8px;background:#f00;color:#fff;cursor:pointer;
+  padding:10px 14px;border:none;border-radius:10px;
+  background:#f00;color:#fff;cursor:pointer;white-space:nowrap;
+  flex-shrink:0;
 }
 .sync-btn:disabled{opacity:.4;cursor:default}
 
-/* ---------- кнопка CLOSE HELP в стиле кружка (внизу перед футером) ---------- */
-.help-close-circle{
-  position: fixed;
-  right: 16px;
-  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
-  z-index: 1600;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, rgba(123,77,255,.35), rgba(61,26,153,.15));
-  border: 2px solid rgba(255,255,255,.35);
-  box-shadow: 0 4px 15px rgba(123,77,255,.35),
-             inset 0 2px 6px rgba(255,255,255,.10);
+#peerIdInput{
+  color:#0097ff;background:transparent;outline:none;
+  font-family:monospace;font-size:14px;text-align:right;
+  width:90px;padding:3px 6px;border:1px solid transparent;border-radius:6px;
+  user-select:text;-webkit-user-select:text;cursor:text;
+  transition:background .2s,color .2s,border-color .2s;
+}
+#peerIdInput::placeholder{color:#444}
+#peerIdInput:focus{background:#111;color:#fff;border-color:#3d1a99}
+#peerIdInput.saved{color:var(--user)!important;border-color:var(--user)!important}
 
-  font-family: 'Unbounded', sans-serif;
+/* ---------- скролл (top будет перезаписан JS) ---------- */
+#scroller{
+  position:fixed;left:0;right:0;
+  top: calc(44px + env(safe-area-inset-top)); /* fallback до вызова JS */
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  z-index:1;
+  touch-action:pan-y;
+}
+#scroller::-webkit-scrollbar{display:none}
 
-  display: none;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+#stage{position:relative;width:100%;min-height:100%}
 
-  -webkit-tap-highlight-color: transparent;
-  padding: 0;
+/* ---------- буквы ---------- */
+.ch{
+  position:absolute;
+  font-family:'JetBrains Mono','Fira Code',monospace;
+  font-size:clamp(14px,3.5vw,20px);
+  line-height:1;
+  white-space:pre;
+  pointer-events:none;user-select:none;
+  transform-origin:50% 50%;
 }
-.help-close-circle.show{ display: flex; }
-.help-close-circle .close-icon{
-  position: relative;
-  width: 28px;
-  height: 28px;
-  pointer-events: none;
+.ch.mine{color:var(--me);text-shadow:0 0 8px rgba(125,211,252,.35)}
+.ch.user{color:var(--user);text-shadow:0 0 8px rgba(175,255,0,.35)}
+
+/* ---------- ссылки ---------- */
+.ch.link{
+  color:var(--link);
+  text-decoration:underline;
+  text-underline-offset:2px;
+  pointer-events:auto;
+  cursor:pointer;
+  text-shadow:0 0 8px rgba(78,168,255,.45);
 }
-.help-close-circle .close-icon::before,
-.help-close-circle .close-icon::after{
-  content: "";
-  position: absolute;
-  left: 50%; top: 50%;
-  background: #f00;
+.ch.link:hover{ color:#8cc7ff; }
+
+/* ---------- подвал ---------- */
+.footer-panel{
+  position:fixed;left:0;right:0;bottom:0;z-index:10;
+  display:flex;align-items:center;justify-content:center;
+  gap:8px;
+  padding:8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  background:#000;border-top:1px solid #1a1a1a;
 }
-.help-close-circle .close-icon::before{
-  width: 28px; height: 2px;
-  transform: translate(-50%,-50%) rotate(45deg);
+#word-input{
+  flex:1;
+  max-width:600px;padding:10px 12px;
+  font-family:'JetBrains Mono',monospace;font-size:16px;
+  border:1px solid #444;border-radius:10px;
+  background:linear-gradient(to bottom,#000,#0b1a2b);color:#fff;outline:none;
+  user-select:text;-webkit-user-select:text;
 }
-.help-close-circle .close-icon::after{
-  width: 2px; height: 28px;
-  transform: translate(-50%,-50%) rotate(45deg);
-}
-.help-close-circle:active{
-  transform: scale(.95);
-  border-color:#ff2440;
-  background: radial-gradient(circle at 35% 35%,rgba(255,36,64,.65),rgba(153,26,40,.35));
+#word-input::placeholder{color:#888}
+
+/* ---------- подпись автора ---------- */
+.author-tag{
+  position:absolute;
+  font-family:monospace;
+  font-size:13px;
+  line-height:1;
+  color:#0097ff;
+  white-space:nowrap;
+  pointer-events:none;
+  transform:translateX(-50%);
+  opacity:.9;
 }
 
-/* ---------- help note (full-screen overlay) ---------- */
-.note{
-  position:fixed;
-  inset:0;
-  z-index:1500;
-  display:none;
-  width:100%;
-  background:#000;
+/* ---------- подсказка ---------- */
+#hint{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
   text-align:center;
-  font-family:sans-serif;
-  font-size:16px;
+  font-size:clamp(16px,3.6vw,20px);
+  line-height:1.4;
+  color:#f2f2f2;
+  font-family:'JetBrains Mono','Fira Code',monospace;
+  text-shadow:0 0 10px rgba(0,0,0,.95);
+  pointer-events:none;
+  z-index:5;
+  transition:opacity .6s ease;
+  padding: 0;
+  letter-spacing:.02em;
 }
-.note.open{display:block}
-.note-text{
-  font-family:monospace, sans-serif;font-size:12px;
-  display:block;
-  padding:44px 6px 24px;color:#fff;line-height:1.35;
-  height:100%;
-  max-height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  overscroll-behavior:contain;text-align:center;
-}
-.note-text p{margin-bottom:10px}
-.note-text p:last-child{margin-bottom:0}
+#hint.hidden{opacity:0}
 </style>
 </head>
 <body>
 
 <div class="top-bar">
-  <span class="brand">Steam</span>
-  <span id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
-  <span id="tapeIndicator" class="tape">Tape</span>
-  <input type="text" id="peerIdInput" autocomplete="off" spellcheck="false" enterkeyhint="done"
-         placeholder="Peer-XXXX" title="Tap to rename yourself">
-</div>
+  <div class="left">
+    <span id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
+    <span id="tapeIndicator" class="tape">Tape</span>
 
-<div class="container">
-  <div class="note" id="note">
-    <div class="note-text">
-      <button class="sync-btn" id="clearBtn" title="Delete all words & media" style="background:#800;margin-top:6px">CLEAR ALL</button>
-      <span id="updateAvailableLine"
-            style="display: none; margin: 16px auto; color: #0097ff; font-size: 14px; font-family: 'Roboto Condensed', sans-serif; cursor: pointer;"
-            onclick="event.stopPropagation(); syncAndKeepData()">
-          Update Available
-      </span>
-      <p style="font-size:14px;margin-top:12px"><strong>Steam — Map of the words</strong></p>
-      <p>Input field below adds words to your device only.</p>
-      <p>Broadcast data to all devices using this terminal at the same time by performing a long tap on the circle.</p>
-      <p>Circle — single tap opens this help, long tap opens the caret to add word or phrase, drag to move.</p>
-      <p>Popover — type a word and tap "Send" (or Enter) to insert it right where the caret points (before/after the nearest cell, word or media). Tap 📎 Media to pick an image or video — it lands in that same caret position. The popover accepts either a word OR a media file, not both at once. An optional recipients field lets you send only to specific Peer IDs (empty = public).</p>
-      <p>In <span style="color:#ff0000">Live</span> mode caret word and media edits are sent to all peers (or to recipients) immediately. In <span style="color:#afff00">Tape</span> mode they're stored locally and flushed when a peer appears.</p>
+    <a class="btn-match" href="match.html">Match</a>
 
-      <p>Word taps (local only): fresh &rarr; white &rarr; green &rarr; orange &rarr; open ChatGPT definition (and copy to clipboard). Long tap cancels highlight, or deletes the word if it wasn't highlighted.</p>
-
-      <p>Media — tap any media to open the full-screen viewer; tap again to close. Long tap any media to delete it (same gesture as deleting a word).</p>
-
-      <p>Footer 📎 button adds local-only media directly from your device (not published to peers).</p>
-
-      <p>SYNC (red button) appears only when there are edits waiting in Tape.</p>
-
-      <p>Your peer name — tap the ID in the top-right corner, type a new name, tap Enter. 3–9 chars: letters, digits, dash, underscore.</p>
-
-      <a href="support.html" title="Support">
-        <img src="/fleurdelis.png" alt="fleur-de-lis"
-             style="display:block;margin:28px auto 54px auto;max-width:48px;height:auto;cursor:pointer">
-      </a>
-    </div>
   </div>
-
-  <div class="words-wrapper" id="words-wrapper"></div>
-
-  <div class="footer-panel">
-    <div class="footer-row">
-      <input type="text" id="word-input" enterkeyhint="send" placeholder="Add word(s) locally and press Enter...">
-      <button id="local-media-btn" class="footer-icon-btn" title="Upload local media">📎</button>
-    </div>
-    <button class="sync-btn" id="syncBtn" title="Re-send tape edits to network" style="display:none">SYNC TAPE TO LIVE</button>
+  <div class="right">
+    <button class="btn-clear" id="btnClear">Clear</button>
+    <input type="text" id="peerIdInput" autocomplete="off" spellcheck="false"
+           maxlength="9" placeholder="Your name">
   </div>
 </div>
 
-<button class="help-close-circle" id="helpCloseCircle" title="Close help">
-  <span class="close-icon" aria-hidden="true"></span>
-</button>
+<div id="hint">Swipe here to see the message</div>
 
-<div id="caret-circle" title="Tap = help · Long tap = add word/media · Drag = move">
-  <span class="caret-question">?</span>
-  <span class="caret-icon" aria-hidden="true"></span>
-</div>
+<div id="scroller"><div id="stage"></div></div>
 
-<div id="media-viewer">
-  <button class="viewer-close" id="viewerClose">×</button>
-</div>
-
-<div id="edit-popover">
-  <input type="text" id="popoverInput" placeholder="Type a word to send…" autocomplete="off" enterkeyhint="send">
-  <input type="text" id="popoverRecipients" placeholder="Recipients (comma-separated, empty = public)" autocomplete="off">
-  <div class="popover-or">— OR —</div>
-  <div class="row">
-    <button class="btn-media" id="btnMedia" title="Attach image or video">📎 Media</button>
-  </div>
-  <div class="row">
-    <button class="btn-add" id="btnAdd">Send</button>
-  </div>
-  <div class="row">
-    <button class="btn-cancel" id="btnCancel">Cancel</button>
-  </div>
+<div class="footer-panel">
+  <input type="text" id="word-input"
+         autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false">
+  <button class="sync-btn" id="syncBtn" style="display:none">SYNC</button>
 </div>
 
 <script>
 /* =========================================================
-   DataManager
+   0. ЯЗЫК + ТЕКСТ
    ========================================================= */
-const DataManager = (() => {
-  const PREFIX = 'wow_';
-  function key(n){return PREFIX+n}
-  function get(n,fb=null){try{const r=localStorage.getItem(key(n));return r===null?fb:JSON.parse(r)}catch(e){return fb}}
-  function set(n,v){try{localStorage.setItem(key(n),JSON.stringify(v))}catch(e){}}
-  return {get,set,key};
-})();
+const LANG = (navigator.language || 'en').toLowerCase().startsWith('ru') ? 'ru' : 'en';
 
-function log(msg){ console.log('[WOW]', msg); }
+const PLACEHOLDER = {
+  ru: 'Ответь и нажми Enter…',
+  en: 'Reply and press Enter…'
+}[LANG];
+
+const HINT_TEXT = {
+  ru: 'Проведи пальцем здесь, чтобы увидеть сообщение',
+  en: 'Swipe field to see the message'
+}[LANG];
+
+const MY_TEXT = {
+  ru: [
+    'Это демонстрационный одноранговый публичный мессенджер',
+    '"Live" наверху значит, что данный момент присутствует кто-то еще. "Tape" значит вы один на странице',
+    'Я создаю программное обеспечение, веб-сайты, интерактивные приложения, а также автономные, многофункциональные децентрализованные одноранговые веб-терминалы — решения, разработанные для самых разных устройств, способные адаптироваться к будущим изменениям',
+    'Вы можете ввести своё имя в правом верхнем углу',
+    'Введите свой текст в поле ниже и нажмите Enter для публикации',
+  ],
+  en: [
+    'This is a demonstration peer public messenger',
+    '"Live" at the top means someone else is present. "Tape" means you are alone on the page',
+    'I create software, websites, interactive applications, and independent, multifunctional, decentralized peer-to-peer web terminals—designed for a variety of devices, capable of adapting to future changes',
+    'You can type your name in the top-right corner',
+    'Type your text in the field below and press Enter to publish',
+  ]
+};
+
+const mySentences = MY_TEXT[LANG];
+const myText = mySentences.join('\n');
 
 /* =========================================================
-   Peer identity + client id
+   1. РАСПОЗНАВАНИЕ ССЫЛОК
    ========================================================= */
-let myId = DataManager.get('peer_id');
-if (!myId) {
-  myId = 'Peer-' + Math.floor(Math.random()*9000+1000);
-  DataManager.set('peer_id', myId);
+const URL_RE = /\b((?:https?:\/\/|www\.)[^\s]+)/gi;
+const MD_LINK_RE = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+
+function trimUrl(u){
+  return u.replace(/[.,;:!?)\]}]+$/, '');
+}
+function normalizeUrl(u){
+  if (/^www\./i.test(u)) return 'https://' + u;
+  return u;
 }
 
-const clientId = 'wow_' + Math.random().toString(16).slice(2,10);
+function autoUrlSplit(text){
+  const out = [];
+  let last = 0;
+  URL_RE.lastIndex = 0;
+  let m;
+  while ((m = URL_RE.exec(text))){
+    const raw = m[0];
+    const cleaned = trimUrl(raw);
+    const start = m.index;
+    const end = start + cleaned.length;
+    if (start > last) out.push({text: text.slice(last, start), link: null});
+    out.push({text: cleaned, link: normalizeUrl(cleaned)});
+    last = end;
+    if (end < start + raw.length){
+      out.push({text: text.slice(end, start + raw.length), link: null});
+      last = start + raw.length;
+    }
+  }
+  if (last < text.length) out.push({text: text.slice(last), link: null});
+  return out;
+}
+
+function splitTextWithLinks(text){
+  const parts = [];
+  let last = 0;
+  MD_LINK_RE.lastIndex = 0;
+  let m;
+  while ((m = MD_LINK_RE.exec(text))){
+    if (m.index > last){
+      parts.push({text: text.slice(last, m.index), link: null, autoUrl: true});
+    }
+    parts.push({text: m[1], link: normalizeUrl(m[2]), autoUrl: false});
+    last = m.index + m[0].length;
+  }
+  if (last < text.length){
+    parts.push({text: text.slice(last), link: null, autoUrl: true});
+  }
+  const out = [];
+  for (const p of parts){
+    if (p.link !== null || !p.autoUrl){
+      out.push(p);
+    } else {
+      for (const seg of autoUrlSplit(p.text)) out.push(seg);
+    }
+  }
+  return out;
+}
+
+function flattenWithLinks(text){
+  const chars = [];
+  for (const seg of splitTextWithLinks(text)){
+    for (const ch of seg.text){
+      chars.push({ch, link: seg.link});
+    }
+  }
+  return chars;
+}
+
+/* =========================================================
+   2. ХРАНИЛИЩЕ
+   ========================================================= */
+const store = {
+  get(k, fb=null){ try{ const v=localStorage.getItem('st_'+k); return v===null?fb:JSON.parse(v);}catch(e){return fb;} },
+  set(k, v){ try{ localStorage.setItem('st_'+k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem('st_'+k); }catch(e){} }
+};
+
+let myId = store.get('peer_id', '');
+if (!myId){ myId = 'Guest-' + Math.floor(1000+Math.random()*9000); store.set('peer_id', myId); }
+
+const clientId = 'swp_' + Math.random().toString(16).slice(2,10);
 
 const peerIdInput = document.getElementById('peerIdInput');
 peerIdInput.value = myId;
 
+let myCursor = store.get('my_cursor', 0);
+let userChars = store.get('user_chars', []);
+
+function saveMyCursor(){ store.set('my_cursor', myCursor); }
+function saveUserChars(){
+  store.set('user_chars', userChars.map(u => ({
+    ch: u.ch,
+    author: u.author,
+    printed: !!u.printed,
+    link: u.link || null
+  })));
+}
+
+let pendingEdits = store.get('pending_edits', []);
+function savePending(){ store.set('pending_edits', pendingEdits); }
+const appliedEditIds = new Set(store.get('applied_edits', []));
+function saveApplied(){ store.set('applied_edits', Array.from(appliedEditIds).slice(-2000)); }
+
 /* =========================================================
-   State
+   3. MQTT
    ========================================================= */
-let itemsList = DataManager.get('words', []);
-if (!Array.isArray(itemsList)) itemsList = [];
+const BROKER = 'wss://broker.emqx.io:8084/mqtt';
+const TOPIC  = 'breakthrough/swipe/v1';
 
-itemsList = itemsList.map(item => {
-  if (!item.type) item.type = 'word';
-  return item;
-});
-
-let pendingEdits = DataManager.get('pending_edits', []);
-let appliedEditIds = new Set(DataManager.get('applied_edits', []));
-
-function saveItems(){ DataManager.set('words', itemsList); }
-function savePending(){ DataManager.set('pending_edits', pendingEdits); }
-function saveApplied(){ DataManager.set('applied_edits', Array.from(appliedEditIds).slice(-2000)); }
-
-/* =========================================================
-   MQTT
-   ========================================================= */
-const BROKER = DataManager.get('broker', 'wss://broker.emqx.io:8084/mqtt');
-const TOPIC  = 'breakthrough/words/v1';
 let client = null;
 let activePeers = {};
 let isLive = false;
-
 let pingTimer = null;
 let peersTimer = null;
 
@@ -605,36 +373,33 @@ function connectMqtt(){
       connectTimeout: 5000,
       keepalive: 60
     });
-  }catch(e){ log('MQTT init error: ' + e.message); return; }
+  }catch(e){ return; }
 
   client.on('connect', () => {
-    log('MQTT connected');
     client.subscribe(TOPIC, {qos:1});
     startHeartbeats();
   });
 
   client.on('close', () => {
-    log('MQTT disconnected');
     stopHeartbeats();
     activePeers = {};
-    updatePeers();
+    refreshChrome();
   });
 
   client.on('offline', () => { stopHeartbeats(); });
-  client.on('error', (e) => { log('MQTT error: ' + e.message); });
+  client.on('error', () => {});
 
   client.on('message', (t, payload) => {
     let p;
     try{ p = JSON.parse(payload.toString()); }catch(e){ return; }
 
     if (p.sid === clientId) return;
-    if (p.sid === undefined && p.sender === myId) return;
 
     if (p.type === 'PING'){ activePeers[p.sender] = Date.now(); return; }
     if (p.type === 'WORD_EDIT'){ applyRemoteEdit(p); return; }
     if (p.type === 'WORD_EDIT_ACK'){
       if (p.editId){
-        pendingEdits = pendingEdits.filter(e=>e.editId!==p.editId);
+        pendingEdits = pendingEdits.filter(e => e.editId !== p.editId);
         savePending();
         refreshChrome();
       }
@@ -654,912 +419,445 @@ function stopHeartbeats(){
   if (pingTimer)  { clearInterval(pingTimer);  pingTimer = null; }
   if (peersTimer) { clearInterval(peersTimer); peersTimer = null; }
 }
-
 function sendPing(){
   if (client && client.connected){
     client.publish(TOPIC, JSON.stringify({type:'PING', sender:myId, sid:clientId}), {qos:0});
   }
 }
-
 function updatePeers(){
   const now = Date.now();
   for (const id in activePeers){
     if (now - activePeers[id] > 12000) delete activePeers[id];
   }
-  const count = Object.keys(activePeers).length;
-  isLive = count > 0;
+  isLive = Object.keys(activePeers).length > 0;
 
   const before = pendingEdits.length;
-  pendingEdits = pendingEdits.filter(e => (now - (e.ts||0)) < 60000);
+  pendingEdits = pendingEdits.filter(e => (now - (e.ts || 0)) < 60000);
   if (pendingEdits.length !== before) savePending();
 
   refreshChrome();
+  if (isLive && pendingEdits.length > 0) flushPendingEdits();
+}
 
-  if (isLive && pendingEdits.length > 0){ flushPendingEdits(); }
+function flushPendingEdits(){
+  if (!client || !client.connected) return;
+  if (pendingEdits.length === 0) return;
+  pendingEdits.slice().forEach(edit => {
+    client.publish(TOPIC, JSON.stringify({
+      ...edit,
+      type: 'WORD_EDIT',
+      sender: myId,
+      sid: clientId
+    }), {qos:1});
+  });
 }
 
 /* =========================================================
-   UI chrome
+   4. UI Chrome
    ========================================================= */
-const liveIndicator = document.getElementById('liveIndicator');
-const tapeIndicator = document.getElementById('tapeIndicator');
+const liveInd = document.getElementById('liveIndicator');
+const tapeInd = document.getElementById('tapeIndicator');
+const liveCount = document.getElementById('livePeerCount');
 const syncBtn = document.getElementById('syncBtn');
-const livePeerCount = document.getElementById('livePeerCount');
 
 function refreshChrome(){
-  const count = Object.keys(activePeers).length;
-  liveIndicator.style.display = isLive ? 'inline' : 'none';
-  tapeIndicator.style.display = isLive ? 'none' : 'inline';
-  livePeerCount.textContent = count;
+  const n = Object.keys(activePeers).length;
+  liveInd.style.display = isLive ? 'inline' : 'none';
+  tapeInd.style.display = isLive ? 'none' : 'inline';
+  liveCount.textContent = n;
 
-  const hasPending = pendingEdits.length > 0;
-  if (hasPending){
+  if (pendingEdits.length){
     syncBtn.style.display = 'inline-block';
-    syncBtn.textContent = isLive
-      ? `SYNC (${pendingEdits.length})`
-      : `TAPE: ${pendingEdits.length} pending`;
+    syncBtn.textContent = isLive ? `SYNC (${pendingEdits.length})` : `TAPE: ${pendingEdits.length}`;
     syncBtn.disabled = !isLive;
   } else {
     syncBtn.style.display = 'none';
   }
 }
 
-function flushPendingEdits(){
-  if (!client || !client.connected) return;
-  if (pendingEdits.length === 0) return;
-  const toSend = pendingEdits.slice();
-  toSend.forEach(edit=>{
-    client.publish(TOPIC, JSON.stringify({
-      ...edit,
-      type: 'WORD_EDIT',
-      sender: myId,
-      sid: clientId
-    }), {qos:1});
-  });
-  log('Flushed ' + toSend.length + ' tape edits (awaiting ACK)');
+syncBtn.addEventListener('click', () => { if (isLive) flushPendingEdits(); });
+
+/* =========================================================
+   4.5. Safe-area: синхронизация высоты шапки с #scroller
+   ========================================================= */
+const scroller = document.getElementById('scroller');
+const topBar = document.querySelector('.top-bar');
+
+function syncScrollerTop(){
+  const h = topBar.getBoundingClientRect().height;
+  scroller.style.top = h + 'px';
+}
+syncScrollerTop();
+window.addEventListener('resize', syncScrollerTop);
+window.addEventListener('orientationchange', syncScrollerTop);
+if (document.fonts && document.fonts.ready){
+  document.fonts.ready.then(syncScrollerTop);
+}
+// На случай позднего изменения safe-area (поворот, скрытие адресной строки)
+if (window.visualViewport){
+  window.visualViewport.addEventListener('resize', syncScrollerTop);
 }
 
 /* =========================================================
-   DOM refs
+   5. Метрики
    ========================================================= */
-const wrapper = document.getElementById('words-wrapper');
-const caret   = document.getElementById('caret-circle');
-const popover = document.getElementById('edit-popover');
-const popoverInput = document.getElementById('popoverInput');
-const popoverRecipients = document.getElementById('popoverRecipients');
-const helpCloseCircle = document.getElementById('helpCloseCircle');
+const stage = document.getElementById('stage');
 
-const mediaViewer = document.getElementById('media-viewer');
-const viewerClose = document.getElementById('viewerClose');
-const note = document.getElementById('note');
+const measure = document.createElement('span');
+measure.style.cssText =
+  'position:absolute;visibility:hidden;' +
+  'font-family:"JetBrains Mono",monospace;' +
+  'font-size:clamp(14px,3.5vw,20px);line-height:1;white-space:pre;';
+measure.textContent = 'M';
+document.body.appendChild(measure);
 
-let caretContext = null;
-let caretOpen = false;
-let lastFontSize = null;
-let currentViewerMedia = null;
+let charW = 0, lineH = 0;
+const marginX = 20, marginY = 20;
+
+function recalcMetrics(){
+  charW = measure.getBoundingClientRect().width;
+  const fs = parseFloat(getComputedStyle(measure).fontSize);
+  lineH = fs * 1.45;
+}
+recalcMetrics();
+window.addEventListener('resize', recalcMetrics);
 
 /* =========================================================
-   FULLSCREEN MEDIA VIEWER
+   6. Раскладка
    ========================================================= */
-function openMediaViewer(item) {
-  Array.from(mediaViewer.children).forEach(ch => {
-    if (ch !== viewerClose) mediaViewer.removeChild(ch);
-  });
+let cursorY = marginY;
+let currentLine = [];
+let currentLineWidth = 0;
 
-  let el;
-  if (item.mediaType === 'image') {
-    el = document.createElement('img');
-    el.src = item.data;
-    el.alt = '';
-  } else if (item.mediaType === 'video') {
-    el = document.createElement('video');
-    el.src = item.data;
-    el.controls = true;
-    el.autoplay = true;
-    el.playsInline = true;
+function maxLineWidth(){ return window.innerWidth - marginX*2; }
+
+function layoutCurrentLine(){
+  let visibleLen = currentLine.length;
+  while (visibleLen > 0 && currentLine[visibleLen-1].ch === ' ') visibleLen--;
+  if (visibleLen === 0) return;
+  const totalW = visibleLen * charW;
+  const startX = (window.innerWidth - totalW) / 2;
+  for (let i = 0; i < currentLine.length; i++){
+    const e = currentLine[i];
+    if (e.el) e.el.style.left = (startX + i*charW) + 'px';
   }
-  if (el) mediaViewer.appendChild(el);
-
-  mediaViewer.classList.add('show');
-  currentViewerMedia = item;
 }
 
-function closeMediaViewer() {
-  mediaViewer.classList.remove('show');
-  const v = mediaViewer.querySelector('video');
-  if (v) { try { v.pause(); } catch(e){} }
-  Array.from(mediaViewer.children).forEach(ch => {
-    if (ch !== viewerClose) mediaViewer.removeChild(ch);
-  });
-  currentViewerMedia = null;
+function wrapLine(){
+  let breakIdx = -1;
+  for (let i = currentLine.length - 1; i >= 0; i--){
+    if (currentLine[i].ch === ' '){ breakIdx = i; break; }
+  }
+  let carry;
+  if (breakIdx >= 0){
+    carry = currentLine.splice(breakIdx + 1);
+    currentLine.splice(breakIdx, 1);
+  } else {
+    carry = currentLine.splice(currentLine.length - 1);
+  }
+  layoutCurrentLine();
+  currentLine = [];
+  currentLineWidth = 0;
+  cursorY += lineH;
+
+  for (const item of carry){
+    if (item.el){
+      item.el.style.top = cursorY + 'px';
+      item.el.style.left = (marginX + currentLine.length * charW) + 'px';
+    }
+    currentLine.push(item);
+    currentLineWidth += charW;
+  }
+  layoutCurrentLine();
+  lastX = null; lastY = null;
 }
 
-mediaViewer.addEventListener('click', (e) => {
-  e.stopPropagation();
-  closeMediaViewer();
-});
-viewerClose.addEventListener('click', (e) => {
-  e.stopPropagation();
-  closeMediaViewer();
-});
+function forceNewline(){
+  layoutCurrentLine();
+  currentLine = [];
+  currentLineWidth = 0;
+  cursorY += lineH;
+  lastX = null; lastY = null;
+  updateStageHeight();
+}
+
+function updateStageHeight(){
+  const needed = cursorY + lineH + 80;
+  stage.style.height = Math.max(window.innerHeight - 120, needed) + 'px';
+}
 
 /* =========================================================
-   HELP NOTE (full screen) + caret «?» / прицел
+   7. Оборот буквы
    ========================================================= */
-function setCaretQuestionMode(){
-  // «?» — всегда до закрытия help
-  caret.classList.remove('show-caret');
-}
-function setCaretCrosshairMode(){
-  // прицел — только после закрытия help
-  caret.classList.add('show-caret');
-}
-
-function openHelpNote(){
-  if (!note) return;
-  setCaretQuestionMode();
-  note.classList.add('open');
-  helpCloseCircle.classList.add('show');
-  requestAnimationFrame(() => renderWords());
+function spin(el){
+  const DUR = 600;
+  const start = performance.now();
+  function frame(now){
+    const t = Math.min(1, (now - start) / DUR);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.style.transform = `rotate(${eased * Math.PI * 2}rad)`;
+    if (t < 1) requestAnimationFrame(frame);
+    else el.style.transform = 'rotate(0rad)';
+  }
+  requestAnimationFrame(frame);
 }
 
-function closeHelpNote(){
-  if (!note) return;
-  note.classList.remove('open');
-  helpCloseCircle.classList.remove('show');
-  setCaretCrosshairMode();
-  requestAnimationFrame(() => renderWords());
+/* =========================================================
+   8. Добавление символа (с поддержкой ссылок)
+   ========================================================= */
+function addChar(ch, kind, author, animateSpin, href){
+  if (author && currentLine.length === 0 && ch !== '\n' && ch !== ' '){
+    cursorY += lineH * 0.5;
+
+    const tag = document.createElement('span');
+    tag.className = 'author-tag';
+    tag.textContent = author;
+    tag.style.left = (window.innerWidth / 2) + 'px';
+    tag.style.top  = cursorY + 'px';
+    stage.appendChild(tag);
+
+    cursorY += lineH;
+    updateStageHeight();
+  }
+
+  if (ch === '\n'){
+    forceNewline();
+    autoScroll();
+    return;
+  }
+
+  if (currentLineWidth + charW > maxLineWidth() && currentLine.length > 0){
+    wrapLine();
+  }
+  if (ch === ' '){
+    currentLine.push({el:null, ch:' ', kind, author, href:null});
+    currentLineWidth += charW;
+    layoutCurrentLine();
+    updateStageHeight();
+    autoScroll();
+    return;
+  }
+  const el = document.createElement('span');
+  el.className = 'ch ' + kind;
+  if (href){
+    el.classList.add('link');
+    el.dataset.href = href;
+    el.setAttribute('role', 'link');
+    el.setAttribute('tabindex', '0');
+  }
+  el.textContent = ch;
+  el.style.top = cursorY + 'px';
+  stage.appendChild(el);
+  const entry = {el, ch, kind, author, href: href || null};
+  currentLine.push(entry);
+  layoutCurrentLine();
+  if (animateSpin) spin(el);
+  else el.style.transform = 'rotate(0rad)';
+  currentLineWidth += charW;
+  updateStageHeight();
+  autoScroll();
 }
 
-// Верхняя кнопка внутри help больше не нужна, но оставим обработчик,
-// если кто-то её вернёт:
-const oldHelpCloseBtn = document.getElementById('help-close-btn');
-if (oldHelpCloseBtn) {
-  oldHelpCloseBtn.addEventListener('click', (e)=>{
-    e.stopPropagation();
-    closeHelpNote();
-  });
+/* =========================================================
+   9. Печать
+   ========================================================= */
+function typeMyChar(){
+  if (myCursor >= myText.length) return false;
+  const ch = myText[myCursor++];
+  saveMyCursor();
+  addChar(ch, 'mine', null, true, null);
+  return true;
 }
 
-// Новая кнопка-кружок «×» внизу перед футером
-helpCloseCircle.addEventListener('click', (e)=>{
-  e.stopPropagation();
+function printOne(){
+  if (myCursor < myText.length && myText[myCursor] === '\n'){
+    return false;
+  }
+  if (typeMyChar()) return true;
+
+  for (const u of userChars){
+    if (!u.printed){
+      if (u.ch === '\n') return false;
+      u.printed = true;
+      addChar(u.ch, 'user', u.author, true, u.link || null);
+      saveUserChars();
+      return true;
+    }
+  }
+  return false;
+}
+
+function appendUserText(text, author, autoPrint){
+  const flat = flattenWithLinks(text);
+  const startIdx = userChars.length;
+  for (const c of flat){
+    userChars.push({ch: c.ch, author: author || 'You', printed: false, link: c.link});
+  }
+  saveUserChars();
+  if (autoPrint){
+    for (let i = startIdx; i < userChars.length; i++){
+      const u = userChars[i];
+      if (!u.printed){
+        u.printed = true;
+        addChar(u.ch, 'user', u.author, true, u.link || null);
+      }
+    }
+    saveUserChars();
+  }
+}
+
+/* =========================================================
+   10. Палец → печать
+   ========================================================= */
+const STEP_PX = 18;
+let lastX = null, lastY = null;
+let gestureMode = null;
+let startClientX = 0, startClientY = 0;
+
+function stagePoint(e){
+  const t = e.touches ? e.touches[0] : e;
+  const r = stage.getBoundingClientRect();
+  return { x: t.clientX - r.left, y: t.clientY - r.top, cx: t.clientX, cy: t.clientY };
+}
+
+function moveTo(x, y){
+  document.getElementById('hint').classList.add('hidden');
+
+  if (lastX === null){
+    lastX = x; lastY = y;
+
+    if (myCursor < myText.length && myText[myCursor] === '\n'){
+      myCursor++;
+      saveMyCursor();
+      addChar('\n', 'mine', null, false, null);
+    } else {
+      for (const u of userChars){
+        if (!u.printed && u.ch === '\n'){
+          u.printed = true;
+          saveUserChars();
+          addChar('\n', 'user', u.author, false, null);
+          break;
+        }
+      }
+    }
+
+    printOne();
+    return;
+  }
+
+  let dx = x - lastX, dy = y - lastY, d = Math.hypot(dx, dy);
+  while (d >= STEP_PX){
+    const t = STEP_PX / d;
+    lastX += dx * t; lastY += dy * t;
+    dx = x - lastX; dy = y - lastY; d = Math.hypot(dx, dy);
+    if (!printOne()) break;
+  }
+}
+
+stage.addEventListener('touchstart', (e) => {
+  if (e.touches.length !== 1) return;
+  const p = stagePoint(e);
+  gestureMode = null;
+  startClientX = p.cx; startClientY = p.cy;
+  lastX = null; lastY = null;
+}, { passive: true });
+
+stage.addEventListener('touchmove', (e) => {
+  if (e.touches.length !== 1) return;
+  if (gestureMode === null){
+    const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+    if (el && el.closest('.ch.link')) return;
+  }
+  const p = stagePoint(e);
+  const dx = p.cx - startClientX;
+  const dy = p.cy - startClientY;
+
+  if (gestureMode === null){
+    if (Math.hypot(dx, dy) < 8) return;
+    gestureMode = Math.abs(dy) > Math.abs(dx) * 1.4 ? 'scroll' : 'draw';
+  }
+  if (gestureMode === 'scroll'){
+    lastX = null; lastY = null;
+    return;
+  }
   e.preventDefault();
-  closeHelpNote();
+  moveTo(p.x, p.y);
+}, { passive: false });
+
+stage.addEventListener('touchend', () => {
+  gestureMode = null; lastX = null; lastY = null;
+}, { passive: true });
+stage.addEventListener('touchcancel', () => {
+  gestureMode = null; lastX = null; lastY = null;
+}, { passive: true });
+
+stage.addEventListener('mousedown', (e) => {
+  if (e.target.closest && e.target.closest('.ch.link')) return;
+  const p = stagePoint(e);
+  lastX = p.x; lastY = p.y;
+  printOne();
 });
-helpCloseCircle.addEventListener('pointerdown', (e)=>{
-  // чтобы клик не уходил в document и не закрывал что-то ещё
+stage.addEventListener('mousemove', (e) => {
+  if (!e.buttons) return;
+  if (e.target.closest && e.target.closest('.ch.link')) return;
+  const p = stagePoint(e);
+  moveTo(p.x, p.y);
+});
+window.addEventListener('mouseup', () => { lastX = null; lastY = null; });
+
+/* =========================================================
+   11. Клик по ссылке
+   ========================================================= */
+function openHref(href){
+  if (!href) return;
+  try{ window.open(href, '_blank', 'noopener'); }catch(e){}
+}
+
+stage.addEventListener('click', (e) => {
+  const el = e.target.closest && e.target.closest('.ch.link');
+  if (!el) return;
+  e.preventDefault();
   e.stopPropagation();
+  openHref(el.dataset.href);
+});
+
+stage.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const el = e.target.closest && e.target.closest('.ch.link');
+  if (!el) return;
+  e.preventDefault();
+  openHref(el.dataset.href);
 });
 
 /* =========================================================
-   FONT SCALE
+   12. Поле ввода
    ========================================================= */
-function recalcFontScale(){
-  wrapper.style.fontSize = '';
+const wordInput = document.getElementById('word-input');
+wordInput.placeholder = PLACEHOLDER;
+document.getElementById('hint').textContent = HINT_TEXT;
+document.getElementById('btnClear').title = LANG === 'ru' ? 'Очистить экран' : 'Clear screen';
 
-  const tempCells = Array.from(wrapper.querySelectorAll('.word-cell, .word-block'));
-  if (tempCells.length === 0){ lastFontSize = null; return; }
-
-  const maxSize = 40;
-  const minSize = 14;
-
-  function applySize(value){
-    wrapper.style.fontSize = `${value}px`;
-  }
-
-  if (note && note.classList.contains('open') && lastFontSize){
-    applySize(lastFontSize);
-    return;
-  }
-
-  let lo = minSize, hi = maxSize, best = minSize;
-  applySize(maxSize);
-  if (wrapper.scrollHeight <= wrapper.clientHeight){
-    best = maxSize;
-  } else {
-    while (lo <= hi){
-      const mid = (lo + hi) >> 1;
-      applySize(mid);
-      if (wrapper.scrollHeight <= wrapper.clientHeight){
-        best = mid; lo = mid + 1;
-      } else {
-        hi = mid - 1;
-      }
-    }
-  }
-  applySize(best);
-  lastFontSize = best;
-}
-
-/* =========================================================
-   resolveInsertAt
-   ========================================================= */
-function resolveInsertAt(anchorId, side, fallbackIndex){
-  if (anchorId){
-    const realIdx = itemsList.findIndex(it => it.id === anchorId);
-    if (realIdx !== -1){
-      return side === 'after' ? realIdx + 1 : realIdx;
-    }
-  }
-  if (typeof fallbackIndex === 'number'){
-    if (fallbackIndex < 0) return 0;
-    return Math.max(0, Math.min(itemsList.length, fallbackIndex));
-  }
-  return itemsList.length;
-}
-
-/* =========================================================
-   Render — слова + медиа + автомасштаб
-   ========================================================= */
-function renderWords(){
-  wrapper.innerHTML = '';
-  if (itemsList.length === 0){
-    wrapper.innerHTML = '<div style="color:#666;font-family:monospace;padding:20px"></div>';
-    return;
-  }
-
-  itemsList.forEach((item, idx) => {
-    if (item.type === 'media') {
-      const cell = document.createElement('div');
-      cell.className = 'media-cell';
-      cell.dataset.idx = idx;
-      cell.dataset.itemId = item.id;
-
-      const author = document.createElement('div');
-      author.className = 'media-author';
-      author.textContent = item.author || myId;
-      cell.appendChild(author);
-
-      if (item.mediaType === 'image') {
-        const img = document.createElement('img');
-        img.src = item.data;
-        img.alt = '';
-        img.loading = 'lazy';
-        cell.appendChild(img);
-      } else if (item.mediaType === 'video') {
-        const video = document.createElement('video');
-        video.src = item.data;
-        video.preload = 'metadata';
-        video.playsInline = true;
-        video.muted = true;
-        cell.appendChild(video);
-      }
-
-      let mediaPressTimer = null;
-      let mediaPressStart = 0;
-      let mediaLongFired = false;
-
-      cell.addEventListener('pointerdown', (e) => {
-        e.stopPropagation();
-        mediaLongFired = false;
-        mediaPressStart = Date.now();
-
-        clearTimeout(mediaPressTimer);
-        mediaPressTimer = setTimeout(() => {
-          mediaLongFired = true;
-          const itemId = cell.dataset.itemId;
-          const realIdx = itemsList.findIndex(it => it.id === itemId);
-          if (realIdx === -1) return;
-
-          if (currentViewerMedia && currentViewerMedia.id === itemId) {
-            closeMediaViewer();
-          }
-          itemsList.splice(realIdx, 1);
-          saveItems();
-          renderWords();
-          log('Media deleted by long tap: ' + itemId);
-        }, 600);
-      });
-
-      cell.addEventListener('pointerup', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        clearTimeout(mediaPressTimer);
-        if (mediaLongFired) return;
-        if (Date.now() - mediaPressStart < 600) {
-          if (currentViewerMedia && currentViewerMedia.id === item.id) {
-            closeMediaViewer();
-          } else {
-            openMediaViewer(item);
-          }
-        }
-      });
-
-      cell.addEventListener('pointercancel', () => clearTimeout(mediaPressTimer));
-      cell.addEventListener('pointerleave', () => clearTimeout(mediaPressTimer));
-
-      wrapper.appendChild(cell);
-      return;
-    }
-
-    // ТЕКСТ
-    const block = document.createElement('div');
-    block.className = 'word-block';
-    block.dataset.itemId = item.id;
-    block.style.cssText = 'display:inline-block; vertical-align:top; max-width:100%; margin:0 0.4em 0 0; word-break:normal; overflow-wrap:break-word; line-height:1.5;';
-
-    if (!item.wordsData && item.word) {
-      const rawWords = item.word.split(/(\s+)/);
-      item.wordsData = rawWords.map(w => ({
-        text: w,
-        highlight: 0, 
-        fresh: !!item.fresh 
-      }));
-      item.fresh = false;
-      saveItems();
-    }
-
-    if (item.author) {
-      const authorDiv = document.createElement('div');
-      authorDiv.textContent = item.author;
-      authorDiv.style.cssText = 'display:block; font-size:1em; color:#0097ff; font-family:inherit; line-height:1.1; margin-bottom:0.2em; text-align:left; user-select:none;';
-      block.appendChild(authorDiv);
-    }
-
-    if (item.wordsData) {
-      item.wordsData.forEach((wObj, wIdx) => {
-        if (!wObj.text.trim()) {
-          block.appendChild(document.createTextNode(wObj.text));
-        } else {
-          const span = document.createElement('span');
-          span.textContent = wObj.text;
-          span.style.cssText = 'display:inline; cursor:pointer; transition:color 0.3s;';
-          
-          if (wObj.fresh) span.style.color = '#ff2440';
-          else if (wObj.highlight === 1) span.style.color = '#afff00';
-          else if (wObj.highlight === 2) span.style.color = '#FFB300';
-          else span.style.color = '#fff';
-
-          let pressTimer, pressStart, longPress = false;
-          
-          span.addEventListener('pointerdown', (e)=>{
-            e.stopPropagation();
-            pressStart = Date.now();
-            longPress = false;
-            pressTimer = setTimeout(()=>{
-              longPress = true;
-              const realIdx = itemsList.findIndex(it => it.id === item.id);
-              if (realIdx !== -1) {
-                itemsList.splice(realIdx, 1);
-                saveItems(); renderWords();
-              }
-            }, 600);
-          });
-
-          span.addEventListener('pointerup', (e)=>{
-            e.stopPropagation();
-            clearTimeout(pressTimer);
-            if (longPress) return;
-            if (Date.now() - pressStart < 600){
-              const realIdx = itemsList.findIndex(it => it.id === item.id);
-              if (realIdx === -1) return;
-              const curItem = itemsList[realIdx];
-              const curWord = curItem.wordsData[wIdx];
-              
-              if (curWord.fresh){
-                curWord.fresh = false;
-                curWord.highlight = 0;
-              } else if ((curWord.highlight|0) === 0){
-                curWord.highlight = 1;
-              } else if (curWord.highlight === 1){
-                curWord.highlight = 2;
-              } else {
-                navigator.clipboard.writeText(curWord.text).catch(()=>{});
-                window.open(`https://chatgpt.com/?q=${encodeURIComponent('What is the definition of the word "'+curWord.text+'" in the interface language?')}`,'_blank');
-              }
-              
-              saveItems();
-              if (curWord.fresh) span.style.color = '#ff2440';
-              else if (curWord.highlight === 1) span.style.color = '#afff00';
-              else if (curWord.highlight === 2) span.style.color = '#FFB300';
-              else span.style.color = '#fff';
-            }
-          });
-          span.addEventListener('pointercancel', ()=> clearTimeout(pressTimer));
-          
-          block.appendChild(span);
-        }
-      });
-    }
-
-    wrapper.appendChild(block);
-    wrapper.appendChild(document.createTextNode(' '));
-  });
-
-  requestAnimationFrame(() => {
-    recalcFontScale();
-  });
-}
-
-/* =========================================================
-   Caret circle — восстановление позиции + защита от футера
-   ========================================================= */
-function getFooterTop(){
-  const footer = document.querySelector('.footer-panel');
-  if (!footer) return window.innerHeight;
-  return footer.getBoundingClientRect().top;
-}
-
-(function restoreCaretPos(){
-  const saved = DataManager.get('caret_pos');
-  const size = caret.offsetWidth || 56;
-  const maxTop = Math.max(0, getFooterTop() - size - 4);
-
-  if (saved && typeof saved.left === 'number'){
-    caret.style.left = saved.left + 'px';
-    caret.style.top  = Math.min(saved.top, maxTop) + 'px';
-  } else {
-    caret.style.left = '12px';
-    caret.style.top  = Math.max(0, maxTop - 200) + 'px';
-  }
-})();
-
-function updateCaretHint(){
-  const wr = wrapper.getBoundingClientRect();
-  const cr = caret.getBoundingClientRect();
-  const cx = cr.left + cr.width/2;
-  const cy = cr.top  + cr.height/2;
-  const inZone = cx >= wr.left && cx <= wr.right &&
-                 cy >= wr.top  && cy <= wr.bottom;
-  caret.classList.toggle('hint', inZone);
-}
-requestAnimationFrame(updateCaretHint);
-
-let isDragging = false, hasMoved = false;
-let dragOffX = 0, dragOffY = 0, startX = 0, startY = 0;
-let caretPressTimer = null;
-let caretLongFired = false;
-const MOVE_THRESHOLD = 8;
-const LONG_PRESS_MS = 600;
-
-caret.addEventListener('pointerdown', (e)=>{
-  e.preventDefault(); e.stopPropagation();
-  isDragging = true; hasMoved = false;
-  caretLongFired = false;
-  const r = caret.getBoundingClientRect();
-  dragOffX = e.clientX - r.left;
-  dragOffY = e.clientY - r.top;
-  startX = e.clientX; startY = e.clientY;
-  caret.classList.add('dragging');
-  caret.setPointerCapture(e.pointerId);
-
-  clearTimeout(caretPressTimer);
-  caretPressTimer = setTimeout(()=>{
-    if (!hasMoved){
-      caretLongFired = true;
-      openCaret();
-    }
-  }, LONG_PRESS_MS);
-});
-
-caret.addEventListener('pointermove', (e)=>{
-  if (!isDragging) return;
-  e.preventDefault(); e.stopPropagation();
-  const dx = e.clientX - startX, dy = e.clientY - startY;
-  if (!hasMoved && Math.hypot(dx,dy) > MOVE_THRESHOLD){
-    hasMoved = true;
-    clearTimeout(caretPressTimer);
-  }
-  let nl = e.clientX - dragOffX;
-  let nt = e.clientY - dragOffY;
-  const s = caret.offsetWidth;
-  const maxTop = Math.max(0, getFooterTop() - s - 4);
-  nl = Math.max(0, Math.min(window.innerWidth  - s, nl));
-  nt = Math.max(0, Math.min(maxTop, nt));
-  caret.style.left = nl + 'px';
-  caret.style.top  = nt + 'px';
-  updateCaretHint();
-});
-
-function endCaretDrag(){
-  if (!isDragging) return;
-  isDragging = false;
-  caret.classList.remove('dragging');
-  clearTimeout(caretPressTimer);
-
-  if (hasMoved){
-    const r = caret.getBoundingClientRect();
-    DataManager.set('caret_pos', {left:r.left, top:r.top});
-    return;
-  }
-  if (caretLongFired) return;
-
-  openHelpNote();
-}
-caret.addEventListener('pointerup', endCaretDrag);
-caret.addEventListener('pointercancel', ()=>{
-  isDragging=false;
-  caret.classList.remove('dragging');
-  clearTimeout(caretPressTimer);
-});
-
-/* =========================================================
-   Open caret / popover
-   ========================================================= */
-function openCaret(){
-  caret.classList.add('active');
-  caretOpen = true;
-  const cr = caret.getBoundingClientRect();
-  const cx = cr.left + cr.width/2;
-  const cy = cr.top  + cr.height/2;
-
-  const cells = Array.from(wrapper.querySelectorAll('.word-block, .word-cell, .media-cell'));
-
-  if (cells.length === 0){
-    caretContext = { anchorId: null, side: 'after', index: -1 };
-    openPopover(caretContext);
-    return;
-  }
-
-  const realIndices = cells.map(cell => {
-    const id = cell.dataset.itemId;
-    return itemsList.findIndex(it => it.id === id);
-  });
-
-  let best = null;
-  cells.forEach((cell, i)=>{
-    const r = cell.getBoundingClientRect();
-    const afterX  = r.right + 4;
-    const beforeX = r.left  - 4;
-    const midY    = r.top + r.height/2;
-    const dA = Math.hypot(cx-afterX,  cy-midY);
-    const dB = Math.hypot(cx-beforeX, cy-midY);
-    const realIdx = realIndices[i];
-    if (realIdx === -1) return;
-    if (!best || dA < best.d) best = { index: realIdx, side:'after',  d:dA, cellIdx:i };
-    if (!best || dB < best.d) best = { index: realIdx, side:'before', d:dB, cellIdx:i };
-  });
-
-  cells.forEach(c => c.style.outline='');
-  if (best && cells[best.cellIdx]){
-    cells[best.cellIdx].style.outline = '2px dashed #7b4dff';
-    setTimeout(()=>{ if (cells[best.cellIdx]) cells[best.cellIdx].style.outline=''; }, 1200);
-  }
-
-  caretContext = {
-    anchorId: best ? itemsList[best.index].id : null,
-    side:     best ? best.side : 'after',
-    index:    best ? best.index : -1
-  };
-  openPopover(caretContext);
-}
-
-function openPopover(ctx){
-  const rect = caret.getBoundingClientRect();
-  popover.style.left = Math.min(window.innerWidth - 240, rect.left) + 'px';
-  popover.style.top  = Math.min(window.innerHeight - 220, rect.bottom + 8) + 'px';
-
-  popoverInput.value = '';
-  popoverRecipients.value = '';
-  popoverInput.disabled = false;
-  popover.classList.add('show');
-  updatePopoverState();
-}
-
-function hidePopover(){
-  popover.classList.remove('show');
-  caret.classList.remove('active');
-  caretContext = null;
-  caretOpen = false;
-  popoverInput.disabled = false;
-  popoverInput.value = '';
-  popoverRecipients.value = '';
-  document.getElementById('btnMedia').classList.remove('disabled');
-  document.getElementById('btnAdd').classList.remove('disabled');
-}
-
-document.addEventListener('pointerdown', (e) => {
-  if (!popover.classList.contains('show')) return;
-  if (popover.contains(e.target) || caret.contains(e.target)) return;
-  hidePopover();
-});
-
-/* =========================================================
-   POPOVER
-   ========================================================= */
-function updatePopoverState(){
-  const hasText = popoverInput.value.trim().length > 0;
-  const mediaBtn = document.getElementById('btnMedia');
-  mediaBtn.classList.toggle('disabled', hasText);
-}
-
-function getPopoverRecipients(){
-  const raw = (popoverRecipients.value || '').trim();
-  return raw
-    ? raw.split(',').map(s => s.trim()).filter(Boolean)
-    : [];
-}
-
-popoverInput.addEventListener('input', updatePopoverState);
-
-document.getElementById('btnCancel').addEventListener('click', hidePopover);
-
-document.getElementById('btnAdd').addEventListener('click', ()=>{
-  const text = popoverInput.value.trim();
-  if (!text || !caretContext) return;
-  const edit = buildAddEdit(caretContext, text);
-  submitEdit(edit, true);
-  hidePopover();
-});
-
-popoverInput.addEventListener('keyup', (e)=>{
-  if (e.key === 'Enter' || e.keyCode === 13){ 
-    e.preventDefault(); 
-    document.getElementById('btnAdd').click(); 
-  }
-  if (e.key === 'Escape' || e.keyCode === 27) hidePopover();
-});
-
-/* =========================================================
-   MEDIA INSERT (popover → сжатие + публикация)
-   ========================================================= */
-document.getElementById('btnMedia').addEventListener('click', () => {
-  const frozenCtx = caretContext ? {
-    anchorId: caretContext.anchorId || null,
-    side:     caretContext.side || 'after',
-    index:    typeof caretContext.index === 'number' ? caretContext.index : -1
-  } : { anchorId: null, side: 'after', index: -1 };
-
-  popoverInput.disabled = true;
-  document.getElementById('btnAdd').classList.add('disabled');
-
-  const picker = document.createElement('input');
-  picker.type = 'file';
-  picker.accept = 'image/*,video/*';
-  picker.style.display = 'none';
-
-  const cleanup = () => {
-    if (picker.parentNode) picker.parentNode.removeChild(picker);
-    popoverInput.disabled = false;
-    document.getElementById('btnAdd').classList.remove('disabled');
-    updatePopoverState();
-  };
-
-  picker.addEventListener('change', () => {
-    const file = picker.files && picker.files[0];
-    if (file) {
-      handleMediaFile(file, frozenCtx);
-    } else {
-      cleanup();
-    }
-  });
-
-  window.addEventListener('focus', function onFocus(){
-    setTimeout(() => {
-      if (picker.parentNode && (!picker.files || picker.files.length === 0)) {
-        cleanup();
-      }
-      window.removeEventListener('focus', onFocus);
-    }, 400);
-  }, { once: true });
-
-  document.body.appendChild(picker);
-  picker.click();
-});
-
-async function compressImage(file){
-  return new Promise((resolve)=>{
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (e)=>{
-      const img = new Image();
-      img.src = e.target.result;
-      img.onload = ()=>{
-        const canvas = document.createElement('canvas');
-        const maxWidth = 400;
-        let width = img.width, height = img.height;
-        if (width > maxWidth){
-          height = (maxWidth / width) * height;
-          width = maxWidth;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
-      };
-      img.onerror = ()=> resolve(e.target.result);
-    };
-    reader.onerror = ()=> resolve(null);
-  });
-}
-
-function readFileAsDataURL(file){
-  return new Promise((resolve, reject)=>{
-    const r = new FileReader();
-    r.onload = ()=> resolve(r.result);
-    r.onerror = ()=> reject(r.error);
-    r.readAsDataURL(file);
-  });
-}
-
-async function handleMediaFile(file, ctx){
-  const isImage = file.type.startsWith('image/');
-  const isVideo = file.type.startsWith('video/');
-  if (!isImage && !isVideo){
-    log('Unsupported file type: ' + file.type);
-    return;
-  }
-
-  let dataUrl;
-  try {
-    if (isImage){
-      dataUrl = await compressImage(file);
-    } else {
-      dataUrl = await readFileAsDataURL(file);
-      if (dataUrl.length > 5 * 1024 * 1024){
-        alert('Video too large (max 5 MB).');
-        hidePopover();
-        return;
-      }
-    }
-  } catch(e){
-    log('File read error: ' + e.message);
-    alert('Failed to read file.');
-    hidePopover();
-    return;
-  }
-
-  if (!dataUrl){
-    alert('Failed to process file.');
-    hidePopover();
-    return;
-  }
-
-  const recipients = getPopoverRecipients();
-
-  const item = {
-    id: 'm-' + Date.now() + '-' + Math.floor(Math.random()*1000),
-    type: 'media',
-    mediaType: isImage ? 'image' : 'video',
-    data: dataUrl,
-    label: '',
-    highlight: 0,
-    fresh: true,
-    originEditId: null,
-    author: myId,
-    recipients: recipients.slice()
-  };
-
-  const insertAt = resolveInsertAt(
-    ctx ? ctx.anchorId : null,
-    ctx ? ctx.side : 'after',
-    ctx ? ctx.index : -1
-  );
-
-  itemsList.splice(insertAt, 0, item);
-  saveItems();
-
-  const editId = newEditId();
-  item.originEditId = editId;
-  saveItems();
-
-  const editPayload = {
-    editId: editId,
-    kind: 'add_media',
-    insertAt: insertAt,
-    anchorId: ctx ? (ctx.anchorId || null) : null,
-    anchorSide: ctx ? (ctx.side || 'after') : 'after',
-    author: myId,
-    ts: Date.now(),
-    recipients: recipients.slice(),
-    mediaType: item.mediaType,
-    data: dataUrl
-  };
-
-  const canSend = isLive && client && client.connected;
-  if (canSend){
-    client.publish(TOPIC, JSON.stringify({
-      ...editPayload,
-      type: 'WORD_EDIT',
-      sender: myId,
-      sid: clientId
-    }), {qos:1});
-    log('Media published → network');
-  } else {
-    pendingEdits.push(editPayload);
-    savePending();
-    log('Media saved to tape');
-  }
-
-  refreshChrome();
-  hidePopover();
-  renderWords();
-}
-
-/* =========================================================
-   Local media (footer button)
-   ========================================================= */
-document.getElementById('local-media-btn').addEventListener('click', ()=>{
-  const picker = document.createElement('input');
-  picker.type = 'file';
-  picker.accept = 'image/*,video/*';
-  picker.style.display = 'none';
-
-  picker.addEventListener('change', ()=>{
-    const file = picker.files && picker.files[0];
-    if (file) handleLocalMediaFile(file);
-    if (picker.parentNode) picker.parentNode.removeChild(picker);
-  });
-
-  document.body.appendChild(picker);
-  picker.click();
-});
-
-async function handleLocalMediaFile(file){
-  const isImage = file.type.startsWith('image/');
-  const isVideo = file.type.startsWith('video/');
-  if (!isImage && !isVideo){
-    log('Unsupported file type: ' + file.type);
-    return;
-  }
-
-  let dataUrl;
-  try {
-    if (isImage){
-      dataUrl = await compressImage(file);
-    } else {
-      dataUrl = await readFileAsDataURL(file);
-      if (dataUrl.length > 5 * 1024 * 1024){
-        alert('Video too large for local storage (max 5 MB).');
-        return;
-      }
-    }
-  } catch(e){
-    log('Local media read error: ' + e.message);
-    return;
-  }
-
-  if (!dataUrl) return;
-
-  const item = {
-    id: 'm-' + Date.now() + '-' + Math.floor(Math.random()*1000),
-    type: 'media',
-    mediaType: isImage ? 'image' : 'video',
-    data: dataUrl,
-    label: '',
-    highlight: 0,
-    fresh: false,
-    originEditId: null,
-    author: myId,
-    recipients: []
-  };
-
-  itemsList.push(item);
-  saveItems();
-  renderWords();
-  log('Local media added (device only)');
-}
-
-/* =========================================================
-   Edit builder / submit
-   ========================================================= */
 function newEditId(){
-  if (crypto && crypto.randomUUID) return 'we-' + crypto.randomUUID();
-  return 'we-' + Date.now() + '-' + Math.random().toString(16).slice(2,10);
+  if (crypto && crypto.randomUUID) return 'se-' + crypto.randomUUID();
+  return 'se-' + Date.now() + '-' + Math.random().toString(16).slice(2,10);
 }
 
-function buildAddEdit(ctx, text){
-  return {
+function submitInput(){
+  const text = wordInput.value.trim();
+  if (!text) return;
+  wordInput.value = '';
+
+  const edit = {
     editId: newEditId(),
     kind: 'add',
-    insertAt: typeof ctx.index === 'number' && ctx.index >= 0 ? ctx.index : 0,
-    word: text,
-    anchorId: ctx.anchorId || null,
-    anchorSide: ctx.side || 'after',
+    text,
     author: myId,
-    ts: Date.now(),
-    recipients: getPopoverRecipients()
+    ts: Date.now()
   };
-}
 
-function submitEdit(edit, applyLocally){
-  if (applyLocally) applyEditLocally(edit, true);
+  appendUserText('\n' + text + '\n', myId, true);
 
   const canSend = isLive && client && client.connected;
-  log(`submitEdit: isLive=${isLive}, connected=${client && client.connected}, canSend=${canSend}`);
-
   if (canSend){
     client.publish(TOPIC, JSON.stringify({
       ...edit,
@@ -1567,86 +865,32 @@ function submitEdit(edit, applyLocally){
       sender: myId,
       sid: clientId
     }), {qos:1});
-    log('Sent edit → network');
   } else {
     pendingEdits.push(edit);
     savePending();
-    log('Edit saved to tape (offline)');
   }
   refreshChrome();
-  renderWords();
 }
+
+wordInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.keyCode === 13){
+    e.preventDefault();
+    submitInput();
+  }
+});
 
 /* =========================================================
-   Apply edit — с фильтром по recipients
+   13. Приём WORD_EDIT + ACK
    ========================================================= */
-function applyEditLocally(edit, asFresh){
-  const rec = edit.recipients || [];
-  const isPublic = rec.length === 0;
-  const isForMe = rec.includes(myId);
-  if (!isPublic && !isForMe && edit.author !== myId) {
-    log('Edit skipped: not addressed to this peer');
-    return;
-  }
-
-  if (edit.editId && itemsList.some(w => w.originEditId === edit.editId)) return;
-
-  if (edit.kind === 'add'){
-    const newItem = {
-      id: 'w-' + Date.now() + '-' + Math.floor(Math.random()*1000),
-      type: 'word',
-      word: edit.word,
-      highlight: 0,
-      fresh: !!asFresh,
-      originEditId: edit.editId || null,
-      author: edit.author || null,
-      recipients: rec.slice()
-    };
-    const insertAt = resolveInsertAt(
-      edit.anchorId || null,
-      edit.anchorSide || 'after',
-      typeof edit.insertAt === 'number' ? edit.insertAt : undefined
-    );
-    itemsList.splice(insertAt, 0, newItem);
-    saveItems();
-    return;
-  }
-
-  if (edit.kind === 'add_media'){
-    const newItem = {
-      id: 'm-' + Date.now() + '-' + Math.floor(Math.random()*1000),
-      type: 'media',
-      mediaType: edit.mediaType,
-      data: edit.data,
-      label: '',
-      highlight: 0,
-      fresh: !!asFresh,
-      originEditId: edit.editId || null,
-      author: edit.author || null,
-      recipients: rec.slice()
-    };
-    const insertAt = resolveInsertAt(
-      edit.anchorId || null,
-      edit.anchorSide || 'after',
-      typeof edit.insertAt === 'number' ? edit.insertAt : undefined
-    );
-    itemsList.splice(insertAt, 0, newItem);
-    saveItems();
-    return;
-  }
-}
-
 function applyRemoteEdit(p){
   if (p.editId && appliedEditIds.has(p.editId)) return;
   if (p.editId){ appliedEditIds.add(p.editId); saveApplied(); }
 
-  applyEditLocally({...p, sender:p.sender}, true);
-  renderWords();
-  log('Remote edit applied from ' + p.sender);
+  appendUserText('\n' + p.text, p.author, true);
 
   if (client && client.connected){
     client.publish(TOPIC, JSON.stringify({
-      type:'WORD_EDIT_ACK',
+      type: 'WORD_EDIT_ACK',
       editId: p.editId,
       sender: myId,
       sid: clientId
@@ -1655,80 +899,57 @@ function applyRemoteEdit(p){
 }
 
 /* =========================================================
-   Manual input (локально, только слова)
+   14. Clear
    ========================================================= */
-document.getElementById('word-input').addEventListener('keyup', (e)=>{
-  if (e.key === 'Enter' || e.keyCode === 13){
-    e.preventDefault();
-    const text = e.target.value.trim();
-    if (!text) return;
-    const newWords = text.split(/\s+/).filter(Boolean);
-    newWords.forEach(w=>{
-      itemsList.push({
-        id:'w-'+Date.now()+'-'+Math.floor(Math.random()*1000),
-        type: 'word',
-        word:w,
-        highlight:0,
-        fresh: false,
-        originEditId: null,
-        author: null,
-        recipients: []
-      });
-    });
-    saveItems();
-    e.target.value = '';
-    renderWords();
-    log('Added locally: ' + newWords.join(', '));
-  }
+document.getElementById('btnClear').addEventListener('click', () => {
+  if (!confirm(LANG === 'ru' ? 'Очистить экран и весь текст на этом устройстве?' : 'Clear screen and all text on this device?')) return;
+
+  myCursor = 0;
+  userChars = [];
+  pendingEdits = [];
+  appliedEditIds.clear();
+
+  store.del('my_cursor');
+  store.del('user_chars');
+  store.del('pending_edits');
+  store.del('applied_edits');
+
+  stage.innerHTML = '';
+  cursorY = marginY;
+  currentLine = [];
+  currentLineWidth = 0;
+  lastX = null; lastY = null;
+  updateStageHeight();
+  refreshChrome();
+
+  document.getElementById('hint').classList.remove('hidden');
 });
 
 /* =========================================================
-   Sync button
+   15. Rename
    ========================================================= */
-syncBtn.addEventListener('click', ()=>{
-  if (!isLive){ log('No peers online — still tape'); return; }
-  flushPendingEdits();
+let beforeId = myId;
+peerIdInput.addEventListener('focus', () => {
+  beforeId = myId;
+  requestAnimationFrame(() => peerIdInput.select());
 });
-
-/* =========================================================
-   Inline peer ID editing
-   ========================================================= */
-let _idBeforeEdit = myId;
-
-peerIdInput.addEventListener('focus', ()=>{
-  _idBeforeEdit = myId;
-  requestAnimationFrame(()=> peerIdInput.select());
+peerIdInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter'){ e.preventDefault(); commitId(); peerIdInput
+peerIdInput.blur(); }
+  if (e.key === 'Escape'){ peerIdInput.value = beforeId; peerIdInput.blur(); }
 });
-
-peerIdInput.addEventListener('keyup', (e)=>{
-  if (e.key === 'Enter' || e.keyCode === 13){
-    e.preventDefault();
-    commitPeerId();
-    peerIdInput.blur();
-  }
-  if (e.key === 'Escape' || e.keyCode === 27){
-    peerIdInput.value = _idBeforeEdit;
-    peerIdInput.blur();
-  }
+peerIdInput.addEventListener('blur', () => {
+  if (peerIdInput.value.trim() !== myId) peerIdInput.value = myId;
 });
-
-peerIdInput.addEventListener('blur', ()=>{
+function commitId(){
   const v = peerIdInput.value.trim();
-  if (v !== myId){ peerIdInput.value = myId; }
-});
-
-function commitPeerId(){
-  const v = peerIdInput.value.trim();
-  if (v === myId){ peerIdInput.value = myId; return; }
-
-  if (!/^[A-Za-z0-9_\-]{3,9}$/.test(v)){
+  if (v === myId) return;
+  if (!/^[A-Za-zА-Яа-я0-9_\- ]{2,9}$/.test(v)){
     peerIdInput.value = myId;
-    log('ID must be 3–9 chars: letters, digits, dash, underscore.');
     return;
   }
-
   myId = v;
-  DataManager.set('peer_id', myId);
+  store.set('peer_id', myId);
   peerIdInput.value = myId;
 
   pendingEdits = [];
@@ -1736,88 +957,55 @@ function commitPeerId(){
   refreshChrome();
 
   peerIdInput.classList.add('saved');
-  setTimeout(()=> peerIdInput.classList.remove('saved'), 800);
-  log('[ID] Renamed to ' + myId);
+  setTimeout(() => peerIdInput.classList.remove('saved'), 800);
 }
 
 /* =========================================================
-   Clear all
+   16. Автоскролл
    ========================================================= */
-document.getElementById('clearBtn').addEventListener('click', ()=>{
-  if (!confirm('Delete ALL words & media on this device?\n\nThis does NOT delete them on other peers.')) return;
+let userScrolling = false;
+let userScrollTimer = null;
+scroller.addEventListener('scroll', () => {
+  userScrolling = true;
+  clearTimeout(userScrollTimer);
+  userScrollTimer = setTimeout(() => { userScrolling = false; }, 500);
+}, { passive: true });
 
-  itemsList = [];
-  saveItems();
-
-  pendingEdits = [];
-  savePending();
-  appliedEditIds = new Set();
-  saveApplied();
-
-  closeMediaViewer();
-  renderWords();
-  refreshChrome();
-  log('Cleared all items (local only)');
-});
+function autoScroll(){
+  if (userScrolling) return;
+  const bottom = cursorY + lineH + 40;
+  const viewBottom = scroller.scrollTop + scroller.clientHeight;
+  if (bottom > viewBottom){
+    scroller.scrollTop = bottom - scroller.clientHeight + 40;
+  }
+}
 
 /* =========================================================
-   Service Worker + Update
+   17. Восстановление
    ========================================================= */
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js', { scope: './' });
-}
-
-async function checkForUpdate() {
-    try {
-        const r = await fetch('./sw.js', { cache: 'no-store' });
-        const text = await r.text();
-        const m = text.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
-        if (!m) return;
-        const serverVersion = m[1];
-
-        const stored = localStorage.getItem('wow_sw_version');
-        if (!stored) {
-            localStorage.setItem('wow_sw_version', serverVersion);
-            return;
-        }
-        if (stored !== serverVersion) {
-            document.getElementById('updateAvailableLine').style.display = 'block';
-        }
-    } catch(e) {}
-}
-setInterval(checkForUpdate, 60000);
-checkForUpdate();
-
-async function syncAndKeepData() {
-    localStorage.removeItem('wow_sw_version');
-
-    log('[Update] Applying update, preserving all data...');
-    if ('serviceWorker' in navigator) {
-        try {
-            const reg = await navigator.serviceWorker.ready;
-            if (reg.waiting) {
-                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    window.location.reload();
-                });
-                return;
-            }
-        } catch(e) {
-            console.warn('[Update] SW activation error:', e);
-        }
+function restorePrinted(){
+  // Мой ввод: тоже прогоняем через распознаватель ссылок
+  const mineFlat = flattenWithLinks(myText);
+  for (let i = 0; i < myCursor; i++){
+    const c = mineFlat[i] || {ch: myText[i], link: null};
+    addChar(c.ch, 'mine', null, false, c.link);
+  }
+  for (const u of userChars){
+    if (u.printed){
+      addChar(u.ch, 'user', u.author, false, u.link || null);
     }
-    window.location.reload();
+  }
 }
 
 /* =========================================================
-   Init
+   18. Init
    ========================================================= */
-connectMqtt();
-renderWords();
+recalcMetrics();
+restorePrinted();
+updateStageHeight();
+syncScrollerTop();
 refreshChrome();
-// Круг всегда стартует с «?» — прицел появится только после закрытия help
-setCaretQuestionMode();
-log('Init done. myId=' + myId + ', clientId=' + clientId + ', items=' + itemsList.length);
+connectMqtt();
 </script>
 </body>
 </html>
