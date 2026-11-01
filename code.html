@@ -7,6 +7,7 @@
   <link rel="manifest" href="manifest.json">
   <title>Code Viewer</title>
   <style>
+
 html, body {
   height: 100%;
   margin: 0;
@@ -56,7 +57,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: flex-start;
+  align-items: flex-start; /* Блоки (строки) прижаты влево */
   justify-content: flex-start;
   padding: 15px 10px;
   box-sizing: border-box;
@@ -82,39 +83,49 @@ body {
   min-width: 0;
 }
 
-/* Строка 1: searchField + стрелки */
+/* --- БАЗОВЫЕ СТИЛИ (столбиком) --- */
 .searchRow {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-/* Строка 2: select + save + logo + checkbox */
-.actionsRow {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center; /* Центрируем элементы по горизонтали внутри колонки (для поиска и стрелок) */
+  justify-content: center;
   gap: 8px;
   width: 100%;
 }
 
+.actionsRow {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Центрируем элементы по горизонтали внутри колонки */
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* --- ЭЛЕМЕНТЫ --- */
 #searchField {
-  padding: 0 8px;             /* убрали вертикальный padding, чтобы высота была точной */
+  padding: 0 8px;
   font-size: 14px;
-  line-height: 28px;          /* центрируем текст по вертикали */
   border: 1px solid #555;
   background-color: #333333;
   color: white;
-  height: 30px;               /* строго 30 пикселей */
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
   box-sizing: border-box;
   border-radius: 5px;
   outline: none;
+  line-height: 28px;
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 #prevMatchButton, #nextMatchButton {
   width: 30px;
   height: 30px;
+  min-height: 30px;
+  max-height: 30px;
   background-color: #333333;
   color: white;
   border: none;
@@ -125,6 +136,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  margin: 0;
 }
 
 .searchButtons {
@@ -137,14 +150,20 @@ body {
   font-size: 14px;
   width: 70px;
   height: 30px;
+  min-height: 30px;
+  max-height: 30px;
   box-sizing: border-box;
   display: block;
+  margin: 0;
+  flex: 0 0 auto;
 }
 
 #saveButton {
   display: block;
   width: 60px;
   height: 30px;
+  min-height: 30px;
+  max-height: 30px;
   background-color: #007bff;
   color: white;
   border: none;
@@ -152,12 +171,16 @@ body {
   font-size: 14px;
   border-radius: 5px;
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
 }
 
-/* Чекбокс */
 #strictNoCache {
   width: 20px;
   height: 20px;
+  min-height: 20px;
+  max-height: 20px;
   margin: 0;
   cursor: pointer;
   accent-color: #007bff;
@@ -165,15 +188,23 @@ body {
   display: block;
 }
 
-/* Обертка для логотипа, чтобы он не растягивался */
 .logoLink {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   height: 40px;
+  margin: 0;
+  padding: 0;
 }
 
-/* Ширина searchField по ориентации */
+.logoLink img {
+  height: 40px;
+  width: auto;
+  display: block;
+}
+
+/* --- ШИРИНА ПОЛЯ ПО ОРИЕНТАЦИИ --- */
 @media (orientation: landscape) {
   #searchField {
     width: 70px;
@@ -188,34 +219,23 @@ body {
   }
 }
 
-/* Портрет — элементы в ряд */
+/* --- В РЯД (ПОРТРЕТ И ШИРОКИЕ ЭКРАНЫ) --- */
 @media (orientation: portrait) {
   .searchRow {
     flex-direction: row;
-    align-items: center;     /* строго по центру по вертикали */
-    justify-content: flex-start;
+    align-items: center; /* Строго по центру по вертикали */
+    justify-content: flex-start; /* Элементы прижаты влево */
   }
 
   .actionsRow {
     flex-direction: row;
-    align-items: center;     /* строго по центру по вертикали */
-    justify-content: center; /* логотип по центру всей строки */
+    align-items: center; /* Строго по центру по вертикали */
+    justify-content: flex-start; /* Элементы прижаты влево */
     flex-wrap: wrap;
-  }
-  
-  /* Выравниваем все элементы в строке по высоте 30px */
-  #fileFormat, #saveButton {
-    align-self: center;
-  }
-  #strictNoCache {
-    align-self: center;
-  }
-  .logoLink {
-    align-self: center;
   }
 }
 
-/* Портрет < 768px */
+/* --- ПОРТРЕТ < 768px --- */
 @media (orientation: portrait) and (max-width: 767px) {
   body {
     flex-direction: column;
@@ -239,7 +259,7 @@ body {
   }
 }
 
-/* Широкий портрет */
+/* --- ШИРОКИЙ ПОРТРЕТ --- */
 @media (orientation: portrait) and (min-width: 768px) {
   #controlPanel > div {
     gap: 6px;
@@ -254,14 +274,11 @@ body {
   }
 
   #fileFormat {
-    flex: 0 0 auto;
     width: 80px;
   }
 
   #saveButton {
-    flex: 0 0 auto;
-    width: auto;
-    padding: 0 8px;
+    width: 80px;
   }
 
   .logoLink img {
