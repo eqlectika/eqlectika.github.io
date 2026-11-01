@@ -4,8 +4,8 @@ const CACHE = 'shell-v1';
 // Только оболочка. Ничего из проверяемого кода здесь быть не должно.
 const SHELL = [
   './',
-  './index.html',
-  './manifest.json',
+  './code.html',
+  './manifest-code.json',
   './research.html',
   './logo.png',
   // + иконки, указанные в manifest.json
