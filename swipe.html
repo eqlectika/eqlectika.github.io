@@ -7,7 +7,9 @@
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="1280">
 <link rel="manifest" href="manifest-swipe.json">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Swipe | Public messenger that come alive</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
@@ -24,8 +26,15 @@ html,body{
   overflow:hidden;font-family:'JetBrains Mono','Fira Code',monospace;
 }
 
-/* ---------- шапка с тенью ---------- */
+/* ---------- safe area сверху ---------- */
+html{
+  padding-top: env(safe-area-inset-top);
+}
+
+/* ---------- шапка ---------- */
 .top-bar{
+  position:fixed;
+  top:0;left:0;right:0;
   z-index:50;
   display:flex;align-items:center;justify-content:space-between;
   gap:8px; 
@@ -34,20 +43,14 @@ html,body{
   box-shadow:0 2px 10px rgba(0,0,0,0.9);
   border-bottom:1px solid #1a1a1a;
 }
-
 .top-bar .left{
   display:flex;align-items:center;gap:8px;
   min-width:0;flex-shrink:1;overflow:hidden;
-  justify-content:space-between;   /* ← добавить */
-  flex:1;                          /* ← чтобы группа заняла всё свободное место */
 }
 .top-bar .right{
   display:flex;align-items:center;gap:8px;
   flex-shrink:0;
-  justify-content:space-between;   /* ← добавить */
-  flex:1;                          /* ← добавить */
 }
-
 .top-bar .brand{
   color:var(--accent);
   white-space:nowrap;
@@ -92,10 +95,11 @@ html,body{
 #peerIdInput:focus{background:#111;color:#fff;border-color:#3d1a99}
 #peerIdInput.saved{color:var(--user)!important;border-color:var(--user)!important}
 
-/* ---------- скролл ---------- */
+/* ---------- скролл (top будет перезаписан JS) ---------- */
 #scroller{
   position:fixed;left:0;right:0;
-  top:44px;bottom:64px;
+  top: calc(44px + env(safe-area-inset-top)); /* fallback до вызова JS */
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
@@ -135,7 +139,7 @@ html,body{
   position:fixed;left:0;right:0;bottom:0;z-index:10;
   display:flex;align-items:center;justify-content:center;
   gap:8px;
-  padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+  padding:8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
   background:#000;border-top:1px solid #1a1a1a;
 }
 #word-input{
@@ -186,7 +190,7 @@ html,body{
     <span id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
     <span id="tapeIndicator" class="tape">Tape</span>
 
-    <a class="btn-match" href="index.html">iDesign</a>
+    <a class="btn-match" href="match.html">Match</a>
 
   </div>
   <div class="right">
@@ -196,7 +200,7 @@ html,body{
   </div>
 </div>
 
-<div id="hint">Swipe here to see the message</div>
+<div id="hint">Swipe here to see the message. Anything you type or paste here can be seen by other users!</div>
 
 <div id="scroller"><div id="stage"></div></div>
 
@@ -218,8 +222,8 @@ const PLACEHOLDER = {
 }[LANG];
 
 const HINT_TEXT = {
-  ru: 'Проведи пальцем здесь, чтобы увидеть сообщение',
-  en: 'Swipe field to see the message'
+  ru: 'Проведи пальцем здесь, чтобы увидеть сообщение. Всё, что вы напишете здесь, могут увидеть другие пользователи!',
+  en: 'Swipe here to see the message. Anything you type or paste here can be seen by other users!'
 }[LANG];
 
 const MY_TEXT = {
@@ -474,10 +478,30 @@ function refreshChrome(){
 syncBtn.addEventListener('click', () => { if (isLive) flushPendingEdits(); });
 
 /* =========================================================
+   4.5. Safe-area: синхронизация высоты шапки с #scroller
+   ========================================================= */
+const scroller = document.getElementById('scroller');
+const topBar = document.querySelector('.top-bar');
+
+function syncScrollerTop(){
+  const h = topBar.getBoundingClientRect().height;
+  scroller.style.top = h + 'px';
+}
+syncScrollerTop();
+window.addEventListener('resize', syncScrollerTop);
+window.addEventListener('orientationchange', syncScrollerTop);
+if (document.fonts && document.fonts.ready){
+  document.fonts.ready.then(syncScrollerTop);
+}
+// На случай позднего изменения safe-area (поворот, скрытие адресной строки)
+if (window.visualViewport){
+  window.visualViewport.addEventListener('resize', syncScrollerTop);
+}
+
+/* =========================================================
    5. Метрики
    ========================================================= */
 const stage = document.getElementById('stage');
-const scroller = document.getElementById('scroller');
 
 const measure = document.createElement('span');
 measure.style.cssText =
@@ -910,7 +934,8 @@ peerIdInput.addEventListener('focus', () => {
   requestAnimationFrame(() => peerIdInput.select());
 });
 peerIdInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter'){ e.preventDefault(); commitId(); peerIdInput.blur(); }
+  if (e.key === 'Enter'){ e.preventDefault(); commitId(); peerIdInput
+peerIdInput.blur(); }
   if (e.key === 'Escape'){ peerIdInput.value = beforeId; peerIdInput.blur(); }
 });
 peerIdInput.addEventListener('blur', () => {
@@ -959,7 +984,7 @@ function autoScroll(){
    17. Восстановление
    ========================================================= */
 function restorePrinted(){
-  // Мой ввод: теперь тоже прогоняем через распознаватель ссылок
+  // Мой ввод: тоже прогоняем через распознаватель ссылок
   const mineFlat = flattenWithLinks(myText);
   for (let i = 0; i < myCursor; i++){
     const c = mineFlat[i] || {ch: myText[i], link: null};
@@ -978,6 +1003,7 @@ function restorePrinted(){
 recalcMetrics();
 restorePrinted();
 updateStageHeight();
+syncScrollerTop();
 refreshChrome();
 connectMqtt();
 </script>
