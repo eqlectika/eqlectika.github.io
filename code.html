@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
   <meta name="description" content="Simple Code Editor" />
-  <link rel="manifest" href="manifest-code.json">
+  <link rel="manifest" href="manifest.json">
   <title>Code Viewer</title>
   <style>
 html, body {
@@ -55,8 +55,8 @@ body {
 #controlPanel > div {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  align-items: left;
+  gap: 8px;
+  align-items: flex-start;
   justify-content: flex-start;
   padding: 15px 10px;
   box-sizing: border-box;
@@ -82,21 +82,39 @@ body {
   min-width: 0;
 }
 
+/* Строка 1: searchField + стрелки */
+.searchRow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Строка 2: select + save + logo + checkbox */
+.actionsRow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
 #searchField {
-  padding: 5px;
+  padding: 0 8px;             /* убрали вертикальный padding, чтобы высота была точной */
   font-size: 14px;
+  line-height: 28px;          /* центрируем текст по вертикали */
   border: 1px solid #555;
   background-color: #333333;
   color: white;
-  height: 35px;
+  height: 30px;               /* строго 30 пикселей */
   box-sizing: border-box;
   border-radius: 5px;
-  width: 100px;
+  outline: none;
 }
 
 #prevMatchButton, #nextMatchButton {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   background-color: #333333;
   color: white;
   border: none;
@@ -117,26 +135,88 @@ body {
 
 #fileFormat {
   font-size: 14px;
-  width: 100px;
-  height: 35px;
+  width: 70px;
+  height: 30px;
+  box-sizing: border-box;
+  display: block;
 }
 
-#saveButton, #reloadButton {
-  height: 40px;
+#saveButton {
+  display: block;
+  width: 60px;
+  height: 30px;
   background-color: #007bff;
   color: white;
   border: none;
   cursor: pointer;
   font-size: 14px;
   border-radius: 5px;
-  padding: 0 10px;
+  box-sizing: border-box;
 }
 
-#reloadButton {
-  background-color: #444;
+/* Чекбокс */
+#strictNoCache {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #007bff;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* Обертка для логотипа, чтобы он не растягивался */
+.logoLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+}
+
+/* Ширина searchField по ориентации */
+@media (orientation: landscape) {
+  #searchField {
+    width: 70px;
+    flex: 0 0 70px;
+  }
 }
 
 @media (orientation: portrait) {
+  #searchField {
+    width: 200px;
+    flex: 0 0 200px;
+  }
+}
+
+/* Портрет — элементы в ряд */
+@media (orientation: portrait) {
+  .searchRow {
+    flex-direction: row;
+    align-items: center;     /* строго по центру по вертикали */
+    justify-content: flex-start;
+  }
+
+  .actionsRow {
+    flex-direction: row;
+    align-items: center;     /* строго по центру по вертикали */
+    justify-content: center; /* логотип по центру всей строки */
+    flex-wrap: wrap;
+  }
+  
+  /* Выравниваем все элементы в строке по высоте 30px */
+  #fileFormat, #saveButton {
+    align-self: center;
+  }
+  #strictNoCache {
+    align-self: center;
+  }
+  .logoLink {
+    align-self: center;
+  }
+}
+
+/* Портрет < 768px */
+@media (orientation: portrait) and (max-width: 767px) {
   body {
     flex-direction: column;
   }
@@ -153,16 +233,39 @@ body {
     border-top: 1px solid #222;
   }
   #controlPanel > div {
-    flex-direction: row;
-    justify-content: space-evenly;
     padding: 10px;
     height: auto;
     width: 100%;
-    flex-wrap: wrap;
   }
-  #searchField {
-    width: 100px;
-    flex-grow: 1;
+}
+
+/* Широкий портрет */
+@media (orientation: portrait) and (min-width: 768px) {
+  #controlPanel > div {
+    gap: 6px;
+    height: auto;
+    padding: 8px 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .actionsRow {
+    flex-wrap: nowrap;
+  }
+
+  #fileFormat {
+    flex: 0 0 auto;
+    width: 80px;
+  }
+
+  #saveButton {
+    flex: 0 0 auto;
+    width: auto;
+    padding: 0 8px;
+  }
+
+  .logoLink img {
+    height: 32px !important;
   }
 }
   </style>
@@ -176,36 +279,63 @@ body {
 
   <div id="controlPanel">
     <div>
-      <input type="text" id="searchField" placeholder="Search">
-      <div class="searchButtons">
-        <button id="prevMatchButton" title="Previous Match">▲</button>
-        <button id="nextMatchButton" title="Next Match">▼</button>
+      <!-- Строка 1 -->
+      <div class="searchRow">
+        <input type="text" id="searchField" placeholder="Search">
+        <div class="searchButtons">
+          <button id="prevMatchButton" title="Previous Match">▲</button>
+          <button id="nextMatchButton" title="Next Match">▼</button>
+        </div>
       </div>
 
-      <select id="fileFormat">
-        <option value="html">HTML</option>
-        <option value="json">JSON</option>
-        <option value="txt">TXT</option>
-        <option value="js">JS</option>
-        <option value="css">CSS</option>
-      </select>
+      <!-- Строка 2 -->
+      <div class="actionsRow">
+        <select id="fileFormat">
+          <option value="html">HTML</option>
+          <option value="json">JSON</option>
+          <option value="txt">TXT</option>
+          <option value="js">JS</option>
+          <option value="css">CSS</option>
+        </select>
 
-      <button id="saveButton">Save</button>
-      <button id="reloadButton" title="Reload preview without cache">⟳</button>
+        <button id="saveButton">Save</button>
 
-      <a href="research.html" style="display: flex; align-items: center;">
-        <img src="logo.png" alt="Feedback" style="height: 40px; opacity: 0.9; width: auto;">
-      </a>
+        <!-- Обернули логотип в ссылку с классом, чтобы зафиксировать его размеры -->
+        <a href="research.html" class="logoLink">
+          <img src="logo.png" alt="Feedback" style="height: 40px; opacity: 0.9; width: auto;">
+        </a>
+
+        <input
+          type="checkbox"
+          id="strictNoCache"
+          title="Strict no-cache: adds cache-buster to XHR URLs. May affect code that validates URLs."
+        >
+      </div>
     </div>
   </div>
 
   <script>
     /* =========================================================
-       1. Анти-кэш прелюдия для srcdoc
-       Вставляется в начало проверяемого документа.
-       Патчит fetch/XHR так, чтобы любые загрузки шли мимо кэша.
+       1. Прелюдии для srcdoc
        ========================================================= */
-    const NO_CACHE_PRELUDE = `
+    const NO_CACHE_PRELUDE_SAFE = `
+<script>
+(function () {
+  try {
+    var origFetch = window.fetch;
+    if (origFetch) {
+      window.fetch = function (input, init) {
+        init = init || {};
+        init.cache = 'no-store';
+        return origFetch.call(this, input, init);
+      };
+    }
+  } catch (e) {}
+})();
+<\/script>
+`;
+
+    const NO_CACHE_PRELUDE_STRICT = `
 <script>
 (function () {
   try {
@@ -229,41 +359,18 @@ body {
         return origOpen.apply(this, [method, url].concat([].slice.call(arguments, 2)));
       };
     }
-  } catch (e) { /* noop */ }
+  } catch (e) {}
 })();
 <\/script>
 `;
 
-    /* =========================================================
-       2. Пересоздание iframe при каждом рендере
-       Новый browsing context => нет унаследованного HTTP-кэша
-       и состояния предыдущего запуска.
-       ========================================================= */
-    function renderPreview(code) {
-      const oldFrame = document.getElementById("preview");
-      const newFrame = oldFrame.cloneNode(false); // без srcdoc, без состояния
-      oldFrame.replaceWith(newFrame);
-
-      let doc = code;
-      // Прелюдию вставляем только для HTML-режима, чтобы не ломать
-      // JSON/TXT/CSS/JS, которые не являются документами.
-      const fmt = fileFormat.value;
-      if (fmt === "html") {
-        doc = NO_CACHE_PRELUDE + doc;
-      }
-      newFrame.srcdoc = doc;
-    }
-
-    /* =========================================================
-       3. Элементы и состояние
-       ========================================================= */
     const editor = document.getElementById("editor");
     const saveButton = document.getElementById("saveButton");
-    const reloadButton = document.getElementById("reloadButton");
     const fileFormat = document.getElementById("fileFormat");
     const searchField = document.getElementById("searchField");
     const prevMatchButton = document.getElementById("prevMatchButton");
     const nextMatchButton = document.getElementById("nextMatchButton");
+    const strictToggle = document.getElementById("strictNoCache");
 
     let searchMatches = [];
     let currentMatchIndex = -1;
@@ -277,16 +384,32 @@ body {
       css: "text/css",
     };
 
-    /* =========================================================
-       4. Рендер по вводу
-       ========================================================= */
+    function getPrelude() {
+      return document.getElementById('strictNoCache').checked
+        ? NO_CACHE_PRELUDE_STRICT
+        : NO_CACHE_PRELUDE_SAFE;
+    }
+
+    function renderPreview(code) {
+      const oldFrame = document.getElementById("preview");
+      const newFrame = oldFrame.cloneNode(false);
+      oldFrame.replaceWith(newFrame);
+
+      let doc = code;
+      if (fileFormat.value === "html") {
+        doc = getPrelude() + doc;
+      }
+      newFrame.srcdoc = doc;
+    }
+
     editor.addEventListener("input", () => {
       renderPreview(editor.value);
     });
 
-    /* =========================================================
-       5. Сохранение файла
-       ========================================================= */
+    strictToggle.addEventListener("change", () => {
+      renderPreview(editor.value);
+    });
+
     saveButton.addEventListener("click", () => {
       const format = fileFormat.value;
       const blob = new Blob([editor.value], { type: mimeTypes[format] || "text/plain" });
@@ -297,23 +420,6 @@ body {
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     });
 
-    /* =========================================================
-       6. Hard reload preview:
-       чистим Cache Storage + пересоздаём iframe.
-       ========================================================= */
-    reloadButton.addEventListener("click", async () => {
-      try {
-        if ("caches" in window) {
-          const keys = await caches.keys();
-          await Promise.all(keys.map(k => caches.delete(k)));
-        }
-      } catch (e) { /* noop */ }
-      renderPreview(editor.value);
-    });
-
-    /* =========================================================
-       7. Поиск по редактору (без изменений в логике)
-       ========================================================= */
     function highlightMatch(index) {
       if (index === -1 || searchMatches.length === 0) return;
       const start = searchMatches[index];
@@ -372,9 +478,6 @@ body {
       }
     });
 
-    /* =========================================================
-       8. Защита от глобального скролла при работе с редактором
-       ========================================================= */
     function stopGlobalScroll(e) {
       e.preventDefault();
     }
@@ -397,27 +500,11 @@ body {
       window.removeEventListener("touchmove", stopGlobalScroll);
     });
 
-    /* =========================================================
-       9. Регистрация Service Worker
-       ========================================================= */
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("sw-code.js").catch(() => { /* noop */ });
+        navigator.serviceWorker.register("sw.js").catch(() => {});
       });
     }
-
-    /* =========================================================
-       10. Автосохранение (оставлено закомментированным,
-           как в оригинале)
-       ========================================================= */
-    //const savedContent = localStorage.getItem('editorContent');
-    //if (savedContent) {
-    //  editor.value = savedContent;
-    //  renderPreview(savedContent);
-    //}
-    //editor.addEventListener('input', () => {
-    //  localStorage.setItem('editorContent', editor.value);
-    //});
   </script>
 </body>
 </html>
