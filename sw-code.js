@@ -1,7 +1,6 @@
 // sw.js
-const CACHE = 'shell-v1';
+const CACHE = 'shell-v2';
 
-// Только оболочка. Ничего из проверяемого кода здесь быть не должно.
 const SHELL = [
   './',
   './code.html',
