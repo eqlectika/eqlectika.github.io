@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-v129'; 
+const CACHE_NAME = 'version-v130'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
