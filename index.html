@@ -229,6 +229,8 @@
                 <button type="button" data-lang="ru" aria-pressed="false">RU</button>
 
                 <button type="button" data-lang="en" class="active" aria-pressed="true">EN</button>
+
+                <button type="button" data-lang="zh" aria-pressed="false">中文</button>
             </div>
         </div>
 
@@ -270,6 +272,23 @@
                 <p>Message me to explore my cache-based service concepts.</p>
             </div>
 
+            <!-- Китайская версия -->
+            <div data-lang-block="zh" style="display:none;">
+                <p>我们不知道自己何时诞生。有人告知了我们。于是我们相信了。世界由语言构成。信任是根基。</p>
+
+                <p>我相信设计是改造环境的一种方式——一个让直觉引导想象的过程。</p>
+
+                <p>符号、标志——不仅是视觉身份，更是一种能够团结人们、传递思想、启动进程的运作机制。共同创造，它便获得额外的效能。</p>
+
+                <p>我设计软件、网站、交互应用，以及独立的去中心化点对点网络终端：多功能的、对等的，能够连接设备与志同道合者，自主运行，并超越惯常基础设施的限制不断演化。我对那些不仅满足当下需求、还为未来变化保留空间的系统深感兴趣。</p>
+
+                <p>虚拟现实是通往语法的门户——它让我们不仅能够感知语言，还能将语言当作工具来使用。</p>
+
+                <p>点击任意词语两次以改变其颜色。第三次点击将打开 ChatGPT 查询其定义。长按可恢复词语的初始颜色。</p>
+
+                <p>请联系我，了解我的数据缓存概念，并探索其应用的可能性。</p>
+            </div>
+
             <a href="https://t.me/eugenebox" style="color: #60a5fa; text-decoration: none;">@eugenebox</a>
         </div>
 
@@ -282,6 +301,9 @@
             </div>
             <div data-lang-block="en">
                 If you find <a href="match.html" style="color: #60a5fa; text-decoration: none;">the interface and included applications</a> useful and would like to support the project using ETH (ERC20), please use the address below.
+            </div>
+            <div data-lang-block="zh" style="display:none;">
+                如果您觉得<a href="match.html" style="color: #60a5fa; text-decoration: none;">此界面及其包含的应用</a>有用，并希望使用 ETH（ERC20）支持该项目，请使用以下地址。
             </div>
         </div>
 
@@ -300,10 +322,12 @@
 
         const LANG_KEY = 'idesign_lang';
 
-        // Определяем язык так же, как в Swipe: navigator.language → ru/en
+        // Определяем язык так же, как в Swipe: navigator.language → ru/en/zh
         function detectLang() {
             const nav = (navigator.language || 'en').toLowerCase();
-            return nav.startsWith('ru') ? 'ru' : 'en';
+            if (nav.startsWith('ru')) return 'ru';
+            if (nav.startsWith('zh')) return 'zh';
+            return 'en';
         }
 
         const I18N = {
@@ -324,6 +348,15 @@
                 hintError: '❌ Failed to copy',
                 copyTitle: 'Click to copy',
                 chatGptQuery: (w) => `What is the definition of the word "${w}"?`
+            },
+            zh: {
+                title: 'iDesign | 让你快乐的网络终端',
+                subtitle: '让你快乐的网络终端',
+                hint: '点击复制地址',
+                hintCopied: '地址已复制！',
+                hintError: '❌ 复制失败',
+                copyTitle: '点击复制',
+                chatGptQuery: (w) => `词语"${w}"的定义是什么？`
             }
         };
 
@@ -444,7 +477,7 @@
         // ============================================================
 
         // Ключ хранилища зависит от языка,
-        // чтобы состояния слов не путались между RU и EN.
+        // чтобы состояния слов не путались между RU, EN и ZH.
         function getStorageKey() {
             return 'trust_fibonacci_words_content_' + currentLang;
         }
