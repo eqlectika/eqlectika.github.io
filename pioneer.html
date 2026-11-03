@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>3D MineSweeper</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { 
+    overflow: hidden; background: #0a0a1a; 
+    font-family: Arial, sans-serif; color: #fff;
+    display: flex; flex-direction: column; align-items: center;
+    height: 100vh; padding: 10px;
+  }
+  h1 { font-size: 20px; margin: 5px 0 10px; color: #ffcc00; }
+  #topbar {
+    display: flex; gap: 10px; align-items: center; margin-bottom: 10px;
+    background: rgba(255,255,255,.08); padding: 8px 15px; border-radius: 20px;
+  }
+  #topbar div { font-size: 14px; }
+  #topbar b { color: #ffcc00; }
+  #canvasWrap { flex: 1; width: 100%; position: relative; }
+  canvas { display: block; margin: 0 auto; }
+  #layerNav {
+    display: flex; gap: 10px; align-items: center; margin-top: 10px;
+    background: rgba(255,255,255,.08); padding: 8px 15px; border-radius: 20px;
+  }
+  #layerNav button {
+    padding: 6px 14px; cursor: pointer; background: #3a7bd5; color: #fff;
+    border: none; border-radius: 5px; font-weight: bold; font-size: 16px;
+  }
+  #layerNav button:hover { background: #5a9bf5; }
+  #layerNav button:disabled { opacity: .3; cursor: not-allowed; }
+  #layerLabel { font-size: 18px; font-weight: bold; color: #ffcc00; min-width: 130px; text-align: center; }
+  #mode {
+    margin-top: 10px; display: flex; gap: 10px; align-items: center;
+    font-size: 13px;
+  }
+  #mode button {
+    padding: 6px 14px; cursor: pointer; background: #444; color: #fff;
+    border: 2px solid #666; border-radius: 5px; font-weight: bold;
+  }
+  #mode button.active { background: #ffcc00; color: #000; border-color: #ffcc00; }
+  #help {
+    position: fixed; bottom: 10px; left: 10px; right: 10px;
+    font-size: 12px; text-align: center; opacity: .7; line-height: 1.6;
+  }
+  #msg {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    font-size: 56px; font-weight: bold; text-shadow: 0 0 30px #000;
+    pointer-events: none; opacity: 0; transition: opacity .4s; z-index: 20;
+  }
+  #msg.show { opacity: 1; }
+  #newGame {
+    position: fixed; top: 10px; right: 10px; padding: 8px 16px;
+    background: #ffcc00; color: #000; border: none; border-radius: 5px;
+    cursor: pointer; font-weight: bold; font-size: 14px;
+  }
+  #newGame:hover { background: #ffdd44; }
+</style>
+</head>
+<body>
+
+<h1>💣 3D MineSweeper</h1>
+
+<div id="topbar">
+  <div>💣 <b id="mines">0</b></div>
+  <div>🚩 <b id="flags">0</b></div>
+  <div>⏱ <b id="time">0</b>с</div>
+</div>
+
+<div id="canvasWrap">
+  <canvas id="game"></canvas>
+</div>
+
+<div id="layerNav">
+  <button id="prevLayer">⬅</button>
+  <div id="layerLabel">Слой 1 / 6</div>
+  <button id="nextLayer">➡</button>
+</div>
+
+<div id="mode">
+  <span>Соседи:</span>
+  <button id="mode2D" class="active">Только слой (легко)</button>
+  <button id="mode3D">Весь куб (сложно)</button>
+</div>
+
+<button id="newGame">🔄 Новая игра</button>
+
+<div id="help">
+  <b>ЛКМ</b> — открыть · <b>ПКМ</b> — флаг 🚩 · Цифра = мины рядом · 
+  ЛКМ по открытой цифре = открыть соседей, если флагов хватает
+</div>
+
+<div id="msg"></div>
+
+<script>
+// ===== Настройки =====
+const SIZE = 6;
+const MINES = 20;
+const CELL = 70;
+const GAP = 6;
+
+// ===== Состояние =====
+let grid = [];        // grid[x][y][z]
+let gameOver, started, flagsCount;
+let activeLayer = 0;
+let use3D = false;    // false = только соседи в слое, true = весь куб
+let startTime, timerInt;
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+function setupCanvas() {
+  const maxW = Math.min(window.innerWidth - 40, SIZE * (CELL + GAP) + GAP);
+  const maxH = Math.min(window.innerHeight - 300, SIZE * (CELL + GAP) + GAP);
+  const side = Math.min(maxW, maxH);
+  canvas.width = SIZE * (CELL + GAP) + GAP;
+  canvas.height = SIZE * (CELL + GAP) + GAP;
+  canvas.style.width = side + 'px';
+  canvas.style.height = side + 'px';
+}
+
+// ===== Игра =====
+function newGame() {
+  gameOver = false;
+  started = false;
+  flagsCount = 0;
+  activeLayer = 0;
+  if (timerInt) clearInterval(timerInt);
+  document.getElementById('time').textContent = '0';
+  document.getElementById('msg').classList.remove('show');
+
+  grid = [];
+  for (let x = 0; x < SIZE; x++) {
+    grid[x] = [];
+    for (let y = 0; y < SIZE; y++) {
+      grid[x][y] = [];
+      for (let z = 0; z < SIZE; z++) {
+        grid[x][y][z] = { mine: false, state: 'hidden', value: 0 };
+      }
+    }
+  }
+
+  document.getElementById('mines').textContent = MINES;
+  document.getElementById('flags').textContent = 0;
+  updateLayerLabel();
+  draw();
+}
+
+function updateLayerLabel() {
+  document.getElementById('layerLabel').textContent = `Слой ${activeLayer + 1} / ${SIZE}`;
+  document.getElementById('prevLayer').disabled = activeLayer === 0;
+  document.getElementById('nextLayer').disabled = activeLayer === SIZE - 1;
+}
+
+function neighbors(x, y, z) {
+  const out = [];
+  const zRange = use3D ? [-1, 0, 1] : [0];   // 2D: только текущий слой!
+  for (let dx = -1; dx <= 1; dx++)
+    for (let dy = -1; dy <= 1; dy++)
+      for (const dz of zRange) {
+        if (!dx && !dy && !dz) continue;
+        const nx = x+dx, ny = y+dy, nz = z+dz;
+        if (nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && nz>=0 && nz<SIZE)
+          out.push([nx, ny, nz]);
+      }
+  return out;
+}
+
+function generateMines(sx, sy, sz) {
+  // Безопасная зона вокруг первого клика
+  const forbidden = new Set();
+  for (let dx = -1; dx <= 1; dx++)
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dz = -1; dz <= 1; dz++)
+        forbidden.add(`${sx+dx},${sy+dy},${sz+dz}`);
+
+  const all = [];
+  for (let x = 0; x < SIZE; x++)
+    for (let y = 0; y < SIZE; y++)
+      for (let z = 0; z < SIZE; z++)
+        if (!forbidden.has(`${x},${y},${z}`)) all.push([x,y,z]);
+
+  // Перемешать
+  for (let i = all.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [all[i], all[j]] = [all[j], all[i]];
+  }
+  for (let i = 0; i < Math.min(MINES, all.length); i++) {
+    const [x,y,z] = all[i];
+    grid[x][y][z].mine = true;
+  }
+
+  // Значения
+  for (let x = 0; x < SIZE; x++)
+    for (let y = 0; y < SIZE; y++)
+      for (let z = 0; z < SIZE; z++) {
+        if (grid[x][y][z].mine) continue;
+        grid[x][y][z].value = neighbors(x,y,z).filter(([a,b,c]) => grid[a][b][c].mine).length;
+      }
+}
+
+function reveal(x, y, z) {
+  const cell = grid[x][y][z];
+  if (cell.state !== 'hidden') return;
+  if (cell.mine) {
+    cell.state = 'open';
+    return;
+  }
+  cell.state = 'open';
+  if (cell.value === 0) {
+    for (const [a,b,c] of neighbors(x,y,z)) reveal(a, b, c);
+  }
+}
+
+function toggleFlag(x, y, z) {
+  const cell = grid[x][y][z];
+  if (cell.state === 'open') return;
+  if (cell.state === 'hidden') {
+    cell.state = 'flag';
+    flagsCount++;
+  } else {
+    cell.state = 'hidden';
+    flagsCount--;
+  }
+  document.getElementById('flags').textContent = flagsCount;
+}
+
+function checkWin() {
+  for (let x = 0; x < SIZE; x++)
+    for (let y = 0; y < SIZE; y++)
+      for (let z = 0; z < SIZE; z++) {
+        const c = grid[x][y][z];
+        if (!c.mine && c.state !== 'open') return false;
+      }
+  return true;
+}
+
+function lose() {
+  gameOver = true;
+  for (let x = 0; x < SIZE; x++)
+    for (let y = 0; y < SIZE; y++)
+      for (let z = 0; z < SIZE; z++) {
+        const c = grid[x][y][z];
+        if (c.mine && c.state !== 'flag') c.state = 'open';
+      }
+  if (timerInt) clearInterval(timerInt);
+  showMsg('💥 BOOM!', '#ff4444');
+  draw();
+}
+
+function win() {
+  gameOver = true;
+  if (timerInt) clearInterval(timerInt);
+  showMsg('🎉 Победа!', '#44ff88');
+  draw();
+}
+
+function showMsg(text, color) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.style.color = color;
+  el.classList.add('show');
+}
+
+// ===== Рисование =====
+function draw() {
+  ctx.fillStyle = '#0a0a1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const NUM_COLORS = ['', '#4fc3f7','#81c784','#ffb74d','#e57373','#ba68c8','#4dd0e1','#ffffff','#f06292'];
+
+  // Клетки текущего слоя
+  for (let x = 0; x < SIZE; x++) {
+    for (let y = 0; y < SIZE; y++) {
+      const c = grid[x][y][activeLayer];
+      const px = GAP + x * (CELL + GAP);
+      const py = GAP + y * (CELL + GAP);
+
+      // Фон
+      if (c.state === 'hidden') {
+        ctx.fillStyle = '#3a7bd5';
+      } else if (c.state === 'flag') {
+        ctx.fillStyle = '#ffcc00';
+      } else {
+        ctx.fillStyle = '#1a1a2a';
+      }
+      roundRect(px, py, CELL, CELL, 8);
+      ctx.fill();
+
+      // Обводка
+      ctx.strokeStyle = 'rgba(0,0,0,.4)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Содержимое
+      if (c.state === 'flag') {
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 36px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🚩', px + CELL/2, py + CELL/2);
+      } else if (c.state === 'open') {
+        if (c.mine) {
+          ctx.fillStyle = '#ff2222';
+          ctx.font = 'bold 40px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('💣', px + CELL/2, py + CELL/2);
+        } else if (c.value > 0) {
+          ctx.fillStyle = NUM_COLORS[c.value];
+          ctx.font = 'bold 36px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(c.value, px + CELL/2, py + CELL/2);
+        }
+      }
+
+      // Подсказка: соседи в других слоях с флагами
+      if (use3D && c.state === 'open' && c.value > 0) {
+        // считаем флаги во всех соседях
+        const nbs = neighbors(x, y, activeLayer);
+        const fl = nbs.filter(([a,b,cc]) => grid[a][b][cc].state === 'flag').length;
+        if (fl > 0 && fl < c.value) {
+          // маленький индикатор
+          ctx.fillStyle = 'rgba(255,204,0,.7)';
+          ctx.beginPath();
+          ctx.arc(px + CELL - 10, py + 10, 5, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
+    }
+  }
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// ===== Ввод =====
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (gameOver) return;
+  const rect = canvas.getBoundingClientRect();
+  // пересчёт координат с учётом масштаба CSS
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top) * scaleY;
+
+  // Определить клетку
+  let gx = -1, gy = -1;
+  for (let x = 0; x < SIZE; x++) {
+    const px = GAP + x * (CELL + GAP);
+    if (cx >= px && cx <= px + CELL) gx = x;
+  }
+  for (let y = 0; y < SIZE; y++) {
+    const py = GAP + y * (CELL + GAP);
+    if (cy >= py && cy <= py + CELL) gy = y;
+  }
+  if (gx < 0 || gy < 0) return;
+
+  const cell = grid[gx][gy][activeLayer];
+
+  // ПКМ = флаг
+  if (e.button === 2) {
+    toggleFlag(gx, gy, activeLayer);
+    draw();
+    return;
+  }
+
+  // ЛКМ
+  if (e.button !== 0) return;
+
+  // Клик по открытой цифре — открыть соседей
+  if (cell.state === 'open' && cell.value > 0) {
+    const nbs = neighbors(gx, gy, activeLayer);
+    const flagged = nbs.filter(([a,b,c]) => grid[a][b][c].state === 'flag').length;
+    if (flagged === cell.value) {
+      for (const [a,b,c] of nbs) {
+        if (grid[a][b][c].state === 'hidden') reveal(a, b, c);
+      }
+      // проверка на взрыв
+      for (const [a,b,c] of nbs) {
+        if (grid[a][b][c].mine && grid[a][b][c].state === 'open') {
+          lose(); return;
+        }
+      }
+      if (checkWin()) { win(); return; }
+      draw();
+    }
+    return;
+  }
+
+  if (cell.state === 'flag') return;
+
+  // Первый клик — генерим мины
+  if (!started) {
+    started = true;
+    generateMines(gx, gy, activeLayer);
+    startTime = Date.now();
+    timerInt = setInterval(() => {
+      document.getElementById('time').textContent = Math.floor((Date.now() - startTime) / 1000);
+    }, 250);
+  }
+
+  reveal(gx, gy, activeLayer);
+
+  if (cell.mine) { lose(); return; }
+  if (checkWin()) { win(); return; }
+  draw();
+});
+
+// ===== UI =====
+document.getElementById('prevLayer').onclick = () => {
+  if (activeLayer > 0) { activeLayer--; updateLayerLabel(); draw(); }
+};
+document.getElementById('nextLayer').onclick = () => {
+  if (activeLayer < SIZE - 1) { activeLayer++; updateLayerLabel(); draw(); }
+};
+
+document.getElementById('mode2D').onclick = () => {
+  if (started) { alert('Смена режима только в новой игре'); return; }
+  use3D = false;
+  document.getElementById('mode2D').classList.add('active');
+  document.getElementById('mode3D').classList.remove('active');
+};
+document.getElementById('mode3D').onclick = () => {
+  if (started) { alert('Смена режима только в новой игре'); return; }
+  use3D = true;
+  document.getElementById('mode3D').classList.add('active');
+  document.getElementById('mode2D').classList.remove('active');
+};
+
+document.getElementById('newGame').onclick = newGame;
+
+window.addEventListener('resize', () => {
+  setupCanvas();
+  draw();
+});
+
+// ===== Старт =====
+setupCanvas();
+newGame();
+</script>
+</body>
+</html>
