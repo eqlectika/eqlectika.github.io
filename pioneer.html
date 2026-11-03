@@ -1,131 +1,225 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>3D MineSweeper</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { 
-    overflow: hidden; background: #0a0a1a; 
-    font-family: Arial, sans-serif; color: #fff;
-    display: flex; flex-direction: column; align-items: center;
-    height: 100vh; padding: 10px;
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; overflow: hidden; background: #0a0a1a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #fff; user-select: none; -webkit-user-select: none;
+    touch-action: manipulation;
   }
-  h1 { font-size: 20px; margin: 5px 0 10px; color: #ffcc00; }
+  body {
+    display: flex; flex-direction: column;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* ===== Top bar ===== */
   #topbar {
-    display: flex; gap: 10px; align-items: center; margin-bottom: 10px;
-    background: rgba(255,255,255,.08); padding: 8px 15px; border-radius: 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; gap: 8px;
   }
-  #topbar div { font-size: 14px; }
-  #topbar b { color: #ffcc00; }
-  #canvasWrap { flex: 1; width: 100%; position: relative; }
-  canvas { display: block; margin: 0 auto; }
+  .stat {
+    display: flex; align-items: center; gap: 4px;
+    background: rgba(255,255,255,.07); padding: 6px 10px;
+    border-radius: 12px; font-size: 13px; font-weight: 600;
+  }
+  .stat b { color: #ffcc00; font-size: 14px; }
+
+  /* ===== Board ===== */
+  #canvasWrap {
+    flex: 1; display: flex; justify-content: center; align-items: center;
+    padding: 4px; position: relative; min-height: 0;
+  }
+  canvas { display: block; border-radius: 10px; touch-action: none; }
+
+  /* ===== Bottom controls ===== */
+  #controls {
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .row {
+    display: flex; gap: 8px; align-items: center; justify-content: center;
+  }
+
+  /* Layer navigation */
   #layerNav {
-    display: flex; gap: 10px; align-items: center; margin-top: 10px;
-    background: rgba(255,255,255,.08); padding: 8px 15px; border-radius: 20px;
+    display: flex; align-items: center; gap: 6px; flex: 1;
+    background: rgba(255,255,255,.07); border-radius: 14px; padding: 4px;
   }
   #layerNav button {
-    padding: 6px 14px; cursor: pointer; background: #3a7bd5; color: #fff;
-    border: none; border-radius: 5px; font-weight: bold; font-size: 16px;
+    width: 52px; height: 48px; border: none; border-radius: 10px;
+    background: #3a7bd5; color: #fff; font-size: 22px; font-weight: bold;
+    cursor: pointer; transition: background .1s;
   }
-  #layerNav button:hover { background: #5a9bf5; }
-  #layerNav button:disabled { opacity: .3; cursor: not-allowed; }
-  #layerLabel { font-size: 18px; font-weight: bold; color: #ffcc00; min-width: 130px; text-align: center; }
-  #mode {
-    margin-top: 10px; display: flex; gap: 10px; align-items: center;
-    font-size: 13px;
+  #layerNav button:active:not(:disabled) { background: #5a9bf5; }
+  #layerNav button:disabled { opacity: .25; }
+  #layerLabel {
+    flex: 1; text-align: center; font-size: 15px; font-weight: 700;
+    color: #ffcc00;
   }
-  #mode button {
-    padding: 6px 14px; cursor: pointer; background: #444; color: #fff;
-    border: 2px solid #666; border-radius: 5px; font-weight: bold;
+  #layerLabel small { display: block; font-size: 10px; color: #888; font-weight: 500; }
+
+  /* Toggle buttons */
+  .toggle {
+    display: flex; background: rgba(255,255,255,.07);
+    border-radius: 12px; padding: 4px; gap: 3px; flex: 1;
   }
-  #mode button.active { background: #ffcc00; color: #000; border-color: #ffcc00; }
-  #help {
-    position: fixed; bottom: 10px; left: 10px; right: 10px;
-    font-size: 12px; text-align: center; opacity: .7; line-height: 1.6;
+  .toggle button {
+    flex: 1; padding: 10px 6px; border: none; border-radius: 9px;
+    background: transparent; color: #aaa; font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all .15s;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
   }
-  #msg {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-    font-size: 56px; font-weight: bold; text-shadow: 0 0 30px #000;
-    pointer-events: none; opacity: 0; transition: opacity .4s; z-index: 20;
-  }
-  #msg.show { opacity: 1; }
+  .toggle button .em { font-size: 16px; }
+  .toggle button.active { background: #ffcc00; color: #000; }
+
+  /* New game button */
   #newGame {
-    position: fixed; top: 10px; right: 10px; padding: 8px 16px;
-    background: #ffcc00; color: #000; border: none; border-radius: 5px;
-    cursor: pointer; font-weight: bold; font-size: 14px;
+    width: 48px; height: 48px; border: none; border-radius: 12px;
+    background: rgba(255,255,255,.07); color: #fff; font-size: 22px;
+    cursor: pointer;
   }
-  #newGame:hover { background: #ffdd44; }
+  #newGame:active { background: rgba(255,255,255,.15); }
+
+  /* ===== Overlay ===== */
+  #msg {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 20px;
+    background: rgba(10,10,26,.85); backdrop-filter: blur(8px);
+    opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 100;
+  }
+  #msg.show { opacity: 1; pointer-events: auto; }
+  #msgText { font-size: 42px; font-weight: 800; text-shadow: 0 4px 30px currentColor; }
+  #msgSub { font-size: 14px; color: #aaa; }
+  #msgBtn {
+    padding: 14px 40px; background: #ffcc00; color: #000;
+    border: none; border-radius: 14px; font-size: 16px; font-weight: 700;
+    cursor: pointer;
+  }
+  #msgBtn:active { transform: scale(.96); }
+
+  /* ===== Toast ===== */
+  #toast {
+    position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,.85); padding: 8px 16px; border-radius: 20px;
+    font-size: 12px; color: #ffcc00; font-weight: 600;
+    opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 50;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; }
 </style>
 </head>
 <body>
 
-<h1>💣 3D MineSweeper</h1>
-
+<!-- Top bar -->
 <div id="topbar">
-  <div>💣 <b id="mines">0</b></div>
-  <div>🚩 <b id="flags">0</b></div>
-  <div>⏱ <b id="time">0</b>с</div>
+  <div class="stat">💣 <b id="mines">0</b></div>
+  <div class="stat">🚩 <b id="flags">0</b></div>
+  <div class="stat">⏱ <b id="time">0</b></div>
 </div>
 
+<!-- Board -->
 <div id="canvasWrap">
   <canvas id="game"></canvas>
 </div>
 
-<div id="layerNav">
-  <button id="prevLayer">⬅</button>
-  <div id="layerLabel">Слой 1 / 6</div>
-  <button id="nextLayer">➡</button>
+<!-- Bottom controls -->
+<div id="controls">
+  <div class="row">
+    <div id="layerNav">
+      <button id="prevLayer">‹</button>
+      <div id="layerLabel">Layer 1<small>of 6</small></div>
+      <button id="nextLayer">›</button>
+    </div>
+    <button id="newGame">🔄</button>
+  </div>
+  <div class="row">
+    <div class="toggle" id="modeToggle">
+      <button data-mode="2d" class="active">
+        <span class="em">🟦</span>Layer
+      </button>
+      <button data-mode="3d">
+        <span class="em">🧊</span>Cube
+      </button>
+    </div>
+    <div class="toggle" id="sizeToggle">
+      <button data-size="6" class="active">6³</button>
+      <button data-size="8">8³</button>
+      <button data-size="10">10³</button>
+      <button data-size="12">12³</button>
+    </div>
+  </div>
 </div>
 
-<div id="mode">
-  <span>Соседи:</span>
-  <button id="mode2D" class="active">Только слой (легко)</button>
-  <button id="mode3D">Весь куб (сложно)</button>
+<!-- Result overlay -->
+<div id="msg">
+  <div id="msgText">💥</div>
+  <div id="msgSub"></div>
+  <button id="msgBtn">Play Again</button>
 </div>
 
-<button id="newGame">🔄 Новая игра</button>
-
-<div id="help">
-  <b>ЛКМ</b> — открыть · <b>ПКМ</b> — флаг 🚩 · Цифра = мины рядом · 
-  ЛКМ по открытой цифре = открыть соседей, если флагов хватает
-</div>
-
-<div id="msg"></div>
+<!-- Toast -->
+<div id="toast"></div>
 
 <script>
-// ===== Настройки =====
-const SIZE = 6;
-const MINES = 20;
-const CELL = 70;
-const GAP = 6;
+// ===== Settings =====
+let SIZE = 6;
+let MINES = 20;
+let CELL = 60;
+let GAP = 4;
+const LONG_PRESS_MS = 350;
+const SWIPE_THRESHOLD = 50;
 
-// ===== Состояние =====
-let grid = [];        // grid[x][y][z]
+// ===== State =====
+let grid = [];
 let gameOver, started, flagsCount;
 let activeLayer = 0;
-let use3D = false;    // false = только соседи в слое, true = весь куб
+let use3D = false;
 let startTime, timerInt;
+let revealedCount = 0;
 
 const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { alpha: false });
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
+// ===== Canvas setup =====
 function setupCanvas() {
-  const maxW = Math.min(window.innerWidth - 40, SIZE * (CELL + GAP) + GAP);
-  const maxH = Math.min(window.innerHeight - 300, SIZE * (CELL + GAP) + GAP);
-  const side = Math.min(maxW, maxH);
-  canvas.width = SIZE * (CELL + GAP) + GAP;
-  canvas.height = SIZE * (CELL + GAP) + GAP;
-  canvas.style.width = side + 'px';
-  canvas.style.height = side + 'px';
+  const wrap = document.getElementById('canvasWrap');
+  const w = wrap.clientWidth - 8;
+  const h = wrap.clientHeight - 8;
+  const available = Math.min(w, h);
+
+  CELL = Math.max(20, Math.floor((available - GAP * (SIZE + 1)) / SIZE));
+  const logical = SIZE * CELL + GAP * (SIZE + 1);
+
+  canvas.width = logical * DPR;
+  canvas.height = logical * DPR;
+  canvas.style.width = logical + 'px';
+  canvas.style.height = logical + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.imageSmoothingEnabled = false;
 }
 
-// ===== Игра =====
+// ===== Game init =====
+function minesForSize(n) {
+  const total = n * n * n;
+  return Math.max(8, Math.floor(total * 0.08));
+}
+
 function newGame() {
   gameOver = false;
   started = false;
   flagsCount = 0;
+  revealedCount = 0;
   activeLayer = 0;
+  MINES = minesForSize(SIZE);
   if (timerInt) clearInterval(timerInt);
   document.getElementById('time').textContent = '0';
   document.getElementById('msg').classList.remove('show');
@@ -136,7 +230,8 @@ function newGame() {
     for (let y = 0; y < SIZE; y++) {
       grid[x][y] = [];
       for (let z = 0; z < SIZE; z++) {
-        grid[x][y][z] = { mine: false, state: 'hidden', value: 0 };
+        grid[x][y][z] = { mine: false, state: 0, value: 0 };
+        // state: 0 = hidden, 1 = open, 2 = flag
       }
     }
   }
@@ -144,189 +239,205 @@ function newGame() {
   document.getElementById('mines').textContent = MINES;
   document.getElementById('flags').textContent = 0;
   updateLayerLabel();
+  setupCanvas();
   draw();
 }
 
 function updateLayerLabel() {
-  document.getElementById('layerLabel').textContent = `Слой ${activeLayer + 1} / ${SIZE}`;
+  const label = document.getElementById('layerLabel');
+  label.innerHTML = `Layer ${activeLayer + 1}<small>of ${SIZE}</small>`;
   document.getElementById('prevLayer').disabled = activeLayer === 0;
   document.getElementById('nextLayer').disabled = activeLayer === SIZE - 1;
 }
 
-function neighbors(x, y, z) {
-  const out = [];
-  const zRange = use3D ? [-1, 0, 1] : [0];   // 2D: только текущий слой!
+// ===== Logic =====
+function forEachNeighbor(x, y, z, fn) {
+  const zMin = use3D ? -1 : 0;
+  const zMax = use3D ? 1 : 0;
   for (let dx = -1; dx <= 1; dx++)
     for (let dy = -1; dy <= 1; dy++)
-      for (const dz of zRange) {
+      for (let dz = zMin; dz <= zMax; dz++) {
         if (!dx && !dy && !dz) continue;
-        const nx = x+dx, ny = y+dy, nz = z+dz;
-        if (nx>=0 && nx<SIZE && ny>=0 && ny<SIZE && nz>=0 && nz<SIZE)
-          out.push([nx, ny, nz]);
+        const nx = x + dx, ny = y + dy, nz = z + dz;
+        if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && nz >= 0 && nz < SIZE)
+          fn(nx, ny, nz);
       }
-  return out;
+}
+
+function countNeighborMines(x, y, z) {
+  let c = 0;
+  forEachNeighbor(x, y, z, (a, b, cc) => { if (grid[a][b][cc].mine) c++; });
+  return c;
+}
+
+function countNeighborFlags(x, y, z) {
+  let c = 0;
+  forEachNeighbor(x, y, z, (a, b, cc) => { if (grid[a][b][cc].state === 2) c++; });
+  return c;
 }
 
 function generateMines(sx, sy, sz) {
-  // Безопасная зона вокруг первого клика
   const forbidden = new Set();
-  for (let dx = -1; dx <= 1; dx++)
-    for (let dy = -1; dy <= 1; dy++)
-      for (let dz = -1; dz <= 1; dz++)
-        forbidden.add(`${sx+dx},${sy+dy},${sz+dz}`);
+  forEachNeighbor(sx, sy, sz, (a, b, c) => forbidden.add(`${a},${b},${c}`));
+  forbidden.add(`${sx},${sy},${sz}`);
 
-  const all = [];
+  const pool = [];
   for (let x = 0; x < SIZE; x++)
     for (let y = 0; y < SIZE; y++)
       for (let z = 0; z < SIZE; z++)
-        if (!forbidden.has(`${x},${y},${z}`)) all.push([x,y,z]);
+        if (!forbidden.has(`${x},${y},${z}`)) pool.push([x, y, z]);
 
-  // Перемешать
-  for (let i = all.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [all[i], all[j]] = [all[j], all[i]];
-  }
-  for (let i = 0; i < Math.min(MINES, all.length); i++) {
-    const [x,y,z] = all[i];
+  const n = Math.min(MINES, pool.length);
+  for (let i = 0; i < n; i++) {
+    const j = i + Math.floor(Math.random() * (pool.length - i));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+    const [x, y, z] = pool[i];
     grid[x][y][z].mine = true;
   }
 
-  // Значения
   for (let x = 0; x < SIZE; x++)
     for (let y = 0; y < SIZE; y++)
-      for (let z = 0; z < SIZE; z++) {
-        if (grid[x][y][z].mine) continue;
-        grid[x][y][z].value = neighbors(x,y,z).filter(([a,b,c]) => grid[a][b][c].mine).length;
-      }
+      for (let z = 0; z < SIZE; z++)
+        if (!grid[x][y][z].mine)
+          grid[x][y][z].value = countNeighborMines(x, y, z);
 }
 
+// Iterative flood-fill (no recursion — fast & safe on 12³)
 function reveal(x, y, z) {
-  const cell = grid[x][y][z];
-  if (cell.state !== 'hidden') return;
-  if (cell.mine) {
-    cell.state = 'open';
+  const start = grid[x][y][z];
+  if (start.state !== 0 || start.mine) {
+    if (start.state === 0) { start.state = 1; revealedCount++; }
     return;
   }
-  cell.state = 'open';
-  if (cell.value === 0) {
-    for (const [a,b,c] of neighbors(x,y,z)) reveal(a, b, c);
+
+  const stack = [[x, y, z]];
+  while (stack.length) {
+    const [cx, cy, cz] = stack.pop();
+    const cell = grid[cx][cy][cz];
+    if (cell.state !== 0 || cell.mine) continue;
+    cell.state = 1;
+    revealedCount++;
+    if (cell.value === 0) {
+      forEachNeighbor(cx, cy, cz, (a, b, c) => {
+        const nb = grid[a][b][c];
+        if (nb.state === 0 && !nb.mine) stack.push([a, b, c]);
+      });
+    }
   }
 }
 
 function toggleFlag(x, y, z) {
   const cell = grid[x][y][z];
-  if (cell.state === 'open') return;
-  if (cell.state === 'hidden') {
-    cell.state = 'flag';
+  if (cell.state === 1) return;
+  if (cell.state === 0) {
+    cell.state = 2;
     flagsCount++;
   } else {
-    cell.state = 'hidden';
+    cell.state = 0;
     flagsCount--;
   }
   document.getElementById('flags').textContent = flagsCount;
 }
 
 function checkWin() {
-  for (let x = 0; x < SIZE; x++)
-    for (let y = 0; y < SIZE; y++)
-      for (let z = 0; z < SIZE; z++) {
-        const c = grid[x][y][z];
-        if (!c.mine && c.state !== 'open') return false;
-      }
-  return true;
+  const totalSafe = SIZE * SIZE * SIZE - MINES;
+  return revealedCount >= totalSafe;
 }
 
-function lose() {
+function lose(hitX, hitY, hitZ) {
   gameOver = true;
   for (let x = 0; x < SIZE; x++)
     for (let y = 0; y < SIZE; y++)
       for (let z = 0; z < SIZE; z++) {
         const c = grid[x][y][z];
-        if (c.mine && c.state !== 'flag') c.state = 'open';
+        if (c.mine && c.state !== 2) c.state = 1;
       }
   if (timerInt) clearInterval(timerInt);
-  showMsg('💥 BOOM!', '#ff4444');
   draw();
+  setTimeout(() => {
+    document.getElementById('msgText').textContent = '💥';
+    document.getElementById('msgText').style.color = '#ff4444';
+    document.getElementById('msgSub').textContent = `Time: ${Math.floor((Date.now() - startTime) / 1000)}s · Try again!`;
+    document.getElementById('msg').classList.add('show');
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+  }, 300);
 }
 
 function win() {
   gameOver = true;
   if (timerInt) clearInterval(timerInt);
-  showMsg('🎉 Победа!', '#44ff88');
   draw();
+  setTimeout(() => {
+    document.getElementById('msgText').textContent = '🎉';
+    document.getElementById('msgText').style.color = '#44ff88';
+    document.getElementById('msgSub').textContent = `Victory in ${Math.floor((Date.now() - startTime) / 1000)}s!`;
+    document.getElementById('msg').classList.add('show');
+    if (navigator.vibrate) navigator.vibrate([50, 50, 50, 50, 50]);
+  }, 300);
 }
 
-function showMsg(text, color) {
-  const el = document.getElementById('msg');
-  el.textContent = text;
-  el.style.color = color;
-  el.classList.add('show');
-}
+// ===== Drawing (optimized) =====
+const NUM_COLORS = ['', '#4fc3f7','#81c784','#ffb74d','#e57373','#ba68c8','#4dd0e1','#ffffff','#f06292'];
 
-// ===== Рисование =====
 function draw() {
+  const W = SIZE * CELL + GAP * (SIZE + 1);
   ctx.fillStyle = '#0a0a1a';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, W, W);
 
-  const NUM_COLORS = ['', '#4fc3f7','#81c784','#ffb74d','#e57373','#ba68c8','#4dd0e1','#ffffff','#f06292'];
+  const fontSize = Math.max(12, Math.floor(CELL * 0.6));
+  const radius = Math.max(3, Math.floor(CELL * 0.18));
+  const step = CELL + GAP;
 
-  // Клетки текущего слоя
   for (let x = 0; x < SIZE; x++) {
     for (let y = 0; y < SIZE; y++) {
       const c = grid[x][y][activeLayer];
-      const px = GAP + x * (CELL + GAP);
-      const py = GAP + y * (CELL + GAP);
+      const px = GAP + x * step;
+      const py = GAP + y * step;
 
-      // Фон
-      if (c.state === 'hidden') {
-        ctx.fillStyle = '#3a7bd5';
-      } else if (c.state === 'flag') {
-        ctx.fillStyle = '#ffcc00';
-      } else {
-        ctx.fillStyle = '#1a1a2a';
-      }
-      roundRect(px, py, CELL, CELL, 8);
+      if (c.state === 0) ctx.fillStyle = '#3a7bd5';
+      else if (c.state === 2) ctx.fillStyle = '#ffcc00';
+      else ctx.fillStyle = '#1a1a2a';
+
+      roundRect(px, py, CELL, CELL, radius);
       ctx.fill();
 
-      // Обводка
-      ctx.strokeStyle = 'rgba(0,0,0,.4)';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Содержимое
-      if (c.state === 'flag') {
-        ctx.fillStyle = '#000';
-        ctx.font = 'bold 36px Arial';
+      if (c.state === 2) {
+        ctx.font = `${Math.floor(CELL * 0.5)}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('🚩', px + CELL/2, py + CELL/2);
-      } else if (c.state === 'open') {
+        ctx.fillText('🚩', px + CELL/2, py + CELL/2 + 1);
+      } else if (c.state === 1) {
         if (c.mine) {
-          ctx.fillStyle = '#ff2222';
-          ctx.font = 'bold 40px Arial';
+          ctx.font = `${Math.floor(CELL * 0.55)}px Arial`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText('💣', px + CELL/2, py + CELL/2);
         } else if (c.value > 0) {
-          ctx.fillStyle = NUM_COLORS[c.value];
-          ctx.font = 'bold 36px Arial';
+          ctx.fillStyle = NUM_COLORS[c.value] || '#fff';
+          ctx.font = `bold ${fontSize}px Arial`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(c.value, px + CELL/2, py + CELL/2);
         }
       }
+    }
+  }
 
-      // Подсказка: соседи в других слоях с флагами
-      if (use3D && c.state === 'open' && c.value > 0) {
-        // считаем флаги во всех соседях
-        const nbs = neighbors(x, y, activeLayer);
-        const fl = nbs.filter(([a,b,cc]) => grid[a][b][cc].state === 'flag').length;
-        if (fl > 0 && fl < c.value) {
-          // маленький индикатор
-          ctx.fillStyle = 'rgba(255,204,0,.7)';
-          ctx.beginPath();
-          ctx.arc(px + CELL - 10, py + 10, 5, 0, Math.PI*2);
-          ctx.fill();
+  // 3D mode indicator: flags in adjacent layers
+  if (use3D) {
+    for (let x = 0; x < SIZE; x++) {
+      for (let y = 0; y < SIZE; y++) {
+        const c = grid[x][y][activeLayer];
+        if (c.state === 1 && c.value > 0) {
+          const fl = countNeighborFlags(x, y, activeLayer);
+          if (fl > 0 && fl < c.value) {
+            const px = GAP + x * step + CELL - 6;
+            const py = GAP + y * step + 6;
+            ctx.fillStyle = 'rgba(255,204,0,.8)';
+            ctx.beginPath();
+            ctx.arc(px, py, Math.max(2.5, CELL * 0.08), 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
       }
     }
@@ -343,65 +454,127 @@ function roundRect(x, y, w, h, r) {
   ctx.closePath();
 }
 
-// ===== Ввод =====
-canvas.addEventListener('contextmenu', e => e.preventDefault());
-
-canvas.addEventListener('pointerdown', (e) => {
-  if (gameOver) return;
+// ===== Input handling =====
+function getCellFromEvent(e) {
   const rect = canvas.getBoundingClientRect();
-  // пересчёт координат с учётом масштаба CSS
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
+  const scaleX = (SIZE * CELL + GAP * (SIZE + 1)) / rect.width;
+  const scaleY = (SIZE * CELL + GAP * (SIZE + 1)) / rect.height;
   const cx = (e.clientX - rect.left) * scaleX;
   const cy = (e.clientY - rect.top) * scaleY;
 
-  // Определить клетку
-  let gx = -1, gy = -1;
-  for (let x = 0; x < SIZE; x++) {
-    const px = GAP + x * (CELL + GAP);
-    if (cx >= px && cx <= px + CELL) gx = x;
-  }
-  for (let y = 0; y < SIZE; y++) {
-    const py = GAP + y * (CELL + GAP);
-    if (cy >= py && cy <= py + CELL) gy = y;
-  }
-  if (gx < 0 || gy < 0) return;
+  const step = CELL + GAP;
+  const gx = Math.floor((cx - GAP) / step);
+  const gy = Math.floor((cy - GAP) / step);
 
-  const cell = grid[gx][gy][activeLayer];
+  if (gx < 0 || gx >= SIZE || gy < 0 || gy >= SIZE) return null;
+  const px = GAP + gx * step;
+  const py = GAP + gy * step;
+  if (cx < px || cx > px + CELL || cy < py || cy > py + CELL) return null;
+  return { x: gx, y: gy };
+}
 
-  // ПКМ = флаг
+let touchStart = null;
+let longPressTimer = null;
+let longPressFired = false;
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (gameOver) return;
+  e.preventDefault();
+
+  const cell = getCellFromEvent(e);
+  if (!cell) return;
+
+  // Right click = flag (desktop)
   if (e.button === 2) {
-    toggleFlag(gx, gy, activeLayer);
+    toggleFlag(cell.x, cell.y, activeLayer);
     draw();
     return;
   }
-
-  // ЛКМ
   if (e.button !== 0) return;
 
-  // Клик по открытой цифре — открыть соседей
-  if (cell.state === 'open' && cell.value > 0) {
-    const nbs = neighbors(gx, gy, activeLayer);
-    const flagged = nbs.filter(([a,b,c]) => grid[a][b][c].state === 'flag').length;
+  touchStart = { ...cell, time: Date.now(), x0: e.clientX, y0: e.clientY, swiped: false };
+  longPressFired = false;
+
+  longPressTimer = setTimeout(() => {
+    longPressFired = true;
+    if (navigator.vibrate) navigator.vibrate(30);
+    const c = grid[cell.x][cell.y][activeLayer];
+    if (c.state !== 1) {
+      toggleFlag(cell.x, cell.y, activeLayer);
+      draw();
+      showToast(c.state === 2 ? '🚩 Flag placed' : '⬜ Flag removed');
+    }
+  }, LONG_PRESS_MS);
+}, { passive: false });
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!touchStart || touchStart.swiped) return;
+  const dx = e.clientX - touchStart.x0;
+  const dy = e.clientY - touchStart.y0;
+  if (Math.abs(dx) > SWIPE_THRESHOLD || Math.abs(dy) > SWIPE_THRESHOLD) {
+    touchStart.swiped = true;
+    clearTimeout(longPressTimer);
+  }
+});
+
+canvas.addEventListener('pointerup', (e) => {
+  if (!touchStart) return;
+  clearTimeout(longPressTimer);
+
+  if (touchStart.swiped) {
+    const dx = e.clientX - touchStart.x0;
+    const dy = e.clientY - touchStart.y0;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
+      if (dx < 0 && activeLayer < SIZE - 1) { activeLayer++; updateLayerLabel(); draw(); }
+      else if (dx > 0 && activeLayer > 0) { activeLayer--; updateLayerLabel(); draw(); }
+    }
+    touchStart = null;
+    return;
+  }
+
+  if (longPressFired) { touchStart = null; return; }
+
+  const { x, y } = touchStart;
+  touchStart = null;
+  handleTap(x, y);
+});
+
+canvas.addEventListener('pointercancel', () => {
+  clearTimeout(longPressTimer);
+  touchStart = null;
+});
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+function handleTap(gx, gy) {
+  if (gameOver) return;
+  const cell = grid[gx][gy][activeLayer];
+
+  // Open number — chord reveal neighbors if flags match
+  if (cell.state === 1 && cell.value > 0) {
+    const flagged = countNeighborFlags(gx, gy, activeLayer);
     if (flagged === cell.value) {
-      for (const [a,b,c] of nbs) {
-        if (grid[a][b][c].state === 'hidden') reveal(a, b, c);
-      }
-      // проверка на взрыв
-      for (const [a,b,c] of nbs) {
-        if (grid[a][b][c].mine && grid[a][b][c].state === 'open') {
-          lose(); return;
-        }
-      }
+      let hitMine = false;
+      forEachNeighbor(gx, gy, activeLayer, (a, b, c) => {
+        const nb = grid[a][b][c];
+        if (nb.state === 0 && nb.mine) hitMine = true;
+      });
+      forEachNeighbor(gx, gy, activeLayer, (a, b, c) => {
+        if (grid[a][b][c].state === 0) reveal(a, b, c);
+      });
+      if (hitMine) { lose(); return; }
       if (checkWin()) { win(); return; }
       draw();
+    } else {
+      showToast(`Need ${cell.value} flags, have ${flagged}`);
     }
     return;
   }
 
-  if (cell.state === 'flag') return;
+  if (cell.state === 2) return;
+  if (cell.state === 1) return;
 
-  // Первый клик — генерим мины
+  // First tap — generate mines
   if (!started) {
     started = true;
     generateMines(gx, gy, activeLayer);
@@ -411,12 +584,26 @@ canvas.addEventListener('pointerdown', (e) => {
     }, 250);
   }
 
-  reveal(gx, gy, activeLayer);
+  if (cell.mine) {
+    reveal(gx, gy, activeLayer);
+    lose();
+    return;
+  }
 
-  if (cell.mine) { lose(); return; }
+  reveal(gx, gy, activeLayer);
   if (checkWin()) { win(); return; }
   draw();
-});
+}
+
+// ===== Toast =====
+let toastTimer = null;
+function showToast(text) {
+  const el = document.getElementById('toast');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1200);
+}
 
 // ===== UI =====
 document.getElementById('prevLayer').onclick = () => {
@@ -426,27 +613,53 @@ document.getElementById('nextLayer').onclick = () => {
   if (activeLayer < SIZE - 1) { activeLayer++; updateLayerLabel(); draw(); }
 };
 
-document.getElementById('mode2D').onclick = () => {
-  if (started) { alert('Смена режима только в новой игре'); return; }
-  use3D = false;
-  document.getElementById('mode2D').classList.add('active');
-  document.getElementById('mode3D').classList.remove('active');
-};
-document.getElementById('mode3D').onclick = () => {
-  if (started) { alert('Смена режима только в новой игре'); return; }
-  use3D = true;
-  document.getElementById('mode3D').classList.add('active');
-  document.getElementById('mode2D').classList.remove('active');
-};
-
-document.getElementById('newGame').onclick = newGame;
-
-window.addEventListener('resize', () => {
-  setupCanvas();
-  draw();
+// Mode switch
+document.querySelectorAll('#modeToggle button').forEach(btn => {
+  btn.onclick = () => {
+    const mode = btn.dataset.mode;
+    if (started && !gameOver && !confirm('Switch mode? Game will restart.')) return;
+    use3D = mode === '3d';
+    document.querySelectorAll('#modeToggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (started) newGame();
+  };
 });
 
-// ===== Старт =====
+// Size switch
+document.querySelectorAll('#sizeToggle button').forEach(btn => {
+  btn.onclick = () => {
+    const newSize = parseInt(btn.dataset.size);
+    if (started && !gameOver && !confirm(`New game ${newSize}×${newSize}×${newSize}?`)) return;
+    SIZE = newSize;
+    document.querySelectorAll('#sizeToggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    newGame();
+  };
+});
+
+document.getElementById('newGame').onclick = () => {
+  if (started && !gameOver && !confirm('Start a new game?')) return;
+  newGame();
+};
+
+document.getElementById('msgBtn').onclick = () => newGame();
+
+// Resize (debounced)
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    setupCanvas();
+    draw();
+  }, 100);
+});
+
+// Prevent iOS scroll
+document.addEventListener('touchmove', e => {
+  if (e.target === canvas) e.preventDefault();
+}, { passive: false });
+
+// Start
 setupCanvas();
 newGame();
 </script>
