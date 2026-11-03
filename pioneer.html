@@ -739,4 +739,63 @@ function renderNotebook() {
     row.appendChild(sel);
     row.appendChild(inp);
     row.appendChild(del);
-    nbList
+    nbList.appendChild(row);
+  });
+}
+
+document.getElementById('nbAdd').addEventListener('click', function(){
+  notebookWords.push({ word: '', trigger: 'START' });
+  saveNotebook(notebookWords);
+  renderNotebook();
+});
+
+document.getElementById('nbReset').addEventListener('click', function(){
+  if (!confirm('Reset to default words?')) return;
+  notebookWords = DEFAULT_WORDS.slice();
+  saveNotebook(notebookWords);
+  renderNotebook();
+});
+
+document.getElementById('nbClose').addEventListener('click', function(){
+  notebook.classList.remove('show');
+});
+
+document.getElementById('btnNotebook').addEventListener('click', function(){
+  renderNotebook();
+  notebook.classList.add('show');
+});
+
+// ===== Help UI =====
+document.getElementById('btnHelp').addEventListener('click', function(){
+  helpModal.classList.add('show');
+});
+document.getElementById('closeHelp').addEventListener('click', function(){
+  helpModal.classList.remove('show');
+});
+helpModal.addEventListener('click', function(e){
+  if (e.target === helpModal) helpModal.classList.remove('show');
+});
+
+window.addEventListener('resize', applyBoardStyle);
+
+// ===== PWA: Register Service Worker =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(function(reg) {
+        console.log('[PWA] SW registered:', reg.scope);
+      })
+      .catch(function(err) {
+        console.warn('[PWA] SW registration failed:', err);
+      });
+  });
+}
+
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+  document.body.classList.add('pwa-standalone');
+}
+
+newGame();
+</script>
+</body>
+</html>
