@@ -3,35 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#0a0a1a">
-<link rel="apple-touch-icon" href="boom.png">
-<link rel="icon" type="image/png" sizes="512x512" href="boom.png">
-<title>3D MineSweeper</title>
+<title>3D Minesweeper</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { margin:0; background:#0a0a1a; color:#fff; font-family:Arial,sans-serif; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
   
-  /* Верхняя панель */
   #topbar { display:flex; justify-content:space-between; align-items:center; padding:10px; background:#151525; font-size:15px; gap:6px; }
   #topbar span { background:#222; padding:6px 12px; border-radius:6px; display:flex; gap:6px; align-items:center; font-weight:bold; }
-  #btnHelp { background:#222; color:#ffcc00; border:none; border-radius:6px; padding:6px 12px; font-size:15px; font-weight:bold; cursor:pointer; }
-  #btnHelp:active { background:#333; }
+  #topbar button { background:#222; border:none; color:#ffcc00; border-radius:6px; padding:6px 10px; font-size:15px; font-weight:bold; cursor:pointer; }
 
-  /* Игровое поле */
-  #boardWrap { flex:1; display:flex; align-items:center; justify-content:center; overflow:auto; padding:8px; }
+  #boardWrap { flex:1; display:flex; align-items:center; justify-content:center; overflow:auto; padding:8px; position:relative; }
   #board { display:grid; gap:2px; margin:auto; }
-  .cell { background:#3a7bd5; border-radius:4px; display:flex; align-items:center; justify-content:center; font-weight:bold; cursor:pointer; user-select:none; position:relative; }
+  
+  .cell {
+    background:#3a7bd5; border-radius:4px; aspect-ratio: 1 / 1;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:bold; cursor:pointer; user-select:none;
+    position:relative; overflow:hidden;
+  }
   .cell.flag { background:#ffcc00; color:#000; }
   .cell.open { background:#1a1a2a; }
   .cell.mine { background:#7a1010; }
-
-  /* Мини-карта слоёв */
+  
   #minimap { display:flex; gap:4px; justify-content:center; padding:8px; background:#151525; overflow-x:auto; }
   .mini-layer { flex-shrink:0; width:36px; height:36px; border-radius:6px; background:#222; border:2px solid #444; display:flex; align-items:center; justify-content:center; font-weight:bold; cursor:pointer; font-size:12px; }
   .mini-layer.active { border-color:#ffcc00; background:#3a3a1a; color:#ffcc00; }
   .mini-layer.done { background:#1a3a1a; border-color:#44ff88; color:#44ff88; }
 
-  /* Нижние контролы */
   #controls { padding:8px; background:#151525; display:flex; flex-direction:column; gap:8px; }
   .row { display:flex; justify-content:center; gap:6px; }
   .row button { padding:8px 10px; background:#444; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; }
@@ -39,62 +37,88 @@
   .row button:disabled { opacity:.3; }
   #layerLabel { flex:1; text-align:center; background:#222; color:#ffcc00; border:none; font-weight:bold; padding:8px; border-radius:6px; }
 
-  /* Оверлей победы/проигрыша */
   #overlay { display:none; position:fixed; inset:0; background:rgba(10,10,26,0.85); z-index:20; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
   #overlay.show { display:flex; }
   #msg { font-size:32px; font-weight:bold; margin-bottom:20px; text-align:center; }
   #overlay button { padding:14px 32px; background:#ffcc00; color:#000; border:none; border-radius:8px; font-size:18px; font-weight:bold; cursor:pointer; }
 
-  /* Окно Help */
-  #helpModal {
-    display:none; position:fixed; inset:0; z-index:30;
-    background:rgba(10,10,26,0.92); backdrop-filter:blur(6px);
+  #toast {
+    position: fixed; bottom: 100px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(0,0,0,.92); color: #ffcc00;
+    padding: 10px 20px; border-radius: 22px;
+    font-size: 14px; font-weight: bold;
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s, transform .25s;
+    z-index: 50; white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ===== Слово-напоминание поверх поля ===== */
+  #wordDisplay {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    font-size: 52px; font-weight: 900;
+    color: #ffcc00;
+    text-shadow: 0 0 30px rgba(255,204,0,.6), 0 4px 20px rgba(0,0,0,.8);
+    opacity: 0; pointer-events: none;
+    transition: opacity .4s, transform .4s;
+    z-index: 60; text-align: center;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    max-width: 95vw; overflow: hidden; text-overflow: ellipsis;
+  }
+  #wordDisplay.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  /* ===== Записная книжка ===== */
+  #notebook {
+    display:none; position:fixed; inset:0; z-index:70;
+    background:rgba(10,10,26,0.95); backdrop-filter:blur(6px);
     overflow-y:auto;
   }
-  #helpModal.show { display:flex; }
-  #helpContent {
+  #notebook.show { display:flex; }
+  #notebookInner {
     max-width:560px; width:calc(100% - 32px);
-    margin:auto; padding:24px 20px 32px;
+    margin:auto; padding:24px 20px;
     background:#151525; border-radius:16px;
     box-shadow:0 10px 40px rgba(0,0,0,.6);
-    display:flex; flex-direction:column; gap:14px;
-    color:#e8e8f0; font-size:14px; line-height:1.55;
+    color:#e8e8f0; font-size:14px;
   }
-  #helpContent h2 {
-    color:#ffcc00; font-size:22px; margin-bottom:4px;
-    text-align:center; letter-spacing:.3px;
-  }
-  #helpContent h3 {
-    color:#4fc3f7; font-size:14px; text-align:center; margin-top:12px;
-    text-transform:uppercase; letter-spacing:.8px;
-  }
-  #helpContent p { margin:0; }
-  #helpContent ul { margin:0; padding-left:18px; }
-  #helpContent li { margin-bottom:6px; }
-  #helpContent b { color:#ffcc00; }
-  #helpContent .em { font-style:bold; color:#aaa; font-size:13px; text-align:center; margin-top:4px; }
+  #notebookInner h2 { color:#ffcc00; font-size:20px; margin-bottom:4px; text-align:center; }
+  #notebookInner .hint { color:#888; font-size:12px; text-align:center; margin-bottom:16px; line-height:1.5; }
 
-  #helpFooter {
-    margin-top:16px; padding-top:16px;
-    border-top:1px solid rgba(255,255,255,.1);
-    display:flex; flex-direction:column; align-items:center; gap:8px;
+  .nb-row {
+    display:flex; gap:6px; align-items:center;
+    background:#1a1a2a; padding:8px; border-radius:8px;
+    margin-bottom:8px;
   }
-  #helpFooter img {
-    width:64px; height:64px; object-fit:contain;
-    opacity:.85;
+  .nb-row select, .nb-row input {
+    background:#0a0a1a; color:#fff; border:1px solid #333;
+    padding:8px; border-radius:6px; font-size:13px; font-family:inherit;
   }
-  #helpFooter a {
-    color:#ffcc00; text-decoration:none; font-size:13px;
-    padding:6px 14px; border:1px solid #ffcc00; border-radius:8px;
-    font-weight:bold; transition:.15s;
+  .nb-row select { flex-shrink:0; width:110px; }
+  .nb-row input { flex:1; min-width:0; }
+  .nb-row .del {
+    background:#7a1010; color:#fff; border:none;
+    width:32px; height:32px; border-radius:6px;
+    font-weight:bold; cursor:pointer; flex-shrink:0;
   }
-  #helpFooter a:hover { background:#ffcc00; color:#000; }
+  .nb-row .del:active { background:#a02020; }
 
-  #closeHelp {
-    align-self:center; margin-top:8px;
-    padding:12px 32px; background:#ffcc00; color:#000;
-    border:none; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer;
+  #nbAdd, #nbClose, #nbReset {
+    padding:10px 16px; border:none; border-radius:8px;
+    font-size:14px; font-weight:bold; cursor:pointer;
+    margin-top:10px;
   }
+  #nbAdd { background:#4fc3f7; color:#000; }
+  #nbClose { background:#ffcc00; color:#000; width:100%; }
+  #nbReset { background:#333; color:#ccc; }
+
+  .nb-actions { display:flex; gap:8px; }
+  .nb-actions button { flex:1; }
 </style>
 </head>
 <body>
@@ -103,11 +127,12 @@
   <span>💣 <b id="mines">0</b></span>
   <span>🚩 <b id="flags">0</b></span>
   <span>⏱ <b id="time">0</b></span>
-  <button id="btnHelp">?</button>
+  <button id="btnNotebook" title="Notebook">📓</button>
 </div>
 
 <div id="boardWrap">
   <div id="board"></div>
+  <div id="wordDisplay"></div>
 </div>
 
 <div id="minimap"></div>
@@ -126,41 +151,28 @@
   </div>
 </div>
 
-<!-- Оверлей конца игры -->
 <div id="overlay">
   <div id="msg">💥 BOOM!</div>
   <button id="btnRestart">Play Again</button>
 </div>
 
-<!-- Окно Help -->
-<div id="helpModal">
-  <div id="helpContent">
-    <h2>3D MineSweeper</h2>
-        <h3>Think in Depth</h3>
-    <p class="em">A true volumetric take on the classic puzzle.</p>
+<div id="toast"></div>
 
-    <h3>The Twist</h3>
-    <p>Every layer is its own unique battlefield, yet they're all connected — a single tap can ripple through empty spaces across multiple layers at once.</p>
-    <p>Mines are counted across all <b>26 neighbors</b> in 3D space — including the layers above and below you. A <b>2</b> on your layer might mean both mines are on <i>your</i> plane… or one could be hiding one layer up.</p>
-
-    <h3>Key Features</h3>
-    <ul>
-      <li><b>Unique Layers</b> — each of the N layers has its own layout. No duplicates.</li>
-      <li><b>Layer Minimap</b> — see all layers at a glance. Green layers are fully cleared. Tap to jump between them.</li>
-      <li><b>Smart Flood-Fill</b> — opening an empty cell cascades through 3D space, revealing safe zones across multiple layers at once.</li>
-      <li><b>Scalable Cube</b> — play on 5³, 8³, 13³, or 21³. Mines scale at 4% density for balanced difficulty.</li>
-      <li><b>Classic Controls</b> — tap to reveal, double-tap (or right-click) to flag. The clock is ticking.</li>
-    </ul>
-
-    <p class="em">Three dimensions. Twenty-six directions. One mistake ends it all.<br>Can you clear the whole cube? 🧊💣</p>
-
-    <div id="helpFooter">
-      <a href="index.html">
-        <img src="fleurdelis.png" alt="fleur-de-lis">
-      </a>
+<!-- Записная книжка -->
+<div id="notebook">
+  <div id="notebookInner">
+    <h2>📓 Notebook</h2>
+    <div class="hint">
+      Words appear as gentle reminders during play<br>
+      Pair a word with a trigger — it'll show up at that moment<br>
+      Add the page to your home screen via the browser menu to use it as an app
     </div>
-
-    <button id="closeHelp">Got it</button>
+    <div id="nbList"></div>
+    <button id="nbAdd">+ Add word</button>
+    <div class="nb-actions">
+      <button id="nbReset">Reset</button>
+      <button id="nbClose">Close</button>
+    </div>
   </div>
 </div>
 
@@ -174,14 +186,88 @@ var started = false;
 var flagsCount = 0;
 var startTime = 0;
 var timerInt = null;
+var lastWordTime = 0;
+var explosiveRunning = false;
+
+const LONG_PRESS_MS = 400;
+const NOTEBOOK_KEY = 'mine3d_notebook_v1';
 
 var boardEl = document.getElementById('board');
 var boardWrap = document.getElementById('boardWrap');
 var overlay = document.getElementById('overlay');
 var msgEl = document.getElementById('msg');
 var minimapEl = document.getElementById('minimap');
-var helpModal = document.getElementById('helpModal');
+var toastEl = document.getElementById('toast');
+var wordDisplay = document.getElementById('wordDisplay');
+var notebook = document.getElementById('notebook');
+var nbList = document.getElementById('nbList');
 
+// ===== Триггеры =====
+var TRIGGERS = {
+  'BOOM': '💥 On explosion',
+  'WIN': '🎉 On victory',
+  'START': '▶️ First tap',
+  'FLAG': '🚩 Flag placed',
+  'LAYER': '🔄 Layer switched',
+  'TIME': '⏱ Every 30s'
+};
+
+// ===== Безопасные демо-слова =====
+var DEFAULT_WORDS = [
+  { word: 'Focus', trigger: 'START' },
+  { word: 'Breathe', trigger: 'LAYER' },
+  { word: 'Nice', trigger: 'FLAG' },
+  { word: 'Think', trigger: 'TIME' },
+  { word: 'Almost', trigger: 'BOOM' },
+  { word: 'Keep going', trigger: 'WIN' }
+];
+
+// ===== Загрузка/сохранение записной книжки =====
+function loadNotebook() {
+  try {
+    var raw = localStorage.getItem(NOTEBOOK_KEY);
+    if (raw) {
+      var arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return arr;
+    }
+  } catch(e) {}
+  return DEFAULT_WORDS.slice();
+}
+
+function saveNotebook(words) {
+  try { localStorage.setItem(NOTEBOOK_KEY, JSON.stringify(words)); } catch(e) {}
+}
+
+var notebookWords = loadNotebook();
+
+// ===== Показать слово по триггеру =====
+function showWordFor(trigger) {
+  var matches = notebookWords.filter(function(w){ return w.trigger === trigger && w.word; });
+  if (!matches.length) return;
+  var pick = matches[Math.floor(Math.random() * matches.length)];
+  showBigWord(pick.word);
+}
+
+var wordHideTimer = null;
+function showBigWord(text) {
+  wordDisplay.textContent = text;
+  wordDisplay.classList.add('show');
+  clearTimeout(wordHideTimer);
+  wordHideTimer = setTimeout(function(){
+    wordDisplay.classList.remove('show');
+  }, 1600);
+}
+
+// ===== Тост =====
+var toastTimer = null;
+function showToast(text) {
+  toastEl.textContent = text;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 1400);
+}
+
+// ===== Плотность =====
 function minesForSize(n) {
   var total = n * n * n;
   var m = Math.floor(total * 0.04);
@@ -190,6 +276,7 @@ function minesForSize(n) {
   return m;
 }
 
+// ===== Стиль =====
 function applyBoardStyle() {
   var gap = SIZE <= 8 ? 3 : (SIZE <= 13 ? 2 : 1);
   var availW = boardWrap.clientWidth - 16 - gap * (SIZE - 1);
@@ -199,6 +286,7 @@ function applyBoardStyle() {
   if (cell < 12) cell = 12;
   var fontSize = Math.max(8, Math.floor(cell * 0.5));
   boardEl.style.gridTemplateColumns = 'repeat(' + SIZE + ', ' + cell + 'px)';
+  boardEl.style.gridAutoRows = cell + 'px';
   boardEl.style.gap = gap + 'px';
   var cells = boardEl.querySelectorAll('.cell');
   for (var i = 0; i < cells.length; i++) {
@@ -208,10 +296,13 @@ function applyBoardStyle() {
   }
 }
 
+// ===== Новая игра =====
 function newGame() {
-  gameOver = false; started = false; flagsCount = 0; activeLayer = 0;
+  gameOver = false; started = false; flagsCount = 0; activeLayer = 0; explosiveRunning = false;
+  lastWordTime = 0;
   if (timerInt) { clearInterval(timerInt); timerInt = null; }
   MINES = minesForSize(SIZE);
+
   document.getElementById('time').textContent = '0';
   document.getElementById('mines').textContent = MINES;
   document.getElementById('flags').textContent = '0';
@@ -225,7 +316,9 @@ function newGame() {
       for (var z = 0; z < SIZE; z++) grid[x][y][z] = { mine: false, state: 0, value: 0 };
     }
   }
-  updateLayerLabel(); renderBoard(); renderMinimap(); applyBoardStyle();
+  updateLayerLabel(); renderBoard(); renderMinimap();
+  requestAnimationFrame(function(){ applyBoardStyle(); });
+  showToast('Tap a cell to start');
 }
 
 function updateLayerLabel() {
@@ -243,7 +336,6 @@ function forEachNeighbor(x, y, z, fn) {
         if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && nz >= 0 && nz < SIZE) fn(nx, ny, nz);
       }
 }
-
 function countMines(x, y, z) {
   var c = 0; forEachNeighbor(x, y, z, function(a,b,d){ if(grid[a][b][d].mine) c++; }); return c;
 }
@@ -292,7 +384,14 @@ function reveal(x, y, z) {
 function toggleFlag(x, y, z) {
   var cell = grid[x][y][z];
   if (cell.state === 1) return;
-  if (cell.state === 0) { cell.state = 2; flagsCount++; } else { cell.state = 0; flagsCount--; }
+  if (cell.state === 0) {
+    cell.state = 2; flagsCount++;
+    showToast('🚩 Flag placed');
+    showWordFor('FLAG');
+  } else {
+    cell.state = 0; flagsCount--;
+    showToast('⬜ Flag removed');
+  }
   document.getElementById('flags').textContent = flagsCount;
 }
 
@@ -305,19 +404,51 @@ function checkWin() {
   return true;
 }
 
-function endGame(win) {
+// ===== Каскадный взрыв =====
+function loseSequential() {
+  gameOver = true;
+  explosiveRunning = true;
+  if (timerInt) { clearInterval(timerInt); timerInt = null; }
+
+  var i = 0;
+  function explodeNextLayer() {
+    if (i >= SIZE) {
+      explosiveRunning = false;
+      var sec = Math.floor((Date.now() - startTime) / 1000);
+      msgEl.textContent = '💥 BOOM!';
+      msgEl.style.color = '#ff4444';
+      overlay.classList.add('show');
+      showToast('💥 Exploded in ' + sec + 's');
+      showWordFor('BOOM');
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+      return;
+    }
+    var z = i++;
+    activeLayer = z;
+    for (var x = 0; x < SIZE; x++)
+      for (var y = 0; y < SIZE; y++) {
+        var c = grid[x][y][z];
+        if (c.mine && c.state !== 2) c.state = 1;
+      }
+    renderBoard(); renderMinimap(); applyBoardStyle();
+    showToast('💥 Layer ' + (z + 1) + ' detonated');
+    if (navigator.vibrate) navigator.vibrate(40);
+    setTimeout(explodeNextLayer, 140);
+  }
+  setTimeout(explodeNextLayer, 200);
+}
+
+function winGame() {
   gameOver = true;
   if (timerInt) { clearInterval(timerInt); timerInt = null; }
-  if (!win) {
-    for (var x = 0; x < SIZE; x++)
-      for (var y = 0; y < SIZE; y++)
-        for (var z = 0; z < SIZE; z++)
-          if (grid[x][y][z].mine && grid[x][y][z].state !== 2) grid[x][y][z].state = 1;
-  }
   renderBoard(); renderMinimap(); applyBoardStyle();
-  msgEl.textContent = win ? '🎉 You win!' : '💥 BOOM!';
-  msgEl.style.color = win ? '#44ff88' : '#ff4444';
+  var sec = Math.floor((Date.now() - startTime) / 1000);
+  msgEl.textContent = '🎉 You win!';
+  msgEl.style.color = '#44ff88';
   overlay.classList.add('show');
+  showToast('🎉 All layers cleared in ' + sec + 's!');
+  showWordFor('WIN');
+  if (navigator.vibrate) navigator.vibrate([50, 50, 50, 50, 50]);
 }
 
 function isLayerDone(z) {
@@ -338,7 +469,11 @@ function renderMinimap() {
     el.textContent = 'L' + (z + 1);
     (function(zz){
       el.addEventListener('click', function(){
-        activeLayer = zz; updateLayerLabel(); renderBoard(); renderMinimap();
+        if (explosiveRunning) return;
+        if (zz === activeLayer) return;
+        activeLayer = zz;
+        updateLayerLabel(); renderBoard(); renderMinimap(); applyBoardStyle();
+        showWordFor('LAYER');
       });
     })(z);
     minimapEl.appendChild(el);
@@ -365,58 +500,105 @@ function renderBoard() {
 }
 
 function bindCell(el, x, y) {
-  el.addEventListener('click', function () {
-    if (gameOver) return;
-    handleTap(x, y, activeLayer); renderBoard(); renderMinimap(); applyBoardStyle();
+  var pressTimer = null;
+  var longFired = false;
+
+  el.addEventListener('pointerdown', function (e) {
+    if (gameOver || explosiveRunning) return;
+    e.preventDefault();
+    longFired = false;
+    pressTimer = setTimeout(function () {
+      longFired = true;
+      if (navigator.vibrate) navigator.vibrate(35);
+      toggleFlag(x, y, activeLayer);
+      renderBoard(); applyBoardStyle();
+    }, LONG_PRESS_MS);
   });
-  el.addEventListener('dblclick', function (e) {
-    if (gameOver) return; e.preventDefault();
-    toggleFlag(x, y, activeLayer); renderBoard(); applyBoardStyle();
+
+  el.addEventListener('pointerup', function (e) {
+    e.preventDefault();
+    clearTimeout(pressTimer);
+    if (longFired || gameOver || explosiveRunning) return;
+    handleTap(x, y, activeLayer);
+    renderBoard(); renderMinimap(); applyBoardStyle();
+  });
+
+  el.addEventListener('pointercancel', function () { clearTimeout(pressTimer); });
+  el.addEventListener('pointerleave', function () { clearTimeout(pressTimer); });
+  el.addEventListener('contextmenu', function (e) {
+    e.preventDefault();
+    if (gameOver || explosiveRunning) return;
+    toggleFlag(x, y, activeLayer);
+    renderBoard(); applyBoardStyle();
   });
 }
 
 function handleTap(gx, gy, gz) {
   if (gameOver) return;
   var cell = grid[gx][gy][gz];
+
   if (cell.state === 1 && cell.value > 0) {
     var f = countFlags(gx, gy, gz);
     if (f === cell.value) {
       var hitMine = false;
       forEachNeighbor(gx, gy, gz, function(a,b,c){ if (grid[a][b][c].state === 0 && grid[a][b][c].mine) hitMine = true; });
       forEachNeighbor(gx, gy, gz, function(a,b,c){ if (grid[a][b][c].state === 0) reveal(a,b,c); });
-      if (hitMine) { endGame(false); return; }
-      if (checkWin()) { endGame(true); return; }
+      if (hitMine) { loseSequential(); return; }
+      if (checkWin()) { winGame(); return; }
+      showToast('🔓 Neighbors opened');
+    } else {
+      showToast('🚩 Need ' + cell.value + ', have ' + f);
     }
     return;
   }
+
   if (cell.state !== 0) return;
+
   if (!started) {
-    started = true; generateMines(gx, gy, gz); startTime = Date.now();
-    timerInt = setInterval(function(){ document.getElementById('time').textContent = Math.floor((Date.now() - startTime) / 1000); }, 250);
+    started = true;
+    generateMines(gx, gy, gz);
+    startTime = Date.now();
+    timerInt = setInterval(function(){
+      var sec = Math.floor((Date.now() - startTime) / 1000);
+      document.getElementById('time').textContent = sec;
+      // Триггер TIME каждые 30 секунд
+      if (sec > 0 && sec % 30 === 0 && sec !== lastWordTime) {
+        lastWordTime = sec;
+        showWordFor('TIME');
+      }
+    }, 250);
+    showToast('⏱ Timer started');
+    showWordFor('START');
   }
-  if (cell.mine) { reveal(gx, gy, gz); endGame(false); return; }
+
+  if (cell.mine) { reveal(gx, gy, gz); loseSequential(); return; }
   reveal(gx, gy, gz);
-  if (checkWin()) { endGame(true); return; }
+  if (checkWin()) { winGame(); return; }
 }
 
+// ===== UI =====
 document.getElementById('prevLayer').addEventListener('click', function(){
-  if (activeLayer > 0) { activeLayer--; updateLayerLabel(); renderBoard(); renderMinimap(); applyBoardStyle(); }
+  if (explosiveRunning) return;
+  if (activeLayer > 0) {
+    activeLayer--; updateLayerLabel(); renderBoard(); renderMinimap(); applyBoardStyle();
+    showWordFor('LAYER');
+  }
 });
 document.getElementById('nextLayer').addEventListener('click', function(){
-  if (activeLayer < SIZE - 1) { activeLayer++; updateLayerLabel(); renderBoard(); renderMinimap(); applyBoardStyle(); }
+  if (explosiveRunning) return;
+  if (activeLayer < SIZE - 1) {
+    activeLayer++; updateLayerLabel(); renderBoard(); renderMinimap(); applyBoardStyle();
+    showWordFor('LAYER');
+  }
 });
 
 document.getElementById('btnRestart').addEventListener('click', newGame);
-
-// Help
-document.getElementById('btnHelp').addEventListener('click', function(){ helpModal.classList.add('show'); });
-document.getElementById('closeHelp').addEventListener('click', function(){ helpModal.classList.remove('show'); });
-helpModal.addEventListener('click', function(e){ if (e.target === helpModal) helpModal.classList.remove('show'); });
 
 var sizeButtons = document.querySelectorAll('button.size');
 for (var i = 0; i < sizeButtons.length; i++) {
   (function (btn) {
     btn.addEventListener('click', function () {
+      if (explosiveRunning) return;
       var newSize = parseInt(btn.getAttribute('data-size'), 10);
       if (started && !gameOver && !confirm('Change size? Game restarts.')) return;
       SIZE = newSize;
@@ -426,7 +608,77 @@ for (var i = 0; i < sizeButtons.length; i++) {
     });
   })(sizeButtons[i]);
 }
+
+// ===== Notebook UI =====
+function renderNotebook() {
+  nbList.innerHTML = '';
+  notebookWords.forEach(function(entry, idx){
+    var row = document.createElement('div');
+    row.className = 'nb-row';
+
+    var sel = document.createElement('select');
+    Object.keys(TRIGGERS).forEach(function(k){
+      var opt = document.createElement('option');
+      opt.value = k;
+      opt.textContent = TRIGGERS[k];
+      if (k === entry.trigger) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', function(){
+      notebookWords[idx].trigger = sel.value;
+      saveNotebook(notebookWords);
+    });
+
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.value = entry.word;
+    inp.placeholder = 'word…';
+    inp.maxLength = 24;
+    inp.addEventListener('input', function(){
+      notebookWords[idx].word = inp.value;
+      saveNotebook(notebookWords);
+    });
+
+    var del = document.createElement('button');
+    del.className = 'del';
+    del.textContent = '✕';
+    del.addEventListener('click', function(){
+      notebookWords.splice(idx, 1);
+      saveNotebook(notebookWords);
+      renderNotebook();
+    });
+
+    row.appendChild(sel);
+    row.appendChild(inp);
+    row.appendChild(del);
+    nbList.appendChild(row);
+  });
+}
+
+document.getElementById('nbAdd').addEventListener('click', function(){
+  notebookWords.push({ word: '', trigger: 'START' });
+  saveNotebook(notebookWords);
+  renderNotebook();
+});
+
+document.getElementById('nbReset').addEventListener('click', function(){
+  if (!confirm('Reset to default words?')) return;
+  notebookWords = DEFAULT_WORDS.slice();
+  saveNotebook(notebookWords);
+  renderNotebook();
+});
+
+document.getElementById('nbClose').addEventListener('click', function(){
+  notebook.classList.remove('show');
+});
+
+document.getElementById('btnNotebook').addEventListener('click', function(){
+  renderNotebook();
+  notebook.classList.add('show');
+});
+
 window.addEventListener('resize', applyBoardStyle);
+
 newGame();
 </script>
 </body>
