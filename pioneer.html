@@ -3,15 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>3D Minesweeper</title>
+<meta name="theme-color" content="#0a0a1a">
+<link rel="apple-touch-icon" href="boom.png">
+<link rel="icon" type="image/png" sizes="512x512" href="boom.png">
+<title>3D MineSweeper</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { margin:0; background:#0a0a1a; color:#fff; font-family:Arial,sans-serif; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
   
   /* Верхняя панель */
-  #topbar { display:flex; justify-content:space-between; align-items:center; padding:10px; background:#151525; font-size:15px; }
+  #topbar { display:flex; justify-content:space-between; align-items:center; padding:10px; background:#151525; font-size:15px; gap:6px; }
   #topbar span { background:#222; padding:6px 12px; border-radius:6px; display:flex; gap:6px; align-items:center; font-weight:bold; }
-  
+  #btnHelp { background:#222; color:#ffcc00; border:none; border-radius:6px; padding:6px 12px; font-size:15px; font-weight:bold; cursor:pointer; }
+  #btnHelp:active { background:#333; }
+
   /* Игровое поле */
   #boardWrap { flex:1; display:flex; align-items:center; justify-content:center; overflow:auto; padding:8px; }
   #board { display:grid; gap:2px; margin:auto; }
@@ -19,7 +24,7 @@
   .cell.flag { background:#ffcc00; color:#000; }
   .cell.open { background:#1a1a2a; }
   .cell.mine { background:#7a1010; }
-  
+
   /* Мини-карта слоёв */
   #minimap { display:flex; gap:4px; justify-content:center; padding:8px; background:#151525; overflow-x:auto; }
   .mini-layer { flex-shrink:0; width:36px; height:36px; border-radius:6px; background:#222; border:2px solid #444; display:flex; align-items:center; justify-content:center; font-weight:bold; cursor:pointer; font-size:12px; }
@@ -34,11 +39,62 @@
   .row button:disabled { opacity:.3; }
   #layerLabel { flex:1; text-align:center; background:#222; color:#ffcc00; border:none; font-weight:bold; padding:8px; border-radius:6px; }
 
-  /* Оверлей */
+  /* Оверлей победы/проигрыша */
   #overlay { display:none; position:fixed; inset:0; background:rgba(10,10,26,0.85); z-index:20; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
   #overlay.show { display:flex; }
   #msg { font-size:32px; font-weight:bold; margin-bottom:20px; text-align:center; }
   #overlay button { padding:14px 32px; background:#ffcc00; color:#000; border:none; border-radius:8px; font-size:18px; font-weight:bold; cursor:pointer; }
+
+  /* Окно Help */
+  #helpModal {
+    display:none; position:fixed; inset:0; z-index:30;
+    background:rgba(10,10,26,0.92); backdrop-filter:blur(6px);
+    overflow-y:auto;
+  }
+  #helpModal.show { display:flex; }
+  #helpContent {
+    max-width:560px; width:calc(100% - 32px);
+    margin:auto; padding:24px 20px 32px;
+    background:#151525; border-radius:16px;
+    box-shadow:0 10px 40px rgba(0,0,0,.6);
+    display:flex; flex-direction:column; gap:14px;
+    color:#e8e8f0; font-size:14px; line-height:1.55;
+  }
+  #helpContent h2 {
+    color:#ffcc00; font-size:22px; margin-bottom:4px;
+    text-align:center; letter-spacing:.3px;
+  }
+  #helpContent h3 {
+    color:#4fc3f7; font-size:14px; text-align:center; margin-top:12px;
+    text-transform:uppercase; letter-spacing:.8px;
+  }
+  #helpContent p { margin:0; }
+  #helpContent ul { margin:0; padding-left:18px; }
+  #helpContent li { margin-bottom:6px; }
+  #helpContent b { color:#ffcc00; }
+  #helpContent .em { font-style:bold; color:#aaa; font-size:13px; text-align:center; margin-top:4px; }
+
+  #helpFooter {
+    margin-top:16px; padding-top:16px;
+    border-top:1px solid rgba(255,255,255,.1);
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+  }
+  #helpFooter img {
+    width:64px; height:64px; object-fit:contain;
+    opacity:.85;
+  }
+  #helpFooter a {
+    color:#ffcc00; text-decoration:none; font-size:13px;
+    padding:6px 14px; border:1px solid #ffcc00; border-radius:8px;
+    font-weight:bold; transition:.15s;
+  }
+  #helpFooter a:hover { background:#ffcc00; color:#000; }
+
+  #closeHelp {
+    align-self:center; margin-top:8px;
+    padding:12px 32px; background:#ffcc00; color:#000;
+    border:none; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer;
+  }
 </style>
 </head>
 <body>
@@ -47,6 +103,7 @@
   <span>💣 <b id="mines">0</b></span>
   <span>🚩 <b id="flags">0</b></span>
   <span>⏱ <b id="time">0</b></span>
+  <button id="btnHelp">?</button>
 </div>
 
 <div id="boardWrap">
@@ -69,9 +126,42 @@
   </div>
 </div>
 
+<!-- Оверлей конца игры -->
 <div id="overlay">
   <div id="msg">💥 BOOM!</div>
   <button id="btnRestart">Play Again</button>
+</div>
+
+<!-- Окно Help -->
+<div id="helpModal">
+  <div id="helpContent">
+    <h2>3D MineSweeper</h2>
+        <h3>Think in Depth</h3>
+    <p class="em">A true volumetric take on the classic puzzle.</p>
+
+    <h3>The Twist</h3>
+    <p>Every layer is its own unique battlefield, yet they're all connected — a single tap can ripple through empty spaces across multiple layers at once.</p>
+    <p>Mines are counted across all <b>26 neighbors</b> in 3D space — including the layers above and below you. A <b>2</b> on your layer might mean both mines are on <i>your</i> plane… or one could be hiding one layer up.</p>
+
+    <h3>Key Features</h3>
+    <ul>
+      <li><b>Unique Layers</b> — each of the N layers has its own layout. No duplicates.</li>
+      <li><b>Layer Minimap</b> — see all layers at a glance. Green layers are fully cleared. Tap to jump between them.</li>
+      <li><b>Smart Flood-Fill</b> — opening an empty cell cascades through 3D space, revealing safe zones across multiple layers at once.</li>
+      <li><b>Scalable Cube</b> — play on 5³, 8³, 13³, or 21³. Mines scale at 4% density for balanced difficulty.</li>
+      <li><b>Classic Controls</b> — tap to reveal, double-tap (or right-click) to flag. The clock is ticking.</li>
+    </ul>
+
+    <p class="em">Three dimensions. Twenty-six directions. One mistake ends it all.<br>Can you clear the whole cube? 🧊💣</p>
+
+    <div id="helpFooter">
+      <a href="index.html">
+        <img src="fleurdelis.png" alt="fleur-de-lis">
+      </a>
+    </div>
+
+    <button id="closeHelp">Got it</button>
+  </div>
 </div>
 
 <script>
@@ -90,8 +180,8 @@ var boardWrap = document.getElementById('boardWrap');
 var overlay = document.getElementById('overlay');
 var msgEl = document.getElementById('msg');
 var minimapEl = document.getElementById('minimap');
+var helpModal = document.getElementById('helpModal');
 
-// Плотность мин: 4% от объёма куба
 function minesForSize(n) {
   var total = n * n * n;
   var m = Math.floor(total * 0.04);
@@ -122,7 +212,6 @@ function newGame() {
   gameOver = false; started = false; flagsCount = 0; activeLayer = 0;
   if (timerInt) { clearInterval(timerInt); timerInt = null; }
   MINES = minesForSize(SIZE);
-  
   document.getElementById('time').textContent = '0';
   document.getElementById('mines').textContent = MINES;
   document.getElementById('flags').textContent = '0';
@@ -145,7 +234,6 @@ function updateLayerLabel() {
   document.getElementById('nextLayer').disabled = activeLayer === SIZE - 1;
 }
 
-// 26 соседей в 3D-кубе
 function forEachNeighbor(x, y, z, fn) {
   for (var dx = -1; dx <= 1; dx++)
     for (var dy = -1; dy <= 1; dy++)
@@ -164,7 +252,6 @@ function countFlags(x, y, z) {
 }
 
 function generateMines(sx, sy, sz) {
-  // Безопасная зона 3×3×3 вокруг первого клика
   var forbidden = {};
   forbidden[sx + ',' + sy + ',' + sz] = true;
   forEachNeighbor(sx, sy, sz, function(a,b,c){ forbidden[a+','+b+','+c] = true; });
@@ -188,7 +275,6 @@ function generateMines(sx, sy, sz) {
         if (!grid[xx][yy][zz].mine) grid[xx][yy][zz].value = countMines(xx, yy, zz);
 }
 
-// Открытие с рекурсией на 26 соседей
 function reveal(x, y, z) {
   var start = grid[x][y][z];
   if (start.mine) { if (start.state === 0) start.state = 1; return; }
@@ -235,7 +321,6 @@ function endGame(win) {
 }
 
 function isLayerDone(z) {
-  // Слой пройден, если на нём все безопасные клетки открыты
   for (var x = 0; x < SIZE; x++)
     for (var y = 0; y < SIZE; y++) {
       if (!grid[x][y][z].mine && grid[x][y][z].state !== 1) return false;
@@ -267,16 +352,12 @@ function renderBoard() {
     for (var x = 0; x < SIZE; x++) {
       var c = grid[x][y][activeLayer];
       var el = document.createElement('div'); el.className = 'cell';
-      
       if (c.state === 0) { /* hidden */ }
       else if (c.state === 2) { el.className = 'cell flag'; el.textContent = '🚩'; }
       else if (c.mine) { el.className = 'cell mine'; el.textContent = '💣'; }
       else {
         el.className = 'cell open';
-        if (c.value > 0) {
-          el.textContent = c.value;
-          el.style.color = NUM_COLORS[c.value] || '#fff';
-        }
+        if (c.value > 0) { el.textContent = c.value; el.style.color = NUM_COLORS[c.value] || '#fff'; }
       }
       bindCell(el, x, y); boardEl.appendChild(el);
     }
@@ -297,7 +378,6 @@ function bindCell(el, x, y) {
 function handleTap(gx, gy, gz) {
   if (gameOver) return;
   var cell = grid[gx][gy][gz];
-  
   if (cell.state === 1 && cell.value > 0) {
     var f = countFlags(gx, gy, gz);
     if (f === cell.value) {
@@ -309,14 +389,11 @@ function handleTap(gx, gy, gz) {
     }
     return;
   }
-  
   if (cell.state !== 0) return;
-  
   if (!started) {
     started = true; generateMines(gx, gy, gz); startTime = Date.now();
     timerInt = setInterval(function(){ document.getElementById('time').textContent = Math.floor((Date.now() - startTime) / 1000); }, 250);
   }
-  
   if (cell.mine) { reveal(gx, gy, gz); endGame(false); return; }
   reveal(gx, gy, gz);
   if (checkWin()) { endGame(true); return; }
@@ -330,6 +407,11 @@ document.getElementById('nextLayer').addEventListener('click', function(){
 });
 
 document.getElementById('btnRestart').addEventListener('click', newGame);
+
+// Help
+document.getElementById('btnHelp').addEventListener('click', function(){ helpModal.classList.add('show'); });
+document.getElementById('closeHelp').addEventListener('click', function(){ helpModal.classList.remove('show'); });
+helpModal.addEventListener('click', function(e){ if (e.target === helpModal) helpModal.classList.remove('show'); });
 
 var sizeButtons = document.querySelectorAll('button.size');
 for (var i = 0; i < sizeButtons.length; i++) {
