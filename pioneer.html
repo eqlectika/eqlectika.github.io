@@ -79,6 +79,7 @@
     transform: translate(-50%, -50%) scale(1);
   }
 
+  /* ===== Notebook ===== */
   #notebook {
     display:none; position:fixed; inset:0; z-index:70;
     background:rgba(10,10,26,0.95); backdrop-filter:blur(6px);
@@ -124,27 +125,77 @@
 
   .nb-actions { display:flex; gap:8px; }
   .nb-actions button { flex:1; }
- .ios-blur-fix {
+
+  /* ===== Help ===== */
+  #helpModal {
+    display:none; position:fixed; inset:0; z-index:80;
+    background:rgba(10,10,26,0.95); backdrop-filter:blur(6px);
+    overflow-y:auto;
+  }
+  #helpModal.show { display:flex; }
+  #helpContent {
+    max-width:560px; width:calc(100% - 32px);
+    margin:auto; padding:24px 20px 28px;
+    background:#151525; border-radius:16px;
+    box-shadow:0 10px 40px rgba(0,0,0,.6);
+    color:#e8e8f0; font-size:14px; line-height:1.55;
+    display:flex; flex-direction:column; gap:14px;
+  }
+  #helpContent h2 {
+    color:#ffcc00; font-size:22px; margin-bottom:4px;
+    text-align:center; letter-spacing:.3px;
+  }
+  #helpContent h3 {
+    color:#4fc3f7; font-size:13px; margin-top:10px;
+    text-transform:uppercase; letter-spacing:.8px;
+  }
+  #helpContent p { margin:0; }
+  #helpContent ul { margin:0; padding-left:18px; }
+  #helpContent li { margin-bottom:6px; }
+  #helpContent b { color:#ffcc00; }
+  #helpContent .em { font-style:italic; color:#aaa; font-size:13px; text-align:center; margin-top:4px; }
+
+  #helpFooter {
+    margin-top:16px; padding-top:16px;
+    border-top:1px solid rgba(255,255,255,.1);
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+  }
+  #helpFooter img {
+    width:64px; height:64px; object-fit:contain;
+    opacity:.85;
+  }
+  #helpFooter a {
+    color:#ffcc00; text-decoration:none; font-size:13px;
+    padding:8px 16px; border:1px solid #ffcc00; border-radius:8px;
+    font-weight:bold; transition:.15s;
+  }
+  #helpFooter a:hover { background:#ffcc00; color:#000; }
+
+  #closeHelp {
+    align-self:center; margin-top:8px;
+    padding:12px 32px; background:#ffcc00; color:#000;
+    border:none; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer;
+  }
+
+  .ios-blur-fix {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: 0; left: 0; right: 0;
     height: 11px;
     z-index: 2147483647;
     pointer-events: none;
-    background-color: #000;  /* подставьте цвет фона вашего файла */
-    -webkit-background-clip: text;
-    color: transparent;
-}
+    background-color: #000;
+  }
 </style>
 </head>
 <body>
   <div class="ios-blur-fix"></div>
+
 <div id="topbar">
   <span>💣 <b id="mines">0</b></span>
   <span>🚩 <b id="flags">0</b></span>
   <span>⏱ <b id="time">0</b></span>
   <button id="btnNotebook" title="Notebook">📓</button>
+  <button id="btnHelp" title="Help">?</button>
 </div>
 
 <div id="boardWrap">
@@ -175,6 +226,7 @@
 
 <div id="toast"></div>
 
+<!-- Notebook -->
 <div id="notebook">
   <div id="notebookInner">
     <h2>📓 Notebook</h2>
@@ -189,6 +241,36 @@
       <button id="nbReset">Reset</button>
       <button id="nbClose">Close</button>
     </div>
+  </div>
+</div>
+
+<!-- Help -->
+<div id="helpModal">
+  <div id="helpContent">
+    <h2>🧊 3D MineSweeper — Think in Depth</h2>
+    <p class="em">A true volumetric take on the classic puzzle.</p>
+
+    <h3>The Twist</h3>
+    <p>Every layer is its own unique battlefield, yet they're all connected — a single tap can ripple through empty spaces across multiple layers at once.</p>
+    <p>Mines are counted across all <b>26 neighbors</b> in 3D space — including the layers above and below you. A <b>2</b> on your layer might mean both mines are on <i>your</i> plane… or one could be hiding one layer up.</p>
+
+    <h3>Key Features</h3>
+    <ul>
+      <li><b>Unique Layers</b> — each of the N layers has its own layout. No duplicates.</li>
+      <li><b>Layer Minimap</b> — see all layers at a glance. Green layers are fully cleared. Tap to jump between them.</li>
+      <li><b>Smart Flood-Fill</b> — opening an empty cell cascades through 3D space, revealing safe zones across multiple layers at once.</li>
+      <li><b>Scalable Cube</b> — play on 5³, 8³, 13³, or 21³. Mines scale at 4% density for balanced difficulty.</li>
+      <li><b>Classic Controls</b> — tap to reveal, long-press to flag. The clock is ticking.</li>
+    </ul>
+
+    <p class="em">Three dimensions. Twenty-six directions. One mistake ends it all.<br>Can you clear the whole cube? 🧊💣</p>
+
+    <div id="helpFooter">
+      <img src="./fleurdelis.png" alt="fleur-de-lis" onerror="this.style.opacity=.3">
+      <a href="./index.html">← Back to Index</a>
+    </div>
+
+    <button id="closeHelp">Got it</button>
   </div>
 </div>
 
@@ -217,6 +299,7 @@ var toastEl = document.getElementById('toast');
 var wordDisplay = document.getElementById('wordDisplay');
 var notebook = document.getElementById('notebook');
 var nbList = document.getElementById('nbList');
+var helpModal = document.getElementById('helpModal');
 
 var TRIGGERS = {
   'BOOM': '💥 On explosion',
@@ -614,6 +697,7 @@ for (var i = 0; i < sizeButtons.length; i++) {
   })(sizeButtons[i]);
 }
 
+// ===== Notebook UI =====
 function renderNotebook() {
   nbList.innerHTML = '';
   notebookWords.forEach(function(entry, idx){
@@ -655,52 +739,4 @@ function renderNotebook() {
     row.appendChild(sel);
     row.appendChild(inp);
     row.appendChild(del);
-    nbList.appendChild(row);
-  });
-}
-
-document.getElementById('nbAdd').addEventListener('click', function(){
-  notebookWords.push({ word: '', trigger: 'START' });
-  saveNotebook(notebookWords);
-  renderNotebook();
-});
-
-document.getElementById('nbReset').addEventListener('click', function(){
-  if (!confirm('Reset to default words?')) return;
-  notebookWords = DEFAULT_WORDS.slice();
-  saveNotebook(notebookWords);
-  renderNotebook();
-});
-
-document.getElementById('nbClose').addEventListener('click', function(){
-  notebook.classList.remove('show');
-});
-
-document.getElementById('btnNotebook').addEventListener('click', function(){
-  renderNotebook();
-  notebook.classList.add('show');
-});
-
-window.addEventListener('resize', applyBoardStyle);
-
-// ===== PWA: Register Service Worker =====
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('./sw.js', { scope: './' })
-      .then(function(reg) {
-        console.log('[PWA] SW registered:', reg.scope);
-      })
-      .catch(function(err) {
-        console.warn('[PWA] SW registration failed:', err);
-      });
-  });
-}
-
-if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-  document.body.classList.add('pwa-standalone');
-}
-
-newGame();
-</script>
-</body>
-</html>
+    nbList
