@@ -23,6 +23,7 @@ const CORE_ASSETS = [
     './support.html',
     './swipe.html',
     './design.html',
+    './pioneer.html',
 
     './manifest-index.json',
     './manifest-auction.json',
@@ -43,6 +44,7 @@ const CORE_ASSETS = [
     './manifest-cube.json',
     './manifest-bismuth.json',
     './manifest-design.json',
+    './manifest-pioneer.json',
     
     './256.001.png',
     './256.002.png',
