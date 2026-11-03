@@ -8,7 +8,7 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { margin:0; background:#0a0a1a; color:#fff; font-family:Arial,sans-serif; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
   
-  /* Верхняя панель (только статистика) */
+  /* Верхняя панель */
   #topbar { display:flex; justify-content:space-between; align-items:center; padding:10px; background:#151525; font-size:15px; }
   #topbar span { background:#222; padding:6px 12px; border-radius:6px; display:flex; gap:6px; align-items:center; font-weight:bold; }
   
@@ -20,10 +20,13 @@
   .cell.open { background:#1a1a2a; }
   .cell.mine { background:#7a1010; }
   
-  /* Точка 3D-подсказки (мина в другом слое по этой же X,Y) */
-  .dot-3d { position:absolute; top:2px; right:2px; width:6px; height:6px; background:#ff4444; border-radius:50%; box-shadow:0 0 4px #ff4444; }
+  /* Мини-карта слоёв */
+  #minimap { display:flex; gap:4px; justify-content:center; padding:8px; background:#151525; overflow-x:auto; }
+  .mini-layer { flex-shrink:0; width:36px; height:36px; border-radius:6px; background:#222; border:2px solid #444; display:flex; align-items:center; justify-content:center; font-weight:bold; cursor:pointer; font-size:12px; }
+  .mini-layer.active { border-color:#ffcc00; background:#3a3a1a; color:#ffcc00; }
+  .mini-layer.done { background:#1a3a1a; border-color:#44ff88; color:#44ff88; }
 
-  /* Нижние контролы (только слои и размеры) */
+  /* Нижние контролы */
   #controls { padding:8px; background:#151525; display:flex; flex-direction:column; gap:8px; }
   .row { display:flex; justify-content:center; gap:6px; }
   .row button { padding:8px 10px; background:#444; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; }
@@ -31,7 +34,7 @@
   .row button:disabled { opacity:.3; }
   #layerLabel { flex:1; text-align:center; background:#222; color:#ffcc00; border:none; font-weight:bold; padding:8px; border-radius:6px; }
 
-  /* Оверлей победы/проигрыша */
+  /* Оверлей */
   #overlay { display:none; position:fixed; inset:0; background:rgba(10,10,26,0.85); z-index:20; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
   #overlay.show { display:flex; }
   #msg { font-size:32px; font-weight:bold; margin-bottom:20px; text-align:center; }
@@ -49,6 +52,8 @@
 <div id="boardWrap">
   <div id="board"></div>
 </div>
+
+<div id="minimap"></div>
 
 <div id="controls">
   <div class="row">
@@ -84,8 +89,9 @@ var boardEl = document.getElementById('board');
 var boardWrap = document.getElementById('boardWrap');
 var overlay = document.getElementById('overlay');
 var msgEl = document.getElementById('msg');
+var minimapEl = document.getElementById('minimap');
 
-// Плотность мин 4%
+// Плотность мин: 4% от объёма куба
 function minesForSize(n) {
   var total = n * n * n;
   var m = Math.floor(total * 0.04);
@@ -130,7 +136,7 @@ function newGame() {
       for (var z = 0; z < SIZE; z++) grid[x][y][z] = { mine: false, state: 0, value: 0 };
     }
   }
-  updateLayerLabel(); renderBoard(); applyBoardStyle();
+  updateLayerLabel(); renderBoard(); renderMinimap(); applyBoardStyle();
 }
 
 function updateLayerLabel() {
@@ -139,14 +145,15 @@ function updateLayerLabel() {
   document.getElementById('nextLayer').disabled = activeLayer === SIZE - 1;
 }
 
-// В 2D-режиме проверяем только 8 соседей на текущем слое (z + 0)
+// 26 соседей в 3D-кубе
 function forEachNeighbor(x, y, z, fn) {
   for (var dx = -1; dx <= 1; dx++)
-    for (var dy = -1; dy <= 1; dy++) {
-      if (dx === 0 && dy === 0) continue;
-      var nx = x + dx, ny = y + dy;
-      if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) fn(nx, ny, z);
-    }
+    for (var dy = -1; dy <= 1; dy++)
+      for (var dz = -1; dz <= 1; dz++) {
+        if (dx === 0 && dy === 0 && dz === 0) continue;
+        var nx = x + dx, ny = y + dy, nz = z + dz;
+        if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE && nz >= 0 && nz < SIZE) fn(nx, ny, nz);
+      }
 }
 
 function countMines(x, y, z) {
@@ -157,7 +164,7 @@ function countFlags(x, y, z) {
 }
 
 function generateMines(sx, sy, sz) {
-  // Безопасная зона 3×3 на текущем слое
+  // Безопасная зона 3×3×3 вокруг первого клика
   var forbidden = {};
   forbidden[sx + ',' + sy + ',' + sz] = true;
   forEachNeighbor(sx, sy, sz, function(a,b,c){ forbidden[a+','+b+','+c] = true; });
@@ -181,6 +188,7 @@ function generateMines(sx, sy, sz) {
         if (!grid[xx][yy][zz].mine) grid[xx][yy][zz].value = countMines(xx, yy, zz);
 }
 
+// Открытие с рекурсией на 26 соседей
 function reveal(x, y, z) {
   var start = grid[x][y][z];
   if (start.mine) { if (start.state === 0) start.state = 1; return; }
@@ -220,10 +228,36 @@ function endGame(win) {
         for (var z = 0; z < SIZE; z++)
           if (grid[x][y][z].mine && grid[x][y][z].state !== 2) grid[x][y][z].state = 1;
   }
-  renderBoard(); applyBoardStyle();
+  renderBoard(); renderMinimap(); applyBoardStyle();
   msgEl.textContent = win ? '🎉 You win!' : '💥 BOOM!';
   msgEl.style.color = win ? '#44ff88' : '#ff4444';
   overlay.classList.add('show');
+}
+
+function isLayerDone(z) {
+  // Слой пройден, если на нём все безопасные клетки открыты
+  for (var x = 0; x < SIZE; x++)
+    for (var y = 0; y < SIZE; y++) {
+      if (!grid[x][y][z].mine && grid[x][y][z].state !== 1) return false;
+    }
+  return true;
+}
+
+function renderMinimap() {
+  minimapEl.innerHTML = '';
+  for (var z = 0; z < SIZE; z++) {
+    var el = document.createElement('div');
+    el.className = 'mini-layer';
+    if (z === activeLayer) el.classList.add('active');
+    if (isLayerDone(z)) el.classList.add('done');
+    el.textContent = 'L' + (z + 1);
+    (function(zz){
+      el.addEventListener('click', function(){
+        activeLayer = zz; updateLayerLabel(); renderBoard(); renderMinimap();
+      });
+    })(z);
+    minimapEl.appendChild(el);
+  }
 }
 
 function renderBoard() {
@@ -242,17 +276,6 @@ function renderBoard() {
         if (c.value > 0) {
           el.textContent = c.value;
           el.style.color = NUM_COLORS[c.value] || '#fff';
-          
-          // 3D-подсказка: если в этой же координате (x, y) на других слоях есть мина
-          var hasOtherLayerMines = false;
-          for (var z = 0; z < SIZE; z++) {
-            if (z !== activeLayer && grid[x][y][z].mine) hasOtherLayerMines = true;
-          }
-          if (hasOtherLayerMines) {
-            var dot = document.createElement('div');
-            dot.className = 'dot-3d';
-            el.appendChild(dot);
-          }
         }
       }
       bindCell(el, x, y); boardEl.appendChild(el);
@@ -263,7 +286,7 @@ function renderBoard() {
 function bindCell(el, x, y) {
   el.addEventListener('click', function () {
     if (gameOver) return;
-    handleTap(x, y, activeLayer); renderBoard(); applyBoardStyle();
+    handleTap(x, y, activeLayer); renderBoard(); renderMinimap(); applyBoardStyle();
   });
   el.addEventListener('dblclick', function (e) {
     if (gameOver) return; e.preventDefault();
@@ -300,10 +323,10 @@ function handleTap(gx, gy, gz) {
 }
 
 document.getElementById('prevLayer').addEventListener('click', function(){
-  if (activeLayer > 0) { activeLayer--; updateLayerLabel(); renderBoard(); applyBoardStyle(); }
+  if (activeLayer > 0) { activeLayer--; updateLayerLabel(); renderBoard(); renderMinimap(); applyBoardStyle(); }
 });
 document.getElementById('nextLayer').addEventListener('click', function(){
-  if (activeLayer < SIZE - 1) { activeLayer++; updateLayerLabel(); renderBoard(); applyBoardStyle(); }
+  if (activeLayer < SIZE - 1) { activeLayer++; updateLayerLabel(); renderBoard(); renderMinimap(); applyBoardStyle(); }
 });
 
 document.getElementById('btnRestart').addEventListener('click', newGame);
