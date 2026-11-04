@@ -177,7 +177,7 @@
     text-align:center; letter-spacing:.3px;
   }
   #helpContent h3 {
-    color:#4fc3f7; font-size:13px; text-align:center;margin-top:10px;
+    color:#4fc3f7; font-size:13px; text-align:center; margin-top:10px;
     text-transform:uppercase; letter-spacing:.8px;
   }
   #helpContent p { margin:0; }
@@ -186,21 +186,58 @@
   #helpContent b { color:#ffcc00; }
   #helpContent .em { color:#aaa; font-size:13px; text-align:center; margin-top:4px; }
 
-  #helpFooter {
-    margin-top:16px; padding-top:16px;
-    border-top:1px solid rgba(255,255,255,.1);
-    display:flex; flex-direction:column; align-items:center; gap:10px;
+  /* ===== Update ===== */
+  #updateBlock {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
   }
-  #helpFooter img {
-    width:64px; height:64px; object-fit:contain;
-    opacity:.85;
+  #btnUpdate {
+    padding: 10px 22px;
+    background: #4fc3f7;
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  #btnUpdate:hover { background: #6fd4ff; }
+  #btnUpdate:active { background: #3aa8d8; }
+  #btnUpdate:disabled { opacity: .5; cursor: wait; }
+  #updateStatus {
+    font-size: 12px;
+    color: #888;
+    text-align: center;
+    min-height: 16px;
+    line-height: 1.4;
+  }
+  #updateStatus.ok { color: #44ff88; }
+  #updateStatus.new { color: #ffcc00; }
+  #updateStatus.err { color: #ff6666; }
+
+  /* ===== Footer (fleur-de-lis) ===== */
+  #helpFooter {
+    margin-top: 16px; padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,.1);
+    display: flex; flex-direction: column;
+    align-items: center; gap: 10px;
   }
   #helpFooter a {
-    color:#ffcc00; text-decoration:none; font-size:13px;
-    padding:8px 16px; solid #ffcc00; 
-    font-weight:bold; transition:.15s;
+    display: inline-block;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background .15s;
   }
-  #helpFooter a:hover { background:#ffcc00; color:#000; }
+  #helpFooter a:hover { background: rgba(255,255,255,.08); }
+  #helpFooter img {
+    width: 64px; height: 64px; object-fit: contain;
+    opacity: .85;
+    display: block;
+  }
 
   #closeHelp {
     align-self:center; margin-top:8px;
@@ -216,7 +253,6 @@
     pointer-events: none;
     background-color: #000;
   }
-
 </style>
 </head>
 <body>
@@ -274,7 +310,7 @@
 <div id="helpModal">
   <div id="helpContent">
     <h2>3D MineSweeper</h2>
-      <h3>Think in Depth</h3>
+    <h3>Think in Depth</h3>
     <p class="em">A true volumetric take on the classic puzzle.</p>
 
     <h3>The Twist</h3>
@@ -292,10 +328,15 @@
 
     <p class="em">Three dimensions.<br>Twenty-six directions.<br>One mistake ends it all.<br>Can you clear the whole cube?<br>🧊<br>💣</p>
 
-    <div id="helpFooter">
+    <!-- Update block -->
+    <div id="updateBlock">
+      <button id="btnUpdate">Update</button>
+      <div id="updateStatus"></div>
+    </div>
 
+    <div id="helpFooter">
       <a href="./index.html">
-              <img src="./fleurdelis.png" alt="fleur-de-lis" onerror="this.style.opacity=.3">
+        <img src="./fleurdelis.png" alt="fleur-de-lis" onerror="this.style.opacity=.3">
       </a>
     </div>
 
@@ -795,6 +836,96 @@ document.getElementById('closeHelp').addEventListener('click', function(){
 helpModal.addEventListener('click', function(e){
   if (e.target === helpModal) helpModal.classList.remove('show');
 });
+
+/* ============================================================
+   UPDATE: Check for new Service Worker version
+   ============================================================ */
+var btnUpdate = document.getElementById('btnUpdate');
+var updateStatus = document.getElementById('updateStatus');
+
+async function getCacheVersion() {
+  try {
+    var resp = await fetch('./sw.js', { cache: 'no-store' });
+    if (!resp.ok) return null;
+    var txt = await resp.text();
+    var m = txt.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
+    return m ? m[1] : null;
+  } catch(e) {
+    return null;
+  }
+}
+
+async function checkForUpdates() {
+  btnUpdate.disabled = true;
+  updateStatus.className = '';
+  updateStatus.textContent = 'Checking…';
+
+  if (!('serviceWorker' in navigator)) {
+    updateStatus.className = 'err';
+    updateStatus.textContent = 'Service Worker not supported';
+    btnUpdate.disabled = false;
+    return;
+  }
+
+  try {
+    var reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) {
+      updateStatus.className = 'err';
+      updateStatus.textContent = 'No active Service Worker';
+      btnUpdate.disabled = false;
+      return;
+    }
+
+    var oldVersion = await getCacheVersion();
+
+    // Форсируем проверку нового sw.js
+    await reg.update();
+
+    // Даём SW ~600ms на скачивание нового файла (если есть)
+    await new Promise(function(r){ setTimeout(r, 600); });
+
+    var newVersion = await getCacheVersion();
+
+    if (reg.installing || reg.waiting) {
+      updateStatus.className = 'new';
+      updateStatus.textContent = 'New version found. Reloading…';
+      // Отправляем SKIP_WAITING (твой sw.js это поддерживает)
+      if (reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+      setTimeout(function(){ location.reload(); }, 1500);
+      return;
+    }
+
+    if (oldVersion && newVersion && oldVersion !== newVersion) {
+      updateStatus.className = 'new';
+      updateStatus.textContent = 'Update available: ' + newVersion + '. Reloading…';
+      setTimeout(function(){ location.reload(); }, 1500);
+      return;
+    }
+
+    updateStatus.className = 'ok';
+    updateStatus.textContent = 'You are up to date ✓' + (newVersion ? ' (' + newVersion + ')' : '');
+  } catch(e) {
+    updateStatus.className = 'err';
+    updateStatus.textContent = 'Check failed: ' + e.message;
+  } finally {
+    btnUpdate.disabled = false;
+  }
+}
+
+btnUpdate.addEventListener('click', checkForUpdates);
+
+// Если SW уже нашёл обновление в фоне — показываем индикатор
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistration().then(function(reg){
+    if (!reg) return;
+    reg.addEventListener('updatefound', function(){
+      updateStatus.className = 'new';
+      updateStatus.textContent = 'Update found in background…';
+    });
+  });
+}
 
 window.addEventListener('resize', applyBoardStyle);
 
