@@ -6,9 +6,6 @@
 <meta name="theme-color" content="#0a0a1a">
 <link rel="manifest" href="./manifest-pioneer.json">
 <link rel="icon" type="image/png" sizes="512x512" href="./boom.png">
-<meta property="og:image" content="/Verge.jpeg">
-<meta property="og:image:width" content="1280">
-<meta property="og:image:height" content="1280">
 <link rel="apple-touch-icon" href="./boom.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -34,6 +31,7 @@
   .cell.flag { background:#ffcc00; color:#000; }
   .cell.open { background:#1a1a2a; }
   .cell.mine { background:#7a1010; }
+  .cell.dead { cursor: default; }
   
   #minimap { display:flex; gap:4px; justify-content:center; padding:8px; background:#151525; overflow-x:auto; }
   .mini-layer { flex-shrink:0; width:36px; height:36px; border-radius:6px; background:#222; border:2px solid #444; display:flex; align-items:center; justify-content:center; font-weight:bold; cursor:pointer; font-size:12px; }
@@ -45,15 +43,47 @@
   .row button { padding:8px 10px; background:#444; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; }
   .row button.active { background:#ffcc00; color:#000; }
   .row button:disabled { opacity:.3; }
-  #layerLabel { flex:1; text-align:center; background:#222; color:#ffcc00; border:none; font-weight:bold; padding:8px; border-radius:6px; }
 
-  #overlay { display:none; position:fixed; inset:0; background:rgba(10,10,26,0.85); z-index:20; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
-  #overlay.show { display:flex; }
-  #msg { font-size:32px; font-weight:bold; margin-bottom:20px; text-align:center; }
-  #overlay button { padding:14px 32px; background:#ffcc00; color:#000; border:none; border-radius:8px; font-size:18px; font-weight:bold; cursor:pointer; }
+  #resultBar {
+    display:none;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    margin: 0 8px;
+    background: #1a1a2a;
+    border-radius: 10px;
+    border: 1px solid #333;
+    font-size: 14px;
+    font-weight: bold;
+    animation: slideIn .35s ease-out;
+  }
+  #resultBar.show { display: flex; }
+  #resultBar.win { border-color: #44ff88; box-shadow: 0 0 12px rgba(68,255,136,.25); }
+  #resultBar.lose { border-color: #ff4444; box-shadow: 0 0 12px rgba(255,68,68,.25); }
+  #resultIcon { font-size: 22px; flex-shrink: 0; }
+  #resultText { flex: 1; color: #ddd; font-weight: 600; }
+  #resultBar.win #resultText { color: #44ff88; }
+  #resultBar.lose #resultText { color: #ff6666; }
+  #btnPlayAgain {
+    padding: 8px 16px;
+    background: #ffcc00;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  #btnPlayAgain:active { opacity: .8; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
   #toast {
-    position: fixed; bottom: 100px; left: 50%;
+    position: fixed; bottom: 140px; left: 50%;
     transform: translateX(-50%) translateY(20px);
     background: rgba(0,0,0,.92); color: #ffcc00;
     padding: 10px 20px; border-radius: 22px;
@@ -82,7 +112,6 @@
     transform: translate(-50%, -50%) scale(1);
   }
 
-  /* ===== Notebook ===== */
   #notebook {
     display:none; position:fixed; inset:0; z-index:70;
     background:rgba(10,10,26,0.95); backdrop-filter:blur(6px);
@@ -129,7 +158,6 @@
   .nb-actions { display:flex; gap:8px; }
   .nb-actions button { flex:1; }
 
-  /* ===== Help ===== */
   #helpModal {
     display:none; position:fixed; inset:0; z-index:80;
     background:rgba(10,10,26,0.95); backdrop-filter:blur(6px);
@@ -156,7 +184,7 @@
   #helpContent ul { margin:0; padding-left:18px; }
   #helpContent li { margin-bottom:6px; }
   #helpContent b { color:#ffcc00; }
-  #helpContent .em { font-style:normal; color:#aaa; font-size:14px; text-align:center; margin-top:4px; }
+  #helpContent .em { font-style:italic; color:#aaa; font-size:13px; text-align:center; margin-top:4px; }
 
   #helpFooter {
     margin-top:16px; padding-top:16px;
@@ -168,8 +196,8 @@
     opacity:.85;
   }
   #helpFooter a {
-    color:#ffcc00; text-decoration:none; font-size:14px;
-    padding:8px 16px; border:0 solid #ffcc00; border-radius:8px;
+    color:#ffcc00; text-decoration:none; font-size:13px;
+    padding:8px 16px; border:1px solid #ffcc00; border-radius:8px;
     font-weight:bold; transition:.15s;
   }
   #helpFooter a:hover { background:#ffcc00; color:#000; }
@@ -206,14 +234,15 @@
   <div id="wordDisplay"></div>
 </div>
 
+<div id="resultBar">
+  <div id="resultIcon">💥</div>
+  <div id="resultText">Exploded in 42s</div>
+  <button id="btnPlayAgain">Play Again</button>
+</div>
+
 <div id="minimap"></div>
 
 <div id="controls">
-  <div class="row">
-    <button id="prevLayer">‹</button>
-    <div id="layerLabel">Layer 1 / 5</div>
-    <button id="nextLayer">›</button>
-  </div>
   <div class="row">
     <button data-size="5" class="size active">5³</button>
     <button data-size="8" class="size">8³</button>
@@ -222,21 +251,15 @@
   </div>
 </div>
 
-<div id="overlay">
-  <div id="msg">💥 BOOM!</div>
-  <button id="btnRestart">Play Again</button>
-</div>
-
 <div id="toast"></div>
 
-<!-- Notebook -->
 <div id="notebook">
   <div id="notebookInner">
     <h2>📓 Notebook</h2>
     <div class="hint">
       Words appear as gentle reminders during play<br>
-      Pair a word with a trigger — it'll show up at that moment
-
+      Pair a word with a trigger — it'll show up at that moment<br>
+      Add the page to your home screen via the browser menu to use it as an app
     </div>
     <div id="nbList"></div>
     <button id="nbAdd">+ Add word</button>
@@ -247,7 +270,6 @@
   </div>
 </div>
 
-<!-- Help -->
 <div id="helpModal">
   <div id="helpContent">
     <h2>🧊 3D MineSweeper — Think in Depth</h2>
@@ -266,12 +288,11 @@
       <li><b>Classic Controls</b> — tap to reveal, long-press to flag. The clock is ticking.</li>
     </ul>
 
-    <p class="em">Three dimensions. Twenty-six directions. One mistake ends it all<br>Can you clear the whole cube? 🧊💣</p>
-   <p class="em">Add the page to your home screen via the browser menu to use it as an app.</p>
+    <p class="em">Three dimensions. Twenty-six directions. One mistake ends it all.<br>Can you clear the whole cube? 🧊💣</p>
 
     <div id="helpFooter">
-
-      <a href="./index.html">      <img src="./fleurdelis.png" alt="fleur-de-lis" onerror="this.style.opacity=.3"></a>
+      <img src="./fleurdelis.png" alt="fleur-de-lis" onerror="this.style.opacity=.3">
+      <a href="./index.html">← Back to Index</a>
     </div>
 
     <button id="closeHelp">Got it</button>
@@ -296,14 +317,15 @@ const NOTEBOOK_KEY = 'mine3d_notebook_v1';
 
 var boardEl = document.getElementById('board');
 var boardWrap = document.getElementById('boardWrap');
-var overlay = document.getElementById('overlay');
-var msgEl = document.getElementById('msg');
 var minimapEl = document.getElementById('minimap');
 var toastEl = document.getElementById('toast');
 var wordDisplay = document.getElementById('wordDisplay');
 var notebook = document.getElementById('notebook');
 var nbList = document.getElementById('nbList');
 var helpModal = document.getElementById('helpModal');
+var resultBar = document.getElementById('resultBar');
+var resultIcon = document.getElementById('resultIcon');
+var resultText = document.getElementById('resultText');
 
 var TRIGGERS = {
   'BOOM': '💥 On explosion',
@@ -401,7 +423,8 @@ function newGame() {
   document.getElementById('time').textContent = '0';
   document.getElementById('mines').textContent = MINES;
   document.getElementById('flags').textContent = '0';
-  overlay.classList.remove('show');
+
+  resultBar.classList.remove('show', 'win', 'lose');
 
   grid = [];
   for (var x = 0; x < SIZE; x++) {
@@ -411,15 +434,9 @@ function newGame() {
       for (var z = 0; z < SIZE; z++) grid[x][y][z] = { mine: false, state: 0, value: 0 };
     }
   }
-  updateLayerLabel(); renderBoard(); renderMinimap();
+  renderBoard(); renderMinimap();
   requestAnimationFrame(function(){ applyBoardStyle(); });
   showToast('Tap a cell to start');
-}
-
-function updateLayerLabel() {
-  document.getElementById('layerLabel').textContent = 'Layer ' + (activeLayer + 1) + ' / ' + SIZE;
-  document.getElementById('prevLayer').disabled = activeLayer === 0;
-  document.getElementById('nextLayer').disabled = activeLayer === SIZE - 1;
 }
 
 function forEachNeighbor(x, y, z, fn) {
@@ -499,6 +516,19 @@ function checkWin() {
   return true;
 }
 
+function showResultBar(won, seconds) {
+  resultBar.classList.remove('win', 'lose');
+  if (won) {
+    resultIcon.textContent = '🎉';
+    resultText.textContent = 'Victory in ' + seconds + 's';
+    resultBar.classList.add('win', 'show');
+  } else {
+    resultIcon.textContent = '💥';
+    resultText.textContent = 'Exploded in ' + seconds + 's';
+    resultBar.classList.add('lose', 'show');
+  }
+}
+
 function loseSequential() {
   gameOver = true;
   explosiveRunning = true;
@@ -509,22 +539,21 @@ function loseSequential() {
     if (i >= SIZE) {
       explosiveRunning = false;
       var sec = Math.floor((Date.now() - startTime) / 1000);
-      msgEl.textContent = '💥 BOOM!';
-      msgEl.style.color = '#ff4444';
-      overlay.classList.add('show');
+      renderBoard(); renderMinimap(); applyBoardStyle();
+      showResultBar(false, sec);
       showToast('💥 Exploded in ' + sec + 's');
       showWordFor('BOOM');
       if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
       return;
     }
     var z = i++;
-    activeLayer = z;
     for (var x = 0; x < SIZE; x++)
       for (var y = 0; y < SIZE; y++) {
         var c = grid[x][y][z];
         if (c.mine && c.state !== 2) c.state = 1;
       }
-    renderBoard(); renderMinimap(); applyBoardStyle();
+    if (z === activeLayer) renderBoard();
+    renderMinimap(); applyBoardStyle();
     showToast('💥 Layer ' + (z + 1) + ' detonated');
     if (navigator.vibrate) navigator.vibrate(40);
     setTimeout(explodeNextLayer, 140);
@@ -537,9 +566,7 @@ function winGame() {
   if (timerInt) { clearInterval(timerInt); timerInt = null; }
   renderBoard(); renderMinimap(); applyBoardStyle();
   var sec = Math.floor((Date.now() - startTime) / 1000);
-  msgEl.textContent = '🎉 You win!';
-  msgEl.style.color = '#44ff88';
-  overlay.classList.add('show');
+  showResultBar(true, sec);
   showToast('🎉 All layers cleared in ' + sec + 's!');
   showWordFor('WIN');
   if (navigator.vibrate) navigator.vibrate([50, 50, 50, 50, 50]);
@@ -566,8 +593,8 @@ function renderMinimap() {
         if (explosiveRunning) return;
         if (zz === activeLayer) return;
         activeLayer = zz;
-        updateLayerLabel(); renderBoard(); renderMinimap(); applyBoardStyle();
-        showWordFor('LAYER');
+        renderBoard(); renderMinimap(); applyBoardStyle();
+        if (!gameOver) showWordFor('LAYER');
       });
     })(z);
     minimapEl.appendChild(el);
@@ -581,6 +608,8 @@ function renderBoard() {
     for (var x = 0; x < SIZE; x++) {
       var c = grid[x][y][activeLayer];
       var el = document.createElement('div'); el.className = 'cell';
+      if (gameOver) el.classList.add('dead');
+
       if (c.state === 0) { /* hidden */ }
       else if (c.state === 2) { el.className = 'cell flag'; el.textContent = '🚩'; }
       else if (c.mine) { el.className = 'cell mine'; el.textContent = '💣'; }
@@ -669,22 +698,7 @@ function handleTap(gx, gy, gz) {
   if (checkWin()) { winGame(); return; }
 }
 
-document.getElementById('prevLayer').addEventListener('click', function(){
-  if (explosiveRunning) return;
-  if (activeLayer > 0) {
-    activeLayer--; updateLayerLabel(); renderBoard(); renderMinimap(); applyBoardStyle();
-    showWordFor('LAYER');
-  }
-});
-document.getElementById('nextLayer').addEventListener('click', function(){
-  if (explosiveRunning) return;
-  if (activeLayer < SIZE - 1) {
-    activeLayer++; updateLayerLabel(); renderBoard(); renderMinimap(); applyBoardStyle();
-    showWordFor('LAYER');
-  }
-});
-
-document.getElementById('btnRestart').addEventListener('click', newGame);
+document.getElementById('btnPlayAgain').addEventListener('click', newGame);
 
 var sizeButtons = document.querySelectorAll('button.size');
 for (var i = 0; i < sizeButtons.length; i++) {
@@ -701,7 +715,6 @@ for (var i = 0; i < sizeButtons.length; i++) {
   })(sizeButtons[i]);
 }
 
-// ===== Notebook UI =====
 function renderNotebook() {
   nbList.innerHTML = '';
   notebookWords.forEach(function(entry, idx){
@@ -769,7 +782,6 @@ document.getElementById('btnNotebook').addEventListener('click', function(){
   notebook.classList.add('show');
 });
 
-// ===== Help UI =====
 document.getElementById('btnHelp').addEventListener('click', function(){
   helpModal.classList.add('show');
 });
@@ -782,7 +794,6 @@ helpModal.addEventListener('click', function(e){
 
 window.addEventListener('resize', applyBoardStyle);
 
-// ===== PWA: Register Service Worker =====
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('./sw.js', { scope: './' })
