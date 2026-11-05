@@ -14,14 +14,14 @@
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { margin:0; background:#0a0a1a; color:#fff; font-family:Arial,sans-serif; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
-  
+
   #topbar { display:flex; justify-content:space-between; align-items:center; padding:10px; background:#151525; font-size:15px; gap:6px; }
   #topbar span { background:#222; padding:6px 12px; border-radius:6px; display:flex; gap:6px; align-items:center; font-weight:bold; }
   #topbar button { background:#222; border:none; color:#ffcc00; border-radius:6px; padding:6px 10px; font-size:15px; font-weight:bold; cursor:pointer; }
 
   #boardWrap { flex:1; display:flex; align-items:center; justify-content:center; overflow:auto; padding:8px; position:relative; }
   #board { display:grid; gap:2px; margin:auto; }
-  
+
   .cell {
     background:#3a7bd5; border-radius:4px; aspect-ratio: 1 / 1;
     display:flex; align-items:center; justify-content:center;
@@ -32,7 +32,7 @@
   .cell.open { background:#1a1a2a; }
   .cell.mine { background:#7a1010; }
   .cell.dead { cursor: default; }
-  
+
   #minimap { display:flex; gap:4px; justify-content:center; padding:8px; background:#151525; overflow-x:auto; }
   .mini-layer { flex-shrink:0; width:36px; height:36px; border-radius:6px; background:#222; border:2px solid #444; display:flex; align-items:center; justify-content:center; font-weight:bold; cursor:pointer; font-size:12px; }
   .mini-layer.active { border-color:#ffcc00; background:#3a3a1a; color:#ffcc00; }
@@ -112,14 +112,18 @@
     transform: translate(-50%, -50%) scale(1);
   }
 
+  /* ===================== NOTEBOOK ===================== */
   #notebook {
     display:none; position:fixed; inset:0; z-index:70;
     background:rgba(10,10,26,0.95); backdrop-filter:blur(6px);
     overflow-y:auto;
+    align-items: flex-start;
+    justify-content: center;
+    -webkit-overflow-scrolling: touch;
   }
   #notebook.show { display:flex; }
   #notebookInner {
-    max-width:560px; width:calc(100% - 32px);
+    width:100%; max-width:560px;
     margin:auto; padding:24px 20px;
     background:#151525; border-radius:16px;
     box-shadow:0 10px 40px rgba(0,0,0,.6);
@@ -158,33 +162,54 @@
   .nb-actions { display:flex; gap:8px; }
   .nb-actions button { flex:1; }
 
+  /* ===================== HELP (FULL-SCREEN) ===================== */
   #helpModal {
-    display:none; position:fixed; inset:0; z-index:80;
-    background:rgba(10,10,26,0.95); backdrop-filter:blur(6px);
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:80;
+    background:rgba(10,10,26,0.98);
+    backdrop-filter:blur(6px);
     overflow-y:auto;
+    align-items:flex-start;
+    justify-content:center;
+    -webkit-overflow-scrolling:touch;
   }
   #helpModal.show { display:flex; }
-  #helpContent {
-    max-width:560px; width:calc(100% - 32px);
-    margin:auto; padding:24px 20px 28px;
-    background:#151525; border-radius:16px;
-    box-shadow:0 10px 40px rgba(0,0,0,.6);
-    color:#e8e8f0; font-size:14px; line-height:1.55;
-    display:flex; flex-direction:column; gap:14px;
-  }
+
+#helpContent {
+  width:100%;
+  max-width:720px;
+  min-height:100%;
+  margin:0 auto;
+  padding:
+    max(24px, env(safe-area-inset-top))
+    max(56px, env(safe-area-inset-right))
+    max(28px, env(safe-area-inset-bottom))
+    max(20px, env(safe-area-inset-left));
+  background:#151525;
+  border-radius:0;
+  box-shadow:none;
+  color:#e8e8f0;
+  font-size:14px;
+  line-height:1.55;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
   #helpContent h2 {
     color:#ffcc00; font-size:22px; margin-bottom:4px;
-    text-align:center; letter-spacing:.3px;
+    text-align:left; letter-spacing:.3px;
   }
   #helpContent h3 {
-    color:#4fc3f7; font-size:13px; text-align:center; margin-top:10px;
+    color:#4fc3f7; font-size:13px; text-align:left; margin-top:10px;
     text-transform:uppercase; letter-spacing:.8px;
   }
   #helpContent p { margin:0; }
   #helpContent ul { margin:0; padding-left:18px; }
   #helpContent li { margin-bottom:6px; }
   #helpContent b { color:#ffcc00; }
-  #helpContent .em { color:#fff; font-size:13px; text-align:center; margin-top:4px; }
+  #helpContent .em { color:#fff; font-size:13px; text-align:left; margin-top:4px; }
 
   /* ===== Update ===== */
   #updateBlock {
@@ -238,7 +263,7 @@
     display: block;
   }
 
-#closeHelp {
+  #closeHelp {
     align-self: center;
     margin-top: 24px;
     padding: 10px 22px;
@@ -249,7 +274,14 @@
     font-size: 16px;
     font-weight: bold;
     cursor: pointer;
-}
+    position: sticky;
+    bottom: 12px;
+  }
+
+  /* Give the last element breathing room above the sticky close button */
+  #helpContent > *:last-child {
+    margin-bottom: 60px;
+  }
 
   .ios-blur-fix {
     position: fixed;
@@ -332,25 +364,23 @@
     </ul>
 
     <p class="em">Three dimensions.<br>Twenty-six directions.<br>One mistake ends it all.<br>Can you clear the whole cube?<br>🧊<br>💣</p>
-<p class="em">Add the page to your home screen via the browser menu to use it as an app.</p>
+    <p class="em">Add the page to your home screen via the browser menu to use it as an app.</p>
 
-       <!-- Update block -->
+    <!-- Update block -->
     <div id="updateBlock">
       <button id="btnUpdate">Update</button>
       <div id="updateStatus"></div>
     </div>
     <div style="text-align:center;">
-  <a href="./lattice.html" style="color: #afff00; font-size:16px; text-decoration:none;">Lattice</a>
-</div>
+      <a href="./lattice.html" style="color: #afff00; font-size:16px; text-decoration:none;">Lattice</a>
+    </div>
     <button id="closeHelp">Close</button>
     <div id="helpFooter">
-
       <a href="./index.html">
         <img src="./fleurdelis.png" alt="fleur-de-lis" onerror="this.style.opacity=.3">
       </a>
     </div>
-      <p style="font-family: ‘Cinzel’, sans-serif; margin: -20px 0 0 0; text-align: center">Web terminals that make you happy</p>
-
+    <p style="font-family: 'Cinzel', sans-serif; margin: -20px 0 0 0; text-align: center">Web terminals that make you happy</p>
   </div>
 </div>
 
