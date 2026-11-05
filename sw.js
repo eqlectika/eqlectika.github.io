@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-v151'; 
+const CACHE_NAME = 'version-v152'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
@@ -85,6 +85,7 @@ const CORE_ASSETS = [
     './binance.PNG',
     './star.png',
     './man.PNG',
+    './lattice.png',
     './woman.PNG'
 ];
 
