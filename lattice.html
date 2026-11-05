@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="manifest" href="manifest-planet.json">
+    <title>Outside-in Planet</title>
+<style>
+html, body { margin: 0; padding: 0; width: 100dvw; height: 100dvh; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; background-color: #0a0a12; }
+canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+#controls { position: fixed; bottom: 50px; left: 20px; display: flex; justify-content: flex-start; pointer-events: none; z-index: 3000; }
+@media (pointer: coarse) { #controls { display: flex; } }
+
+#logoLink { pointer-events: auto; cursor: pointer; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+
+#throttleArea { position: fixed; top: 0; left: 0; width: 50vw; height: 100vh; z-index: 2000; pointer-events: auto; touch-action: none; }
+#controlArea  { position: fixed; top: 0; right: 0; width: 50vw; height: 100vh; z-index: 2000; pointer-events: auto; touch-action: none; }
+@media (pointer: fine) { #throttleArea, #controlArea { pointer-events: none; } }
+
+#startButton { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 5000; padding: 15px 30px; background-color: #3b3b4f; color: white; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; }
+
+#crosshair {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 28px;
+    height: 28px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    pointer-events: none;
+    z-index: 6000;
+}
+#crosshair::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 48px;              /* ← длина горизонтальной линии */
+    height: 1px;
+    background: rgba(255, 255, 255, 0.32);
+    transform: translate(-50%, -50%);
+}
+#crosshair::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1px;
+    height: 48px;             /* ← длина вертикальной линии */
+    background: rgba(255, 255, 255, 0.32);
+    transform: translate(-50%, -50%);
+}
+#crosshair .dot {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 3px; height: 3px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#centerTapZone { position: fixed; top: 50%; left: 50%; width: 90px; height: 90px; transform: translate(-50%, -50%); z-index: 3500; pointer-events: auto; touch-action: none; background: transparent; }
+
+#bottomRow { position: fixed; bottom: 10px; left: 0; width: 100%; display: flex; align-items: center; justify-content: center; gap: 16px; z-index: 4000; pointer-events: none; }
+#bottomRow > * { pointer-events: auto; }
+
+.grid-group {
+    display: flex;
+    gap: 6px;
+}
+
+.grid-btn { background: #232838; border: 1px solid #4a5478; color: #dde6ff; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 22px; cursor: pointer; min-width: 48px; text-align: center; -webkit-tap-highlight-color: transparent; }
+.grid-btn.active { background: #3d6eff; border-color: #8fb0ff; color: #ffffff; box-shadow: 0 0 14px rgba(61,110,255,0.65); }
+</style>
+</head>
+<body>
+    <button id="startButton">FULL SCREEN</button>
+    <div id="crosshair"><div class="dot"></div></div>
+    <div id="centerTapZone"></div>
+
+    <div id="bottomRow">
+        <div class="grid-group">
+            <button class="grid-btn" data-grid="5">5</button>
+            <button class="grid-btn active" data-grid="8">8</button>
+        </div>
+        <a href="research.html" id="logoLink">
+            <img src="logo.png" alt="Logo" draggable="false" style="width: 42px; height: 42px; opacity: 0.2;">
+        </a>
+        <div class="grid-group">
+            <button class="grid-btn" data-grid="13">13</button>
+            <button class="grid-btn" data-grid="21">21</button>
+        </div>
+    </div>
+
+    <div id="throttleArea"></div> <div id="controlArea"></div> <div id="controls"></div>
+
+<script type="importmap">
+  { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+// --- БЛОК 1: управление тягой и наклоном ---
+let currentThrottle = 0;
+let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
+let isReverseThrust = true;
+
+const throttleArea = document.getElementById('throttleArea');
+const controlArea = document.getElementById('controlArea');
+const activeTouches = { throttle: null, control: null };
+
+function updateThrottle(e) {
+    const rect = throttleArea.getBoundingClientRect();
+    currentThrottle = Math.max(0, Math.min(1, 1 - ((e.clientY - rect.top) / rect.height)));
+}
+throttleArea.addEventListener('pointerdown', (e) => { throttleArea.setPointerCapture(e.pointerId); activeTouches.throttle = e.pointerId; updateThrottle(e); });
+throttleArea.addEventListener('pointermove', (e) => { if (e.pointerId === activeTouches.throttle) updateThrottle(e); });
+const resetThrottle = (e) => { if (e.pointerId === activeTouches.throttle) { throttleArea.releasePointerCapture(e.pointerId); activeTouches.throttle = null; currentThrottle = 0; } };
+throttleArea.addEventListener('pointerup', resetThrottle);
+throttleArea.addEventListener('pointercancel', resetThrottle);
+
+controlArea.addEventListener('pointerdown', (e) => {
+    controlArea.setPointerCapture(e.pointerId);
+    activeTouches.control = e.pointerId;
+    touchJoystick.active = true; touchJoystick.startX = e.clientX; touchJoystick.startY = e.clientY;
+    touchJoystick.moveX = 0; touchJoystick.moveY = 0;
+});
+controlArea.addEventListener('pointermove', (e) => {
+    if (e.pointerId === activeTouches.control && touchJoystick.active) {
+        const maxDistance = 100;
+        touchJoystick.moveX = Math.max(-1, Math.min(1, (e.clientX - touchJoystick.startX) / maxDistance));
+        touchJoystick.moveY = Math.max(-1, Math.min(1, (e.clientY - touchJoystick.startY) / maxDistance));
+    }
+});
+const resetJoystick = (e) => {
+    if (e.pointerId === activeTouches.control) {
+        controlArea.releasePointerCapture(e.pointerId);
+        activeTouches.control = null;
+        touchJoystick.active = false; touchJoystick.moveX = 0; touchJoystick.moveY = 0;
+    }
+};
+controlArea.addEventListener('pointerup', resetJoystick);
+controlArea.addEventListener('pointercancel', resetJoystick);
+window.addEventListener('dragstart', (e) => e.preventDefault());
+
+    import * as THREE from 'three';
+
+    const FLY_SPEED = 0.0057;
+    const TURN_SPEED = 0.0003;
+    const TOUCH_TURN_SPEED = 0.0005;
+    const GRAVITY = 0.0043333;
+    const DAMPING_TURN = 0.99;
+    const DAMPING_MOVE = 0.99;
+    const PLANET_RADIUS = 1500;
+    const PLAYER_HEIGHT = 2;
+
+    document.getElementById('startButton').addEventListener('click', () => {
+        document.getElementById('startButton').style.display = 'none';
+        if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+        else if (document.documentElement.webkitRequestFullscreen) document.documentElement.webkitRequestFullscreen();
+        if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+    });
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a12);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 12000);
+
+    const player = new THREE.Group();
+    player.position.set(0, -(PLANET_RADIUS - PLAYER_HEIGHT), 0);
+    const initialDir = player.position.clone().normalize();
+    player.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), initialDir);
+    scene.add(player);
+
+    camera.quaternion.setFromEuler(new THREE.Euler(Math.PI, 0, 0, 'YXZ'));
+    player.add(camera);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    const light = new THREE.DirectionalLight(0xffffff, 2.5);
+    light.position.set(50, 200, 50);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x888888));
+    const backLight = new THREE.DirectionalLight(0xabcdef, 0.8);
+    backLight.position.set(-50, 100, -50);
+    scene.add(backLight);
+
+    const collidableObjects = [];
+    function addStructure(mesh) { scene.add(mesh); collidableObjects.push(mesh); }
+
+    // ---- Сфера ----
+    const planetGeometry = new THREE.SphereGeometry(PLANET_RADIUS, 64, 64);
+    const planetMaterial = new THREE.ShaderMaterial({
+        wireframe: false, transparent: true, side: THREE.DoubleSide,
+        uniforms: { uSize: { value: 0.05 } },
+        vertexShader: `
+            varying vec3 vWorldPosition;
+            varying vec3 vNormal;
+            void main() {
+                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                vWorldPosition = worldPosition.xyz;
+                vNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * viewMatrix * worldPosition;
+            }`,
+        fragmentShader: `
+            varying vec3 vWorldPosition;
+            varying vec3 vNormal;
+            uniform float uSize;
+            void main() {
+                vec2 grid = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize);
+                vec2 grid2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize);
+                float line = min(min(grid.x, grid.y), min(grid2.x, grid2.y));
+                float alpha = 1.0 - min(line, 1.0);
+                if (alpha < 0.1) discard;
+                gl_FragColor = vec4(0.26, 0.26, 1.0, alpha * 0.4);
+            }`
+    });
+    const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+    scene.add(planetMesh);
+
+    function positionOnSphere(mesh, distanceToCenter) {
+        const u = Math.random(), v = Math.random();
+        const theta = u * 2.0 * Math.PI;
+        const phi = Math.acos(2.0 * v - 1.0);
+        const x = distanceToCenter * Math.sin(phi) * Math.cos(theta);
+        const y = distanceToCenter * Math.sin(phi) * Math.sin(theta);
+        const z = distanceToCenter * Math.cos(phi);
+        mesh.position.set(x, y, z);
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(x, y, z).normalize());
+    }
+
+    for(let i=0; i<40; i++) {
+        const sizeX = 10 + Math.random() * 20, sizeY = 4 + Math.random() * 15, sizeZ = 10 + Math.random() * 20;
+        const box = new THREE.Mesh(new THREE.BoxGeometry(sizeX, sizeY, sizeZ), new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff }));
+        box.geometry.translate(0, -sizeY / 2, 0);
+        positionOnSphere(box, PLANET_RADIUS);
+        addStructure(box);
+    }
+    for(let i=0; i<25; i++) {
+        const archGroup = new THREE.Group();
+        const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
+        const w = 4, h = 30, d = 4, span = 25;
+        const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material); leftLeg.position.set(-span/2, -h/2, 0); archGroup.add(leftLeg);
+        const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material); rightLeg.position.set(span/2, -h/2, 0); archGroup.add(rightLeg);
+        const topBar = new THREE.Mesh(new THREE.BoxGeometry(span + w, w, d), material); topBar.position.set(0, -h - w/2, 0); archGroup.add(topBar);
+        positionOnSphere(archGroup, PLANET_RADIUS);
+        leftLeg.updateMatrixWorld(); rightLeg.updateMatrixWorld(); topBar.updateMatrixWorld();
+        collidableObjects.push(leftLeg, rightLeg, topBar);
+        scene.add(archGroup);
+    }
+    for(let i=0; i<15; i++) {
+        const bridgeGroup = new THREE.Group();
+        const material = new THREE.MeshPhongMaterial({ color: 0x555566 });
+        const length = 80, width = 12, height = 15;
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(width, 2, length), material); deck.position.set(0, -height, 0); bridgeGroup.add(deck);
+        for(let j = -length/3; j <= length/3; j += length/3) {
+            const pillar = new THREE.Mesh(new THREE.BoxGeometry(4, height, 4), material);
+            pillar.position.set(0, -height/2, j); bridgeGroup.add(pillar); pillar.updateMatrixWorld(); collidableObjects.push(pillar);
+        }
+        positionOnSphere(bridgeGroup, PLANET_RADIUS);
+        deck.updateMatrixWorld(); collidableObjects.push(deck);
+        scene.add(bridgeGroup);
+    }
+
+    const backgroundPlanets = [];
+    [
+        { radius: 500, color: 0xe27b58, x: 3500, y: 1500, z: -2000, rotSpeed: 0.002 },
+        { radius: 800, color: 0x47637c, x: -4500, y: -2000, z: -3000, rotSpeed: 0.001 },
+        { radius: 300, color: 0x8d5b9c, x: -4000, y: -4000, z: -4000, rotSpeed: 0.003 }
+    ].forEach(data => {
+        const bgPlanetMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(data.radius, 32, 32),
+            new THREE.MeshPhongMaterial({ color: data.color, shininess: 10, flatShading: true })
+        );
+        bgPlanetMesh.position.set(data.x, data.y, data.z);
+        scene.add(bgPlanetMesh);
+        backgroundPlanets.push({ mesh: bgPlanetMesh, rotSpeed: data.rotSpeed });
+    });
+
+    const keys = {};
+    let lastSpaceTime = 0, superThrust = false;
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !keys['Space']) {
+            const t = performance.now();
+            if (t - lastSpaceTime < 250) superThrust = true;
+            lastSpaceTime = t;
+        }
+        keys[e.code] = true;
+    });
+    window.addEventListener('keyup', (e) => { keys[e.code] = false; if (e.code === 'Space') superThrust = false; });
+
+    let velocity = new THREE.Vector3(0, 0, 0);
+    let angularVelocityX = 0, angularVelocityZ = 0;
+
+    // ============================================================
+    // КУБ С СЕТКАМИ НА 6 ГРАНЯХ
+    // ============================================================
+    // Один куб, вписанный в сферу: ребро a = 2R/√3 ≈ 1732
+    // Грани полупрозрачные, на каждой — N×N ячеек сапёра.
+    // Внутри куба пусто.
+    // ============================================================
+    const CUBE_EDGE = 2 * PLANET_RADIUS / Math.sqrt(3); // ≈ 1732
+    const HALF = CUBE_EDGE / 2;
+
+    const cubeGroup = new THREE.Group();
+    scene.add(cubeGroup);
+
+    // Состояние: 6 граней, на каждой N×N
+    // faces: 0:+X, 1:-X, 2:+Y, 3:-Y, 4:+Z, 5:-Z
+    let currentN = 8;
+    let faceCells = [];        // faceCells[face] = массив мешей (N*N)
+    let faceMines = [];        // faceMines[face] = bool[]
+    let faceRevealed = [];     // bool[]
+    let faceFlagged = [];      // bool[]
+    let allCellMeshes = [];    // плоский массив всех ячеек для raycast
+
+    // Материалы ячеек
+    const matHidden   = new THREE.MeshBasicMaterial({ color: 0x2a4a8a, transparent: true, opacity: 0.10, depthWrite: false, side: THREE.DoubleSide });
+    const matRevealed = new THREE.MeshBasicMaterial({ color: 0x66aaff, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide });
+    const matMine     = new THREE.MeshBasicMaterial({ color: 0xff3355, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide });
+    const matFlag     = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide });
+
+    // Рёбра куба для читаемости
+    function addCubeEdges() {
+        const edgeGeo = new THREE.BoxGeometry(CUBE_EDGE, CUBE_EDGE, CUBE_EDGE);
+        const edges = new THREE.EdgesGeometry(edgeGeo);
+        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x6a8fd0, transparent: true, opacity: 0.55 }));
+        cubeGroup.add(line);
+    }
+
+    // Утилита: построить 2D-позицию ячейки (u,v) на грани face, вернуть меш
+    // Нормали граней:
+    //   0:+X (u=+Z, v=+Y)
+    //   1:-X (u=-Z, v=+Y)
+    //   2:+Y (u=+X, v=+Z)
+    //   3:-Y (u=+X, v=-Z)
+    //   4:+Z (u=-X, v=+Y)
+    //   5:-Z (u=+X, v=+Y)
+    function buildCellMesh(face, row, col, cellSize) {
+        // Плоский квад, чуть вдвинутый внутрь, чтобы не совпадал с ребром
+        const geo = new THREE.PlaneGeometry(cellSize * 0.92, cellSize * 0.92);
+        const mesh = new THREE.Mesh(geo, matHidden);
+
+        // Локальные координаты (u,v) в диапазоне [-HALF, HALF]
+        const u = -HALF + (col + 0.5) * cellSize;
+        const v =  HALF - (row + 0.5) * cellSize;
+
+        const eps = 0.5; // вдвиг внутрь, чтобы не мерцало с рёбрами
+        let pos, rot;
+
+        switch (face) {
+            case 0: // +X
+                pos = new THREE.Vector3(HALF - eps, v, u);
+                rot = new THREE.Euler(0, -Math.PI/2, 0);
+                break;
+            case 1: // -X
+                pos = new THREE.Vector3(-HALF + eps, v, -u);
+                rot = new THREE.Euler(0, Math.PI/2, 0);
+                break;
+            case 2: // +Y
+                pos = new THREE.Vector3(u, HALF - eps, v);
+                rot = new THREE.Euler(Math.PI/2, 0, 0);
+                break;
+            case 3: // -Y
+                pos = new THREE.Vector3(u, -HALF + eps, -v);
+                rot = new THREE.Euler(-Math.PI/2, 0, 0);
+                break;
+            case 4: // +Z
+                pos = new THREE.Vector3(-u, v, HALF - eps);
+                rot = new THREE.Euler(0, 0, 0);
+                break;
+            case 5: // -Z
+                pos = new THREE.Vector3(u, v, -HALF + eps);
+                rot = new THREE.Euler(0, Math.PI, 0);
+                break;
+        }
+        mesh.position.copy(pos);
+        mesh.rotation.copy(rot);
+        return mesh;
+    }
+
+    function buildCube(n) {
+        // очистка
+        while (cubeGroup.children.length) {
+            const c = cubeGroup.children[0];
+            if (c.geometry) c.geometry.dispose();
+            cubeGroup.remove(c);
+        }
+        faceCells = [];
+        faceMines = [];
+        faceRevealed = [];
+        faceFlagged = [];
+        allCellMeshes = [];
+        currentN = n;
+
+        const cellSize = CUBE_EDGE / n;
+
+        for (let face = 0; face < 6; face++) {
+            const cells = [];
+            const mines = new Array(n * n).fill(false);
+            const revealed = new Array(n * n).fill(false);
+            const flagged = new Array(n * n).fill(false);
+
+            // мины ~15%
+            const mineCount = Math.max(1, Math.floor(n * n * 0.15));
+            let placed = 0;
+            while (placed < mineCount) {
+                const i = Math.floor(Math.random() * n * n);
+                if (!mines[i]) { mines[i] = true; placed++; }
+            }
+
+            for (let row = 0; row < n; row++) {
+                for (let col = 0; col < n; col++) {
+                    const idx = row * n + col;
+                    const mesh = buildCellMesh(face, row, col, cellSize);
+                    mesh.userData = { face, row, col, idx };
+                    cubeGroup.add(mesh);
+                    cells[idx] = mesh;
+                    allCellMeshes.push(mesh);
+                }
+            }
+
+            faceCells.push(cells);
+            faceMines.push(mines);
+            faceRevealed.push(revealed);
+            faceFlagged.push(flagged);
+        }
+
+        addCubeEdges();
+    }
+
+    function refreshFace(face) {
+        const n = currentN;
+        const cells = faceCells[face];
+        const mines = faceMines[face];
+        const revealed = faceRevealed[face];
+        const flagged = faceFlagged[face];
+        for (let i = 0; i < n * n; i++) {
+            const m = cells[i];
+            if (!m) continue;
+            if (flagged[i]) m.material = matFlag;
+            else if (revealed[i]) m.material = mines[i] ? matMine : matRevealed;
+            else m.material = matHidden;
+        }
+    }
+
+    function neighborsOf(face, row, col) {
+        const n = currentN;
+        const out = [];
+        for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+                if (!dr && !dc) continue;
+                const nr = row + dr, nc = col + dc;
+                if (nr < 0 || nr >= n || nc < 0 || nc >= n) continue;
+                out.push(nr * n + nc);
+            }
+        }
+        return out;
+    }
+
+    function revealCell(face, idx) {
+        const n = currentN;
+        if (idx < 0 || idx >= n * n) return;
+        if (faceRevealed[face][idx] || faceFlagged[face][idx]) return;
+        if (faceMines[face][idx]) {
+            for (let i = 0; i < n * n; i++) if (faceMines[face][i]) faceRevealed[face][i] = true;
+            refreshFace(face);
+            return;
+        }
+        const stack = [idx];
+        while (stack.length) {
+            const cur = stack.pop();
+            if (faceRevealed[face][cur] || faceFlagged[face][cur] || faceMines[face][cur]) continue;
+            faceRevealed[face][cur] = true;
+            const row = Math.floor(cur / n), col = cur % n;
+            let minesAround = 0;
+            for (const k of neighborsOf(face, row, col)) if (faceMines[face][k]) minesAround++;
+            if (minesAround === 0) {
+                for (const k of neighborsOf(face, row, col)) {
+                    if (!faceRevealed[face][k] && !faceFlagged[face][k] && !faceMines[face][k]) stack.push(k);
+                }
+            }
+        }
+        refreshFace(face);
+    }
+
+    function toggleFlag(face, idx) {
+        const n = currentN;
+        if (idx < 0 || idx >= n * n) return;
+        if (faceRevealed[face][idx]) return;
+        faceFlagged[face][idx] = !faceFlagged[face][idx];
+        refreshFace(face);
+    }
+
+    // --- Raycast из центра экрана ---
+    const centerRay = new THREE.Raycaster();
+    const centerNDC = new THREE.Vector2(0, 0);
+
+    function getCellUnderCrosshair() {
+        centerRay.setFromCamera(centerNDC, camera);
+        const hits = centerRay.intersectObjects(allCellMeshes, false);
+        if (hits.length) {
+            const u = hits[0].object.userData;
+            return { face: u.face, idx: u.idx };
+        }
+        return null;
+    }
+
+    // --- Тапы ---
+    const centerTapZone = document.getElementById('centerTapZone');
+    let lpTimer = null, lpFired = false;
+
+    centerTapZone.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        lpFired = false;
+        centerTapZone.setPointerCapture(e.pointerId);
+        lpTimer = setTimeout(() => {
+            lpFired = true;
+            const hit = getCellUnderCrosshair();
+            if (hit) toggleFlag(hit.face, hit.idx);
+        }, 450);
+    });
+    centerTapZone.addEventListener('pointerup', (e) => {
+        e.preventDefault();
+        if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+        if (lpFired) return;
+        const hit = getCellUnderCrosshair();
+        if (hit) revealCell(hit.face, hit.idx);
+    });
+    centerTapZone.addEventListener('pointercancel', () => {
+        if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+        lpFired = false;
+    });
+
+    // --- Кнопки сетки ---
+    document.querySelectorAll('.grid-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const n = parseInt(btn.dataset.grid, 10);
+            if (isNaN(n)) return;
+            document.querySelectorAll('.grid-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            buildCube(n);
+        });
+    });
+
+    buildCube(8);
+
+    // ============================================================
+    function animate() {
+        requestAnimationFrame(animate);
+
+        if (keys['ArrowLeft']) angularVelocityZ -= TURN_SPEED;
+        if (keys['ArrowRight']) angularVelocityZ += TURN_SPEED;
+        if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
+        if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
+
+        if (touchJoystick.active) {
+            angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
+            angularVelocityZ += touchJoystick.moveX * TOUCH_TURN_SPEED;
+        }
+        angularVelocityX *= DAMPING_TURN;
+        angularVelocityZ *= DAMPING_TURN;
+
+        const deltaQuaternion = new THREE.Quaternion().setFromEuler(
+            new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
+        );
+        player.quaternion.multiply(deltaQuaternion);
+
+        let thrustForce = 0;
+        if (keys['Space']) {
+            thrustForce = FLY_SPEED * (superThrust ? 2.5 : 1.0);
+        } else if (currentThrottle > 0.05) {
+            thrustForce = FLY_SPEED * (currentThrottle * 2.0);
+        }
+
+        let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+        if (isReverseThrust) localUp.negate();
+        if (thrustForce > 0) velocity.add(localUp.clone().multiplyScalar(thrustForce));
+
+        const playerDirection = player.position.clone().normalize();
+        velocity.addScaledVector(playerDirection, GRAVITY);
+        player.position.add(velocity);
+        velocity.multiplyScalar(DAMPING_MOVE);
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.set(player.position, playerDirection.clone());
+        const intersects = raycaster.intersectObjects(collidableObjects);
+        if (intersects.length > 0 && intersects[0].distance < PLAYER_HEIGHT + 0.1) {
+            const groundDistance = intersects[0].point.length();
+            player.position.copy(playerDirection.clone().multiplyScalar(groundDistance - PLAYER_HEIGHT));
+            const normalVelocity = velocity.dot(playerDirection);
+            if (normalVelocity > 0) velocity.addScaledVector(playerDirection, -normalVelocity);
+        }
+        if (player.position.length() > PLANET_RADIUS - PLAYER_HEIGHT) {
+            player.position.copy(playerDirection.clone().multiplyScalar(PLANET_RADIUS - PLAYER_HEIGHT));
+            const normalVelocity = velocity.dot(playerDirection);
+            if (normalVelocity > 0) velocity.addScaledVector(playerDirection, -normalVelocity * 1.3);
+        }
+
+        backgroundPlanets.forEach(planet => {
+            planet.mesh.rotation.y += planet.rotSpeed;
+            planet.mesh.rotation.x += planet.rotSpeed * 0.2;
+        });
+
+        renderer.render(scene, camera);
+    }
+
+    animate();
+</script>
+</body>
+</html>
