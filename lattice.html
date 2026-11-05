@@ -1,77 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <link rel="manifest" href="manifest-planet.json">
-    <title>Outside-in Planet</title>
+    <title>Outside-in Planet · Minesweeper Cube</title>
 <style>
-html, body { margin: 0; padding: 0; width: 100dvw; height: 100dvh; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; background-color: #0a0a12; }
-canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-
-#controls { position: fixed; bottom: 50px; left: 20px; display: flex; justify-content: flex-start; pointer-events: none; z-index: 3000; }
-@media (pointer: coarse) { #controls { display: flex; } }
-
-#logoLink { pointer-events: auto; cursor: pointer; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
-
-#throttleArea { position: fixed; top: 0; left: 0; width: 50vw; height: 100vh; z-index: 2000; pointer-events: auto; touch-action: none; }
-#controlArea  { position: fixed; top: 0; right: 0; width: 50vw; height: 100vh; z-index: 2000; pointer-events: auto; touch-action: none; }
-@media (pointer: fine) { #throttleArea, #controlArea { pointer-events: none; } }
-
-#startButton { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 5000; padding: 15px 30px; background-color: #3b3b4f; color: white; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; }
-
-#crosshair {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    width: 28px;
-    height: 28px;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    pointer-events: none;
-    z-index: 6000;
-}
-#crosshair::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 48px;              /* ← длина горизонтальной линии */
-    height: 1px;
-    background: rgba(255, 255, 255, 0.32);
-    transform: translate(-50%, -50%);
-}
-#crosshair::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 1px;
-    height: 48px;             /* ← длина вертикальной линии */
-    background: rgba(255, 255, 255, 0.32);
-    transform: translate(-50%, -50%);
-}
-#crosshair .dot {
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 3px; height: 3px;
-    background: rgba(255, 255, 255, 0.4);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-}
-
-#centerTapZone { position: fixed; top: 50%; left: 50%; width: 90px; height: 90px; transform: translate(-50%, -50%); z-index: 3500; pointer-events: auto; touch-action: none; background: transparent; }
-
-#bottomRow { position: fixed; bottom: 10px; left: 0; width: 100%; display: flex; align-items: center; justify-content: center; gap: 16px; z-index: 4000; pointer-events: none; }
-#bottomRow > * { pointer-events: auto; }
-
-.grid-group {
-    display: flex;
-    gap: 6px;
-}
-
-.grid-btn { background: #232838; border: 1px solid #4a5478; color: #dde6ff; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 22px; cursor: pointer; min-width: 48px; text-align: center; -webkit-tap-highlight-color: transparent; }
-.grid-btn.active { background: #3d6eff; border-color: #8fb0ff; color: #ffffff; box-shadow: 0 0 14px rgba(61,110,255,0.65); }
+    html, body { margin: 0; padding: 0; width: 100dvw; height: 100dvh; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; background-color: #0a0a12; }
+    canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    #controls { position: fixed; bottom: 50px; left: 20px; display: flex; justify-content: flex-start; pointer-events: none; z-index: 3000; }
+    @media (pointer: coarse) { #controls { display: flex; } }
+    #logoLink { pointer-events: auto; cursor: pointer; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+    /* Throttle area - full height, left half */
+    #throttleArea { position: fixed; top: 0; left: 0; width: 50vw; height: 100vh; z-index: 2000; pointer-events: auto; touch-action: none; }
+    #controlArea  { position: fixed; top: 0; right: 0; width: 50vw; height: 100vh; z-index: 2000; pointer-events: auto; touch-action: none; }
+    @media (pointer: fine) { #throttleArea, #controlArea { pointer-events: none; } }
+    #startButton { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 5000; padding: 15px 30px; background-color: #3b3b4f; color: white; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; }
+    #crosshair {
+        position: fixed; top: 50%; left: 50%; width: 28px; height: 28px;
+        transform: translate(-50%, -50%); border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.22); pointer-events: none; z-index: 6000;
+    }
+    #crosshair::before {
+        content: ''; position: absolute; top: 50%; left: 50%; width: 48px; height: 1px;
+        background: rgba(255, 255, 255, 0.32); transform: translate(-50%, -50%);
+    }
+    #crosshair::after {
+        content: ''; position: absolute; top: 50%; left: 50%; width: 1px; height: 48px;
+        background: rgba(255, 255, 255, 0.32); transform: translate(-50%, -50%);
+    }
+    #crosshair .dot {
+        position: absolute; top: 50%; left: 50%; width: 3px; height: 3px;
+        background: rgba(255, 255, 255, 0.4); border-radius: 50%; transform: translate(-50%, -50%);
+    }
+    #centerTapZone { position: fixed; top: 50%; left: 50%; width: 90px; height: 90px; transform: translate(-50%, -50%); z-index: 3500; pointer-events: auto; touch-action: none; background: transparent; }
+    #bottomRow { position: fixed; bottom: 10px; left: 0; width: 100%; display: flex; align-items: center; justify-content: center; gap: 16px; z-index: 4000; pointer-events: none; }
+    #bottomRow > * { pointer-events: auto; }
+    .grid-group { display: flex; gap: 6px; }
+    .grid-btn { background: #232838; border: 1px solid #4a5478; color: #dde6ff; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 22px; cursor: pointer; min-width: 48px; text-align: center; -webkit-tap-highlight-color: transparent; }
+    .grid-btn.active { background: #3d6eff; border-color: #8fb0ff; color: #ffffff; box-shadow: 0 0 14px rgba(61,110,255,0.65); }
 </style>
 </head>
 <body>
@@ -100,21 +66,49 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
 </script>
 <script type="module">
 // --- БЛОК 1: управление тягой и наклоном ---
-let currentThrottle = 0;
+let currentThrottle = 0;           // 0..1, где 1 = максимальная тяга (вверх/вперёд)
 let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
-let isReverseThrust = true;
+// isReverseThrust = true означает, что положительная тяга толкает ВНИЗ (от игрока), 
+// а отрицательная — вверх. Но мы хотим: вверх = как прежде (вперёд), вниз = назад.
+// Поэтому логику инвертируем на уровне расчёта силы.
+let isReverseThrust = false;      // теперь false = прямая тяга (вверх = вперёд)
 
 const throttleArea = document.getElementById('throttleArea');
 const controlArea = document.getElementById('controlArea');
 const activeTouches = { throttle: null, control: null };
 
+// НОВАЯ ЛОГИКА: тяга считается от центра экрана по вертикали.
+// Верхняя половина экрана (y < centerY) даёт положительную тягу (вперёд),
+// нижняя половина (y > centerY) даёт отрицательную тягу (назад).
+// Величина = |y - centerY| / (height/2), ограничена 0..1.
 function updateThrottle(e) {
     const rect = throttleArea.getBoundingClientRect();
-    currentThrottle = Math.max(0, Math.min(1, 1 - ((e.clientY - rect.top) / rect.height)));
+    const centerY = rect.top + rect.height / 2;
+    const halfHeight = rect.height / 2;
+    // Смещение от центра: положительное — вниз (назад), отрицательное — вверх (вперёд)
+    const offsetY = e.clientY - centerY;
+    // Нормализуем: -1..1, где -1 = верх, +1 = низ
+    let normalized = offsetY / halfHeight;
+    normalized = Math.max(-1, Math.min(1, normalized));
+    // Инвертируем знак, чтобы вверх = положительная тяга (вперёд)
+    currentThrottle = -normalized;
 }
-throttleArea.addEventListener('pointerdown', (e) => { throttleArea.setPointerCapture(e.pointerId); activeTouches.throttle = e.pointerId; updateThrottle(e); });
-throttleArea.addEventListener('pointermove', (e) => { if (e.pointerId === activeTouches.throttle) updateThrottle(e); });
-const resetThrottle = (e) => { if (e.pointerId === activeTouches.throttle) { throttleArea.releasePointerCapture(e.pointerId); activeTouches.throttle = null; currentThrottle = 0; } };
+
+throttleArea.addEventListener('pointerdown', (e) => { 
+    throttleArea.setPointerCapture(e.pointerId); 
+    activeTouches.throttle = e.pointerId; 
+    updateThrottle(e); 
+});
+throttleArea.addEventListener('pointermove', (e) => { 
+    if (e.pointerId === activeTouches.throttle) updateThrottle(e); 
+});
+const resetThrottle = (e) => { 
+    if (e.pointerId === activeTouches.throttle) { 
+        throttleArea.releasePointerCapture(e.pointerId); 
+        activeTouches.throttle = null; 
+        currentThrottle = 0; 
+    } 
+};
 throttleArea.addEventListener('pointerup', resetThrottle);
 throttleArea.addEventListener('pointercancel', resetThrottle);
 
@@ -300,34 +294,61 @@ window.addEventListener('dragstart', (e) => e.preventDefault());
     let angularVelocityX = 0, angularVelocityZ = 0;
 
     // ============================================================
-    // КУБ С СЕТКАМИ НА 6 ГРАНЯХ
+    // КУБ С СЕТКАМИ И ЦИФРАМИ
     // ============================================================
-    // Один куб, вписанный в сферу: ребро a = 2R/√3 ≈ 1732
-    // Грани полупрозрачные, на каждой — N×N ячеек сапёра.
-    // Внутри куба пусто.
-    // ============================================================
-    const CUBE_EDGE = 2 * PLANET_RADIUS / Math.sqrt(3); // ≈ 1732
+    const CUBE_EDGE = 2 * PLANET_RADIUS / Math.sqrt(3);
     const HALF = CUBE_EDGE / 2;
 
     const cubeGroup = new THREE.Group();
     scene.add(cubeGroup);
 
-    // Состояние: 6 граней, на каждой N×N
-    // faces: 0:+X, 1:-X, 2:+Y, 3:-Y, 4:+Z, 5:-Z
     let currentN = 8;
-    let faceCells = [];        // faceCells[face] = массив мешей (N*N)
-    let faceMines = [];        // faceMines[face] = bool[]
-    let faceRevealed = [];     // bool[]
-    let faceFlagged = [];      // bool[]
-    let allCellMeshes = [];    // плоский массив всех ячеек для raycast
+    let faceCells = [];
+    let faceMines = [];
+    let faceRevealed = [];
+    let faceFlagged = [];
+    let allCellMeshes = [];
+
+    // ---- ТЕКСТУРЫ ДЛЯ ЦИФР ----
+    const numberTextures = {};
+    function getNumberTexture(num) {
+        if (numberTextures[num]) return numberTextures[num];
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'rgba(0,0,0,0)';
+        ctx.fillRect(0, 0, 128, 128);
+        // яркие цвета для цифр
+        const colors = {
+            1: '#4fc3f7', // голубой
+            2: '#81c784', // зелёный
+            3: '#e57373', // красный
+            4: '#ba68c8', // фиолетовый
+            5: '#ffb74d', // оранжевый
+            6: '#4dd0e1', // циан
+            7: '#f06292', // розовый
+            8: '#bdbdbd'  // серый
+        };
+        ctx.font = 'bold 90px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = colors[num] || '#ffffff';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 8;
+        ctx.fillText(num.toString(), 64, 64);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.needsUpdate = true;
+        numberTextures[num] = tex;
+        return tex;
+    }
 
     // Материалы ячеек
-    const matHidden   = new THREE.MeshBasicMaterial({ color: 0x2a4a8a, transparent: true, opacity: 0.10, depthWrite: false, side: THREE.DoubleSide });
+    const matHidden   = new THREE.MeshBasicMaterial({ color: 0x2a4a8a, transparent: true, opacity: 0.25, depthWrite: false, side: THREE.DoubleSide });
     const matRevealed = new THREE.MeshBasicMaterial({ color: 0x66aaff, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide });
-    const matMine     = new THREE.MeshBasicMaterial({ color: 0xff3355, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide });
-    const matFlag     = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide });
+    const matMine     = new THREE.MeshBasicMaterial({ color: 0xff3355, transparent: true, opacity: 0.65, depthWrite: false, side: THREE.DoubleSide });
+    const matFlag     = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.65, depthWrite: false, side: THREE.DoubleSide });
 
-    // Рёбра куба для читаемости
     function addCubeEdges() {
         const edgeGeo = new THREE.BoxGeometry(CUBE_EDGE, CUBE_EDGE, CUBE_EDGE);
         const edges = new THREE.EdgesGeometry(edgeGeo);
@@ -335,51 +356,23 @@ window.addEventListener('dragstart', (e) => e.preventDefault());
         cubeGroup.add(line);
     }
 
-    // Утилита: построить 2D-позицию ячейки (u,v) на грани face, вернуть меш
-    // Нормали граней:
-    //   0:+X (u=+Z, v=+Y)
-    //   1:-X (u=-Z, v=+Y)
-    //   2:+Y (u=+X, v=+Z)
-    //   3:-Y (u=+X, v=-Z)
-    //   4:+Z (u=-X, v=+Y)
-    //   5:-Z (u=+X, v=+Y)
     function buildCellMesh(face, row, col, cellSize) {
-        // Плоский квад, чуть вдвинутый внутрь, чтобы не совпадал с ребром
         const geo = new THREE.PlaneGeometry(cellSize * 0.92, cellSize * 0.92);
         const mesh = new THREE.Mesh(geo, matHidden);
 
-        // Локальные координаты (u,v) в диапазоне [-HALF, HALF]
         const u = -HALF + (col + 0.5) * cellSize;
         const v =  HALF - (row + 0.5) * cellSize;
 
-        const eps = 0.5; // вдвиг внутрь, чтобы не мерцало с рёбрами
+        const eps = 0.5;
         let pos, rot;
 
         switch (face) {
-            case 0: // +X
-                pos = new THREE.Vector3(HALF - eps, v, u);
-                rot = new THREE.Euler(0, -Math.PI/2, 0);
-                break;
-            case 1: // -X
-                pos = new THREE.Vector3(-HALF + eps, v, -u);
-                rot = new THREE.Euler(0, Math.PI/2, 0);
-                break;
-            case 2: // +Y
-                pos = new THREE.Vector3(u, HALF - eps, v);
-                rot = new THREE.Euler(Math.PI/2, 0, 0);
-                break;
-            case 3: // -Y
-                pos = new THREE.Vector3(u, -HALF + eps, -v);
-                rot = new THREE.Euler(-Math.PI/2, 0, 0);
-                break;
-            case 4: // +Z
-                pos = new THREE.Vector3(-u, v, HALF - eps);
-                rot = new THREE.Euler(0, 0, 0);
-                break;
-            case 5: // -Z
-                pos = new THREE.Vector3(u, v, -HALF + eps);
-                rot = new THREE.Euler(0, Math.PI, 0);
-                break;
+            case 0: pos = new THREE.Vector3(HALF - eps, v, u); rot = new THREE.Euler(0, -Math.PI/2, 0); break;
+            case 1: pos = new THREE.Vector3(-HALF + eps, v, -u); rot = new THREE.Euler(0, Math.PI/2, 0); break;
+            case 2: pos = new THREE.Vector3(u, HALF - eps, v); rot = new THREE.Euler(Math.PI/2, 0, 0); break;
+            case 3: pos = new THREE.Vector3(u, -HALF + eps, -v); rot = new THREE.Euler(-Math.PI/2, 0, 0); break;
+            case 4: pos = new THREE.Vector3(-u, v, HALF - eps); rot = new THREE.Euler(0, 0, 0); break;
+            case 5: pos = new THREE.Vector3(u, v, -HALF + eps); rot = new THREE.Euler(0, Math.PI, 0); break;
         }
         mesh.position.copy(pos);
         mesh.rotation.copy(rot);
@@ -387,10 +380,10 @@ window.addEventListener('dragstart', (e) => e.preventDefault());
     }
 
     function buildCube(n) {
-        // очистка
         while (cubeGroup.children.length) {
             const c = cubeGroup.children[0];
             if (c.geometry) c.geometry.dispose();
+            if (c.material && c.material.map && c.material.map.isTexture) c.material.map.dispose();
             cubeGroup.remove(c);
         }
         faceCells = [];
@@ -408,7 +401,6 @@ window.addEventListener('dragstart', (e) => e.preventDefault());
             const revealed = new Array(n * n).fill(false);
             const flagged = new Array(n * n).fill(false);
 
-            // мины ~15%
             const mineCount = Math.max(1, Math.floor(n * n * 0.15));
             let placed = 0;
             while (placed < mineCount) {
@@ -434,21 +426,106 @@ window.addEventListener('dragstart', (e) => e.preventDefault());
         }
 
         addCubeEdges();
+        // обновить все грани (спрятанные)
+        for (let f = 0; f < 6; f++) refreshFace(f);
     }
 
+    // ---- Создание текстового спрайта с цифрой ----
+    function createNumberSprite(num, size) {
+        const tex = getNumberTexture(num);
+        const mat = new THREE.SpriteMaterial({ 
+            map: tex, 
+            transparent: true, 
+            depthTest: false,
+            depthWrite: false,
+            opacity: 0.95
+        });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(size * 0.8, size * 0.8, 1);
+        sprite.userData.isNumberSprite = true;
+        return sprite;
+    }
+
+    // ---- Обновление отображения грани с цифрами ----
     function refreshFace(face) {
         const n = currentN;
         const cells = faceCells[face];
         const mines = faceMines[face];
         const revealed = faceRevealed[face];
         const flagged = faceFlagged[face];
+        const cellSize = CUBE_EDGE / n;
+
+        // Удалить старые спрайты с цифрами у этой грани
+        const toRemove = [];
+        cubeGroup.children.forEach(child => {
+            if (child.userData.isNumberSprite && child.userData.face === face) {
+                toRemove.push(child);
+            }
+        });
+        toRemove.forEach(sprite => {
+            if (sprite.material.map) sprite.material.map.dispose();
+            if (sprite.material) sprite.material.dispose();
+            cubeGroup.remove(sprite);
+        });
+
         for (let i = 0; i < n * n; i++) {
             const m = cells[i];
             if (!m) continue;
-            if (flagged[i]) m.material = matFlag;
-            else if (revealed[i]) m.material = mines[i] ? matMine : matRevealed;
-            else m.material = matHidden;
+
+            if (flagged[i]) {
+                m.material = matFlag;
+            } else if (revealed[i]) {
+                m.material = mines[i] ? matMine : matRevealed;
+
+                // Если это не мина — добавить цифру
+                if (!mines[i]) {
+                    const row = Math.floor(i / n), col = i % n;
+                    const minesAround = countMinesAround(face, row, col);
+
+                    if (minesAround > 0) {
+                        const sprite = createNumberSprite(minesAround, cellSize);
+                        // Позиция спрайта — там же, где ячейка, но чуть снаружи
+                        const worldPos = m.position.clone();
+                        // Сместить наружу вдоль нормали грани
+                        const normal = getFaceNormal(face);
+                        worldPos.addScaledVector(normal, 1.5); // чуть отступить от плоскости
+                        sprite.position.copy(worldPos);
+                        // Ориентация спрайта — всегда лицом к камере, это Sprite
+                        sprite.userData.face = face;
+                        sprite.userData.isNumberSprite = true;
+                        cubeGroup.add(sprite);
+                    }
+                }
+            } else {
+                m.material = matHidden;
+            }
         }
+    }
+
+    function getFaceNormal(face) {
+        switch(face) {
+            case 0: return new THREE.Vector3(1, 0, 0);
+            case 1: return new THREE.Vector3(-1, 0, 0);
+            case 2: return new THREE.Vector3(0, 1, 0);
+            case 3: return new THREE.Vector3(0, -1, 0);
+            case 4: return new THREE.Vector3(0, 0, 1);
+            case 5: return new THREE.Vector3(0, 0, -1);
+        }
+        return new THREE.Vector3(0, 1, 0);
+    }
+
+    function countMinesAround(face, row, col) {
+        const n = currentN;
+        let count = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+                if (!dr && !dc) continue;
+                const nr = row + dr, nc = col + dc;
+                if (nr < 0 || nr >= n || nc < 0 || nc >= n) continue;
+                if (faceMines[face][nr * n + nc]) count++;
+            }
+        }
+        return count;
     }
 
     function neighborsOf(face, row, col) {
@@ -574,16 +651,47 @@ window.addEventListener('dragstart', (e) => e.preventDefault());
         );
         player.quaternion.multiply(deltaQuaternion);
 
+        // ========== ТЯГА (ИЗМЕНЕНО) ==========
         let thrustForce = 0;
+        // currentThrottle: -1..1, где положительное — вперёд (вверх), отрицательное — назад (вниз)
+        // Клавиатура: Space — вперёд (с superThrust), как раньше.
+        // isReverseThrust = false — прямая тяга: локальный "верх" игрока — это направление "вперёд".
+        // Но раньше при isReverseThrust = true локальныйUp инвертировался, и положительная тяга толкала вниз.
+        // Теперь мы хотим: вверх (положительный currentThrottle) = как прежде (вперёд, к центру/от игрока? 
+        // В оригинале: isReverseThrust = true, localUp инвертируется, и thrustForce * localUp толкает вниз 
+        // (от игрока). Значит "как прежде" для клавиши Space было движение вниз (от игрока), 
+        // но визуально игрок летел к планете? На самом деле игрок стартует на нижней точке сферы, 
+        // localUp после инверсии смотрит от центра, и положительная тяга уводит от центра — вверх по экрану.
+        // Пользователь хочет: "вверх как прежде, вниз назад". То есть положительная тяга (вверх) 
+        // должна давать такое же направление, как раньше при Space (когда isReverseThrust = true).
+        // Раньше при Space: localUp = (0,1,0) * quat, затем negate, затем velocity += localUp * thrustForce.
+        // Это уводило игрока от планеты (вверх по экрану). 
+        // Теперь мы хотим, чтобы положительный currentThrottle (вверх) давал то же самое.
+        // Значит нужно оставить инверсию localUp при положительной тяге.
+        // Но тогда отрицательная тяга (вниз) должна толкать в противоположную сторону — к планете.
+        // Реализуем через знак thrustForce и инверсию localUp:
+        // Если currentThrottle > 0 — движемся "вперёд" (как Space), localUp инвертируется, сила положительная.
+        // Если currentThrottle < 0 — движемся "назад", localUp НЕ инвертируется, сила тоже инвертируется? 
+        // Проще: всегда инвертируем localUp, а thrustForce делаем = FLY_SPEED * currentThrottle * 2.0 (если >0.05)
+        // Тогда: currentThrottle > 0 → thrustForce > 0, localUp инвертирован → летим вверх (от планеты)
+        // currentThrottle < 0 → thrustForce < 0, localUp инвертирован → летим вниз (к планете)
+        // Это то, что нужно: вверх = от планеты (как прежде), вниз = к планете (назад).
+        // =====================================
+
+        const isThrottleActive = Math.abs(currentThrottle) > 0.05;
         if (keys['Space']) {
             thrustForce = FLY_SPEED * (superThrust ? 2.5 : 1.0);
-        } else if (currentThrottle > 0.05) {
+        } else if (isThrottleActive) {
             thrustForce = FLY_SPEED * (currentThrottle * 2.0);
         }
 
+        // Всегда инвертируем localUp для соответствия "вверх = от планеты" при положительной тяге
         let localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
-        if (isReverseThrust) localUp.negate();
-        if (thrustForce > 0) velocity.add(localUp.clone().multiplyScalar(thrustForce));
+        localUp.negate();  // теперь localUp смотрит от планеты (вверх по экрану)
+
+        if (thrustForce !== 0) {
+            velocity.add(localUp.clone().multiplyScalar(thrustForce));
+        }
 
         const playerDirection = player.position.clone().normalize();
         velocity.addScaledVector(playerDirection, GRAVITY);
