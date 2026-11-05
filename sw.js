@@ -24,6 +24,7 @@ const CORE_ASSETS = [
     './swipe.html',
     './design.html',
     './pioneer.html',
+    './lattice.html',
 
     './manifest-index.json',
     './manifest-auction.json',
@@ -45,6 +46,7 @@ const CORE_ASSETS = [
     './manifest-bismuth.json',
     './manifest-design.json',
     './manifest-pioneer.json',
+    './manifest-lattice.json',
     
     './256.001.png',
     './256.002.png',
