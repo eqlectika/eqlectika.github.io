@@ -185,6 +185,75 @@ padding: calc(6px + env(safe-area-inset-top)) 8px 6px 8px;
   letter-spacing:.02em;
 }
 #hint.hidden{opacity:0}
+
+/* ---------- календарь (по центру) ---------- */
+.calendar-widget{
+  position:fixed;
+  bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  left:50%;
+  transform:translateX(-50%) translateY(20px) scale(0.9);
+  z-index:100;
+  font-family:'Roboto Condensed',sans-serif;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.5s ease, transform 0.5s ease;
+  display:flex;
+  justify-content:center;
+}
+.calendar-widget.visible{
+  opacity:1;
+  transform:translateX(-50%) translateY(0) scale(1);
+  pointer-events:auto;
+}
+.calendar-btn{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:12px 20px;
+  background:#1a1a1a;
+  color:#ff5700;
+  border:1px solid #ff5700;
+  border-radius:10px;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  transition:all 0.2s;
+  box-shadow:0 2px 12px rgba(0,0,0,0.7);
+  white-space:nowrap;
+}
+.calendar-btn:hover{
+  background:#ff5700;
+  color:#000;
+}
+.calendar-btn svg{
+  width:16px;
+  height:16px;
+  fill:currentColor;
+}
+.calendar-toast{
+  position:fixed;
+  bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+  left:50%;
+  transform:translateX(-50%) translateY(10px);
+  background:#1a1a1a;
+  color:#afff00;
+  border:1px solid #afff00;
+  border-radius:8px;
+  padding:8px 14px;
+  font-size:13px;
+  font-family:'JetBrains Mono',monospace;
+  z-index:101;
+  opacity:0;
+  transition:opacity 0.3s, transform 0.3s;
+  pointer-events:none;
+  max-width:260px;
+  line-height:1.3;
+  text-align:center;
+}
+.calendar-toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
 </style>
 </head>
 <body>
@@ -214,6 +283,20 @@ padding: calc(6px + env(safe-area-inset-top)) 8px 6px 8px;
   <button class="sync-btn" id="syncBtn" style="display:none">SYNC</button>
 </div>
 
+<!-- =========================================================
+     КАЛЕНДАРЬ: появляется после проявления новой строки
+     ========================================================= -->
+<div class="calendar-widget" id="calendarWidget">
+  <button class="calendar-btn" id="addToCalendarBtn" title="Add to Calendar">
+    <svg viewBox="0 0 24 24">
+      <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+    </svg>
+    <span id="calendarBtnLabel">Calendar</span>
+  </button>
+</div>
+
+<div class="calendar-toast" id="calendarToast"></div>
+
 <script>
 /* =========================================================
    0. ЯЗЫК + ТЕКСТ
@@ -233,15 +316,19 @@ const HINT_TEXT = {
 const MY_TEXT = {
   ru: [
     'Это демонстрационный одноранговый публичный мессенджер',
-    '"Live" наверху значит, что данный момент присутствует кто-то еще. "Tape" значит вы один на странице',
+    '"Live" наверху значит, что данный момент присутствует кто-то еще, и может видеть ваши сообщения. "Tape" значит вы один на странице',
     'Я создаю программное обеспечение, веб-сайты, интерактивные приложения, а также автономные, многофункциональные децентрализованные одноранговые веб-терминалы — решения, разработанные для самых разных устройств, способные адаптироваться к будущим изменениям',
+    'Чтобы выйти на контакт, посещайте эту страницу регулярно',
+    'Вы можете создать такое событие прямо сейчас',
     'Вы можете ввести своё имя в правом верхнем углу',
     'Введите свой текст в поле ниже и нажмите Enter для публикации',
   ],
   en: [
     'This is a demonstration peer public messenger',
-    '"Live" at the top means someone else is present. "Tape" means you are alone on the page',
+    '"Live" at the top means someone else is present, and can see your messages. "Tape" means you are alone on the page',
     'I create software, websites, interactive applications, and independent, multifunctional, decentralized peer-to-peer web terminals—designed for a variety of devices, capable of adapting to future changes',
+    'To get in touch, please visit this page regularly',
+    'You can create such an event right now',
     'You can type your name in the top-right corner',
     'Type your text in the field below and press Enter to publish',
   ]
@@ -497,7 +584,6 @@ window.addEventListener('orientationchange', syncScrollerTop);
 if (document.fonts && document.fonts.ready){
   document.fonts.ready.then(syncScrollerTop);
 }
-// На случай позднего изменения safe-area (поворот, скрытие адресной строки)
 if (window.visualViewport){
   window.visualViewport.addEventListener('resize', syncScrollerTop);
 }
@@ -927,6 +1013,9 @@ document.getElementById('btnClear').addEventListener('click', () => {
   refreshChrome();
 
   document.getElementById('hint').classList.remove('hidden');
+
+  // Скрываем календарь при очистке
+  hideCalendar();
 });
 
 /* =========================================================
@@ -988,7 +1077,6 @@ function autoScroll(){
    17. Восстановление
    ========================================================= */
 function restorePrinted(){
-  // Мой ввод: тоже прогоняем через распознаватель ссылок
   const mineFlat = flattenWithLinks(myText);
   for (let i = 0; i < myCursor; i++){
     const c = mineFlat[i] || {ch: myText[i], link: null};
@@ -1010,6 +1098,201 @@ updateStageHeight();
 syncScrollerTop();
 refreshChrome();
 connectMqtt();
+
+/* =========================================================
+   19. КАЛЕНДАРЬ: появляется после проявления новой строки
+   ========================================================= */
+
+// Новая строка, после которой появляется кнопка календаря
+// Индекс в MY_TEXT: 4 (0-based)
+const CALENDAR_TRIGGER_SENTENCE_INDEX = 4;
+
+// Вычисляем позицию символа, с которого начинается триггерная строка
+function getSentenceCharPosition(index) {
+  let pos = 0;
+  for (let i = 0; i < index; i++) {
+    pos += mySentences[i].length;
+    if (i < mySentences.length - 1) pos += 1; // '\n' между предложениями
+  }
+  return pos;
+}
+
+// Позиция НАЧАЛА триггерной строки
+const triggerStartPos = getSentenceCharPosition(CALENDAR_TRIGGER_SENTENCE_INDEX);
+// Позиция КОНЦА триггерной строки
+const triggerEndPos = triggerStartPos + mySentences[CALENDAR_TRIGGER_SENTENCE_INDEX].length;
+
+console.log('[Swipe] Trigger sentence:', mySentences[CALENDAR_TRIGGER_SENTENCE_INDEX]);
+console.log('[Swipe] Trigger char position:', triggerStartPos, '-', triggerEndPos);
+
+// Тексты для календарной кнопки и уведомлений
+const CAL_TEXT = {
+  ru: {
+    btn: 'Создать событие',
+    title: 'Swipe — публичный мессенджер',
+    desc: 'Проверьте страницу Swipe: https://eqlectika.github.io',
+    location: 'https://eqlectika.github.io',
+    toast: 'Событие создано! Проверьте календарь.'
+  },
+  en: {
+    btn: 'Create event',
+    title: 'Swipe — public messenger',
+    desc: 'Check the Swipe page: https://eqlectika.github.io',
+    location: 'https://eqlectika.github.io',
+    toast: 'Event created! Check your calendar.'
+  }
+}[LANG];
+
+// Обновляем подпись кнопки
+document.getElementById('calendarBtnLabel').textContent = CAL_TEXT.btn;
+
+// Флаг: показывался ли уже календарь
+let calendarShown = false;
+
+/**
+ * Показывает виджет календаря с анимацией.
+ */
+function showCalendar() {
+  if (calendarShown) return;
+  calendarShown = true;
+  const widget = document.getElementById('calendarWidget');
+  widget.classList.add('visible');
+  console.log('[Swipe] Calendar widget shown');
+}
+
+/**
+ * Скрывает виджет календаря.
+ */
+function hideCalendar() {
+  calendarShown = false;
+  const widget = document.getElementById('calendarWidget');
+  widget.classList.remove('visible');
+  console.log('[Swipe] Calendar widget hidden');
+}
+
+/**
+ * Проверяет, проявил ли пользователь триггерную строку.
+ * Если да — показывает календарь.
+ */
+function checkCalendarVisibility() {
+  // Календарь появляется, когда курсор печати достиг КОНЦА
+  // триггерной строки (т.е. вся строка уже проявилась)
+  if (!calendarShown && myCursor >= triggerEndPos) {
+    showCalendar();
+  }
+}
+
+/**
+ * Создаёт и скачивает .ics файл для добавления в календарь.
+ * Событие повторяется ежедневно, чтобы пользователь мог вернуться.
+ */
+function createCalendarEvent() {
+  const now = new Date();
+  const dtstamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+  // Начало: через 1 час от текущего момента
+  const start = new Date(now.getTime() + 60 * 60 * 1000);
+  const dtstart = start.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+  // Конец: через 2 часа от текущего момента
+  const end = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  const dtend = end.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+  const uid = 'swipe-' + Date.now() + '-' + Math.random().toString(16).slice(2, 8) + '@eqlectika.github.io';
+
+  const icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Swipe//Public Messenger//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    'UID:' + uid,
+    'DTSTAMP:' + dtstamp,
+    'DTSTART:' + dtstart,
+    'DTEND:' + dtend,
+    'SUMMARY:' + CAL_TEXT.title,
+    'DESCRIPTION:' + CAL_TEXT.desc.replace(/\n/g, '\\n'),
+    'LOCATION:' + CAL_TEXT.location,
+    'STATUS:CONFIRMED',
+    'TRANSP:OPAQUE',
+    'RRULE:FREQ=DAILY;COUNT=365',
+    'BEGIN:VALARM',
+    'TRIGGER:-PT15M',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Reminder: ' + CAL_TEXT.title,
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'swipe-event.ics';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  const toast = document.getElementById('calendarToast');
+  toast.textContent = CAL_TEXT.toast;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// Привязка обработчика
+document.getElementById('addToCalendarBtn').addEventListener('click', createCalendarEvent);
+
+/* ---------------------------------------------------------
+   Патчим функции печати, чтобы отслеживать прогресс
+   и показывать календарь, как только триггерная строка
+   полностью проявится.
+   --------------------------------------------------------- */
+
+// Патчим typeMyChar (для собственного текста)
+const originalTypeMyChar = typeMyChar;
+typeMyChar = function() {
+  const result = originalTypeMyChar();
+  if (result) checkCalendarVisibility();
+  return result;
+};
+
+// Патчим moveTo (для свайпа)
+const originalMoveTo = moveTo;
+moveTo = function(x, y) {
+  originalMoveTo(x, y);
+  checkCalendarVisibility();
+};
+
+// Патчим addChar, чтобы отслеживать прямые вызовы (восстановление, remote)
+const originalAddChar = addChar;
+addChar = function(ch, kind, author, animateSpin, href) {
+  originalAddChar(ch, kind, author, animateSpin, href);
+  checkCalendarVisibility();
+};
+
+// Проверяем при клике/тапе
+document.getElementById('scroller').addEventListener('click', () => {
+  checkCalendarVisibility();
+}, { passive: true });
+
+// Инициализация: если страница уже была пройдена до триггерной строки
+// (например, при перезагрузке), показываем календарь сразу
+if (myCursor >= triggerEndPos) {
+  setTimeout(() => {
+    showCalendar();
+  }, 500);
+}
+
+// Также проверяем после restorePrinted в init
+setTimeout(() => {
+  checkCalendarVisibility();
+}, 1000);
+
+console.log('[Swipe] Calendar feature loaded. Widget will appear after trigger line is revealed.');
 </script>
+
 </body>
 </html>
