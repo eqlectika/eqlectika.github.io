@@ -1279,8 +1279,14 @@ const DataManager = (() => {
 })();
 
 // ============================================
-// TDZ-защита: activePeers объявлен В САМОМ НАЧАЛЕ
+// [PRESENCE FIX] Константы присутствия объявлены в самом начале
 // ============================================
+const TOPIC = 'auction/p2p/network/v1';
+// [PRESENCE FIX] Таймаут присутствия согласован с MQTT keepalive (60s * 1.5 + запас).
+// Пир остаётся "онлайн" до ~90 секунд после закрытия вкладки, пока брокер держит сессию.
+const PEER_TIMEOUT_MS = 95000;
+
+// TDZ-защита: activePeers объявлен ДО первого использования
 let activePeers = {};
 
 function createTextThumbnail(text) {
@@ -1464,12 +1470,13 @@ function ensureGate(peerA, peerB, itemId) {
     return gateId;
 }
 
+// [PRESENCE FIX] isPeerOnline использует PEER_TIMEOUT_MS вместо захардкоженных 12000
 function isPeerOnline(peerId) {
     if (!peerId) return false;
-    if (peerId === myId) return true; // ← продавец всегда онлайн для самого себя
+    if (peerId === myId) return true; // продавец всегда онлайн для самого себя
     const ts = activePeers[peerId];
     if (!ts) return false;
-    return (Date.now() - ts) <= 12000;
+    return (Date.now() - ts) <= PEER_TIMEOUT_MS;
 }
 
 function isDemoPeer(peerId) {
@@ -1520,6 +1527,15 @@ function changeMyId() {
 
     pendingTransfers = {};
     savePending();
+
+    // [PRESENCE FIX] Пересоздаём MQTT-клиент с новым clientId,
+    // чтобы LWT публиковался от актуального ID.
+    try {
+        if (client && typeof client.end === 'function') {
+            client.end(true);
+        }
+    } catch (e) {}
+    setTimeout(() => window.location.reload(), 100);
 
     log('[ID] Renamed to ' + myId);
     alert('Your ID is now "' + myId + '".');
@@ -1869,17 +1885,26 @@ function saveLocal() {
 const DEFAULT_BROKER = 'wss://test.mosquitto.org:8081/mqtt';
 const savedBroker = DataManager.get('broker_url', DEFAULT_BROKER);
 
+// [PRESENCE FIX] clientId привязан к myId (а не случайный),
+// добавлен will (LWT) для мгновенного уведомления об уходе.
+// TOPIC уже объявлен выше, поэтому will может на него ссылаться.
 const client = mqtt.connect(savedBroker, {
-    clientId: 'versus_resonance_' + Math.random().toString(16).substr(2, 8),
+    clientId: 'versus_resonance_' + String(myId).replace(/[^A-Za-z0-9_-]/g, '_'),
     reconnectPeriod: 5000,
     connectTimeout: 5000,
-    keepalive: 60
+    keepalive: 60,
+    clean: true,
+    will: {
+        topic: TOPIC,
+        payload: JSON.stringify({ type: 'OFFLINE', sender: myId, ts: Date.now() }),
+        qos: 1,
+        retain: false
+    }
 });
-const TOPIC = 'auction/p2p/network/v1';
 
 client.on('connect', () => {
     const statusEl = document.getElementById('netStatus');
-    statusEl.style.color = '#0097ff'; // <-- ДОБАВИТЬ ЭТУ СТРОКУ (сброс на синий)
+    statusEl.style.color = '#0097ff';
     statusEl.innerHTML = `Status: Connected to the transport layer as ${myId}`;
     log("Waiting for peer(s)...");
     client.subscribe(TOPIC, { qos: 1 });
@@ -1960,6 +1985,16 @@ if (packet.type === 'TRANSFER_IMPACT' && packet.target === myId) {
         if (packet.type === 'PING') {
             if (packet.sender !== myId) {
                 activePeers[packet.sender] = Date.now();
+            }
+        }
+
+        // [PRESENCE FIX] Обработка LWT — пир ушёл, убираем мгновенно
+        if (packet.type === 'OFFLINE') {
+            if (packet.sender !== myId) {
+                if (activePeers[packet.sender] !== undefined) {
+                    delete activePeers[packet.sender];
+                    updateOnlinePeersCount();
+                }
             }
         }
         
@@ -2285,6 +2320,29 @@ else if (packet.type === 'GATE_MSG') {
 
     } catch(e) {
         log("Packet processing error: " + e.message);
+    }
+});
+
+// [PRESENCE FIX] Корректный уход при закрытии вкладки/навигации:
+// публикуем OFFLINE (qos 1) и принудительно закрываем клиент (end(true) применит LWT, если публикация не успела).
+window.addEventListener('pagehide', () => {
+    try {
+        if (client && client.connected) {
+            client.publish(TOPIC, JSON.stringify({
+                type: 'OFFLINE',
+                sender: myId,
+                ts: Date.now()
+            }), { qos: 1 });
+        }
+        client.end(true);
+    } catch (e) {}
+});
+
+// [PRESENCE FIX] Возврат из bfcache — MQTT-клиент мёртв, перезагружаем страницу,
+// чтобы пересоздать клиент с актуальным clientId.
+window.addEventListener('pageshow', (e) => {
+    if (e.persisted) {
+        window.location.reload();
     }
 });
 
@@ -3530,19 +3588,24 @@ setActivityRange(activityRange);
     if (el) el.value = myId;
 })();
 
+// [PRESENCE FIX] getOnlinePeerCount использует PEER_TIMEOUT_MS вместо 12000
 function getOnlinePeerCount() {
     const now = Date.now();
     return Object.keys(activePeers).filter(peerId => {
         return peerId !== myId
             && peerId !== 'System-Genesis'
-            && (now - activePeers[peerId]) <= 12000;
+            && (now - activePeers[peerId]) <= PEER_TIMEOUT_MS;
     }).length;
 }
 
+// [PRESENCE FIX] updateOnlinePeersCount:
+// - использует PEER_TIMEOUT_MS вместо 12000
+// - сравнивает МНОЖЕСТВО пиров, а не только их количество,
+//   чтобы UI не «залипал», когда один ушёл, а другой пришёл.
 function updateOnlinePeersCount() {
     const now = Date.now();
     for (let peerId in activePeers) {
-        if (now - activePeers[peerId] > 12000) {
+        if (now - activePeers[peerId] > PEER_TIMEOUT_MS) {
             delete activePeers[peerId];
         }
     }
@@ -3551,8 +3614,12 @@ function updateOnlinePeersCount() {
     const peerLabel = onlineCount === 1 ? 'peer' : 'peers';
     log(`[Network] Active online: ${onlineCount} ${peerLabel}`);
 
-    // Перерисовываем список только если количество пиров изменилось
-    if (window._lastOnlineCount === onlineCount) return;
+    const peerSetKey = Object.keys(activePeers)
+        .filter(p => p !== myId && p !== 'System-Genesis' && (now - activePeers[p]) <= PEER_TIMEOUT_MS)
+        .sort()
+        .join(',');
+    if (window._lastPeerSetKey === peerSetKey) return;
+    window._lastPeerSetKey = peerSetKey;
     window._lastOnlineCount = onlineCount;
 
     const liveIndicator = document.getElementById('liveIndicator');
