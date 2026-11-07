@@ -1,4 +1,4 @@
-const CACHE_NAME = 'version-v156'; 
+const CACHE_NAME = 'version-v157'; 
 const CORE_ASSETS = [
     '/',
     './index.html',
@@ -47,6 +47,7 @@ const CORE_ASSETS = [
     './manifest-design.json',
     './manifest-pioneer.json',
     './manifest-lattice.json',
+    './manifest-swipe.json',
     
     './256.001.png',
     './256.002.png',
@@ -86,6 +87,7 @@ const CORE_ASSETS = [
     './star.png',
     './man.PNG',
     './lattice.png',
+    './swipe.png',
     './woman.PNG'
 ];
 
