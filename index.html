@@ -319,13 +319,13 @@
     <!-- === ПОДДЕРЖКА / SUPPORT === -->
     <div class="content-text" style="font-size:12px; margin-top:48px;" id="content-text-main">
         <div data-lang-block="ru" style="display:none;">
-            Если вы находите <a href="match.html" style="color: #60a5fa; text-decoration: none;">этот интерфейс и приложения</a> полезными, и хотели бы поддержать проект с помощью ETH (ERC20), пожалуйста, используйте адрес ниже.
+            Если вы находите этот интерфейс и приложения полезными, и хотели бы поддержать проект с помощью ETH (ERC20), пожалуйста, используйте адрес ниже.
         </div>
         <div data-lang-block="en">
-            If you find <a href="match.html" style="color: #60a5fa; text-decoration: none;">the interface and included applications</a> useful and would like to support the project using ETH (ERC20), please use the address below.
+            If you find the interface and included applications</a> useful and would like to support the project using ETH (ERC20), please use the address below.
         </div>
         <div data-lang-block="zh" style="display:none;">
-            如果您觉得<a href="match.html" style="color: #60a5fa; text-decoration: none;">此界面及其包含的应用</a>有用，并希望使用 ETH（ERC20）支持该项目，请使用以下地址。
+            如果您觉得此界面及其包含的应用</a>有用，并希望使用 ETH（ERC20）支持该项目，请使用以下地址。
         </div>
     </div>
 
@@ -508,45 +508,25 @@
      * При этом ведётся счётчик тапов. На третьем тапе (подряд, в пределах
      * TAP_RESET_MS) выполняется переход на match.html.
      */
-    function handleWordClick(wordElement) {
-        const word = wordElement.textContent.trim();
-        if (!word) return;
+function handleWordClick(wordElement) {
+            const word = wordElement.textContent.trim();
+            if (!word) return;
 
-        const now = Date.now();
-        const lastTap = wordElement._lastTapAt || 0;
+            let currentState = parseInt(wordElement.dataset.state || '0');
 
-        // Сброс счётчика, если пауза слишком большая
-        if (now - lastTap > TAP_RESET_MS) {
-            wordElement._tapCount = 0;
+            if (currentState === 2) {
+                // Третий тап → переход на match.html
+                window.location.href = 'match.html';
+                return;
+            }
+
+            currentState = currentState + 1;
+            wordElement.dataset.state = currentState;
+            wordElement.classList.remove('state-0', 'state-1', 'state-2');
+            wordElement.classList.add(`state-${currentState}`);
+
+            saveWordStates();
         }
-
-        wordElement._lastTapAt = now;
-        wordElement._tapCount = (wordElement._tapCount || 0) + 1;
-
-        // Третий тап подряд → переход
-        if (wordElement._tapCount >= TAPS_BEFORE_NAVIGATION) {
-            wordElement._tapCount = 0;
-            navigateToMatch(wordElement);
-            return;
-        }
-
-        // Обычная смена цвета
-        let currentState = parseInt(wordElement.dataset.state || '0');
-
-        if (currentState === 0) {
-            currentState = 1;
-        } else if (currentState === 1) {
-            currentState = 2;
-        } else {
-            currentState = 1;
-        }
-
-        wordElement.dataset.state = currentState;
-        wordElement.classList.remove('state-0', 'state-1', 'state-2');
-        wordElement.classList.add(`state-${currentState}`);
-
-        saveWordStates();
-    }
 
     function saveWordStates() {
         const states = { main: [], story: [] };
