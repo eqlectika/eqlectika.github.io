@@ -315,6 +315,8 @@ const HINT_TEXT = {
 
 const MY_TEXT = {
   ru: [
+    'Мы не придумали слова',
+    'Нас информировали',
     'Это демонстрационный одноранговый публичный мессенджер',
     '"Live" наверху значит, что данный момент присутствует кто-то еще, и может видеть ваши сообщения. "Tape" значит вы один на странице',
     'Я создаю программное обеспечение, веб-сайты, интерактивные приложения, а также автономные, многофункциональные децентрализованные одноранговые веб-терминалы — решения, разработанные для самых разных устройств, способные адаптироваться к будущим изменениям',
@@ -324,6 +326,8 @@ const MY_TEXT = {
     'Введите свой текст в поле ниже и нажмите Enter для публикации',
   ],
   en: [
+    'We didn’t come up with the words',
+    'We were informed',
     'This is a demonstration peer public messenger',
     '"Live" at the top means someone else is present, and can see your messages. "Tape" means you are alone on the page',
     'I create software, websites, interactive applications, and independent, multifunctional, decentralized peer-to-peer web terminals—designed for a variety of devices, capable of adapting to future changes',
@@ -695,7 +699,19 @@ function spin(el){
 /* =========================================================
    8. Добавление символа (с поддержкой ссылок)
    ========================================================= */
+const hintEl = document.getElementById('hint');
+
+function hideHint(){
+  // Скрываем подсказку, как только на экране появляется любой символ
+  if (hintEl && !hintEl.classList.contains('hidden')){
+    hintEl.classList.add('hidden');
+  }
+}
+
 function addChar(ch, kind, author, animateSpin, href){
+  // Любой добавленный символ означает, что текст уже пошёл — прячем подсказку
+  hideHint();
+
   if (author && currentLine.length === 0 && ch !== '\n' && ch !== ' '){
     cursorY += lineH * 0.5;
 
@@ -811,8 +827,7 @@ function stagePoint(e){
 }
 
 function moveTo(x, y){
-  document.getElementById('hint').classList.add('hidden');
-
+  // Подсказку больше не трогаем здесь — её скрывает addChar()
   if (lastX === null){
     lastX = x; lastY = y;
 
@@ -924,7 +939,7 @@ stage.addEventListener('keydown', (e) => {
    ========================================================= */
 const wordInput = document.getElementById('word-input');
 wordInput.placeholder = PLACEHOLDER;
-document.getElementById('hint').textContent = HINT_TEXT;
+hintEl.textContent = HINT_TEXT;
 document.getElementById('btnClear').title = LANG === 'ru' ? 'Очистить экран' : 'Clear screen';
 
 function newEditId(){
@@ -1012,7 +1027,8 @@ document.getElementById('btnClear').addEventListener('click', () => {
   updateStageHeight();
   refreshChrome();
 
-  document.getElementById('hint').classList.remove('hidden');
+  // Возвращаем подсказку — экран снова пуст
+  hintEl.classList.remove('hidden');
 
   // Скрываем календарь при очистке
   hideCalendar();
@@ -1086,6 +1102,11 @@ function restorePrinted(){
     if (u.printed){
       addChar(u.ch, 'user', u.author, false, u.link || null);
     }
+  }
+  // Подсказка скрывается автоматически через addChar(),
+  // но на случай, если на экране уже что-то есть — проверим ещё раз
+  if (myCursor > 0 || userChars.some(u => u.printed)){
+    hideHint();
   }
 }
 
