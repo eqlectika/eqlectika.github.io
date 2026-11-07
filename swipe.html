@@ -165,7 +165,6 @@ padding: calc(6px + env(safe-area-inset-top)) 8px 6px 8px;
   color:#0097ff;
   white-space:nowrap;
   pointer-events:none;
-  transform:translateX(-50%);
   opacity:.9;
 }
 
@@ -314,28 +313,41 @@ const HINT_TEXT = {
 }[LANG];
 
 const MY_TEXT = {
-  ru: [
-    'Мы не придумали слова',
-    'Нас информировали',
-    'Это демонстрационный одноранговый публичный мессенджер',
-    '"Live" наверху значит, что данный момент присутствует кто-то еще, и может видеть ваши сообщения. "Tape" значит вы один на странице',
-    'Я создаю программное обеспечение, веб-сайты, интерактивные приложения, а также автономные, многофункциональные децентрализованные одноранговые веб-терминалы — решения, разработанные для самых разных устройств, способные адаптироваться к будущим изменениям',
-    'Чтобы выйти на контакт, посещайте эту страницу регулярно',
-    'Вы можете создать такое событие прямо сейчас',
-    'Вы можете ввести своё имя в правом верхнем углу',
-    'Введите свой текст в поле ниже и нажмите Enter для публикации',
-  ],
-  en: [
-    'We didn’t come up with the words',
-    'We were informed',
-    'This is a demonstration peer public messenger',
-    '"Live" at the top means someone else is present, and can see your messages. "Tape" means you are alone on the page',
-    'I create software, websites, interactive applications, and independent, multifunctional, decentralized peer-to-peer web terminals—designed for a variety of devices, capable of adapting to future changes',
-    'To get in touch, please visit this page regularly',
-    'You can create such an event right now',
-    'You can type your name in the top-right corner',
-    'Type your text in the field below and press Enter to publish',
-  ]
+ru: [
+  'Мы не придумали слова',
+  'Нас информировали',
+  'Это демонстрационный одноранговый публичный мессенджер',
+  '"Live" наверху значит, что данный момент присутствует кто-то еще, и может видеть ваши сообщения. "Tape" значит вы один на странице',
+  'Я создаю программное обеспечение, веб-сайты, интерактивные приложения, а также автономные, многофункциональные децентрализованные одноранговые веб-терминалы — решения, разработанные для самых разных устройств, способные адаптироваться к будущим изменениям',
+  'Чтобы выйти на контакт, посещайте эту страницу регулярно',
+  'Вы можете создать такое событие прямо сейчас',
+  'Вы можете ввести своё имя в правом верхнем углу',
+  'Введите свой текст в поле ниже и нажмите Enter для публикации',
+  // ↓ твои новые строки
+  'Всё относительно',
+  'Когда вы думаете, что кто-то изменился, может быть изменились вы?',
+  'Они это мы',
+  'Сделайте внимательно глубокий вдох носом',
+  'Как думаете, что это было?..',
+  'У вас есть цель?'
+],
+en: [
+  'We didn’t come up with the words',
+  'We were informed',
+  'This is a demonstration peer public messenger',
+  '"Live" at the top means someone else is present, and can see your messages. "Tape" means you are alone on the page',
+  'I create software, websites, interactive applications, and independent, multifunctional, decentralized peer-to-peer web terminals—designed for a variety of devices, capable of adapting to future changes',
+  'To get in touch, please visit this page regularly',
+  'You can create such an event right now',
+  'You can type your name in the top-right corner',
+  'Type your text in the field below and press Enter to publish',
+  'Everything is relative',
+  'When you think someone has changed, maybe it is you who changed?',
+  'They are us',
+  'Take a careful deep breath through your nose',
+  'What do you think that was?..',
+  'Do you have a goal?'
+]
 };
 
 const mySentences = MY_TEXT[LANG];
@@ -607,7 +619,8 @@ document.body.appendChild(measure);
 
 let charW = 0, lineH = 0;
 const marginX = 20, marginY = 20;
-
+const marginRight = 40;
+    
 function recalcMetrics(){
   charW = measure.getBoundingClientRect().width;
   const fs = parseFloat(getComputedStyle(measure).fontSize);
@@ -623,14 +636,14 @@ let cursorY = marginY;
 let currentLine = [];
 let currentLineWidth = 0;
 
-function maxLineWidth(){ return window.innerWidth - marginX*2; }
+function maxLineWidth(){ return window.innerWidth - marginX - marginRight; }
 
 function layoutCurrentLine(){
   let visibleLen = currentLine.length;
   while (visibleLen > 0 && currentLine[visibleLen-1].ch === ' ') visibleLen--;
   if (visibleLen === 0) return;
   const totalW = visibleLen * charW;
-  const startX = (window.innerWidth - totalW) / 2;
+  const startX = marginX;
   for (let i = 0; i < currentLine.length; i++){
     const e = currentLine[i];
     if (e.el) e.el.style.left = (startX + i*charW) + 'px';
@@ -718,7 +731,7 @@ function addChar(ch, kind, author, animateSpin, href){
     const tag = document.createElement('span');
     tag.className = 'author-tag';
     tag.textContent = author;
-    tag.style.left = (window.innerWidth / 2) + 'px';
+    tag.style.left = marginX + 'px';
     tag.style.top  = cursorY + 'px';
     stage.appendChild(tag);
 
@@ -776,14 +789,23 @@ function typeMyChar(){
 }
 
 function printOne(){
-  if (myCursor < myText.length && myText[myCursor] === '\n'){
-    return false;
+  // Пропускаем переводы строк в собственном тексте
+  while (myCursor < myText.length && myText[myCursor] === '\n'){
+    myCursor++;
+    saveMyCursor();
+    addChar('\n', 'mine', null, false, null);
   }
+
   if (typeMyChar()) return true;
 
   for (const u of userChars){
     if (!u.printed){
-      if (u.ch === '\n') return false;
+      if (u.ch === '\n'){
+        u.printed = true;
+        saveUserChars();
+        addChar('\n', 'user', u.author, false, null);
+        continue;
+      }
       u.printed = true;
       addChar(u.ch, 'user', u.author, true, u.link || null);
       saveUserChars();
@@ -903,7 +925,6 @@ stage.addEventListener('mousedown', (e) => {
   printOne();
 });
 stage.addEventListener('mousemove', (e) => {
-  if (!e.buttons) return;
   if (e.target.closest && e.target.closest('.ch.link')) return;
   const p = stagePoint(e);
   moveTo(p.x, p.y);
