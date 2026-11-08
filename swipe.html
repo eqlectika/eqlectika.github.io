@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" type="image/png" href="loop.png">
+<link rel="icon" type="image/png" href="swipe.png">
     <link rel="apple-touch-icon"
       sizes="180x180"
       href="swipe.png?v=3">
@@ -29,12 +29,10 @@ html,body{
   overflow:hidden;font-family:'JetBrains Mono','Fira Code',monospace;
 }
 
-/* ---------- safe area сверху ---------- */
 html{
   padding-top: env(safe-area-inset-top);
 }
 
-/* ---------- шапка ---------- */
 .top-bar{
   position:fixed;
   top:0;left:0;right:0;
@@ -99,10 +97,9 @@ padding: calc(6px + env(safe-area-inset-top)) 8px 6px 8px;
 #peerIdInput:focus{background:#111;color:#fff;border-color:#3d1a99}
 #peerIdInput.saved{color:var(--user)!important;border-color:var(--user)!important}
 
-/* ---------- скролл (top будет перезаписан JS) ---------- */
 #scroller{
   position:fixed;left:0;right:0;
-  top: calc(44px + env(safe-area-inset-top)); /* fallback до вызова JS */
+  top: calc(44px + env(safe-area-inset-top));
   bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
@@ -114,7 +111,6 @@ padding: calc(6px + env(safe-area-inset-top)) 8px 6px 8px;
 
 #stage{position:relative;width:100%;min-height:100%}
 
-/* ---------- буквы ---------- */
 .ch{
   position:absolute;
   font-family:'JetBrains Mono','Fira Code',monospace;
@@ -127,18 +123,6 @@ padding: calc(6px + env(safe-area-inset-top)) 8px 6px 8px;
 .ch.mine{color:var(--me);text-shadow:0 0 8px rgba(125,211,252,.35)}
 .ch.user{color:var(--user);text-shadow:0 0 8px rgba(175,255,0,.35)}
 
-/* ---------- ссылки ---------- */
-.ch.link{
-  color:var(--link);
-  text-decoration:underline;
-  text-underline-offset:2px;
-  pointer-events:auto;
-  cursor:pointer;
-  text-shadow:0 0 8px rgba(78,168,255,.45);
-}
-.ch.link:hover{ color:#8cc7ff; }
-
-/* ---------- подвал ---------- */
 .footer-panel{
   position:fixed;left:0;right:0;bottom:0;z-index:10;
   display:flex;align-items:center;justify-content:center;
@@ -156,7 +140,6 @@ padding: calc(6px + env(safe-area-inset-top)) 8px 6px 8px;
 }
 #word-input::placeholder{color:#888}
 
-/* ---------- подпись автора ---------- */
 .author-tag{
   position:absolute;
   font-family:monospace;
@@ -168,7 +151,6 @@ padding: calc(6px + env(safe-area-inset-top)) 8px 6px 8px;
   opacity:.9;
 }
 
-/* ---------- подсказка ---------- */
 #hint{
   position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
   text-align:center;
@@ -185,7 +167,6 @@ padding: calc(6px + env(safe-area-inset-top)) 8px 6px 8px;
 }
 #hint.hidden{opacity:0}
 
-/* ---------- календарь (по центру) ---------- */
 .calendar-widget{
   position:fixed;
   bottom: calc(60px + env(safe-area-inset-bottom, 0px));
@@ -282,9 +263,6 @@ padding: calc(6px + env(safe-area-inset-top)) 8px 6px 8px;
   <button class="sync-btn" id="syncBtn" style="display:none">SYNC</button>
 </div>
 
-<!-- =========================================================
-     КАЛЕНДАРЬ: появляется после проявления новой строки
-     ========================================================= -->
 <div class="calendar-widget" id="calendarWidget">
   <button class="calendar-btn" id="addToCalendarBtn" title="Add to Calendar">
     <svg viewBox="0 0 24 24">
@@ -297,9 +275,6 @@ padding: calc(6px + env(safe-area-inset-top)) 8px 6px 8px;
 <div class="calendar-toast" id="calendarToast"></div>
 
 <script>
-/* =========================================================
-   0. ЯЗЫК + ТЕКСТ
-   ========================================================= */
 const LANG = (navigator.language || 'en').toLowerCase().startsWith('ru') ? 'ru' : 'en';
 
 const PLACEHOLDER = {
@@ -317,117 +292,29 @@ ru: [
   'Мы не придумали слова',
   'Нас информировали',
   'Это демонстрационный одноранговый публичный мессенджер',
-  '"Live" наверху значит, что данный момент присутствует кто-то еще, и может видеть ваши сообщения. "Tape" значит вы один на странице',
+  'Live наверху значит, что в данный момент присутствует кто-то еще, и может видеть ваши сообщения, Tape значит вы один на странице',
   'Я создаю программное обеспечение, веб-сайты, интерактивные приложения, а также автономные, многофункциональные децентрализованные одноранговые веб-терминалы — решения, разработанные для самых разных устройств, способные адаптироваться к будущим изменениям',
   'Чтобы выйти на контакт, посещайте эту страницу регулярно',
   'Вы можете создать такое событие прямо сейчас',
   'Вы можете ввести своё имя в правом верхнем углу',
-  'Введите свой текст в поле ниже и нажмите Enter для публикации',
-  // ↓ твои новые строки
-  'Всё относительно',
-  'Когда вы думаете, что кто-то изменился, может быть изменились вы?',
-  'Они это мы',
-  'Сделайте внимательно глубокий вдох носом',
-  'Как думаете, что это было?..',
-  'У вас есть цель?'
+  'Введите свой текст в поле ниже и нажмите Enter для публикации'
 ],
 en: [
   'We didn’t come up with the words',
   'We were informed',
   'This is a demonstration peer public messenger',
-  '"Live" at the top means someone else is present, and can see your messages. "Tape" means you are alone on the page',
+  'Live at the top means someone else is present, and can see your messages, Tape means you are alone on the page',
   'I create software, websites, interactive applications, and independent, multifunctional, decentralized peer-to-peer web terminals—designed for a variety of devices, capable of adapting to future changes',
   'To get in touch, please visit this page regularly',
   'You can create such an event right now',
   'You can type your name in the top-right corner',
-  'Type your text in the field below and press Enter to publish',
-  'Everything is relative',
-  'When you think someone has changed, maybe it is you who changed?',
-  'They are us',
-  'Take a careful deep breath through your nose',
-  'What do you think that was?..',
-  'Do you have a goal?'
+  'Type your text in the field below and press Enter to publish'
 ]
 };
 
 const mySentences = MY_TEXT[LANG];
 const myText = mySentences.join('\n');
 
-/* =========================================================
-   1. РАСПОЗНАВАНИЕ ССЫЛОК
-   ========================================================= */
-const URL_RE = /\b((?:https?:\/\/|www\.)[^\s]+)/gi;
-const MD_LINK_RE = /\[([^\]]+)\]\(([^)\s]+)\)/g;
-
-function trimUrl(u){
-  return u.replace(/[.,;:!?)\]}]+$/, '');
-}
-function normalizeUrl(u){
-  if (/^www\./i.test(u)) return 'https://' + u;
-  return u;
-}
-
-function autoUrlSplit(text){
-  const out = [];
-  let last = 0;
-  URL_RE.lastIndex = 0;
-  let m;
-  while ((m = URL_RE.exec(text))){
-    const raw = m[0];
-    const cleaned = trimUrl(raw);
-    const start = m.index;
-    const end = start + cleaned.length;
-    if (start > last) out.push({text: text.slice(last, start), link: null});
-    out.push({text: cleaned, link: normalizeUrl(cleaned)});
-    last = end;
-    if (end < start + raw.length){
-      out.push({text: text.slice(end, start + raw.length), link: null});
-      last = start + raw.length;
-    }
-  }
-  if (last < text.length) out.push({text: text.slice(last), link: null});
-  return out;
-}
-
-function splitTextWithLinks(text){
-  const parts = [];
-  let last = 0;
-  MD_LINK_RE.lastIndex = 0;
-  let m;
-  while ((m = MD_LINK_RE.exec(text))){
-    if (m.index > last){
-      parts.push({text: text.slice(last, m.index), link: null, autoUrl: true});
-    }
-    parts.push({text: m[1], link: normalizeUrl(m[2]), autoUrl: false});
-    last = m.index + m[0].length;
-  }
-  if (last < text.length){
-    parts.push({text: text.slice(last), link: null, autoUrl: true});
-  }
-  const out = [];
-  for (const p of parts){
-    if (p.link !== null || !p.autoUrl){
-      out.push(p);
-    } else {
-      for (const seg of autoUrlSplit(p.text)) out.push(seg);
-    }
-  }
-  return out;
-}
-
-function flattenWithLinks(text){
-  const chars = [];
-  for (const seg of splitTextWithLinks(text)){
-    for (const ch of seg.text){
-      chars.push({ch, link: seg.link});
-    }
-  }
-  return chars;
-}
-
-/* =========================================================
-   2. ХРАНИЛИЩЕ
-   ========================================================= */
 const store = {
   get(k, fb=null){ try{ const v=localStorage.getItem('st_'+k); return v===null?fb:JSON.parse(v);}catch(e){return fb;} },
   set(k, v){ try{ localStorage.setItem('st_'+k, JSON.stringify(v)); }catch(e){} },
@@ -450,8 +337,7 @@ function saveUserChars(){
   store.set('user_chars', userChars.map(u => ({
     ch: u.ch,
     author: u.author,
-    printed: !!u.printed,
-    link: u.link || null
+    printed: !!u.printed
   })));
 }
 
@@ -460,9 +346,6 @@ function savePending(){ store.set('pending_edits', pendingEdits); }
 const appliedEditIds = new Set(store.get('applied_edits', []));
 function saveApplied(){ store.set('applied_edits', Array.from(appliedEditIds).slice(-2000)); }
 
-/* =========================================================
-   3. MQTT
-   ========================================================= */
 const BROKER = 'wss://broker.emqx.io:8084/mqtt';
 const TOPIC  = 'breakthrough/swipe/v1';
 
@@ -559,9 +442,6 @@ function flushPendingEdits(){
   });
 }
 
-/* =========================================================
-   4. UI Chrome
-   ========================================================= */
 const liveInd = document.getElementById('liveIndicator');
 const tapeInd = document.getElementById('tapeIndicator');
 const liveCount = document.getElementById('livePeerCount');
@@ -584,9 +464,6 @@ function refreshChrome(){
 
 syncBtn.addEventListener('click', () => { if (isLive) flushPendingEdits(); });
 
-/* =========================================================
-   4.5. Safe-area: синхронизация высоты шапки с #scroller
-   ========================================================= */
 const scroller = document.getElementById('scroller');
 const topBar = document.querySelector('.top-bar');
 
@@ -604,9 +481,6 @@ if (window.visualViewport){
   window.visualViewport.addEventListener('resize', syncScrollerTop);
 }
 
-/* =========================================================
-   5. Метрики
-   ========================================================= */
 const stage = document.getElementById('stage');
 
 const measure = document.createElement('span');
@@ -620,7 +494,7 @@ document.body.appendChild(measure);
 let charW = 0, lineH = 0;
 const marginX = 20, marginY = 20;
 const marginRight = 40;
-    
+
 function recalcMetrics(){
   charW = measure.getBoundingClientRect().width;
   const fs = parseFloat(getComputedStyle(measure).fontSize);
@@ -629,9 +503,6 @@ function recalcMetrics(){
 recalcMetrics();
 window.addEventListener('resize', recalcMetrics);
 
-/* =========================================================
-   6. Раскладка
-   ========================================================= */
 let cursorY = marginY;
 let currentLine = [];
 let currentLineWidth = 0;
@@ -676,7 +547,6 @@ function wrapLine(){
     currentLineWidth += charW;
   }
   layoutCurrentLine();
-  lastX = null; lastY = null;
 }
 
 function forceNewline(){
@@ -684,7 +554,6 @@ function forceNewline(){
   currentLine = [];
   currentLineWidth = 0;
   cursorY += lineH;
-  lastX = null; lastY = null;
   updateStageHeight();
 }
 
@@ -693,9 +562,6 @@ function updateStageHeight(){
   stage.style.height = Math.max(window.innerHeight - 120, needed) + 'px';
 }
 
-/* =========================================================
-   7. Оборот буквы
-   ========================================================= */
 function spin(el){
   const DUR = 600;
   const start = performance.now();
@@ -709,20 +575,15 @@ function spin(el){
   requestAnimationFrame(frame);
 }
 
-/* =========================================================
-   8. Добавление символа (с поддержкой ссылок)
-   ========================================================= */
 const hintEl = document.getElementById('hint');
 
 function hideHint(){
-  // Скрываем подсказку, как только на экране появляется любой символ
   if (hintEl && !hintEl.classList.contains('hidden')){
     hintEl.classList.add('hidden');
   }
 }
 
-function addChar(ch, kind, author, animateSpin, href){
-  // Любой добавленный символ означает, что текст уже пошёл — прячем подсказку
+function addChar(ch, kind, author, animateSpin){
   hideHint();
 
   if (author && currentLine.length === 0 && ch !== '\n' && ch !== ' '){
@@ -749,7 +610,7 @@ function addChar(ch, kind, author, animateSpin, href){
     wrapLine();
   }
   if (ch === ' '){
-    currentLine.push({el:null, ch:' ', kind, author, href:null});
+    currentLine.push({el:null, ch:' ', kind, author});
     currentLineWidth += charW;
     layoutCurrentLine();
     updateStageHeight();
@@ -758,16 +619,10 @@ function addChar(ch, kind, author, animateSpin, href){
   }
   const el = document.createElement('span');
   el.className = 'ch ' + kind;
-  if (href){
-    el.classList.add('link');
-    el.dataset.href = href;
-    el.setAttribute('role', 'link');
-    el.setAttribute('tabindex', '0');
-  }
   el.textContent = ch;
   el.style.top = cursorY + 'px';
   stage.appendChild(el);
-  const entry = {el, ch, kind, author, href: href || null};
+  const entry = {el, ch, kind, author};
   currentLine.push(entry);
   layoutCurrentLine();
   if (animateSpin) spin(el);
@@ -777,37 +632,25 @@ function addChar(ch, kind, author, animateSpin, href){
   autoScroll();
 }
 
-/* =========================================================
-   9. Печать
-   ========================================================= */
 function typeMyChar(){
   if (myCursor >= myText.length) return false;
   const ch = myText[myCursor++];
   saveMyCursor();
-  addChar(ch, 'mine', null, true, null);
+  addChar(ch, 'mine', null, true);
   return true;
 }
 
 function printOne(){
-  // Пропускаем переводы строк в собственном тексте
-  while (myCursor < myText.length && myText[myCursor] === '\n'){
-    myCursor++;
-    saveMyCursor();
-    addChar('\n', 'mine', null, false, null);
+  if (myCursor < myText.length && myText[myCursor] === '\n'){
+    return false;
   }
-
   if (typeMyChar()) return true;
 
   for (const u of userChars){
     if (!u.printed){
-      if (u.ch === '\n'){
-        u.printed = true;
-        saveUserChars();
-        addChar('\n', 'user', u.author, false, null);
-        continue;
-      }
+      if (u.ch === '\n') return false;
       u.printed = true;
-      addChar(u.ch, 'user', u.author, true, u.link || null);
+      addChar(u.ch, 'user', u.author, true);
       saveUserChars();
       return true;
     }
@@ -816,10 +659,9 @@ function printOne(){
 }
 
 function appendUserText(text, author, autoPrint){
-  const flat = flattenWithLinks(text);
   const startIdx = userChars.length;
-  for (const c of flat){
-    userChars.push({ch: c.ch, author: author || 'You', printed: false, link: c.link});
+  for (const ch of text){
+    userChars.push({ch, author: author || 'You', printed: false});
   }
   saveUserChars();
   if (autoPrint){
@@ -827,20 +669,18 @@ function appendUserText(text, author, autoPrint){
       const u = userChars[i];
       if (!u.printed){
         u.printed = true;
-        addChar(u.ch, 'user', u.author, true, u.link || null);
+        addChar(u.ch, 'user', u.author, true);
       }
     }
     saveUserChars();
   }
 }
 
-/* =========================================================
-   10. Палец → печать
-   ========================================================= */
 const STEP_PX = 18;
 let lastX = null, lastY = null;
 let gestureMode = null;
 let startClientX = 0, startClientY = 0;
+let lineBoundaryHit = false;
 
 function stagePoint(e){
   const t = e.touches ? e.touches[0] : e;
@@ -849,22 +689,28 @@ function stagePoint(e){
 }
 
 function moveTo(x, y){
-  // Подсказку больше не трогаем здесь — её скрывает addChar()
+  if (lineBoundaryHit) return;
+
   if (lastX === null){
     lastX = x; lastY = y;
 
     if (myCursor < myText.length && myText[myCursor] === '\n'){
       myCursor++;
       saveMyCursor();
-      addChar('\n', 'mine', null, false, null);
-    } else {
-      for (const u of userChars){
-        if (!u.printed && u.ch === '\n'){
-          u.printed = true;
-          saveUserChars();
-          addChar('\n', 'user', u.author, false, null);
-          break;
-        }
+      addChar('\n', 'mine', null, false);
+      printOne();
+      if (myCursor >= myText.length || myText[myCursor] === '\n') lineBoundaryHit = true;
+      return;
+    }
+
+    for (const u of userChars){
+      if (!u.printed && u.ch === '\n'){
+        u.printed = true;
+        saveUserChars();
+        addChar('\n', 'user', u.author, false);
+        printOne();
+        lineBoundaryHit = true;
+        return;
       }
     }
 
@@ -877,7 +723,10 @@ function moveTo(x, y){
     const t = STEP_PX / d;
     lastX += dx * t; lastY += dy * t;
     dx = x - lastX; dy = y - lastY; d = Math.hypot(dx, dy);
-    if (!printOne()) break;
+    if (!printOne()){
+      lineBoundaryHit = true;
+      break;
+    }
   }
 }
 
@@ -887,14 +736,11 @@ stage.addEventListener('touchstart', (e) => {
   gestureMode = null;
   startClientX = p.cx; startClientY = p.cy;
   lastX = null; lastY = null;
+  lineBoundaryHit = false;
 }, { passive: true });
 
 stage.addEventListener('touchmove', (e) => {
   if (e.touches.length !== 1) return;
-  if (gestureMode === null){
-    const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
-    if (el && el.closest('.ch.link')) return;
-  }
   const p = stagePoint(e);
   const dx = p.cx - startClientX;
   const dy = p.cy - startClientY;
@@ -913,51 +759,26 @@ stage.addEventListener('touchmove', (e) => {
 
 stage.addEventListener('touchend', () => {
   gestureMode = null; lastX = null; lastY = null;
+  lineBoundaryHit = false;
 }, { passive: true });
 stage.addEventListener('touchcancel', () => {
   gestureMode = null; lastX = null; lastY = null;
+  lineBoundaryHit = false;
 }, { passive: true });
 
 stage.addEventListener('mousedown', (e) => {
-  if (e.target.closest && e.target.closest('.ch.link')) return;
   const p = stagePoint(e);
   lastX = p.x; lastY = p.y;
+  lineBoundaryHit = false;
   printOne();
 });
 stage.addEventListener('mousemove', (e) => {
-  if (e.target.closest && e.target.closest('.ch.link')) return;
+  if (!e.buttons) return;
   const p = stagePoint(e);
   moveTo(p.x, p.y);
 });
-window.addEventListener('mouseup', () => { lastX = null; lastY = null; });
+window.addEventListener('mouseup', () => { lastX = null; lastY = null; lineBoundaryHit = false; });
 
-/* =========================================================
-   11. Клик по ссылке
-   ========================================================= */
-function openHref(href){
-  if (!href) return;
-  try{ window.open(href, '_blank', 'noopener'); }catch(e){}
-}
-
-stage.addEventListener('click', (e) => {
-  const el = e.target.closest && e.target.closest('.ch.link');
-  if (!el) return;
-  e.preventDefault();
-  e.stopPropagation();
-  openHref(el.dataset.href);
-});
-
-stage.addEventListener('keydown', (e) => {
-  if (e.key !== 'Enter' && e.key !== ' ') return;
-  const el = e.target.closest && e.target.closest('.ch.link');
-  if (!el) return;
-  e.preventDefault();
-  openHref(el.dataset.href);
-});
-
-/* =========================================================
-   12. Поле ввода
-   ========================================================= */
 const wordInput = document.getElementById('word-input');
 wordInput.placeholder = PLACEHOLDER;
 hintEl.textContent = HINT_TEXT;
@@ -1005,9 +826,6 @@ wordInput.addEventListener('keydown', (e) => {
   }
 });
 
-/* =========================================================
-   13. Приём WORD_EDIT + ACK
-   ========================================================= */
 function applyRemoteEdit(p){
   if (p.editId && appliedEditIds.has(p.editId)) return;
   if (p.editId){ appliedEditIds.add(p.editId); saveApplied(); }
@@ -1024,9 +842,6 @@ function applyRemoteEdit(p){
   }
 }
 
-/* =========================================================
-   14. Clear
-   ========================================================= */
 document.getElementById('btnClear').addEventListener('click', () => {
   if (!confirm(LANG === 'ru' ? 'Очистить экран и весь текст на этом устройстве?' : 'Clear screen and all text on this device?')) return;
 
@@ -1045,27 +860,22 @@ document.getElementById('btnClear').addEventListener('click', () => {
   currentLine = [];
   currentLineWidth = 0;
   lastX = null; lastY = null;
+  lineBoundaryHit = false;
   updateStageHeight();
   refreshChrome();
 
-  // Возвращаем подсказку — экран снова пуст
   hintEl.classList.remove('hidden');
 
-  // Скрываем календарь при очистке
   hideCalendar();
 });
 
-/* =========================================================
-   15. Rename
-   ========================================================= */
 let beforeId = myId;
 peerIdInput.addEventListener('focus', () => {
   beforeId = myId;
   requestAnimationFrame(() => peerIdInput.select());
 });
 peerIdInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter'){ e.preventDefault(); commitId(); peerIdInput
-peerIdInput.blur(); }
+  if (e.key === 'Enter'){ e.preventDefault(); commitId(); peerIdInput.blur(); }
   if (e.key === 'Escape'){ peerIdInput.value = beforeId; peerIdInput.blur(); }
 });
 peerIdInput.addEventListener('blur', () => {
@@ -1090,9 +900,6 @@ function commitId(){
   setTimeout(() => peerIdInput.classList.remove('saved'), 800);
 }
 
-/* =========================================================
-   16. Автоскролл
-   ========================================================= */
 let userScrolling = false;
 let userScrollTimer = null;
 scroller.addEventListener('scroll', () => {
@@ -1110,30 +917,20 @@ function autoScroll(){
   }
 }
 
-/* =========================================================
-   17. Восстановление
-   ========================================================= */
 function restorePrinted(){
-  const mineFlat = flattenWithLinks(myText);
   for (let i = 0; i < myCursor; i++){
-    const c = mineFlat[i] || {ch: myText[i], link: null};
-    addChar(c.ch, 'mine', null, false, c.link);
+    addChar(myText[i], 'mine', null, false);
   }
   for (const u of userChars){
     if (u.printed){
-      addChar(u.ch, 'user', u.author, false, u.link || null);
+      addChar(u.ch, 'user', u.author, false);
     }
   }
-  // Подсказка скрывается автоматически через addChar(),
-  // но на случай, если на экране уже что-то есть — проверим ещё раз
   if (myCursor > 0 || userChars.some(u => u.printed)){
     hideHint();
   }
 }
 
-/* =========================================================
-   18. Init
-   ========================================================= */
 recalcMetrics();
 restorePrinted();
 updateStageHeight();
@@ -1141,33 +938,20 @@ syncScrollerTop();
 refreshChrome();
 connectMqtt();
 
-/* =========================================================
-   19. КАЛЕНДАРЬ: появляется после проявления новой строки
-   ========================================================= */
-
-// Новая строка, после которой появляется кнопка календаря
-// Индекс в MY_TEXT: 4 (0-based)
 const CALENDAR_TRIGGER_SENTENCE_INDEX = 5;
 
-// Вычисляем позицию символа, с которого начинается триггерная строка
 function getSentenceCharPosition(index) {
   let pos = 0;
   for (let i = 0; i < index; i++) {
     pos += mySentences[i].length;
-    if (i < mySentences.length - 1) pos += 1; // '\n' между предложениями
+    if (i < mySentences.length - 1) pos += 1;
   }
   return pos;
 }
 
-// Позиция НАЧАЛА триггерной строки
 const triggerStartPos = getSentenceCharPosition(CALENDAR_TRIGGER_SENTENCE_INDEX);
-// Позиция КОНЦА триггерной строки
 const triggerEndPos = triggerStartPos + mySentences[CALENDAR_TRIGGER_SENTENCE_INDEX].length;
 
-console.log('[Swipe] Trigger sentence:', mySentences[CALENDAR_TRIGGER_SENTENCE_INDEX]);
-console.log('[Swipe] Trigger char position:', triggerStartPos, '-', triggerEndPos);
-
-// Тексты для календарной кнопки и уведомлений
 const CAL_TEXT = {
   ru: {
     btn: 'Создать событие',
@@ -1185,58 +969,36 @@ const CAL_TEXT = {
   }
 }[LANG];
 
-// Обновляем подпись кнопки
 document.getElementById('calendarBtnLabel').textContent = CAL_TEXT.btn;
 
-// Флаг: показывался ли уже календарь
 let calendarShown = false;
 
-/**
- * Показывает виджет календаря с анимацией.
- */
 function showCalendar() {
   if (calendarShown) return;
   calendarShown = true;
   const widget = document.getElementById('calendarWidget');
   widget.classList.add('visible');
-  console.log('[Swipe] Calendar widget shown');
 }
 
-/**
- * Скрывает виджет календаря.
- */
 function hideCalendar() {
   calendarShown = false;
   const widget = document.getElementById('calendarWidget');
   widget.classList.remove('visible');
-  console.log('[Swipe] Calendar widget hidden');
 }
 
-/**
- * Проверяет, проявил ли пользователь триггерную строку.
- * Если да — показывает календарь.
- */
 function checkCalendarVisibility() {
-  // Календарь появляется, когда курсор печати достиг КОНЦА
-  // триггерной строки (т.е. вся строка уже проявилась)
   if (!calendarShown && myCursor >= triggerEndPos) {
     showCalendar();
   }
 }
 
-/**
- * Создаёт и скачивает .ics файл для добавления в календарь.
- * Событие повторяется ежедневно, чтобы пользователь мог вернуться.
- */
 function createCalendarEvent() {
   const now = new Date();
   const dtstamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 
-  // Начало: через 1 час от текущего момента
   const start = new Date(now.getTime() + 60 * 60 * 1000);
   const dtstart = start.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 
-  // Конец: через 2 часа от текущего момента
   const end = new Date(now.getTime() + 2 * 60 * 60 * 1000);
   const dtend = end.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 
@@ -1284,16 +1046,8 @@ function createCalendarEvent() {
   setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// Привязка обработчика
 document.getElementById('addToCalendarBtn').addEventListener('click', createCalendarEvent);
 
-/* ---------------------------------------------------------
-   Патчим функции печати, чтобы отслеживать прогресс
-   и показывать календарь, как только триггерная строка
-   полностью проявится.
-   --------------------------------------------------------- */
-
-// Патчим typeMyChar (для собственного текста)
 const originalTypeMyChar = typeMyChar;
 typeMyChar = function() {
   const result = originalTypeMyChar();
@@ -1301,39 +1055,31 @@ typeMyChar = function() {
   return result;
 };
 
-// Патчим moveTo (для свайпа)
 const originalMoveTo = moveTo;
 moveTo = function(x, y) {
   originalMoveTo(x, y);
   checkCalendarVisibility();
 };
 
-// Патчим addChar, чтобы отслеживать прямые вызовы (восстановление, remote)
 const originalAddChar = addChar;
-addChar = function(ch, kind, author, animateSpin, href) {
-  originalAddChar(ch, kind, author, animateSpin, href);
+addChar = function(ch, kind, author, animateSpin) {
+  originalAddChar(ch, kind, author, animateSpin);
   checkCalendarVisibility();
 };
 
-// Проверяем при клике/тапе
 document.getElementById('scroller').addEventListener('click', () => {
   checkCalendarVisibility();
 }, { passive: true });
 
-// Инициализация: если страница уже была пройдена до триггерной строки
-// (например, при перезагрузке), показываем календарь сразу
 if (myCursor >= triggerEndPos) {
   setTimeout(() => {
     showCalendar();
   }, 500);
 }
 
-// Также проверяем после restorePrinted в init
 setTimeout(() => {
   checkCalendarVisibility();
 }, 1000);
-
-console.log('[Swipe] Calendar feature loaded. Widget will appear after trigger line is revealed.');
 </script>
 
 </body>
