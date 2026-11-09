@@ -47,7 +47,6 @@ html{padding-top:env(safe-area-inset-top)}
   height:100vh;height:100dvh;background:#000;
 }
 
-/* board-wrap занимает всё между top-bar (44) и footer (56) */
 .board-wrap{
   flex:1 1 auto;
   position:relative;
@@ -230,6 +229,18 @@ html{padding-top:env(safe-area-inset-top)}
   margin:0;
 }
 
+/* ---------- update available ---------- */
+#updateAvailableLine{
+  display:none;
+  margin:16px auto;
+  color:#0097ff;
+  font-size:14px;
+  font-family:'Roboto',sans-serif;
+  cursor:pointer;
+  text-align:center;
+}
+#updateAvailableLine:hover{text-decoration:underline;}
+
 /* ---------- media viewer (dormant) ---------- */
 #media-viewer{
   position:fixed;inset:0;z-index:2000;display:none;
@@ -304,6 +315,7 @@ html{padding-top:env(safe-area-inset-top)}
     <p>Long tap your own cell — free it; the word goes to history with author and flag count.</p>
     <p>Live = edits broadcast immediately. Tape = edits queued locally.</p>
     <p>Tap the peer ID top-right to rename yourself (3–9 chars, letters/digits/-/_).</p>
+    <span id="updateAvailableLine" onclick="event.stopPropagation(); syncAndKeepData()">Update Available</span>
     <a href="index.html" class="header-link">
       <img src="fleurdelis.png" alt="Logo" class="header-logo">
     </a>
@@ -1083,6 +1095,55 @@ function commitPeerId(){
   refreshChrome();
   peerIdInput.classList.add('saved');
   setTimeout(()=> peerIdInput.classList.remove('saved'), 800);
+}
+
+/* =========================================================
+   Service Worker + Update
+   ========================================================= */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js', { scope: './' });
+}
+
+async function checkForUpdate() {
+  try {
+    const r = await fetch('./sw.js', { cache: 'no-store' });
+    const text = await r.text();
+    const m = text.match(/CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
+    if (!m) return;
+    const serverVersion = m[1];
+
+    const stored = localStorage.getItem('wow_sw_version');
+    if (!stored) {
+      localStorage.setItem('wow_sw_version', serverVersion);
+      return;
+    }
+    if (stored !== serverVersion) {
+      const el = document.getElementById('updateAvailableLine');
+      if (el) el.style.display = 'block';
+    }
+  } catch(e) {}
+}
+setInterval(checkForUpdate, 60000);
+checkForUpdate();
+
+async function syncAndKeepData() {
+  localStorage.removeItem('wow_sw_version');
+  log('[Update] Applying update, preserving all data...');
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg.waiting) {
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.location.reload();
+        });
+        return;
+      }
+    } catch(e) {
+      console.warn('[Update] SW activation error:', e);
+    }
+  }
+  window.location.reload();
 }
 
 /* =========================================================
