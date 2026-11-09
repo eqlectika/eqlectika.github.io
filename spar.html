@@ -17,6 +17,7 @@
 html,body{width:100%;height:100%;background:#000;font-family:'Roboto',sans-serif;overflow:hidden}
 html{padding-top:env(safe-area-inset-top)}
 
+/* ---------- top bar ---------- */
 .top-bar{
   position:fixed;top:0;left:0;right:0;z-index:50;
   display:flex;align-items:center;justify-content:space-between;
@@ -40,6 +41,7 @@ html{padding-top:env(safe-area-inset-top)}
 #peerIdInput:focus{background:#111;color:#fff;border-color:#3d1a99;box-shadow:0 0 0 2px rgba(123,77,255,.25);}
 #peerIdInput.saved{color:#afff00 !important;border-color:#afff00 !important;transition:none}
 
+/* ---------- layout ---------- */
 .container{
   display:flex;flex-direction:column;
   height:100vh;height:100dvh;background:#000;
@@ -62,6 +64,7 @@ html{padding-top:env(safe-area-inset-top)}
   height:100%;
 }
 
+/* ---------- cell ---------- */
 .cell{
   position:relative;
   border-radius:12px;
@@ -104,6 +107,7 @@ html{padding-top:env(safe-area-inset-top)}
 .cell.empty .author,
 .cell.empty .flags{display:none}
 
+/* ---------- footer ---------- */
 .footer-panel{
   position:fixed;bottom:0;left:0;right:0;z-index:10;
   display:flex;align-items:center;justify-content:space-around;
@@ -127,6 +131,7 @@ html{padding-top:env(safe-area-inset-top)}
 }
 .foot-score .lbl{color:#777;font-size:10px;display:block;font-weight:400}
 
+/* ---------- popover ---------- */
 #edit-popover{
   position:fixed;z-index:950;display:none;flex-direction:column;gap:6px;
   background:#0b0b28;border:2px solid #ff0000;border-radius:20px;
@@ -149,6 +154,7 @@ html{padding-top:env(safe-area-inset-top)}
 #edit-popover .btn-add{background:#ff2440}
 #edit-popover .btn-cancel{background:#222;color:#aaa}
 
+/* ---------- action menu ---------- */
 #action-menu{
   position:fixed;z-index:970;display:none;flex-direction:column;gap:6px;
   background:#0b0b28;border:2px solid #7b4dff;border-radius:16px;
@@ -169,6 +175,7 @@ html{padding-top:env(safe-area-inset-top)}
 #action-menu .menu-request{border-color:#0097ff;color:#0097ff}
 #action-menu .menu-gpt{border-color:#afff00;color:#afff00}
 
+/* ---------- full-screen overlays ---------- */
 .overlay{
   position:fixed;inset:0;z-index:1500;display:none;
   background:#000;color:#fff;
@@ -190,6 +197,7 @@ html{padding-top:env(safe-area-inset-top)}
 .overlay .body::-webkit-scrollbar{display:none;width:0;height:0}
 .overlay .body{scrollbar-width:none;-ms-overflow-style:none}
 
+/* ---------- history ---------- */
 .hist-entry{
   display:flex;gap:8px;align-items:baseline;
   padding:6px 0;border-bottom:1px solid #1f1f3a;
@@ -207,8 +215,22 @@ html{padding-top:env(safe-area-inset-top)}
 .hist-entry .f{color:#FFB300;flex:0 0 auto;min-width:2em;text-align:right;}
 .hist-empty{color:#666;padding:14px 0;text-align:center;}
 
+/* ---------- help ---------- */
 .help-body p{margin-bottom:10px;color:#fff;font-size:13px;line-height:1.4;}
+.header-link{
+  display:block;
+  width:fit-content;
+  margin:20px auto;
+  text-decoration:none;
+}
+.header-logo{
+  display:block;
+  max-width:48px;
+  height:auto;
+  margin:0;
+}
 
+/* ---------- media viewer (dormant) ---------- */
 #media-viewer{
   position:fixed;inset:0;z-index:2000;display:none;
   align-items:center;justify-content:center;
@@ -282,6 +304,9 @@ html{padding-top:env(safe-area-inset-top)}
     <p>Long tap your own cell — free it; the word goes to history with author and flag count.</p>
     <p>Live = edits broadcast immediately. Tape = edits queued locally.</p>
     <p>Tap the peer ID top-right to rename yourself (3–9 chars, letters/digits/-/_).</p>
+    <a href="index.html" class="header-link">
+      <img src="fleurdelis.png" alt="Logo" class="header-logo">
+    </a>
   </div>
 </div>
 
@@ -502,7 +527,6 @@ function renderBoard(){
   board.innerHTML = '';
 
   const availableW = window.innerWidth;
-  const availableH = window.innerHeight - TOP_BAR_H - FOOTER_H;
   const innerW = availableW - BOARD_PAD*2 - GAP*(COLS-1);
   const cellW = Math.floor(innerW / COLS);
 
@@ -1016,7 +1040,8 @@ function renderHistory(){
 document.getElementById('helpBtn').addEventListener('click', ()=>{
   helpSheet.classList.add('show');
 });
-helpSheet.addEventListener('click', ()=>{
+helpSheet.addEventListener('click', (e)=>{
+  if (e.target.closest('.header-link')) return;
   helpSheet.classList.remove('show');
 });
 
