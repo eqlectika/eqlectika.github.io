@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="spar.png">
+<link rel="apple-touch-icon" sizes="180x180" href="spar.png?v=2">
+<meta property="og:image" content="/Verge.jpeg">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="1280">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Spar | Word battle</title>
+<link rel="manifest" href="manifest-steam.json">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
+html,body{width:100%;height:100%;background:#000;font-family:'Roboto',sans-serif;overflow:hidden}
+html{padding-top:env(safe-area-inset-top)}
+
+.top-bar{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:4px 8px;background:#000;
+  font-family:'Roboto',sans-serif;font-weight:700;font-size:16px;color:#aaa;
+}
+.top-bar .brand{color:#999;}
+.top-bar .live{color:#ff0000;animation:livePulse 1.5s infinite}
+.top-bar .tape{color:#afff00}
+@keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+#peerIdInput{
+  color:#0097ff;background:transparent;border:1px solid transparent;outline:none;
+  font-family:'Roboto',sans-serif;font-size:14px;font-weight:400;
+  text-align:right;width:108px;padding:3px 0;
+  user-select:text;-webkit-user-select:text;cursor:text;
+  transition:background .2s,color .2s,border-color .2s,box-shadow .2s;
+}
+#peerIdInput::placeholder{color:#444}
+#peerIdInput:focus{background:#111;color:#fff;border-color:#3d1a99;box-shadow:0 0 0 2px rgba(123,77,255,.25);}
+#peerIdInput.saved{color:#afff00 !important;border-color:#afff00 !important;transition:none}
+
+.container{
+  display:flex;flex-direction:column;
+  height:100vh;height:100dvh;background:#000;
+}
+
+.board-wrap{
+  flex:1 1 auto;position:relative;overflow:hidden;
+  display:flex;align-items:stretch;justify-content:stretch;
+  padding:44px 0 0 0;
+}
+
+#board{
+  flex:1 1 auto;
+  display:grid;
+  gap:4px;
+  padding:4px;
+  width:100%;
+  height:100%;
+}
+
+.cell{
+  position:relative;
+  border-radius:12px;
+  background:#0b0b28;
+  border:2px solid #2a2a5a;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;
+  padding:4px;
+  overflow:hidden;
+  transition:border-color .2s,box-shadow .2s,background .2s;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  cursor:pointer;
+  min-width:0;min-height:0;
+}
+
+.cell .flags{
+  position:absolute;top:2px;right:6px;
+  font-family:'Roboto',sans-serif;font-weight:700;
+  font-size:11px;color:#FFB300;line-height:1;min-height:12px;
+}
+.cell .word{
+  font-family:'Roboto',sans-serif;font-weight:700;
+  line-height:1.1;color:#fff;
+  word-break:break-word;overflow-wrap:anywhere;
+  padding:0 2px;pointer-events:none;
+  max-width:100%;max-height:100%;
+  transition:font-family .15s;
+}
+.cell .word.cond{font-family:'Roboto Condensed',sans-serif;}
+.cell .author{
+  position:absolute;bottom:2px;left:0;right:0;
+  font-family:'Roboto',sans-serif;font-size:9px;color:#0097ff;line-height:1;
+  text-align:center;pointer-events:none;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  padding:0 3px;
+}
+.cell.empty .word,
+.cell.empty .author,
+.cell.empty .flags{display:none}
+
+.footer-panel{
+  position:fixed;bottom:0;left:0;right:0;z-index:10;
+  display:flex;align-items:center;justify-content:space-around;
+  padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px)) 6px;
+  background:#000;border-top:1px solid #223355;min-height:44px;
+}
+.foot-btn{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:4px;
+  min-width:44px;height:36px;padding:0 8px;
+  background:linear-gradient(to bottom,#000,#223355);
+  border:1px solid #999;border-radius:10px;color:#fff;
+  font-family:'Roboto',sans-serif;font-weight:700;font-size:13px;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.foot-btn:active{transform:scale(.96)}
+.foot-score{
+  color:#fff;font-family:'Roboto',sans-serif;font-weight:700;
+  font-size:13px;min-width:44px;text-align:center;white-space:nowrap;
+}
+.foot-score .lbl{color:#777;font-size:10px;display:block;font-weight:400}
+
+#edit-popover{
+  position:fixed;z-index:950;display:none;flex-direction:column;gap:6px;
+  background:#0b0b28;border:2px solid #ff0000;border-radius:20px;
+  padding:10px;min-width:220px;box-shadow:0 8px 28px rgba(0,0,0,.6);
+}
+#edit-popover.show{display:flex}
+#edit-popover input{
+  min-height:42px;font-family:'Roboto',sans-serif;font-size:16px;
+  padding:8px 10px;border-radius:8px;border:2px solid #555;
+  background:#120a3a;color:#fff;outline:none;
+  user-select:text;-webkit-user-select:text;
+}
+#edit-popover .row{display:flex;gap:6px}
+#edit-popover button{
+  min-height:42px;flex:1;
+  font-family:'Roboto',sans-serif;font-size:14px;font-weight:700;
+  padding:8px 6px;border:2px solid #ff0000;border-radius:8px;
+  cursor:pointer;color:#fff;background:#333;
+}
+#edit-popover .btn-add{background:#ff2440}
+#edit-popover .btn-cancel{background:#222;color:#aaa}
+
+/* ---------- action menu (double tap) ---------- */
+#action-menu{
+  position:fixed;z-index:970;display:none;flex-direction:column;gap:6px;
+  background:#0b0b28;border:2px solid #7b4dff;border-radius:16px;
+  padding:8px;min-width:240px;max-width:calc(100vw - 24px);
+  box-shadow:0 8px 28px rgba(0,0,0,.7);
+}
+#action-menu.show{display:flex}
+#action-menu button{
+  min-height:42px;
+  font-family:'Roboto',sans-serif;font-size:14px;font-weight:700;
+  padding:8px 10px;border-radius:10px;
+  border:2px solid #3d1a99;background:#120a3a;color:#fff;
+  cursor:pointer;text-align:left;
+}
+#action-menu button:active{transform:scale(.98)}
+#action-menu .menu-cancel{border-color:#555;background:#1a1a1a;color:#ccc;text-align:center;}
+#action-menu .menu-flag{border-color:#FFB300;color:#FFB300}
+#action-menu .menu-request{border-color:#0097ff;color:#0097ff}
+#action-menu .menu-gpt{border-color:#afff00;color:#afff00}
+
+.overlay{
+  position:fixed;inset:0;z-index:1500;display:none;
+  background:#000;color:#fff;
+}
+.overlay.show{display:flex;flex-direction:column;}
+.overlay .title{
+  font-family:'Roboto',sans-serif;font-weight:700;
+  font-size:16px;padding:14px 16px 10px;
+  text-align:center;color:#fff;
+  border-bottom:1px solid #223355;
+}
+.overlay .body{
+  flex:1 1 auto;overflow-y:auto;
+  padding:10px 14px 24px;
+  font-family:'Roboto',sans-serif;font-size:13px;line-height:1.5;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
+.overlay .body::-webkit-scrollbar{display:none;width:0;height:0}
+.overlay .body{scrollbar-width:none;-ms-overflow-style:none}
+
+.hist-entry{
+  display:flex;gap:8px;align-items:baseline;
+  padding:6px 0;border-bottom:1px solid #1f1f3a;
+  word-break:break-word;
+}
+.hist-entry .num{
+  color:#666;flex:0 0 auto;
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+  min-width:2ch;
+  transition:min-width .15s;
+}
+.hist-entry .w{color:#fff;font-weight:700;flex:1 1 auto;}
+.hist-entry .a{color:#0097ff;flex:0 0 auto;}
+.hist-entry .f{color:#FFB300;flex:0 0 auto;min-width:2em;text-align:right;}
+.hist-empty{color:#666;padding:14px 0;text-align:center;}
+
+.help-body p{margin-bottom:10px;color:#fff;font-size:13px;line-height:1.4;}
+
+#media-viewer{
+  position:fixed;inset:0;z-index:2000;display:none;
+  align-items:center;justify-content:center;
+  background:rgba(0,0,20,.96);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:20px;
+}
+#media-viewer.show{display:flex}
+#media-viewer .viewer-close{
+  position:absolute;top:16px;right:20px;
+  width:40px;height:40px;border-radius:50%;
+  background:rgba(255,0,0,.85);color:#fff;border:none;
+  font-size:22px;font-family:monospace;line-height:1;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  z-index:2001;
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="brand">Spar</span>
+  <span id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
+  <span id="tapeIndicator" class="tape">Tape</span>
+  <input type="text" id="peerIdInput" autocomplete="off" spellcheck="false" enterkeyhint="done"
+         placeholder="Peer-XXXX" title="Tap to rename yourself">
+</div>
+
+<div class="container">
+  <div class="board-wrap">
+    <div id="board"></div>
+  </div>
+
+  <div class="footer-panel">
+    <button class="foot-btn" id="helpBtn" title="Help">?</button>
+    <div class="foot-score"><span class="lbl">words</span><span id="score1">0</span></div>
+    <div class="foot-score"><span class="lbl">AvaKo</span><span id="score2">0</span></div>
+    <button class="foot-btn" id="historyBtn" title="History">≡</button>
+  </div>
+</div>
+
+<div id="edit-popover">
+  <input type="text" id="popoverInput" placeholder="Type one word…" autocomplete="off" enterkeyhint="send" maxlength="40">
+  <div class="row">
+    <button class="btn-add" id="btnAdd">Send</button>
+  </div>
+  <div class="row">
+    <button class="btn-cancel" id="btnCancel">Cancel</button>
+  </div>
+</div>
+
+<div id="action-menu">
+  <button class="menu-flag" id="menuFlag">flag</button>
+  <button class="menu-request" id="menuRequest">request field</button>
+  <button class="menu-gpt" id="menuGpt">open ChatGPT for definition at interface language</button>
+  <button class="menu-cancel" id="menuCancel">Cancel</button>
+</div>
+
+<div class="overlay" id="historySheet">
+  <div class="title">History (tap any place to close)</div>
+  <div class="body" id="historyBody"></div>
+</div>
+
+<div class="overlay" id="helpSheet">
+  <div class="title">Help (tap any place to close)</div>
+  <div class="body help-body" id="helpBody">
+    <p><strong>Steam — Map of the words</strong></p>
+    <p>Single tap an empty or your own cell — opens the input popup with the keyboard.</p>
+    <p>Single tap someone else's cell — adds a flag (one flag per user per cell).</p>
+    <p>Double tap any occupied cell — action menu: flag / request field / open ChatGPT for definition at interface language.</p>
+    <p>Long tap someone else's cell — request the field.</p>
+    <p>Long tap your own cell — free it; the word goes to history with author and flag count.</p>
+    <p>Live = edits broadcast immediately. Tape = edits queued locally.</p>
+    <p>Tap the peer ID top-right to rename yourself (3–9 chars, letters/digits/-/_).</p>
+  </div>
+</div>
+
+<div id="media-viewer">
+  <button class="viewer-close" id="viewerClose">×</button>
+</div>
+
+<script>
+/* =========================================================
+   DataManager
+   ========================================================= */
+const DataManager = (() => {
+  const PREFIX = 'wow_';
+  function key(n){return PREFIX+n}
+  function get(n,fb=null){try{const r=localStorage.getItem(key(n));return r===null?fb:JSON.parse(r)}catch(e){return fb}}
+  function set(n,v){try{localStorage.setItem(key(n),JSON.stringify(v))}catch(e){}}
+  return {get,set,key};
+})();
+function log(msg){ console.log('[WOW]', msg); }
+
+/* =========================================================
+   Peer identity
+   ========================================================= */
+let myId = DataManager.get('peer_id');
+if (!myId) {
+  myId = 'Peer-' + Math.floor(Math.random()*9000+1000);
+  DataManager.set('peer_id', myId);
+}
+const clientId = 'wow_' + Math.random().toString(16).slice(2,10);
+const peerIdInput = document.getElementById('peerIdInput');
+peerIdInput.value = myId;
+
+/* =========================================================
+   Board state
+   ========================================================= */
+const COLS = 4;
+let ROWS = 8;
+let cells = DataManager.get('cells', null);
+if (!Array.isArray(cells)) cells = null;
+
+let historyList = DataManager.get('history', []);
+if (!Array.isArray(historyList)) historyList = [];
+
+let pendingEdits = DataManager.get('pending_edits', []);
+let appliedEditIds = new Set(DataManager.get('applied_edits', []));
+
+function saveCells(){ DataManager.set('cells', cells); }
+function saveHistory(){ DataManager.set('history', historyList); }
+function savePending(){ DataManager.set('pending_edits', pendingEdits); }
+function saveApplied(){ DataManager.set('applied_edits', Array.from(appliedEditIds).slice(-2000)); }
+
+/* =========================================================
+   MQTT
+   ========================================================= */
+const BROKER = DataManager.get('broker', 'wss://broker.emqx.io:8084/mqtt');
+const TOPIC  = 'breakthrough/words/v2';
+let client = null;
+let activePeers = {};
+let isLive = false;
+let pingTimer = null;
+let peersTimer = null;
+
+function connectMqtt(){
+  try{
+    client = mqtt.connect(BROKER, {
+      clientId: clientId,
+      reconnectPeriod: 5000,
+      connectTimeout: 5000,
+      keepalive: 60
+    });
+  }catch(e){ log('MQTT init error: ' + e.message); return; }
+
+  client.on('connect', () => {
+    log('MQTT connected');
+    client.subscribe(TOPIC, {qos:1});
+    startHeartbeats();
+  });
+  client.on('close', () => {
+    log('MQTT disconnected');
+    stopHeartbeats();
+    activePeers = {};
+    updatePeers();
+  });
+  client.on('offline', () => { stopHeartbeats(); });
+  client.on('error', (e) => { log('MQTT error: ' + e.message); });
+
+  client.on('message', (t, payload) => {
+    let p;
+    try{ p = JSON.parse(payload.toString()); }catch(e){ return; }
+    if (p.sid === clientId) return;
+    if (p.sid === undefined && p.sender === myId) return;
+    if (p.type === 'PING'){ activePeers[p.sender] = Date.now(); return; }
+    if (p.type === 'CELL_EDIT'){ applyRemoteEdit(p); return; }
+    if (p.type === 'CELL_EDIT_ACK'){
+      if (p.editId){
+        pendingEdits = pendingEdits.filter(e=>e.editId!==p.editId);
+        savePending();
+        refreshChrome();
+      }
+      return;
+    }
+  });
+}
+function startHeartbeats(){
+  stopHeartbeats();
+  sendPing(); updatePeers();
+  pingTimer  = setInterval(sendPing, 5000);
+  peersTimer = setInterval(updatePeers, 3000);
+}
+function stopHeartbeats(){
+  if (pingTimer)  { clearInterval(pingTimer);  pingTimer = null; }
+  if (peersTimer) { clearInterval(peersTimer); peersTimer = null; }
+}
+function sendPing(){
+  if (client && client.connected){
+    client.publish(TOPIC, JSON.stringify({type:'PING', sender:myId, sid:clientId}), {qos:0});
+  }
+}
+function updatePeers(){
+  const now = Date.now();
+  for (const id in activePeers){
+    if (now - activePeers[id] > 12000) delete activePeers[id];
+  }
+  const count = Object.keys(activePeers).length;
+  isLive = count > 0;
+  const before = pendingEdits.length;
+  pendingEdits = pendingEdits.filter(e => (now - (e.ts||0)) < 60000);
+  if (pendingEdits.length !== before) savePending();
+  refreshChrome();
+  if (isLive && pendingEdits.length > 0){ flushPendingEdits(); }
+}
+
+/* =========================================================
+   UI chrome
+   ========================================================= */
+const liveIndicator = document.getElementById('liveIndicator');
+const tapeIndicator = document.getElementById('tapeIndicator');
+const livePeerCount = document.getElementById('livePeerCount');
+const score1El = document.getElementById('score1');
+const score2El = document.getElementById('score2');
+
+function refreshChrome(){
+  const count = Object.keys(activePeers).length;
+  liveIndicator.style.display = isLive ? 'inline' : 'none';
+  tapeIndicator.style.display = isLive ? 'none' : 'inline';
+  livePeerCount.textContent = count;
+
+  let occupied = 0, totalFlags = 0;
+  (cells||[]).forEach(c => {
+    if (c && c.word){ occupied++; totalFlags += (c.flags|0); }
+  });
+  score1El.textContent = occupied;
+  score2El.textContent = totalFlags;
+}
+
+function flushPendingEdits(){
+  if (!client || !client.connected) return;
+  if (pendingEdits.length === 0) return;
+  const toSend = pendingEdits.slice();
+  toSend.forEach(edit=>{
+    client.publish(TOPIC, JSON.stringify({
+      ...edit, type: 'CELL_EDIT', sender: myId, sid: clientId
+    }), {qos:1});
+  });
+  log('Flushed ' + toSend.length + ' tape edits (awaiting ACK)');
+}
+
+/* =========================================================
+   DOM refs
+   ========================================================= */
+const board = document.getElementById('board');
+const popover = document.getElementById('edit-popover');
+const popoverInput = document.getElementById('popoverInput');
+const actionMenu = document.getElementById('action-menu');
+
+const historySheet = document.getElementById('historySheet');
+const historyBody = document.getElementById('historyBody');
+const helpSheet = document.getElementById('helpSheet');
+
+const mediaViewer = document.getElementById('media-viewer');
+const viewerClose = document.getElementById('viewerClose');
+
+/* =========================================================
+   Grid sizing
+   ========================================================= */
+const GAP = 4;
+
+function computeGrid(){
+  const wrap = document.querySelector('.board-wrap');
+  const availableW = wrap.clientWidth;
+  const availableH = wrap.clientHeight;
+  if (availableW <= 0 || availableH <= 0) return;
+
+  const cellW = Math.floor((availableW - GAP*(COLS-1)) / COLS);
+  const rowsFit = Math.max(1, Math.floor((availableH + GAP) / (cellW + GAP)));
+  ROWS = rowsFit;
+
+  const total = COLS * ROWS;
+  if (!Array.isArray(cells) || cells.length !== total){
+    const old = Array.isArray(cells) ? cells : [];
+    const next = new Array(total).fill(null);
+    for (let i=0; i<Math.min(old.length, total); i++) next[i] = old[i];
+    cells = next;
+    saveCells();
+  }
+}
+
+/* =========================================================
+   Render
+   ========================================================= */
+function renderBoard(){
+  board.innerHTML = '';
+  board.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+  board.style.gridTemplateRows = `repeat(${ROWS}, 1fr)`;
+  board.style.gap = GAP + 'px';
+
+  for (let i=0; i<COLS*ROWS; i++){
+    const c = cells[i];
+    const el = document.createElement('div');
+    el.className = 'cell' + (c && c.word ? '' : ' empty');
+    el.dataset.idx = i;
+
+    const flags = document.createElement('div');
+    flags.className = 'flags';
+    flags.textContent = (c && c.flags) ? String(c.flags) : '';
+    el.appendChild(flags);
+
+    const word = document.createElement('div');
+    word.className = 'word';
+    word.textContent = (c && c.word) ? c.word : '';
+    el.appendChild(word);
+
+    const author = document.createElement('div');
+    author.className = 'author';
+    author.textContent = (c && c.author) ? c.author : '';
+    el.appendChild(author);
+
+    if (c && c.word){
+      const authorColor = colorForAuthor(c.author);
+      el.style.borderColor = authorColor;
+      el.style.boxShadow = `0 0 0 1px ${authorColor}, 0 0 12px ${hexToRgba(authorColor, .35)}`;
+    }
+
+    attachCellGestures(el, i);
+    board.appendChild(el);
+  }
+
+  fitAllWordFonts();
+}
+
+function fitAllWordFonts(){
+  const cellEls = board.querySelectorAll('.cell');
+  cellEls.forEach(el=>{
+    const wordEl = el.querySelector('.word');
+    if (!wordEl || !wordEl.textContent) return;
+
+    const boxW = el.clientWidth  - 10;
+    const boxH = el.clientHeight - 22;
+    if (boxW <= 0 || boxH <= 0) return;
+
+    const base = Math.max(10, Math.min(28, Math.floor(Math.min(boxW, boxH) / 2)));
+
+    wordEl.classList.remove('cond');
+    let size = base;
+    wordEl.style.fontSize = size + 'px';
+
+    let guard = 40;
+    while (guard-- > 0){
+      if (fits(wordEl, boxW, boxH)) break;
+      size -= 1;
+      if (size < 9) break;
+      wordEl.style.fontSize = size + 'px';
+    }
+
+    if (!fits(wordEl, boxW, boxH)){
+      wordEl.classList.add('cond');
+      size = Math.max(9, base);
+      wordEl.style.fontSize = size + 'px';
+      guard = 40;
+      while (guard-- > 0){
+        if (fits(wordEl, boxW, boxH)) break;
+        size -= 1;
+        if (size < 8) break;
+        wordEl.style.fontSize = size + 'px';
+      }
+    }
+  });
+}
+
+function fits(el, w, h){
+  return el.scrollWidth <= w + 1 && el.scrollHeight <= h + 1;
+}
+
+function colorForAuthor(author){
+  if (!author) return '#7b4dff';
+  let h = 0;
+  for (let i=0;i<author.length;i++) h = (h*31 + author.charCodeAt(i)) >>> 0;
+  const hue = h % 360;
+  return hslToHex(hue, 70, 60);
+}
+function hslToHex(h,s,l){
+  s/=100; l/=100;
+  const c = (1 - Math.abs(2*l - 1)) * s;
+  const x = c * (1 - Math.abs(((h/60)%2) - 1));
+  const m = l - c/2;
+  let r=0,g=0,b=0;
+  if (h<60){r=c;g=x;b=0;}
+  else if (h<120){r=x;g=c;b=0;}
+  else if (h<180){r=0;g=c;b=x;}
+  else if (h<240){r=0;g=x;b=c;}
+  else if (h<300){r=x;g=0;b=c;}
+  else {r=c;g=0;b=x;}
+  const toHex = v => Math.round((v+m)*255).toString(16).padStart(2,'0');
+  return '#' + toHex(r) + toHex(g) + toHex(b);
+}
+function hexToRgba(hex, a){
+  const h = hex.replace('#','');
+  const r = parseInt(h.substring(0,2),16);
+  const g = parseInt(h.substring(2,4),16);
+  const b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* =========================================================
+   Gestures: single / double / long
+   ========================================================= */
+const SINGLE_DELAY = 260;
+const LONG_MS = 600;
+const MOVE_CANCEL = 12;
+
+function attachCellGestures(el, idx){
+  let longTimer = null;
+  let singleTimer = null;
+  let longFired = false;
+  let tapCount = 0;
+  let downX = 0, downY = 0, downAt = 0;
+  let moved = false;
+
+  function cancelLong(){
+    if (longTimer){ clearTimeout(longTimer); longTimer = null; }
+  }
+  function cancelSingle(){
+    if (singleTimer){ clearTimeout(singleTimer); singleTimer = null; }
+  }
+
+  el.addEventListener('pointerdown', (e)=>{
+    e.stopPropagation();
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    downX = e.clientX; downY = e.clientY; downAt = Date.now();
+    longFired = false; moved = false;
+    cancelLong();
+    longTimer = setTimeout(()=>{
+      longTimer = null;
+      longFired = true;
+      cancelSingle();
+      tapCount = 0;
+      handleLong(idx);
+    }, LONG_MS);
+  });
+
+  el.addEventListener('pointermove', (e)=>{
+    if (moved) return;
+    if (Math.abs(e.clientX - downX) > MOVE_CANCEL ||
+        Math.abs(e.clientY - downY) > MOVE_CANCEL){
+      moved = true;
+      cancelLong();
+    }
+  });
+
+  el.addEventListener('pointercancel', ()=>{
+    cancelLong();
+    moved = true;
+  });
+
+  el.addEventListener('pointerup', (e)=>{
+    e.stopPropagation();
+    cancelLong();
+    if (longFired) return;
+    if (moved) return;
+    if (Date.now() - downAt >= LONG_MS) return;
+
+    tapCount++;
+    if (tapCount === 1){
+      singleTimer = setTimeout(()=>{
+        singleTimer = null;
+        tapCount = 0;
+        handleSingle(idx);
+      }, SINGLE_DELAY);
+    } else if (tapCount === 2){
+      cancelSingle();
+      tapCount = 0;
+      handleDouble(idx);
+    } else {
+      tapCount = 0;
+    }
+  });
+
+  el.addEventListener('contextmenu', (e)=> e.preventDefault());
+}
+
+/* =========================================================
+   Gesture handlers
+   ========================================================= */
+function isMine(c){ return c && c.author === myId; }
+function isOccupied(c){ return !!(c && c.word); }
+
+function handleSingle(idx){
+  const c = cells[idx];
+  if (!isOccupied(c)){ openPlacePopover(idx); return; }
+  if (isMine(c)){ openEditPopover(idx); return; }
+  addFlag(idx);
+}
+
+function handleDouble(idx){
+  const c = cells[idx];
+  if (!isOccupied(c)) return;
+  openActionMenu(idx);
+}
+
+function handleLong(idx){
+  const c = cells[idx];
+  if (!isOccupied(c)) return;
+  if (isMine(c)) freeCell(idx);
+  else requestField(idx);
+}
+
+/* =========================================================
+   Place / edit popover
+   ========================================================= */
+let popoverCtx = null;
+
+function openPlacePopover(idx){
+  popoverCtx = { mode:'place', idx };
+  popoverInput.value = '';
+  popoverInput.placeholder = 'Type one word…';
+  positionPopoverNearCell(idx);
+  popover.classList.add('show');
+  setTimeout(()=> popoverInput.focus(), 30);
+}
+function openEditPopover(idx){
+  const c = cells[idx];
+  if (!c) return;
+  popoverCtx = { mode:'edit', idx };
+  popoverInput.value = c.word || '';
+  popoverInput.placeholder = 'Edit word…';
+  positionPopoverNearCell(idx);
+  popover.classList.add('show');
+  setTimeout(()=>{ popoverInput.focus(); popoverInput.select(); }, 30);
+}
+function positionPopoverNearCell(idx){
+  const el = board.querySelector(`.cell[data-idx="${idx}"]`);
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  const w = 240, h = 160;
+  let left = r.left + r.width/2 - w/2;
+  let top = r.bottom + 8;
+  left = Math.max(8, Math.min(window.innerWidth - w - 8, left));
+  if (top + h > window.innerHeight - 60) top = Math.max(8, r.top - h - 8);
+  popover.style.left = left + 'px';
+  popover.style.top  = top + 'px';
+}
+function hidePopover(){
+  popover.classList.remove('show');
+  popoverCtx = null;
+}
+
+document.getElementById('btnCancel').addEventListener('click', hidePopover);
+document.getElementById('btnAdd').addEventListener('click', ()=>{
+  if (!popoverCtx) return;
+  const word = popoverInput.value.trim();
+  if (!word) return;
+  if (popoverCtx.mode === 'place') placeWord(popoverCtx.idx, word);
+  else editWord(popoverCtx.idx, word);
+  hidePopover();
+});
+popoverInput.addEventListener('keyup', (e)=>{
+  if (e.key === 'Enter'){ e.preventDefault(); document.getElementById('btnAdd').click(); }
+  if (e.key === 'Escape') hidePopover();
+});
+document.addEventListener('pointerdown', (e)=>{
+  if (popover.classList.contains('show')
+      && !popover.contains(e.target)
+      && !e.target.closest('.cell')){
+    hidePopover();
+  }
+});
+
+/* =========================================================
+   Action menu
+   ========================================================= */
+let menuIdx = null;
+function openActionMenu(idx){
+  menuIdx = idx;
+  const el = board.querySelector(`.cell[data-idx="${idx}"]`);
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  const w = 260, h = 220;
+  let left = r.left + r.width/2 - w/2;
+  let top = r.bottom + 8;
+  left = Math.max(8, Math.min(window.innerWidth - w - 8, left));
+  if (top + h > window.innerHeight - 12) top = Math.max(8, r.top - h - 8);
+  actionMenu.style.left = left + 'px';
+  actionMenu.style.top  = top + 'px';
+  actionMenu.classList.add('show');
+}
+function hideActionMenu(){
+  actionMenu.classList.remove('show');
+  menuIdx = null;
+}
+document.getElementById('menuFlag').addEventListener('click', ()=>{
+  if (menuIdx == null) return;
+  addFlag(menuIdx); hideActionMenu();
+});
+document.getElementById('menuRequest').addEventListener('click', ()=>{
+  if (menuIdx == null) return;
+  requestField(menuIdx); hideActionMenu();
+});
+document.getElementById('menuGpt').addEventListener('click', ()=>{
+  if (menuIdx == null) return;
+  openGpt(menuIdx); hideActionMenu();
+});
+document.getElementById('menuCancel').addEventListener('click', hideActionMenu);
+document.addEventListener('pointerdown', (e)=>{
+  if (actionMenu.classList.contains('show')
+      && !actionMenu.contains(e.target)
+      && !e.target.closest('.cell')){
+    hideActionMenu();
+  }
+});
+
+/* =========================================================
+   Actions
+   ========================================================= */
+function newEditId(){
+  if (crypto && crypto.randomUUID) return 'ce-' + crypto.randomUUID();
+  return 'ce-' + Date.now() + '-' + Math.random().toString(16).slice(2,10);
+}
+
+function placeWord(idx, word){
+  const c = cells[idx];
+  if (isOccupied(c)) return;
+  const item = { word, author: myId, flags: 0, flagBy: [], originEditId: newEditId() };
+  cells[idx] = item;
+  saveCells(); renderBoard(); refreshChrome();
+  publishOrQueue({
+    editId: item.originEditId, kind: 'place', idx, word, author: myId, ts: Date.now()
+  });
+}
+
+function editWord(idx, word){
+  const c = cells[idx];
+  if (!isMine(c)) return;
+  c.word = word;
+  c.originEditId = newEditId();
+  saveCells(); renderBoard(); refreshChrome();
+  publishOrQueue({
+    editId: c.originEditId, kind: 'edit', idx, word, author: myId, ts: Date.now()
+  });
+}
+
+function freeCell(idx){
+  const c = cells[idx];
+  if (!isMine(c)) return;
+  const record = { word: c.word, author: c.author, flags: c.flags|0, ts: Date.now() };
+  historyList.push(record);
+  saveHistory();
+  const editId = newEditId();
+  cells[idx] = null;
+  saveCells(); renderBoard(); refreshChrome();
+  publishOrQueue({
+    editId, kind: 'free', idx, word: record.word, flags: record.flags, author: myId, ts: Date.now()
+  });
+}
+
+function addFlag(idx){
+  const c = cells[idx];
+  if (!isOccupied(c)) return;
+  if (c.author === myId) return;
+  if (!Array.isArray(c.flagBy)) c.flagBy = [];
+  if (c.flagBy.includes(myId)) return;
+  c.flagBy.push(myId);
+  c.flags = c.flagBy.length;
+  saveCells(); renderBoard(); refreshChrome();
+  publishOrQueue({
+    editId: newEditId(), kind: 'flag', idx, word: c.word, author: c.author, by: myId, ts: Date.now()
+  });
+}
+
+function requestField(idx){
+  const c = cells[idx];
+  if (!c) return;
+  publishOrQueue({
+    editId: newEditId(), kind: 'request', idx, author: c.author, by: myId, ts: Date.now()
+  });
+  log('Requested field ' + idx);
+}
+
+function openGpt(idx){
+  const c = cells[idx];
+  if (!isOccupied(c)) return;
+  const lang = (navigator.language || 'en').slice(0,2);
+  const url = `https://chatgpt.com/?q=${encodeURIComponent(
+    'What is the definition of the word "' + c.word + '" in the interface language (' + lang + ')?'
+  )}`;
+  window.open(url, '_blank');
+}
+
+/* =========================================================
+   Publish / queue
+   ========================================================= */
+function publishOrQueue(edit){
+  const canSend = isLive && client && client.connected;
+  if (canSend){
+    client.publish(TOPIC, JSON.stringify({
+      ...edit, type: 'CELL_EDIT', sender: myId, sid: clientId
+    }), {qos:1});
+  } else {
+    pendingEdits.push(edit);
+    savePending();
+    refreshChrome();
+  }
+}
+
+/* =========================================================
+   Remote
+   ========================================================= */
+function applyRemoteEdit(p){
+  if (p.editId && appliedEditIds.has(p.editId)) return;
+  if (p.editId){ appliedEditIds.add(p.editId); saveApplied(); }
+
+  if (!Array.isArray(cells)) cells = [];
+
+  if (p.kind === 'place'){
+    if (!isOccupied(cells[p.idx])){
+      cells[p.idx] = { word: p.word, author: p.author, flags: 0, flagBy: [], originEditId: p.editId || null };
+    }
+  } else if (p.kind === 'edit'){
+    const c = cells[p.idx];
+    if (c && c.author === p.author){ c.word = p.word; }
+  } else if (p.kind === 'free'){
+    const c = cells[p.idx];
+    if (c && c.author === p.author){
+      historyList.push({ word: c.word, author: c.author, flags: c.flags|0, ts: Date.now() });
+      saveHistory();
+      cells[p.idx] = null;
+    }
+  } else if (p.kind === 'flag'){
+    const c = cells[p.idx];
+    if (c){
+      if (!Array.isArray(c.flagBy)) c.flagBy = [];
+      if (!c.flagBy.includes(p.by)) c.flagBy.push(p.by);
+      c.flags = c.flagBy.length;
+    }
+  }
+
+  saveCells(); renderBoard(); refreshChrome();
+
+  if (client && client.connected){
+    client.publish(TOPIC, JSON.stringify({
+      type:'CELL_EDIT_ACK', editId: p.editId, sender: myId, sid: clientId
+    }), {qos:1});
+  }
+}
+
+/* =========================================================
+   History overlay
+   ========================================================= */
+document.getElementById('historyBtn').addEventListener('click', ()=>{
+  renderHistory();
+  historySheet.classList.add('show');
+});
+historySheet.addEventListener('click', ()=>{
+  historySheet.classList.remove('show');
+});
+
+function renderHistory(){
+  historyBody.innerHTML = '';
+  if (!historyList.length){
+    historyBody.innerHTML = '<div class="hist-empty">No history yet.</div>';
+    return;
+  }
+  const sorted = historyList.slice().reverse();
+  const maxNum = String(historyList.length);
+  sorted.forEach((rec, i)=>{
+    const n = historyList.length - i;
+    const row = document.createElement('div');
+    row.className = 'hist-entry';
+
+    const numEl = document.createElement('span');
+    numEl.className = 'num';
+    numEl.style.minWidth = (maxNum.length + 1) + 'ch';
+    numEl.textContent = n + '.';
+
+    const wEl = document.createElement('span');
+    wEl.className = 'w';
+    wEl.textContent = rec.word || '';
+
+    const aEl = document.createElement('span');
+    aEl.className = 'a';
+    aEl.textContent = rec.author || '';
+
+    const fEl = document.createElement('span');
+    fEl.className = 'f';
+    fEl.textContent = '⚑ ' + (rec.flags|0);
+
+    row.appendChild(numEl);
+    row.appendChild(wEl);
+    row.appendChild(aEl);
+    row.appendChild(fEl);
+    historyBody.appendChild(row);
+  });
+}
+
+/* =========================================================
+   Help overlay
+   ========================================================= */
+document.getElementById('helpBtn').addEventListener('click', ()=>{
+  helpSheet.classList.add('show');
+});
+helpSheet.addEventListener('click', ()=>{
+  helpSheet.classList.remove('show');
+});
+
+/* =========================================================
+   Media viewer (dormant)
+   ========================================================= */
+function closeMediaViewer(){ mediaViewer.classList.remove('show'); }
+mediaViewer.addEventListener('click', closeMediaViewer);
+viewerClose.addEventListener('click', (e)=>{ e.stopPropagation(); closeMediaViewer(); });
+
+/* =========================================================
+   Peer ID editing
+   ========================================================= */
+let _idBeforeEdit = myId;
+peerIdInput.addEventListener('focus', ()=>{
+  _idBeforeEdit = myId;
+  requestAnimationFrame(()=> peerIdInput.select());
+});
+peerIdInput.addEventListener('keyup', (e)=>{
+  if (e.key === 'Enter'){ e.preventDefault(); commitPeerId(); peerIdInput.blur(); }
+  if (e.key === 'Escape'){ peerIdInput.value = _idBeforeEdit; peerIdInput.blur(); }
+});
+peerIdInput.addEventListener('blur', ()=>{
+  const v = peerIdInput.value.trim();
+  if (v !== myId){ peerIdInput.value = myId; }
+});
+function commitPeerId(){
+  const v = peerIdInput.value.trim();
+  if (v === myId){ peerIdInput.value = myId; return; }
+  if (!/^[A-Za-z0-9_\-]{3,9}$/.test(v)){
+    peerIdInput.value = myId;
+    return;
+  }
+  myId = v;
+  DataManager.set('peer_id', myId);
+  peerIdInput.value = myId;
+  pendingEdits = [];
+  savePending();
+  refreshChrome();
+  peerIdInput.classList.add('saved');
+  setTimeout(()=> peerIdInput.classList.remove('saved'), 800);
+}
+
+/* =========================================================
+   Resize / Init
+   ========================================================= */
+let resizeTimer = null;
+function relayout(){
+  computeGrid();
+  renderBoard();
+  refreshChrome();
+}
+window.addEventListener('resize', ()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(relayout, 120);
+});
+window.addEventListener('orientationchange', ()=>{
+  setTimeout(relayout, 200);
+});
+
+connectMqtt();
+requestAnimationFrame(()=>{
+  requestAnimationFrame(()=>{
+    relayout();
+    log('Init done. myId=' + myId + ', rows=' + ROWS);
+  });
+});
+</script>
+</body>
+</html>
