@@ -22,6 +22,7 @@ html{padding-top:env(safe-area-inset-top)}
   display:flex;align-items:center;justify-content:space-between;
   padding:4px 8px;background:#000;
   font-family:'Roboto',sans-serif;font-weight:700;font-size:16px;color:#aaa;
+  height:44px;
 }
 .top-bar .brand{color:#999;}
 .top-bar .live{color:#ff0000;animation:livePulse 1.5s infinite}
@@ -44,14 +45,16 @@ html{padding-top:env(safe-area-inset-top)}
   height:100vh;height:100dvh;background:#000;
 }
 
+/* board-wrap занимает всё между top-bar (44) и footer (56) */
 .board-wrap{
-  flex:1 1 auto;position:relative;overflow:hidden;
-  display:flex;align-items:stretch;justify-content:stretch;
-  padding:44px 0 0 0;
+  flex:1 1 auto;
+  position:relative;
+  overflow:hidden;
+  padding:44px 0 56px 0;
+  box-sizing:border-box;
 }
 
 #board{
-  flex:1 1 auto;
   display:grid;
   gap:4px;
   padding:4px;
@@ -105,7 +108,9 @@ html{padding-top:env(safe-area-inset-top)}
   position:fixed;bottom:0;left:0;right:0;z-index:10;
   display:flex;align-items:center;justify-content:space-around;
   padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px)) 6px;
-  background:#000;border-top:1px solid #223355;min-height:44px;
+  background:#000;border-top:1px solid #223355;
+  height:56px;
+  box-sizing:border-box;
 }
 .foot-btn{
   flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:4px;
@@ -144,7 +149,6 @@ html{padding-top:env(safe-area-inset-top)}
 #edit-popover .btn-add{background:#ff2440}
 #edit-popover .btn-cancel{background:#222;color:#aaa}
 
-/* ---------- action menu (double tap) ---------- */
 #action-menu{
   position:fixed;z-index:970;display:none;flex-direction:column;gap:6px;
   background:#0b0b28;border:2px solid #7b4dff;border-radius:16px;
@@ -270,7 +274,7 @@ html{padding-top:env(safe-area-inset-top)}
 <div class="overlay" id="helpSheet">
   <div class="title">Help (tap any place to close)</div>
   <div class="body help-body" id="helpBody">
-    <p><strong>Steam — Map of the words</strong></p>
+    <p><strong>Spar — Word battle</strong></p>
     <p>Single tap an empty or your own cell — opens the input popup with the keyboard.</p>
     <p>Single tap someone else's cell — adds a flag (one flag per user per cell).</p>
     <p>Double tap any occupied cell — action menu: flag / request field / open ChatGPT for definition at interface language.</p>
@@ -464,15 +468,21 @@ const viewerClose = document.getElementById('viewerClose');
    Grid sizing
    ========================================================= */
 const GAP = 4;
+const BOARD_PAD = 4;
+const TOP_BAR_H = 44;
+const FOOTER_H = 56;
 
 function computeGrid(){
-  const wrap = document.querySelector('.board-wrap');
-  const availableW = wrap.clientWidth;
-  const availableH = wrap.clientHeight;
+  const availableW = window.innerWidth;
+  const availableH = window.innerHeight - TOP_BAR_H - FOOTER_H;
   if (availableW <= 0 || availableH <= 0) return;
 
-  const cellW = Math.floor((availableW - GAP*(COLS-1)) / COLS);
-  const rowsFit = Math.max(1, Math.floor((availableH + GAP) / (cellW + GAP)));
+  const innerW = availableW - BOARD_PAD*2 - GAP*(COLS-1);
+  const cellW = Math.floor(innerW / COLS);
+  if (cellW <= 0) return;
+
+  const innerH = availableH - BOARD_PAD*2;
+  const rowsFit = Math.max(1, Math.floor((innerH + GAP) / (cellW + GAP)));
   ROWS = rowsFit;
 
   const total = COLS * ROWS;
@@ -490,9 +500,18 @@ function computeGrid(){
    ========================================================= */
 function renderBoard(){
   board.innerHTML = '';
-  board.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
-  board.style.gridTemplateRows = `repeat(${ROWS}, 1fr)`;
+
+  const availableW = window.innerWidth;
+  const availableH = window.innerHeight - TOP_BAR_H - FOOTER_H;
+  const innerW = availableW - BOARD_PAD*2 - GAP*(COLS-1);
+  const cellW = Math.floor(innerW / COLS);
+
+  board.style.gridTemplateColumns = `repeat(${COLS}, ${cellW}px)`;
+  board.style.gridTemplateRows    = `repeat(${ROWS}, ${cellW}px)`;
   board.style.gap = GAP + 'px';
+  board.style.padding = BOARD_PAD + 'px';
+  board.style.justifyContent = 'start';
+  board.style.alignContent = 'start';
 
   for (let i=0; i<COLS*ROWS; i++){
     const c = cells[i];
