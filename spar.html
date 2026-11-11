@@ -358,10 +358,10 @@ peerIdInput.value = myId;
 /* =========================================================
    Board state
    ========================================================= */
-const COLS = 4;
+const COLS = 4;                          // всегда 4 столбца
 const DEFAULT_GROW_STEP = 1;
 
-let ROWS = 8;
+let ROWS = 8;                            // текущее число рядов (стартовое — см. init)
 
 let cells = DataManager.get('cells', null);
 if (!Array.isArray(cells)) cells = [];
@@ -570,8 +570,12 @@ function ensureCellsLength(){
 }
 
 /* Пересчёт ширины ячейки и минимально необходимого ROWS под экран + данные.
-   Запасных рядов не добавляет — рост только через growRowsIfNeeded(). */
-function computeGrid(){
+   mode:
+     'init'   — старт: ROWS = max(fitRows, dataRows)  (ровно сколько влезает на первоначальном экране)
+     'resize' — ресайз: только увеличиваем
+*/
+function computeGrid(mode){
+  mode = mode || 'resize';
   const availableW = window.innerWidth;
   if (availableW <= 0) return;
 
@@ -582,12 +586,16 @@ function computeGrid(){
   currentCellW = cellW;
 
   const fitRows = rowsThatFit(cellW);
-  if (ROWS < fitRows) ROWS = fitRows;
 
   const last = lastOccupiedIndex();
-  if (last >= 0){
-    const dataRows = Math.floor(last / COLS) + 1;
-    if (ROWS < dataRows) ROWS = dataRows;
+  const dataRows = last >= 0 ? Math.floor(last / COLS) + 1 : 0;
+
+  const required = Math.max(fitRows, dataRows);
+
+  if (mode === 'init'){
+    ROWS = required;
+  } else {
+    if (ROWS < required) ROWS = required;
   }
 
   ensureCellsLength();
@@ -873,12 +881,42 @@ function handleLong(idx){
    ========================================================= */
 let popoverCtx = null;
 
+function positionPopoverNearCell(idx){
+  const el = board.querySelector(`.cell[data-idx="${idx}"]`);
+  if (!el) return;
+
+  const r = el.getBoundingClientRect();
+
+  // Показываем, чтобы браузер посчитал реальный размер
+  popover.style.visibility = 'hidden';
+  popover.classList.add('show');
+
+  const pw = popover.offsetWidth;
+  const ph = popover.offsetHeight;
+
+  const MARGIN = 8;
+
+  // Горизонталь: по центру ячейки, но не вылезаем за края окна
+  let left = r.left + r.width/2 - pw/2;
+  left = Math.max(MARGIN, Math.min(window.innerWidth - pw - MARGIN, left));
+
+  // Вертикаль: под ячейкой, если помещается; иначе над ней
+  let top = r.bottom + MARGIN;
+  if (top + ph > window.innerHeight - MARGIN){
+    top = r.top - ph - MARGIN;
+  }
+  if (top < MARGIN) top = MARGIN;
+
+  popover.style.left = left + 'px';
+  popover.style.top  = top + 'px';
+  popover.style.visibility = '';
+}
+
 function openPlacePopover(idx){
   popoverCtx = { mode:'place', idx };
   popoverInput.value = '';
   popoverInput.placeholder = 'Type one word…';
   positionPopoverNearCell(idx);
-  popover.classList.add('show');
   setTimeout(()=> popoverInput.focus(), 30);
 }
 function openEditPopover(idx){
@@ -888,20 +926,7 @@ function openEditPopover(idx){
   popoverInput.value = c.word || '';
   popoverInput.placeholder = 'Edit word…';
   positionPopoverNearCell(idx);
-  popover.classList.add('show');
   setTimeout(()=>{ popoverInput.focus(); popoverInput.select(); }, 30);
-}
-function positionPopoverNearCell(idx){
-  const el = board.querySelector(`.cell[data-idx="${idx}"]`);
-  if (!el) return;
-  const r = el.getBoundingClientRect();
-  const w = 240, h = 160;
-  let left = r.left + r.width/2 - w/2;
-  let top = r.bottom + 8;
-  left = Math.max(8, Math.min(window.innerWidth - w - 8, left));
-  if (top + h > window.innerHeight - 60) top = Math.max(8, r.top - h - 8);
-  popover.style.left = left + 'px';
-  popover.style.top  = top + 'px';
 }
 function hidePopover(){
   popover.classList.remove('show');
@@ -937,15 +962,29 @@ function openActionMenu(idx){
   menuIdx = idx;
   const el = board.querySelector(`.cell[data-idx="${idx}"]`);
   if (!el) return;
+
   const r = el.getBoundingClientRect();
-  const w = 260, h = 220;
-  let left = r.left + r.width/2 - w/2;
-  let top = r.bottom + 8;
-  left = Math.max(8, Math.min(window.innerWidth - w - 8, left));
-  if (top + h > window.innerHeight - 12) top = Math.max(8, r.top - h - 8);
+
+  actionMenu.style.visibility = 'hidden';
+  actionMenu.classList.add('show');
+
+  const mw = actionMenu.offsetWidth;
+  const mh = actionMenu.offsetHeight;
+
+  const MARGIN = 8;
+
+  let left = r.left + r.width/2 - mw/2;
+  left = Math.max(MARGIN, Math.min(window.innerWidth - mw - MARGIN, left));
+
+  let top = r.bottom + MARGIN;
+  if (top + mh > window.innerHeight - MARGIN){
+    top = r.top - mh - MARGIN;
+  }
+  if (top < MARGIN) top = MARGIN;
+
   actionMenu.style.left = left + 'px';
   actionMenu.style.top  = top + 'px';
-  actionMenu.classList.add('show');
+  actionMenu.style.visibility = '';
 }
 function hideActionMenu(){
   actionMenu.classList.remove('show');
@@ -1287,7 +1326,7 @@ async function syncAndKeepData() {
 let resizeTimer = null;
 function relayout(){
   const prevCellW = currentCellW;
-  computeGrid();
+  computeGrid('resize');
   if (Math.abs(prevCellW - currentCellW) > 0.5){
     renderBoard();
   } else {
@@ -1306,7 +1345,10 @@ window.addEventListener('orientationchange', ()=>{
 connectMqtt();
 requestAnimationFrame(()=>{
   requestAnimationFrame(()=>{
-    computeGrid();
+    // Стартовое значение ROWS = ровно столько, сколько влезает на первоначальном экране
+    // (но не меньше, чем нужно для сохранённых данных).
+    computeGrid('init');
+    // Если данных меньше, чем помещается, но есть пустые хвостовые ряды — убрать их.
     shrinkRowsIfNeeded();
     renderBoard();
     refreshChrome();
