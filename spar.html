@@ -50,17 +50,21 @@ html{padding-top:env(safe-area-inset-top)}
 .board-wrap{
   flex:1 1 auto;
   position:relative;
-  overflow:hidden;
+  overflow-y:auto;
+  overflow-x:hidden;
   padding:44px 0 56px 0;
   box-sizing:border-box;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
 }
+.board-wrap::-webkit-scrollbar{width:0;height:0}
+.board-wrap{scrollbar-width:none;-ms-overflow-style:none}
 
 #board{
   display:grid;
   gap:4px;
   padding:4px;
   width:100%;
-  height:100%;
 }
 
 /* ---------- cell ---------- */
@@ -270,7 +274,7 @@ html{padding-top:env(safe-area-inset-top)}
 </div>
 
 <div class="container">
-  <div class="board-wrap">
+  <div class="board-wrap" id="boardWrap">
     <div id="board"></div>
   </div>
 
@@ -355,9 +359,12 @@ peerIdInput.value = myId;
    Board state
    ========================================================= */
 const COLS = 4;
+const DEFAULT_GROW_STEP = 1;
+
 let ROWS = 8;
+
 let cells = DataManager.get('cells', null);
-if (!Array.isArray(cells)) cells = null;
+if (!Array.isArray(cells)) cells = [];
 
 let historyList = DataManager.get('history', []);
 if (!Array.isArray(historyList)) historyList = [];
@@ -489,6 +496,7 @@ function flushPendingEdits(){
 /* =========================================================
    DOM refs
    ========================================================= */
+const boardWrap = document.getElementById('boardWrap');
 const board = document.getElementById('board');
 const popover = document.getElementById('edit-popover');
 const popoverInput = document.getElementById('popoverInput');
@@ -502,40 +510,133 @@ const mediaViewer = document.getElementById('media-viewer');
 const viewerClose = document.getElementById('viewerClose');
 
 /* =========================================================
-   Grid sizing
+   Grid sizing (dynamic, scrollable)
    ========================================================= */
 const GAP = 4;
 const BOARD_PAD = 4;
 const TOP_BAR_H = 44;
 const FOOTER_H = 56;
 
+let currentCellW = 0;
+
+/* Сколько рядов влезает на экран при текущей ширине ячейки */
+function rowsThatFit(cellW){
+  const availableH = window.innerHeight - TOP_BAR_H - FOOTER_H;
+  if (availableH <= 0 || cellW <= 0) return 1;
+  const innerH = availableH - BOARD_PAD*2;
+  return Math.max(1, Math.floor((innerH + GAP) / (cellW + GAP)));
+}
+
+/* Индекс последней занятой ячейки (-1, если пусто) */
+function lastOccupiedIndex(){
+  for (let i = cells.length - 1; i >= 0; i--){
+    if (cells[i] && cells[i].word) return i;
+  }
+  return -1;
+}
+
+/* Есть ли хотя бы одна пустая ячейка во всей сетке */
+function hasAnyEmptyCell(){
+  const total = COLS * ROWS;
+  for (let i = 0; i < total; i++){
+    const c = cells[i];
+    if (!c || !c.word) return true;
+  }
+  return false;
+}
+
+/* Есть ли свободная ячейка строго выше указанного индекса */
+function hasEmptyCellAbove(index){
+  for (let i = 0; i < index; i++){
+    const c = cells[i];
+    if (!c || !c.word) return true;
+  }
+  return false;
+}
+
+/* Приводим массив cells к длине ROWS*COLS, не обрезая занятые ячейки */
+function ensureCellsLength(){
+  const total = COLS * ROWS;
+  if (cells.length === total) return;
+  if (cells.length < total){
+    while (cells.length < total) cells.push(null);
+  } else {
+    while (cells.length > total && !cells[cells.length-1]) cells.pop();
+    if (cells.length < total){
+      while (cells.length < total) cells.push(null);
+    }
+  }
+  saveCells();
+}
+
+/* Пересчёт ширины ячейки и минимально необходимого ROWS под экран + данные.
+   Запасных рядов не добавляет — рост только через growRowsIfNeeded(). */
 function computeGrid(){
   const availableW = window.innerWidth;
-  const availableH = window.innerHeight - TOP_BAR_H - FOOTER_H;
-  if (availableW <= 0 || availableH <= 0) return;
+  if (availableW <= 0) return;
 
   const innerW = availableW - BOARD_PAD*2 - GAP*(COLS-1);
   const cellW = Math.floor(innerW / COLS);
   if (cellW <= 0) return;
 
-  const innerH = availableH - BOARD_PAD*2;
-  const rowsFit = Math.max(1, Math.floor((innerH + GAP) / (cellW + GAP)));
-  ROWS = rowsFit;
+  currentCellW = cellW;
 
-  const total = COLS * ROWS;
-  if (!Array.isArray(cells) || cells.length !== total){
-    const old = Array.isArray(cells) ? cells : [];
-    const next = new Array(total).fill(null);
-    for (let i=0; i<Math.min(old.length, total); i++) next[i] = old[i];
-    cells = next;
-    saveCells();
+  const fitRows = rowsThatFit(cellW);
+  if (ROWS < fitRows) ROWS = fitRows;
+
+  const last = lastOccupiedIndex();
+  if (last >= 0){
+    const dataRows = Math.floor(last / COLS) + 1;
+    if (ROWS < dataRows) ROWS = dataRows;
   }
+
+  ensureCellsLength();
+}
+
+/* Рост: добавляем ряд ТОЛЬКО когда все ячейки заняты */
+function growRowsIfNeeded(){
+  if (hasAnyEmptyCell()) return false;
+  ROWS += DEFAULT_GROW_STEP;
+  ensureCellsLength();
+  return true;
+}
+
+/* Сжатие: удаляем последний ряд ТОЛЬКО если
+   - он полностью пуст (нет ни одной занятой ячейки), И
+   - выше него есть хотя бы одна свободная ячейка.
+   Если в последнем ряду есть хоть одна занятая — ряд остаётся. */
+function shrinkRowsIfNeeded(){
+  let changed = false;
+
+  while (ROWS > 1){
+    const rowStart = (ROWS - 1) * COLS;
+
+    // 1) Последний ряд должен быть полностью пуст
+    let rowIsEmpty = true;
+    for (let i = rowStart; i < rowStart + COLS; i++){
+      const c = cells[i];
+      if (c && c.word){ rowIsEmpty = false; break; }
+    }
+    if (!rowIsEmpty) break;
+
+    // 2) Выше должна быть хотя бы одна свободная ячейка
+    if (!hasEmptyCellAbove(rowStart)) break;
+
+    ROWS -= 1;
+    const newLen = ROWS * COLS;
+    while (cells.length > newLen) cells.pop();
+    changed = true;
+  }
+
+  if (changed) saveCells();
+  return changed;
 }
 
 /* =========================================================
    Render
    ========================================================= */
-function renderBoard(){
+function renderBoard(opts){
+  opts = opts || {};
   board.innerHTML = '';
 
   const availableW = window.innerWidth;
@@ -549,7 +650,8 @@ function renderBoard(){
   board.style.justifyContent = 'start';
   board.style.alignContent = 'start';
 
-  for (let i=0; i<COLS*ROWS; i++){
+  const total = COLS * ROWS;
+  for (let i=0; i<total; i++){
     const c = cells[i];
     const el = document.createElement('div');
     el.className = 'cell' + (c && c.word ? '' : ' empty');
@@ -581,6 +683,13 @@ function renderBoard(){
   }
 
   fitAllWordFonts();
+
+  if (opts.scrollToIdx != null){
+    const target = board.querySelector(`.cell[data-idx="${opts.scrollToIdx}"]`);
+    if (target){
+      target.scrollIntoView({block:'nearest', behavior:'smooth'});
+    }
+  }
 }
 
 function fitAllWordFonts(){
@@ -876,7 +985,16 @@ function placeWord(idx, word){
   if (isOccupied(c)) return;
   const item = { word, author: myId, flags: 0, flagBy: [], originEditId: newEditId() };
   cells[idx] = item;
-  saveCells(); renderBoard(); refreshChrome();
+  saveCells();
+
+  const grew = growRowsIfNeeded();
+  if (grew){
+    renderBoard({ scrollToIdx: idx });
+  } else {
+    renderBoard();
+  }
+  refreshChrome();
+
   publishOrQueue({
     editId: item.originEditId, kind: 'place', idx, word, author: myId, ts: Date.now()
   });
@@ -901,7 +1019,12 @@ function freeCell(idx){
   saveHistory();
   const editId = newEditId();
   cells[idx] = null;
-  saveCells(); renderBoard(); refreshChrome();
+  saveCells();
+
+  const shrunk = shrinkRowsIfNeeded();
+  renderBoard(shrunk ? { scrollToIdx: idx } : undefined);
+  refreshChrome();
+
   publishOrQueue({
     editId, kind: 'free', idx, word: record.word, flags: record.flags, author: myId, ts: Date.now()
   });
@@ -965,9 +1088,17 @@ function applyRemoteEdit(p){
 
   if (!Array.isArray(cells)) cells = [];
 
+  let grew = false;
+
   if (p.kind === 'place'){
+    const neededRows = Math.floor(p.idx / COLS) + 1;
+    if (neededRows > ROWS){
+      ROWS = neededRows;
+      ensureCellsLength();
+    }
     if (!isOccupied(cells[p.idx])){
       cells[p.idx] = { word: p.word, author: p.author, flags: 0, flagBy: [], originEditId: p.editId || null };
+      grew = growRowsIfNeeded();
     }
   } else if (p.kind === 'edit'){
     const c = cells[p.idx];
@@ -978,6 +1109,7 @@ function applyRemoteEdit(p){
       historyList.push({ word: c.word, author: c.author, flags: c.flags|0, ts: Date.now() });
       saveHistory();
       cells[p.idx] = null;
+      shrinkRowsIfNeeded();
     }
   } else if (p.kind === 'flag'){
     const c = cells[p.idx];
@@ -988,7 +1120,10 @@ function applyRemoteEdit(p){
     }
   }
 
-  saveCells(); renderBoard(); refreshChrome();
+  saveCells();
+  if (grew) renderBoard({ scrollToIdx: p.idx });
+  else renderBoard();
+  refreshChrome();
 
   if (client && client.connected){
     client.publish(TOPIC, JSON.stringify({
@@ -1151,8 +1286,13 @@ async function syncAndKeepData() {
    ========================================================= */
 let resizeTimer = null;
 function relayout(){
+  const prevCellW = currentCellW;
   computeGrid();
-  renderBoard();
+  if (Math.abs(prevCellW - currentCellW) > 0.5){
+    renderBoard();
+  } else {
+    fitAllWordFonts();
+  }
   refreshChrome();
 }
 window.addEventListener('resize', ()=>{
@@ -1166,8 +1306,11 @@ window.addEventListener('orientationchange', ()=>{
 connectMqtt();
 requestAnimationFrame(()=>{
   requestAnimationFrame(()=>{
-    relayout();
-    log('Init done. myId=' + myId + ', rows=' + ROWS);
+    computeGrid();
+    shrinkRowsIfNeeded();
+    renderBoard();
+    refreshChrome();
+    log('Init done. myId=' + myId + ', rows=' + ROWS + ', cellW=' + currentCellW);
   });
 });
 </script>
