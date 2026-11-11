@@ -358,10 +358,11 @@ peerIdInput.value = myId;
 /* =========================================================
    Board state
    ========================================================= */
-const COLS = 4;                          // всегда 4 столбца
+const COLS = 4;                  // всегда 4 столбца
+const MIN_ROWS = 4;              // никогда не меньше 16 ячеек (4×4)
 const DEFAULT_GROW_STEP = 1;
 
-let ROWS = 8;                            // текущее число рядов (стартовое — см. init)
+let ROWS = MIN_ROWS;             // текущее число рядов
 
 let cells = DataManager.get('cells', null);
 if (!Array.isArray(cells)) cells = [];
@@ -522,9 +523,9 @@ let currentCellW = 0;
 /* Сколько рядов влезает на экран при текущей ширине ячейки */
 function rowsThatFit(cellW){
   const availableH = window.innerHeight - TOP_BAR_H - FOOTER_H;
-  if (availableH <= 0 || cellW <= 0) return 1;
+  if (availableH <= 0 || cellW <= 0) return MIN_ROWS;
   const innerH = availableH - BOARD_PAD*2;
-  return Math.max(1, Math.floor((innerH + GAP) / (cellW + GAP)));
+  return Math.max(MIN_ROWS, Math.floor((innerH + GAP) / (cellW + GAP)));
 }
 
 /* Индекс последней занятой ячейки (-1, если пусто) */
@@ -571,7 +572,7 @@ function ensureCellsLength(){
 
 /* Пересчёт ширины ячейки и минимально необходимого ROWS под экран + данные.
    mode:
-     'init'   — старт: ROWS = max(fitRows, dataRows)  (ровно сколько влезает на первоначальном экране)
+     'init'   — старт: ROWS = max(MIN_ROWS, fitRows, dataRows)
      'resize' — ресайз: только увеличиваем
 */
 function computeGrid(mode){
@@ -590,7 +591,7 @@ function computeGrid(mode){
   const last = lastOccupiedIndex();
   const dataRows = last >= 0 ? Math.floor(last / COLS) + 1 : 0;
 
-  const required = Math.max(fitRows, dataRows);
+  const required = Math.max(MIN_ROWS, fitRows, dataRows);
 
   if (mode === 'init'){
     ROWS = required;
@@ -610,16 +611,16 @@ function growRowsIfNeeded(){
 }
 
 /* Сжатие: удаляем последний ряд ТОЛЬКО если
-   - он полностью пуст (нет ни одной занятой ячейки), И
+   - ROWS > MIN_ROWS  (никогда не меньше 16 ячеек / 4 рядов),
+   - последний ряд полностью пуст (нет ни одной занятой ячейки),
    - выше него есть хотя бы одна свободная ячейка.
    Если в последнем ряду есть хоть одна занятая — ряд остаётся. */
 function shrinkRowsIfNeeded(){
   let changed = false;
 
-  while (ROWS > 1){
+  while (ROWS > MIN_ROWS){
     const rowStart = (ROWS - 1) * COLS;
 
-    // 1) Последний ряд должен быть полностью пуст
     let rowIsEmpty = true;
     for (let i = rowStart; i < rowStart + COLS; i++){
       const c = cells[i];
@@ -627,7 +628,6 @@ function shrinkRowsIfNeeded(){
     }
     if (!rowIsEmpty) break;
 
-    // 2) Выше должна быть хотя бы одна свободная ячейка
     if (!hasEmptyCellAbove(rowStart)) break;
 
     ROWS -= 1;
@@ -887,7 +887,6 @@ function positionPopoverNearCell(idx){
 
   const r = el.getBoundingClientRect();
 
-  // Показываем, чтобы браузер посчитал реальный размер
   popover.style.visibility = 'hidden';
   popover.classList.add('show');
 
@@ -896,11 +895,9 @@ function positionPopoverNearCell(idx){
 
   const MARGIN = 8;
 
-  // Горизонталь: по центру ячейки, но не вылезаем за края окна
   let left = r.left + r.width/2 - pw/2;
   left = Math.max(MARGIN, Math.min(window.innerWidth - pw - MARGIN, left));
 
-  // Вертикаль: под ячейкой, если помещается; иначе над ней
   let top = r.bottom + MARGIN;
   if (top + ph > window.innerHeight - MARGIN){
     top = r.top - ph - MARGIN;
@@ -1345,11 +1342,7 @@ window.addEventListener('orientationchange', ()=>{
 connectMqtt();
 requestAnimationFrame(()=>{
   requestAnimationFrame(()=>{
-    // Стартовое значение ROWS = ровно столько, сколько влезает на первоначальном экране
-    // (но не меньше, чем нужно для сохранённых данных).
     computeGrid('init');
-    // Если данных меньше, чем помещается, но есть пустые хвостовые ряды — убрать их.
-    shrinkRowsIfNeeded();
     renderBoard();
     refreshChrome();
     log('Init done. myId=' + myId + ', rows=' + ROWS + ', cellW=' + currentCellW);
