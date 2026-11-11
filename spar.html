@@ -955,8 +955,22 @@ document.addEventListener('pointerdown', (e)=>{
    Action menu
    ========================================================= */
 let menuIdx = null;
+
 function openActionMenu(idx){
+  const c = cells[idx];
+  if (!c) return;
   menuIdx = idx;
+
+  // --- Новая логика: настраиваем видимость пунктов меню в зависимости от автора ---
+  const mine = isMine(c);
+  const flagBtn = document.getElementById('menuFlag');
+  const reqBtn  = document.getElementById('menuRequest');
+  // "flag" и "request field" показываем только для чужих ячеек
+  flagBtn.style.display = mine ? 'none' : '';
+  reqBtn.style.display  = mine ? 'none' : '';
+  // "open ChatGPT" и "Cancel" видны всегда
+  // (они уже видны по умолчанию)
+
   const el = board.querySelector(`.cell[data-idx="${idx}"]`);
   if (!el) return;
 
@@ -983,6 +997,7 @@ function openActionMenu(idx){
   actionMenu.style.top  = top + 'px';
   actionMenu.style.visibility = '';
 }
+
 function hideActionMenu(){
   actionMenu.classList.remove('show');
   menuIdx = null;
