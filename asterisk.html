@@ -356,14 +356,12 @@ body.img-fullscreen-active .editor-wrapper { isolation:auto; z-index:auto; }
 <!-- ============== HANDLE MODAL ============== -->
 <div id="handle-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1100; align-items:center; justify-content:center;">
   <div style="background:#222; color:#fff; padding:16px; border-radius:16px; width:96%; max-width:470px; font-family:sans-serif; box-shadow:0 10px 30px rgba(0,0,0,0.6); max-height:90vh; overflow-y:auto; box-sizing:border-box;">
-    <h3 data-lang="handleTitle" style="margin-top:12px; margin-bottom:0; font-size:20px; text-align:center; font-weight:bold;"></h3>
-    <div class="help-box" id="help-box"></div>
-
-    <label for="handle-file-input" data-lang="chooseHandle" style="display:flex; align-items:center; justify-content:center; width:100%; box-sizing:border-box; padding:12px; margin-bottom:12px; border:none; border-radius:8px; background:#ff8700; color:#000; font-size:16px; font-weight:bold; cursor:pointer;"></label>
-    <input type="file" id="handle-file-input" accept="image/png" style="display:none;">
 
     <div id="handle-list" style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:20px;"></div>
-
+    <label for="handle-file-input" data-lang="chooseHandle" style="display:flex; align-items:center; justify-content:center; width:100%; box-sizing:border-box; padding:12px; margin-bottom:12px; border:none; border-radius:8px; background:#ff8700; color:#000; font-size:16px; font-weight:bold; cursor:pointer;"></label>
+    <input type="file" id="handle-file-input" accept="image/png" style="display:none;">
+    <h3 data-lang="handleTitle" style="margin-top:48px; margin-bottom:0; font-size:20px; text-align:left; font-weight:bold;"></h3>
+    <div class="help-box" id="help-box"></div>
     <button type="button" id="handle-close-btn" data-lang="close" style="width:100%; box-sizing:border-box; padding:12px; border:none; border-radius:8px; background:#333; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;"></button>
   </div>
 </div>
@@ -374,7 +372,7 @@ body.img-fullscreen-active .editor-wrapper { isolation:auto; z-index:auto; }
 const translations = {
   ru: {
     title: "Asterisk — Layout Studio",
-    helpText: "<h3>Нажмите и удерживайте любое поле, чтобы открыть настройки</h3><p>1. Введите или вставьте текст и картинку в любое поле.</p><p>2. Двигайте крестик, чтобы изменить размер полей.</p><p>3. Нажмите на крестик, чтобы сменить логотип.</p><p>4. Двойной тап на крестик — это меню (добавить png, палитра).</p><p>5. Долгое нажатие на крестик — случайный дизайн.</p><p>6. Круговой свайп вокруг крестика (≈360°) — тоже случайный дизайн.</p><p>7. Нажмите на картинку, чтобы увеличить; долгое нажатие — удалить.</p><p>8. Добавьте страницу на главный экран через меню браузера, чтобы запускать её как приложение и сохранять данные.</p><p>9. Сделайте скриншот готового макета или видео-захват экрана на лету, пока вы перемещаете крестик.</p>",
+    helpText: "<h3>Нажмите и удерживайте любое поле, чтобы открыть настройки</h3><p>1. Введите или вставьте текст и картинку в любое поле.</p><p>2. Двигайте крестик, чтобы изменить размер полей.</p><p>3. Нажмите на крестик, чтобы сменить логотип.</p><p>4. Двойной тап на крестик — это меню (добавить png, палитра).</p><p>5. Долгое нажатие на крестик — случайный дизайн.</p><p>6. Нажмите на картинку, чтобы увеличить; долгое нажатие — удалить.</p><p>7. Добавьте страницу на главный экран через меню браузера, чтобы запускать её как приложение и сохранять данные.</p><p>8. Сделайте скриншот готового макета или видео-захват экрана на лету, пока вы перемещаете крестик.</p>",
     settingsTitle: "Настройки поля",
     fontLabel: "Шрифт:",
     alignLeft: "Слева", alignCenter: "По центру", alignRight: "Справа",
@@ -397,7 +395,7 @@ const translations = {
   },
   en: {
     title: "Asterisk — Layout Studio",
-    helpText: "<h3>Long tap any field for settings</h3><p>1. Type or paste text and image into any field.</p><p>2. Move the crosshair handle to resize fields.</p><p>3. Tap the handle to change the logo.</p><p>4. Double tap the handle — logo menu (add png, palette).</p><p>5. Long tap the handle — random design.</p><p>6. Circle-swipe around the handle (≈360°) — also random design.</p><p>7. Tap an image to expand; long tap to delete.</p><p>8. Add the page to your Home Screen via the browser menu to launch it like an app and keep data saved.</p><p>9. Make a screenshot of the finished layout or a screen recording on the fly while you move the crosshair.</p>",
+    helpText: "<h3>Long tap any field for settings</h3><p>1. Type or paste text and image into any field.</p><p>2. Move the crosshair handle to resize fields.</p><p>3. Tap the handle to change the logo.</p><p>4. Double tap the handle — logo menu (add png, palette).</p><p>5. Long tap the handle — random design.</p><p>6. Tap an image to expand; long tap to delete.</p><p>7. Add the page to your Home Screen via the browser menu to launch it like an app and keep data saved.</p><p>8. Make a screenshot of the finished layout or a screen recording on the fly while you move the crosshair.</p>",
     settingsTitle: "Field Settings",
     fontLabel: "Font:",
     alignLeft: "Left", alignCenter: "Center", alignRight: "Right",
@@ -431,12 +429,13 @@ document.getElementById('help-box').innerHTML = t.helpText;
 
 /* placeholder text for each field */
 const phHTML = `<p>1. ${lang==='ru'?'Введите или вставьте текст и картинку.':'Type or paste text and image here.'}</p>
-<p>2. ${lang==='ru'?'Двигайте крестик для ресайза.':'Move crosshair to resize fields.'}</p>
+<p>2. ${lang==='ru'?'Двигайте крестик — изменяйте размер полей.':'Move crosshair to resize fields.'}</p>
 <p>3. ${lang==='ru'?'Тап на крестик — сменить логотип.':'Tap handle to change logo.'}</p>
 <p>4. ${lang==='ru'?'Двойной тап — меню логотипов.':'Double tap — logo menu.'}</p>
-<p>5. ${lang==='ru'?'Долгое нажатие / круговой свайп ≈360° — случайный дизайн.':'Long tap / circle-swipe ≈360° — random design.'}</p>
-<p>6. ${lang==='ru'?'Долгое нажатие на пустое поле — настройки.':'Long tap empty field for settings.'}</p>
-<p>7. ${lang==='ru'?'Тап на картинку — увеличить, долгое — удалить.':'Tap image to expand, long tap to delete.'}</p>`;
+<p>5. ${lang==='ru'?'Долгое нажатие на пустое поле — настройки.':'Long tap empty field for settings.'}</p>
+<p>6. ${lang==='ru'?'Тап на картинку — увеличить, держите картинку, чтобы удалить.':'Tap image to expand, hold the image to delete.'}</p>
+<p>7. ${lang==='ru'?'Добавьте страницу на главный экран и используйте иконку для входа.':'Add the page to Home Screen and use the icon to launch.'}</p>
+<p>8. ${lang==='ru'?'Сделайте скриншот готового макета или видео-захват экрана на лету, пока вы перемещаете крестик.':'Make a screenshot of the finished layout or a screen recording on the fly while you move the crosshair.'}</p>`;
 document.querySelectorAll('[data-ph]').forEach(el => el.innerHTML = phHTML);
 
 /* ==================== STORAGE / DB ==================== */
