@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="icon" type="image/png" href="cross.png">
+<link rel="apple-touch-icon" sizes="180x180" href="cross.png?v=2">
+<meta property="og:image" content="/Verge.jpeg">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="1280">
+<link rel="manifest" href="manifest-asterisk.json">
+<title>Asterisk — Layout Studio</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/bytesized@5.2.4/index.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Micro+5+Charted&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Aubrey&family=Barriecito&display=swap" rel="stylesheet">
+
+<style>
+@font-face { font-family:'Inter'; src:url('fonts/Inter-VariableFont_opsz,wght.woff2') format('woff2-variations'); font-weight:100 900; font-style:normal; font-display:swap; }
+@font-face { font-family:'Inter'; src:url('fonts/Inter-Italic-VariableFont_opsz,wght.woff2') format('woff2-variations'); font-weight:100 900; font-style:italic; font-display:swap; }
+@font-face { font-family:'Montserrat'; src:url('fonts/Montserrat-VariableFont_wght.woff2') format('woff2-variations'); font-weight:100 900; font-style:normal; font-display:swap; }
+@font-face { font-family:'Montserrat'; src:url('fonts/Montserrat-Italic-VariableFont_wght.woff2') format('woff2-variations'); font-weight:100 900; font-style:italic; font-display:swap; }
+@font-face { font-family:'PT Sans Narrow'; src:url('fonts/PTSansNarrow-Regular.woff2') format('woff2'); font-weight:400; font-display:swap; }
+@font-face { font-family:'PT Sans Narrow'; src:url('fonts/PTSansNarrow-Bold.woff2') format('woff2'); font-weight:700; font-display:swap; }
+
+* { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+*::-webkit-scrollbar { width:4px; height:4px; background:transparent; }
+*::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.15); border-radius:8px; }
+*::-webkit-scrollbar-track { background:transparent; }
+
+body, html {
+  margin:0; padding:0; height:100dvh; width:100vw; overflow:hidden;
+  background:#000; touch-action:none; -webkit-tap-highlight-color:transparent;
+}
+.container {
+  display:grid;
+  grid-template-columns: var(--x, 50%) 1fr;
+  grid-template-rows: var(--y, 50%) 1fr;
+  height:100%; width:100%;
+}
+.editor-wrapper {
+  position:relative; width:100%; height:100%; overflow:hidden;
+  isolation:isolate; container-type:size; container-name:field;
+}
+.editor-wrapper::before {
+  content:''; position:absolute; inset:0;
+  background-image: var(--bg-tile, none);
+  background-repeat:repeat; background-size:auto; background-position:top left;
+  z-index:0; pointer-events:none;
+}
+.editor-wrapper::after {
+  content:''; position:absolute; inset:0;
+  background: var(--bg, #ff8700);
+opacity: var(--bg-tint, 0.35);  z-index:1; pointer-events:none;
+}
+.editor-wrapper[data-tilemode="fit"]::before  { background-size:contain; background-repeat:no-repeat; background-position:center; }
+.editor-wrapper[data-tilemode="fill"]::before { background-size:cover;   background-repeat:no-repeat; background-position:center; }
+
+.editor {
+  position:relative; z-index:2; width:100%; height:100%;
+  background:transparent; color:var(--color);
+  box-sizing:border-box; padding:34px 15px 15px 15px;
+  font-size:var(--fs, 10cqmin); outline:none;
+  touch-action:auto; -webkit-user-select:text; user-select:text; -webkit-touch-callout:none;
+  overflow-y:auto; font-family:var(--fn, 'Inter', sans-serif);
+  word-break:break-word; line-height:1.2;
+}
+.editor div, .editor p { margin:0.5em 0 !important; text-align:inherit; }
+.editor:empty::before { content:none; }
+
+.ph {
+  position:absolute; top:34px; left:15px; right:15px; bottom:15px;
+  pointer-events:auto; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  touch-action:pan-y; overscroll-behavior:contain; scrollbar-width:none;
+  color:var(--color); font-family:var(--fn, 'Inter', sans-serif);
+  font-size:var(--fs, 10cqmin); opacity:0.7; line-height:1.2;
+  word-break:break-word; z-index:3;
+}
+.ph::-webkit-scrollbar { display:none; }
+.ph.hidden { display:none; }
+.ph p { margin:0 !important; }
+.ph p + p { margin-top:0.5em !important; }
+.editor:not(:empty) ~ .ph { display:none; }
+
+.img-preview {
+  position:absolute; max-width:30%; max-height:30%; border-radius:4px;
+  pointer-events:auto; cursor:pointer; display:none; opacity:0.7; z-index:10;
+  touch-action:manipulation; -webkit-user-drag:none; user-select:none;
+  -webkit-user-select:none; -webkit-touch-callout:none;
+}
+
+.handle {
+  position:absolute; top:var(--y, 50%); left:var(--x, 50%);
+  width:32px; height:32px;
+  transform:translate(-50%, -50%) scale(1);
+  z-index:100; touch-action:none; cursor:pointer;
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+  display:flex; align-items:center; justify-content:center;
+  transition:transform 0.15s ease-out, filter 0.3s ease;
+  will-change:transform;
+}
+.handle::before { content:''; position:absolute; inset:-12px; border-radius:50%; }
+.handle:active { filter:brightness(0.85); }
+.handle img {
+  width:100%; height:100%; object-fit:contain; pointer-events:none;
+  -webkit-user-drag:none;
+  transition:transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#settings-modal select {
+  -webkit-appearance:none; -moz-appearance:none; appearance:none;
+  background-color:#333 !important; color:#fff !important;
+  border:1px solid #555 !important; padding:12px 16px !important;
+  font-size:16px !important; border-radius:8px !important;
+  width:100% !important; box-sizing:border-box !important; cursor:pointer;
+}
+#settings-modal select::-ms-expand { display:none; }
+
+.img-preview.fullscreen {
+  position:fixed !important; top:50% !important; left:50% !important;
+  transform:translate(-50%, -50%) !important;
+  max-width:90vw !important; max-height:90vh !important;
+  width:auto !important; height:auto !important; object-fit:contain !important;
+  z-index:99 !important; opacity:1 !important; cursor:pointer;
+  box-shadow:0 0 50px rgba(0,0,0,0.8); border-radius:8px;
+}
+body.img-fullscreen-active .editor-wrapper { isolation:auto; z-index:auto; }
+
+#align-toolbar { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
+.format-btn {
+  padding:10px 6px; border:1px solid #555; border-radius:8px;
+  background:#333; color:#fff; font-size:14px; font-weight:bold;
+  cursor:pointer; min-width:0;
+}
+.format-btn:active { background:#555; }
+
+#tile-mode-toolbar { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
+#tile-mode-toolbar .format-btn.active { background:#00f; border-color:#00f; color:#fff; }
+
+#settings-modal {
+  height:100dvh !important; overflow-y:auto !important;
+  -webkit-overflow-scrolling:touch; touch-action:auto !important;
+  box-sizing:border-box; padding:12px;
+}
+#settings-modal > div {
+  max-height:calc(100dvh - 24px); overflow-y:auto;
+  -webkit-overflow-scrolling:touch; touch-action:pan-y !important;
+  box-sizing:border-box;
+}
+.editor:focus { -webkit-user-select:text; user-select:text; }
+
+.font-picker { position:relative; background:#333; border:1px solid #555; border-radius:8px; padding:0; }
+.font-picker-display { padding:12px 16px; color:#fff; font-size:16px; cursor:pointer; }
+.font-picker-list {
+  display:none; position:absolute; top:100%; left:0; right:0;
+  background:#333; border:1px solid #555; border-radius:0 0 8px 8px;
+  max-height:50vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain; z-index:1001; box-shadow:0 8px 20px rgba(0,0,0,0.5);
+}
+.font-picker.open .font-picker-list { display:block; }
+.font-option { padding:8px 16px; border-radius:0; color:#fff; cursor:pointer; font-size:16px; }
+.font-option:hover { background:#444; }
+.font-option.selected { background:#00f; color:#fff; }
+
+#setting-tint {
+  -webkit-appearance:none; appearance:none; height:8px;
+  border-radius:4px; background:#444; outline:none; cursor:pointer;
+}
+#setting-tint::-webkit-slider-thumb {
+  -webkit-appearance:none; appearance:none; width:22px; height:22px;
+  border-radius:50%; background:#ff8700; cursor:pointer;
+  border:2px solid #fff; box-sizing:border-box;
+}
+#setting-tint::-moz-range-thumb {
+  width:22px; height:22px; border-radius:50%; background:#ff8700;
+  cursor:pointer; border:2px solid #fff; box-sizing:border-box;
+}
+
+.tile-row { display:flex; align-items:center; margin-bottom:12px; gap:10px; }
+.tile-preview-thumb {
+  width:48px; height:48px; border-radius:6px; border:2px solid #555;
+  background:#111; object-fit:cover; flex-shrink:0;
+}
+.tile-input { display:none; }
+.tile-btn {
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:10px 16px; border-radius:8px; background:#ff8700; color:#000;
+  font-weight:bold; font-size:14px; cursor:pointer; border:none;
+  flex-shrink:0; -webkit-tap-highlight-color:transparent; user-select:none;
+}
+.tile-btn:active { background:#e07a00; }
+.tile-name { font-size:13px; color:#aaa; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+
+#settings-modal, #settings-modal * {
+  -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none;
+  user-select:none; -webkit-touch-callout:none;
+  -webkit-tap-highlight-color:transparent; pointer-events:auto;
+}
+#handle-modal, #handle-modal * {
+  -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none;
+  user-select:none; -webkit-touch-callout:none;
+  -webkit-tap-highlight-color:transparent; pointer-events:auto;
+}
+
+.ios-blur-fix {
+  position:fixed; top:0; left:0; right:0; height:11px;
+  z-index:2147483647; pointer-events:none;
+  background-color:#000; -webkit-background-clip:text; color:transparent;
+}
+
+.help-box { padding:4px 0; margin:0 0 24px 0; font-size:16px; line-height:1.5; color:#ccc; }
+.help-box p { margin:0 0 0.5em 0; }
+.help-box p:last-child { margin-bottom:0; }
+</style>
+</head>
+<body>
+  <div class="ios-blur-fix"></div>
+
+<div class="container" id="app">
+  <div class="editor-wrapper">
+    <div class="editor" id="t0" contenteditable="true"></div>
+    <div class="ph" data-ph></div>
+    <img class="img-preview">
+  </div>
+  <div class="editor-wrapper">
+    <div class="editor" id="t1" contenteditable="true"></div>
+    <div class="ph" data-ph></div>
+    <img class="img-preview">
+  </div>
+  <div class="editor-wrapper">
+    <div class="editor" id="t2" contenteditable="true"></div>
+    <div class="ph" data-ph></div>
+    <img class="img-preview">
+  </div>
+  <div class="editor-wrapper">
+    <div class="editor" id="t3" contenteditable="true"></div>
+    <div class="ph" data-ph></div>
+    <img class="img-preview">
+  </div>
+  <a href="#" class="handle" id="handle" draggable="false">
+    <img src="handle.png" alt="Logo" draggable="false">
+  </a>
+</div>
+
+<!-- ============== SETTINGS MODAL ============== -->
+<div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:#222; color:#fff; padding:16px; border-radius:16px; width:96%; max-width:470px; font-family:sans-serif; box-shadow:0 10px 30px rgba(0,0,0,0.6);">
+    <h3 data-lang="settingsTitle" style="margin-top:0; margin-bottom:20px; font-size:20px; text-align:center; font-weight:bold;"></h3>
+
+    <label data-lang="fontLabel" style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;"></label>
+    <div id="setting-font" class="font-picker" style="margin-bottom:16px;">
+      <div class="font-picker-display" id="font-display">Inter</div>
+      <div class="font-picker-list" id="font-list">
+        <div class="font-option" data-value="'Inter', Arial, sans-serif" style="font-family:'Inter', Arial, sans-serif;">Inter</div>
+        <div class="font-option" data-value="'Montserrat', Arial, sans-serif" style="font-family:'Montserrat', Arial, sans-serif;">Montserrat</div>
+        <div class="font-option" data-value="'Playfair Display', serif" style="font-family:'Playfair Display', serif;">Playfair Display</div>
+        <div class="font-option" data-value="'PT Sans Narrow', Arial, sans-serif" style="font-family:'PT Sans Narrow', Arial, sans-serif;">PT Sans Narrow</div>
+        <div class="font-option" data-value="'Unbounded', Arial, sans-serif" style="font-family:'Unbounded', Arial, sans-serif;">Unbounded</div>
+        <div class="font-option" data-value="'UnifrakturCook', serif" style="font-family:'UnifrakturCook', serif;">Gothic (latin only)</div>
+        <div class="font-option" data-value="'Luckiest Guy', Arial, sans-serif" style="font-family:'Luckiest Guy', Arial, sans-serif;">Luckiest Guy</div>
+        <div class="font-option" data-value="'Roboto Condensed', Arial, sans-serif" style="font-family:'Roboto Condensed', Arial, sans-serif;">Roboto Condensed</div>
+        <div class="font-option" data-value="'Lato', Arial, sans-serif" style="font-family:'Lato', Arial, sans-serif;">Lato</div>
+        <div class="font-option" data-value="'Courier Prime', 'Courier New', monospace" style="font-family:'Courier Prime', 'Courier New', monospace;">Typewriter</div>
+        <div class="font-option" data-value="'Ubuntu', Arial, sans-serif" style="font-family:'Ubuntu', Arial, sans-serif;">Ubuntu</div>
+        <div class="font-option" data-value="'Bytesized', 'Ubuntu', system-ui, sans-serif" style="font-family:'Bytesized', 'Ubuntu', system-ui, sans-serif;">Bytesized</div>
+        <div class="font-option" data-value="'Aubrey', serif" style="font-family:'Aubrey', serif;">Aubrey</div>
+        <div class="font-option" data-value="'Micro 5 Charted', sans-serif" style="font-family:'Micro 5 Charted', sans-serif;">Micro 5 Charted</div>
+        <div class="font-option" data-value="'Barriecito', cursive" style="font-family:'Barriecito', cursive;">Barriecito</div>
+      </div>
+    </div>
+
+    <div id="align-toolbar">
+      <button type="button" style="padding:6px 16px" class="format-btn" data-align="left"   data-lang="alignLeft"></button>
+      <button type="button" style="padding:6px 16px" class="format-btn" data-align="center" data-lang="alignCenter"></button>
+      <button type="button" style="padding:6px 16px" class="format-btn" data-align="right"  data-lang="alignRight"></button>
+    </div>
+
+    <label data-lang="sizeLabel" style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;"></label>
+    <select id="setting-size" style="margin-bottom:16px;">
+      <option value="4cqmin"  data-lang="sizeSmall"></option>
+      <option value="6cqmin"  data-lang="sizeNormal"></option>
+      <option value="10cqmin" data-lang="sizeLarge"></option>
+      <option value="15cqmin" data-lang="sizeXL"></option>
+    </select>
+
+    <div style="display:flex; gap:12px; margin-bottom:16px;">
+      <div style="flex:1; position:relative;">
+        <label data-lang="bgLabel" style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;"></label>
+        <button type="button" id="bg-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#ff8700; cursor:pointer; border:2px solid #555; padding:0;"></button>
+        <input type="color" id="setting-bg" style="position:absolute; bottom:0; left:0; width:100%; height:100%; opacity:0; pointer-events:auto; cursor:pointer;">
+      </div>
+      <div style="flex:1; position:relative;">
+        <label data-lang="colorLabel" style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;"></label>
+        <button type="button" id="color-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#000; cursor:pointer; border:2px solid #555; padding:0;"></button>
+        <input type="color" id="setting-color" style="position:absolute; bottom:0; left:0; width:100%; height:100%; opacity:0; pointer-events:auto; cursor:pointer;">
+      </div>
+    </div>
+
+    <label data-lang="bgImgLabel" style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;"></label>
+    <div class="tile-row">
+      <img id="tile-thumb" class="tile-preview-thumb" alt="" style="display:none;">
+      <label for="setting-tile" class="tile-btn" data-lang="chooseMedia"></label>
+      <input type="file" id="setting-tile" accept="image/*" class="tile-input">
+      <span id="tile-name" class="tile-name" data-lang="noFile"></span>
+    </div>
+    <label style="display:flex; align-items:center; font-size:15px; cursor:pointer; color:#ff758f; padding:4px 0; margin-bottom:16px;">
+      <input type="checkbox" id="setting-del-tile" style="width:20px; height:20px; margin-right:10px; accent-color:#ff758f; cursor:pointer;">
+      <span data-lang="delBg"></span>
+    </label>
+
+    <label data-lang="bgModeLabel" style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;"></label>
+    <div id="tile-mode-toolbar">
+      <button type="button" class="format-btn" data-tilemode="repeat" data-lang="modeTile"></button>
+      <button type="button" class="format-btn" data-tilemode="fit"    data-lang="modeFit"></button>
+      <button type="button" class="format-btn" data-tilemode="fill"   data-lang="modeFill"></button>
+    </div>
+
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">
+      <span data-lang="tintTitle"></span>: <span id="tint-val" style="color:#ff8700; font-weight:bold;">100</span>%
+    </label>
+    <input type="range" id="setting-tint" min="0" max="100" value="100" style="width:100%; margin-bottom:20px;">
+    <div data-lang="tintDesc" style="font-size:12px; color:#888; margin-top:-12px; margin-bottom:16px;"></div>
+
+    <label data-lang="posLabel" style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;"></label>
+    <select id="setting-pos" style="margin-bottom:20px;">
+      <option value="bottom right" data-lang="posBR"></option>
+      <option value="bottom left"  data-lang="posBL"></option>
+      <option value="top right"    data-lang="posTR"></option>
+      <option value="top left"     data-lang="posTL"></option>
+    </select>
+
+    <div id="image-action-container" style="margin-bottom:20px; display:none;">
+      <label style="display:flex; align-items:center; font-size:16px; cursor:pointer; color:#ff758f; padding:4px 0;">
+        <input type="checkbox" id="setting-del-img" style="width:20px; height:20px; margin-right:10px; accent-color:#ff758f; cursor:pointer;">
+        <span data-lang="delImg"></span>
+      </label>
+    </div>
+
+    <div style="display:flex; gap:12px;">
+      <button type="button" id="setting-cancel" data-lang="cancel" style="flex:1; padding:12px; border:none; border-radius:8px; background:#ff000050; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;"></button>
+      <button type="button" id="setting-save"   data-lang="save"   style="flex:1; padding:12px; border:none; border-radius:8px; background:#00ff0050; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;"></button>
+    </div>
+        <div id="update-app" data-lang="update" style="font-family:'Inter', sans-serif; text-align:center; margin:30px 0; color:#ff8700; font-size:16px; font-weight:bold; cursor:pointer;"></div>
+
+    <div style="margin:0 0 40px; text-align:center;">
+      <a href="index.html" style="display:inline-block;">
+        <img src="fleurdelis.png" alt="Fleur de lis" class="no-invert"
+             style="display:block; height:64px; width:auto; max-width:100%;">
+      </a>
+      <p style="letter-spacing:3px; margin:10px 0 20px; font-size:12px; color:#fff; font-family:'Cinzel', sans-serif;">
+        Web terminals that make you happy
+      </p>
+    </div>
+  </div>
+</div>
+ 
+<!-- ============== HANDLE MODAL ============== -->
+<div id="handle-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1100; align-items:center; justify-content:center;">
+  <div style="background:#222; color:#fff; padding:16px; border-radius:16px; width:96%; max-width:470px; font-family:sans-serif; box-shadow:0 10px 30px rgba(0,0,0,0.6); max-height:90vh; overflow-y:auto; box-sizing:border-box;">
+    <h3 data-lang="handleTitle" style="margin-top:12px; margin-bottom:0; font-size:20px; text-align:center; font-weight:bold;"></h3>
+    <div class="help-box" id="help-box"></div>
+
+    <label for="handle-file-input" data-lang="chooseHandle" style="display:flex; align-items:center; justify-content:center; width:100%; box-sizing:border-box; padding:12px; margin-bottom:12px; border:none; border-radius:8px; background:#ff8700; color:#000; font-size:16px; font-weight:bold; cursor:pointer;"></label>
+    <input type="file" id="handle-file-input" accept="image/png" style="display:none;">
+
+    <div id="handle-list" style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:20px;"></div>
+
+    <button type="button" id="handle-close-btn" data-lang="close" style="width:100%; box-sizing:border-box; padding:12px; border:none; border-radius:8px; background:#333; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;"></button>
+  </div>
+</div>
+
+<script src="purify.min.js"></script>
+<script>
+/* ==================== TRANSLATIONS ==================== */
+const translations = {
+  ru: {
+    title: "Asterisk — Layout Studio",
+    helpText: "<h3>Нажмите и удерживайте любое поле, чтобы открыть настройки</h3><p>1. Введите или вставьте текст и картинку в любое поле.</p><p>2. Двигайте крестик, чтобы изменить размер полей.</p><p>3. Нажмите на крестик, чтобы сменить логотип.</p><p>4. Долгое нажатие на крестик — меню логотипов (добавить png, палитра).</p><p>5. Круговой свайп вокруг крестика (≈360°) — случайный дизайн.</p><p>6. Нажмите на картинку, чтобы увеличить; долгое нажатие — удалить.</p><p>7. Добавьте страницу на главный экран через меню браузера, чтобы запускать её как приложение и сохранять данные.</p><p>8. Сделайте скриншот готового макета или видео-захват экрана на лету, пока вы перемещаете крестик.</p>",
+    settingsTitle: "Настройки поля",
+    fontLabel: "Шрифт:",
+    alignLeft: "Слева", alignCenter: "По центру", alignRight: "Справа",
+    sizeLabel: "Размер шрифта:",
+    sizeSmall: "Маленький", sizeNormal: "Обычный", sizeLarge: "Большой", sizeXL: "Очень большой",
+    bgLabel: "Фон:", colorLabel: "Цвет текста:",
+    bgImgLabel: "Фоновое изображение:",
+    chooseMedia: "Выбрать файл", noFile: "Нет файла", delBg: "Удалить фон",
+    bgModeLabel: "Режим фона:", modeTile: "Плитка", modeFit: "Вписать", modeFill: "Заполнить",
+    tintTitle: "Прозрачность",
+    tintDesc: "0% — фон полностью виден, 100% — цвет перекрывает фон",
+    posLabel: "Позиция изображения:",
+    posBR: "Снизу справа", posBL: "Снизу слева", posTR: "Сверху справа", posTL: "Сверху слева",
+    delImg: "Удалить изображение",
+    cancel: "Отмена", save: "Сохранить", update: "Обновить",
+    handleTitle: "Как пользоваться",
+    chooseHandle: "Загрузить свой логотип (png)",
+    close: "Закрыть",
+    alertPng: "Пожалуйста, выберите свой логотип (png)"
+  },
+  en: {
+    title: "Asterisk — Layout Studio",
+    helpText: "<h3>Long tap any field for settings</h3><p>1. Type or paste text and image into any field.</p><p>2. Move the crosshair handle to resize fields.</p><p>3. Tap the handle to change the logo.</p><p>4. Long tap the handle — logo menu (add png, palette).</p><p>5. Circle-swipe around the handle (≈360°) — random design.</p><p>6. Tap an image to expand; long tap to delete.</p><p>7. Add the page to your Home Screen via the browser menu to launch it like an app and keep data saved.</p><p>8. Make a screenshot of the finished layout or a screen recording on the fly while you move the crosshair.</p>",
+    settingsTitle: "Field Settings",
+    fontLabel: "Font:",
+    alignLeft: "Left", alignCenter: "Center", alignRight: "Right",
+    sizeLabel: "Font size:",
+    sizeSmall: "Small", sizeNormal: "Normal", sizeLarge: "Large", sizeXL: "Extra Large",
+    bgLabel: "Background:", colorLabel: "Text color:",
+    bgImgLabel: "Background image:",
+    chooseMedia: "Choose media", noFile: "No file", delBg: "Delete background",
+    bgModeLabel: "Background mode:", modeTile: "Tile", modeFit: "Fit", modeFill: "Fill",
+    tintTitle: "Tint opacity",
+    tintDesc: "0% — tile fully visible, 100% — color fully covers tile",
+    posLabel: "Image position:",
+    posBR: "Bottom Right", posBL: "Bottom Left", posTR: "Top Right", posTL: "Top Left",
+    delImg: "Delete image",
+    cancel: "Cancel", save: "Save", update: "Update",
+    handleTitle: "How to use",
+    chooseHandle: "Upload custom handle logo (png)",
+    close: "Close",
+    alertPng: "Please choose custom logo (png)"
+  }
+};
+const lang = (navigator.language || navigator.userLanguage || 'en').startsWith('ru') ? 'ru' : 'en';
+const t = translations[lang];
+
+document.title = t.title;
+document.querySelectorAll('[data-lang]').forEach(el => {
+  const key = el.dataset.lang;
+  if (t[key]) el.textContent = t[key];
+});
+document.getElementById('help-box').innerHTML = t.helpText;
+
+/* placeholder text for each field */
+const phHTML = `<p>1. ${lang==='ru'?'Введите или вставьте текст и картинку.':'Type or paste text and image here.'}</p>
+<p>2. ${lang==='ru'?'Двигайте крестик для ресайза.':'Move crosshair to resize fields.'}</p>
+<p>3. ${lang==='ru'?'Тап на крестик — сменить логотип.':'Tap handle to change logo.'}</p>
+<p>4. ${lang==='ru'?'Долгое нажатие — меню логотипов.':'Long tap handle — logo menu.'}</p>
+<p>5. ${lang==='ru'?'Круговой свайп ≈360° — случайный дизайн.':'Circle-swipe ≈360° — random design.'}</p>
+<p>6. ${lang==='ru'?'Долгое нажатие на пустое поле — настройки.':'Long tap empty field for settings.'}</p>
+<p>7. ${lang==='ru'?'Тап на картинку — увеличить, долгое — удалить.':'Tap image to expand, long tap to delete.'}</p>`;
+document.querySelectorAll('[data-ph]').forEach(el => el.innerHTML = phHTML);
+
+/* ==================== STORAGE / DB ==================== */
+if (!localStorage.getItem('q_s_default_large')) {
+  ['0','1','2','3'].forEach(i => localStorage.removeItem('q_s_' + i));
+  localStorage.setItem('q_s_default_large', '1');
+}
+
+const inpBg = document.getElementById('setting-bg');
+const inpColor = document.getElementById('setting-color');
+const bgPickerBtn = document.getElementById('bg-picker-btn');
+const colorPickerBtn = document.getElementById('color-picker-btn');
+const inpTile = document.getElementById('setting-tile');
+const tileThumb = document.getElementById('tile-thumb');
+const tileName = document.getElementById('tile-name');
+const chkDelTile = document.getElementById('setting-del-tile');
+const inpTint = document.getElementById('setting-tint');
+const tintVal = document.getElementById('tint-val');
+const tileModeToolbar = document.getElementById('tile-mode-toolbar');
+
+inpBg.addEventListener('input', e => { bgPickerBtn.style.background = e.target.value; });
+inpColor.addEventListener('input', e => { colorPickerBtn.style.background = e.target.value; });
+
+let refreshing = false;
+let updateWorker = null;
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    reg.update();
+    if (reg.waiting) updateWorker = reg.waiting;
+    reg.addEventListener('updatefound', () => {
+      updateWorker = reg.installing;
+      updateWorker.addEventListener('statechange', () => {
+        if (updateWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          const u = document.getElementById('update-app');
+          if (u) u.style.color = '#ff8700';
+        }
+      });
+    });
+  });
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) { refreshing = true; window.location.reload(); }
+  });
+}
+document.getElementById('update-app').onclick = () => {
+  if (updateWorker) updateWorker.postMessage({ type: 'SKIP_WAITING' });
+  else window.location.reload(true);
+};
+
+const container = document.getElementById('app');
+const handle    = document.getElementById('handle');
+const textareas = document.querySelectorAll('.editor');
+const images    = document.querySelectorAll('.img-preview');
+
+let isDragging = false;
+let dragStartTime = 0;
+let db;
+
+/* default builtin logo set */
+const builtinDesigns = ['question.png','handle-black.png','note.png','handle.png','paw.png','logo.png','fleurdelis.png','clockface.png','loop.png','empty.png','break.png','delis.png'];
+let loadedHandles = [];
+let currentDesign = parseInt(localStorage.getItem('q_handle_design') || '0');
+
+let builtinActive = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('q_builtin_handle_active') || '{}');
+    const result = {};
+    builtinDesigns.forEach(src => { result[src] = saved[src] !== false; });
+    return result;
+  } catch {
+    const result = {};
+    builtinDesigns.forEach(src => { result[src] = true; });
+    return result;
+  }
+})();
+function saveBuiltinActive() {
+  localStorage.setItem('q_builtin_handle_active', JSON.stringify(builtinActive));
+}
+function getActiveDesigns() {
+  const builtin = builtinDesigns.filter(src => builtinActive[src]).map(src => ({ kind:'builtin', src }));
+  const loaded  = loadedHandles.filter(h => h.active).map(h => ({ kind:'loaded', src:h.dataUrl, id:h.id }));
+  return [...builtin, ...loaded];
+}
+
+const defBgs = ['#ff8700', '#005f00', '#000000', '#870000'];
+const defColors = ['#000000', '#E1BEE7', '#81C784', '#FFD54F'];
+
+const magicPalettes = [
+  { bg: defBgs, co: defColors },
+  { bg: ['#2b2d42','#8d99ae','#edf2f4','#ef233c'], co: ['#fff','#000','#000','#fff'] },
+  { bg: ['#1a5b8c','#143d59','#f4b41a','#fbcbc9'], co: ['#fff','#fff','#000','#000'] },
+  { bg: ['#0f172a','#1e293b','#334155','#475569'], co: ['#38bdf8','#818cf8','#fb7185','#34d399'] },
+  { bg: ['#111','#222','#333','#444'], co: ['#eee','#eee','#eee','#eee'] },
+  { bg: ['#ffccd5','#ffb3c1','#ff8fa3','#ff758f'], co: ['#590d22','#590d22','#fff','#fff'] },
+  { bg: ['#e2efe0','#bccbaf','#96a788','#708264'], co: ['#283618','#283618','#fefae0','#fefae0'] }
+];
+
+/* ==================== DB ==================== */
+const dbRequest = indexedDB.open("QuadEditorDB", 5);
+dbRequest.onupgradeneeded = e => {
+  db = e.target.result;
+  if (!db.objectStoreNames.contains("texts"))   db.createObjectStore("texts", { keyPath: "id" });
+  if (!db.objectStoreNames.contains("handles")) db.createObjectStore("handles", { keyPath: "id", autoIncrement: true });
+};
+dbRequest.onsuccess = e => {
+  db = e.target.result;
+  loadHandlesFromDB().then(() => { loadData(); updateHandleScale(); });
+};
+
+async function saveToDB(id, content, img = null, clearImg = false, tile = null, clearTile = false) {
+  return new Promise(resolve => {
+    const tx = db.transaction("texts", "readwrite");
+    const store = tx.objectStore("texts");
+    const req = store.get(id);
+    req.onsuccess = () => {
+      const data = req.result || { id };
+      data.content = DOMPurify.sanitize(content, {
+        ALLOWED_TAGS:['p','div','br','b','i','u','strong','em','span'],
+        ALLOWED_ATTR:['style']
+      });
+      if (clearImg) delete data.img; else if (img) data.img = img;
+      if (clearTile) delete data.tile; else if (tile) data.tile = tile;
+      store.put(data);
+      tx.oncomplete = () => resolve();
+    };
+  });
+}
+
+function updateHandleImage(index) {
+  const imgEl = handle.querySelector('img');
+  const all = getActiveDesigns();
+  if (all.length === 0) { imgEl.removeAttribute('src'); return; }
+  const safe = ((index % all.length) + all.length) % all.length;
+  imgEl.src = all[safe].src;
+  imgEl.style.transform = 'rotate(0deg)';
+}
+
+function updateHandleScale() {
+  const x = parseFloat(localStorage.getItem('q_x') || '50');
+  const y = parseFloat(localStorage.getItem('q_y') || '50');
+  const dx = (x - 50) / 50, dy = (y - 50) / 50;
+  const d = Math.min(Math.sqrt(dx*dx + dy*dy), 1);
+  const tl = 1 - d;
+  const ts = tl * tl * (3 - 2 * tl);
+  const scale = 1 + 0.62 * ts;
+  handle.style.transform = `translate(-50%, -50%) scale(${scale})`;
+}
+
+function loadHandlesFromDB() {
+  return new Promise(resolve => {
+    if (!db) return resolve();
+    const tx = db.transaction("handles", "readonly");
+    const req = tx.objectStore("handles").getAll();
+    req.onsuccess = () => {
+      loadedHandles = (req.result || []).map(r => ({ id:r.id, dataUrl:r.dataUrl, active:r.active !== false }));
+      resolve();
+    };
+    req.onerror = () => resolve();
+  });
+}
+function addHandleToDB(dataUrl) {
+  return new Promise(resolve => {
+    const tx = db.transaction("handles", "readwrite");
+    const req = tx.objectStore("handles").add({ dataUrl, active:true, createdAt:Date.now() });
+    req.onsuccess = () => resolve(req.result);
+  });
+}
+function setHandleActiveInDB(id, active) {
+  return new Promise(resolve => {
+    const tx = db.transaction("handles", "readwrite");
+    const store = tx.objectStore("handles");
+    const getReq = store.get(id);
+    getReq.onsuccess = () => {
+      const rec = getReq.result;
+      if (rec) { rec.active = active; store.put(rec); }
+      resolve();
+    };
+  });
+}
+function deleteHandleFromDB(id) {
+  return new Promise(resolve => {
+    const tx = db.transaction("handles", "readwrite");
+    const req = tx.objectStore("handles").delete(id);
+    req.onsuccess = () => resolve();
+  });
+}
+
+const EYE_OPEN = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF  = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+function renderHandleList() {
+  const list = document.getElementById('handle-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  const makeCell = (src, isActive, opts) => {
+    const cell = document.createElement('div');
+    cell.style.cssText = 'position:relative; aspect-ratio:1; border:2px solid #555; border-radius:8px; background:#111; overflow:hidden; display:flex; align-items:center; justify-content:center;';
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = 'max-width:70%; max-height:70%; object-fit:contain; pointer-events:none; transition:opacity .2s;';
+    img.style.opacity = isActive ? '1' : '0.3';
+    cell.appendChild(img);
+    const eye = document.createElement('button');
+    eye.type = 'button'; eye.innerHTML = isActive ? EYE_OPEN : EYE_OFF;
+    eye.style.cssText = 'position:absolute; top:2px; left:2px; width:24px; height:24px; border-radius:50%; border:none; background:rgba(0,0,0,0.65); color:#fff; cursor:pointer; line-height:1; padding:0; display:flex; align-items:center; justify-content:center;';
+    eye.addEventListener('click', async e => {
+      e.stopPropagation();
+      if (opts.onToggle) await opts.onToggle();
+      renderHandleList();
+    });
+    cell.appendChild(eye);
+    if (opts.onDelete) {
+      const del = document.createElement('button');
+      del.type = 'button'; del.textContent = '×';
+      del.style.cssText = 'position:absolute; top:2px; right:2px; width:24px; height:24px; border-radius:50%; border:none; background:rgba(255,0,0,0.85); color:#fff; font-size:16px; font-weight:bold; cursor:pointer; line-height:1; padding:0;';
+      del.addEventListener('click', async e => {
+        e.stopPropagation();
+        await opts.onDelete();
+        renderHandleList();
+      });
+      cell.appendChild(del);
+    }
+    list.appendChild(cell);
+  };
+
+  builtinDesigns.forEach(src => {
+    makeCell(src, builtinActive[src], {
+      onToggle: () => {
+        builtinActive[src] = !builtinActive[src];
+        saveBuiltinActive();
+        currentDesign = 0;
+        updateHandleImage(currentDesign);
+      }
+    });
+  });
+  loadedHandles.forEach(h => {
+    makeCell(h.dataUrl, h.active, {
+      onToggle: async () => {
+        h.active = !h.active;
+        await setHandleActiveInDB(h.id, h.active);
+        currentDesign = 0;
+        updateHandleImage(currentDesign);
+      },
+      onDelete: async () => {
+        await deleteHandleFromDB(h.id);
+        loadedHandles = loadedHandles.filter(x => x.id !== h.id);
+        currentDesign = 0;
+        updateHandleImage(currentDesign);
+      }
+    });
+  });
+}
+
+async function openHandleModal() {
+  await loadHandlesFromDB();
+  renderHandleList();
+  document.getElementById('handle-modal').style.display = 'flex';
+}
+document.getElementById('handle-close-btn').addEventListener('click', () => {
+  document.getElementById('handle-modal').style.display = 'none';
+});
+document.getElementById('handle-modal').addEventListener('click', e => {
+  if (e.target.id === 'handle-modal') document.getElementById('handle-modal').style.display = 'none';
+});
+document.getElementById('handle-file-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!file.type.includes('png')) { alert(t.alertPng); e.target.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const dataUrl = ev.target.result;
+    const id = await addHandleToDB(dataUrl);
+    loadedHandles.push({ id, dataUrl, active:true });
+    renderHandleList();
+    e.target.value = '';
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ==================== RANDOM LAYOUT (circle swipe) ==================== */
+function applyRandomLayout() {
+  const all = getActiveDesigns();
+  if (all.length > 0) {
+    currentDesign = Math.floor(Math.random() * all.length);
+    localStorage.setItem('q_handle_design', currentDesign);
+    updateHandleImage(currentDesign);
+  }
+  const randomHue = Math.floor(Math.random() * 360);
+  const randomDegrees = Math.floor(Math.random() * 4) * 90;
+  const hi = handle.querySelector('img');
+  hi.style.transform = `rotate(${randomDegrees}deg)`;
+  handle.style.filter = `hue-rotate(${randomHue}deg) drop-shadow(0 6px 6px rgba(255,255,255,0.4))`;
+
+  const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
+  const fontValues = Array.from(document.querySelectorAll('#setting-font .font-option')).map(o => o.dataset.value);
+
+  textareas.forEach((ta, i) => {
+    const wrap = ta.parentElement;
+    const randomFont = fontValues[Math.floor(Math.random() * fontValues.length)];
+    wrap.style.setProperty('--fn', randomFont);
+    wrap.style.setProperty('--bg', palette.bg[i]);
+    wrap.style.setProperty('--color', palette.co[i]);
+    localStorage.setItem(`q_f_${i}`, randomFont);
+    localStorage.setItem(`q_b_${i}`, palette.bg[i]);
+    localStorage.setItem(`q_c_${i}`, palette.co[i]);
+  });
+
+  if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+}
+
+/* ==================== TILE / ALIGN / IMG POS ==================== */
+function getTileMode(i) {
+  const mode = localStorage.getItem(`q_tilemode_${i}`) || 'repeat';
+  return mode === 'pan' ? 'repeat' : mode;
+}
+function setTileModeUI(i, mode) {
+  const wrap = textareas[i].parentElement;
+  wrap.dataset.tilemode = mode;
+  tileModeToolbar.querySelectorAll('[data-tilemode]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tilemode === mode);
+  });
+}
+function applyAlign(i, align) {
+  const ta = textareas[i];
+  ta.style.textAlign = align;
+  Array.from(ta.children).forEach(ch => { ch.style.textAlign = align; });
+}
+function applyImagePosition(i, pos) {
+  const img = images[i];
+  const [v, h] = pos.split(' ');
+  img.style.top    = v === 'top'    ? '10px' : 'auto';
+  img.style.bottom = v === 'bottom' ? '10px' : 'auto';
+  img.style.left   = h === 'left'   ? '10px' : 'auto';
+  img.style.right  = h === 'right'  ? '10px' : 'auto';
+}
+
+/* ==================== DEMO HELPERS ==================== */
+const demoText3 = {
+  ru: '<p>Напишите свой текст и вставьте изображение в любую ячейку.</p>',
+  en: '<p>Write your own text and paste an image into any cell</p>'
+};
+const demoBgs = [
+  { file:{ en:'long_en.jpeg', ru:'long_ru.jpeg' }, mode:'fill',   tint:'0' },
+  { file:'fill.jpg', mode:'fill',   tint:'0' },
+  { file:'tile.png', mode:'repeat', tint:'0' },
+  { file:'fit.jpg',  mode:'fit',    tint:'0.62' }
+];
+function getDemoFile(demo) {
+  if (!demo) return null;
+  return typeof demo.file === 'object' ? (demo.file[lang] || demo.file.en) : demo.file;
+}
+
+/* ==================== LOAD DATA ==================== */
+function loadData() {
+  document.body.classList.remove('img-fullscreen-active');
+  container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
+  container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
+  updateHandleImage(currentDesign);
+  updateHandleScale();
+
+  textareas.forEach((ta, i) => {
+    const img = images[i];
+    const wrap = ta.parentElement;
+
+    applyImagePosition(i, localStorage.getItem(`q_pos_${i}`) || 'bottom right');
+
+    const bg = localStorage.getItem(`q_b_${i}`) || defBgs[i];
+    const co = localStorage.getItem(`q_c_${i}`) || defColors[i];
+    const fn = localStorage.getItem(`q_f_${i}`) || 'Inter, Arial, sans-serif';
+    let fs   = localStorage.getItem(`q_s_${i}`) || '10cqmin';
+    if (fs.endsWith('px')) {
+      const px = parseFloat(fs);
+      fs = (px / 4.5).toFixed(2) + 'cqmin';
+      localStorage.setItem(`q_s_${i}`, fs);
+    }
+    wrap.style.setProperty('--bg', bg);
+    wrap.style.setProperty('--color', co);
+    wrap.style.setProperty('--fn', fn);
+    wrap.style.setProperty('--fs', fs);
+    setTileModeUI(i, getTileMode(i));
+
+    const savedTint = localStorage.getItem(`q_tint_${i}`);
+    const hasUserBg = localStorage.getItem(`q_b_${i}`) || localStorage.getItem(`q_tilemode_${i}`);
+    if (!hasUserBg) {
+      const demo = demoBgs[i];
+      wrap.style.setProperty('--bg-tile', `url(${getDemoFile(demo)})`);
+      wrap.style.setProperty('--bg-tint', demo.tint);
+      setTileModeUI(i, demo.mode);
+    } else {
+      wrap.style.setProperty('--bg-tint', savedTint !== null ? savedTint : '0.35');
+    }
+
+    if (i === 3 && !localStorage.getItem('q_demo_img_3')) {
+      images[i].src = 'demo.png';
+      images[i].style.display = 'block';
+      localStorage.setItem('q_demo_img_3', '1');
+      localStorage.setItem('q_pos_3', 'bottom left');
+      applyImagePosition(3, 'bottom left');
+    }
+
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(i);
+    req.onsuccess = () => {
+      const saved = req.result && req.result.content;
+      const hasSaved = saved && saved.replace(/<[^>]*>/g, '').trim() !== '';
+      if (hasSaved) {
+        ta.innerHTML = DOMPurify.sanitize(saved, {
+          ALLOWED_TAGS:['p','div','br','b','i','u','strong','em','span'],
+          ALLOWED_ATTR:['style']
+        });
+      } else if (i === 3 && !localStorage.getItem('q_demo_text_3')) {
+        ta.innerHTML = demoText3[lang] || demoText3.en;
+        localStorage.setItem('q_demo_text_3', '1');
+      }
+      if (req.result && req.result.img) {
+        images[i].src = req.result.img;
+        images[i].style.display = 'block';
+      } else if (i !== 3) {
+        images[i].removeAttribute('src');
+        images[i].style.display = 'none';
+      }
+      if (req.result && req.result.tile) {
+        wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+        wrap.style.setProperty('--bg-tint', savedTint !== null ? savedTint : '0.35');
+      }
+      applyAlign(i, localStorage.getItem(`q_halign_${i}`) || 'left');
+      // re-hide placeholder if content present
+      const ph = ta.parentElement.querySelector('.ph');
+      if (ph && ta.textContent.trim() !== '') ph.classList.add('hidden');
+    };
+  });
+}
+
+/* ==================== HANDLE GESTURES ==================== */
+let handleLongPressTimer;
+let handleLongPressFired = false;
+let startX = 0, startY = 0;
+let totalAngle = 0;
+let lastAngle = 0;
+let startRadius = 0;
+let circleFired = false;
+const CIRCLE_THRESHOLD = 300;      // degrees
+const CIRCLE_MIN_RADIUS = 40;      // px from handle center
+
+function angleFromCenter(cx, cy) {
+  const rect = handle.getBoundingClientRect();
+  const hx = rect.left + rect.width / 2;
+  const hy = rect.top + rect.height / 2;
+  return { ang: Math.atan2(cy - hy, cx - hx), r: Math.hypot(cx - hx, cy - hy) };
+}
+
+handle.addEventListener('pointerdown', e => {
+  e.stopPropagation();
+  isDragging = true;
+  handleLongPressFired = false;
+  circleFired = false;
+  totalAngle = 0;
+  dragStartTime = Date.now();
+  const pt = e.touches ? e.touches[0] : e;
+  startX = pt.clientX; startY = pt.clientY;
+  const info = angleFromCenter(pt.clientX, pt.clientY);
+  lastAngle = info.ang;
+  startRadius = info.r;
+
+  clearTimeout(handleLongPressTimer);
+  handleLongPressTimer = setTimeout(() => {
+    if (!isDragging || circleFired) return;
+    handleLongPressFired = true;
+    isDragging = false;
+    openHandleModal();
+    if (navigator.vibrate) navigator.vibrate(30);
+  }, 600);
+});
+
+window.addEventListener('pointermove', e => {
+  if (!isDragging) return;
+  const pt = e.touches ? e.touches[0] : e;
+
+  const moveX = Math.abs(pt.clientX - startX);
+  const moveY = Math.abs(pt.clientY - startY);
+
+  // cancel long-press if moved
+  if (moveX > 5 || moveY > 5) clearTimeout(handleLongPressTimer);
+
+  // circle-swipe detection
+  if (!circleFired) {
+    const info = angleFromCenter(pt.clientX, pt.clientY);
+    if (info.r >= CIRCLE_MIN_RADIUS) {
+      let d = info.ang - lastAngle;
+      if (d >  Math.PI) d -= Math.PI * 2;
+      if (d < -Math.PI) d += Math.PI * 2;
+      totalAngle += Math.abs(d) * (180 / Math.PI);
+      lastAngle = info.ang;
+
+      // reached threshold - fire random layout, don't move handle
+      if (totalAngle >= CIRCLE_THRESHOLD) {
+        circleFired = true;
+        handleLongPressFired = true;    // suppress tap and long-press
+        isDragging = false;
+        clearTimeout(handleLongPressTimer);
+        applyRandomLayout();
+        return;
+      }
+      // while circling, don't drag the handle position
+      return;
+    } else {
+      lastAngle = info.ang;
+    }
+  }
+
+  // normal drag = reposition handle
+  const padding = 10;
+  const rawX = (pt.clientX / window.innerWidth) * 100;
+  const rawY = (pt.clientY / window.innerHeight) * 100;
+  const clampedX = Math.max(padding, Math.min(100 - padding, rawX));
+  const clampedY = Math.max(padding, Math.min(100 - padding, rawY));
+  const x = `${clampedX}%`;
+  const y = `${clampedY}%`;
+  container.style.setProperty('--x', x);
+  container.style.setProperty('--y', y);
+  localStorage.setItem('q_x', x);
+  localStorage.setItem('q_y', y);
+  updateHandleScale();
+});
+
+window.addEventListener('pointerup', () => {
+  clearTimeout(handleLongPressTimer);
+  if (handleLongPressFired || circleFired) { handleLongPressFired = false; circleFired = false; return; }
+  if (!isDragging) return;
+  isDragging = false;
+  const duration = Date.now() - dragStartTime;
+  if (duration < 250) {
+    // single tap: change logo
+    const all = getActiveDesigns();
+    if (all.length > 0) {
+      currentDesign = (currentDesign + 1) % all.length;
+      localStorage.setItem('q_handle_design', currentDesign);
+      updateHandleImage(currentDesign);
+    }
+  }
+});
+
+handle.addEventListener('pointercancel', () => {
+  clearTimeout(handleLongPressTimer);
+  isDragging = false;
+  circleFired = false;
+});
+handle.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, { passive:false });
+handle.addEventListener('click', e => e.preventDefault());
+handle.addEventListener('contextmenu', e => e.preventDefault());
+window.addEventListener('resize', updateHandleScale);
+
+/* ==================== IMAGE FILE HELPER ==================== */
+function handleImageFile(file, index, ta) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    images[index].src = ev.target.result;
+    images[index].style.display = 'block';
+    saveToDB(index, ta.innerHTML, ev.target.result);
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ==================== SETTINGS MODAL ==================== */
+const modal = document.getElementById('settings-modal');
+const selSize = document.getElementById('setting-size');
+const selPos = document.getElementById('setting-pos');
+const chkDelImg = document.getElementById('setting-del-img');
+const imgActionContainer = document.getElementById('image-action-container');
+const btnSave = document.getElementById('setting-save');
+const btnCancel = document.getElementById('setting-cancel');
+const fontPicker = document.getElementById('setting-font');
+const fontDisplay = document.getElementById('font-display');
+
+selSize.addEventListener('change', () => {
+  if (activeIndex !== null) {
+    const wrap = textareas[activeIndex].parentElement;
+    wrap.style.setProperty('--fs', selSize.value);
+  }
+});
+
+fontPicker.addEventListener('click', e => {
+  if (e.target === fontDisplay) { fontPicker.classList.toggle('open'); return; }
+  const opt = e.target.closest('.font-option');
+  if (!opt) return;
+  document.querySelectorAll('#setting-font .font-option').forEach(o => o.classList.remove('selected'));
+  opt.classList.add('selected');
+  fontDisplay.textContent = opt.textContent;
+  fontDisplay.style.fontFamily = opt.style.fontFamily;
+  fontPicker.classList.remove('open');
+  if (activeIndex !== null) {
+    const wrap = textareas[activeIndex].parentElement;
+    wrap.style.setProperty('--fn', opt.dataset.value);
+  }
+});
+
+let activeIndex = null;
+let textareaLongPressTimer;
+
+document.querySelectorAll('[data-align]').forEach(button => {
+  button.addEventListener('click', () => {
+    if (activeIndex === null) return;
+    const ta = textareas[activeIndex];
+    const align = button.dataset.align;
+    applyAlign(activeIndex, align);
+    localStorage.setItem(`q_halign_${activeIndex}`, align);
+    saveToDB(activeIndex, ta.innerHTML);
+  });
+});
+
+tileModeToolbar.addEventListener('click', e => {
+  const btn = e.target.closest('[data-tilemode]');
+  if (!btn || activeIndex === null) return;
+  setTileModeUI(activeIndex, btn.dataset.tilemode);
+});
+
+inpTint.addEventListener('input', e => {
+  tintVal.textContent = e.target.value;
+  if (activeIndex !== null) {
+    const wrap = textareas[activeIndex].parentElement;
+    wrap.style.setProperty('--bg-tint', e.target.value / 100);
+  }
+});
+
+inpTile.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file || activeIndex === null) return;
+  tileName.textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const dataUrl = ev.target.result;
+    const wrap = textareas[activeIndex].parentElement;
+    wrap.style.setProperty('--bg-tile', `url(${dataUrl})`);
+    wrap.style.setProperty('--bg-tint', '0.35');
+    inpTint.value = 35; tintVal.textContent = '35';
+    tileThumb.src = dataUrl;
+    tileThumb.style.display = 'block';
+    textareas[activeIndex]._pendingTile = dataUrl;
+    chkDelTile.checked = false;
+  };
+  reader.readAsDataURL(file);
+});
+
+chkDelTile.addEventListener('change', e => {
+  if (activeIndex === null) return;
+  const wrap = textareas[activeIndex].parentElement;
+  if (e.target.checked) {
+    wrap.style.setProperty('--bg-tile', 'none');
+    wrap.style.setProperty('--bg-tint', '1');
+    inpTint.value = 100; tintVal.textContent = '100';
+  } else {
+    const pending = textareas[activeIndex]._pendingTile;
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(activeIndex);
+    req.onsuccess = () => {
+      if (pending) wrap.style.setProperty('--bg-tile', `url(${pending})`);
+      else if (req.result && req.result.tile) wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+      wrap.style.setProperty('--bg-tint', '0.35');
+      inpTint.value = 35; tintVal.textContent = '35';
+    };
+  }
+});
+
+/* ---------- per-editor input + gestures ---------- */
+textareas.forEach((ta, i) => {
+  // placeholder pointer - click to hide & focus
+  const ph = ta.parentElement.querySelector('.ph');
+  if (ph) {
+    ph.addEventListener('pointerdown', e => { ph._x = e.clientX; ph._y = e.clientY; });
+    ph.addEventListener('pointerup', e => {
+      const dx = Math.abs(e.clientX - ph._x);
+      const dy = Math.abs(e.clientY - ph._y);
+      if (dx < 8 && dy < 8) { ph.classList.add('hidden'); ta.focus(); }
+    });
+  }
+
+  ta.addEventListener('input', () => {
+    if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
+      ta.innerHTML = '';
+      if (ph) ph.classList.remove('hidden');
+    }
+    saveToDB(i, ta.innerHTML);
+  });
+
+  ta.addEventListener('paste', e => {
+    e.preventDefault();
+    const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
+    if (item) {
+      handleImageFile(item.getAsFile(), i, ta);
+    } else {
+      const text = e.clipboardData.getData('text/plain');
+      const clean = DOMPurify.sanitize(text, { ALLOWED_TAGS:[], ALLOWED_ATTR:[] });
+      document.execCommand('insertText', false, clean);
+    }
+  });
+
+  ta.addEventListener('dragover', e => e.preventDefault());
+  ta.addEventListener('drop', e => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = Array.from(e.dataTransfer.files).find(x => x.type.indexOf('image') !== -1);
+      if (file) handleImageFile(file, i, ta);
+    } else {
+      const item = Array.from(e.dataTransfer.items).find(x => x.type.indexOf('image') !== -1);
+      if (item) handleImageFile(item.getAsFile(), i, ta);
+    }
+  });
+  ta.addEventListener('contextmenu', e => e.preventDefault());
+
+  // long press on field → open settings
+  let lpX = 0, lpY = 0;
+  const startLongPress = e => {
+    const pt = e.touches ? e.touches[0] : e;
+    lpX = pt.clientX; lpY = pt.clientY;
+    activeIndex = i;
+    clearTimeout(textareaLongPressTimer);
+    textareaLongPressTimer = setTimeout(() => {
+      // set UI
+      const savedFont = localStorage.getItem(`q_f_${i}`) || '';
+      const fontOpts = document.querySelectorAll('#setting-font .font-option');
+      let matched = false;
+      fontOpts.forEach(o => {
+        const m = o.dataset.value === savedFont;
+        o.classList.toggle('selected', m);
+        if (m) matched = true;
+      });
+      if (!matched && fontOpts[0]) fontOpts[0].classList.add('selected');
+      const selOpt = document.querySelector('#setting-font .font-option.selected');
+      if (selOpt) {
+        fontDisplay.textContent = selOpt.textContent;
+        fontDisplay.style.fontFamily = selOpt.style.fontFamily;
+      }
+
+      const savedSize = localStorage.getItem(`q_s_${i}`) || '';
+      const opts = Array.from(selSize.options).map(o => o.value);
+      selSize.selectedIndex = opts.indexOf(savedSize) >= 0 ? opts.indexOf(savedSize) : 0;
+
+      const currentBg = localStorage.getItem(`q_b_${i}`) ||
+        getComputedStyle(ta.parentElement).getPropertyValue('--bg').trim() || defBgs[i];
+      const currentColor = localStorage.getItem(`q_c_${i}`) ||
+        getComputedStyle(ta.parentElement).getPropertyValue('--color').trim() || defColors[i];
+      inpBg.value = currentBg; bgPickerBtn.style.background = currentBg;
+      inpColor.value = currentColor; colorPickerBtn.style.background = currentColor;
+
+      selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
+      setTileModeUI(i, getTileMode(i));
+      applyAlign(i, localStorage.getItem(`q_halign_${i}`) || 'left');
+
+      if (images[i].style.display === 'block') {
+        imgActionContainer.style.display = 'block';
+        chkDelImg.checked = false;
+      } else {
+        imgActionContainer.style.display = 'none';
+      }
+
+      ta._pendingTile = null;
+      inpTile.value = '';
+      tileName.textContent = t.noFile;
+      chkDelTile.checked = false;
+      tileThumb.style.display = 'none';
+      tileThumb.removeAttribute('src');
+
+      const tileTx = db.transaction("texts", "readonly");
+      const tileReq = tileTx.objectStore("texts").get(i);
+      tileReq.onsuccess = () => {
+        if (tileReq.result && tileReq.result.tile) {
+          tileThumb.src = tileReq.result.tile;
+          tileThumb.style.display = 'block';
+        }
+      };
+
+      const savedTint = localStorage.getItem(`q_tint_${i}`);
+      const num = savedTint !== null ? parseFloat(savedTint) : 0.35;
+      inpTint.value = Math.round(num * 100);
+      tintVal.textContent = inpTint.value;
+
+      if (window.getSelection) window.getSelection().removeAllRanges();
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      modal.style.display = 'flex';
+    }, 600);
+  };
+  const stopLongPress = () => clearTimeout(textareaLongPressTimer);
+  ta.addEventListener('mousedown', startLongPress);
+  ta.addEventListener('mouseup', stopLongPress);
+  ta.addEventListener('mouseleave', stopLongPress);
+  ta.addEventListener('touchstart', startLongPress, { passive:true });
+  ta.addEventListener('touchend', stopLongPress);
+  ta.addEventListener('touchmove', stopLongPress);
+
+  // image gestures
+  const img = images[i];
+  let imgLPTimer = null, imgSX = 0, imgSY = 0, imgDeleted = false;
+  img.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    imgDeleted = false;
+    imgSX = e.clientX; imgSY = e.clientY;
+    clearTimeout(imgLPTimer);
+    imgLPTimer = setTimeout(() => {
+      imgDeleted = true;
+      img.classList.remove('fullscreen');
+      document.body.classList.remove('img-fullscreen-active');
+      img.removeAttribute('src');
+      img.style.display = 'none';
+      localStorage.removeItem(`q_pos_${i}`);
+      saveToDB(i, ta.innerHTML, null, true);
+    }, 1000);
+  });
+  img.addEventListener('pointerup', () => clearTimeout(imgLPTimer));
+  img.addEventListener('pointercancel', () => clearTimeout(imgLPTimer));
+  img.addEventListener('pointerleave', () => clearTimeout(imgLPTimer));
+  img.addEventListener('pointermove', e => {
+    if (Math.abs(e.clientX - imgSX) > 8 || Math.abs(e.clientY - imgSY) > 8) clearTimeout(imgLPTimer);
+  });
+  img.addEventListener('click', e => {
+    e.stopPropagation();
+    if (imgDeleted) return;
+    img.classList.toggle('fullscreen');
+    document.body.classList.toggle('img-fullscreen-active', !!document.querySelector('.img-preview.fullscreen'));
+  });
+});
+
+btnSave.onclick = () => {
+  if (activeIndex === null) return;
+  const targetTa = textareas[activeIndex];
+  const wrap = targetTa.parentElement;
+
+  const fontOption = document.querySelector('#setting-font .font-option.selected');
+  const fontValue = fontOption ? fontOption.dataset.value : "'Inter', Arial, sans-serif";
+  wrap.style.setProperty('--fn', fontValue);
+  localStorage.setItem(`q_f_${activeIndex}`, fontValue);
+
+  wrap.style.setProperty('--fs', selSize.value);
+  localStorage.setItem(`q_s_${activeIndex}`, selSize.value);
+
+  wrap.style.setProperty('--bg', inpBg.value);
+  localStorage.setItem(`q_b_${activeIndex}`, inpBg.value);
+
+  wrap.style.setProperty('--color', inpColor.value);
+  localStorage.setItem(`q_c_${activeIndex}`, inpColor.value);
+
+  const tintNum = parseInt(inpTint.value, 10) / 100;
+  wrap.style.setProperty('--bg-tint', tintNum);
+  localStorage.setItem(`q_tint_${activeIndex}`, tintNum);
+
+  applyAlign(activeIndex, localStorage.getItem(`q_halign_${activeIndex}`) || 'left');
+
+  if (chkDelTile.checked) {
+    wrap.style.setProperty('--bg-tile', 'none');
+    saveToDB(activeIndex, targetTa.innerHTML, null, false, null, true);
+    setTileModeUI(activeIndex, 'repeat');
+    localStorage.setItem(`q_tilemode_${activeIndex}`, 'repeat');
+  } else if (targetTa._pendingTile) {
+    wrap.style.setProperty('--bg-tile', `url(${targetTa._pendingTile})`);
+    saveToDB(activeIndex, targetTa.innerHTML, null, false, targetTa._pendingTile);
+  }
+  delete targetTa._pendingTile;
+
+  const mode = textareas[activeIndex].parentElement.dataset.tilemode || 'repeat';
+  localStorage.setItem(`q_tilemode_${activeIndex}`, mode);
+  setTileModeUI(activeIndex, mode);
+
+  localStorage.setItem(`q_pos_${activeIndex}`, selPos.value);
+  applyImagePosition(activeIndex, selPos.value);
+
+  if (chkDelImg.checked) {
+    images[activeIndex].removeAttribute('src');
+    images[activeIndex].style.display = 'none';
+    localStorage.removeItem(`q_pos_${activeIndex}`);
+    saveToDB(activeIndex, targetTa.innerHTML, null, true);
+  }
+
+  modal.style.display = 'none';
+  activeIndex = null;
+};
+
+btnCancel.onclick = () => {
+  if (activeIndex !== null) {
+    const wrap = textareas[activeIndex].parentElement;
+    const savedTint = localStorage.getItem(`q_tint_${activeIndex}`);
+    wrap.style.setProperty('--bg-tint', savedTint !== null ? savedTint : '0.35');
+    const savedBg = localStorage.getItem(`q_b_${activeIndex}`);
+    if (savedBg !== null) wrap.style.setProperty('--bg', savedBg);
+    const savedColor = localStorage.getItem(`q_c_${activeIndex}`);
+    if (savedColor !== null) wrap.style.setProperty('--color', savedColor);
+    const savedFont = localStorage.getItem(`q_f_${activeIndex}`);
+    if (savedFont !== null) wrap.style.setProperty('--fn', savedFont);
+    const savedSize = localStorage.getItem(`q_s_${activeIndex}`);
+    if (savedSize !== null) wrap.style.setProperty('--fs', savedSize);
+
+    setTileModeUI(activeIndex, getTileMode(activeIndex));
+    applyAlign(activeIndex, localStorage.getItem(`q_halign_${activeIndex}`) || 'left');
+
+    const tx = db.transaction("texts", "readonly");
+    const req = tx.objectStore("texts").get(activeIndex);
+    req.onsuccess = () => {
+      if (req.result && req.result.tile) {
+        wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+      } else if (!localStorage.getItem(`q_b_${activeIndex}`) && !localStorage.getItem(`q_tilemode_${activeIndex}`)) {
+        const demo = demoBgs[activeIndex];
+        wrap.style.setProperty('--bg-tile', `url(${getDemoFile(demo)})`);
+        wrap.style.setProperty('--bg-tint', demo.tint);
+        setTileModeUI(activeIndex, demo.mode);
+      } else {
+        wrap.style.setProperty('--bg-tile', 'none');
+      }
+    };
+    delete textareas[activeIndex]._pendingTile;
+  }
+  modal.style.display = 'none';
+  activeIndex = null;
+};
+
+document.addEventListener('contextmenu', e => {
+  if (document.getElementById('settings-modal').style.display === 'flex') e.preventDefault();
+}, { capture:true });
+document.getElementById('settings-modal').addEventListener('contextmenu', e => e.preventDefault(), { capture:true });
+</script>
+</body>
+</html>
