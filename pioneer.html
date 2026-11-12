@@ -97,7 +97,7 @@
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 #wordDisplay {
-  position: fixed; top: 38%; left: 50%;
+  position: fixed; top: 76px; left: 50%;
   transform: translate(-50%, -50%) scale(0.9);
   font-size: 34px; font-weight: 800;
   color: #fff;
@@ -294,6 +294,19 @@
     pointer-events: none;
     background-color: #000;
   }
+html, body {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+input, textarea, select {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
 </style>
 </head>
 <body>
@@ -999,6 +1012,13 @@ if ('serviceWorker' in navigator) {
 if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
   document.body.classList.add('pwa-standalone');
 }
+
+document.addEventListener('selectstart', function(e){
+  if (!e.target.closest('input, textarea, select')) e.preventDefault();
+}, { passive: false });
+document.addEventListener('contextmenu', function(e){
+  if (!e.target.closest('input, textarea, select')) e.preventDefault();
+});
 
 newGame();
 </script>
