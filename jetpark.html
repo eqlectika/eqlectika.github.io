@@ -38,57 +38,87 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
     font-size: 12px; cursor: pointer; letter-spacing: 2px;
 }
 
+/* === ВЕРХНИЙ БАР: presence | buttons | peerId === */
 #topBar {
     position: fixed; top: 0; left: 0; right: 0;
     z-index: 4000; pointer-events: none;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 10px;
+    display: flex; align-items: center; justify-content: flex-end;
+    padding: 8px 10px; gap: 8px;
+    box-sizing: border-box;   /* ← важно: padding не выталкивает за край */
 }
 #presence {
     display: flex; align-items: center; gap: 6px;
     color: rgba(255,255,255,0.85); font-size: 9px;
     text-shadow: 0 0 6px rgba(0,0,0,0.9);
-    pointer-events: none;
+    pointer-events: none; white-space: nowrap;
 }
 #presence .dot { width: 7px; height: 7px; border-radius: 50%; background: #8a8a9a; box-shadow: 0 0 5px currentColor; }
 #presence.multi .dot { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
+
+#topButtons {
+    display: flex; gap: 4px; align-items: center;
+    pointer-events: auto;
+    flex: 0 0 auto;            /* ← было flex: 1 1 auto — вот причина */
+    justify-content: flex-end;
+}
+.topBtn {
+    padding: 4px 9px; font-size: 9px; color: rgba(255,255,255,0.75);
+    background: rgba(0,0,0,0.4); border: 1px solid rgba(125,211,252,0.3);
+    border-radius: 5px; cursor: pointer; white-space: nowrap;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    -webkit-tap-highlight-color: transparent;
+}
+.topBtn:active { transform: scale(0.96); }
+.topBtn.active { border-color: #4ade80; color: #4ade80; }
+#voiceBtn.active { border-color: #ff3da0; color: #ff3da0; }
 
 #peerIdInput{
     pointer-events: auto;
     color:#7dd3fc; background: transparent; border: 1px solid transparent; outline: none;
     font-size: 9px; text-align: right;
-    width: 100px; padding: 3px 5px;
+    width: 84px; margin-right:-3px;padding: 3px 0 3px 5px;   /* right = 0 в покое */
     user-select: text; -webkit-user-select: text; cursor: text;
-    transition: background .2s, color .2s, border-color .2s, box-shadow .2s;
+    transition: background .2s, color .2s, border-color .2s, box-shadow .2s, padding .15s;
     border-radius: 5px; text-shadow: 0 0 6px rgba(0,0,0,0.9);
+    flex: 0 0 auto;
+    min-width: 0;
+    box-sizing: border-box;
 }
 #peerIdInput::placeholder{color:#555}
-#peerIdInput:focus{background:rgba(0,0,0,0.6);color:#fff;border-color:#7dd3fc;box-shadow:0 0 0 2px rgba(125,211,252,.25);}
+#peerIdInput:focus{
+    padding: 3px 5px 3px 5px;            /* right = 5 в фокусе */
+    background:rgba(0,0,0,0.6);
+    color:#fff;
+    border-color:#7dd3fc;
+    box-shadow:0 0 0 2px rgba(125,211,252,.25);
+}
 #peerIdInput.saved{color:#afff00 !important;border-color:#afff00 !important;}
 
-#routeHud {
-    position: fixed; bottom: 10px; right: 12px;
+/* === ПРАВЫЙ НИЖНИЙ БЛОК: route + balance / energy / boost === */
+#rightHud {
+    position: fixed; bottom: 10px; right: 10px;   /* ← было 12, ставим 10 = padding-right шапки */
     z-index: 4000; color: rgba(255,255,255,0.85);
     font-size: 8px; text-align: right; line-height: 1.4;
     pointer-events: none; text-shadow: 0 0 6px rgba(0,0,0,0.95);
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
 }
-#routeHud .label { color: rgba(255,255,255,0.5); font-size: 7px; text-transform: uppercase; letter-spacing: 1px; }
-#routeHud .value { font-weight: bold; font-size: 9px; color: #fff; }
-#routeHud .complete { color: #4ade80; }
-
-#leftHud {
-    position: fixed; bottom: 10px; left: 12px;
-    z-index: 4000; color: rgba(255,255,255,0.85);
-    font-size: 8px; line-height: 1.4;
-    pointer-events: none; text-shadow: 0 0 6px rgba(0,0,0,0.95);
+#rightHud .section { display: flex; flex-direction: column; align-items: flex-end; }
+#rightHud .label { color: rgba(255,255,255,0.5); font-size: 7px; text-transform: uppercase; letter-spacing: 1px; }
+#rightHud .value { font-weight: bold; font-size: 9px; color: #fff; }
+#rightHud .complete { color: #4ade80; }
+#rightHud .divider {
+    width: 60px; height: 1px;
+    background: rgba(125,211,252,0.25);
+    margin: 2px 0;
 }
-#leftHud .label { color: rgba(255,255,255,0.5); font-size: 7px; text-transform: uppercase; letter-spacing: 1px; }
-#leftHud .value { font-weight: bold; font-size: 9px; color: #7dd3fc; }
-#leftHud .tokenValue { font-weight: bold; font-size: 13px; color: #ffd166; }
+#rightHud .tokenValue { font-weight: bold; font-size: 13px; color: #ffd166; }
+#rightHud .valBlue { color: #7dd3fc; }
 
+/* === ЧАТ внизу по центру === */
 #chatPanel {
-    position: fixed; bottom: 55px; left: 12px;
-    z-index: 4000; width: 220px; max-height: 180px;
+    position: fixed; bottom: 8px; left: 12px;
+    transform: none;
+    z-index: 4000; width: 200px; max-height: 160px;
     display: flex; flex-direction: column; pointer-events: auto;
 }
 #chatLog {
@@ -99,6 +129,7 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
     padding-bottom: 3px;
     display: flex; flex-direction: column; gap: 2px;
     -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    max-height: 110px;
 }
 #chatLog::-webkit-scrollbar { width: 0; height: 0; }
 #chatLog .msg .who { color: #7dd3fc; font-weight: bold; }
@@ -107,6 +138,7 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
 #chatInputWrap { display: flex; align-items: center; gap: 5px; margin-top: 3px; }
 #chatInput {
     flex: 1 1 auto;
+
     background: rgba(0,0,0,0.45); border: 1px solid rgba(125,211,252,0.4);
     border-radius: 5px; padding: 5px 7px; color: #fff; font-size: 11px; outline: none;
     user-select: text; -webkit-user-select: text;
@@ -117,22 +149,6 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
     background: rgba(125,211,252,0.15); border: 1px solid rgba(125,211,252,0.6);
     color: #7dd3fc; border-radius: 5px; padding: 5px 8px; font-size: 11px; cursor: pointer;
 }
-
-#bottomButtons {
-    position: fixed; left: 50%; bottom: 6px;
-    transform: translateX(-50%); z-index: 4500;
-    display: flex; gap: 6px; align-items: center;
-    pointer-events: auto;
-}
-.bottomBtn {
-    padding: 4px 10px; font-size: 10px; color: rgba(255,255,255,0.7);
-    background: rgba(0,0,0,0.4); border: 1px solid rgba(125,211,252,0.3);
-    border-radius: 5px; cursor: pointer;
-    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-}
-.bottomBtn:active { transform: scale(0.96); }
-.bottomBtn.active { border-color: #4ade80; color: #4ade80; }
-#voiceBtn.active { border-color: #ff3da0; color: #ff3da0; }
 
 #pilotsPanel {
     position: fixed; top: 40px; right: 10px;
@@ -368,7 +384,13 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
     <div id="topBar">
         <div id="presence" class="solo">
             <span class="dot"></span>
-            <span id="presenceText">Solo flight</span>
+            <span id="presenceText">Solo</span>
+        </div>
+        <div id="topButtons">
+            <button class="topBtn" id="helpBtn">Help</button>
+            <button class="topBtn" id="statsBtn">Stats</button>
+            <button class="topBtn" id="buildBtn">Build</button>
+            <button class="topBtn" id="voiceBtn">🎤</button>
         </div>
         <input type="text" id="peerIdInput" autocomplete="off" spellcheck="false" enterkeyhint="done"
                placeholder="Peer-XXXX" title="Tap to rename yourself">
@@ -385,16 +407,33 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
         </div>
     </div>
 
-    <div id="routeHud">
-        <div><span class="label">Route</span><br><span class="value" id="routeName">—</span></div>
-        <div><span class="label">Checkpoints</span><br><span class="value" id="routeCP">0 / 0</span></div>
-        <div><span class="label">Time</span><br><span class="value" id="routeTime">—</span></div>
-    </div>
-
-    <div id="leftHud">
-        <div><span class="label">Balance</span> <span class="tokenValue" id="balanceET">0</span> <span class="label">ET</span></div>
-        <div><span class="label">Energy</span> <span class="value" id="routeEnergy">0</span></div>
-        <div><span class="label">Boost</span> <span class="value" id="boostTime">—</span></div>
+    <!-- Правый нижний блок: route + balance/energy/boost -->
+    <div id="rightHud">
+        <div class="section">
+            <div class="label">Route</div>
+            <div class="value" id="routeName">—</div>
+        </div>
+        <div class="section">
+            <div class="label">Checkpoints</div>
+            <div class="value" id="routeCP">0 / 0</div>
+        </div>
+        <div class="section">
+            <div class="label">Time</div>
+            <div class="value" id="routeTime">—</div>
+        </div>
+        <div class="divider"></div>
+        <div class="section">
+            <div class="label">Balance</div>
+            <div class="tokenValue"><span id="balanceET">0</span> ET</div>
+        </div>
+        <div class="section">
+            <div class="label">Energy</div>
+            <div class="value valBlue" id="routeEnergy">0</div>
+        </div>
+        <div class="section">
+            <div class="label">Boost</div>
+            <div class="value valBlue" id="boostTime">—</div>
+        </div>
     </div>
 
     <div id="chatPanel">
@@ -411,13 +450,6 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
         <div class="msg" id="frozenMsg">FROZEN</div>
     </div>
 
-    <div id="bottomButtons">
-        <button class="bottomBtn" id="helpBtn">Help</button>
-        <button class="bottomBtn" id="statsBtn">Stats</button>
-        <button class="bottomBtn" id="buildBtn">Build</button>
-        <button class="bottomBtn" id="voiceBtn">🎤</button>
-    </div>
-
     <button id="startButton">START</button>
     
     <div id="throttleArea"></div>
@@ -425,7 +457,7 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
 
     <!-- Help overlay -->
     <div class="overlay" id="helpSheet">
-        <div class="title">Help (tap title to close)</div>
+        <div class="title">Help (tap here to close)</div>
         <div class="body">
             <p><b>Left side</b> — thrust up / down</p>
             <p><b>Right side</b> — steer and tilt</p>
@@ -444,7 +476,7 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
 
     <!-- Stats overlay -->
     <div class="overlay" id="statsSheet">
-        <div class="title" id="statsTitle">Stats (tap title to close)</div>
+        <div class="title" id="statsTitle">Stats (tap here to close)</div>
         <div class="body">
             <div class="statsGrid">
                 <div class="statCard gold">
@@ -497,7 +529,6 @@ canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; heigh
                 <span>max <span id="chartMax">0</span></span>
             </div>
 
-            <!-- === SEND ET === -->
             <div id="sendSection">
                 <div class="sendTitle">Send ET</div>
                 <div class="sendRow">
@@ -664,11 +695,11 @@ function updatePresenceIndicator() {
     if (count > 0) {
         presenceEl.classList.remove('solo');
         presenceEl.classList.add('multi');
-        presenceTextEl.textContent = `Pilots: ${count + 1}`;
+        presenceTextEl.textContent = `Multi (${count + 1})`;
     } else {
         presenceEl.classList.remove('multi');
         presenceEl.classList.add('solo');
-        presenceTextEl.textContent = 'Solo flight';
+        presenceTextEl.textContent = 'Solo';
     }
     renderPilotsPanel();
 }
@@ -768,7 +799,7 @@ chatSend.addEventListener('click', sendChatMessage);
 chatInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendChatMessage(); } });
 
 // =========================================================
-// VOICE CHAT (WebRTC push-to-talk)
+// VOICE CHAT
 // =========================================================
 const peerConnections = {};
 const remoteAudio = {};
@@ -902,7 +933,7 @@ function isFrozen() {
 }
 
 // =========================================================
-// SEND TOKENS (через Stats-окно)
+// SEND TOKENS
 // =========================================================
 const knownPeers = new Set(loadLSJson('jp_known_peers', []));
 function rememberPeer(id) {
@@ -1016,7 +1047,7 @@ function handleIncomingTx(p) {
 }
 
 // =========================================================
-// НАРУШЕНИЯ (пролёт сквозь дом)
+// НАРУШЕНИЯ
 // =========================================================
 const violationState = { count: 0, lastTs: 0, buildLockUntil: 0 };
 const VIOLATION_RESET_MS = 30000;
