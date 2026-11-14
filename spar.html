@@ -25,13 +25,13 @@ html{padding-top:env(safe-area-inset-top)}
   font-family:'Roboto',sans-serif;font-weight:700;font-size:16px;color:#aaa;
   height:44px;
 }
-.top-bar .brand{color:#999;}
+.top-bar .brand{text-decoration:none;   background:transparent;border:1px solid #0cf;border-radius:8px; padding:4px 6px;color:#0cf;}
 .top-bar .live{color:#ff0000;animation:livePulse 1.5s infinite}
 .top-bar .tape{color:#afff00}
 @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 #peerIdInput{
-  color:#0097ff;background:transparent;border:1px solid transparent;outline:none;
+  color:#00ccff;background:transparent;border:1px solid transparent;outline:none;
   font-family:'Roboto',sans-serif;font-size:14px;font-weight:400;
   text-align:right;width:108px;padding:3px 0;
   user-select:text;-webkit-user-select:text;cursor:text;
@@ -261,14 +261,26 @@ html{padding-top:env(safe-area-inset-top)}
   cursor:pointer;display:flex;align-items:center;justify-content:center;
   z-index:2001;
 }
+.top-btn{
+  background:transparent;border:1px solid #ccc;border-radius:8px;
+  color:#fff;font-family:'Roboto',sans-serif;font-weight:700;
+  font-size:13px;width:28px;height:28px;line-height:1;
+  cursor:pointer;margin-right:6px;padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.top-btn:active{transform:scale(.94)}
 </style>
 </head>
 <body>
 
 <div class="top-bar">
-  <span class="brand">Spar</span>
+ 
+
+<a class="brand" href="swipe.html">Spar</a>
+
   <span id="liveIndicator" class="live" style="display:none">Live! (<span id="livePeerCount">0</span>)</span>
   <span id="tapeIndicator" class="tape">Tape</span>
+<button class="top-btn" id="helpBtn" title="Help">?</button>
   <input type="text" id="peerIdInput" autocomplete="off" spellcheck="false" enterkeyhint="done"
          placeholder="Peer-XXXX" title="Tap to rename yourself">
 </div>
@@ -279,10 +291,9 @@ html{padding-top:env(safe-area-inset-top)}
   </div>
 
   <div class="footer-panel">
-    <button class="foot-btn" id="helpBtn" title="Help">Help</button>
     <div class="foot-score"><span class="lbl">Words</span><span id="score1">0</span></div>
-    <div class="foot-score"><span class="lbl">AvaKo</span><span id="score2">0</span></div>
     <button class="foot-btn" id="historyBtn" title="History">Score</button>
+    <div class="foot-score"><span class="lbl">Flags</span><span id="score2">0</span></div>
   </div>
 </div>
 
@@ -934,14 +945,21 @@ document.getElementById('btnCancel').addEventListener('click', hidePopover);
 document.getElementById('btnAdd').addEventListener('click', ()=>{
   if (!popoverCtx) return;
   const word = popoverInput.value.trim();
-  if (!word) return;
+  if (!/^\S{1,40}$/.test(word)){ popoverInput.focus(); return; }
   if (popoverCtx.mode === 'place') placeWord(popoverCtx.idx, word);
   else editWord(popoverCtx.idx, word);
   hidePopover();
 });
-popoverInput.addEventListener('keyup', (e)=>{
+
+popoverInput.addEventListener('keydown', (e)=>{
+  if (e.key === ' '){ e.preventDefault(); return; }
   if (e.key === 'Enter'){ e.preventDefault(); document.getElementById('btnAdd').click(); }
   if (e.key === 'Escape') hidePopover();
+});
+
+popoverInput.addEventListener('input', ()=>{
+  const v = popoverInput.value.replace(/\s+/g,'').slice(0,40);
+  if (popoverInput.value !== v) popoverInput.value = v;
 });
 document.addEventListener('pointerdown', (e)=>{
   if (popover.classList.contains('show')
