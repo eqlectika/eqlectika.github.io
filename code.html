@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-<meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="description" content="Simple Code Editor" />
   <link rel="manifest" href="manifest.json">
@@ -64,7 +64,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: flex-start; /* Блоки (строки) прижаты влево */
+  align-items: flex-start;
   justify-content: flex-start;
   padding: 15px 10px;
   box-sizing: border-box;
@@ -90,11 +90,10 @@ body {
   min-width: 0;
 }
 
-/* --- БАЗОВЫЕ СТИЛИ (столбиком) --- */
 .searchRow {
   display: flex;
   flex-direction: column;
-  align-items: center; /* Центрируем элементы по горизонтали внутри колонки (для поиска и стрелок) */
+  align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
@@ -103,13 +102,12 @@ body {
 .actionsRow {
   display: flex;
   flex-direction: column;
-  align-items: center; /* Центрируем элементы по горизонтали внутри колонки */
+  align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
 }
 
-/* --- ЭЛЕМЕНТЫ --- */
 #searchField {
   padding: 0 8px;
   font-size: 14px;
@@ -211,7 +209,6 @@ body {
   display: block;
 }
 
-/* --- ШИРИНА ПОЛЯ ПО ОРИЕНТАЦИИ --- */
 @media (orientation: landscape) {
   #searchField {
     width: 70px;
@@ -226,23 +223,21 @@ body {
   }
 }
 
-/* --- В РЯД (ПОРТРЕТ И ШИРОКИЕ ЭКРАНЫ) --- */
 @media (orientation: portrait) {
   .searchRow {
     flex-direction: row;
-    align-items: center; /* Строго по центру по вертикали */
-    justify-content: flex-start; /* Элементы прижаты влево */
+    align-items: center;
+    justify-content: flex-start;
   }
 
   .actionsRow {
     flex-direction: row;
-    align-items: center; /* Строго по центру по вертикали */
-    justify-content: flex-start; /* Элементы прижаты влево */
+    align-items: center;
+    justify-content: flex-start;
     flex-wrap: wrap;
   }
 }
 
-/* --- ПОРТРЕТ < 768px --- */
 @media (orientation: portrait) and (max-width: 767px) {
   body {
     flex-direction: column;
@@ -266,7 +261,6 @@ body {
   }
 }
 
-/* --- ШИРОКИЙ ПОРТРЕТ --- */
 @media (orientation: portrait) and (min-width: 768px) {
   #controlPanel > div {
     gap: 6px;
@@ -300,7 +294,7 @@ body {
     height: 11px;
     z-index: 2147483647;
     pointer-events: none;
-    background-color: #000;  /* подставьте цвет фона вашего файла */
+    background-color: #000;
     -webkit-background-clip: text;
     color: transparent;
 }
@@ -337,7 +331,6 @@ body {
 
         <button id="saveButton">Save</button>
 
-        <!-- Обернули логотип в ссылку с классом, чтобы зафиксировать его размеры -->
         <a href="research.html" class="logoLink">
           <img src="logo.png" alt="Feedback" style="height: 40px; opacity: 0.9; width: auto;">
         </a>
@@ -375,26 +368,85 @@ body {
     const NO_CACHE_PRELUDE_STRICT = `
 <script>
 (function () {
+  var STAMP = Date.now();
+  function bust(url) {
+    if (!url) return url;
+    if (typeof url !== 'string') return url;
+    if (/^(data:|blob:|about:|javascript:|#)/i.test(url)) return url;
+    try {
+      var u = new URL(url, location.href);
+      u.searchParams.set('_nocache', STAMP);
+      return u.toString();
+    } catch (e) { return url; }
+  }
+
+  // --- fetch ---
   try {
     var origFetch = window.fetch;
     if (origFetch) {
       window.fetch = function (input, init) {
         init = init || {};
         init.cache = 'no-store';
+        if (typeof input === 'string') {
+          input = bust(input);
+        } else if (input && input.url) {
+          input = new Request(bust(input.url), input);
+        }
         return origFetch.call(this, input, init);
       };
     }
+  } catch (e) {}
+
+  // --- XHR ---
+  try {
     var OrigXHR = window.XMLHttpRequest;
     if (OrigXHR) {
       var origOpen = OrigXHR.prototype.open;
       OrigXHR.prototype.open = function (method, url) {
-        try {
-          var u = new URL(url, location.href);
-          u.searchParams.set('_nocache', Date.now());
-          url = u.toString();
-        } catch (e) {}
+        url = bust(url);
         return origOpen.apply(this, [method, url].concat([].slice.call(arguments, 2)));
       };
+    }
+  } catch (e) {}
+
+  // --- setAttribute для src/href ---
+  try {
+    var origSetAttribute = Element.prototype.setAttribute;
+    Element.prototype.setAttribute = function (name, value) {
+      if ((name === 'src' || name === 'href') && typeof value === 'string') {
+        value = bust(value);
+      }
+      return origSetAttribute.call(this, name, value);
+    };
+  } catch (e) {}
+
+  // --- setProperty для img.src / script.src и т.п. ---
+  try {
+    var protoImgSrc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+    if (protoImgSrc && protoImgSrc.set) {
+      Object.defineProperty(HTMLImageElement.prototype, 'src', {
+        configurable: true,
+        get: protoImgSrc.get,
+        set: function (v) { return protoImgSrc.set.call(this, bust(v)); }
+      });
+    }
+  } catch (e) {}
+
+  // --- serviceWorker: дерегистрируем ---
+  try {
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) { r.unregister(); });
+      });
+    }
+  } catch (e) {}
+
+  // --- CacheStorage: чистим ---
+  try {
+    if (window.caches && caches.keys) {
+      caches.keys().then(function (keys) {
+        keys.forEach(function (k) { caches.delete(k); });
+      });
     }
   } catch (e) {}
 })();
@@ -421,22 +473,103 @@ body {
       css: "text/css",
     };
 
-    function getPrelude() {
-      return document.getElementById('strictNoCache').checked
-        ? NO_CACHE_PRELUDE_STRICT
-        : NO_CACHE_PRELUDE_SAFE;
+    /* =========================================================
+       2. Cache-buster для HTML-строки
+       ========================================================= */
+    function bustCacheInHtml(html) {
+      const stamp = Date.now();
+      const bust = (url) => {
+        if (!url) return url;
+        if (/^(data:|blob:|about:|javascript:|#)/i.test(url)) return url;
+        try {
+          const u = new URL(url, location.href);
+          u.searchParams.set("_nocache", stamp);
+          return u.toString();
+        } catch (e) {
+          return url;
+        }
+      };
+
+      // src= / href=
+      html = html.replace(
+        /\b(src|href)\s*=\s*(["'])(.*?)\2/gi,
+        (m, attr, q, url) => attr + "=" + q + bust(url) + q
+      );
+
+      // url(...) в CSS
+      html = html.replace(
+        /url\(\s*(["']?)(.*?)\1\s*\)/gi,
+        (m, q, url) => "url(" + q + bust(url) + q + ")"
+      );
+
+      // @import "..."
+      html = html.replace(
+        /@import\s+(["'])(.*?)\1/gi,
+        (m, q, url) => "@import " + q + bust(url) + q
+      );
+
+      return html;
     }
 
-    function renderPreview(code) {
+    function getPrelude() {
+      return strictToggle.checked ? NO_CACHE_PRELUDE_STRICT : NO_CACHE_PRELUDE_SAFE;
+    }
+
+    /* =========================================================
+       3. Жёсткий сброс preview
+       ========================================================= */
+    async function hardResetPreview() {
       const oldFrame = document.getElementById("preview");
-      const newFrame = oldFrame.cloneNode(false);
-      oldFrame.replaceWith(newFrame);
+      if (oldFrame) oldFrame.remove();
+
+      // Очистить CacheStorage
+      try {
+        if (window.caches && caches.keys) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((k) => caches.delete(k)));
+        }
+      } catch (e) {}
+
+      // Дерегистрировать service workers
+      try {
+        if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        }
+      } catch (e) {}
+
+      // Создать новый iframe
+      const f = document.createElement("iframe");
+      f.id = "preview";
+      f.title = "Preview";
+      f.src = "about:blank";
+
+      const controlPanel = document.getElementById("controlPanel");
+      controlPanel.parentNode.insertBefore(f, controlPanel);
+      return f;
+    }
+
+    /* =========================================================
+       4. Рендер preview
+       ========================================================= */
+    let renderToken = 0;
+
+    async function renderPreview(code) {
+      const token = ++renderToken;
+      const newFrame = await hardResetPreview();
+
+      if (token !== renderToken) return; // устарел
 
       let doc = code;
       if (fileFormat.value === "html") {
-        doc = getPrelude() + doc;
+        doc = getPrelude() + bustCacheInHtml(code);
       }
-      newFrame.srcdoc = doc;
+
+      // Дождаться применения about:blank
+      requestAnimationFrame(() => {
+        if (token !== renderToken) return;
+        newFrame.srcdoc = doc;
+      });
     }
 
     editor.addEventListener("input", () => {
@@ -447,6 +580,9 @@ body {
       renderPreview(editor.value);
     });
 
+    /* =========================================================
+       5. Сохранение
+       ========================================================= */
     saveButton.addEventListener("click", () => {
       const format = fileFormat.value;
       const blob = new Blob([editor.value], { type: mimeTypes[format] || "text/plain" });
@@ -457,6 +593,9 @@ body {
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     });
 
+    /* =========================================================
+       6. Поиск
+       ========================================================= */
     function highlightMatch(index) {
       if (index === -1 || searchMatches.length === 0) return;
       const start = searchMatches[index];
@@ -515,6 +654,9 @@ body {
       }
     });
 
+    /* =========================================================
+       7. Блокировка глобального скролла в редакторе
+       ========================================================= */
     function stopGlobalScroll(e) {
       e.preventDefault();
     }
@@ -537,6 +679,9 @@ body {
       window.removeEventListener("touchmove", stopGlobalScroll);
     });
 
+    /* =========================================================
+       8. Service worker
+       ========================================================= */
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("sw.js").catch(() => {});
