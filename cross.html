@@ -452,7 +452,7 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     height: 11px;
     z-index: 2147483647;
     pointer-events: none;
-    background-color: #000;
+    background-color: #000;  /* подставьте цвет фона вашего файла */
     -webkit-background-clip: text;
     color: transparent;
 }
@@ -829,8 +829,8 @@ if (fs.endsWith('px')) {
 if (i === 0 && !localStorage.getItem('q_demo_shown')) {
   wrap.style.setProperty('--bg-tile', `url(demo-tile.png)`);
   wrap.style.setProperty('--bg-tint', '0.35');
-  setTileModeUI(0, 'fill');
-  localStorage.setItem('q_tilemode_0', 'fill');
+  setTileModeUI(0, 'fill');                          // ← добавить
+  localStorage.setItem('q_tilemode_0', 'fill');      // ← добавить
   localStorage.setItem('q_demo_shown', '1');
   localStorage.setItem('q_tint_0', '0.35');
 } else {
@@ -842,7 +842,6 @@ if (i === 0 && !localStorage.getItem('q_demo_shown')) {
   });
 }
 
-/* ===================== PLACEHOLDER TAP ===================== */
 textareas.forEach((ta) => {
   const ph = ta.parentElement.querySelector('.ph');
   if (!ph) return;
@@ -861,54 +860,26 @@ textareas.forEach((ta) => {
     }
   });
 });
+  
+let handleLongPressTimer;
+let startX = 0, startY = 0;
 
-/* ===================== HANDLE (tap / longpress / drag) ===================== */
-const HANDLE_LONGPRESS_MS   = 600;
-const HANDLE_MOVE_THRESHOLD = 5;
-const HANDLE_TAP_MAX_MS     = 250;
-
-const handleState = {
-  pointerId: null,
-  startX: 0,
-  startY: 0,
-  longPressTimer: null,
-  longPressFired: false,
-  moved: false,
-  startTime: 0
-};
-
-function resetHandleState() {
-  clearTimeout(handleState.longPressTimer);
-  handleState.longPressTimer = null;
-  handleState.pointerId = null;
-  handleState.longPressFired = false;
-  handleState.moved = false;
-}
+let handleLongPressFired = false;
 
 handle.addEventListener('pointerdown', (e) => {
-  if (handleState.pointerId !== null) return; // мультитач игнорируем
-
-  handleState.pointerId   = e.pointerId;
-  handleState.startX      = e.clientX;
-  handleState.startY      = e.clientY;
-  handleState.startTime   = Date.now();
-  handleState.longPressFired = false;
-  handleState.moved       = false;
-
-  isDragging    = true;
+  isDragging = true;
+  handleLongPressFired = false;
   dragStartTime = Date.now();
+  const touch = e.touches ? e.touches[0] : e;
+  startX = touch.clientX;
+  startY = touch.clientY;
 
-  try { handle.setPointerCapture(e.pointerId); } catch (_) {}
-
-  clearTimeout(handleState.longPressTimer);
-  handleState.longPressTimer = setTimeout(() => {
-    if (handleState.moved || handleState.pointerId === null) return;
-    handleState.longPressFired = true;
+  clearTimeout(handleLongPressTimer);
+  handleLongPressTimer = setTimeout(() => {
+    if (!isDragging) return;
+    handleLongPressFired = true;
     isDragging = false;
-    clearTimeout(handleState.longPressTimer);
-    handleState.longPressTimer = null;
 
-    // ===== LONGPRESS: смена дизайна + случайной палитры =====
     currentDesign = (currentDesign + 1) % designs.length;
     localStorage.setItem('q_handle_design', currentDesign);
     updateHandleImage(currentDesign);
@@ -940,30 +911,23 @@ handle.addEventListener('pointerdown', (e) => {
     });
 
     if (navigator.vibrate) navigator.vibrate(30);
-    // ===== /LONGPRESS =====
-  }, HANDLE_LONGPRESS_MS);
+  }, 600);
 });
 
-handle.addEventListener('pointermove', (e) => {
-  if (e.pointerId !== handleState.pointerId) return;
+window.addEventListener('pointermove', (e) => {
+  if (!isDragging) return;
+  const touch = e.touches ? e.touches[0] : e;
 
-  const dx = Math.abs(e.clientX - handleState.startX);
-  const dy = Math.abs(e.clientY - handleState.startY);
+  const moveX = Math.abs(touch.clientX - startX);
+  const moveY = Math.abs(touch.clientY - startY);
 
-  if (dx > HANDLE_MOVE_THRESHOLD || dy > HANDLE_MOVE_THRESHOLD) {
-    if (!handleState.moved) {
-      handleState.moved = true;
-      clearTimeout(handleState.longPressTimer);
-      handleState.longPressTimer = null;
-    }
+  if (moveX > 5 || moveY > 5) {
+    clearTimeout(handleLongPressTimer);
   }
 
-  if (!isDragging) return;
-
-  // ===== DRAG-RESIZE =====
   const padding = 10;
-  const rawX = (e.clientX / window.innerWidth) * 100;
-  const rawY = (e.clientY / window.innerHeight) * 100;
+  const rawX = (touch.clientX / window.innerWidth) * 100;
+  const rawY = (touch.clientY / window.innerHeight) * 100;
   const clampedX = Math.max(padding, Math.min(100 - padding, rawX));
   const clampedY = Math.max(padding, Math.min(100 - padding, rawY));
   const x = `${clampedX}%`;
@@ -974,47 +938,33 @@ handle.addEventListener('pointermove', (e) => {
   localStorage.setItem('q_y', y);
 });
 
-handle.addEventListener('pointerup', (e) => {
-  if (e.pointerId !== handleState.pointerId) return;
-
-  clearTimeout(handleState.longPressTimer);
-  handleState.longPressTimer = null;
-
-  const fired    = handleState.longPressFired;
-  const moved    = handleState.moved;
-  const duration = Date.now() - handleState.startTime;
-
-  resetHandleState();
+window.addEventListener('pointerup', (e) => {
+  clearTimeout(handleLongPressTimer);
+  if (handleLongPressFired) { handleLongPressFired = false; return; }
+  if (!isDragging) return;
   isDragging = false;
 
-  // Одиночный тап: не двигали, longpress не срабатывал, коротко
-  if (!fired && !moved && duration < HANDLE_TAP_MAX_MS) {
+  const duration = Date.now() - dragStartTime;
+  if (duration < 250) {
+    // Одиночный тап — меняем ТОЛЬКО логотип handle
     currentDesign = (currentDesign + 1) % designs.length;
     localStorage.setItem('q_handle_design', currentDesign);
     updateHandleImage(currentDesign);
   }
 });
 
-handle.addEventListener('pointercancel', (e) => {
-  if (e.pointerId !== handleState.pointerId) return;
-  resetHandleState();
+handle.addEventListener('pointercancel', () => {
+  clearTimeout(handleLongPressTimer);
   isDragging = false;
 });
-
-handle.addEventListener('lostpointercapture', (e) => {
-  if (e.pointerId !== handleState.pointerId) return;
-  resetHandleState();
-  isDragging = false;
-});
-
-handle.addEventListener('click', (e) => e.preventDefault());
-handle.addEventListener('contextmenu', (e) => e.preventDefault());
-
+  
 handle.addEventListener('touchstart', (e) => {
   if (e.cancelable) e.preventDefault();
 }, { passive: false });
 
-/* ===================== IMAGE FILE ===================== */
+handle.addEventListener('click', (e) => e.preventDefault());
+handle.addEventListener('contextmenu', (e) => e.preventDefault());
+
 function handleImageFile(file, index, ta) {
   const reader = new FileReader();
   reader.onload = (ev) => {
@@ -1025,7 +975,6 @@ function handleImageFile(file, index, ta) {
   reader.readAsDataURL(file);
 }
 
-/* ===================== MODAL ELEMENTS ===================== */
 const modal = document.getElementById('settings-modal');
 const selSize = document.getElementById('setting-size');
 const selPos = document.getElementById('setting-pos');
@@ -1057,6 +1006,7 @@ fontPicker.addEventListener('click', (e) => {
 });
 
 let activeIndex = null;
+let textareaLongPressTimer;
 
 document.querySelectorAll('[data-align]').forEach(button => {
   button.addEventListener('click', () => {
@@ -1145,16 +1095,15 @@ chkDelTile.addEventListener('change', (e) => {
   }
 });
 
-/* ===================== PER-TEXTAREA EVENTS ===================== */
 textareas.forEach((ta, i) => {
   ta.addEventListener('input', () => {
-    if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
-      ta.innerHTML = '';
-      const ph = ta.parentElement.querySelector('.ph');
-      if (ph) ph.classList.remove('hidden');
-    }
-    saveToDB(i, ta.innerHTML);
-  });
+  if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
+    ta.innerHTML = '';
+    const ph = ta.parentElement.querySelector('.ph');
+    if (ph) ph.classList.remove('hidden');
+  }
+  saveToDB(i, ta.innerHTML);
+});
 
   ta.addEventListener('paste', (e) => {
     e.preventDefault();
@@ -1180,125 +1129,115 @@ textareas.forEach((ta, i) => {
     }
   });
 
-  // ===== Longpress по пустому полю → открыть настройки =====
-  const lp = { timer: null, startX: 0, startY: 0, fired: false, pid: null };
-  const FIELD_LONGPRESS_MS   = 600;
-  const FIELD_MOVE_THRESHOLD = 8;
 
-  const cancelFieldLongPress = () => {
-    clearTimeout(lp.timer);
-    lp.timer = null;
-    lp.pid = null;
-  };
 
-  const startFieldLongPress = (e) => {
-    if (lp.pid !== null) return;
-    lp.pid = e.pointerId;
-    lp.startX = e.clientX;
-    lp.startY = e.clientY;
-    lp.fired = false;
-    activeIndex = i;
+let longPressStartX = 0;
+let longPressStartY = 0;
 
-    clearTimeout(lp.timer);
-    lp.timer = setTimeout(() => {
-      if (lp.pid === null) return;
-      lp.fired = true;
-      lp.pid = null;
+const startLongPress = (e) => {
+  const touch = e.touches ? e.touches[0] : e;
 
-      const hasText = ta.textContent.trim() !== '';
-      if (hasText) return;
+  longPressStartX = touch.clientX;
+  longPressStartY = touch.clientY;
 
-      const savedFont = localStorage.getItem(`q_f_${i}`) || '';
-      const fontOpts = document.querySelectorAll('#setting-font .font-option');
-      let fontMatched = false;
-      fontOpts.forEach(o => {
-        const isMatch = o.dataset.value === savedFont;
-        o.classList.toggle('selected', isMatch);
-        if (isMatch) fontMatched = true;
-      });
-      if (!fontMatched && fontOpts[0]) {
-        fontOpts[0].classList.add('selected');
-      }
-      const selOpt = document.querySelector('#setting-font .font-option.selected');
-      const fd = document.getElementById('font-display');
-      if (selOpt && fd) {
-        fd.textContent = selOpt.textContent;
-        fd.style.fontFamily = selOpt.style.fontFamily;
-      }
+  activeIndex = i;
 
-      const savedSize = localStorage.getItem(`q_s_${i}`) || '';
-      const sizeOptions = Array.from(selSize.options).map(o => o.value);
-      selSize.selectedIndex = sizeOptions.indexOf(savedSize) >= 0
-        ? sizeOptions.indexOf(savedSize)
-        : 0;
+  clearTimeout(textareaLongPressTimer);
 
-      const currentBg =
-        localStorage.getItem(`q_b_${i}`) ||
-        getComputedStyle(ta.parentElement).getPropertyValue('--bg').trim() ||
-        defBgs[i];
+textareaLongPressTimer = setTimeout(() => {
 
-      const currentColor =
-        localStorage.getItem(`q_c_${i}`) ||
-        getComputedStyle(ta.parentElement).getPropertyValue('--color').trim() ||
-        defColors[i];
+  const hasText = ta.textContent.trim() !== '';
+  if (hasText) return;
 
-      inpBg.value = currentBg;
-      bgPickerBtn.style.background = currentBg;
+const savedFont = localStorage.getItem(`q_f_${i}`) || '';
+const fontOpts = document.querySelectorAll('#setting-font .font-option');
+let fontMatched = false;
+fontOpts.forEach(o => {
+  const isMatch = o.dataset.value === savedFont;
+  o.classList.toggle('selected', isMatch);
+  if (isMatch) fontMatched = true;
+});
+if (!fontMatched && fontOpts[0]) {
+  fontOpts[0].classList.add('selected');
+}
+const selOpt = document.querySelector('#setting-font .font-option.selected');
+const fd = document.getElementById('font-display');
+if (selOpt && fd) {
+  fd.textContent = selOpt.textContent;
+  fd.style.fontFamily = selOpt.style.fontFamily;
+}
 
-      inpColor.value = currentColor;
-      colorPickerBtn.style.background = currentColor;
+const savedSize = localStorage.getItem(`q_s_${i}`) || '';
+const sizeOptions = Array.from(selSize.options).map(o => o.value);
+selSize.selectedIndex = sizeOptions.indexOf(savedSize) >= 0
+  ? sizeOptions.indexOf(savedSize)
+  : 0;
 
-      selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
+const currentBg =
+  localStorage.getItem(`q_b_${i}`) ||
+  getComputedStyle(ta.parentElement).getPropertyValue('--bg').trim() ||
+  defBgs[i];
 
-      setTileModeUI(i, getTileMode(i));
+const currentColor =
+  localStorage.getItem(`q_c_${i}`) ||
+  getComputedStyle(ta.parentElement).getPropertyValue('--color').trim() ||
+  defColors[i];
 
-      if (images[i].style.display === 'block') {
-        imgActionContainer.style.display = 'block';
-        chkDelImg.checked = false;
-      } else {
-        imgActionContainer.style.display = 'none';
-      }
+    inpBg.value = currentBg;
+    bgPickerBtn.style.background = currentBg;
 
-      // --- Загрузка существующего тайла ---
-      ta._pendingTile = null;
-      inpTile.value = '';
-      tileName.textContent = 'No file';
-      chkDelTile.checked = false;
-      tileThumb.style.display = 'none';
-      tileThumb.removeAttribute('src');
+    inpColor.value = currentColor;
+    colorPickerBtn.style.background = currentColor;
 
-      const tileTx = db.transaction("texts", "readonly");
-      const tileReq = tileTx.objectStore("texts").get(i);
-      tileReq.onsuccess = () => {
-        if (tileReq.result && tileReq.result.tile) {
-          tileThumb.src = tileReq.result.tile;
-          tileThumb.style.display = 'block';
-        }
-      };
+    selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
 
-      // --- Тинт ---
-      const savedTint = localStorage.getItem(`q_tint_${i}`);
-      const tintNum = savedTint !== null ? parseFloat(savedTint) : 1;
-      inpTint.value = Math.round(tintNum * 100);
-      tintVal.textContent = inpTint.value;
+    // Инициализация режима тайла
+    setTileModeUI(i, getTileMode(i));
 
-      if (window.getSelection) window.getSelection().removeAllRanges();
-      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-      modal.style.display = 'flex';
-    }, FIELD_LONGPRESS_MS);
-  };
-
-  ta.addEventListener('pointerdown', startFieldLongPress);
-  ta.addEventListener('pointermove', (e) => {
-    if (e.pointerId !== lp.pid) return;
-    if (Math.abs(e.clientX - lp.startX) > FIELD_MOVE_THRESHOLD ||
-        Math.abs(e.clientY - lp.startY) > FIELD_MOVE_THRESHOLD) {
-      cancelFieldLongPress();
+    if (images[i].style.display === 'block') {
+      imgActionContainer.style.display = 'block';
+      chkDelImg.checked = false;
+    } else {
+      imgActionContainer.style.display = 'none';
     }
-  });
-  ta.addEventListener('pointerup', cancelFieldLongPress);
-  ta.addEventListener('pointercancel', cancelFieldLongPress);
-  // ===== /longpress по полю =====
+
+    // --- Загрузка существующего тайла ---
+    ta._pendingTile = null;
+    inpTile.value = '';
+    tileName.textContent = 'No file';
+    chkDelTile.checked = false;
+    tileThumb.style.display = 'none';
+    tileThumb.removeAttribute('src');
+
+    const tileTx = db.transaction("texts", "readonly");
+    const tileReq = tileTx.objectStore("texts").get(i);
+    tileReq.onsuccess = () => {
+      if (tileReq.result && tileReq.result.tile) {
+        tileThumb.src = tileReq.result.tile;
+        tileThumb.style.display = 'block';
+      }
+    };
+
+    // --- Тинт ---
+    const savedTint = localStorage.getItem(`q_tint_${i}`);
+    const tintNum = savedTint !== null ? parseFloat(savedTint) : 1;
+    inpTint.value = Math.round(tintNum * 100);
+    tintVal.textContent = inpTint.value;
+
+    if (window.getSelection) window.getSelection().removeAllRanges();
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    modal.style.display = 'flex';
+  }, 600);
+};
+
+  const stopLongPress = () => clearTimeout(textareaLongPressTimer);
+
+  ta.addEventListener('mousedown', startLongPress);
+  ta.addEventListener('mouseup', stopLongPress);
+  ta.addEventListener('mouseleave', stopLongPress);
+  ta.addEventListener('touchstart', startLongPress, { passive: true });
+  ta.addEventListener('touchend', stopLongPress);
+  ta.addEventListener('touchmove', stopLongPress);
 
   // === ОБРАБОТЧИКИ КАРТИНКИ (pointer events) ===
   const img = images[i];
@@ -1340,7 +1279,6 @@ textareas.forEach((ta, i) => {
   });
 });
 
-/* ===================== SAVE ===================== */
 btnSave.onclick = () => {
   if (activeIndex === null) return;
   const targetTa = textareas[activeIndex];
@@ -1373,6 +1311,7 @@ btnSave.onclick = () => {
   if (chkDelTile.checked) {
     wrap.style.setProperty('--bg-tile', 'none');
     saveToDB(activeIndex, targetTa.innerHTML, null, false, null, true);
+    // Если тайл удалён — сбрасываем режим на repeat
     setTileModeUI(activeIndex, 'repeat');
     localStorage.setItem(`q_tilemode_${activeIndex}`, 'repeat');
   } else if (targetTa._pendingTile) {
