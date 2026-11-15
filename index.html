@@ -295,7 +295,7 @@
             If you find my applications useful and would like to support the project using ETH (ERC20), please use the address below.
         </div>
         <div data-lang-block="zh" style="display:none;">
-            如果您觉得此界面及其包含的应用</a>有用，并希望使用 ETH（ERC20）支持该项目，请使用以下地址。
+            如果您觉得此界面及其包含的应用有用，并希望使用 ETH（ERC20）支持该项目，请使用以下地址。
         </div>
     </div>
 
@@ -449,10 +449,10 @@
     // ============================================================
 
     const MATCH_PAGE = 'match.html';
-    const TAPS_BEFORE_NAVIGATION = 3; // третий тап → переход
+    const TAPS_BEFORE_NAVIGATION = 3;   // третий подряд тап → переход
     const LONG_PRESS_MS = 600;
     const SHORT_TAP_MS = 300;
-    const TAP_RESET_MS = 1000; // если пауза между тапами больше — счётчик сбрасывается
+    const TAP_RESET_MS = 1000;          // пауза между тапами, после которой счётчик сбрасывается
 
     function getStorageKey() {
         return 'trust_fibonacci_words_content_' + currentLang;
@@ -467,45 +467,65 @@
         saveWordStates();
     }
 
-    function navigateToMatch(wordElement) {
-        if (wordElement._navigating) return;
-        wordElement._navigating = true;
-        window.location.href = MATCH_PAGE;
-    }
-
     /**
-     * Клик по слову: 0 → 1 (зелёный) → 2 (оранжевый) → 1 → 2 ...
-     * При этом ведётся счётчик тапов. На третьем тапе (подряд, в пределах
-     * TAP_RESET_MS) выполняется переход на match.html.
+     * Клик по слову:
+     *   - счётчик подряд идущих тапов (_tapCount) увеличивается;
+     *   - на 3-м подряд тапе — переход на match.html;
+     *   - иначе — визуальный цикл 0 → 1 → 2 → 1 → 2 ...
+     *
+     * Навигация зависит ТОЛЬКО от _tapCount, а не от dataset.state,
+     * чтобы восстановленный из localStorage state=2 не приводил
+     * к мгновенному переходу после смены языка.
      */
-function handleWordClick(wordElement) {
-            const word = wordElement.textContent.trim();
-            if (!word) return;
+    function handleWordClick(wordElement) {
+        const word = wordElement.textContent.trim();
+        if (!word) return;
 
-            let currentState = parseInt(wordElement.dataset.state || '0');
+        const now = Date.now();
+        if (now - (wordElement._lastTapAt || 0) > TAP_RESET_MS) {
+            wordElement._tapCount = 0;
+        }
+        wordElement._lastTapAt = now;
+        wordElement._tapCount = (wordElement._tapCount || 0) + 1;
 
-            if (currentState === 2) {
-                // Третий тап → переход на match.html
-                window.location.href = 'match.html';
-                return;
-            }
-
-            currentState = currentState + 1;
-            wordElement.dataset.state = currentState;
-            wordElement.classList.remove('state-0', 'state-1', 'state-2');
-            wordElement.classList.add(`state-${currentState}`);
-
-            saveWordStates();
+        // Третий подряд тап → переход
+        if (wordElement._tapCount >= TAPS_BEFORE_NAVIGATION) {
+            if (wordElement._navigating) return;
+            wordElement._navigating = true;
+            window.location.href = MATCH_PAGE;
+            return;
         }
 
+        // Визуальный цикл 0 → 1 → 2 → 1 → 2 ...
+        let currentState = parseInt(wordElement.dataset.state || '0', 10);
+        if (currentState >= 2) {
+            currentState = 1;
+        } else {
+            currentState = currentState + 1;
+        }
+
+        wordElement.dataset.state = String(currentState);
+        wordElement.classList.remove('state-0', 'state-1', 'state-2');
+        wordElement.classList.add('state-' + currentState);
+
+        saveWordStates();
+    }
+
+    // --- Сохранение/восстановление состояний по СЛОВУ (а не по индексу) ---
+
     function saveWordStates() {
-        const states = { main: [], story: [] };
+        const states = {};
         ['main', 'story'].forEach(key => {
             const root = document.getElementById('content-text-' + key);
             if (!root) return;
-            root.querySelectorAll('.clickable-word').forEach(el => {
-                states[key].push(el.dataset.state || '0');
+            const block = root.querySelector('[data-lang-block="' + currentLang + '"]');
+            if (!block) return;
+            const map = {};
+            block.querySelectorAll('.clickable-word').forEach(el => {
+                const word = el.textContent.trim();
+                if (word) map[word] = el.dataset.state || '0';
             });
+            states[key] = map;
         });
         try {
             localStorage.setItem(getStorageKey(), JSON.stringify(states));
@@ -519,33 +539,30 @@ function handleWordClick(wordElement) {
         } catch (e) {
             states = null;
         }
-        if (!states) return;
-
-        if (Array.isArray(states)) {
-            const all = document.querySelectorAll(
-                '#content-text-main .clickable-word, #content-text-story .clickable-word'
-            );
-            all.forEach((el, i) => {
-                const state = states[i] || '0';
-                el.dataset.state = state;
-                el.classList.remove('state-0', 'state-1', 'state-2');
-                el.classList.add('state-' + state);
-            });
-            return;
-        }
+        if (!states || typeof states !== 'object') return;
 
         ['main', 'story'].forEach(key => {
             const root = document.getElementById('content-text-' + key);
             if (!root) return;
-            const arr = states[key] || [];
-            root.querySelectorAll('.clickable-word').forEach((el, i) => {
-                const state = arr[i] || '0';
+            const block = root.querySelector('[data-lang-block="' + currentLang + '"]');
+            if (!block) return;
+            const map = states[key];
+            if (!map || typeof map !== 'object') return;
+            block.querySelectorAll('.clickable-word').forEach(el => {
+                const word = el.textContent.trim();
+                const state = (map[word] === '1' || map[word] === '2') ? map[word] : '0';
                 el.dataset.state = state;
                 el.classList.remove('state-0', 'state-1', 'state-2');
                 el.classList.add('state-' + state);
+                // Счётчик тапов после восстановления сбрасываем — навигация
+                // должна требовать явных новых тапов
+                el._tapCount = 0;
+                el._lastTapAt = 0;
             });
         });
     }
+
+    // --- Обёртка слов в span'ы ---
 
     function wrapWordsInContainer(container) {
         if (!container) return;
@@ -595,6 +612,8 @@ function handleWordClick(wordElement) {
         });
     }
 
+    // --- Обработчики: только pointer-события, БЕЗ click ---
+
     function attachWordListeners() {
         const wordElements = document.querySelectorAll('.clickable-word');
 
@@ -603,25 +622,22 @@ function handleWordClick(wordElement) {
                 wordEl.dataset.state = '0';
                 wordEl.classList.add('state-0');
             }
-            if (!wordEl._tapCount) {
-                wordEl._tapCount = 0;
-            }
-            if (!wordEl._lastTapAt) {
-                wordEl._lastTapAt = 0;
-            }
+            if (wordEl._tapCount === undefined) wordEl._tapCount = 0;
+            if (wordEl._lastTapAt === undefined) wordEl._lastTapAt = 0;
+            if (wordEl._navigating === undefined) wordEl._navigating = false;
 
-            // Удаляем старые обработчики (если были)
-            wordEl.removeEventListener('click', wordClickHandler);
-            wordEl.removeEventListener('pointerdown', wordPointerDownHandler);
-            wordEl.removeEventListener('pointerup', wordPointerUpHandler);
-            wordEl.removeEventListener('pointercancel', wordPointerCancelHandler);
-            wordEl.removeEventListener('pointerleave', wordPointerLeaveHandler);
-
-            wordEl.addEventListener('click', wordClickHandler);
+            // Снимаем возможные старые обработчики
+            if (wordEl._handlers) {
+                wordEl.removeEventListener('pointerdown', wordEl._handlers.down);
+                wordEl.removeEventListener('pointerup', wordEl._handlers.up);
+                wordEl.removeEventListener('pointercancel', wordEl._handlers.cancel);
+                wordEl.removeEventListener('pointerleave', wordEl._handlers.leave);
+                wordEl.removeEventListener('click', wordEl._handlers.click);
+            }
 
             let pressStartTime = 0;
 
-            function wordPointerDownHandler(event) {
+            const down = function (event) {
                 event.stopPropagation();
                 pressStartTime = Date.now();
                 wordEl._isLongPress = false;
@@ -631,9 +647,9 @@ function handleWordClick(wordElement) {
                     wordEl._isLongPress = true;
                     resetWordState(wordEl);
                 }, LONG_PRESS_MS);
-            }
+            };
 
-            function wordPointerUpHandler(event) {
+            const up = function (event) {
                 event.stopPropagation();
                 clearTimeout(wordEl._longPressTimer);
 
@@ -643,35 +659,38 @@ function handleWordClick(wordElement) {
                 }
 
                 const pressDuration = Date.now() - pressStartTime;
-
                 if (pressDuration < SHORT_TAP_MS) {
                     handleWordClick(wordEl);
                 }
-            }
+            };
 
-            function wordPointerCancelHandler(event) {
+            const cancel = function (event) {
                 event.stopPropagation();
                 clearTimeout(wordEl._longPressTimer);
                 wordEl._isLongPress = false;
-            }
+            };
 
-            function wordPointerLeaveHandler(event) {
+            const leave = function (event) {
                 event.stopPropagation();
                 clearTimeout(wordEl._longPressTimer);
                 wordEl._isLongPress = false;
-            }
+            };
 
-            wordEl.addEventListener('pointerdown', wordPointerDownHandler);
-            wordEl.addEventListener('pointerup', wordPointerUpHandler);
-            wordEl.addEventListener('pointercancel', wordPointerCancelHandler);
-            wordEl.addEventListener('pointerleave', wordPointerLeaveHandler);
+            // click НЕ обрабатывает смену состояния — только предотвращает
+            // синтетический клик после pointerup (чтобы не сработал дважды)
+            const click = function (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            };
+
+            wordEl._handlers = { down, up, cancel, leave, click };
+
+            wordEl.addEventListener('pointerdown', down);
+            wordEl.addEventListener('pointerup', up);
+            wordEl.addEventListener('pointercancel', cancel);
+            wordEl.addEventListener('pointerleave', leave);
+            wordEl.addEventListener('click', click);
         });
-    }
-
-    function wordClickHandler(event) {
-        if (event.detail === 0) {
-            handleWordClick(event.currentTarget);
-        }
     }
 
     // ============================================================
@@ -679,6 +698,8 @@ function handleWordClick(wordElement) {
     // ============================================================
 
     function reinitWordWrapping() {
+        // Полный сброс состояния у ВСЕХ слов (включая скрытые блоки),
+        // чтобы восстановление по словам не смешивалось со старым состоянием
         document.querySelectorAll('.clickable-word').forEach(el => {
             if (el._longPressTimer) {
                 clearTimeout(el._longPressTimer);
@@ -688,6 +709,10 @@ function handleWordClick(wordElement) {
             el._tapCount = 0;
             el._lastTapAt = 0;
             el._navigating = false;
+
+            el.dataset.state = '0';
+            el.classList.remove('state-1', 'state-2');
+            el.classList.add('state-0');
         });
 
         wrapWordsInContainer(document.getElementById('content-text-main'));
