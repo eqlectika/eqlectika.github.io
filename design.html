@@ -5,15 +5,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="icon" type="image/png" href="design.png">
-    <link rel="apple-touch-icon"
-      sizes="180x180"
-      href="design.png?v=2">
+<link rel="apple-touch-icon" sizes="180x180" href="design.png?v=2">
 <meta property="og:image" content="/Verge.jpeg">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="1280">
 <link rel="manifest" href="manifest-design.json">
 <title>Design | Note Editor</title>
-<script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet">
@@ -30,6 +28,7 @@
 <link href="https://fonts.googleapis.com/css2?family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Micro+5+Charted&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Aubrey&family=Barriecito&display=swap" rel="stylesheet">
+
 <style>
 * {
   scrollbar-width: thin;
@@ -55,33 +54,32 @@ body, html {
   width: 100vw;
   overflow: hidden;
   background: #000;
-  touch-action: none;
+  touch-action: auto;
   -webkit-tap-highlight-color: transparent;
 }
+
 .container {
   display: grid;
   grid-template-columns: var(--x, 50%) 1fr;
   grid-template-rows: var(--y, 50%) 1fr;
   height: 100%;
   width: 100%;
-  position: relative;       /* ← добавить */
+  position: relative;
 }
 
-/* Вертикальная линия #0f0 строго по границе X */
 .container::before {
   content: '';
   position: absolute;
   top: 0;
   bottom: 0;
   left: var(--x, 50%);
-  width: 2px;                    /* толщина — 2px как вы хотели */
+  width: 2px;
   background: #0f0;
-  transform: translateX(-50%);   /* центрируем НА границе */
+  transform: translateX(-50%);
   z-index: 50;
   pointer-events: none;
 }
 
-/* Горизонтальная линия #0f0 строго по границе Y */
 .container::after {
   content: '';
   position: absolute;
@@ -96,15 +94,15 @@ body, html {
 }
 
 .editor-wrapper {
-position: relative;
-width: 100%;
-height: 100%;
-overflow: hidden;
-isolation: isolate;
-container-type: size;
-container-name: field;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  container-type: size;
+  container-name: field;
 }
-/* Слой 1 — тайл */
+
 .editor-wrapper::before {
   content: '';
   position: absolute;
@@ -117,7 +115,6 @@ container-name: field;
   pointer-events: none;
 }
 
-/* Слой 2 — цвет с прозрачностью (тинт) */
 .editor-wrapper::after {
   content: '';
   position: absolute;
@@ -128,7 +125,6 @@ container-name: field;
   pointer-events: none;
 }
 
-/* === Режимы тайла === */
 .editor-wrapper[data-tilemode="fit"]::before {
   background-size: contain;
   background-repeat: no-repeat;
@@ -151,10 +147,10 @@ container-name: field;
   padding: 34px 15px 15px 15px;
   font-size: var(--fs, 10cqmin);
   outline: none;
-  touch-action: auto;
+  touch-action: manipulation;
   -webkit-user-select: text;
   user-select: text;
-  -webkit-touch-callout: none;
+  -webkit-touch-callout: default;
   overflow-y: auto;
   font-family: var(--fn, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
   word-break: break-word;
@@ -164,8 +160,11 @@ container-name: field;
 .editor div, .editor p {
   margin: 0.5em 0 !important;
 }
-
 .editor:empty::before { content: none; }
+.editor:focus {
+  -webkit-user-select: text;
+  user-select: text;
+}
 
 .ph {
   position: absolute;
@@ -176,7 +175,7 @@ container-name: field;
   pointer-events: auto;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
+  touch-action: manipulation;
   overscroll-behavior: contain;
   scrollbar-width: none;
   color: var(--color);
@@ -189,10 +188,8 @@ container-name: field;
 }
 .ph::-webkit-scrollbar { display: none; }
 .ph.hidden { display: none; }
-
 .ph p { margin: 0 !important; }
 .ph p + p { margin-top: 0.5em !important; }
-
 .editor:not(:empty) ~ .ph { display: none; }
 
 .img-preview {
@@ -211,57 +208,6 @@ container-name: field;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
-
-.handle {
-position: absolute;
-top: var(--y, 50%);
-left: var(--x, 50%);
-width: 32px;
-height: 32px;
-transform: translate(-50%, -50%) scale(1);
-z-index: 100;
-touch-action: none;
-cursor: pointer;
--webkit-user-select: none;
-user-select: none;
--webkit-touch-callout: none;
-display: flex;
-align-items: center;
-justify-content: center;
-transition: transform 0.1s ease, filter 0.3s ease;
-}
-
-.handle:active {
-transform: translate(-50%, -50%) scale(0.85);
-}
-
-.handle img {
-width: 100%;
-height: 100%;
-object-fit: contain;
-pointer-events: none;
--webkit-user-drag: none;
-transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-#settings-modal select {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-color: #333 !important;
-  color: #fff !important;
-  border: 1px solid #555 !important;
-  padding: 12px 16px !important;
-  font-size: 16px !important;
-  border-radius: 8px !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  cursor: pointer;
-}
-#settings-modal select::-ms-expand {
-  display: none;
-}
-
 .img-preview.fullscreen {
   position: fixed !important;
   top: 50% !important;
@@ -279,13 +225,56 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border-radius: 8px;
 }
 
+.handle {
+  position: absolute;
+  top: var(--y, 50%);
+  left: var(--x, 50%);
+  width: 32px;
+  height: 32px;
+  transform: translate(-50%, -50%) scale(1);
+  z-index: 100;
+  touch-action: none;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter 0.3s ease;
+  will-change: transform;
+}
+.handle img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#settings-modal select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: #333 !important;
+  color: #fff !important;
+  border: 1px solid #555 !important;
+  padding: 12px 16px !important;
+  font-size: 16px !important;
+  border-radius: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  cursor: pointer;
+}
+#settings-modal select::-ms-expand { display: none; }
+
 #align-toolbar {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin-bottom: 20px;
 }
-
 .format-btn {
   padding: 10px 6px;
   border: 1px solid #555;
@@ -297,12 +286,8 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   cursor: pointer;
   min-width: 0;
 }
+.format-btn:active { background: #555; }
 
-.format-btn:active {
-  background: #555;
-}
-
-/* Кнопки режима тайла */
 #tile-mode-toolbar {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -323,7 +308,6 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   box-sizing: border-box;
   padding: 12px;
 }
-
 #settings-modal > div {
   max-height: calc(100dvh - 24px);
   overflow-y: auto;
@@ -331,10 +315,27 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   touch-action: pan-y !important;
   box-sizing: border-box;
 }
+#settings-modal,
+#settings-modal * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+}
+#settings-modal #setting-broker { border: 2px solid #0f0 !important; }
 
-.editor:focus {
-  -webkit-user-select: text;
-  user-select: text;
+#handle-modal,
+#handle-modal * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
 }
 
 .font-picker {
@@ -344,14 +345,12 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border-radius: 8px;
   padding: 0;
 }
-
 .font-picker-display {
   padding: 12px 16px;
   color: #fff;
   font-size: 16px;
   cursor: pointer;
 }
-
 .font-picker-list {
   display: none;
   position: absolute;
@@ -368,11 +367,7 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   z-index: 1001;
   box-shadow: 0 8px 20px rgba(0,0,0,0.5);
 }
-
-.font-picker.open .font-picker-list {
-  display: block;
-}
-
+.font-picker.open .font-picker-list { display: block; }
 .font-option {
   padding: 8px 16px;
   border-radius: 0;
@@ -383,7 +378,6 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 .font-option:hover { background: #444; }
 .font-option.selected { background: #00f; color: #fff; }
 
-/* Range slider */
 #setting-tint {
   -webkit-appearance: none;
   appearance: none;
@@ -414,14 +408,12 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   box-sizing: border-box;
 }
 
-/* Tile UI */
 .tile-row {
   display: flex;
   align-items: center;
   margin-bottom: 12px;
   gap: 10px;
 }
-
 .tile-preview-thumb {
   width: 48px;
   height: 48px;
@@ -431,11 +423,7 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   object-fit: cover;
   flex-shrink: 0;
 }
-
-.tile-input {
-  display: none;
-}
-
+.tile-input { display: none; }
 .tile-btn {
   display: inline-flex;
   align-items: center;
@@ -452,10 +440,7 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
-.tile-btn:active {
-  background: #e07a00;
-}
-
+.tile-btn:active { background: #e07a00; }
 .tile-name {
   font-size: 13px;
   color: #aaa;
@@ -465,127 +450,145 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   flex: 1;
   min-width: 0;
 }
-#settings-modal,
-#settings-modal * {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-  -webkit-tap-highlight-color: transparent;
-  pointer-events: auto;
+
+.help-box {
+  padding: 4px 0;
+  margin: 0 0 24px 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #ccc;
+}
+.help-box p { margin: 0 0 0.5em 0; }
+.help-box p:last-child { margin-bottom: 0; }
+
+.ios-blur-fix {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 11px;
+  z-index: 2147483647;
+  pointer-events: none;
+  background-color: #000;
+  -webkit-background-clip: text;
+  color: transparent;
 }
 
-#settings-modal #setting-broker { border: 2px solid #0f0 !important; }
-.ios-blur-fix {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 11px;
-    z-index: 2147483647;
-    pointer-events: none;
-    background-color: #000;  /* подставьте цвет фона вашего файла */
-    -webkit-background-clip: text;
-    color: transparent;
+.help-box h3 {
+  margin-top: 34px;
+  margin-bottom: 20px;
+  font-size: 20px;
+  text-align: left;
+  font-weight: bold;
 }
+
 </style>
 </head>
 <body>
-  <div class="ios-blur-fix"></div>
+<div class="ios-blur-fix"></div>
+
 <div class="container" id="app">
-<div class="editor-wrapper">
-  <div class="editor" id="t0" contenteditable="true"></div>
-  <div class="ph">
-<p><strong>Anything you type or paste here can be seen by other users!</strong></p>
-<p>1. Type or paste text and image here.</p>
-<p>2. Move handle (crosshair) to resize fields.</p>
-<p>3. Tap handle to change logo.</p>
-<p>4. Long tap handle to change design & palette.</p>
-<p>5. Very long tap empty field to format.</p>
-<p>6. Tap image to toggle expand (close) or long tap to delete.</p>
-<p>7. Add the page to your Home Screen via the browser menu and use that shortcut to launch and save data.</p>
+  <div class="editor-wrapper">
+    <div class="editor" id="t0" contenteditable="true"></div>
+    <div class="ph">
+      <p><strong>Anything you type or paste here can be seen by other users!</strong></p>
+      <p>1. Type or paste text and image here.</p>
+      <p>2. Move handle (crosshair) to resize fields.</p>
+      <p>3. Tap handle to change logo.</p>
+      <p>4. Double tap handle — logo menu (upload png, palette).</p>
+      <p>5. Long tap handle — random design.</p>
+      <p>6. Double tap empty field — font, color and background settings.</p>
+      <p>7. Tap image to expand; long tap image to delete.</p>
+      <p>8. Add the page to your Home Screen via the browser menu and use that shortcut to launch and save data.</p>
+    </div>
+    <img class="img-preview">
   </div>
-  <img class="img-preview">
-</div>
-<div class="editor-wrapper">
-  <div class="editor" id="t1" contenteditable="true"></div>
-  <div class="ph">
-<p><strong>Anything you type or paste here can be seen by other users!</strong></p>
-<p>1. Type or paste text and image here.</p>
-<p>2. Move handle (crosshair) to resize fields.</p>
-<p>3. Tap handle to change logo.</p>
-<p>4. Long tap handle to change design & palette.</p>
-<p>5. Very long tap empty field to format.</p>
-<p>6. Tap image to toggle expand (close) or long tap to delete.</p>
-<p>7. Add the page to your Home Screen via the browser menu and use that shortcut to launch and save data.</p>
+  <div class="editor-wrapper">
+    <div class="editor" id="t1" contenteditable="true"></div>
+    <div class="ph">
+      <p><strong>Anything you type or paste here can be seen by other users!</strong></p>
+      <p>1. Type or paste text and image here.</p>
+      <p>2. Move handle (crosshair) to resize fields.</p>
+      <p>3. Tap handle to change logo.</p>
+      <p>4. Double tap handle — logo menu (upload png, palette).</p>
+      <p>5. Long tap handle — random design.</p>
+      <p>6. Double tap empty field — font, color and background settings.</p>
+      <p>7. Tap image to expand; long tap image to delete.</p>
+      <p>8. Add the page to your Home Screen via the browser menu and use that shortcut to launch and save data.</p>
+    </div>
+    <img class="img-preview">
   </div>
-  <img class="img-preview">
-</div>
-<div class="editor-wrapper">
-  <div class="editor" id="t2" contenteditable="true"></div>
-  <div class="ph">
-<p><strong>Anything you type or paste here can be seen by other users!</strong></p>
-<p>1. Type or paste text and image here.</p>
-<p>2. Move handle (crosshair) to resize fields.</p>
-<p>3. Tap handle to change logo.</p>
-<p>4. Long tap handle to change design & palette.</p>
-<p>5. Very long tap empty field to format.</p>
-<p>6. Tap image to toggle expand (close) or long tap to delete.</p>
-<p>7. Add the page to your Home Screen via the browser menu and use that shortcut to launch and save data.</p>
+  <div class="editor-wrapper">
+    <div class="editor" id="t2" contenteditable="true"></div>
+    <div class="ph">
+      <p><strong>Anything you type or paste here can be seen by other users!</strong></p>
+      <p>1. Type or paste text and image here.</p>
+      <p>2. Move handle (crosshair) to resize fields.</p>
+      <p>3. Tap handle to change logo.</p>
+      <p>4. Double tap handle — logo menu (upload png, palette).</p>
+      <p>5. Long tap handle — random design.</p>
+      <p>6. Double tap empty field — font, color and background settings.</p>
+      <p>7. Tap image to expand; long tap image to delete.</p>
+      <p>8. Add the page to your Home Screen via the browser menu and use that shortcut to launch and save data.</p>
+    </div>
+    <img class="img-preview">
   </div>
-  <img class="img-preview">
-</div>
-<div class="editor-wrapper">
-  <div class="editor" id="t3" contenteditable="true"></div>
-  <div class="ph">
-<p><strong>Anything you type or paste here can be seen by other users!</strong></p>
-<p>1. Type or paste text and image here.</p>
-<p>2. Move handle (crosshair) to resize fields.</p>
-<p>3. Tap handle to change logo.</p>
-<p>4. Long tap handle to change design & palette.</p>
-<p>5. Very long tap empty field to format.</p>
-<p>6. Tap image to toggle expand (close) or long tap to delete.</p>
-<p>7. Add the page to your Home Screen via the browser menu and use that shortcut to launch and save data.</p>
+  <div class="editor-wrapper">
+    <div class="editor" id="t3" contenteditable="true"></div>
+    <div class="ph">
+      <p><strong>Anything you type or paste here can be seen by other users!</strong></p>
+      <p>1. Type or paste text and image here.</p>
+      <p>2. Move handle (crosshair) to resize fields.</p>
+      <p>3. Tap handle to change logo.</p>
+      <p>4. Double tap handle — logo menu (upload png, palette).</p>
+      <p>5. Long tap handle — random design.</p>
+      <p>6. Double tap empty field — font, color and background settings.</p>
+      <p>7. Tap image to expand; long tap image to delete.</p>
+      <p>8. Add the page to your Home Screen via the browser menu and use that shortcut to launch and save data.</p>
+    </div>
+    <img class="img-preview">
   </div>
-  <img class="img-preview">
-</div>
-<a href="#" class="handle" id="handle" draggable="false"><img src="handle.png" alt="Logo" draggable="false"></a>
+  <a href="#" class="handle" id="handle" draggable="false">
+    <img src="handle.png" alt="Logo" draggable="false">
+  </a>
 </div>
 
+<!-- ============== SETTINGS MODAL ============== -->
 <div id="settings-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center;">
-  <div style="background:#222; color:#fff; padding:16px; border-radius:16px; width:96%; max-width:470px; font-family:sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+  <div style="background:#222; color:#fff; padding:16px; border-radius:16px; width:96%; max-width:470px; font-family:sans-serif; box-shadow:0 10px 30px rgba(0,0,0,0.6);">
     <h3 style="margin-top:0; margin-bottom:20px; font-size:20px; text-align:center; font-weight:bold;">Field Settings</h3>
     <p style="margin:-10px 0 20px; font-size:13px; color:#0f0; text-align:center; line-height:1.4;">
-  Any changes sync instantly across all devices using this app via realtime message broker
-</p>
+      Any changes sync instantly across all devices using this app via realtime message broker
+    </p>
+
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">MQTT Broker:</label>
-<select id="setting-broker" style="margin-bottom:16px;">
-  <option value="wss://broker.emqx.io:8084/mqtt">EMQX (Global)</option>
-  <option value="wss://broker-cn.emqx.io:8084/mqtt">EMQX (China)</option>
-  <option value="wss://test.mosquitto.org:8081/mqtt">Mosquitto (Test)</option>
-  <option value="custom">Custom…</option>
-</select>
-<label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font:</label>
-<div id="setting-font" class="font-picker" style="margin-bottom:16px;">
-  <div class="font-picker-display" id="font-display">Luckiest Guy</div>
-  <div class="font-picker-list" id="font-list">
-    <div class="font-option" data-value="'Luckiest Guy', Arial, sans-serif" style="font-family:'Luckiest Guy', Arial, sans-serif;">Luckiest Guy</div>
-    <div class="font-option" data-value="'Roboto Condensed', Arial, sans-serif" style="font-family:'Roboto Condensed', Arial, sans-serif;">Roboto Condensed</div>
-    <div class="font-option" data-value="'Lato', Arial, sans-serif" style="font-family:'Lato', Arial, sans-serif;">Lato</div>
-    <div class="font-option" data-value="'Playfair Display', serif" style="font-family:'Playfair Display', serif;">Playfair Display</div>
-    <div class="font-option" data-value="'Unbounded', Arial, sans-serif" style="font-family:'Unbounded', Arial, sans-serif;">Unbounded</div>
-    <div class="font-option" data-value="Copperplate, 'Copperplate Gothic Bold', sans-serif" style="font-family:Copperplate, 'Copperplate Gothic Bold', sans-serif;">Copperplate</div>
-    <div class="font-option" data-value="'Courier Prime', 'American Typewriter', 'Courier New', monospace" style="font-family:'Courier Prime', 'American Typewriter', 'Courier New', monospace;">Typewriter</div>
-    <div class="font-option" data-value="'Ubuntu', Arial, sans-serif" style="font-family:'Ubuntu', Arial, sans-serif;">Ubuntu</div>
-    <div class="font-option" data-value="'Bytesized', 'Ubuntu', system-ui, sans-serif" style="font-family:'Bytesized', 'Ubuntu', system-ui, sans-serif;">Bytesized</div>
-    <div class="font-option" data-value="'Roboto Mono', monospace" style="font-family:'Roboto Mono', monospace;">Monospace</div>
-    <div class="font-option" data-value="'UnifrakturCook', Copperplate, serif" style="font-family:'UnifrakturCook', serif;">UnifrakturCook</div>
-<div class="font-option" data-value="'Aubrey', serif" style="font-family:'Aubrey', serif;">Aubrey</div>
-<div class="font-option" data-value="'Micro 5 Charted', sans-serif" style="font-family:'Micro 5 Charted', sans-serif;">Micro 5 Charted</div>
-<div class="font-option" data-value="'Barriecito', cursive" style="font-family:'Barriecito', cursive;">Barriecito</div>
-  </div>
-</div>
+    <select id="setting-broker" style="margin-bottom:16px;">
+      <option value="wss://broker.emqx.io:8084/mqtt">EMQX (Global)</option>
+      <option value="wss://broker-cn.emqx.io:8084/mqtt">EMQX (China)</option>
+      <option value="wss://test.mosquitto.org:8081/mqtt">Mosquitto (Test)</option>
+      <option value="custom">Custom…</option>
+    </select>
+
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font:</label>
+    <div id="setting-font" class="font-picker" style="margin-bottom:16px;">
+      <div class="font-picker-display" id="font-display">Luckiest Guy</div>
+      <div class="font-picker-list" id="font-list">
+        <div class="font-option" data-value="'Luckiest Guy', Arial, sans-serif" style="font-family:'Luckiest Guy', Arial, sans-serif;">Luckiest Guy</div>
+        <div class="font-option" data-value="'Roboto Condensed', Arial, sans-serif" style="font-family:'Roboto Condensed', Arial, sans-serif;">Roboto Condensed</div>
+        <div class="font-option" data-value="'Lato', Arial, sans-serif" style="font-family:'Lato', Arial, sans-serif;">Lato</div>
+        <div class="font-option" data-value="'Playfair Display', serif" style="font-family:'Playfair Display', serif;">Playfair Display</div>
+        <div class="font-option" data-value="'Unbounded', Arial, sans-serif" style="font-family:'Unbounded', Arial, sans-serif;">Unbounded</div>
+        <div class="font-option" data-value="Copperplate, 'Copperplate Gothic Bold', sans-serif" style="font-family:Copperplate, 'Copperplate Gothic Bold', sans-serif;">Copperplate</div>
+        <div class="font-option" data-value="'Courier Prime', 'American Typewriter', 'Courier New', monospace" style="font-family:'Courier Prime', 'American Typewriter', 'Courier New', monospace;">Typewriter</div>
+        <div class="font-option" data-value="'Ubuntu', Arial, sans-serif" style="font-family:'Ubuntu', Arial, sans-serif;">Ubuntu</div>
+        <div class="font-option" data-value="'Bytesized', 'Ubuntu', system-ui, sans-serif" style="font-family:'Bytesized', 'Ubuntu', system-ui, sans-serif;">Bytesized</div>
+        <div class="font-option" data-value="'Roboto Mono', monospace" style="font-family:'Roboto Mono', monospace;">Monospace</div>
+        <div class="font-option" data-value="'UnifrakturCook', Copperplate, serif" style="font-family:'UnifrakturCook', serif;">UnifrakturCook</div>
+        <div class="font-option" data-value="'Aubrey', serif" style="font-family:'Aubrey', serif;">Aubrey</div>
+        <div class="font-option" data-value="'Micro 5 Charted', sans-serif" style="font-family:'Micro 5 Charted', sans-serif;">Micro 5 Charted</div>
+        <div class="font-option" data-value="'Barriecito', cursive" style="font-family:'Barriecito', cursive;">Barriecito</div>
+      </div>
+    </div>
 
     <div id="align-toolbar">
       <button type="button" style="padding: 6px 16px" class="format-btn" data-align="left">Left</button>
@@ -594,29 +597,26 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     </div>
 
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Font size:</label>
-<select id="setting-size" style="margin-bottom:16px;">
-<option value="4cqmin">Small (4cqmin)</option>
-<option value="6cqmin">Normal (6cqmin)</option>
-<option value="10cqmin">Large (10cqmin)</option>
-<option value="15cqmin">Extra Large (15cqmin)</option>
-</select>
+    <select id="setting-size" style="margin-bottom:16px;">
+      <option value="4cqmin">Small (4cqmin)</option>
+      <option value="6cqmin">Normal (6cqmin)</option>
+      <option value="10cqmin">Large (10cqmin)</option>
+      <option value="15cqmin">Extra Large (15cqmin)</option>
+    </select>
 
     <div style="display:flex; gap:12px; margin-bottom:16px;">
       <div style="flex:1; position:relative;">
         <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Background:</label>
-        <button type="button" id="bg-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#ff8700; cursor:pointer; border:2px solid #555; padding:0; display:flex; align-items:center; justify-content:center;">
-        </button>
+        <button type="button" id="bg-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#ff8700; cursor:pointer; border:2px solid #555; padding:0;"></button>
         <input type="color" id="setting-bg" style="position:absolute; bottom:0; left:0; width:100%; height:100%; opacity:0; pointer-events:auto; cursor:pointer;">
       </div>
       <div style="flex:1; position:relative;">
         <label style="display:block; font-size:14px; margin-bottom:6px; color:#ccc;">Text color:</label>
-        <button type="button" id="color-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#000000; cursor:pointer; border:2px solid #555; padding:0; display:flex; align-items:center; justify-content:center;">
-        </button>
+        <button type="button" id="color-picker-btn" style="width:100%; height:48px; border-radius:8px; background:#000000; cursor:pointer; border:2px solid #555; padding:0;"></button>
         <input type="color" id="setting-color" style="position:absolute; bottom:0; left:0; width:100%; height:100%; opacity:0; pointer-events:auto; cursor:pointer;">
       </div>
     </div>
 
-    <!-- TILE -->
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Background image:</label>
     <div class="tile-row">
       <img id="tile-thumb" class="tile-preview-thumb" alt="" style="display:none;">
@@ -628,15 +628,13 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       <input type="checkbox" id="setting-del-tile" style="width:20px; height:20px; margin-right:10px; accent-color:#ff758f; cursor:pointer;"> Delete background
     </label>
 
-    <!-- TILE MODE -->
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">Background (image) mode:</label>
-<div id="tile-mode-toolbar">
-  <button type="button" class="format-btn" data-tilemode="repeat">Tile</button>
-  <button type="button" class="format-btn" data-tilemode="fit">Fit</button>
-  <button type="button" class="format-btn" data-tilemode="fill">Fill</button>
-</div>
+    <div id="tile-mode-toolbar">
+      <button type="button" class="format-btn" data-tilemode="repeat">Tile</button>
+      <button type="button" class="format-btn" data-tilemode="fit">Fit</button>
+      <button type="button" class="format-btn" data-tilemode="fill">Fill</button>
+    </div>
 
-    <!-- TINT -->
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">
       Tint opacity: <span id="tint-val" style="color:#ff8700; font-weight:bold;">100</span>%
     </label>
@@ -659,38 +657,73 @@ transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       </label>
     </div>
 
+    <input type="text" id="setting-broker-custom" placeholder="wss://your-broker:port/mqtt"
+           style="display:none; width:100%; padding:10px; margin-bottom:16px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box;">
 
-<input type="text" id="setting-broker-custom" placeholder="wss://your-broker:port/mqtt"
-       style="display:none; width:100%; padding:10px; margin-bottom:16px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box;">
     <div style="height:20px;"></div>
     <div style="display:flex; gap:12px;">
       <button type="button" id="setting-cancel" style="flex:1; padding:12px; border:none; border-radius:8px; background:#ff000050; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Cancel</button>
       <button type="button" id="setting-save" style="flex:1; padding:12px; border:none; border-radius:8px; background:#00ff0050; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Save</button>
     </div>
-    <div id="update-app" style="font-family:'Ubuntu', sans-serif;text-align:center; margin:50px 0; color:#ff8700; font-size:16px; font-weight: bold; cursor:pointer;">
-       Update
-    </div>
-<div style="margin: 0 0 40px; text-align: center;">
-    <a href="index.html" style="display: inline-block;">
-        <img 
-            src="fleurdelis.png" 
-            alt="Fleur de lis" 
-            class="no-invert"
-            style="display: block; height: 64px; width: auto; max-width: 100%;">
-    </a>
-    <p style="letter-spacing: 3px; margin:10px;font-size: 12px; color: #fff; font-family: 'Cinzel', sans-serif; margin: 0 0 20px 0;">
-        Web terminals that make you happy
-    </p>
-</div>
 
+    <div id="update-app" style="font-family:'Ubuntu', sans-serif;text-align:center; margin:50px 0; color:#ff8700; font-size:16px; font-weight: bold; cursor:pointer;">Update</div>
+
+    <div style="margin: 0 0 40px; text-align: center;">
+      <a href="index.html" style="display: inline-block;">
+        <img src="fleurdelis.png" alt="Fleur de lis" class="no-invert"
+             style="display: block; height: 64px; width: auto; max-width: 100%;">
+      </a>
+      <p style="letter-spacing: 3px; margin:10px 0 20px 0; font-size: 12px; color: #fff; font-family: 'Cinzel', sans-serif;">
+        Web terminals that make you happy
+      </p>
+    </div>
   </div>
 </div>
 
+<!-- ============== HANDLE MODAL ============== -->
+<div id="handle-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); z-index:1100; align-items:center; justify-content:center;">
+  <div style="background:#222; color:#fff; padding:16px; border-radius:16px; width:96%; max-width:470px; font-family:sans-serif; box-shadow:0 10px 30px rgba(0,0,0,0.6); max-height:90vh; overflow-y:auto; box-sizing:border-box;">
+    <div id="handle-list" style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:20px;"></div>
+    <label for="handle-file-input" style="display:flex; align-items:center; justify-content:center; width:100%; box-sizing:border-box; padding:12px; margin-bottom:12px; border:none; border-radius:8px; background:#ff8700; color:#000; font-size:16px; font-weight:bold; cursor:pointer;">Upload custom handle logo (png)</label>
+    <input type="file" id="handle-file-input" accept="image/png" style="display:none;">
+
+<div class="help-box" id="help-box"></div>
+
+    <button type="button" id="handle-close-btn" style="width:100%; box-sizing:border-box; padding:12px; border:none; border-radius:8px; background:#333; color:#fff; font-size:16px; font-weight:bold; cursor:pointer;">Close</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js" defer></script>
 <script>
+
+/* ==================== TRANSLATIONS ==================== */
+const helpText = (navigator.language || navigator.userLanguage || 'en').startsWith('ru')
+  ? `<h3>Как пользоваться</h3>
+     <p>1. Введите или вставьте текст и картинку в любое поле.</p>
+     <p>2. Двигайте крестик, чтобы изменить размер полей.</p>
+     <p>3. Нажмите на крестик, чтобы сменить логотип.</p>
+     <p>4. Двойной тап на крестик — это меню (добавить png, палитра).</p>
+     <p>5. Долгое нажатие на крестик — случайный дизайн.</p>
+     <p>6. Двойной тап по пустому полю — настройки шрифта, цвета и фона.</p>
+     <p>7. Нажмите на картинку, чтобы увеличить; долгое нажатие — удалить.</p>
+     <p>8. Добавьте страницу на главный экран через меню браузера, чтобы запускать её как приложение и сохранять данные.</p>`
+  : `<h3>How to use</h3>
+     <p>1. Type or paste text and image into any field.</p>
+     <p>2. Move the crosshair handle to resize fields.</p>
+     <p>3. Tap the handle to change the logo.</p>
+     <p>4. Double tap the handle — logo menu (upload png, palette).</p>
+     <p>5. Long tap the crosshair — random design.</p>
+     <p>6. Double tap an empty field — font, color and background settings.</p>
+     <p>7. Tap an image to expand; long tap to delete.</p>
+     <p>8. Add the page to your Home Screen via the browser menu to launch it like an app and keep data saved.</p>`;
+document.getElementById('help-box').innerHTML = helpText;
+
+/* ==================== STORAGE / DB ==================== */
 if (!localStorage.getItem('q_s_default_large')) {
   ['0','1','2','3'].forEach(i => localStorage.removeItem('q_s_' + i));
   localStorage.setItem('q_s_default_large', '1');
 }
+
 const inpBg = document.getElementById('setting-bg');
 const inpColor = document.getElementById('setting-color');
 const bgPickerBtn = document.getElementById('bg-picker-btn');
@@ -702,68 +735,75 @@ const tileName = document.getElementById('tile-name');
 const chkDelTile = document.getElementById('setting-del-tile');
 const inpTint = document.getElementById('setting-tint');
 const tintVal = document.getElementById('tint-val');
-
 const tileModeToolbar = document.getElementById('tile-mode-toolbar');
 
-inpBg.addEventListener('input', (e) => {
-  bgPickerBtn.style.background = e.target.value;
-});
-
-inpColor.addEventListener('input', (e) => {
-  colorPickerBtn.style.background = e.target.value;
-});
+inpBg.addEventListener('input', e => { bgPickerBtn.style.background = e.target.value; });
+inpColor.addEventListener('input', e => { colorPickerBtn.style.background = e.target.value; });
 
 let refreshing = false;
 let updateWorker = null;
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').then((registration) => {
-    registration.update();
-    if (registration.waiting) {
-      updateWorker = registration.waiting;
-    }
-    registration.addEventListener('updatefound', () => {
-      updateWorker = registration.installing;
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    reg.update();
+    if (reg.waiting) updateWorker = reg.waiting;
+    reg.addEventListener('updatefound', () => {
+      updateWorker = reg.installing;
       updateWorker.addEventListener('statechange', () => {
         if (updateWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          const updateEl = document.getElementById('update-app');
-          if (updateEl) updateEl.style.color = '#ff8700';
+          const u = document.getElementById('update-app');
+          if (u) u.style.color = '#ff8700';
         }
       });
     });
   });
-
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) {
-      refreshing = true;
-      window.location.reload();
-    }
+    if (!refreshing) { refreshing = true; window.location.reload(); }
   });
 }
-
 document.getElementById('update-app').onclick = () => {
-  if (updateWorker) {
-    updateWorker.postMessage({ type: 'SKIP_WAITING' });
-  } else {
-    window.location.reload(true);
-  }
+  if (updateWorker) updateWorker.postMessage({ type: 'SKIP_WAITING' });
+  else window.location.reload(true);
 };
 
 const container = document.getElementById('app');
-const handle = document.getElementById('handle');
+const handle    = document.getElementById('handle');
 const textareas = document.querySelectorAll('.editor');
-const images = document.querySelectorAll('.img-preview');
+const images    = document.querySelectorAll('.img-preview');
 
 let isDragging = false;
 let dragStartTime = 0;
 let db;
 
-const designs = ['256.001.png', '256.002.png', '256.003.png', '256.004.png', '256.005.png', '256.006.png', '256.007.png', '256.008.png'];
+/* builtin + loaded handle designs */
+const builtinDesigns = ['256.001.png','256.002.png','256.003.png','256.004.png','256.005.png','256.006.png','256.007.png','256.008.png'];
+let loadedHandles = [];
 let currentDesign = parseInt(localStorage.getItem('q_handle_design') || '0');
+
+let builtinActive = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('q_builtin_handle_active') || '{}');
+    const result = {};
+    builtinDesigns.forEach(src => { result[src] = saved[src] !== false; });
+    return result;
+  } catch {
+    const result = {};
+    builtinDesigns.forEach(src => { result[src] = true; });
+    return result;
+  }
+})();
+function saveBuiltinActive() {
+  localStorage.setItem('q_builtin_handle_active', JSON.stringify(builtinActive));
+}
+function getActiveDesigns() {
+  const builtin = builtinDesigns.filter(src => builtinActive[src]).map(src => ({ kind:'builtin', src }));
+  const loaded  = loadedHandles.filter(h => h.active).map(h => ({ kind:'loaded', src:h.dataUrl, id:h.id }));
+  return [...builtin, ...loaded];
+}
 
 const defBgs = ['#ff8700', '#005f00', '#870000', '#000080'];
 const defColors = ['#000000', '#E1BEE7', '#81C784', '#FFD54F'];
-  
+
 const magicPalettes = [
   { bg: defBgs, co: defColors },
   { bg: ['#2b2d42', '#8d99ae', '#edf2f4', '#ef233c'], co: ['#fff', '#000', '#000', '#fff'] },
@@ -774,52 +814,118 @@ const magicPalettes = [
   { bg: ['#e2efe0', '#bccbaf', '#96a788', '#708264'], co: ['#283618', '#283618', '#fefae0', '#fefae0'] }
 ];
 
-// --- IndexedDB setup ---
-const dbRequest = indexedDB.open("QuadEditorDB", 4);
+/* ==================== DB ==================== */
+const dbRequest = indexedDB.open("QuadEditorDB", 5);
 dbRequest.onupgradeneeded = e => {
   db = e.target.result;
-  if (!db.objectStoreNames.contains("texts")) db.createObjectStore("texts", { keyPath: "id" });
+  if (!db.objectStoreNames.contains("texts"))   db.createObjectStore("texts",   { keyPath: "id" });
+  if (!db.objectStoreNames.contains("handles")) db.createObjectStore("handles", { keyPath: "id", autoIncrement: true });
 };
-dbRequest.onsuccess = e => { db = e.target.result; loadData(); };
+dbRequest.onsuccess = e => {
+  db = e.target.result;
+  loadHandlesFromDB().then(() => { loadData(); });
+};
 
 async function saveToDB(id, content, img = null, clearImg = false, tile = null, clearTile = false) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const tx = db.transaction("texts", "readwrite");
     const store = tx.objectStore("texts");
     const req = store.get(id);
     req.onsuccess = () => {
       const data = req.result || { id };
       data.content = content;
-      if (clearImg) {
-        delete data.img;
-      } else if (img) {
-        data.img = img;
-      }
-      if (clearTile) {
-        delete data.tile;
-      } else if (tile) {
-        data.tile = tile;
-      }
+      if (clearImg) delete data.img; else if (img) data.img = img;
+      if (clearTile) delete data.tile; else if (tile) data.tile = tile;
       store.put(data);
       tx.oncomplete = () => resolve();
     };
   });
 }
 
+function loadHandlesFromDB() {
+  return new Promise(resolve => {
+    if (!db) return resolve();
+    const tx = db.transaction("handles", "readonly");
+    const req = tx.objectStore("handles").getAll();
+    req.onsuccess = () => {
+      loadedHandles = (req.result || []).map(r => ({ id:r.id, dataUrl:r.dataUrl, active:r.active !== false }));
+      resolve();
+    };
+    req.onerror = () => resolve();
+  });
+}
+function addHandleToDB(dataUrl) {
+  return new Promise(resolve => {
+    const tx = db.transaction("handles", "readwrite");
+    const req = tx.objectStore("handles").add({ dataUrl, active:true, createdAt:Date.now() });
+    req.onsuccess = () => resolve(req.result);
+  });
+}
+function setHandleActiveInDB(id, active) {
+  return new Promise(resolve => {
+    const tx = db.transaction("handles", "readwrite");
+    const store = tx.objectStore("handles");
+    const getReq = store.get(id);
+    getReq.onsuccess = () => {
+      const rec = getReq.result;
+      if (rec) { rec.active = active; store.put(rec); }
+      resolve();
+    };
+  });
+}
+function deleteHandleFromDB(id) {
+  return new Promise(resolve => {
+    const tx = db.transaction("handles", "readwrite");
+    const req = tx.objectStore("handles").delete(id);
+    req.onsuccess = () => resolve();
+  });
+}
+
+/* ==================== HANDLE ==================== */
 function updateHandleImage(index) {
   const imgEl = handle.querySelector('img');
-  imgEl.src = designs[index];
-  if (index === 3) {
-    imgEl.style.transform = 'rotate(0deg)';
-  }
+  const all = getActiveDesigns();
+  if (all.length === 0) { imgEl.removeAttribute('src'); return; }
+  const safe = ((index % all.length) + all.length) % all.length;
+  imgEl.src = all[safe].src;
+  imgEl.style.transform = 'rotate(0deg)';
 }
 
+function applyRandomLayout() {
+  const all = getActiveDesigns();
+  if (all.length > 0) {
+    currentDesign = Math.floor(Math.random() * all.length);
+    localStorage.setItem('q_handle_design', currentDesign);
+    updateHandleImage(currentDesign);
+  }
+  const randomHue = Math.floor(Math.random() * 360);
+  const randomDegrees = Math.floor(Math.random() * 4) * 90;
+  const hi = handle.querySelector('img');
+  hi.style.transform = `rotate(${randomDegrees}deg)`;
+  handle.style.filter = `hue-rotate(${randomHue}deg) drop-shadow(0 6px 6px rgba(255,255,255,0.4))`;
+
+  const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
+  const fontValues = Array.from(document.querySelectorAll('#setting-font .font-option')).map(o => o.dataset.value);
+
+  textareas.forEach((ta, i) => {
+    const wrap = ta.parentElement;
+    const randomFont = fontValues[Math.floor(Math.random() * fontValues.length)];
+    wrap.style.setProperty('--fn', randomFont);
+    wrap.style.setProperty('--bg', palette.bg[i]);
+    wrap.style.setProperty('--color', palette.co[i]);
+    localStorage.setItem(`q_f_${i}`, randomFont);
+    localStorage.setItem(`q_b_${i}`, palette.bg[i]);
+    localStorage.setItem(`q_c_${i}`, palette.co[i]);
+  });
+
+  if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+}
+
+/* ==================== TILE / ALIGN / IMG POS ==================== */
 function getTileMode(i) {
   const mode = localStorage.getItem(`q_tilemode_${i}`) || 'repeat';
-  if (mode === 'pan') return 'repeat';
-  return mode;
+  return mode === 'pan' ? 'repeat' : mode;
 }
-
 function setTileModeUI(i, mode) {
   const wrap = textareas[i].parentElement;
   wrap.dataset.tilemode = mode;
@@ -827,34 +933,42 @@ function setTileModeUI(i, mode) {
     btn.classList.toggle('active', btn.dataset.tilemode === mode);
   });
 }
+function applyAlign(i, align) {
+  const ta = textareas[i];
+  ta.style.textAlign = align;
+  Array.from(ta.children).forEach(ch => { ch.style.textAlign = align; });
+}
+function applyImagePosition(i, pos) {
+  const img = images[i];
+  const [v, h] = pos.split(' ');
+  img.style.top    = v === 'top'    ? '10px' : 'auto';
+  img.style.bottom = v === 'bottom' ? '10px' : 'auto';
+  img.style.left   = h === 'left'   ? '10px' : 'auto';
+  img.style.right  = h === 'right'  ? '10px' : 'auto';
+}
 
+/* ==================== LOAD DATA ==================== */
 function loadData() {
   container.style.setProperty('--x', localStorage.getItem('q_x') || '50%');
   container.style.setProperty('--y', localStorage.getItem('q_y') || '50%');
   updateHandleImage(currentDesign);
 
   textareas.forEach((ta, i) => {
-const img = images[i];
-
-const savedPos = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
-const [v, h] = savedPos.split(' ');
-
-img.style.top    = v === 'top'    ? '10px' : 'auto';
-img.style.bottom = v === 'bottom' ? '10px' : 'auto';
-img.style.left   = h === 'left'   ? '10px' : 'auto';
-img.style.right  = h === 'right'  ? '10px' : 'auto';
-
+    const img = images[i];
     const wrap = ta.parentElement;
+
+    applyImagePosition(i, localStorage.getItem(`q_pos_${i}`) || 'bottom right');
 
     const bg = localStorage.getItem(`q_b_${i}`) || defBgs[i];
     const co = localStorage.getItem(`q_c_${i}`) || defColors[i];
     const fn = localStorage.getItem(`q_f_${i}`) || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
-let fs = localStorage.getItem(`q_s_${i}`) || '10cqmin';
-if (fs.endsWith('px')) {
-  const px = parseFloat(fs);
-  fs = (px / 4.5).toFixed(2) + 'cqmin'; // 18px ≈ 4cqmin
-  localStorage.setItem(`q_s_${i}`, fs);
-}    const tint = localStorage.getItem(`q_tint_${i}`);
+    let fs   = localStorage.getItem(`q_s_${i}`) || '10cqmin';
+    if (fs.endsWith('px')) {
+      const px = parseFloat(fs);
+      fs = (px / 4.5).toFixed(2) + 'cqmin';
+      localStorage.setItem(`q_s_${i}`, fs);
+    }
+    const tint = localStorage.getItem(`q_tint_${i}`);
 
     wrap.style.setProperty('--bg', bg);
     wrap.style.setProperty('--color', co);
@@ -862,7 +976,6 @@ if (fs.endsWith('px')) {
     wrap.style.setProperty('--fs', fs);
     wrap.style.setProperty('--bg-tint', tint !== null ? tint : '1');
 
-    // Применяем режим тайла
     setTileModeUI(i, getTileMode(i));
 
     const tx = db.transaction("texts", "readonly");
@@ -875,109 +988,58 @@ if (fs.endsWith('px')) {
 
         if (req.result.tile) {
           wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+        } else if (i === 0 && !localStorage.getItem('q_demo_shown')) {
+          wrap.style.setProperty('--bg-tile', `url(demo-tile.png)`);
+          wrap.style.setProperty('--bg-tint', '0.35');
+          setTileModeUI(0, 'fill');
+          localStorage.setItem('q_tilemode_0', 'fill');
+          localStorage.setItem('q_demo_shown', '1');
+          localStorage.setItem('q_tint_0', '0.35');
         } else {
-if (i === 0 && !localStorage.getItem('q_demo_shown')) {
-  wrap.style.setProperty('--bg-tile', `url(demo-tile.png)`);
-  wrap.style.setProperty('--bg-tint', '0.35');
-  setTileModeUI(0, 'fill');                          // ← добавить
-  localStorage.setItem('q_tilemode_0', 'fill');      // ← добавить
-  localStorage.setItem('q_demo_shown', '1');
-  localStorage.setItem('q_tint_0', '0.35');
-} else {
-  wrap.style.setProperty('--bg-tile', 'none');
-}
+          wrap.style.setProperty('--bg-tile', 'none');
         }
       }
+
+      applyAlign(i, localStorage.getItem(`q_halign_${i}`) || 'left');
+      const ph = ta.parentElement.querySelector('.ph');
+      if (ph && ta.textContent.trim() !== '') ph.classList.add('hidden');
     };
   });
 }
 
-textareas.forEach((ta) => {
-  const ph = ta.parentElement.querySelector('.ph');
-  if (!ph) return;
-
-  ph.addEventListener('pointerdown', (e) => {
-    ph._x = e.clientX;
-    ph._y = e.clientY;
-  });
-
-  ph.addEventListener('pointerup', (e) => {
-    const dx = Math.abs(e.clientX - ph._x);
-    const dy = Math.abs(e.clientY - ph._y);
-    if (dx < 8 && dy < 8) {
-      ph.classList.add('hidden');
-      ta.focus();
-    }
-  });
-});
-  
+/* ==================== HANDLE GESTURES ==================== */
 let handleLongPressTimer;
+let handleLongPressFired = false;
+let lastHandleTapTime = 0;
 let startX = 0, startY = 0;
 
-let handleLongPressFired = false;
-
-handle.addEventListener('pointerdown', (e) => {
+handle.addEventListener('pointerdown', e => {
+  e.stopPropagation();
   isDragging = true;
   handleLongPressFired = false;
   dragStartTime = Date.now();
-  const touch = e.touches ? e.touches[0] : e;
-  startX = touch.clientX;
-  startY = touch.clientY;
+  startX = e.clientX;
+  startY = e.clientY;
 
   clearTimeout(handleLongPressTimer);
   handleLongPressTimer = setTimeout(() => {
     if (!isDragging) return;
     handleLongPressFired = true;
     isDragging = false;
-
-    currentDesign = (currentDesign + 1) % designs.length;
-    localStorage.setItem('q_handle_design', currentDesign);
-    updateHandleImage(currentDesign);
-
-    const randomHue = Math.floor(Math.random() * 360);
-
-    if (currentDesign === 3) {
-      handle.style.filter = `drop-shadow(0 4px 4px rgba(0,0,0,0.5)) drop-shadow(0 4px 4px rgba(255,255,255,0.3))`;
-    } else {
-      const randomDegrees = Math.floor(Math.random() * 4) * 90;
-      handle.querySelector('img').style.transform = `rotate(${randomDegrees}deg)`;
-      handle.style.filter = `hue-rotate(${randomHue}deg) drop-shadow(0 6px 6px rgba(255,255,255,0.4))`;
-    }
-
-    const palette = magicPalettes[Math.floor(Math.random() * magicPalettes.length)];
-    const fontValues = Array.from(
-      document.querySelectorAll('#setting-font .font-option')
-    ).map(o => o.dataset.value);
-
-    textareas.forEach((ta, i) => {
-      const wrap = ta.parentElement;
-      const randomFont = fontValues[Math.floor(Math.random() * fontValues.length)];
-      wrap.style.setProperty('--fn', randomFont);
-      wrap.style.setProperty('--bg', palette.bg[i]);
-      wrap.style.setProperty('--color', palette.co[i]);
-      localStorage.setItem(`q_f_${i}`, randomFont);
-      localStorage.setItem(`q_b_${i}`, palette.bg[i]);
-      localStorage.setItem(`q_c_${i}`, palette.co[i]);
-    });
-
-    if (navigator.vibrate) navigator.vibrate(30);
+    applyRandomLayout();
   }, 600);
 });
 
-window.addEventListener('pointermove', (e) => {
+window.addEventListener('pointermove', e => {
   if (!isDragging) return;
-  const touch = e.touches ? e.touches[0] : e;
 
-  const moveX = Math.abs(touch.clientX - startX);
-  const moveY = Math.abs(touch.clientY - startY);
-
-  if (moveX > 5 || moveY > 5) {
-    clearTimeout(handleLongPressTimer);
-  }
+  const moveX = Math.abs(e.clientX - startX);
+  const moveY = Math.abs(e.clientY - startY);
+  if (moveX > 5 || moveY > 5) clearTimeout(handleLongPressTimer);
 
   const padding = 10;
-  const rawX = (touch.clientX / window.innerWidth) * 100;
-  const rawY = (touch.clientY / window.innerHeight) * 100;
+  const rawX = (e.clientX / window.innerWidth) * 100;
+  const rawY = (e.clientY / window.innerHeight) * 100;
   const clampedX = Math.max(padding, Math.min(100 - padding, rawX));
   const clampedY = Math.max(padding, Math.min(100 - padding, rawY));
   const x = `${clampedX}%`;
@@ -989,36 +1051,137 @@ window.addEventListener('pointermove', (e) => {
   scheduleBroadcastLayout();
 });
 
-window.addEventListener('pointerup', (e) => {
+window.addEventListener('pointerup', () => {
   clearTimeout(handleLongPressTimer);
   if (handleLongPressFired) { handleLongPressFired = false; return; }
   if (!isDragging) return;
   isDragging = false;
 
-  const duration = Date.now() - dragStartTime;
-  if (duration < 250) {
-    // Одиночный тап — меняем ТОЛЬКО логотип handle
-    currentDesign = (currentDesign + 1) % designs.length;
-    localStorage.setItem('q_handle_design', currentDesign);
-    updateHandleImage(currentDesign);
+  if (Date.now() - dragStartTime < 250) {
+    const now = Date.now();
+    if (lastHandleTapTime && now - lastHandleTapTime < 300) {
+      lastHandleTapTime = 0;
+      openHandleModal();
+      if (navigator.vibrate) navigator.vibrate(30);
+    } else {
+      lastHandleTapTime = now;
+      const all = getActiveDesigns();
+      if (all.length > 0) {
+        currentDesign = (currentDesign + 1) % all.length;
+        localStorage.setItem('q_handle_design', currentDesign);
+        updateHandleImage(currentDesign);
+      }
+    }
   }
 });
 
 handle.addEventListener('pointercancel', () => {
   clearTimeout(handleLongPressTimer);
   isDragging = false;
+  handleLongPressFired = false;
 });
-  
-handle.addEventListener('touchstart', (e) => {
-  if (e.cancelable) e.preventDefault();
-}, { passive: false });
+handle.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, { passive:false });
+handle.addEventListener('click', e => e.preventDefault());
+handle.addEventListener('contextmenu', e => e.preventDefault());
 
-handle.addEventListener('click', (e) => e.preventDefault());
-handle.addEventListener('contextmenu', (e) => e.preventDefault());
+/* ==================== HANDLE MODAL ==================== */
+const EYE_OPEN = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF  = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 
+function renderHandleList() {
+  const list = document.getElementById('handle-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  const makeCell = (src, isActive, opts) => {
+    const cell = document.createElement('div');
+    cell.style.cssText = 'position:relative; aspect-ratio:1; border:2px solid #555; border-radius:8px; background:#111; overflow:hidden; display:flex; align-items:center; justify-content:center;';
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = 'max-width:70%; max-height:70%; object-fit:contain; pointer-events:none; transition:opacity .2s;';
+    img.style.opacity = isActive ? '1' : '0.3';
+    cell.appendChild(img);
+    const eye = document.createElement('button');
+    eye.type = 'button'; eye.innerHTML = isActive ? EYE_OPEN : EYE_OFF;
+    eye.style.cssText = 'position:absolute; top:2px; left:2px; width:24px; height:24px; border-radius:50%; border:none; background:rgba(0,0,0,0.65); color:#fff; cursor:pointer; line-height:1; padding:0; display:flex; align-items:center; justify-content:center;';
+    eye.addEventListener('click', async e => {
+      e.stopPropagation();
+      if (opts.onToggle) await opts.onToggle();
+      renderHandleList();
+    });
+    cell.appendChild(eye);
+    if (opts.onDelete) {
+      const del = document.createElement('button');
+      del.type = 'button'; del.textContent = '×';
+      del.style.cssText = 'position:absolute; top:2px; right:2px; width:24px; height:24px; border-radius:50%; border:none; background:rgba(255,0,0,0.85); color:#fff; font-size:16px; font-weight:bold; cursor:pointer; line-height:1; padding:0;';
+      del.addEventListener('click', async e => {
+        e.stopPropagation();
+        await opts.onDelete();
+        renderHandleList();
+      });
+      cell.appendChild(del);
+    }
+    list.appendChild(cell);
+  };
+
+  builtinDesigns.forEach(src => {
+    makeCell(src, builtinActive[src], {
+      onToggle: () => {
+        builtinActive[src] = !builtinActive[src];
+        saveBuiltinActive();
+        currentDesign = 0;
+        updateHandleImage(currentDesign);
+      }
+    });
+  });
+  loadedHandles.forEach(h => {
+    makeCell(h.dataUrl, h.active, {
+      onToggle: async () => {
+        h.active = !h.active;
+        await setHandleActiveInDB(h.id, h.active);
+        currentDesign = 0;
+        updateHandleImage(currentDesign);
+      },
+      onDelete: async () => {
+        await deleteHandleFromDB(h.id);
+        loadedHandles = loadedHandles.filter(x => x.id !== h.id);
+        currentDesign = 0;
+        updateHandleImage(currentDesign);
+      }
+    });
+  });
+}
+
+async function openHandleModal() {
+  await loadHandlesFromDB();
+  renderHandleList();
+  document.getElementById('handle-modal').style.display = 'flex';
+}
+document.getElementById('handle-close-btn').addEventListener('click', () => {
+  document.getElementById('handle-modal').style.display = 'none';
+});
+document.getElementById('handle-modal').addEventListener('click', e => {
+  if (e.target.id === 'handle-modal') document.getElementById('handle-modal').style.display = 'none';
+});
+document.getElementById('handle-file-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!file.type.includes('png')) { alert('Please choose custom logo (png)'); e.target.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const dataUrl = ev.target.result;
+    const id = await addHandleToDB(dataUrl);
+    loadedHandles.push({ id, dataUrl, active:true });
+    renderHandleList();
+    e.target.value = '';
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ==================== IMAGE FILE HELPER ==================== */
 function handleImageFile(file, index, ta) {
   const reader = new FileReader();
-  reader.onload = (ev) => {
+  reader.onload = ev => {
     images[index].src = ev.target.result;
     images[index].style.display = 'block';
     saveToDB(index, ta.innerHTML, ev.target.result);
@@ -1027,6 +1190,7 @@ function handleImageFile(file, index, ta) {
   reader.readAsDataURL(file);
 }
 
+/* ==================== SETTINGS MODAL ==================== */
 const modal = document.getElementById('settings-modal');
 const selSize = document.getElementById('setting-size');
 const selPos = document.getElementById('setting-pos');
@@ -1034,58 +1198,51 @@ const chkDelImg = document.getElementById('setting-del-img');
 const imgActionContainer = document.getElementById('image-action-container');
 const btnSave = document.getElementById('setting-save');
 const btnCancel = document.getElementById('setting-cancel');
-
 const fontPicker = document.getElementById('setting-font');
 const fontDisplay = document.getElementById('font-display');
 
-fontPicker.addEventListener('click', (e) => {
-  if (e.target === fontDisplay) {
-    fontPicker.classList.toggle('open');
-    return;
-  }
+let activeIndex = null;
 
+fontPicker.addEventListener('click', e => {
+  if (e.target === fontDisplay) { fontPicker.classList.toggle('open'); return; }
   const opt = e.target.closest('.font-option');
   if (!opt) return;
-
-  document.querySelectorAll('#setting-font .font-option')
-    .forEach(o => o.classList.remove('selected'));
+  document.querySelectorAll('#setting-font .font-option').forEach(o => o.classList.remove('selected'));
   opt.classList.add('selected');
-
   fontDisplay.textContent = opt.textContent;
   fontDisplay.style.fontFamily = opt.style.fontFamily;
-
   fontPicker.classList.remove('open');
+  if (activeIndex !== null) {
+    const wrap = textareas[activeIndex].parentElement;
+    wrap.style.setProperty('--fn', opt.dataset.value);
+  }
 });
 
-let activeIndex = null;
-let textareaLongPressTimer;
+selSize.addEventListener('change', () => {
+  if (activeIndex !== null) {
+    const wrap = textareas[activeIndex].parentElement;
+    wrap.style.setProperty('--fs', selSize.value);
+  }
+});
 
 document.querySelectorAll('[data-align]').forEach(button => {
   button.addEventListener('click', () => {
     if (activeIndex === null) return;
     const ta = textareas[activeIndex];
-    ta.focus();
-    document.execCommand(
-      'justify' + button.dataset.align.charAt(0).toUpperCase() +
-      button.dataset.align.slice(1),
-      false,
-      null
-    );
+    const align = button.dataset.align;
+    applyAlign(activeIndex, align);
+    localStorage.setItem(`q_halign_${activeIndex}`, align);
     saveToDB(activeIndex, ta.innerHTML);
   });
 });
 
-tileModeToolbar.addEventListener('click', (e) => {
+tileModeToolbar.addEventListener('click', e => {
   const btn = e.target.closest('[data-tilemode]');
   if (!btn || activeIndex === null) return;
-  const mode = btn.dataset.tilemode;
-
-  setTileModeUI(activeIndex, mode);
-  // НЕ сохраняем в localStorage — сохраним только при Save
+  setTileModeUI(activeIndex, btn.dataset.tilemode);
 });
 
-// Превью тинта в реальном времени
-inpTint.addEventListener('input', (e) => {
+inpTint.addEventListener('input', e => {
   tintVal.textContent = e.target.value;
   if (activeIndex !== null) {
     const wrap = textareas[activeIndex].parentElement;
@@ -1093,23 +1250,17 @@ inpTint.addEventListener('input', (e) => {
   }
 });
 
-inpTile.addEventListener('change', (e) => {
+inpTile.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file || activeIndex === null) return;
-
   tileName.textContent = file.name;
-
   const reader = new FileReader();
-  reader.onload = (ev) => {
+  reader.onload = ev => {
     const dataUrl = ev.target.result;
     const wrap = textareas[activeIndex].parentElement;
     wrap.style.setProperty('--bg-tile', `url(${dataUrl})`);
-
-    // автотинт 0.35 при загрузке фона
     wrap.style.setProperty('--bg-tint', '0.35');
-    inpTint.value = 35;
-    tintVal.textContent = '35';
-
+    inpTint.value = 35; tintVal.textContent = '35';
     tileThumb.src = dataUrl;
     tileThumb.style.display = 'block';
     textareas[activeIndex]._pendingTile = dataUrl;
@@ -1118,233 +1269,101 @@ inpTile.addEventListener('change', (e) => {
   reader.readAsDataURL(file);
 });
 
-chkDelTile.addEventListener('change', (e) => {
+chkDelTile.addEventListener('change', e => {
   if (activeIndex === null) return;
   const wrap = textareas[activeIndex].parentElement;
-
   if (e.target.checked) {
     wrap.style.setProperty('--bg-tile', 'none');
-
-    // вернуть тинт на 100% (цвет снова полностью перекрывает поле)
     wrap.style.setProperty('--bg-tint', '1');
-    inpTint.value = 100;
-    tintVal.textContent = '100';
+    inpTint.value = 100; tintVal.textContent = '100';
   } else {
     const pending = textareas[activeIndex]._pendingTile;
     const tx = db.transaction("texts", "readonly");
     const req = tx.objectStore("texts").get(activeIndex);
     req.onsuccess = () => {
-      if (pending) {
-        wrap.style.setProperty('--bg-tile', `url(${pending})`);
-      } else if (req.result && req.result.tile) {
-        wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
-      }
-      // при возврате фона — снова 0.35, чтобы картинку было видно
+      if (pending) wrap.style.setProperty('--bg-tile', `url(${pending})`);
+      else if (req.result && req.result.tile) wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
       wrap.style.setProperty('--bg-tint', '0.35');
-      inpTint.value = 35;
-      tintVal.textContent = '35';
+      inpTint.value = 35; tintVal.textContent = '35';
     };
   }
 });
 
-textareas.forEach((ta, i) => {
-  ta.addEventListener('input', () => {
-  if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
-    ta.innerHTML = '';
-    const ph = ta.parentElement.querySelector('.ph');
-    if (ph) ph.classList.remove('hidden');
-  }
-  saveToDB(i, ta.innerHTML);
-  scheduleFieldBroadcast(i);
-});
-
-  ta.addEventListener('paste', (e) => {
-    e.preventDefault();
-    const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
-    if (item) {
-      handleImageFile(item.getAsFile(), i, ta);
-    } else {
-      const text = e.clipboardData.getData('text/plain');
-      document.execCommand('insertText', false, text);
-    }
-  });
-
-  ta.addEventListener('dragover', (e) => { e.preventDefault(); });
-
-  ta.addEventListener('drop', (e) => {
-    e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = Array.from(e.dataTransfer.files).find(x => x.type.indexOf('image') !== -1);
-      if (file) { handleImageFile(file, i, ta); }
-    } else {
-      const item = Array.from(e.dataTransfer.items).find(x => x.type.indexOf('image') !== -1);
-      if (item) { handleImageFile(item.getAsFile(), i, ta); }
-    }
-  });
-
-  ta.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-  });
-
-let longPressStartX = 0;
-let longPressStartY = 0;
-
-const startLongPress = (e) => {
-  const touch = e.touches ? e.touches[0] : e;
-
-  longPressStartX = touch.clientX;
-  longPressStartY = touch.clientY;
-
+function openSettings(i) {
   activeIndex = i;
+  const ta = textareas[i];
 
-  clearTimeout(textareaLongPressTimer);
+  const savedFont = localStorage.getItem(`q_f_${i}`) || '';
+  const fontOpts = document.querySelectorAll('#setting-font .font-option');
+  let matched = false;
+  fontOpts.forEach(o => {
+    const m = o.dataset.value === savedFont;
+    o.classList.toggle('selected', m);
+    if (m) matched = true;
+  });
+  if (!matched && fontOpts[0]) fontOpts[0].classList.add('selected');
+  const selOpt = document.querySelector('#setting-font .font-option.selected');
+  if (selOpt) {
+    fontDisplay.textContent = selOpt.textContent;
+    fontDisplay.style.fontFamily = selOpt.style.fontFamily;
+  }
 
-textareaLongPressTimer = setTimeout(() => {
+  const savedSize = localStorage.getItem(`q_s_${i}`) || '';
+  const opts = Array.from(selSize.options).map(o => o.value);
+  selSize.selectedIndex = opts.indexOf(savedSize) >= 0 ? opts.indexOf(savedSize) : 0;
 
-  const hasText = ta.textContent.trim() !== '';
-  if (hasText) return;
+  const currentBg = localStorage.getItem(`q_b_${i}`) ||
+    getComputedStyle(ta.parentElement).getPropertyValue('--bg').trim() || defBgs[i];
+  const currentColor = localStorage.getItem(`q_c_${i}`) ||
+    getComputedStyle(ta.parentElement).getPropertyValue('--color').trim() || defColors[i];
+  inpBg.value = currentBg; bgPickerBtn.style.background = currentBg;
+  inpColor.value = currentColor; colorPickerBtn.style.background = currentColor;
 
-const savedFont = localStorage.getItem(`q_f_${i}`) || '';
-const fontOpts = document.querySelectorAll('#setting-font .font-option');
-let fontMatched = false;
-fontOpts.forEach(o => {
-  const isMatch = o.dataset.value === savedFont;
-  o.classList.toggle('selected', isMatch);
-  if (isMatch) fontMatched = true;
-});
-if (!fontMatched && fontOpts[0]) {
-  fontOpts[0].classList.add('selected');
-}
-const selOpt = document.querySelector('#setting-font .font-option.selected');
-const fd = document.getElementById('font-display');
-if (selOpt && fd) {
-  fd.textContent = selOpt.textContent;
-  fd.style.fontFamily = selOpt.style.fontFamily;
-}
+  selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
+  setTileModeUI(i, getTileMode(i));
+  applyAlign(i, localStorage.getItem(`q_halign_${i}`) || 'left');
 
-const savedSize = localStorage.getItem(`q_s_${i}`) || '';
-const sizeOptions = Array.from(selSize.options).map(o => o.value);
-selSize.selectedIndex = sizeOptions.indexOf(savedSize) >= 0
-  ? sizeOptions.indexOf(savedSize)
-  : 0;
+  if (images[i].style.display === 'block') {
+    imgActionContainer.style.display = 'block';
+    chkDelImg.checked = false;
+  } else {
+    imgActionContainer.style.display = 'none';
+  }
 
-const currentBg =
-  localStorage.getItem(`q_b_${i}`) ||
-  getComputedStyle(ta.parentElement).getPropertyValue('--bg').trim() ||
-  defBgs[i];
+  ta._pendingTile = null;
+  inpTile.value = '';
+  tileName.textContent = 'No file';
+  chkDelTile.checked = false;
+  tileThumb.style.display = 'none';
+  tileThumb.removeAttribute('src');
 
-const currentColor =
-  localStorage.getItem(`q_c_${i}`) ||
-  getComputedStyle(ta.parentElement).getPropertyValue('--color').trim() ||
-  defColors[i];
-
-    inpBg.value = currentBg;
-    bgPickerBtn.style.background = currentBg;
-
-    inpColor.value = currentColor;
-    colorPickerBtn.style.background = currentColor;
-
-    selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
-
-    // Инициализация режима тайла
-    setTileModeUI(i, getTileMode(i));
-
-    if (images[i].style.display === 'block') {
-      imgActionContainer.style.display = 'block';
-      chkDelImg.checked = false;
-    } else {
-      imgActionContainer.style.display = 'none';
+  const tileTx = db.transaction("texts", "readonly");
+  const tileReq = tileTx.objectStore("texts").get(i);
+  tileReq.onsuccess = () => {
+    if (tileReq.result && tileReq.result.tile) {
+      tileThumb.src = tileReq.result.tile;
+      tileThumb.style.display = 'block';
     }
+  };
 
-    // --- Загрузка существующего тайла ---
-    ta._pendingTile = null;
-    inpTile.value = '';
-    tileName.textContent = 'No file';
-    chkDelTile.checked = false;
-    tileThumb.style.display = 'none';
-    tileThumb.removeAttribute('src');
+  const savedTint = localStorage.getItem(`q_tint_${i}`);
+  const num = savedTint !== null ? parseFloat(savedTint) : 1;
+  inpTint.value = Math.round(num * 100);
+  tintVal.textContent = inpTint.value;
 
-    const tileTx = db.transaction("texts", "readonly");
-    const tileReq = tileTx.objectStore("texts").get(i);
-    tileReq.onsuccess = () => {
-      if (tileReq.result && tileReq.result.tile) {
-        tileThumb.src = tileReq.result.tile;
-        tileThumb.style.display = 'block';
-      }
-    };
+  if (window.getSelection) window.getSelection().removeAllRanges();
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 
-    // --- Тинт ---
-    const savedTint = localStorage.getItem(`q_tint_${i}`);
-    const tintNum = savedTint !== null ? parseFloat(savedTint) : 1;
-    inpTint.value = Math.round(tintNum * 100);
-    tintVal.textContent = inpTint.value;
-
-    if (window.getSelection) window.getSelection().removeAllRanges();
-    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-    modal.style.display = 'flex';
-  }, 600);
-};
-
-  const stopLongPress = () => clearTimeout(textareaLongPressTimer);
-
-  ta.addEventListener('mousedown', startLongPress);
-  ta.addEventListener('mouseup', stopLongPress);
-  ta.addEventListener('mouseleave', stopLongPress);
-  ta.addEventListener('touchstart', startLongPress, { passive: true });
-  ta.addEventListener('touchend', stopLongPress);
-  ta.addEventListener('touchmove', stopLongPress);
-
-  // === ОБРАБОТЧИКИ КАРТИНКИ (pointer events) ===
-  const img = images[i];
-  let imgLongPressTimer = null;
-  let imgStartX = 0, imgStartY = 0;
-  let imgDeleted = false;
-
-  img.addEventListener('pointerdown', (e) => {
-    e.stopPropagation();
-    imgDeleted = false;
-    imgStartX = e.clientX;
-    imgStartY = e.clientY;
-    clearTimeout(imgLongPressTimer);
-    imgLongPressTimer = setTimeout(() => {
-      imgDeleted = true;
-      img.classList.remove('fullscreen');
-      img.removeAttribute('src');
-      img.style.display = 'none';
-      localStorage.removeItem(`q_pos_${i}`);
-      saveToDB(i, ta.innerHTML, null, true);
-    }, 1000);
-  });
-
-  img.addEventListener('pointerup', () => clearTimeout(imgLongPressTimer));
-  img.addEventListener('pointercancel', () => clearTimeout(imgLongPressTimer));
-  img.addEventListener('pointerleave', () => clearTimeout(imgLongPressTimer));
-
-  img.addEventListener('pointermove', (e) => {
-    if (Math.abs(e.clientX - imgStartX) > 8 ||
-        Math.abs(e.clientY - imgStartY) > 8) {
-      clearTimeout(imgLongPressTimer);
-    }
-  });
-
-  img.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (imgDeleted) return;
-    img.classList.toggle('fullscreen');
-  });
-});
+  modal.style.display = 'flex';
+}
 
 btnSave.onclick = () => {
   if (activeIndex === null) return;
   const targetTa = textareas[activeIndex];
   const wrap = targetTa.parentElement;
 
-  // --- FONT ---
   const fontOption = document.querySelector('#setting-font .font-option.selected');
-  const fontValue = fontOption
-    ? fontOption.dataset.value
-    : "'Luckiest Guy', Arial, sans-serif"; 
-
+  const fontValue = fontOption ? fontOption.dataset.value : "'Luckiest Guy', Arial, sans-serif";
   wrap.style.setProperty('--fn', fontValue);
   localStorage.setItem(`q_f_${activeIndex}`, fontValue);
 
@@ -1357,16 +1376,15 @@ btnSave.onclick = () => {
   wrap.style.setProperty('--color', inpColor.value);
   localStorage.setItem(`q_c_${activeIndex}`, inpColor.value);
 
-  // --- TINT ---
   const tintNum = parseInt(inpTint.value, 10) / 100;
   wrap.style.setProperty('--bg-tint', tintNum);
   localStorage.setItem(`q_tint_${activeIndex}`, tintNum);
 
-  // --- TILE ---
+  applyAlign(activeIndex, localStorage.getItem(`q_halign_${activeIndex}`) || 'left');
+
   if (chkDelTile.checked) {
     wrap.style.setProperty('--bg-tile', 'none');
     saveToDB(activeIndex, targetTa.innerHTML, null, false, null, true);
-    // Если тайл удалён — сбрасываем режим на repeat
     setTileModeUI(activeIndex, 'repeat');
     localStorage.setItem(`q_tilemode_${activeIndex}`, 'repeat');
   } else if (targetTa._pendingTile) {
@@ -1375,17 +1393,12 @@ btnSave.onclick = () => {
   }
   delete targetTa._pendingTile;
 
-  // --- TILE MODE ---
-  const currentMode = textareas[activeIndex].parentElement.dataset.tilemode || 'repeat';
-  localStorage.setItem(`q_tilemode_${activeIndex}`, currentMode);
-  setTileModeUI(activeIndex, currentMode);
+  const mode = textareas[activeIndex].parentElement.dataset.tilemode || 'repeat';
+  localStorage.setItem(`q_tilemode_${activeIndex}`, mode);
+  setTileModeUI(activeIndex, mode);
 
   localStorage.setItem(`q_pos_${activeIndex}`, selPos.value);
-  const [v, h] = selPos.value.split(' ');
-  images[activeIndex].style.top    = v === 'top'    ? '10px' : 'auto';
-  images[activeIndex].style.bottom = v === 'bottom' ? '10px' : 'auto';
-  images[activeIndex].style.left   = h === 'left'   ? '10px' : 'auto';
-  images[activeIndex].style.right  = h === 'right'  ? '10px' : 'auto';
+  applyImagePosition(activeIndex, selPos.value);
 
   if (chkDelImg.checked) {
     images[activeIndex].removeAttribute('src');
@@ -1395,6 +1408,9 @@ btnSave.onclick = () => {
   }
 
   broadcastFieldUpdate(activeIndex);
+
+  const selBroker = document.getElementById('setting-broker');
+  const brokerCustom = document.getElementById('setting-broker-custom');
   localStorage.setItem('q_broker', selBroker.value);
   if (selBroker.value === 'custom') localStorage.setItem('q_broker_custom', brokerCustom.value.trim());
   connectCrossMqtt();
@@ -1407,35 +1423,31 @@ btnCancel.onclick = () => {
   if (activeIndex !== null) {
     const wrap = textareas[activeIndex].parentElement;
 
-    // Откат тинта
     const savedTint = localStorage.getItem(`q_tint_${activeIndex}`);
     wrap.style.setProperty('--bg-tint', savedTint !== null ? savedTint : '1');
 
-    // Откат цвета фона
     const savedBg = localStorage.getItem(`q_b_${activeIndex}`);
     if (savedBg !== null) wrap.style.setProperty('--bg', savedBg);
 
-    // Откат цвета текста
     const savedColor = localStorage.getItem(`q_c_${activeIndex}`);
     if (savedColor !== null) wrap.style.setProperty('--color', savedColor);
 
-    // Откат шрифта
     const savedFont = localStorage.getItem(`q_f_${activeIndex}`);
     if (savedFont !== null) wrap.style.setProperty('--fn', savedFont);
 
-    // Откат размера шрифта
     const savedSize = localStorage.getItem(`q_s_${activeIndex}`);
     if (savedSize !== null) wrap.style.setProperty('--fs', savedSize);
 
-    // Откат режима тайла
     setTileModeUI(activeIndex, getTileMode(activeIndex));
+    applyAlign(activeIndex, localStorage.getItem(`q_halign_${activeIndex}`) || 'left');
 
-    // Восстановить тайл из БД
     const tx = db.transaction("texts", "readonly");
     const req = tx.objectStore("texts").get(activeIndex);
     req.onsuccess = () => {
       if (req.result && req.result.tile) {
         wrap.style.setProperty('--bg-tile', `url(${req.result.tile})`);
+      } else if (activeIndex === 0 && !localStorage.getItem('q_b_0') && !localStorage.getItem('q_tilemode_0')) {
+        wrap.style.setProperty('--bg-tile', `url(demo-tile.png)`);
       } else {
         wrap.style.setProperty('--bg-tile', 'none');
       }
@@ -1446,16 +1458,151 @@ btnCancel.onclick = () => {
   activeIndex = null;
 };
 
-document.addEventListener('contextmenu', (e) => {
-  const modal = document.getElementById('settings-modal');
-  if (modal.style.display === 'flex') {
-    e.preventDefault();
+document.addEventListener('contextmenu', e => {
+  if (document.getElementById('settings-modal').style.display === 'flex') e.preventDefault();
+}, { capture:true });
+document.getElementById('settings-modal').addEventListener('contextmenu', e => e.preventDefault(), { capture:true });
+
+/* ==================== PER-EDITOR: INPUT + DOUBLE-TAP + IMAGE ==================== */
+textareas.forEach((ta, i) => {
+  const ph = ta.parentElement.querySelector('.ph');
+
+  if (ph) {
+    ph.addEventListener('pointerdown', e => { ph._x = e.clientX; ph._y = e.clientY; });
+    ph.addEventListener('pointerup', e => {
+      const dx = Math.abs(e.clientX - ph._x);
+      const dy = Math.abs(e.clientY - ph._y);
+      if (dx < 8 && dy < 8) {
+        ph.classList.add('hidden');
+        setTimeout(() => {
+          if (document.activeElement !== ta) ta.focus();
+        }, 320);
+      }
+    });
   }
-}, { capture: true });
 
-document.getElementById('settings-modal').addEventListener('contextmenu', (e) => e.preventDefault(), { capture: true });
+  ta.addEventListener('input', () => {
+    if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
+      ta.innerHTML = '';
+      if (ph) ph.classList.remove('hidden');
+    }
+    saveToDB(i, ta.innerHTML);
+    scheduleFieldBroadcast(i);
+  });
 
-// === MQTT синхронизация ===
+  ta.addEventListener('paste', e => {
+    e.preventDefault();
+    const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
+    if (item) {
+      handleImageFile(item.getAsFile(), i, ta);
+    } else {
+      const text = e.clipboardData.getData('text/plain');
+      document.execCommand('insertText', false, text);
+    }
+  });
+
+  ta.addEventListener('dragover', e => e.preventDefault());
+  ta.addEventListener('drop', e => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = Array.from(e.dataTransfer.files).find(x => x.type.indexOf('image') !== -1);
+      if (file) handleImageFile(file, i, ta);
+    } else {
+      const item = Array.from(e.dataTransfer.items).find(x => x.type.indexOf('image') !== -1);
+      if (item) handleImageFile(item.getAsFile(), i, ta);
+    }
+  });
+
+  ta.addEventListener('contextmenu', e => e.preventDefault());
+
+  /* ---- DOUBLE-TAP: общий tapState на поле, защита от тройного тапа и выделения ---- */
+  const tapState = { lastTap: 0, openedAt: 0, pendingOpen: null };
+
+  const cancelPending = () => {
+    if (tapState.pendingOpen) {
+      clearTimeout(tapState.pendingOpen);
+      tapState.pendingOpen = null;
+    }
+  };
+
+  function bindDoubleTap(el) {
+    if (!el) return;
+
+    el.addEventListener('pointerdown', cancelPending, { passive: true });
+
+    el.addEventListener('click', e => {
+      if (e.target.closest('.img-preview')) return;
+      if (ta.textContent.trim() !== '') return;
+
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed && sel.toString().trim() !== '') return;
+
+      const now = Date.now();
+      if (now - tapState.lastTap < 300) {
+        tapState.lastTap = 0;
+        cancelPending();
+        tapState.pendingOpen = setTimeout(() => {
+          tapState.pendingOpen = null;
+          if (now - tapState.openedAt < 400) return;
+          tapState.openedAt = Date.now();
+          openSettings(i);
+          if (navigator.vibrate) navigator.vibrate(30);
+        }, 60);
+      } else {
+        tapState.lastTap = now;
+      }
+    });
+
+    el.addEventListener('dblclick', e => {
+      if (e.target.closest('.img-preview')) return;
+      if (ta.textContent.trim() !== '') return;
+
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed && sel.toString().trim() !== '') return;
+
+      if (tapState.pendingOpen) return;
+
+      const now = Date.now();
+      if (now - tapState.openedAt < 400) return;
+      tapState.openedAt = now;
+      openSettings(i);
+    });
+  }
+  bindDoubleTap(ta);
+  bindDoubleTap(ph);
+
+  /* ---- IMAGE GESTURES ---- */
+  const img = images[i];
+  let imgLPTimer = null, imgSX = 0, imgSY = 0, imgDeleted = false;
+
+  img.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    imgDeleted = false;
+    imgSX = e.clientX; imgSY = e.clientY;
+    clearTimeout(imgLPTimer);
+    imgLPTimer = setTimeout(() => {
+      imgDeleted = true;
+      img.classList.remove('fullscreen');
+      img.removeAttribute('src');
+      img.style.display = 'none';
+      localStorage.removeItem(`q_pos_${i}`);
+      saveToDB(i, ta.innerHTML, null, true);
+    }, 1000);
+  });
+  img.addEventListener('pointerup',     () => clearTimeout(imgLPTimer));
+  img.addEventListener('pointercancel', () => clearTimeout(imgLPTimer));
+  img.addEventListener('pointerleave',  () => clearTimeout(imgLPTimer));
+  img.addEventListener('pointermove', e => {
+    if (Math.abs(e.clientX - imgSX) > 8 || Math.abs(e.clientY - imgSY) > 8) clearTimeout(imgLPTimer);
+  });
+  img.addEventListener('click', e => {
+    e.stopPropagation();
+    if (imgDeleted) return;
+    img.classList.toggle('fullscreen');
+  });
+});
+
+/* ==================== MQTT SYNC ==================== */
 let mqttClient = null;
 const CROSS_TOPIC = 'cross/editor/sync/v1';
 const CROSS_CLIENT_ID = 'cross_' + Math.random().toString(16).slice(2, 10);
@@ -1467,15 +1614,14 @@ function getBrokerUrl() {
 }
 
 function connectCrossMqtt() {
+  if (typeof mqtt === 'undefined') return;
   if (mqttClient) { try { mqttClient.end(true); } catch(e) {} mqttClient = null; }
   mqttClient = mqtt.connect(getBrokerUrl(), {
     clientId: CROSS_CLIENT_ID, reconnectPeriod: 3000, connectTimeout: 8000, clean: true
   });
   mqttClient.on('connect', () => {
     mqttClient.subscribe(CROSS_TOPIC, { qos: 1 });
-    mqttClient.publish(CROSS_TOPIC, JSON.stringify({
-      type: 'REQUEST_STATE', sid: CROSS_CLIENT_ID
-    }), { qos: 1 });
+    mqttClient.publish(CROSS_TOPIC, JSON.stringify({ type: 'REQUEST_STATE', sid: CROSS_CLIENT_ID }), { qos: 1 });
   });
   mqttClient.on('message', (t, payload) => {
     let msg; try { msg = JSON.parse(payload.toString()); } catch(e) { return; }
@@ -1538,7 +1684,7 @@ function broadcastLayout() {
 let layoutTimer;
 function scheduleBroadcastLayout() { clearTimeout(layoutTimer); layoutTimer = setTimeout(broadcastLayout, 100); }
 
-let fieldTimers = {};
+const fieldTimers = {};
 function scheduleFieldBroadcast(i) { clearTimeout(fieldTimers[i]); fieldTimers[i] = setTimeout(() => broadcastFieldUpdate(i), 200); }
 
 function applyRemoteState(msg) {
@@ -1568,22 +1714,13 @@ function applyRemoteState(msg) {
     if (d.fs) { wrap.style.setProperty('--fs', d.fs); localStorage.setItem(`q_s_${msg.index}`, d.fs); }
     if (d.tint) { wrap.style.setProperty('--bg-tint', d.tint); localStorage.setItem(`q_tint_${msg.index}`, d.tint); }
     if (d.tilemode) { setTileModeUI(msg.index, d.tilemode); localStorage.setItem(`q_tilemode_${msg.index}`, d.tilemode); }
-    if (d.pos) {
-      const [v, h] = d.pos.split(' ');
-      const im = document.querySelectorAll('.img-preview')[msg.index];
-      im.style.top    = v === 'top'    ? '10px' : 'auto';
-      im.style.bottom = v === 'bottom' ? '10px' : 'auto';
-      im.style.left   = h === 'left'   ? '10px' : 'auto';
-      im.style.right  = h === 'right'  ? '10px' : 'auto';
-      localStorage.setItem(`q_pos_${msg.index}`, d.pos);
-    }
+    if (d.pos) { applyImagePosition(msg.index, d.pos); localStorage.setItem(`q_pos_${msg.index}`, d.pos); }
   } else if (msg.type === 'LAYOUT_UPDATE') {
     container.style.setProperty('--x', msg.x); localStorage.setItem('q_x', msg.x);
     container.style.setProperty('--y', msg.y); localStorage.setItem('q_y', msg.y);
   }
 }
 
-// select брокера
 const selBroker = document.getElementById('setting-broker');
 const brokerCustom = document.getElementById('setting-broker-custom');
 const savedBroker = localStorage.getItem('q_broker') || 'wss://broker.emqx.io:8084/mqtt';
@@ -1591,8 +1728,7 @@ if (savedBroker === 'custom') { selBroker.value = 'custom'; brokerCustom.style.d
 else selBroker.value = savedBroker;
 selBroker.addEventListener('change', () => { brokerCustom.style.display = selBroker.value === 'custom' ? 'block' : 'none'; });
 
-// запуск
-connectCrossMqtt();
+window.addEventListener('load', () => { connectCrossMqtt(); });
 </script>
 </body>
 </html>
