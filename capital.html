@@ -372,7 +372,7 @@
         <option value="solusdt">SOLUSDT</option>
         <option value="bnbusdt">BNBUSDT</option>
         <option value="nearusdt">NEARUSDT</option>
-        <option value="gramusdt">GRAMUSDT</option>
+        <option value="trxusdt">TRXUSDT</option>
       </select>
       <select id="tf">
         <option value="1m">1 Minute</option>
@@ -469,11 +469,11 @@
   <script>
     // ===== SETTINGS: универсальный менеджер настроек localStorage =====
     const AppSettings = {
-      KEY: 'capital_eqlectika_settings_v1',
+      KEY: 'capital_eqlectika_settings_v2',  // v2: hiddenDatasets теперь хранит label'ы, а не индексы
       defaults: {
         pair: 'zecusdt',
         tf: '1d',
-        hiddenDatasets: [] // индексы скрытых датасетов на процентных графиках
+        hiddenDatasets: []  // массив label'ов пар, например ["BTCUSDT", "ETHUSDT"]
       },
       _cache: null,
 
@@ -481,7 +481,12 @@
         if (this._cache) return this._cache;
         try {
           const raw = localStorage.getItem(this.KEY);
-          this._cache = raw ? { ...this.defaults, ...JSON.parse(raw) } : { ...this.defaults };
+          const parsed = raw ? JSON.parse(raw) : {};
+          // Миграция с v1: старые числовые индексы просто игнорируем
+          if (parsed.hiddenDatasets && parsed.hiddenDatasets.some(x => typeof x === 'number')) {
+            parsed.hiddenDatasets = [];
+          }
+          this._cache = { ...this.defaults, ...parsed };
         } catch (e) {
           console.warn('localStorage read error:', e);
           this._cache = { ...this.defaults };
@@ -602,7 +607,7 @@
       'fetusdt',
       'qntusdt',
       'solusdt',
-      'bnbusdt', 'nearusdt', 'gramusdt'
+      'bnbusdt', 'nearusdt', 'trxusdt'
     ];
 
     const allPairsCandles = {};
@@ -619,7 +624,7 @@
       'solusdt': '#14F1f5',
       'bnbusdt': '#999999',
       'nearusdt': '#00ff00',
-      'gramusdt': '#0088CC'
+      'trxusdt': '#ff060a'
     };
 
     // ===== SETTINGS: применяем сохранённые настройки ДО запуска connect() =====
@@ -1334,9 +1339,8 @@
 
       initPercentChart();
       initFundingPercentChart();
-
-      // ===== SETTINGS: восстанавливаем скрытые датасеты после инициализации графиков =====
-      restoreHiddenDatasets();
+      // ===== SETTINGS: restoreHiddenDatasets() УБРАН отсюда.
+      // Будет вызван в конце connect(), после загрузки данных.
     }
 
     async function getFutures(symbol) {
@@ -1362,33 +1366,37 @@
       if (percentChart) percentChart.update('none');
     }
 
-    // ===== SETTINGS: сохранить состояние скрытых датасетов =====
+    // ===== SETTINGS: сохранить состояние скрытых линий ПО LABEL =====
     function persistHiddenDatasets() {
-      const hidden = [];
+      const hiddenLabels = [];
       if (percentChart) {
-        percentChart.data.datasets.forEach((d, i) => {
-          if (percentChart.getDatasetMeta(i).hidden) hidden.push(i);
+        percentChart.data.datasets.forEach((ds, i) => {
+          if (percentChart.getDatasetMeta(i).hidden) {
+            hiddenLabels.push(ds.label);
+          }
         });
       }
-      AppSettings.save({ hiddenDatasets: hidden });
+      AppSettings.save({ hiddenDatasets: hiddenLabels });
+      console.log('💾 Hidden datasets saved:', hiddenLabels);
     }
 
-    // ===== SETTINGS: применить сохранённые скрытые датасеты =====
+    // ===== SETTINGS: применить сохранённые скрытые линии ПО LABEL =====
     function restoreHiddenDatasets() {
-      const hidden = AppSettings.get('hiddenDatasets') || [];
-      if (!hidden.length) return;
+      const hiddenLabels = AppSettings.get('hiddenDatasets') || [];
+      if (!hiddenLabels.length) return;
 
-      hidden.forEach(idx => {
-        if (percentChart && percentChart.data.datasets[idx]) {
-          percentChart.getDatasetMeta(idx).hidden = true;
-        }
-        if (fundingPercentChart && fundingPercentChart.data.datasets[idx]) {
-          fundingPercentChart.getDatasetMeta(idx).hidden = true;
-        }
-      });
+      const apply = (chart, name) => {
+        if (!chart) return;
+        chart.data.datasets.forEach((ds, i) => {
+          const shouldHide = hiddenLabels.includes(ds.label);
+          chart.setDatasetVisibility(i, !shouldHide);
+        });
+        chart.update('none');
+        console.log(`♻️ Restored hidden for ${name}:`, hiddenLabels);
+      };
 
-      if (percentChart) percentChart.update('none');
-      if (fundingPercentChart) fundingPercentChart.update('none');
+      apply(percentChart, 'percentChart');
+      apply(fundingPercentChart, 'fundingPercentChart');
     }
 
     const percentChartLabelsPlugin = {
@@ -1471,18 +1479,16 @@
           if (chart._labelClickAreas) {
             chart._labelClickAreas.forEach(area => {
               if (x >= area.left && x <= area.right && y >= area.top && y <= area.bottom) {
-                const meta = chart.getDatasetMeta(area.datasetIndex);
-                const newState = meta.hidden !== true;
-                meta.hidden = newState;
+                // ===== SETTINGS: используем setDatasetVisibility вместо meta.hidden =====
+                const newVisible = !chart.isDatasetVisible(area.datasetIndex);
+                chart.setDatasetVisibility(area.datasetIndex, newVisible);
                 chart.update();
 
-                // ===== SETTINGS: сохраняем новое состояние =====
                 persistHiddenDatasets();
 
-                if (window.fundingPercentChart) {
-                  const targetMeta = window.fundingPercentChart.getDatasetMeta(area.datasetIndex);
-                  targetMeta.hidden = newState;
-                  window.fundingPercentChart.update();
+                if (fundingPercentChart) {
+                  fundingPercentChart.setDatasetVisibility(area.datasetIndex, newVisible);
+                  fundingPercentChart.update();
                 }
               }
             });
@@ -1765,18 +1771,16 @@
           if (chart._labelClickAreas) {
             chart._labelClickAreas.forEach(area => {
               if (x >= area.left && x <= area.right && y >= area.top && y <= area.bottom) {
-                const meta = chart.getDatasetMeta(area.datasetIndex);
-                const newState = meta.hidden !== true;
-                meta.hidden = newState;
+                // ===== SETTINGS: используем setDatasetVisibility вместо meta.hidden =====
+                const newVisible = !chart.isDatasetVisible(area.datasetIndex);
+                chart.setDatasetVisibility(area.datasetIndex, newVisible);
                 chart.update();
 
-                // ===== SETTINGS: сохраняем новое состояние =====
                 persistHiddenDatasets();
 
-                if (window.percentChart) {
-                  const targetMeta = window.percentChart.getDatasetMeta(area.datasetIndex);
-                  targetMeta.hidden = newState;
-                  window.percentChart.update();
+                if (percentChart) {
+                  percentChart.setDatasetVisibility(area.datasetIndex, newVisible);
+                  percentChart.update();
                 }
               }
             });
@@ -1944,6 +1948,13 @@
 
           updateChart(candles);
           worker.postMessage({ candles, period, candleClosed: true });
+
+          // ===== SETTINGS: восстанавливаем скрытые линии ПОСЛЕ загрузки данных =====
+          // Данные в percentChart и fundingPercentChart уже заполнены через
+          // updatePercentChartData() / updateFundingPercentChartData(),
+          // которые вызываются из syncChartsScale() внутри updateChart().
+          // Теперь безопасно применить сохранённые hidden-состояния.
+          restoreHiddenDatasets();
 
           const streamList = [];
           timeframesList.forEach(tf => {
