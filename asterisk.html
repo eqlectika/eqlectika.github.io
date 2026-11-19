@@ -57,7 +57,9 @@ body, html {
 .editor-wrapper::before {
   content:''; position:absolute; inset:0;
   background-image: var(--bg-tile, none);
-  background-repeat:repeat; background-size:auto; background-position:top left;
+  background-repeat:repeat;
+  background-size: var(--tile-size, auto);
+  background-position:top left;
   z-index:0; pointer-events:none;
 }
 .editor-wrapper::after {
@@ -312,6 +314,13 @@ body.img-fullscreen-active .editor-wrapper { isolation:auto; z-index:auto; }
       <input type="file" id="setting-tile" accept="image/*" class="tile-input">
       <span id="tile-name" class="tile-name" data-lang="noFile"></span>
     </div>
+
+    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">
+      <span data-lang="tintTitle"></span>: <span id="tint-val" style="color:#ff8700; font-weight:bold;">100</span>%
+    </label>
+    <input type="range" id="setting-tint" min="0" max="100" value="100" style="width:100%; margin-bottom:20px;">
+    <div data-lang="tintDesc" style="font-size:12px; color:#888; margin-top:-12px; margin-bottom:16px;"></div>
+    
     <label style="display:flex; align-items:center; font-size:15px; cursor:pointer; color:#ff758f; padding:4px 0; margin-bottom:16px;">
       <input type="checkbox" id="setting-del-tile" style="width:20px; height:20px; margin-right:10px; accent-color:#ff758f; cursor:pointer;">
       <span data-lang="delBg"></span>
@@ -324,11 +333,14 @@ body.img-fullscreen-active .editor-wrapper { isolation:auto; z-index:auto; }
       <button type="button" class="format-btn" data-tilemode="fill"   data-lang="modeFill"></button>
     </div>
 
-    <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">
-      <span data-lang="tintTitle"></span>: <span id="tint-val" style="color:#ff8700; font-weight:bold;">100</span>%
-    </label>
-    <input type="range" id="setting-tint" min="0" max="100" value="100" style="width:100%; margin-bottom:20px;">
-    <div data-lang="tintDesc" style="font-size:12px; color:#888; margin-top:-12px; margin-bottom:16px;"></div>
+    <div id="tile-size-container" style="margin-bottom:20px;">
+      <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">
+        <span data-lang="tileSizeTitle"></span>: <span id="tile-size-val" style="color:#ff8700; font-weight:bold;">100</span>%
+      </label>
+      <input type="range" id="setting-tile-size" min="10" max="200" step="5" value="100" style="width:100%;">
+    </div>
+
+
 
     <label data-lang="posLabel" style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;"></label>
     <select id="setting-pos" style="margin-bottom:20px;">
@@ -468,6 +480,23 @@ const chkDelTile = document.getElementById('setting-del-tile');
 const inpTint = document.getElementById('setting-tint');
 const tintVal = document.getElementById('tint-val');
 const tileModeToolbar = document.getElementById('tile-mode-toolbar');
+
+const inpTileSize = document.getElementById('setting-tile-size');
+const tileSizeVal = document.getElementById('tile-size-val');
+const tileSizeContainer = document.getElementById('tile-size-container');
+
+function applyTileSize(i, pct) {
+  const wrap = textareas[i].parentElement;
+  const n = parseInt(pct, 10);
+  wrap.style.setProperty('--tile-size', (!n || n === 100) ? 'auto' : `${n}%`);
+}
+
+inpTileSize.addEventListener('input', e => {
+  tileSizeVal.textContent = e.target.value;
+  if (activeIndex !== null) {
+    applyTileSize(activeIndex, e.target.value);
+  }
+});
 
 inpBg.addEventListener('input', e => { bgPickerBtn.style.background = e.target.value; });
 inpColor.addEventListener('input', e => { colorPickerBtn.style.background = e.target.value; });
@@ -1399,6 +1428,58 @@ document.addEventListener('contextmenu', e => {
   if (document.getElementById('settings-modal').style.display === 'flex') e.preventDefault();
 }, { capture:true });
 document.getElementById('settings-modal').addEventListener('contextmenu', e => e.preventDefault(), { capture:true });
+
+(function initTileSizeFeature() {
+  if (translations && translations.ru) translations.ru.tileSizeTitle = "Размер плитки";
+  if (translations && translations.en) translations.en.tileSizeTitle = "Tile size";
+
+  document.querySelectorAll('[data-lang="tileSizeTitle"]').forEach(el => {
+    el.textContent = t.tileSizeTitle;
+  });
+
+  function syncTileSizeVisibility() {
+    if (!tileSizeContainer || activeIndex === null) return;
+    const mode = textareas[activeIndex].parentElement.dataset.tilemode || getTileMode(activeIndex);
+    tileSizeContainer.style.display = mode === 'repeat' ? 'block' : 'none';
+  }
+
+  textareas.forEach((ta, i) => {
+    applyTileSize(i, localStorage.getItem(`q_tilesize_${i}`) || '100');
+  });
+
+  const _openSettings = openSettings;
+  openSettings = function(i) {
+    _openSettings(i);
+    const saved = localStorage.getItem(`q_tilesize_${i}`) || '100';
+    inpTileSize.value = saved;
+    tileSizeVal.textContent = saved;
+    applyTileSize(i, saved);
+    syncTileSizeVisibility();
+  };
+
+  tileModeToolbar.addEventListener('click', () => {
+    setTimeout(syncTileSizeVisibility, 0);
+  });
+
+  const _saveClick = btnSave.onclick;
+  btnSave.onclick = function() {
+    if (activeIndex !== null) {
+      const pct = parseInt(inpTileSize.value, 10) || 100;
+      applyTileSize(activeIndex, pct);
+      localStorage.setItem(`q_tilesize_${activeIndex}`, pct);
+    }
+    if (_saveClick) _saveClick();
+  };
+
+  const _cancelClick = btnCancel.onclick;
+  btnCancel.onclick = function() {
+    if (activeIndex !== null) {
+      const saved = localStorage.getItem(`q_tilesize_${activeIndex}`) || '100';
+      applyTileSize(activeIndex, saved);
+    }
+    if (_cancelClick) _cancelClick();
+  };
+})();
 </script>
 </body>
 </html>
