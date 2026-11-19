@@ -89,7 +89,9 @@ opacity: var(--bg-tint, 0.35);  z-index:1; pointer-events:none;
   color:var(--color); font-family:var(--fn, 'Inter', sans-serif);
   font-size:var(--fs, 10cqmin); opacity:0.7; line-height:1.2;
   word-break:break-word; z-index:3;
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
 }
+
 .ph::-webkit-scrollbar { display:none; }
 .ph.hidden { display:none; }
 .ph p { margin:0 !important; }
@@ -1097,8 +1099,13 @@ function openSettings(i) {
   inpTint.value = Math.round(num * 100);
   tintVal.textContent = inpTint.value;
 
-  if (window.getSelection) window.getSelection().removeAllRanges();
-  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  const clearSel = () => {
+    if (window.getSelection) window.getSelection().removeAllRanges();
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  };
+  clearSel();
+  setTimeout(clearSel, 50);
+
 
   modal.style.display = 'flex';
 }
@@ -1278,6 +1285,7 @@ textareas.forEach((ta, i) => {
       if (ta.textContent.trim() !== '') return;
       const now = Date.now();
       if (now - tapState.lastTap < 300) {
+        e.preventDefault();
         tapState.lastTap = 0;
         if (now - tapState.openedAt < 400) return;
         tapState.openedAt = now;
@@ -1291,12 +1299,15 @@ textareas.forEach((ta, i) => {
     el.addEventListener('dblclick', (e) => {
       if (e.target.closest('.img-preview')) return;
       if (ta.textContent.trim() !== '') return;
+      e.preventDefault();
       const now = Date.now();
       if (now - tapState.openedAt < 400) return;
       tapState.openedAt = now;
       openSettings(i);
     });
   }
+
+
   bindDoubleTap(ta);
   bindDoubleTap(ph);
 
