@@ -1139,41 +1139,90 @@ chkDelTile.addEventListener('change', e => {
 });
 
 /* ==================== PER-EDITOR: INPUT + DOUBLE-TAP + IMAGE ==================== */
+function insertPlainTextAtCursor(containerEl, text) {
+  containerEl.focus();
+  const sel = window.getSelection();
+  let range;
+
+  if (sel && sel.rangeCount > 0 && containerEl.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+    range = sel.getRangeAt(0);
+    range.deleteContents();
+  } else {
+    range = document.createRange();
+    range.selectNodeContents(containerEl);
+    range.collapse(false);
+    if (sel) {
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }
+
+  const lines = String(text ?? '').replace(/\r\n/g, '\n').split('\n');
+  const frag = document.createDocumentFragment();
+  lines.forEach((line, idx) => {
+    if (idx > 0) frag.appendChild(document.createElement('br'));
+    frag.appendChild(document.createTextNode(line));
+  });
+
+  range.insertNode(frag);
+  range.collapse(false);
+  if (sel) {
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+}
+
 textareas.forEach((ta, i) => {
   const ph = ta.parentElement.querySelector('.ph');
 
-  // placeholder: скрыть и (отложенно) сфокусировать — не мешает double-tap
   if (ph) {
-    ph.addEventListener('pointerdown', e => { ph._x = e.clientX; ph._y = e.clientY; });
+    ph.addEventListener('pointerdown', e => {
+      ph._x = e.clientX;
+      ph._y = e.clientY;
+    });
     ph.addEventListener('pointerup', e => {
-      const dx = Math.abs(e.clientX - ph._x);
-      const dy = Math.abs(e.clientY - ph._y);
+      const dx = Math.abs(e.clientX - (ph._x ?? e.clientX));
+      const dy = Math.abs(e.clientY - (ph._y ?? e.clientY));
       if (dx < 8 && dy < 8) {
         ph.classList.add('hidden');
-        setTimeout(() => {
-          if (document.activeElement !== ta) ta.focus();
-        }, 320);
+        ta.focus();
       }
     });
   }
 
-  ta.addEventListener('input', () => {
-    if (ta.textContent.trim() === '' && !ta.querySelector('img')) {
+  const syncAfterEdit = () => {
+    const isEmpty = ta.textContent.trim() === '' && !ta.querySelector('img');
+    if (isEmpty) {
       ta.innerHTML = '';
       if (ph) ph.classList.remove('hidden');
+    } else if (ph) {
+      ph.classList.add('hidden');
     }
     saveToDB(i, ta.innerHTML);
-  });
+  };
+
+  ta.addEventListener('input', syncAfterEdit);
 
   ta.addEventListener('paste', e => {
     e.preventDefault();
-    const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf('image') !== -1);
+    const clipboard = e.clipboardData || window.clipboardData;
+    if (!clipboard) return;
+
+    const item = Array.from(clipboard.items || []).find(x => x.type && x.type.indexOf('image') !== -1);
     if (item) {
-      handleImageFile(item.getAsFile(), i, ta);
-    } else {
-      const text = e.clipboardData.getData('text/plain');
-      const clean = DOMPurify.sanitize(text, { ALLOWED_TAGS:[], ALLOWED_ATTR:[] });
-      document.execCommand('insertText', false, clean);
+      const file = item.getAsFile();
+      if (file) {
+        if (ph) ph.classList.add('hidden');
+        handleImageFile(file, i, ta);
+      }
+      return;
+    }
+
+    const text = clipboard.getData('text/plain');
+    if (typeof text === 'string') {
+      if (ph) ph.classList.add('hidden');
+      insertPlainTextAtCursor(ta, text);
+      syncAfterEdit();
     }
   });
 
