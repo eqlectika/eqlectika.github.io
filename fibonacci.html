@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -10,7 +10,10 @@
   <meta property="og:image:width" content="1280" />
   <meta property="og:image:height" content="1280" />
   <link rel="manifest" href="manifest-fibonacci.json" />
-  <title>Часы Фибоначчи</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet" />
+  <title>Fibonacci Clock</title>
   <style>
     * {
       box-sizing: border-box;
@@ -74,7 +77,7 @@
 </head>
 <body>
   <div class="ios-blur-fix"></div>
-  <a id="delisLink" class="logo-link" href="match.html" aria-label="Перейти на match.html" draggable="false">
+  <a id="delisLink" class="logo-link" href="match.html" aria-label="Go to match.html" draggable="false">
     <img src="delis.png" alt="delis" draggable="false" />
   </a>
   <canvas id="canvas"></canvas>
@@ -91,7 +94,7 @@
           if (!updateWorker) return;
           updateWorker.addEventListener('statechange', () => {
             if (updateWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // Новый Service Worker установлен и готов к активации
+              // New Service Worker installed and ready to activate
             }
           });
         });
@@ -108,12 +111,19 @@
     const ctx = canvas.getContext('2d');
     const delisLink = document.getElementById('delisLink');
 
-    // Размер логотипа в px (подставьте нужное значение при необходимости)
+    // Logo size in px
     const LOGO_PX = 48;
 
-    const FIB = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+    // Mode: 'dual' (main dual spiral) or 'single180' (single spiral rotated 180°)
+    let mode = 'dual';
 
-    // Базовая спираль изнутри наружу по часовой стрелке, старт в (0, 0)
+    // Screen coordinates of the toggle point at spiral origin (0, 0) and hit radius
+    let switchHit = { x: 0, y: 0, r: 28 };
+
+    const FIB = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+    const ROMAN_12 = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+
+    // Base spiral from inside out clockwise, starting at (0, 0)
     function buildBaseSpiral() {
       const squares = [];
       const arcs = [];
@@ -180,8 +190,8 @@
       };
     }
 
-    // Левая спираль (0..30 сек): поворот базовой на 180 градусов вокруг (0, 0)
-    function buildLeftSpiral(base) {
+    // Single spiral rotated 180° around (0, 0)
+    function buildInverted180Spiral(base) {
       const squares = base.squares.map((sq) => ({
         x: -(sq.x + sq.s),
         y: -(sq.y + sq.s),
@@ -211,7 +221,7 @@
       };
     }
 
-    // Правая спираль (30..60 сек): зеркало левой по горизонтали, от внешнего края внутрь к центру
+    // Right spiral for dual mode (30..60 sec)
     function buildRightSpiral(left) {
       const squares = left.squares.map((sq) => ({
         x: -(sq.x + sq.s),
@@ -245,8 +255,9 @@
     }
 
     const baseSpiral = buildBaseSpiral();
-    const leftSpiral = buildLeftSpiral(baseSpiral);
+    const leftSpiral = buildInverted180Spiral(baseSpiral);
     const rightSpiral = buildRightSpiral(leftSpiral);
+    const single180Spiral = leftSpiral;
 
     function getArcPoint(arc, t) {
       const ang = arc.a1 + (arc.a2 - arc.a1) * t;
@@ -285,6 +296,22 @@
     window.addEventListener('resize', resize);
     resize();
 
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        resize();
+      });
+    }
+
+    // Switch mode by tapping at the spiral origin (0, 0) with no visible buttons
+    window.addEventListener('pointerdown', (e) => {
+      if (e.target && e.target.closest && e.target.closest('#delisLink')) return;
+      const dx = e.clientX - switchHit.x;
+      const dy = e.clientY - switchHit.y;
+      if (dx * dx + dy * dy <= switchHit.r * switchHit.r) {
+        mode = mode === 'dual' ? 'single180' : 'dual';
+      }
+    });
+
     function drawHalfSpiral(spiral, toX, toY) {
       for (const sq of spiral.squares) {
         const px = toX(sq.x);
@@ -317,7 +344,6 @@
       ctx.stroke();
     }
 
-    // Ровная непрерывная линия вдоль участка [uStart, uEnd] одной спирали без точек
     function traceSpiralPath(spiral, uStart, uEnd, toX, toY) {
       const totalArcs = spiral.arcs.length;
       const i0 = Math.max(0, Math.min(totalArcs - 1, Math.floor(uStart * totalArcs)));
@@ -377,7 +403,6 @@
       ctx.stroke();
     }
 
-    // Отрисовка линейного отрезка времени [segStart, segEnd] внутри общего окна [windowStart, windowEnd] длиной tailLen
     function drawTimeInterval(segStart, segEnd, windowStart, tailLen, toLeftX, toLeftY, toRightX, toRightY) {
       if (segEnd <= segStart) return;
 
@@ -399,8 +424,8 @@
       }
     }
 
-    // Кольцевой затухающий след на 30 секунд: плавно переходит с правой стороны в начало нового цикла (0с)
-    function drawFadingTrace(sec, toLeftX, toLeftY, toRightX, toRightY) {
+    // 30-second wrapping fading trail for dual mode
+    function drawDualFadingTrace(sec, toLeftX, toLeftY, toRightX, toRightY) {
       const tailLen = 30;
       const endSec = sec;
       const rawStartSec = endSec - tailLen;
@@ -408,13 +433,11 @@
       if (rawStartSec >= 0) {
         drawTimeInterval(rawStartSec, endSec, rawStartSec, tailLen, toLeftX, toLeftY, toRightX, toRightY);
       } else {
-        // Хвост заходит в конец предыдущего цикла [60 + rawStartSec, 60]
         const prevStart = 60 + rawStartSec;
         const prevEnd = 60;
         const prevLen = prevEnd - prevStart;
         const currLen = endSec;
 
-        // Хвост в конце предыдущего цикла (самый тусклый участок)
         if (prevLen > 0) {
           drawCleanSpan(
             rightSpiral,
@@ -427,7 +450,6 @@
           );
         }
 
-        // Продолжение в начале текущего цикла [0, endSec]
         if (currLen > 0) {
           const startAlpha = Math.pow(prevLen / tailLen, 1.5) * 0.92;
           const endAlpha = Math.pow(1, 1.5) * 0.92;
@@ -436,25 +458,83 @@
       }
     }
 
-    function positionDelisLogo(toLeftY, sec) {
-      // Находим квадрат 89 и берём половину его высоты в пикселях
-      const sq89 = leftSpiral.squares.find((sq) => sq.val === 89);
-      const half89Px = sq89 ? (sq89.s * currentScale) / 2 : (89 * currentScale) / 2;
+    // Wrapping fading trail for single mode (0..1 along the spiral over 60 sec)
+    function drawSingleFadingTrace(secProg, toX, toY) {
+      const tailSpan = 0.5;
+      const rawStart = secProg - tailSpan;
 
-      // Верхний край композиции по высоте
-      const topY = toLeftY(leftSpiral.bounds.minY);
-      const targetX = w / 2;
-      const targetY = topY + half89Px;
+      if (rawStart >= 0) {
+        drawCleanSpan(single180Spiral, rawStart, secProg, 0, 0.92, toX, toY);
+      } else {
+        const prevStart = 1 + rawStart;
+        const prevLen = 1 - prevStart;
+        const midAlpha = Math.pow(prevLen / tailSpan, 1.5) * 0.92;
+        if (prevLen > 0) {
+          drawCleanSpan(single180Spiral, prevStart, 1, 0, midAlpha, toX, toY);
+        }
+        if (secProg > 0) {
+          drawCleanSpan(single180Spiral, 0, secProg, midAlpha, 0.92, toX, toY);
+        }
+      }
+    }
 
-      // Симметричная прозрачность: 1 на 0с -> 0 на 30с -> 1 на 60с
-      const opacity = sec < 30 ? (1 - sec / 30) : ((sec - 30) / 30);
+    // Roman numerals along the single spiral (Cinzel font)
+    function drawRomanNumerals(spiral, toX, toY) {
+      const labelSize = Math.max(11, Math.min(currentScale * 0.35, 18));
+      ctx.font = `600 ${labelSize}px 'Cinzel', serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (let k = 1; k <= 12; k++) {
+        const u = k / 12;
+        const pt = getSpiralPoint(spiral, u);
+        const lx = toX(pt.x);
+        const ly = toY(pt.y);
+
+        const offset = labelSize * 0.85;
+        const dx = lx + Math.cos(pt.ang) * offset;
+        const dy = ly + Math.sin(pt.ang) * offset;
+
+        ctx.fillStyle = '#07090f';
+        ctx.beginPath();
+        ctx.arc(dx, dy, labelSize * 0.65, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = (k === 12) ? '#fbbf24' : '#e2e8f0';
+        ctx.fillText(ROMAN_12[k - 1], dx, dy);
+      }
+    }
+
+    function applyLogoOpacity(sec, currentMode = 'dual') {
+      const baseOpacity = sec < 30 ? (1 - sec / 30) : ((sec - 30) / 30);
+      const opacity = currentMode === 'single180' ? (1 - baseOpacity) : baseOpacity;
       const clampedOpacity = Math.max(0, Math.min(1, opacity));
 
       delisLink.style.width = `${LOGO_PX}px`;
       delisLink.style.height = `${LOGO_PX}px`;
-      delisLink.style.transform = `translate3d(${targetX.toFixed(1)}px, ${targetY.toFixed(1)}px, 0) translate(-50%, -50%)`;
       delisLink.style.opacity = clampedOpacity.toFixed(4);
       delisLink.style.pointerEvents = clampedOpacity > 0.01 ? 'auto' : 'none';
+    }
+
+    function positionLogoDual(toLeftY, sec) {
+      const sq89 = leftSpiral.squares.find((sq) => sq.val === 89);
+      const half89Px = sq89 ? (sq89.s * currentScale) / 2 : (89 * currentScale) / 2;
+      const topY = toLeftY(leftSpiral.bounds.minY);
+      const targetX = w / 2;
+      const targetY = topY + half89Px;
+
+      applyLogoOpacity(sec, 'dual');
+      delisLink.style.transform = `translate3d(${targetX.toFixed(1)}px, ${targetY.toFixed(1)}px, 0) translate(-50%, -50%)`;
+    }
+
+    // In single mode, position the logo right where square 89 is located
+    function positionLogoSingleAt89(toX, toY, sec) {
+      const sq89 = single180Spiral.squares.find((sq) => sq.val === 89);
+      const targetX = sq89 ? toX(sq89.x + sq89.s / 2) : w / 2;
+      const targetY = sq89 ? toY(sq89.y + sq89.s / 2) : h / 2;
+
+      applyLogoOpacity(sec, 'single180');
+      delisLink.style.transform = `translate3d(${targetX.toFixed(1)}px, ${targetY.toFixed(1)}px, 0) translate(-50%, -50%)`;
     }
 
     function render() {
@@ -467,100 +547,163 @@
       ctx.fillStyle = '#07090f';
       ctx.fillRect(0, 0, w, h);
 
-      const padX = w * 0.04;
-      const padY = h * 0.08;
+      if (mode === 'dual') {
+        const padX = w * 0.04;
+        const padY = h * 0.08;
 
-      const totalWorldW = leftSpiral.bounds.w + rightSpiral.bounds.w;
-      const maxWorldH = Math.max(leftSpiral.bounds.h, rightSpiral.bounds.h);
+        const totalWorldW = leftSpiral.bounds.w + rightSpiral.bounds.w;
+        const maxWorldH = Math.max(leftSpiral.bounds.h, rightSpiral.bounds.h);
 
-      const scaleX = (w - padX * 2) / totalWorldW;
-      const scaleY = (h - padY * 2) / maxWorldH;
-      currentScale = Math.max(0.1, Math.min(scaleX, scaleY));
+        const scaleX = (w - padX * 2) / totalWorldW;
+        const scaleY = (h - padY * 2) / maxWorldH;
+        currentScale = Math.max(0.1, Math.min(scaleX, scaleY));
 
-      const leftPixelW = leftSpiral.bounds.w * currentScale;
-      const rightPixelW = rightSpiral.bounds.w * currentScale;
-      const totalPixelW = leftPixelW + rightPixelW;
+        const leftPixelW = leftSpiral.bounds.w * currentScale;
+        const rightPixelW = rightSpiral.bounds.w * currentScale;
+        const totalPixelW = leftPixelW + rightPixelW;
 
-      const startScreenX = (w - totalPixelW) / 2;
-      const centerScreenY = h / 2;
+        const startScreenX = (w - totalPixelW) / 2;
+        const centerScreenY = h / 2;
 
-      const leftMidX = (leftSpiral.bounds.minX + leftSpiral.bounds.maxX) / 2;
-      const leftMidY = (leftSpiral.bounds.minY + leftSpiral.bounds.maxY) / 2;
-      const leftCenterX = startScreenX + leftPixelW / 2;
+        const leftMidX = (leftSpiral.bounds.minX + leftSpiral.bounds.maxX) / 2;
+        const leftMidY = (leftSpiral.bounds.minY + leftSpiral.bounds.maxY) / 2;
+        const leftCenterX = startScreenX + leftPixelW / 2;
 
-      const toLeftX = (wx) => leftCenterX + (wx - leftMidX) * currentScale;
-      const toLeftY = (wy) => centerScreenY + (wy - leftMidY) * currentScale;
+        const toLeftX = (wx) => leftCenterX + (wx - leftMidX) * currentScale;
+        const toLeftY = (wy) => centerScreenY + (wy - leftMidY) * currentScale;
 
-      const rightMidX = (rightSpiral.bounds.minX + rightSpiral.bounds.maxX) / 2;
-      const rightMidY = (rightSpiral.bounds.minY + rightSpiral.bounds.maxY) / 2;
-      const rightCenterX = startScreenX + leftPixelW + rightPixelW / 2;
+        const rightMidX = (rightSpiral.bounds.minX + rightSpiral.bounds.maxX) / 2;
+        const rightMidY = (rightSpiral.bounds.minY + rightSpiral.bounds.maxY) / 2;
+        const rightCenterX = startScreenX + leftPixelW + rightPixelW / 2;
 
-      const toRightX = (wx) => rightCenterX + (wx - rightMidX) * currentScale;
-      const toRightY = (wy) => centerScreenY + (wy - rightMidY) * currentScale;
+        const toRightX = (wx) => rightCenterX + (wx - rightMidX) * currentScale;
+        const toRightY = (wy) => centerScreenY + (wy - rightMidY) * currentScale;
 
-      // 1. Обе половины спирали вплотную друг к другу
-      drawHalfSpiral(leftSpiral, toLeftX, toLeftY);
-      drawHalfSpiral(rightSpiral, toRightX, toRightY);
+        drawHalfSpiral(leftSpiral, toLeftX, toLeftY);
+        drawHalfSpiral(rightSpiral, toRightX, toRightY);
+        drawDualFadingTrace(sec, toLeftX, toLeftY, toRightX, toRightY);
 
-      // 2. Кольцевой затухающий след на 30 секунд с плавным переходом в новый цикл
-      drawFadingTrace(sec, toLeftX, toLeftY, toRightX, toRightY);
+        const isLeftHalf = sec < 30;
+        const activeSpiral = isLeftHalf ? leftSpiral : rightSpiral;
+        const activeToX = isLeftHalf ? toLeftX : toRightX;
+        const activeToY = isLeftHalf ? toLeftY : toRightY;
+        const halfProgress = isLeftHalf ? (sec / 30) : ((sec - 30) / 30);
 
-      // 3. Плавная секундная стрелка (0..30с слева наружу, 30..60с справа внутрь)
-      const isLeftHalf = sec < 30;
-      const activeSpiral = isLeftHalf ? leftSpiral : rightSpiral;
-      const activeToX = isLeftHalf ? toLeftX : toRightX;
-      const activeToY = isLeftHalf ? toLeftY : toRightY;
-      const halfProgress = isLeftHalf ? (sec / 30) : ((sec - 30) / 30);
+        const pivotX = activeToX(0);
+        const pivotY = activeToY(0);
+        const tip = getSpiralPoint(activeSpiral, halfProgress);
+        const tipX = activeToX(tip.x);
+        const tipY = activeToY(tip.y);
 
-      const pivotX = activeToX(0);
-      const pivotY = activeToY(0);
-      const tip = getSpiralPoint(activeSpiral, halfProgress);
-      const tipX = activeToX(tip.x);
-      const tipY = activeToY(tip.y);
+        ctx.beginPath();
+        ctx.moveTo(pivotX, pivotY);
+        ctx.lineTo(tipX, tipY);
+        ctx.strokeStyle = '#fde047';
+        ctx.lineWidth = 2;
+        ctx.stroke();
 
-      ctx.beginPath();
-      ctx.moveTo(pivotX, pivotY);
-      ctx.lineTo(tipX, tipY);
-      ctx.strokeStyle = '#fde047';
-      ctx.lineWidth = 2;
-      ctx.stroke();
+        const originX = toLeftX(0);
+        const originY = toLeftY(0);
+        switchHit = { x: originX, y: originY, r: Math.max(20, Math.min(36, currentScale * 6)) };
 
-      // 4. Часовая и минутная стрелки привязаны к началу левой спирали (0, 0)
-      const originX = toLeftX(0);
-      const originY = toLeftY(0);
-      const handMaxR = Math.min(leftPixelW, h) * 0.36;
-      const hrAngle = (hr / 12) * Math.PI * 2 - Math.PI / 2;
-      const minAngle = (min / 60) * Math.PI * 2 - Math.PI / 2;
+        const handMaxR = Math.min(leftPixelW, h) * 0.36;
+        const hrAngle = (hr / 12) * Math.PI * 2 - Math.PI / 2;
+        const minAngle = (min / 60) * Math.PI * 2 - Math.PI / 2;
 
-      ctx.beginPath();
-      ctx.moveTo(originX, originY);
-      ctx.lineTo(
-        originX + Math.cos(hrAngle) * (handMaxR * 0.6),
-        originY + Math.sin(hrAngle) * (handMaxR * 0.6)
-      );
-      ctx.strokeStyle = '#fb7185';
-      ctx.lineWidth = 4;
-      ctx.lineCap = 'round';
-      ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(
+          originX + Math.cos(hrAngle) * (handMaxR * 0.6),
+          originY + Math.sin(hrAngle) * (handMaxR * 0.6)
+        );
+        ctx.strokeStyle = '#fb7185';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.stroke();
 
-      ctx.beginPath();
-      ctx.moveTo(originX, originY);
-      ctx.lineTo(
-        originX + Math.cos(minAngle) * handMaxR,
-        originY + Math.sin(minAngle) * handMaxR
-      );
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2.5;
-      ctx.lineCap = 'round';
-      ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(
+          originX + Math.cos(minAngle) * handMaxR,
+          originY + Math.sin(minAngle) * handMaxR
+        );
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.stroke();
 
-      ctx.beginPath();
-      ctx.arc(originX, originY, 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
+        ctx.beginPath();
+        ctx.arc(originX, originY, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
 
-      // 5. Позиционирование и симметричное затухание/появление логотипа delis.png
-      positionDelisLogo(toLeftY, sec);
+        positionLogoDual(toLeftY, sec);
+      } else {
+        const pad = Math.min(w, h) * 0.08;
+        const scaleX = (w - pad * 2) / single180Spiral.bounds.w;
+        const scaleY = (h - pad * 2) / single180Spiral.bounds.h;
+        currentScale = Math.max(0.1, Math.min(scaleX, scaleY));
+
+        const centerWorldX = (single180Spiral.bounds.minX + single180Spiral.bounds.maxX) / 2;
+        const centerWorldY = (single180Spiral.bounds.minY + single180Spiral.bounds.maxY) / 2;
+
+        const toX = (wx) => w / 2 + (wx - centerWorldX) * currentScale;
+        const toY = (wy) => h / 2 + (wy - centerWorldY) * currentScale;
+
+        drawHalfSpiral(single180Spiral, toX, toY);
+        drawRomanNumerals(single180Spiral, toX, toY);
+
+        const secProg = sec / 60;
+        drawSingleFadingTrace(secProg, toX, toY);
+
+        const originX = toX(0);
+        const originY = toY(0);
+        switchHit = { x: originX, y: originY, r: Math.max(20, Math.min(36, currentScale * 6)) };
+
+        const tip = getSpiralPoint(single180Spiral, secProg);
+        const tipX = toX(tip.x);
+        const tipY = toY(tip.y);
+
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(tipX, tipY);
+        ctx.strokeStyle = '#fde047';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        const handMaxR = Math.min(w, h) * 0.24;
+        const hrAngle = (hr / 12) * Math.PI * 2 - Math.PI / 2;
+        const minAngle = (min / 60) * Math.PI * 2 - Math.PI / 2;
+
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(
+          originX + Math.cos(hrAngle) * (handMaxR * 0.6),
+          originY + Math.sin(hrAngle) * (handMaxR * 0.6)
+        );
+        ctx.strokeStyle = '#fb7185';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(
+          originX + Math.cos(minAngle) * handMaxR,
+          originY + Math.sin(minAngle) * handMaxR
+        );
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(originX, originY, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+
+        positionLogoSingleAt89(toX, toY, sec);
+      }
 
       requestAnimationFrame(render);
     }
