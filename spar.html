@@ -201,10 +201,47 @@ html{padding-top:env(safe-area-inset-top)}
 .overlay .body{scrollbar-width:none;-ms-overflow-style:none}
 
 /* ---------- history ---------- */
+.hist-toolbar{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:0 0 10px 0;margin-bottom:6px;
+  border-bottom:1px solid #223355;
+  flex-wrap:wrap;
+}
+.hist-toolbar-left{
+  display:flex;align-items:center;gap:8px;
+}
+.hist-select-all{
+  display:inline-flex;align-items:center;gap:6px;
+  color:#ccc;font-size:12px;font-weight:700;cursor:pointer;
+}
+.hist-select-all input{
+  width:16px;height:16px;accent-color:#ff2440;cursor:pointer;
+}
+.hist-count{
+  color:#888;font-size:12px;
+}
+.hist-del-btn{
+  background:#2a0b14;border:1px solid #ff2440;border-radius:8px;
+  color:#ff6b7d;font-family:'Roboto',sans-serif;font-size:12px;font-weight:700;
+  padding:6px 10px;cursor:pointer;
+}
+.hist-del-btn:disabled{
+  opacity:.35;cursor:default;border-color:#555;color:#888;background:#111;
+}
+.hist-del-btn:not(:disabled):active{transform:scale(.97)}
+
 .hist-entry{
-  display:flex;gap:8px;align-items:baseline;
-  padding:6px 0;border-bottom:1px solid #1f1f3a;
-  word-break:break-word;
+  display:flex;gap:8px;align-items:center;
+  padding:7px 6px;border-bottom:1px solid #1f1f3a;border-radius:6px;
+  word-break:break-word;cursor:pointer;
+  transition:background .12s;
+}
+.hist-entry.selected{
+  background:rgba(255,36,64,.14);
+}
+.hist-check{
+  flex:0 0 auto;width:16px;height:16px;
+  accent-color:#ff2440;cursor:pointer;
 }
 .hist-entry .num{
   color:#666;flex:0 0 auto;
@@ -315,7 +352,7 @@ html{padding-top:env(safe-area-inset-top)}
 </div>
 
 <div class="overlay" id="historySheet">
-  <div class="title">Score (tap any place to close)</div>
+  <div class="title">Score (tap empty space to close)</div>
   <div class="body" id="historyBody"></div>
 </div>
 
@@ -1202,28 +1239,130 @@ function applyRemoteEdit(p){
 }
 
 /* =========================================================
-   History overlay
+   History overlay (with selected cleanup)
    ========================================================= */
+let selectedHistoryIndices = new Set();
+
 document.getElementById('historyBtn').addEventListener('click', ()=>{
+  selectedHistoryIndices.clear();
   renderHistory();
   historySheet.classList.add('show');
 });
-historySheet.addEventListener('click', ()=>{
+historySheet.addEventListener('click', (e)=>{
+  if (e.target.closest('.hist-entry') || e.target.closest('.hist-toolbar')){
+    return;
+  }
+  selectedHistoryIndices.clear();
   historySheet.classList.remove('show');
 });
 
+function deleteSelectedHistory(){
+  if (!selectedHistoryIndices.size) return;
+  historyList = historyList.filter((_, idx) => !selectedHistoryIndices.has(idx));
+  selectedHistoryIndices.clear();
+  saveHistory();
+  renderHistory();
+}
+
 function renderHistory(){
   historyBody.innerHTML = '';
+
+  // Удаляем индексы, вышедшие за пределы текущего массива
+  selectedHistoryIndices.forEach(idx => {
+    if (idx < 0 || idx >= historyList.length) selectedHistoryIndices.delete(idx);
+  });
+
   if (!historyList.length){
     historyBody.innerHTML = '<div class="hist-empty">No history yet.</div>';
     return;
   }
-  const sorted = historyList.slice().reverse();
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'hist-toolbar';
+
+  const left = document.createElement('div');
+  left.className = 'hist-toolbar-left';
+
+  const selectAllLabel = document.createElement('label');
+  selectAllLabel.className = 'hist-select-all';
+
+  const selectAllCb = document.createElement('input');
+  selectAllCb.type = 'checkbox';
+  selectAllCb.checked = selectedHistoryIndices.size === historyList.length && historyList.length > 0;
+  selectAllCb.indeterminate = selectedHistoryIndices.size > 0 && selectedHistoryIndices.size < historyList.length;
+  selectAllCb.addEventListener('change', ()=>{
+    if (selectAllCb.checked){
+      selectedHistoryIndices = new Set(historyList.map((_, i) => i));
+    } else {
+      selectedHistoryIndices.clear();
+    }
+    renderHistory();
+  });
+
+  const selectAllText = document.createElement('span');
+  selectAllText.textContent = 'All';
+
+  selectAllLabel.appendChild(selectAllCb);
+  selectAllLabel.appendChild(selectAllText);
+
+  const countEl = document.createElement('span');
+  countEl.className = 'hist-count';
+  countEl.textContent = `${selectedHistoryIndices.size} / ${historyList.length}`;
+
+  left.appendChild(selectAllLabel);
+  left.appendChild(countEl);
+
+  const delBtn = document.createElement('button');
+  delBtn.type = 'button';
+  delBtn.className = 'hist-del-btn';
+  delBtn.disabled = selectedHistoryIndices.size === 0;
+  delBtn.textContent = selectedHistoryIndices.size > 0
+    ? `Delete selected (${selectedHistoryIndices.size})`
+    : 'Delete selected';
+  delBtn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    deleteSelectedHistory();
+  });
+
+  toolbar.appendChild(left);
+  toolbar.appendChild(delBtn);
+  historyBody.appendChild(toolbar);
+
   const maxNum = String(historyList.length);
-  sorted.forEach((rec, i)=>{
-    const n = historyList.length - i;
+  for (let idx = historyList.length - 1; idx >= 0; idx--){
+    const rec = historyList[idx];
+    const n = idx + 1;
+    const isChecked = selectedHistoryIndices.has(idx);
+
     const row = document.createElement('div');
-    row.className = 'hist-entry';
+    row.className = 'hist-entry' + (isChecked ? ' selected' : '');
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'hist-check';
+    cb.checked = isChecked;
+
+    const toggleItem = ()=>{
+      if (selectedHistoryIndices.has(idx)){
+        selectedHistoryIndices.delete(idx);
+      } else {
+        selectedHistoryIndices.add(idx);
+      }
+      renderHistory();
+    };
+
+    cb.addEventListener('click', (e)=>{
+      e.stopPropagation();
+    });
+    cb.addEventListener('change', (e)=>{
+      e.stopPropagation();
+      toggleItem();
+    });
+
+    row.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      toggleItem();
+    });
 
     const numEl = document.createElement('span');
     numEl.className = 'num';
@@ -1242,12 +1381,13 @@ function renderHistory(){
     fEl.className = 'f';
     fEl.textContent = '⚑ ' + (rec.flags|0);
 
+    row.appendChild(cb);
     row.appendChild(numEl);
     row.appendChild(wEl);
     row.appendChild(aEl);
     row.appendChild(fEl);
     historyBody.appendChild(row);
-  });
+  }
 }
 
 /* =========================================================
