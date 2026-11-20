@@ -109,7 +109,7 @@ body, html {
   inset: 0;
   background-image: var(--bg-tile, none);
   background-repeat: repeat;
-  background-size: auto;
+  background-size: var(--tile-size, auto);
   background-position: top left;
   z-index: 0;
   pointer-events: none;
@@ -639,6 +639,13 @@ body, html {
       <button type="button" class="format-btn" data-tilemode="fill">Fill</button>
     </div>
 
+    <div id="tile-size-container" style="margin-bottom:20px;">
+      <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">
+        <span data-lang="tileSizeTitle">Tile size</span>: <span id="tile-size-val" style="color:#ff8700; font-weight:bold;">100</span>%
+      </label>
+      <input type="range" id="setting-tile-size" min="10" max="200" step="5" value="100" style="width:100%;">
+    </div>
+
     <label style="display:block; font-size:15px; margin-bottom:6px; color:#ccc;">
       Tint opacity: <span id="tint-val" style="color:#ff8700; font-weight:bold;">100</span>%
     </label>
@@ -701,7 +708,11 @@ body, html {
 <script>
 
 /* ==================== TRANSLATIONS ==================== */
-const helpText = (navigator.language || navigator.userLanguage || 'en').startsWith('ru')
+const isRu = (navigator.language || navigator.userLanguage || 'en').startsWith('ru');
+const tileSizeLabelEl = document.querySelector('[data-lang="tileSizeTitle"]');
+if (tileSizeLabelEl && isRu) tileSizeLabelEl.textContent = "Размер плитки";
+
+const helpText = isRu
   ? `<h3>Как пользоваться</h3>
      <p>Всё, что вы вводите, вставляете или загружаете, видно другим пользователям!</p>
      <p>1. Введите или вставьте текст и картинку в любое поле.</p>
@@ -742,6 +753,10 @@ const chkDelTile = document.getElementById('setting-del-tile');
 const inpTint = document.getElementById('setting-tint');
 const tintVal = document.getElementById('tint-val');
 const tileModeToolbar = document.getElementById('tile-mode-toolbar');
+
+const inpTileSize = document.getElementById('setting-tile-size');
+const tileSizeVal = document.getElementById('tile-size-val');
+const tileSizeContainer = document.getElementById('tile-size-container');
 
 inpBg.addEventListener('input', e => { bgPickerBtn.style.background = e.target.value; });
 inpColor.addEventListener('input', e => { colorPickerBtn.style.background = e.target.value; });
@@ -939,6 +954,16 @@ function setTileModeUI(i, mode) {
     btn.classList.toggle('active', btn.dataset.tilemode === mode);
   });
 }
+function applyTileSize(i, pct) {
+  const wrap = textareas[i].parentElement;
+  const n = parseInt(pct, 10);
+  wrap.style.setProperty('--tile-size', (!n || n === 100) ? 'auto' : `${n}%`);
+}
+function syncTileSizeVisibility() {
+  if (!tileSizeContainer || activeIndex === null) return;
+  const mode = textareas[activeIndex].parentElement.dataset.tilemode || getTileMode(activeIndex);
+  tileSizeContainer.style.display = mode === 'repeat' ? 'block' : 'none';
+}
 function applyAlign(i, align) {
   const ta = textareas[i];
   ta.style.textAlign = align;
@@ -981,6 +1006,7 @@ function loadData() {
     wrap.style.setProperty('--fn', fn);
     wrap.style.setProperty('--fs', fs);
     wrap.style.setProperty('--bg-tint', tint !== null ? tint : '1');
+    applyTileSize(i, localStorage.getItem(`q_tilesize_${i}`) || '100');
 
     setTileModeUI(i, getTileMode(i));
 
@@ -1246,6 +1272,14 @@ tileModeToolbar.addEventListener('click', e => {
   const btn = e.target.closest('[data-tilemode]');
   if (!btn || activeIndex === null) return;
   setTileModeUI(activeIndex, btn.dataset.tilemode);
+  syncTileSizeVisibility();
+});
+
+inpTileSize.addEventListener('input', e => {
+  tileSizeVal.textContent = e.target.value;
+  if (activeIndex !== null) {
+    applyTileSize(activeIndex, e.target.value);
+  }
 });
 
 inpTint.addEventListener('input', e => {
@@ -1327,6 +1361,11 @@ function openSettings(i) {
 
   selPos.value = localStorage.getItem(`q_pos_${i}`) || 'bottom right';
   setTileModeUI(i, getTileMode(i));
+  const savedTileSize = localStorage.getItem(`q_tilesize_${i}`) || '100';
+  inpTileSize.value = savedTileSize;
+  tileSizeVal.textContent = savedTileSize;
+  applyTileSize(i, savedTileSize);
+  syncTileSizeVisibility();
   applyAlign(i, localStorage.getItem(`q_halign_${i}`) || 'left');
 
   if (images[i].style.display === 'block') {
@@ -1408,6 +1447,10 @@ btnSave.onclick = () => {
   localStorage.setItem(`q_tilemode_${activeIndex}`, mode);
   setTileModeUI(activeIndex, mode);
 
+  const pct = parseInt(inpTileSize.value, 10) || 100;
+  applyTileSize(activeIndex, pct);
+  localStorage.setItem(`q_tilesize_${activeIndex}`, pct);
+
   localStorage.setItem(`q_pos_${activeIndex}`, selPos.value);
   applyImagePosition(activeIndex, selPos.value);
 
@@ -1448,6 +1491,9 @@ btnCancel.onclick = () => {
 
     const savedSize = localStorage.getItem(`q_s_${activeIndex}`);
     if (savedSize !== null) wrap.style.setProperty('--fs', savedSize);
+
+    const savedTileSize = localStorage.getItem(`q_tilesize_${activeIndex}`) || '100';
+    applyTileSize(activeIndex, savedTileSize);
 
     setTileModeUI(activeIndex, getTileMode(activeIndex));
     applyAlign(activeIndex, localStorage.getItem(`q_halign_${activeIndex}`) || 'left');
@@ -1635,6 +1681,7 @@ function captureState() {
       fs: localStorage.getItem(`q_s_${i}`),
       tint: localStorage.getItem(`q_tint_${i}`),
       tilemode: localStorage.getItem(`q_tilemode_${i}`),
+      tilesize: localStorage.getItem(`q_tilesize_${i}`),
       pos: localStorage.getItem(`q_pos_${i}`)
     }))
   };
@@ -1658,6 +1705,7 @@ function broadcastFieldUpdate(i) {
       fs: localStorage.getItem(`q_s_${i}`),
       tint: localStorage.getItem(`q_tint_${i}`),
       tilemode: localStorage.getItem(`q_tilemode_${i}`),
+      tilesize: localStorage.getItem(`q_tilesize_${i}`),
       pos: localStorage.getItem(`q_pos_${i}`)
     }
   }), { qos: 1 });
@@ -1694,6 +1742,7 @@ function applyRemoteState(msg) {
       if (f.fs) { wrap.style.setProperty('--fs', f.fs); localStorage.setItem(`q_s_${i}`, f.fs); }
       if (f.tint) { wrap.style.setProperty('--bg-tint', f.tint); localStorage.setItem(`q_tint_${i}`, f.tint); }
       if (f.tilemode) { setTileModeUI(i, f.tilemode); localStorage.setItem(`q_tilemode_${i}`, f.tilemode); }
+      if (f.tilesize) { applyTileSize(i, f.tilesize); localStorage.setItem(`q_tilesize_${i}`, f.tilesize); }
     });
   } else if (msg.type === 'FIELD_UPDATE') {
     const ta = document.getElementById('t' + msg.index); const wrap = ta.parentElement;
@@ -1705,6 +1754,7 @@ function applyRemoteState(msg) {
     if (d.fs) { wrap.style.setProperty('--fs', d.fs); localStorage.setItem(`q_s_${msg.index}`, d.fs); }
     if (d.tint) { wrap.style.setProperty('--bg-tint', d.tint); localStorage.setItem(`q_tint_${msg.index}`, d.tint); }
     if (d.tilemode) { setTileModeUI(msg.index, d.tilemode); localStorage.setItem(`q_tilemode_${msg.index}`, d.tilemode); }
+    if (d.tilesize) { applyTileSize(msg.index, d.tilesize); localStorage.setItem(`q_tilesize_${msg.index}`, d.tilesize); }
     if (d.pos) { applyImagePosition(msg.index, d.pos); localStorage.setItem(`q_pos_${msg.index}`, d.pos); }
   } else if (msg.type === 'LAYOUT_UPDATE') {
     container.style.setProperty('--x', msg.x); localStorage.setItem('q_x', msg.x);
