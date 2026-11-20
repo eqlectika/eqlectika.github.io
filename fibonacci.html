@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Часы Фибоначчи</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #07090f;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .logo-link {
+      position: fixed;
+      left: 0;
+      top: 0;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      text-decoration: none;
+      will-change: transform, opacity;
+    }
+    .logo-link img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <a id="delisLink" class="logo-link" href="match.html" aria-label="Перейти на match.html">
+    <img src="delis.png" alt="delis" />
+  </a>
+  <canvas id="canvas"></canvas>
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const delisLink = document.getElementById('delisLink');
+
+    // Размер логотипа в px (подставьте нужное значение при необходимости)
+    const LOGO_PX = 48;
+
+    const FIB = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+
+    // Базовая спираль изнутри наружу по часовой стрелке, старт в (0, 0)
+    function buildBaseSpiral() {
+      const squares = [];
+      const arcs = [];
+
+      squares.push({ x: 0, y: -1, s: 1, val: 1 });
+      arcs.push({ cx: 1, cy: 0, r: 1, a1: Math.PI, a2: Math.PI * 1.5, ccw: false });
+
+      let boxMinX = 0;
+      let boxMaxX = 1;
+      let boxMinY = -1;
+      let boxMaxY = 0;
+
+      for (let i = 1; i < FIB.length; i++) {
+        const s = FIB[i];
+        const step = (i - 1) % 4;
+
+        const prevEndX = arcs[i - 1].cx + arcs[i - 1].r * Math.cos(arcs[i - 1].a2);
+        const prevEndY = arcs[i - 1].cy + arcs[i - 1].r * Math.sin(arcs[i - 1].a2);
+
+        const nextA1 = arcs[i - 1].a2;
+        const nextA2 = nextA1 + Math.PI / 2;
+
+        let sqX, sqY;
+        if (step === 0) {
+          sqX = boxMaxX;
+          sqY = boxMaxY - s;
+          boxMaxX += s;
+          boxMinY = Math.min(boxMinY, sqY);
+        } else if (step === 1) {
+          sqX = boxMaxX - s;
+          sqY = boxMaxY;
+          boxMaxY += s;
+          boxMinX = Math.min(boxMinX, sqX);
+        } else if (step === 2) {
+          sqX = boxMinX - s;
+          sqY = boxMinY;
+          boxMinX -= s;
+          boxMaxY = Math.max(boxMaxY, sqY + s);
+        } else {
+          sqX = boxMinX;
+          sqY = boxMinY - s;
+          boxMinY -= s;
+          boxMaxX = Math.max(boxMaxX, sqX + s);
+        }
+
+        const nextCx = prevEndX - s * Math.cos(nextA1);
+        const nextCy = prevEndY - s * Math.sin(nextA1);
+
+        squares.push({ x: sqX, y: sqY, s, val: s });
+        arcs.push({ cx: nextCx, cy: nextCy, r: s, a1: nextA1, a2: nextA2, ccw: false });
+      }
+
+      return {
+        squares,
+        arcs,
+        bounds: {
+          minX: boxMinX,
+          maxX: boxMaxX,
+          minY: boxMinY,
+          maxY: boxMaxY,
+          w: boxMaxX - boxMinX,
+          h: boxMaxY - boxMinY
+        }
+      };
+    }
+
+    // Левая спираль (0..30 сек): поворот базовой на 180 градусов вокруг (0, 0)
+    function buildLeftSpiral(base) {
+      const squares = base.squares.map((sq) => ({
+        x: -(sq.x + sq.s),
+        y: -(sq.y + sq.s),
+        s: sq.s,
+        val: sq.val
+      }));
+
+      const arcs = base.arcs.map((arc) => ({
+        cx: -arc.cx,
+        cy: -arc.cy,
+        r: arc.r,
+        a1: arc.a1 + Math.PI,
+        a2: arc.a2 + Math.PI,
+        ccw: false
+      }));
+
+      const b = base.bounds;
+      const minX = -b.maxX;
+      const maxX = -b.minX;
+      const minY = -b.maxY;
+      const maxY = -b.minY;
+
+      return {
+        squares,
+        arcs,
+        bounds: { minX, maxX, minY, maxY, w: maxX - minX, h: maxY - minY }
+      };
+    }
+
+    // Правая спираль (30..60 сек): зеркало левой по горизонтали, от внешнего края внутрь к центру
+    function buildRightSpiral(left) {
+      const squares = left.squares.map((sq) => ({
+        x: -(sq.x + sq.s),
+        y: sq.y,
+        s: sq.s,
+        val: sq.val
+      }));
+
+      const mirroredArcs = left.arcs.map((arc) => ({
+        cx: -arc.cx,
+        cy: arc.cy,
+        r: arc.r,
+        a1: Math.PI - arc.a2,
+        a2: Math.PI - arc.a1,
+        ccw: false
+      }));
+
+      const arcs = mirroredArcs.slice().reverse();
+
+      const b = left.bounds;
+      const minX = -b.maxX;
+      const maxX = -b.minX;
+      const minY = b.minY;
+      const maxY = b.maxY;
+
+      return {
+        squares,
+        arcs,
+        bounds: { minX, maxX, minY, maxY, w: maxX - minX, h: maxY - minY }
+      };
+    }
+
+    const baseSpiral = buildBaseSpiral();
+    const leftSpiral = buildLeftSpiral(baseSpiral);
+    const rightSpiral = buildRightSpiral(leftSpiral);
+
+    function getArcPoint(arc, t) {
+      const ang = arc.a1 + (arc.a2 - arc.a1) * t;
+      return {
+        x: arc.cx + arc.r * Math.cos(ang),
+        y: arc.cy + arc.r * Math.sin(ang),
+        ang
+      };
+    }
+
+    function getSpiralPoint(spiral, u) {
+      const clamped = Math.max(0, Math.min(1, u));
+      if (clamped >= 1) {
+        return getArcPoint(spiral.arcs[spiral.arcs.length - 1], 1);
+      }
+      const scaled = clamped * spiral.arcs.length;
+      const idx = Math.floor(scaled);
+      const localT = scaled - idx;
+      return getArcPoint(spiral.arcs[idx], localT);
+    }
+
+    let w = 800;
+    let h = 600;
+    let dpr = 1;
+    let currentScale = 1;
+
+    function resize() {
+      w = window.innerWidth || document.documentElement.clientWidth || 800;
+      h = window.innerHeight || document.documentElement.clientHeight || 600;
+      dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(w * dpr));
+      canvas.height = Math.max(1, Math.floor(h * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    function drawHalfSpiral(spiral, toX, toY) {
+      for (const sq of spiral.squares) {
+        const px = toX(sq.x);
+        const py = toY(sq.y);
+        const ps = sq.s * currentScale;
+
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.16)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px, py, ps, ps);
+
+        if (ps > 16) {
+          ctx.fillStyle = 'rgba(148, 163, 184, 0.22)';
+          ctx.font = `500 ${Math.max(10, Math.min(ps * 0.22, 28))}px system-ui, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(sq.val), px + ps / 2, py + ps / 2);
+        }
+      }
+
+      ctx.beginPath();
+      spiral.arcs.forEach((arc, idx) => {
+        const pStart = getArcPoint(arc, 0);
+        if (idx === 0) {
+          ctx.moveTo(toX(pStart.x), toY(pStart.y));
+        }
+        ctx.arc(toX(arc.cx), toY(arc.cy), arc.r * currentScale, arc.a1, arc.a2, arc.ccw);
+      });
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.25)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // Ровная непрерывная линия вдоль участка [uStart, uEnd] одной спирали без точек
+    function traceSpiralPath(spiral, uStart, uEnd, toX, toY) {
+      const totalArcs = spiral.arcs.length;
+      const i0 = Math.max(0, Math.min(totalArcs - 1, Math.floor(uStart * totalArcs)));
+      const i1 = Math.max(0, Math.min(totalArcs - 1, Math.floor(uEnd * totalArcs)));
+
+      ctx.beginPath();
+      let started = false;
+
+      for (let idx = i0; idx <= i1; idx++) {
+        const arc = spiral.arcs[idx];
+        const arcMinU = idx / totalArcs;
+        const arcMaxU = (idx + 1) / totalArcs;
+
+        const loc0 = Math.max(uStart, arcMinU);
+        const loc1 = Math.min(uEnd, arcMaxU);
+        if (loc1 <= loc0) continue;
+
+        const p0 = (loc0 - arcMinU) / (arcMaxU - arcMinU);
+        const p1 = (loc1 - arcMinU) / (arcMaxU - arcMinU);
+
+        const ang0 = arc.a1 + (arc.a2 - arc.a1) * p0;
+        const ang1 = arc.a1 + (arc.a2 - arc.a1) * p1;
+
+        const startPt = {
+          x: arc.cx + arc.r * Math.cos(ang0),
+          y: arc.cy + arc.r * Math.sin(ang0)
+        };
+
+        if (!started) {
+          ctx.moveTo(toX(startPt.x), toY(startPt.y));
+          started = true;
+        }
+        ctx.arc(toX(arc.cx), toY(arc.cy), arc.r * currentScale, ang0, ang1, arc.ccw);
+      }
+    }
+
+    function drawCleanSpan(spiral, uStart, uEnd, alphaStart, alphaEnd, toX, toY) {
+      if (uEnd <= uStart) return;
+
+      const pStart = getSpiralPoint(spiral, uStart);
+      const pEnd = getSpiralPoint(spiral, uEnd);
+
+      const x0 = toX(pStart.x);
+      const y0 = toY(pStart.y);
+      const x1 = toX(pEnd.x);
+      const y1 = toY(pEnd.y);
+
+      const grad = ctx.createLinearGradient(x0, y0, x1, y1);
+      grad.addColorStop(0, `rgba(251, 191, 36, ${alphaStart.toFixed(3)})`);
+      grad.addColorStop(1, `rgba(251, 191, 36, ${alphaEnd.toFixed(3)})`);
+
+      traceSpiralPath(spiral, uStart, uEnd, toX, toY);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'butt';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+    }
+
+    // Отрисовка линейного отрезка времени [segStart, segEnd] внутри общего окна [windowStart, windowEnd] длиной tailLen
+    function drawTimeInterval(segStart, segEnd, windowStart, tailLen, toLeftX, toLeftY, toRightX, toRightY) {
+      if (segEnd <= segStart) return;
+
+      const alphaAt = (tSec) => {
+        const ageNorm = Math.max(0, Math.min(1, (tSec - windowStart) / tailLen));
+        return Math.pow(ageNorm, 1.5) * 0.92;
+      };
+
+      const l0 = Math.min(segStart, 30);
+      const l1 = Math.min(segEnd, 30);
+      if (l1 > l0) {
+        drawCleanSpan(leftSpiral, l0 / 30, l1 / 30, alphaAt(l0), alphaAt(l1), toLeftX, toLeftY);
+      }
+
+      const r0 = Math.max(segStart, 30);
+      const r1 = Math.max(segEnd, 30);
+      if (r1 > r0) {
+        drawCleanSpan(rightSpiral, (r0 - 30) / 30, (r1 - 30) / 30, alphaAt(r0), alphaAt(r1), toRightX, toRightY);
+      }
+    }
+
+    // Кольцевой затухающий след на 30 секунд: плавно переходит с правой стороны в начало нового цикла (0с)
+    function drawFadingTrace(sec, toLeftX, toLeftY, toRightX, toRightY) {
+      const tailLen = 30;
+      const endSec = sec;
+      const rawStartSec = endSec - tailLen;
+
+      if (rawStartSec >= 0) {
+        drawTimeInterval(rawStartSec, endSec, rawStartSec, tailLen, toLeftX, toLeftY, toRightX, toRightY);
+      } else {
+        // Хвост заходит в конец предыдущего цикла [60 + rawStartSec, 60]
+        const prevStart = 60 + rawStartSec;
+        const prevEnd = 60;
+        const prevLen = prevEnd - prevStart;
+        const currLen = endSec;
+
+        // Хвост в конце предыдущего цикла (самый тусклый участок)
+        if (prevLen > 0) {
+          drawCleanSpan(
+            rightSpiral,
+            (prevStart - 30) / 30,
+            1,
+            0,
+            Math.pow(prevLen / tailLen, 1.5) * 0.92,
+            toRightX,
+            toRightY
+          );
+        }
+
+        // Продолжение в начале текущего цикла [0, endSec]
+        if (currLen > 0) {
+          const startAlpha = Math.pow(prevLen / tailLen, 1.5) * 0.92;
+          const endAlpha = Math.pow(1, 1.5) * 0.92;
+          drawCleanSpan(leftSpiral, 0, endSec / 30, startAlpha, endAlpha, toLeftX, toLeftY);
+        }
+      }
+    }
+
+    function positionDelisLogo(toLeftY, sec) {
+      // Находим квадрат 89 и берём половину его высоты в пикселях
+      const sq89 = leftSpiral.squares.find((sq) => sq.val === 89);
+      const half89Px = sq89 ? (sq89.s * currentScale) / 2 : (89 * currentScale) / 2;
+
+      // Верхний край композиции по высоте
+      const topY = toLeftY(leftSpiral.bounds.minY);
+      const targetX = w / 2;
+      const targetY = topY + half89Px;
+
+      // Симметричная прозрачность: 1 на 0с -> 0 на 30с -> 1 на 60с
+      const opacity = sec < 30 ? (1 - sec / 30) : ((sec - 30) / 30);
+      const clampedOpacity = Math.max(0, Math.min(1, opacity));
+
+      delisLink.style.width = `${LOGO_PX}px`;
+      delisLink.style.height = `${LOGO_PX}px`;
+      delisLink.style.transform = `translate3d(${targetX.toFixed(1)}px, ${targetY.toFixed(1)}px, 0) translate(-50%, -50%)`;
+      delisLink.style.opacity = clampedOpacity.toFixed(4);
+      delisLink.style.pointerEvents = clampedOpacity > 0.01 ? 'auto' : 'none';
+    }
+
+    function render() {
+      const now = new Date();
+      const ms = now.getMilliseconds();
+      const sec = now.getSeconds() + ms / 1000;
+      const min = now.getMinutes() + sec / 60;
+      const hr = (now.getHours() % 12) + min / 60;
+
+      ctx.fillStyle = '#07090f';
+      ctx.fillRect(0, 0, w, h);
+
+      const padX = w * 0.04;
+      const padY = h * 0.08;
+
+      const totalWorldW = leftSpiral.bounds.w + rightSpiral.bounds.w;
+      const maxWorldH = Math.max(leftSpiral.bounds.h, rightSpiral.bounds.h);
+
+      const scaleX = (w - padX * 2) / totalWorldW;
+      const scaleY = (h - padY * 2) / maxWorldH;
+      currentScale = Math.max(0.1, Math.min(scaleX, scaleY));
+
+      const leftPixelW = leftSpiral.bounds.w * currentScale;
+      const rightPixelW = rightSpiral.bounds.w * currentScale;
+      const totalPixelW = leftPixelW + rightPixelW;
+
+      const startScreenX = (w - totalPixelW) / 2;
+      const centerScreenY = h / 2;
+
+      const leftMidX = (leftSpiral.bounds.minX + leftSpiral.bounds.maxX) / 2;
+      const leftMidY = (leftSpiral.bounds.minY + leftSpiral.bounds.maxY) / 2;
+      const leftCenterX = startScreenX + leftPixelW / 2;
+
+      const toLeftX = (wx) => leftCenterX + (wx - leftMidX) * currentScale;
+      const toLeftY = (wy) => centerScreenY + (wy - leftMidY) * currentScale;
+
+      const rightMidX = (rightSpiral.bounds.minX + rightSpiral.bounds.maxX) / 2;
+      const rightMidY = (rightSpiral.bounds.minY + rightSpiral.bounds.maxY) / 2;
+      const rightCenterX = startScreenX + leftPixelW + rightPixelW / 2;
+
+      const toRightX = (wx) => rightCenterX + (wx - rightMidX) * currentScale;
+      const toRightY = (wy) => centerScreenY + (wy - rightMidY) * currentScale;
+
+      // 1. Обе половины спирали вплотную друг к другу
+      drawHalfSpiral(leftSpiral, toLeftX, toLeftY);
+      drawHalfSpiral(rightSpiral, toRightX, toRightY);
+
+      // 2. Кольцевой затухающий след на 30 секунд с плавным переходом в новый цикл
+      drawFadingTrace(sec, toLeftX, toLeftY, toRightX, toRightY);
+
+      // 3. Плавная секундная стрелка (0..30с слева наружу, 30..60с справа внутрь)
+      const isLeftHalf = sec < 30;
+      const activeSpiral = isLeftHalf ? leftSpiral : rightSpiral;
+      const activeToX = isLeftHalf ? toLeftX : toRightX;
+      const activeToY = isLeftHalf ? toLeftY : toRightY;
+      const halfProgress = isLeftHalf ? (sec / 30) : ((sec - 30) / 30);
+
+      const pivotX = activeToX(0);
+      const pivotY = activeToY(0);
+      const tip = getSpiralPoint(activeSpiral, halfProgress);
+      const tipX = activeToX(tip.x);
+      const tipY = activeToY(tip.y);
+
+      ctx.beginPath();
+      ctx.moveTo(pivotX, pivotY);
+      ctx.lineTo(tipX, tipY);
+      ctx.strokeStyle = '#fde047';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 4. Часовая и минутная стрелки привязаны к началу левой спирали (0, 0)
+      const originX = toLeftX(0);
+      const originY = toLeftY(0);
+      const handMaxR = Math.min(leftPixelW, h) * 0.36;
+      const hrAngle = (hr / 12) * Math.PI * 2 - Math.PI / 2;
+      const minAngle = (min / 60) * Math.PI * 2 - Math.PI / 2;
+
+      ctx.beginPath();
+      ctx.moveTo(originX, originY);
+      ctx.lineTo(
+        originX + Math.cos(hrAngle) * (handMaxR * 0.6),
+        originY + Math.sin(hrAngle) * (handMaxR * 0.6)
+      );
+      ctx.strokeStyle = '#fb7185';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(originX, originY);
+      ctx.lineTo(
+        originX + Math.cos(minAngle) * handMaxR,
+        originY + Math.sin(minAngle) * handMaxR
+      );
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(originX, originY, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+
+      // 5. Позиционирование и симметричное затухание/появление логотипа delis.png
+      positionDelisLogo(toLeftY, sec);
+
+      requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
