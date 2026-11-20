@@ -19,11 +19,24 @@
       -webkit-tap-highlight-color: transparent;
     }
     html, body {
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100dvh;
       overflow: hidden;
       background: #07090f;
+      touch-action: none;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    .ios-blur-fix {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 11px;
+      z-index: 2147483647;
+      pointer-events: none;
+      background-color: #000;
+      -webkit-background-clip: text;
+      color: transparent;
     }
     canvas {
       display: block;
@@ -60,11 +73,37 @@
   </style>
 </head>
 <body>
+  <div class="ios-blur-fix"></div>
   <a id="delisLink" class="logo-link" href="match.html" aria-label="Перейти на match.html" draggable="false">
     <img src="delis.png" alt="delis" draggable="false" />
   </a>
   <canvas id="canvas"></canvas>
   <script>
+    let refreshing = false;
+    let updateWorker = null;
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(reg => {
+        reg.update();
+        if (reg.waiting) updateWorker = reg.waiting;
+        reg.addEventListener('updatefound', () => {
+          updateWorker = reg.installing;
+          if (!updateWorker) return;
+          updateWorker.addEventListener('statechange', () => {
+            if (updateWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Новый Service Worker установлен и готов к активации
+            }
+          });
+        });
+      });
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    }
+
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const delisLink = document.getElementById('delisLink');
