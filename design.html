@@ -185,7 +185,11 @@ body, html {
   line-height: 1.2;
   word-break: break-word;
   z-index: 3;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
+
 .ph::-webkit-scrollbar { display: none; }
 .ph.hidden { display: none; }
 .ph p { margin: 0 !important; }
@@ -1353,11 +1357,16 @@ function openSettings(i) {
   inpTint.value = Math.round(num * 100);
   tintVal.textContent = inpTint.value;
 
-  if (window.getSelection) window.getSelection().removeAllRanges();
-  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  const clearSel = () => {
+    if (window.getSelection) window.getSelection().removeAllRanges();
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  };
+  clearSel();
+  setTimeout(clearSel, 50);
 
   modal.style.display = 'flex';
 }
+
 
 btnSave.onclick = () => {
   if (activeIndex === null) return;
@@ -1517,61 +1526,41 @@ textareas.forEach((ta, i) => {
 
   ta.addEventListener('contextmenu', e => e.preventDefault());
 
-  /* ---- DOUBLE-TAP: общий tapState на поле, защита от тройного тапа и выделения ---- */
-  const tapState = { lastTap: 0, openedAt: 0, pendingOpen: null };
-
-  const cancelPending = () => {
-    if (tapState.pendingOpen) {
-      clearTimeout(tapState.pendingOpen);
-      tapState.pendingOpen = null;
-    }
-  };
+  const tapState = { lastTap: 0, openedAt: 0 };
 
   function bindDoubleTap(el) {
     if (!el) return;
 
-    el.addEventListener('pointerdown', cancelPending, { passive: true });
-
-    el.addEventListener('click', e => {
+    el.addEventListener('click', (e) => {
       if (e.target.closest('.img-preview')) return;
       if (ta.textContent.trim() !== '') return;
-
-      const sel = window.getSelection();
-      if (sel && !sel.isCollapsed && sel.toString().trim() !== '') return;
-
       const now = Date.now();
       if (now - tapState.lastTap < 300) {
+        e.preventDefault();
         tapState.lastTap = 0;
-        cancelPending();
-        tapState.pendingOpen = setTimeout(() => {
-          tapState.pendingOpen = null;
-          if (now - tapState.openedAt < 400) return;
-          tapState.openedAt = Date.now();
-          openSettings(i);
-          if (navigator.vibrate) navigator.vibrate(30);
-        }, 60);
+        if (now - tapState.openedAt < 400) return;
+        tapState.openedAt = now;
+        openSettings(i);
+        if (navigator.vibrate) navigator.vibrate(30);
       } else {
         tapState.lastTap = now;
       }
     });
 
-    el.addEventListener('dblclick', e => {
+    el.addEventListener('dblclick', (e) => {
       if (e.target.closest('.img-preview')) return;
       if (ta.textContent.trim() !== '') return;
-
-      const sel = window.getSelection();
-      if (sel && !sel.isCollapsed && sel.toString().trim() !== '') return;
-
-      if (tapState.pendingOpen) return;
-
+      e.preventDefault();
       const now = Date.now();
       if (now - tapState.openedAt < 400) return;
       tapState.openedAt = now;
       openSettings(i);
     });
   }
+
   bindDoubleTap(ta);
   bindDoubleTap(ph);
+
 
   /* ---- IMAGE GESTURES ---- */
   const img = images[i];
