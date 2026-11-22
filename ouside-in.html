@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="icon" type="image/png" sizes="512x512" href="planet.png">
+<link rel="apple-touch-icon" sizes="180x180" href="planet.png?v=2">
+<link rel="manifest" href="manifest-planet.json">
+<title>Outside-in Planet</title>
+<script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
+html,body{
+  width:100dvw;height:100dvh;overflow:hidden;
+  touch-action:none;background:#0a0a12;color:#eef2ff;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+canvas{
+  display:block;position:fixed;inset:0;width:100%;height:100%;z-index:1;
+}
+
+#throttleArea,#controlArea{
+  position:fixed;top:0;height:100dvh;width:50vw;z-index:10;pointer-events:auto;touch-action:none;
+}
+#throttleArea{left:0}
+#controlArea{right:0}
+@media (pointer:fine){
+  #throttleArea,#controlArea{pointer-events:none}
+}
+
+#startButton{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:60;
+  padding:14px 26px;background:rgba(59,59,79,.88);color:#fff;
+  border:none;border-radius:8px;font-size:16px;cursor:pointer;
+}
+
+.top-left-hud{
+  position:fixed;top:max(8px,env(safe-area-inset-top));left:10px;z-index:40;
+  display:flex;align-items:center;gap:14px;font-size:13px;
+}
+.presence-badge{font-weight:700;letter-spacing:.3px}
+.presence-badge.alone{color:#94a3b8}
+.presence-badge.else{color:#4ade80}
+
+.top-btn{
+  background:none;border:none;padding:0;
+  color:#cbd5e1;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
+}
+.top-btn:hover{color:#fff}
+.top-btn.active-mode{color:#38bdf8}
+
+.top-right-hud{
+  position:fixed;top:max(8px,env(safe-area-inset-top));right:10px;z-index:40;
+  display:flex;align-items:center;font-size:13px;
+}
+#peerIdInput{
+  background:none;border:none;border-bottom:1px solid transparent;
+  color:#38bdf8;font:inherit;font-weight:600;width:98px;text-align:right;outline:none;
+  user-select:text;-webkit-user-select:text;
+}
+#peerIdInput:focus{border-bottom-color:#38bdf8;color:#fff}
+#peerIdInput.saved{color:#a3e635 !important;border-bottom-color:#a3e635 !important}
+
+#reticleWrap{
+  position:fixed;right:24px;bottom:84px;z-index:45;
+  touch-action:none;
+}
+#attackBtn{
+  width:56px;height:56px;
+  background:transparent;border:none;
+  color:rgba(255,255,255,.88);
+  display:flex;align-items:center;justify-content:center;
+  cursor:grab;touch-action:none;
+}
+#attackBtn.active{
+  color:#fb7185;
+  filter:drop-shadow(0 0 6px rgba(251,113,133,.75));
+}
+#reticleMenu{
+  position:fixed;z-index:52;display:none;flex-direction:column;gap:4px;
+  background:rgba(10,14,26,.94);border:1px solid rgba(148,163,184,.32);
+  border-radius:8px;padding:6px;min-width:138px;max-width:176px;
+}
+#reticleMenu.open{display:flex}
+.rm-item{
+  background:rgba(30,41,59,.8);border:1px solid rgba(148,163,184,.22);
+  color:#f8fafc;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;
+  text-align:left;cursor:pointer;
+}
+.rm-item:hover,.rm-item.selected{background:#2563eb;border-color:#60a5fa}
+.rm-hint{
+  margin-top:2px;padding-top:4px;border-top:1px solid rgba(148,163,184,.18);
+  font-size:10.5px;line-height:1.3;color:#94a3b8;
+}
+
+.bottom-bar{
+  position:fixed;left:10px;right:10px;bottom:max(8px,env(safe-area-inset-bottom));z-index:40;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:none;
+}
+.chat-dock{
+  pointer-events:auto;display:flex;align-items:center;
+  background:rgba(10,13,25,.78);border:1px solid rgba(148,163,184,.25);
+  border-radius:8px;padding:4px 8px;
+  width:62vw;max-width:none;
+}
+#chatInput{
+  background:none;border:none;color:#fff;font-size:13px;
+  width:100%;outline:none;user-select:text;-webkit-user-select:text;
+}
+#chatInput::placeholder{color:#64748b}
+
+.token-dock{
+  pointer-events:auto;background:rgba(10,13,25,.75);
+  border:1px solid rgba(148,163,184,.22);border-radius:8px;
+  padding:5px 10px;font-size:13px;font-weight:700;color:#fbbf24;cursor:pointer;white-space:nowrap;
+}
+
+#chatFeed{
+  position:fixed;left:10px;bottom:48px;z-index:35;
+  width:62vw;max-height:110px;overflow-y:auto;
+  font-size:12px;line-height:1.35;pointer-events:none;
+  display:flex;flex-direction:column;gap:2px;
+}
+.chat-line{background:none;padding:1px 2px;color:#f1f5f9;text-shadow:0 1px 2px #000}
+.chat-line span{color:#38bdf8;font-weight:600}
+
+.modal-overlay{
+  position:fixed;inset:0;z-index:100;display:none;
+  background:rgba(4,6,14,.94);overflow-y:auto;
+}
+.modal-overlay.show{display:block}
+#statsModal .modal-card{
+  width:100%;min-height:100dvh;height:100dvh;
+  background:#0c1120;border:none;border-radius:0;padding:16px;
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.modal-card{
+  width:min(660px,calc(100% - 32px));margin:20px auto;
+  background:#0c1120;border:1px solid #1e293b;border-radius:12px;padding:16px;
+}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.modal-head h2{font-size:16px}
+.close-modal{background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer}
+
+canvas#statsChart{
+  position:static;width:100%;height:150px;background:#070a14;
+  border:1px solid #1e293b;border-radius:8px;margin-bottom:12px;flex-shrink:0;
+}
+.section-label{font-size:12px;font-weight:700;color:#94a3b8;margin-bottom:6px;display:block}
+.transfer-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.transfer-row input,.transfer-row select{
+  background:#070a14;border:1px solid #334155;color:#fff;border-radius:6px;padding:6px 8px;font-size:13px;
+  user-select:text;-webkit-user-select:text;
+}
+.act-btn{
+  background:#2563eb;border:none;color:#fff;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;
+}
+.act-btn.withdraw{background:#059669}
+.act-btn.secondary{background:#334155}
+.act-btn.danger{background:#dc2626}
+.act-btn:disabled{opacity:.45;cursor:default}
+.hist-list{max-height:180px;overflow-y:auto;border-top:1px solid #1e293b;margin-top:6px;margin-bottom:12px}
+.hist-item{
+  display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #131c31;font-size:12px;
+}
+.hist-item.sel{background:rgba(220,38,38,.16)}
+.buildings-box{
+  flex:1;min-height:120px;overflow-y:auto;background:#070a14;border:1px solid #1e293b;
+  border-radius:8px;padding:8px;font-size:12px;color:#cbd5e1;
+}
+.b-row{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:5px 0;border-bottom:1px solid #111827;
+}
+.b-row:last-child{border-bottom:none}
+.help-text p{margin-bottom:8px;font-size:13px;line-height:1.45;color:#cbd5e1}
+.help-footer-logo{
+  margin-top:16px;padding-top:12px;border-top:1px solid #1e293b;
+  display:flex;justify-content:center;align-items:center;
+}
+.help-footer-logo a{
+  display:inline-flex;align-items:center;justify-content:center;
+  opacity:.92;transition:transform .15s ease,opacity .15s ease;
+}
+.help-footer-logo a:hover{opacity:1;transform:scale(1.04)}
+.help-footer-logo img{width:44px;height:44px;object-fit:contain;display:block}
+</style>
+</head>
+<body>
+
+<button id="startButton">FULL SCREEN</button>
+
+<div class="top-left-hud">
+  <span id="presenceBadge" class="presence-badge alone">Alone</span>
+  <button id="helpBtn" class="top-btn">Help</button>
+  <button id="fillToggleBtn" class="top-btn">Wire</button>
+</div>
+
+<div class="top-right-hud">
+  <input id="peerIdInput" type="text" maxlength="12" spellcheck="false" autocomplete="off" placeholder="Peer-XXXX">
+</div>
+
+<div id="throttleArea"></div>
+<div id="controlArea"></div>
+
+<div id="reticleWrap">
+  <div id="attackBtn" title="Drag to aim. Tap: menu (Build / Attack / Hack). Long-press: continue build, attack, or hack.">
+    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+      <line x1="18" y1="3" x2="18" y2="13" stroke="currentColor" stroke-width="2"/>
+      <line x1="18" y1="23" x2="18" y2="33" stroke="currentColor" stroke-width="2"/>
+      <line x1="3" y1="18" x2="13" y2="18" stroke="currentColor" stroke-width="2"/>
+      <line x1="23" y1="18" x2="33" y2="18" stroke="currentColor" stroke-width="2"/>
+      <circle cx="18" cy="18" r="2.2" fill="currentColor"/>
+    </svg>
+  </div>
+</div>
+
+<div id="reticleMenu">
+  <button class="rm-item selected" data-mode="build">Build</button>
+  <button class="rm-item" data-mode="attack">Attack</button>
+  <button class="rm-item" data-mode="hack">Hack</button>
+  <div class="rm-hint">Long-press to continue build, attack, or hack.</div>
+</div>
+
+<div id="chatFeed"></div>
+<div class="bottom-bar">
+  <div class="chat-dock">
+    <input id="chatInput" type="text" maxlength="180" placeholder="Message..." autocomplete="off">
+  </div>
+  <div class="token-dock" id="tokenCounterDock">🪙 <span id="tokenBalanceEl">100</span></div>
+</div>
+
+<div class="modal-overlay" id="statsModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>Stats</h2>
+      <button class="close-modal" id="closeStatsBtn">✕</button>
+    </div>
+    <canvas id="statsChart" width="620" height="150"></canvas>
+
+    <span class="section-label">Token Transfer</span>
+    <div class="transfer-row">
+      <select id="recipientSelect" title="To Peer"></select>
+      <input id="recipientCustom" type="text" placeholder="To Peer-XXXX" style="width:130px">
+      <input id="transferAmount" type="number" min="1" step="1" value="5" style="width:80px">
+      <button class="act-btn" id="sendTokensBtn">Send</button>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+      <strong style="font-size:13px">Expense History</strong>
+      <div style="display:flex;gap:6px">
+        <button class="act-btn secondary" id="selectAllHistBtn">Select All</button>
+        <button class="act-btn danger" id="deleteSelectedHistBtn" disabled>Delete Selected</button>
+      </div>
+    </div>
+    <div class="hist-list" id="expenseHistoryList"></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">
+      <strong style="font-size:12px;color:#94a3b8">Built Houses (<span id="builtCountEl">0</span>)</strong>
+      <button class="act-btn withdraw" id="withdrawAllBtn" disabled>Withdraw All</button>
+    </div>
+    <div class="buildings-box" id="builtHousesList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="helpModal">
+  <div class="modal-card help-text">
+    <div class="modal-head">
+      <h2>Controls &amp; Rules</h2>
+      <button class="close-modal" id="closeHelpBtn">✕</button>
+    </div>
+    <p><strong>Touch &amp; Reticle:</strong> Drag the reticle anywhere to aim. <strong>Tap</strong> opens the menu (<code>Build</code>, <code>Attack</code>, <code>Hack</code>); <strong>long-press</strong> the reticle (or hold/press <code>F</code>) to execute and continue building, attacking, or hacking.</p>
+    <p><strong>Crossing the Surface:</strong> Fly through the boundary gates on <code>R = 1500</code> or across the sphere wall to switch sides.</p>
+    <p><strong>Houses &amp; Stacking:</strong> Houses sit flush on the surface on your current side and stack strictly on top of existing roofs.</p>
+    <p><strong>Own House Withdrawal &amp; Centers:</strong> Withdraw stored tokens in <code>Stats</code> via <code>Withdraw</code> / <code>Withdraw All</code>. Architectural centers grow taller as nearby houses and stored tokens increase.</p>
+    <div class="help-footer-logo">
+      <a href="match.html" title="Match">
+        <img src="fleurdelis.png" alt="Fleur-de-lis">
+      </a>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+const AUTHOR_ID = 'Author';
+const INITIAL_CAPITAL = 100;
+const FLY_SPEED = 0.0065;
+const TURN_SPEED = 0.00034;
+const TOUCH_TURN_SPEED = 0.0005;
+const GRAVITY = 0.0043333;
+const DAMPING_TURN = 0.99;
+const DAMPING_MOVE = 0.99;
+const PLANET_RADIUS = 1500;
+const RING_COOLDOWN_MS = 4000;
+const RING_ACTIVE_OPACITY = 0.9;
+const RING_FADED_OPACITY = 0.14;
+const LONG_PRESS_MS = 420;
+
+const store = {
+  get(k, fb){ try{ const v = localStorage.getItem('oip_' + k); return v === null ? fb : JSON.parse(v); }catch{ return fb; } },
+  set(k, v){ try{ localStorage.setItem('oip_' + k, JSON.stringify(v)); }catch{} }
+};
+
+let myPeerId = store.get('peer_id') || ('Peer-' + Math.floor(1000 + Math.random() * 9000));
+store.set('peer_id', myPeerId);
+const clientId = 'oip_' + Math.random().toString(16).slice(2, 10);
+
+if (localStorage.getItem('oip_initialized') === null){
+  store.set('tokens', INITIAL_CAPITAL);
+  localStorage.setItem('oip_initialized', '1');
+}
+
+let tokens = store.get('tokens', INITIAL_CAPITAL);
+let tokenSeries = store.get('token_series', [{ t: Date.now(), val: tokens }]);
+let expenseHistory = store.get('expense_history', []);
+let selectedExpenseIds = new Set();
+let buildings = store.get('buildings', []);
+
+function saveEconomy(){
+  store.set('tokens', tokens);
+  store.set('token_series', tokenSeries.slice(-60));
+  store.set('expense_history', expenseHistory);
+}
+function recordTokenDelta(delta, reason, isExpense = false){
+  tokens = Math.max(0, Number((tokens + delta).toFixed(2)));
+  tokenSeries.push({ t: Date.now(), val: tokens });
+  if (isExpense){
+    expenseHistory.unshift({
+      id: 'exp_' + Date.now() + '_' + Math.random().toString(16).slice(2, 6),
+      reason,
+      amount: Number(Math.abs(delta).toFixed(2)),
+      ts: Date.now()
+    });
+  }
+  saveEconomy();
+  tokenBalanceEl.textContent = Number.isInteger(tokens) ? tokens : tokens.toFixed(1);
+}
+function notifyAuthor(amount, source, buildingId = null){
+  if (amount <= 0) return;
+  publishMqtt({ type: 'AUTHOR_SHARE', to: AUTHOR_ID, amount: Number(amount.toFixed(2)), source, buildingId, from: myPeerId });
+}
+
+const peerIdInput = document.getElementById('peerIdInput');
+const presenceBadge = document.getElementById('presenceBadge');
+const tokenBalanceEl = document.getElementById('tokenBalanceEl');
+const chatFeed = document.getElementById('chatFeed');
+const chatInput = document.getElementById('chatInput');
+const attackBtn = document.getElementById('attackBtn');
+const reticleMenu = document.getElementById('reticleMenu');
+const fillToggleBtn = document.getElementById('fillToggleBtn');
+
+peerIdInput.value = myPeerId;
+tokenBalanceEl.textContent = Number.isInteger(tokens) ? tokens : tokens.toFixed(1);
+
+document.getElementById('startButton').addEventListener('click', () => {
+  document.getElementById('startButton').style.display = 'none';
+  if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+  else if (document.documentElement.webkitRequestFullscreen) document.documentElement.webkitRequestFullscreen();
+  if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+});
+
+let currentThrottle = 0;
+let touchJoystick = { active: false, startX: 0, startY: 0, moveX: 0, moveY: 0 };
+const isReverseThrust = true;
+
+const throttleArea = document.getElementById('throttleArea');
+const controlArea = document.getElementById('controlArea');
+const activeTouches = { throttle: null, control: null };
+
+function updateThrottle(e){
+  const rect = throttleArea.getBoundingClientRect();
+  const centerY = rect.top + rect.height / 2;
+  currentThrottle = e.clientY < centerY
+    ? 1 - ((e.clientY - rect.top) / (rect.height / 2))
+    : -((e.clientY - centerY) / (rect.height / 2));
+  currentThrottle = Math.max(-1, Math.min(1, currentThrottle));
+}
+throttleArea.addEventListener('pointerdown', (e) => {
+  throttleArea.setPointerCapture(e.pointerId);
+  activeTouches.throttle = e.pointerId;
+  updateThrottle(e);
+});
+throttleArea.addEventListener('pointermove', (e) => {
+  if (e.pointerId === activeTouches.throttle) updateThrottle(e);
+});
+const resetThrottle = (e) => {
+  if (e.pointerId === activeTouches.throttle){
+    throttleArea.releasePointerCapture(e.pointerId);
+    activeTouches.throttle = null;
+    currentThrottle = 0;
+  }
+};
+throttleArea.addEventListener('pointerup', resetThrottle);
+throttleArea.addEventListener('pointercancel', resetThrottle);
+
+controlArea.addEventListener('pointerdown', (e) => {
+  controlArea.setPointerCapture(e.pointerId);
+  activeTouches.control = e.pointerId;
+  touchJoystick.active = true;
+  touchJoystick.startX = e.clientX;
+  touchJoystick.startY = e.clientY;
+  touchJoystick.moveX = 0;
+  touchJoystick.moveY = 0;
+});
+controlArea.addEventListener('pointermove', (e) => {
+  if (e.pointerId === activeTouches.control && touchJoystick.active){
+    const maxDistance = 100;
+    touchJoystick.moveX = Math.max(-1, Math.min(1, (e.clientX - touchJoystick.startX) / maxDistance));
+    touchJoystick.moveY = Math.max(-1, Math.min(1, (e.clientY - touchJoystick.startY) / maxDistance));
+  }
+});
+const resetJoystick = (e) => {
+  if (e.pointerId === activeTouches.control){
+    controlArea.releasePointerCapture(e.pointerId);
+    activeTouches.control = null;
+    touchJoystick.active = false;
+    touchJoystick.moveX = 0;
+    touchJoystick.moveY = 0;
+  }
+};
+controlArea.addEventListener('pointerup', resetJoystick);
+controlArea.addEventListener('pointercancel', resetJoystick);
+window.addEventListener('dragstart', (e) => e.preventDefault());
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a12);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 14000);
+
+const player = new THREE.Group();
+player.position.set(0, 0, 0);
+scene.add(player);
+camera.quaternion.setFromEuler(new THREE.Euler(Math.PI, 0, 0, 'YXZ'));
+player.add(camera);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+document.body.appendChild(renderer.domElement);
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+scene.add(new THREE.AmbientLight(0x94a3b8, 1.35));
+const sunLight = new THREE.DirectionalLight(0xffffff, 2.4);
+sunLight.position.set(900, 2200, 700);
+scene.add(sunLight);
+const rimLight = new THREE.DirectionalLight(0x7dd3fc, 1.0);
+rimLight.position.set(-1200, -1600, -900);
+scene.add(rimLight);
+
+/* =========================================================
+   SPHERE PLANET AT EXACT RADIUS 1500
+   ========================================================= */
+const planetGeometry = new THREE.SphereGeometry(PLANET_RADIUS, 64, 48);
+let fillDisabled = false;
+
+const planetMaterial = new THREE.ShaderMaterial({
+  wireframe: false,
+  transparent: true,
+  side: THREE.DoubleSide,
+  uniforms: {
+    uSize: { value: 0.05 },
+    uNoFill: { value: 0.0 }
+  },
+  vertexShader: `
+    varying vec3 vWorldPosition;
+    void main(){
+      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+      vWorldPosition = worldPosition.xyz;
+      gl_Position = projectionMatrix * viewMatrix * worldPosition;
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vWorldPosition;
+    uniform float uSize;
+    uniform float uNoFill;
+    void main(){
+      vec2 grid = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize);
+      vec2 grid2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize);
+      float line = min(min(grid.x, grid.y), min(grid2.x, grid2.y));
+      float thinLine = 1.0 - min(line / 0.75, 1.0);
+      float dist = length(vWorldPosition - cameraPosition);
+      float farFade = 1.0 - smoothstep(250.0, 2200.0, dist);
+      float gridAlpha = thinLine * farFade;
+      vec3 baseColor = vec3(0.24, 0.36, 0.92);
+      if (uNoFill > 0.5){
+        gl_FragColor = vec4(baseColor, gridAlpha * 0.85);
+      } else {
+        float alpha = max(gridAlpha * 0.42, 0.24);
+        gl_FragColor = vec4(baseColor, alpha);
+      }
+    }
+  `
+});
+
+const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
+scene.add(planetMesh);
+
+fillToggleBtn.addEventListener('click', () => {
+  fillDisabled = !fillDisabled;
+  planetMaterial.uniforms.uNoFill.value = fillDisabled ? 1.0 : 0.0;
+  fillToggleBtn.textContent = fillDisabled ? 'Solid' : 'Wire';
+  fillToggleBtn.classList.toggle('active-mode', fillDisabled);
+});
+
+/* =========================================================
+   BOUNDARY CROSSING GATES ON THE R=1500 SPHERE SHELL
+   ========================================================= */
+const boundaryGates = [];
+const gateGeo = new THREE.TorusGeometry(24, 1.4, 12, 36);
+const gateCoords = [
+  { lat: 0.22, lon: 0.2, color: 0x38bdf8 },
+  { lat: -0.25, lon: 1.57, color: 0x4ade80 },
+  { lat: 0.28, lon: 3.14, color: 0xfbbf24 },
+  { lat: -0.22, lon: 4.71, color: 0xf472b6 },
+  { lat: 0.65, lon: 1.0, color: 0xc084fc },
+  { lat: -0.65, lon: 2.6, color: 0xfb7185 }
+];
+
+gateCoords.forEach((g) => {
+  const dir = new THREE.Vector3(
+    Math.cos(g.lat) * Math.cos(g.lon),
+    Math.sin(g.lat),
+    Math.cos(g.lat) * Math.sin(g.lon)
+  ).normalize();
+  const pos = dir.clone().multiplyScalar(PLANET_RADIUS);
+  const mesh = new THREE.Mesh(
+    gateGeo,
+    new THREE.MeshBasicMaterial({ color: g.color, transparent: true, opacity: 0.85 })
+  );
+  mesh.position.copy(pos);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+  scene.add(mesh);
+  boundaryGates.push({ dir, pos, cooldownUntil: 0 });
+});
+
+/* =========================================================
+   DISTINCT ARCHITECTURAL CENTERS WITH INFLUENCE ZONES
+   ========================================================= */
+const collidableObjects = [planetMesh];
+const linePalette = [0x38bdf8, 0xf472b6, 0xfbbf24, 0x4ade80, 0xc084fc, 0xfb7185];
+
+const centerSpecs = [
+  { id: 'c_ziggurat', arch: 'ziggurat', lat: 0.35, lon: 0.4, side: 1, color: 0x38bdf8, influenceRadius: 190 },
+  { id: 'c_archgate', arch: 'archgate', lat: -0.35, lon: 2.1, side: 1, color: 0xf472b6, influenceRadius: 190 },
+  { id: 'c_hexspire', arch: 'hexspire', lat: 0.25, lon: 4.0, side: 1, color: 0xfbbf24, influenceRadius: 190 },
+  { id: 'c_domebeacon', arch: 'domebeacon', lat: 0.55, lon: 5.4, side: 1, color: 0x4ade80, influenceRadius: 190 },
+  { id: 'c_pagoda', arch: 'pagoda', lat: -0.25, lon: 1.2, side: -1, color: 0x4ade80, influenceRadius: 190 },
+  { id: 'c_twinportal', arch: 'twinportal', lat: 0.4, lon: 3.7, side: -1, color: 0xc084fc, influenceRadius: 190 }
+];
+
+const centerObjects = [];
+
+function buildUniqueCenterGroup(spec){
+  const group = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color: 0x162033, roughness: 0.65, metalness: 0.25 });
+  const lineMat = new THREE.LineBasicMaterial({ color: spec.color });
+  const whiteLine = new THREE.LineBasicMaterial({ color: 0xffffff });
+
+  function addPart(geo, lx, ly, lz, useWhite = false){
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(lx, ly, lz);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 22), useWhite ? whiteLine : lineMat);
+    m.add(edges);
+    group.add(m);
+  }
+
+  if (spec.arch === 'ziggurat'){
+    addPart(new THREE.BoxGeometry(28, 10, 28), 0, 5, 0);
+    addPart(new THREE.BoxGeometry(20, 12, 20), 0, 16, 0);
+    addPart(new THREE.BoxGeometry(12, 14, 12), 0, 29, 0, true);
+    addPart(new THREE.ConeGeometry(5, 18, 4), 0, 45, 0);
+  } else if (spec.arch === 'archgate'){
+    addPart(new THREE.BoxGeometry(7, 36, 10), -11, 18, 0);
+    addPart(new THREE.BoxGeometry(7, 36, 10), 11, 18, 0);
+    addPart(new THREE.BoxGeometry(30, 7, 10), 0, 39, 0, true);
+    addPart(new THREE.TorusGeometry(8, 1.4, 8, 20), 0, 22, 0);
+  } else if (spec.arch === 'hexspire'){
+    addPart(new THREE.CylinderGeometry(14, 18, 14, 6), 0, 7, 0);
+    addPart(new THREE.CylinderGeometry(9, 12, 22, 6), 0, 25, 0, true);
+    addPart(new THREE.CylinderGeometry(3, 7, 26, 6), 0, 49, 0);
+  } else if (spec.arch === 'domebeacon'){
+    addPart(new THREE.CylinderGeometry(16, 16, 12, 16), 0, 6, 0);
+    addPart(new THREE.SphereGeometry(14, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), 0, 12, 0, true);
+    addPart(new THREE.CylinderGeometry(1.5, 1.5, 22, 8), 0, 37, 0);
+  } else if (spec.arch === 'pagoda'){
+    addPart(new THREE.CylinderGeometry(17, 20, 8, 8), 0, 4, 0);
+    addPart(new THREE.CylinderGeometry(12, 15, 8, 8), 0, 14, 0, true);
+    addPart(new THREE.CylinderGeometry(7, 10, 8, 8), 0, 24, 0);
+    addPart(new THREE.ConeGeometry(4, 16, 8), 0, 36, 0);
+  } else {
+    addPart(new THREE.BoxGeometry(6, 42, 6), -8, 21, -5);
+    addPart(new THREE.BoxGeometry(6, 42, 6), 8, 21, 5);
+    addPart(new THREE.BoxGeometry(22, 5, 14), 0, 32, 0, true);
+  }
+
+  return group;
+}
+
+centerSpecs.forEach((spec) => {
+  const dir = new THREE.Vector3(
+    Math.cos(spec.lat) * Math.cos(spec.lon),
+    Math.sin(spec.lat),
+    Math.cos(spec.lat) * Math.sin(spec.lon)
+  ).normalize();
+  const baseR = PLANET_RADIUS;
+  const up = dir.clone().multiplyScalar(spec.side);
+  const group = buildUniqueCenterGroup(spec);
+  group.position.copy(dir).multiplyScalar(baseR);
+  group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), up);
+  scene.add(group);
+  centerObjects.push({ spec, dir, baseR, up, group, elevationBoost: 0 });
+});
+
+function updateCentersInfluence(){
+  for (const c of centerObjects){
+    const cPos = c.dir.clone().multiplyScalar(c.baseR);
+    let score = 0;
+    for (const b of buildings){
+      const bPos = new THREE.Vector3(b.x, b.y, b.z);
+      const bSide = bPos.length() >= PLANET_RADIUS ? 1 : -1;
+      if (bSide !== c.spec.side) continue;
+      const dist = bPos.distanceTo(cPos);
+      if (dist <= c.spec.influenceRadius){
+        const weight = 1 - dist / c.spec.influenceRadius;
+        const housePower = 1 + (b.storedTokens || 0) * 0.45 + ((b.tier || 1) - 1) * 1.2;
+        score += weight * housePower;
+      }
+    }
+    const targetBoost = Math.min(85, score * 9.5);
+    c.elevationBoost += (targetBoost - c.elevationBoost) * 0.12;
+    c.group.position.copy(c.dir).multiplyScalar(c.baseR + c.spec.side * c.elevationBoost);
+  }
+}
+
+const routeRings = [];
+const ringGeo = new THREE.TorusGeometry(15, 1.0, 12, 32);
+
+function makeVerticalRingQuaternion(radialDir, rowHeading){
+  const normal = new THREE.Vector3().crossVectors(radialDir, rowHeading);
+  if (normal.lengthSq() < 1e-4){
+    const fallback = Math.abs(radialDir.y) < 0.8 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+    normal.crossVectors(radialDir, fallback);
+  }
+  normal.normalize();
+  return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+}
+
+const ringRows = [
+  { lat0: -0.75, lon0: 1.1, dLat: 0.14, dLon: 0.14, count: 11, side: 1, heading: new THREE.Vector3(1, 0.5, 0.2).normalize() },
+  { lat0: 0.7, lon0: 2.8, dLat: -0.14, dLon: 0.16, count: 11, side: 1, heading: new THREE.Vector3(-0.4, 0.8, 0.4).normalize() },
+  { lat0: 0.85, lon0: 0.7, dLat: -0.16, dLon: 0.15, count: 10, side: 1, heading: new THREE.Vector3(0.6, -0.5, 0.6).normalize() },
+  { lat0: -0.85, lon0: 3.9, dLat: 0.15, dLon: 0.15, count: 10, side: 1, heading: new THREE.Vector3(-0.7, 0.2, -0.6).normalize() },
+  { lat0: 0.55, lon0: 3.4, dLat: -0.12, dLon: 0.17, count: 10, side: -1, heading: new THREE.Vector3(0.7, 0.4, -0.5).normalize() },
+  { lat0: -0.6, lon0: 2.0, dLat: 0.13, dLon: 0.16, count: 10, side: -1, heading: new THREE.Vector3(-0.3, 0.9, 0.2).normalize() },
+  { lat0: -0.7, lon0: 5.1, dLat: 0.13, dLon: 0.15, count: 10, side: -1, heading: new THREE.Vector3(0.5, -0.6, -0.6).normalize() }
+];
+
+ringRows.forEach((row, rIdx) => {
+  for (let k = 0; k < row.count; k++){
+    const lat = Math.max(-1.25, Math.min(1.25, row.lat0 + k * row.dLat));
+    const lon = row.lon0 + k * row.dLon;
+    const dir = new THREE.Vector3(
+      Math.cos(lat) * Math.cos(lon),
+      Math.sin(lat),
+      Math.cos(lat) * Math.sin(lon)
+    ).normalize();
+    const r = PLANET_RADIUS + row.side * 22;
+    const pos = dir.clone().multiplyScalar(r);
+
+    const mat = new THREE.MeshBasicMaterial({
+      color: linePalette[(rIdx + k) % linePalette.length],
+      transparent: true,
+      opacity: RING_ACTIVE_OPACITY
+    });
+    const mesh = new THREE.Mesh(ringGeo, mat);
+    mesh.position.copy(pos);
+    mesh.quaternion.copy(makeVerticalRingQuaternion(dir, row.heading));
+    scene.add(mesh);
+
+    routeRings.push({ mesh, mat, cooldownUntil: 0 });
+  }
+});
+
+function updateRouteRingsFade(nowMs){
+  for (const ring of routeRings){
+    if (nowMs < ring.cooldownUntil){
+      const remainingRatio = Math.max(0, Math.min(1, (ring.cooldownUntil - nowMs) / RING_COOLDOWN_MS));
+      const recovery = 1 - remainingRatio;
+      ring.mat.opacity = RING_FADED_OPACITY + (RING_ACTIVE_OPACITY - RING_FADED_OPACITY) * (recovery * recovery);
+    } else {
+      ring.mat.opacity = RING_ACTIVE_OPACITY;
+    }
+  }
+}
+
+/* =========================================================
+   HOUSES FLUSH ON SURFACE (R = 1500) OR STACKED ON ROOF TOP
+   ========================================================= */
+const buildingsGroup = new THREE.Group();
+scene.add(buildingsGroup);
+const buildingMeshes = new Map();
+
+function getHouseHeight(b){
+  const invested = Math.max(0, (b.storedTokens || 0) + ((b.tier || 1) - 1) * 2);
+  return Math.max(4, 7 + invested * 2.2);
+}
+
+function upsertBuildingMesh(b){
+  const idx = buildings.findIndex(item => item.id === b.id);
+  if (idx >= 0) buildings[idx] = b;
+  else buildings.push(b);
+
+  if (buildingMeshes.has(b.id)){
+    const old = buildingMeshes.get(b.id);
+    buildingsGroup.remove(old);
+    const ci = collidableObjects.indexOf(old);
+    if (ci >= 0) collidableObjects.splice(ci, 1);
+  }
+
+  const basePos = new THREE.Vector3(b.x, b.y, b.z);
+  const dir = basePos.length() > 0.001 ? basePos.clone().normalize() : new THREE.Vector3(0, 1, 0);
+  const side = basePos.length() >= PLANET_RADIUS ? 1 : -1;
+  const up = dir.clone().multiplyScalar(side);
+  const h = getHouseHeight(b);
+
+  const flushBase = dir.clone().multiplyScalar(basePos.length());
+  const boxGeo = new THREE.BoxGeometry(8, h, 8);
+  const houseMesh = new THREE.Mesh(
+    boxGeo,
+    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 })
+  );
+  houseMesh.position.copy(flushBase).addScaledVector(up, h * 0.5);
+  houseMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), up);
+  houseMesh.userData.buildingId = b.id;
+
+  const outlineCol = b.color || linePalette[buildings.length % linePalette.length];
+  const edges = new THREE.EdgesGeometry(boxGeo);
+  const lineMesh = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: outlineCol }));
+  houseMesh.add(lineMesh);
+
+  buildingsGroup.add(houseMesh);
+  buildingMeshes.set(b.id, houseMesh);
+  collidableObjects.push(houseMesh);
+}
+buildings.forEach(upsertBuildingMesh);
+
+function computeTopPlacementOnUserSide(aimPoint){
+  const playerSide = player.position.length() >= PLANET_RADIUS ? 1 : -1;
+  const dir = aimPoint.length() > 0.001
+    ? aimPoint.clone().normalize()
+    : (player.position.length() > 0.001 ? player.position.clone().normalize() : new THREE.Vector3(0, -1, 0));
+
+  let topRadius = PLANET_RADIUS;
+  let stackedTier = 1;
+
+  for (const b of buildings){
+    const bBase = new THREE.Vector3(b.x, b.y, b.z);
+    const bSide = bBase.length() >= PLANET_RADIUS ? 1 : -1;
+    if (bSide !== playerSide) continue;
+    const bDir = bBase.clone().normalize();
+    const angDist = dir.angleTo(bDir) * PLANET_RADIUS;
+    if (angDist < 4.5){
+      const roofRadius = bBase.length() + getHouseHeight(b);
+      if (roofRadius > topRadius){
+        topRadius = roofRadius;
+        stackedTier = (b.tier || 1) + 1;
+      }
+    }
+  }
+
+  return {
+    basePos: dir.multiplyScalar(topRadius),
+    tier: stackedTier
+  };
+}
+
+const aimRaycaster = new THREE.Raycaster();
+function getAimedWorldPoint(){
+  const rect = attackBtn.getBoundingClientRect();
+  const cx = rect.left + rect.width * 0.5;
+  const cy = rect.top + rect.height * 0.5;
+  const ndc = new THREE.Vector2(
+    (cx / window.innerWidth) * 2 - 1,
+    -(cy / window.innerHeight) * 2 + 1
+  );
+  camera.updateMatrixWorld();
+  aimRaycaster.setFromCamera(ndc, camera);
+  const hits = aimRaycaster.intersectObjects([planetMesh], false);
+  if (hits.length > 0 && hits[0].distance < 2500){
+    return hits[0].point.clone();
+  }
+  const fallbackDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
+  return camera.getWorldPosition(new THREE.Vector3()).addScaledVector(fallbackDir, 60);
+}
+
+const backgroundPlanets = [];
+[
+  { radius: 500, color: 0xe27b58, x: 3500, y: 1500, z: -2000, rotSpeed: 0.002 },
+  { radius: 800, color: 0x47637c, x: -4500, y: -2000, z: -3000, rotSpeed: 0.001 },
+  { radius: 300, color: 0x8d5b9c, x: -4000, y: -4000, z: -4000, rotSpeed: 0.003 }
+].forEach(data => {
+  const m = new THREE.Mesh(
+    new THREE.SphereGeometry(data.radius, 32, 32),
+    new THREE.MeshPhongMaterial({ color: data.color, shininess: 10, flatShading: true })
+  );
+  m.position.set(data.x, data.y, data.z);
+  scene.add(m);
+  backgroundPlanets.push({ mesh: m, rotSpeed: data.rotSpeed });
+});
+
+/* =========================================================
+   MQTT MULTIPLAYER & CHAT
+   ========================================================= */
+const BROKER = 'wss://broker.emqx.io:8084/mqtt';
+const TOPIC = 'outside_in_planet/megacity/v1';
+let mqttClient = null;
+const remotePeers = new Map();
+const remotePeerGeo = new THREE.OctahedronGeometry(3.5, 0);
+let activeRemoteAttacks = {};
+
+function getOrCreateRemotePeer(id){
+  if (remotePeers.has(id)) return remotePeers.get(id);
+  const mesh = new THREE.Mesh(
+    remotePeerGeo,
+    new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.45 })
+  );
+  scene.add(mesh);
+  const entry = { mesh, lastSeen: Date.now() };
+  remotePeers.set(id, entry);
+  return entry;
+}
+
+function updatePresenceUI(){
+  const now = Date.now();
+  for (const [id, entry] of remotePeers.entries()){
+    if (now - entry.lastSeen > 12000){
+      scene.remove(entry.mesh);
+      remotePeers.delete(id);
+    }
+  }
+  if (remotePeers.size > 0){
+    presenceBadge.textContent = `Else (${remotePeers.size})`;
+    presenceBadge.className = 'presence-badge else';
+  } else {
+    presenceBadge.textContent = 'Alone';
+    presenceBadge.className = 'presence-badge alone';
+  }
+}
+
+function publishMqtt(payload){
+  if (mqttClient && mqttClient.connected){
+    mqttClient.publish(TOPIC, JSON.stringify({ ...payload, sender: myPeerId, sid: clientId, ts: Date.now() }), { qos: 0 });
+  }
+}
+
+function appendChatLine(sender, text){
+  const div = document.createElement('div');
+  div.className = 'chat-line';
+  const s = document.createElement('span');
+  s.textContent = sender + ': ';
+  div.appendChild(s);
+  div.appendChild(document.createTextNode(text));
+  chatFeed.appendChild(div);
+  while (chatFeed.children.length > 5) chatFeed.removeChild(chatFeed.firstChild);
+  chatFeed.scrollTop = chatFeed.scrollHeight;
+}
+
+try{
+  mqttClient = mqtt.connect(BROKER, { clientId, reconnectPeriod: 4000, connectTimeout: 5000, keepalive: 60 });
+  mqttClient.on('connect', () => {
+    mqttClient.subscribe(TOPIC, { qos: 0 });
+    publishMqtt({ type: 'STATE', pos: [player.position.x, player.position.y, player.position.z] });
+  });
+  mqttClient.on('message', (_, raw) => {
+    let data;
+    try{ data = JSON.parse(raw.toString()); }catch{ return; }
+    if (data.sid === clientId) return;
+
+    if (data.type === 'STATE' && Array.isArray(data.pos) && data.pos.length === 3){
+      const entry = getOrCreateRemotePeer(data.sender || 'Peer');
+      entry.mesh.position.set(data.pos[0], data.pos[1], data.pos[2]);
+      entry.lastSeen = Date.now();
+      updatePresenceUI();
+    } else if (data.type === 'CHAT' && typeof data.text === 'string'){
+      appendChatLine(data.sender || 'Peer', data.text);
+    } else if (data.type === 'TRANSFER' && data.to === myPeerId){
+      recordTokenDelta(data.amount, `Transfer from ${data.sender}`, false);
+    } else if (data.type === 'BUILDING_BUILT'){
+      upsertBuildingMesh(data.building);
+      store.set('buildings', buildings);
+    } else if (data.type === 'BUILDING_LOOTED'){
+      const b = buildings.find(item => item.id === data.buildingId);
+      if (b){
+        b.storedTokens = Math.max(0, (b.storedTokens || 0) - data.amount);
+        upsertBuildingMesh(b);
+        store.set('buildings', buildings);
+      }
+    } else if (data.type === 'AUTHOR_SHARE' && data.source === 'house_build' && data.buildingId){
+      const b = buildings.find(item => item.id === data.buildingId);
+      if (b){
+        b.storedTokens = Math.max(0, (b.storedTokens || 0) - (data.amount || 1));
+        upsertBuildingMesh(b);
+        store.set('buildings', buildings);
+      }
+    } else if (data.type === 'FREEZE_PLAYER' && data.target === myPeerId){
+      applyFreezeToSelf(data.durationMs || 6000);
+    } else if (data.type === 'FREEZE_STATE'){
+      if (data.active){
+        activeRemoteAttacks[data.target] = { attacker: data.attacker, until: Date.now() + (data.durationMs || 6000) };
+      } else {
+        delete activeRemoteAttacks[data.target];
+      }
+    }
+  });
+}catch{}
+
+setInterval(() => {
+  publishMqtt({
+    type: 'STATE',
+    pos: [Number(player.position.x.toFixed(2)), Number(player.position.y.toFixed(2)), Number(player.position.z.toFixed(2))]
+  });
+  updatePresenceUI();
+}, 1500);
+
+function sendChat(){
+  const txt = chatInput.value.trim();
+  if (!txt) return;
+  appendChatLine(myPeerId, txt);
+  publishMqtt({ type: 'CHAT', text: txt });
+  chatInput.value = '';
+}
+chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); sendChat(); } });
+
+peerIdInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') peerIdInput.blur(); });
+peerIdInput.addEventListener('blur', () => {
+  const v = peerIdInput.value.trim();
+  if (/^[A-Za-z0-9_\-]{3,12}$/.test(v)){
+    myPeerId = v;
+    store.set('peer_id', myPeerId);
+    peerIdInput.classList.add('saved');
+    setTimeout(() => peerIdInput.classList.remove('saved'), 700);
+  } else {
+    peerIdInput.value = myPeerId;
+  }
+});
+
+/* =========================================================
+   RETICLE: TAP = MENU -> PICK MODE -> LONG-PRESS = RUN
+   ========================================================= */
+let selectedReticleMode = 'build';
+
+function openReticleMenu(){
+  const r = attackBtn.getBoundingClientRect();
+  const left = Math.max(8, Math.min(window.innerWidth - 184, r.left - 58));
+  const top = Math.max(40, r.top - 156);
+  reticleMenu.style.left = left + 'px';
+  reticleMenu.style.top = top + 'px';
+  reticleMenu.classList.add('open');
+}
+function closeReticleMenu(){
+  reticleMenu.classList.remove('open');
+}
+
+reticleMenu.querySelectorAll('.rm-item').forEach(btn => {
+  btn.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    selectedReticleMode = btn.dataset.mode;
+    reticleMenu.querySelectorAll('.rm-item').forEach(b => b.classList.toggle('selected', b === btn));
+    closeReticleMenu();
+  });
+});
+
+const keys = {};
+let lastSpaceTime = 0;
+let superThrust = false;
+
+window.addEventListener('keydown', (e) => {
+  if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+  if (e.code === 'Space' && !keys['Space']){
+    const now = performance.now();
+    if (now - lastSpaceTime < 250) superThrust = true;
+    lastSpaceTime = now;
+  }
+  if (e.code === 'KeyF' && !keys['KeyF']) startSelectedAction();
+  keys[e.code] = true;
+});
+window.addEventListener('keyup', (e) => {
+  keys[e.code] = false;
+  if (e.code === 'Space') superThrust = false;
+  if (e.code === 'KeyF') stopHoldAction();
+});
+
+let mouseDragging = false, lastMouseX = 0, lastMouseY = 0;
+renderer.domElement.addEventListener('mousedown', (e) => {
+  if (e.button === 0){ mouseDragging = true; lastMouseX = e.clientX; lastMouseY = e.clientY; }
+});
+window.addEventListener('mousemove', (e) => {
+  if (!mouseDragging) return;
+  touchJoystick.active = true;
+  touchJoystick.moveX = Math.max(-1, Math.min(1, (e.clientX - lastMouseX) / 35));
+  touchJoystick.moveY = Math.max(-1, Math.min(1, (e.clientY - lastMouseY) / 35));
+  lastMouseX = e.clientX; lastMouseY = e.clientY;
+});
+window.addEventListener('mouseup', () => {
+  if (mouseDragging){ mouseDragging = false; touchJoystick.active = false; touchJoystick.moveX = 0; touchJoystick.moveY = 0; }
+});
+
+let isHoldingAttack = false;
+let holdStartTime = 0;
+let holdMode = null;
+let targetBuildingId = null;
+let targetPeerId = null;
+let lastDepositStep = 0;
+let lastDrainStep = 0;
+let frozenUntil = 0;
+let freezeCooldownUntil = 0;
+let longPressTimer = null;
+let longPressTriggered = false;
+let btnDrag = { active: false, moved: false, downAt: 0, ox: 0, oy: 0, sx: 0, sy: 0 };
+
+function clearLongPressTimer(){
+  if (longPressTimer !== null){
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+}
+
+function applyFreezeToSelf(durationMs){
+  frozenUntil = Math.max(frozenUntil, Date.now() + durationMs);
+}
+
+function findNearestBuilding(fromPos, maxDist = 35){
+  let best = null, bestD = maxDist;
+  for (const b of buildings){
+    const d = fromPos.distanceTo(new THREE.Vector3(b.x, b.y, b.z));
+    if (d < bestD){ bestD = d; best = b; }
+  }
+  return best;
+}
+
+function findNearestPeer(maxDist = 55){
+  for (const [pid, entry] of remotePeers.entries()){
+    if (player.position.distanceTo(entry.mesh.position) < maxDist) return pid;
+  }
+  return null;
+}
+
+function startSelectedAction(){
+  closeReticleMenu();
+  if (Date.now() < frozenUntil) return;
+  const incomingFreeze = activeRemoteAttacks[myPeerId];
+  if (incomingFreeze && incomingFreeze.until > Date.now() && incomingFreeze.attacker !== myPeerId) return;
+  if (isHoldingAttack) return;
+
+  const aimPt = getAimedWorldPoint();
+
+  if (selectedReticleMode === 'hack'){
+    const nearB = findNearestBuilding(aimPt, 35) || findNearestBuilding(player.position, 35);
+    if (!nearB || nearB.owner === myPeerId || (nearB.storedTokens || 0) <= 0) return;
+    holdMode = 'hack';
+    targetBuildingId = nearB.id;
+    lastDrainStep = 0;
+    isHoldingAttack = true;
+    holdStartTime = performance.now();
+    attackBtn.classList.add('active');
+    publishMqtt({ type: 'BUILDING_ALERT', buildingId: nearB.id, owner: nearB.owner, attacker: myPeerId });
+  } else if (selectedReticleMode === 'attack'){
+    const nearP = findNearestPeer(55);
+    if (!nearP || Date.now() < freezeCooldownUntil) return;
+    holdMode = 'attack';
+    targetPeerId = nearP;
+    isHoldingAttack = true;
+    holdStartTime = performance.now();
+    attackBtn.classList.add('active');
+    const durMs = 6000;
+    publishMqtt({ type: 'FREEZE_PLAYER', target: nearP, attacker: myPeerId, durationMs: durMs });
+    publishMqtt({ type: 'FREEZE_STATE', target: nearP, attacker: myPeerId, active: true, durationMs: durMs });
+    freezeCooldownUntil = Date.now() + 7500;
+  } else {
+    if (tokens < 1) return;
+    holdMode = 'build';
+    targetBuildingId = null;
+    lastDepositStep = 0;
+    isHoldingAttack = true;
+    holdStartTime = performance.now();
+    attackBtn.classList.add('active');
+
+    recordTokenDelta(-1, 'Build house', true);
+
+    const placed = computeTopPlacementOnUserSide(aimPt);
+    const newB = {
+      id: 'b_' + Date.now() + '_' + Math.random().toString(16).slice(2, 6),
+      owner: myPeerId,
+      x: Number(placed.basePos.x.toFixed(1)),
+      y: Number(placed.basePos.y.toFixed(1)),
+      z: Number(placed.basePos.z.toFixed(1)),
+      storedTokens: 0,
+      tier: placed.tier,
+      color: linePalette[buildings.length % linePalette.length]
+    };
+    targetBuildingId = newB.id;
+    upsertBuildingMesh(newB);
+    store.set('buildings', buildings);
+    publishMqtt({ type: 'BUILDING_BUILT', building: newB });
+    notifyAuthor(1, 'house_build', newB.id);
+  }
+}
+
+function stopHoldAction(){
+  clearLongPressTimer();
+  longPressTriggered = false;
+  if (!isHoldingAttack) return;
+  isHoldingAttack = false;
+  attackBtn.classList.remove('active');
+  if (holdMode === 'attack' && targetPeerId){
+    publishMqtt({ type: 'FREEZE_STATE', target: targetPeerId, attacker: myPeerId, active: false });
+  }
+  holdMode = null;
+  targetBuildingId = null;
+  targetPeerId = null;
+}
+
+attackBtn.addEventListener('pointerdown', (e) => {
+  e.stopPropagation();
+  attackBtn.setPointerCapture(e.pointerId);
+  const r = attackBtn.getBoundingClientRect();
+  longPressTriggered = false;
+  btnDrag = {
+    active: true,
+    moved: false,
+    downAt: performance.now(),
+    ox: e.clientX - r.left,
+    oy: e.clientY - r.top,
+    sx: e.clientX,
+    sy: e.clientY
+  };
+  clearLongPressTimer();
+  longPressTimer = setTimeout(() => {
+    if (btnDrag.active && !btnDrag.moved){
+      longPressTriggered = true;
+      startSelectedAction();
+    }
+  }, LONG_PRESS_MS);
+});
+
+attackBtn.addEventListener('pointermove', (e) => {
+  if (!btnDrag.active) return;
+  if (Math.hypot(e.clientX - btnDrag.sx, e.clientY - btnDrag.sy) > 8){
+    btnDrag.moved = true;
+    clearLongPressTimer();
+  }
+  if (btnDrag.moved){
+    closeReticleMenu();
+    const nx = Math.max(8, Math.min(window.innerWidth - 64, e.clientX - btnDrag.ox));
+    const ny = Math.max(44, Math.min(window.innerHeight - 104, e.clientY - btnDrag.oy));
+    reticleWrap.style.left = nx + 'px';
+    reticleWrap.style.top = ny + 'px';
+    reticleWrap.style.right = 'auto';
+    reticleWrap.style.bottom = 'auto';
+  }
+});
+
+const onReticleRelease = () => {
+  if (!btnDrag.active) return;
+  const wasQuickTap = !btnDrag.moved && !longPressTriggered && (performance.now() - btnDrag.downAt) < LONG_PRESS_MS;
+  btnDrag.active = false;
+  stopHoldAction();
+
+  if (wasQuickTap){
+    if (reticleMenu.classList.contains('open')) closeReticleMenu();
+    else openReticleMenu();
+  }
+};
+
+attackBtn.addEventListener('pointerup', onReticleRelease);
+attackBtn.addEventListener('pointercancel', onReticleRelease);
+
+/* =========================================================
+   STATS MODAL (FULL HEIGHT + WITHDRAW + WITHDRAW ALL)
+   ========================================================= */
+const statsModal = document.getElementById('statsModal');
+const recipientSelect = document.getElementById('recipientSelect');
+const expenseHistoryList = document.getElementById('expenseHistoryList');
+const deleteSelectedHistBtn = document.getElementById('deleteSelectedHistBtn');
+const selectAllHistBtn = document.getElementById('selectAllHistBtn');
+const builtCountEl = document.getElementById('builtCountEl');
+const builtHousesList = document.getElementById('builtHousesList');
+const withdrawAllBtn = document.getElementById('withdrawAllBtn');
+
+function drawChart(){
+  const canvas = document.getElementById('statsChart');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const pts = tokenSeries.length ? tokenSeries : [{ val: tokens }];
+  const maxV = Math.max(10, ...pts.map(p => p.val));
+  const minV = Math.min(0, ...pts.map(p => p.val));
+  const span = Math.max(1, maxV - minV);
+
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  pts.forEach((p, idx) => {
+    const x = pts.length === 1 ? canvas.width / 2 : (idx / (pts.length - 1)) * (canvas.width - 36) + 18;
+    const y = canvas.height - 20 - ((p.val - minV) / span) * (canvas.height - 40);
+    if (idx === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '12px sans-serif';
+  ctx.fillText(`Balance: ${tokens.toFixed(1)} | Peak: ${maxV.toFixed(1)}`, 14, 18);
+}
+
+function syncDeleteButtonState(){
+  deleteSelectedHistBtn.disabled = selectedExpenseIds.size === 0;
+  selectAllHistBtn.textContent = (expenseHistory.length > 0 && selectedExpenseIds.size === expenseHistory.length)
+    ? 'Unselect All'
+    : 'Select All';
+}
+
+function renderExpenseHistory(){
+  expenseHistoryList.innerHTML = '';
+  if (!expenseHistory.length){
+    expenseHistoryList.innerHTML = '<div style="padding:10px;color:#64748b;font-size:12px">No expenses yet</div>';
+    selectedExpenseIds.clear();
+    syncDeleteButtonState();
+    return;
+  }
+  expenseHistory.forEach((item) => {
+    const row = document.createElement('div');
+    row.className = 'hist-item' + (selectedExpenseIds.has(item.id) ? ' sel' : '');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = selectedExpenseIds.has(item.id);
+    cb.addEventListener('change', () => {
+      if (cb.checked) selectedExpenseIds.add(item.id);
+      else selectedExpenseIds.delete(item.id);
+      row.classList.toggle('sel', cb.checked);
+      syncDeleteButtonState();
+    });
+    const txt = document.createElement('span');
+    txt.textContent = `-${item.amount} • ${item.reason}`;
+    row.appendChild(cb);
+    row.appendChild(txt);
+    expenseHistoryList.appendChild(row);
+  });
+  syncDeleteButtonState();
+}
+
+selectAllHistBtn.addEventListener('click', () => {
+  if (!expenseHistory.length) return;
+  if (selectedExpenseIds.size === expenseHistory.length){
+    selectedExpenseIds.clear();
+  } else {
+    selectedExpenseIds = new Set(expenseHistory.map(x => x.id));
+  }
+  renderExpenseHistory();
+});
+
+deleteSelectedHistBtn.addEventListener('click', () => {
+  if (!selectedExpenseIds.size) return;
+  expenseHistory = expenseHistory.filter(x => !selectedExpenseIds.has(x.id));
+  selectedExpenseIds.clear();
+  saveEconomy();
+  renderExpenseHistory();
+});
+
+function withdrawFromHouse(b, idx){
+  const amt = b.storedTokens || 0;
+  if (amt <= 0) return 0;
+  b.storedTokens = 0;
+  upsertBuildingMesh(b);
+  store.set('buildings', buildings);
+  recordTokenDelta(amt, `Withdraw house #${idx + 1}`, false);
+  publishMqtt({ type: 'BUILDING_BUILT', building: b });
+  return amt;
+}
+
+withdrawAllBtn.addEventListener('click', () => {
+  const myHouses = buildings.filter(b => b.owner === myPeerId);
+  let totalWithdrawn = 0;
+  myHouses.forEach((b, i) => {
+    totalWithdrawn += withdrawFromHouse(b, i);
+  });
+  if (totalWithdrawn > 0){
+    drawChart();
+    renderBuiltHouses();
+  }
+});
+
+function renderBuiltHouses(){
+  const myHouses = buildings.filter(b => b.owner === myPeerId);
+  builtCountEl.textContent = myHouses.length;
+  const totalStored = myHouses.reduce((acc, item) => acc + (item.storedTokens || 0), 0);
+  withdrawAllBtn.disabled = totalStored <= 0;
+
+  builtHousesList.innerHTML = '';
+  if (!myHouses.length){
+    builtHousesList.innerHTML = '<div style="color:#64748b">No houses built yet</div>';
+    return;
+  }
+  myHouses.forEach((b, i) => {
+    const row = document.createElement('div');
+    row.className = 'b-row';
+    const info = document.createElement('span');
+    info.textContent = `#${i + 1} (${b.x}, ${b.y}, ${b.z}) — stored: ${b.storedTokens || 0}`;
+    const btn = document.createElement('button');
+    btn.className = 'act-btn withdraw';
+    btn.textContent = 'Withdraw';
+    btn.disabled = (b.storedTokens || 0) <= 0;
+    btn.addEventListener('click', () => {
+      const amt = withdrawFromHouse(b, i);
+      if (amt > 0){
+        drawChart();
+        renderBuiltHouses();
+      }
+    });
+    row.appendChild(info);
+    row.appendChild(btn);
+    builtHousesList.appendChild(row);
+  });
+}
+
+document.getElementById('sendTokensBtn').addEventListener('click', () => {
+  const to = (document.getElementById('recipientCustom').value.trim() || recipientSelect.value || '').trim();
+  const amt = parseFloat(document.getElementById('transferAmount').value);
+  if (!to || to === myPeerId || isNaN(amt) || amt <= 0 || tokens < amt) return;
+  const fee = Number((amt * 0.01).toFixed(2));
+  const net = Number((amt - fee).toFixed(2));
+  recordTokenDelta(-amt, `Transfer to ${to}`, true);
+  if (fee > 0) notifyAuthor(fee, 'transfer');
+  publishMqtt({ type: 'TRANSFER', to, amount: net });
+  drawChart();
+  renderExpenseHistory();
+});
+
+function openStats(){
+  recipientSelect.innerHTML = '';
+  const peerKeys = Array.from(remotePeers.keys()).filter(k => k !== myPeerId);
+  if (!peerKeys.length){
+    const opt = document.createElement('option');
+    opt.value = ''; opt.textContent = 'No online peers';
+    recipientSelect.appendChild(opt);
+  } else {
+    peerKeys.forEach(k => {
+      const opt = document.createElement('option');
+      opt.value = k; opt.textContent = k;
+      recipientSelect.appendChild(opt);
+    });
+  }
+  selectedExpenseIds.clear();
+  drawChart();
+  renderExpenseHistory();
+  renderBuiltHouses();
+  statsModal.classList.add('show');
+}
+document.getElementById('tokenCounterDock').addEventListener('click', openStats);
+document.getElementById('closeStatsBtn').addEventListener('click', () => statsModal.classList.remove('show'));
+
+const helpModal = document.getElementById('helpModal');
+document.getElementById('helpBtn').addEventListener('click', () => helpModal.classList.add('show'));
+document.getElementById('closeHelpBtn').addEventListener('click', () => helpModal.classList.remove('show'));
+
+/* =========================================================
+   FLIGHT PHYSICS, SAFE BOUNDS & BOUNDARY CROSSING
+   ========================================================= */
+let velocity = new THREE.Vector3(0, 0, 0);
+let angularVelocityX = 0;
+let angularVelocityZ = 0;
+const clock = new THREE.Clock();
+
+function computeGravity(pos){
+  const r = pos.length();
+  if (r < 0.001) return new THREE.Vector3(0, 0, 0);
+  const dir = pos.clone().normalize();
+  const coreMask = THREE.MathUtils.smoothstep(r, 120, 340);
+  const outerMask = 1.0 - THREE.MathUtils.smoothstep(r, PLANET_RADIUS + 450, PLANET_RADIUS + 1150);
+  const g = GRAVITY * coreMask * outerMask;
+  return r < PLANET_RADIUS ? dir.multiplyScalar(g) : dir.multiplyScalar(-g);
+}
+
+function updateHoldActions(nowMs){
+  if (!isHoldingAttack || !holdMode) return;
+  const elapsed = nowMs - holdStartTime;
+
+  if (holdMode === 'build' && targetBuildingId){
+    const step = Math.floor(elapsed / 800);
+    if (step > lastDepositStep && tokens >= 1){
+      lastDepositStep = step;
+      recordTokenDelta(-1, 'Stock house', true);
+      const b = buildings.find(item => item.id === targetBuildingId);
+      if (b){
+        b.storedTokens = (b.storedTokens || 0) + 1;
+        upsertBuildingMesh(b);
+        store.set('buildings', buildings);
+        publishMqtt({ type: 'BUILDING_BUILT', building: b });
+      }
+    }
+  } else if (holdMode === 'hack' && targetBuildingId){
+    const warningMs = 9000;
+    if (elapsed >= warningMs){
+      const drainStep = Math.floor((elapsed - warningMs) / 700);
+      if (drainStep > lastDrainStep){
+        lastDrainStep = drainStep;
+        const b = buildings.find(item => item.id === targetBuildingId);
+        if (b && (b.storedTokens || 0) > 0){
+          b.storedTokens -= 1;
+          upsertBuildingMesh(b);
+          store.set('buildings', buildings);
+          recordTokenDelta(1, 'House hack', false);
+          publishMqtt({ type: 'BUILDING_LOOTED', buildingId: b.id, amount: 1, by: myPeerId });
+        } else {
+          stopHoldAction();
+        }
+      }
+    }
+  }
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+  clock.getDelta();
+  const nowMs = performance.now();
+
+  if (Date.now() >= frozenUntil){
+    if (keys['ArrowLeft']) angularVelocityZ -= TURN_SPEED;
+    if (keys['ArrowRight']) angularVelocityZ += TURN_SPEED;
+    if (keys['ArrowUp']) angularVelocityX -= TURN_SPEED;
+    if (keys['ArrowDown']) angularVelocityX += TURN_SPEED;
+
+    if (touchJoystick.active){
+      angularVelocityX += touchJoystick.moveY * TOUCH_TURN_SPEED;
+      angularVelocityZ += touchJoystick.moveX * TOUCH_TURN_SPEED;
+    }
+
+    angularVelocityX *= DAMPING_TURN;
+    angularVelocityZ *= DAMPING_TURN;
+
+    const deltaQuaternion = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(angularVelocityX, 0, angularVelocityZ, 'YXZ')
+    );
+    player.quaternion.multiply(deltaQuaternion);
+
+    let signedThrust = 0;
+    if (keys['Space']){
+      signedThrust = FLY_SPEED * (superThrust ? 2.5 : 1.0);
+    } else if (keys['KeyB']){
+      signedThrust = -FLY_SPEED * (superThrust ? 2.0 : 1.0);
+    } else if (Math.abs(currentThrottle) > 0.05){
+      signedThrust = FLY_SPEED * (currentThrottle * 2.0);
+    }
+
+    const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
+    if (isReverseThrust) localUp.negate();
+
+    if (Math.abs(signedThrust) > 0){
+      velocity.add(localUp.multiplyScalar(signedThrust));
+    }
+  } else {
+    angularVelocityX *= 0.85;
+    angularVelocityZ *= 0.85;
+  }
+
+  velocity.add(computeGravity(player.position));
+  velocity.multiplyScalar(DAMPING_MOVE);
+  player.position.add(velocity);
+
+  let r = player.position.length();
+  if (r > PLANET_RADIUS + 900){
+    const dir = player.position.clone().normalize();
+    player.position.copy(dir.multiplyScalar(PLANET_RADIUS + 420));
+    velocity.addScaledVector(dir, -0.35);
+    r = player.position.length();
+  } else if (r < 140){
+    const dir = r > 0.001 ? player.position.clone().normalize() : new THREE.Vector3(0, 1, 0);
+    player.position.copy(dir.multiplyScalar(PLANET_RADIUS - 120));
+    velocity.set(0, 0, 0);
+    r = player.position.length();
+  }
+
+  const curSide = r >= PLANET_RADIUS ? 1 : -1;
+
+  for (const gate of boundaryGates){
+    if (nowMs >= gate.cooldownUntil && player.position.distanceTo(gate.pos) < 24){
+      gate.cooldownUntil = nowMs + 1500;
+      const dir = player.position.length() > 0.001 ? player.position.clone().normalize() : gate.dir;
+      const targetSide = curSide > 0 ? -1 : 1;
+      player.position.copy(dir.multiplyScalar(PLANET_RADIUS + targetSide * 6));
+      velocity.addScaledVector(dir, targetSide * 0.25);
+    }
+  }
+
+  for (const ring of routeRings){
+    if (nowMs >= ring.cooldownUntil && player.position.distanceTo(ring.mesh.position) < 17){
+      ring.cooldownUntil = nowMs + RING_COOLDOWN_MS;
+      ring.mat.opacity = RING_FADED_OPACITY;
+      recordTokenDelta(2, 'Route ring', false);
+    }
+  }
+
+  updateRouteRingsFade(nowMs);
+  updateCentersInfluence();
+  updateHoldActions(nowMs);
+
+  backgroundPlanets.forEach(planet => {
+    planet.mesh.rotation.y += planet.rotSpeed;
+    planet.mesh.rotation.x += planet.rotSpeed * 0.2;
+  });
+
+  renderer.render(scene, camera);
+}
+
+animate();
+</script>
+</body>
+</html>
