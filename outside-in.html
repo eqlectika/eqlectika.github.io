@@ -2,21 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="icon" type="image/png" sizes="512x512" href="planet.png">
 <link rel="apple-touch-icon" sizes="180x180" href="planet.png?v=2">
 <link rel="manifest" href="manifest-outside-in.json">
-<title>Outside-in Planet</title>
+<title>Outside-in Jetpack | Mint & Build</title>
 <script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
+*{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 html,body{
   width:100dvw;height:100dvh;overflow:hidden;
-  touch-action:none;background:#0a0a12;color:#eef2ff;
+  touch-action:none;-ms-touch-action:none;background:#0a0a12;color:#eef2ff;
   font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
 }
 canvas{
-  display:block;position:fixed;inset:0;width:100%;height:100%;z-index:1;
+  display:block;position:fixed;inset:0;width:100%;height:100%;z-index:1;touch-action:none;
 }
 
 #throttleArea,#controlArea{
@@ -47,7 +47,6 @@ canvas{
   color:#cbd5e1;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
 }
 .top-btn:hover{color:#fff}
-.top-btn.active-mode{color:#38bdf8}
 
 .top-right-hud{
   position:fixed;top:max(8px,env(safe-area-inset-top));right:10px;z-index:40;
@@ -79,7 +78,7 @@ canvas{
 #reticleMenu{
   position:fixed;z-index:52;display:none;flex-direction:column;gap:4px;
   background:rgba(10,14,26,.94);border:1px solid rgba(148,163,184,.32);
-  border-radius:8px;padding:6px;min-width:138px;max-width:176px;
+  border-radius:8px;padding:6px;min-width:148px;max-width:186px;
 }
 #reticleMenu.open{display:flex}
 .rm-item{
@@ -87,7 +86,10 @@ canvas{
   color:#f8fafc;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;
   text-align:left;cursor:pointer;
 }
-.rm-item:hover,.rm-item.selected{background:#2563eb;border-color:#60a5fa}
+@media (hover:hover){
+  .rm-item:hover{background:#1d4ed8;border-color:#93c5fd}
+}
+.rm-item.selected{background:#2563eb;border-color:#60a5fa}
 .rm-hint{
   margin-top:2px;padding-top:4px;border-top:1px solid rgba(148,163,184,.18);
   font-size:10.5px;line-height:1.3;color:#94a3b8;
@@ -126,26 +128,39 @@ canvas{
 
 .modal-overlay{
   position:fixed;inset:0;z-index:100;display:none;
-  background:rgba(4,6,14,.94);overflow-y:auto;
+  background:rgba(4,6,14,.94);overflow-y:auto;touch-action:pan-y;
 }
 .modal-overlay.show{display:block}
 #statsModal .modal-card{
   width:100%;min-height:100dvh;height:100dvh;
   background:#0c1120;border:none;border-radius:0;padding:16px;
-  display:flex;flex-direction:column;overflow-y:auto;
+  display:flex;flex-direction:column;overflow-y:auto;touch-action:pan-y;
 }
 .modal-card{
   width:min(660px,calc(100% - 32px));margin:20px auto;
   background:#0c1120;border:1px solid #1e293b;border-radius:12px;padding:16px;
 }
-.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .modal-head h2{font-size:16px}
 .close-modal{background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer}
+
+.timeframe-bar{
+  display:flex;gap:6px;margin-bottom:8px;flex-shrink:0;
+}
+.tf-btn{
+  background:#070a14;border:1px solid #1e293b;color:#94a3b8;
+  border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;
+}
+.tf-btn.active{
+  background:#2563eb;border-color:#60a5fa;color:#fff;
+}
 
 canvas#statsChart{
   position:static;width:100%;height:150px;background:#070a14;
   border:1px solid #1e293b;border-radius:8px;margin-bottom:12px;flex-shrink:0;
+  touch-action:pan-y;cursor:grab;
 }
+canvas#statsChart:active{cursor:grabbing}
 .section-label{font-size:12px;font-weight:700;color:#94a3b8;margin-bottom:6px;display:block}
 .transfer-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .transfer-row input,.transfer-row select{
@@ -159,10 +174,15 @@ canvas#statsChart{
 .act-btn.secondary{background:#334155}
 .act-btn.danger{background:#dc2626}
 .act-btn:disabled{opacity:.45;cursor:default}
-.hist-list{max-height:180px;overflow-y:auto;border-top:1px solid #1e293b;margin-top:6px;margin-bottom:12px}
-.hist-item{
-  display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #131c31;font-size:12px;
+.hist-list{
+  min-height:96px;max-height:200px;overflow-y:auto;
+  background:#070a14;border:1px solid #1e293b;border-radius:8px;
+  padding:4px 8px;margin-top:6px;margin-bottom:12px;flex-shrink:0;
 }
+.hist-item{
+  display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #131c31;font-size:12px;color:#e2e8f0;
+}
+.hist-item:last-child{border-bottom:none}
 .hist-item.sel{background:rgba(220,38,38,.16)}
 .buildings-box{
   flex:1;min-height:120px;overflow-y:auto;background:#070a14;border:1px solid #1e293b;
@@ -184,18 +204,18 @@ canvas#statsChart{
 }
 .help-footer-logo a:hover{opacity:1;transform:scale(1.04)}
 .help-footer-logo img{width:44px;height:44px;object-fit:contain;display:block}
-        .ios-blur-fix {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 11px;
-            z-index: 2147483647;
-            pointer-events: none;
-            background-color: #000;
-            -webkit-background-clip: text;
-            color: transparent;
-        }
+.ios-blur-fix {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 11px;
+  z-index: 2147483647;
+  pointer-events: none;
+  background-color: #000;
+  -webkit-background-clip: text;
+  color: transparent;
+}
 </style>
 </head>
 <body>
@@ -215,7 +235,7 @@ canvas#statsChart{
 <div id="controlArea"></div>
 
 <div id="reticleWrap">
-  <div id="attackBtn" title="Drag to aim. Tap: menu (Build / Attack / Hack). Long-press: continue build, attack, or hack.">
+  <div id="attackBtn" title="Tap to open menu. Long-press the crosshair to activate the mode.">
     <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
       <line x1="18" y1="3" x2="18" y2="13" stroke="currentColor" stroke-width="2"/>
       <line x1="18" y1="23" x2="18" y2="33" stroke="currentColor" stroke-width="2"/>
@@ -230,7 +250,7 @@ canvas#statsChart{
   <button class="rm-item selected" data-mode="build">Build</button>
   <button class="rm-item" data-mode="attack">Attack</button>
   <button class="rm-item" data-mode="hack">Hack</button>
-  <div class="rm-hint">Long-press to continue build, attack, or hack.</div>
+  <div class="rm-hint">Long-press the crosshair to activate the mode</div>
 </div>
 
 <div id="chatFeed"></div>
@@ -246,6 +266,12 @@ canvas#statsChart{
     <div class="modal-head">
       <h2>Stats</h2>
       <button class="close-modal" id="closeStatsBtn">✕</button>
+    </div>
+    <div class="timeframe-bar" id="timeframeBar">
+      <button class="tf-btn active" data-tf="day">Day</button>
+      <button class="tf-btn" data-tf="week">Week</button>
+      <button class="tf-btn" data-tf="month">Month</button>
+      <button class="tf-btn" data-tf="all">All</button>
     </div>
     <canvas id="statsChart" width="620" height="150"></canvas>
 
@@ -280,12 +306,14 @@ canvas#statsChart{
       <h2>Controls &amp; Rules</h2>
       <button class="close-modal" id="closeHelpBtn">✕</button>
     </div>
-    <p><strong>Touch &amp; Reticle:</strong> Drag the reticle anywhere to aim. <strong>Tap</strong> opens the menu (<code>Build</code>, <code>Attack</code>, <code>Hack</code>); <strong>long-press</strong> the reticle (or hold/press <code>F</code>) to execute and continue building, attacking, or hacking.</p>
-    <p><strong>Crossing the Surface:</strong> Fly through the boundary gates on <code>R = 1500</code> or across the sphere wall to switch sides.</p>
-    <p><strong>Houses &amp; Stacking:</strong> Houses sit flush on the surface on your current side and stack strictly on top of existing roofs.</p>
-    <p><strong>Own House Withdrawal &amp; Centers:</strong> Withdraw stored tokens in <code>Stats</code> via <code>Withdraw</code> / <code>Withdraw All</code>. Architectural centers grow taller as nearby houses and stored tokens increase.</p>
+    <p><strong>Touch Controls:</strong> Drag up or down on the left half of the screen for throttle; drag on the right half to tilt.</p>
+    <p><strong>Desktop Controls:</strong> Use Arrow keys (<code>←</code> <code>↑</code> <code>↓</code> <code>→</code>) or hold left mouse button and drag to tilt; hold <code>Space</code> for forward thrust (double-tap <code>Space</code> for boost) or <code>B</code> for reverse thrust.</p>
+    <p><strong>Reticle &amp; Modes:</strong> Drag the crosshair to aim. <strong>Tap</strong> the crosshair to open or close the mode menu (<code>Build</code>, <code>Attack</code>, <code>Hack</code>), select a mode, and <strong>long-press</strong> the crosshair (or hold/press <code>F</code>) to activate it.</p>
+    <p><strong>Free Flight &amp; Gravity:</strong> Fly in any direction indefinitely. Gravity is zero at the planet center and zero at the matching outer height.</p>
+    <p><strong>Houses, Roofs &amp; Bridges:</strong> Buildings place on your current side without overlapping, feature roof accents matching the nearest sector center, and can span horizontally as arches or bridges when anchored to another building wall.</p>
+    <p><strong>Hack Houses &amp; Flyers:</strong> Hack stored tokens from other players' buildings or hack nearby players mid-flight.</p>
     <div class="help-footer-logo">
-      <a href="match.html" title="Match">
+      <a href="https://eugenebox.t.me" target="_blank" rel="noopener noreferrer" title="Telegram">
         <img src="fleurdelis.png" alt="Fleur-de-lis">
       </a>
     </div>
@@ -304,9 +332,31 @@ canvas#statsChart{
 <script type="module">
 import * as THREE from 'three';
 
-const AUTHOR_ID = 'Author';
+/* Block system magnifying lens / context menu / text selection outside inputs */
+document.addEventListener('contextmenu', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('selectstart', (e) => {
+  if (!e.target || !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)){
+    e.preventDefault();
+  }
+}, { passive: false });
+document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
+window.addEventListener('wheel', (e) => {
+  if (e.ctrlKey) e.preventDefault();
+}, { passive: false });
+let lastTouchEndMs = 0;
+document.addEventListener('touchend', (e) => {
+  const now = Date.now();
+  if (now - lastTouchEndMs <= 300){
+    e.preventDefault();
+  }
+  lastTouchEndMs = now;
+}, { passive: false });
+
+const AUTHOR_ID = 'eugenebox';
 const INITIAL_CAPITAL = 100;
-const FLY_SPEED = 0.0065;
+const FLY_SPEED = 0.013;
 const TURN_SPEED = 0.00034;
 const TOUCH_TURN_SPEED = 0.0005;
 const GRAVITY = 0.0043333;
@@ -316,50 +366,88 @@ const PLANET_RADIUS = 1500;
 const RING_COOLDOWN_MS = 4000;
 const RING_ACTIVE_OPACITY = 0.9;
 const RING_FADED_OPACITY = 0.14;
-const LONG_PRESS_MS = 420;
+const LONG_PRESS_MS = 450;
 
+const memoryStore = {};
 const store = {
-  get(k, fb){ try{ const v = localStorage.getItem('oip_' + k); return v === null ? fb : JSON.parse(v); }catch{ return fb; } },
-  set(k, v){ try{ localStorage.setItem('oip_' + k, JSON.stringify(v)); }catch{} }
+  get(k, fb){
+    const key = 'oip_' + k;
+    try{
+      const v = localStorage.getItem(key);
+      if (v !== null) return JSON.parse(v);
+    }catch{}
+    return Object.prototype.hasOwnProperty.call(memoryStore, key) ? memoryStore[key] : fb;
+  },
+  set(k, v){
+    const key = 'oip_' + k;
+    memoryStore[key] = v;
+    try{ localStorage.setItem(key, JSON.stringify(v)); }catch{}
+  }
 };
 
 let myPeerId = store.get('peer_id') || ('Peer-' + Math.floor(1000 + Math.random() * 9000));
 store.set('peer_id', myPeerId);
 const clientId = 'oip_' + Math.random().toString(16).slice(2, 10);
 
-if (localStorage.getItem('oip_initialized') === null){
+if (!store.get('initialized', false)){
   store.set('tokens', INITIAL_CAPITAL);
-  localStorage.setItem('oip_initialized', '1');
+  store.set('initialized', true);
 }
 
-let tokens = store.get('tokens', INITIAL_CAPITAL);
-let tokenSeries = store.get('token_series', [{ t: Date.now(), val: tokens }]);
-let expenseHistory = store.get('expense_history', []);
+let tokens = Number(store.get('tokens', INITIAL_CAPITAL));
+if (!Number.isFinite(tokens)) tokens = INITIAL_CAPITAL;
+let tokenSeries = Array.isArray(store.get('token_series', null)) ? store.get('token_series', []) : [{ t: Date.now(), val: tokens }];
+if (!tokenSeries.length) tokenSeries = [{ t: Date.now(), val: tokens }];
+let expenseHistory = Array.isArray(store.get('expense_history', null)) ? store.get('expense_history', []) : [];
 let selectedExpenseIds = new Set();
-let buildings = store.get('buildings', []);
+let buildings = Array.isArray(store.get('buildings', null)) ? store.get('buildings', []) : [];
+let selectedTimeframe = store.get('chart_timeframe', 'day');
+if (!['day', 'week', 'month', 'all'].includes(selectedTimeframe)) selectedTimeframe = 'day';
 
 function saveEconomy(){
   store.set('tokens', tokens);
-  store.set('token_series', tokenSeries.slice(-60));
+  store.set('token_series', tokenSeries.slice(-300));
   store.set('expense_history', expenseHistory);
 }
 function recordTokenDelta(delta, reason, isExpense = false){
-  tokens = Math.max(0, Number((tokens + delta).toFixed(2)));
+  const numDelta = Number(delta);
+  if (!Number.isFinite(numDelta)) return;
+  tokens = Math.max(0, Number((tokens + numDelta).toFixed(2)));
   tokenSeries.push({ t: Date.now(), val: tokens });
-  if (isExpense){
-    expenseHistory.unshift({
-      id: 'exp_' + Date.now() + '_' + Math.random().toString(16).slice(2, 6),
-      reason,
-      amount: Number(Math.abs(delta).toFixed(2)),
-      ts: Date.now()
-    });
+  if (isExpense || numDelta < 0){
+    const absAmt = Number(Math.abs(numDelta).toFixed(2));
+    if (absAmt > 0){
+      expenseHistory.unshift({
+        id: 'exp_' + Date.now() + '_' + Math.random().toString(16).slice(2, 6),
+        reason: reason || 'Expense',
+        amount: absAmt,
+        ts: Date.now()
+      });
+    }
   }
   saveEconomy();
   tokenBalanceEl.textContent = Number.isInteger(tokens) ? tokens : tokens.toFixed(1);
+  if (typeof statsModal !== 'undefined' && statsModal && statsModal.classList.contains('show')){
+    drawChart();
+    renderExpenseHistory();
+    renderBuiltHouses();
+  }
 }
-function notifyAuthor(amount, source, buildingId = null){
-  if (amount <= 0) return;
-  publishMqtt({ type: 'AUTHOR_SHARE', to: AUTHOR_ID, amount: Number(amount.toFixed(2)), source, buildingId, from: myPeerId });
+function routeAuthorFee(amount, source, buildingId = null){
+  const numAmt = Number(amount);
+  if (!Number.isFinite(numAmt) || numAmt <= 0) return;
+  const rounded = Number(numAmt.toFixed(2));
+  if (myPeerId === AUTHOR_ID){
+    recordTokenDelta(rounded, `Author share (${source})`, false);
+  }
+  publishMqtt({
+    type: 'AUTHOR_SHARE',
+    to: AUTHOR_ID,
+    amount: rounded,
+    source,
+    buildingId,
+    from: myPeerId
+  });
 }
 
 const peerIdInput = document.getElementById('peerIdInput');
@@ -369,7 +457,6 @@ const chatFeed = document.getElementById('chatFeed');
 const chatInput = document.getElementById('chatInput');
 const attackBtn = document.getElementById('attackBtn');
 const reticleMenu = document.getElementById('reticleMenu');
-const fillToggleBtn = document.getElementById('fillToggleBtn');
 
 peerIdInput.value = myPeerId;
 tokenBalanceEl.textContent = Number.isInteger(tokens) ? tokens : tokens.toFixed(1);
@@ -446,7 +533,7 @@ window.addEventListener('dragstart', (e) => e.preventDefault());
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0a12);
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 14000);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 24000);
 
 const player = new THREE.Group();
 player.position.set(0, 0, 0);
@@ -474,18 +561,16 @@ rimLight.position.set(-1200, -1600, -900);
 scene.add(rimLight);
 
 /* =========================================================
-   SPHERE PLANET AT EXACT RADIUS 1500
+   SPHERE PLANET AT RADIUS 1500 — WIRE ONLY WITH DISTANCE FADE
    ========================================================= */
-const planetGeometry = new THREE.SphereGeometry(PLANET_RADIUS, 64, 48);
-let fillDisabled = false;
+const planetGeometry = new THREE.SphereGeometry(PLANET_RADIUS, 72, 54);
 
 const planetMaterial = new THREE.ShaderMaterial({
   wireframe: false,
   transparent: true,
   side: THREE.DoubleSide,
   uniforms: {
-    uSize: { value: 0.05 },
-    uNoFill: { value: 0.0 }
+    uSize: { value: 0.05 }
   },
   vertexShader: `
     varying vec3 vWorldPosition;
@@ -498,22 +583,18 @@ const planetMaterial = new THREE.ShaderMaterial({
   fragmentShader: `
     varying vec3 vWorldPosition;
     uniform float uSize;
-    uniform float uNoFill;
     void main(){
-      vec2 grid = abs(fract(vWorldPosition.xy * uSize) - 0.5) / fwidth(vWorldPosition.xy * uSize);
-      vec2 grid2 = abs(fract(vWorldPosition.zy * uSize) - 0.5) / fwidth(vWorldPosition.zy * uSize);
+      vec2 p1 = vWorldPosition.xy * uSize;
+      vec2 p2 = vWorldPosition.zy * uSize;
+      vec2 grid = abs(fract(p1 - 0.5) - 0.5) / max(fwidth(p1), 0.0001);
+      vec2 grid2 = abs(fract(p2 - 0.5) - 0.5) / max(fwidth(p2), 0.0001);
       float line = min(min(grid.x, grid.y), min(grid2.x, grid2.y));
-      float thinLine = 1.0 - min(line / 0.75, 1.0);
+      float thinLine = 1.0 - min(line / 0.65, 1.0);
       float dist = length(vWorldPosition - cameraPosition);
-      float farFade = 1.0 - smoothstep(250.0, 2200.0, dist);
-      float gridAlpha = thinLine * farFade;
-      vec3 baseColor = vec3(0.24, 0.36, 0.92);
-      if (uNoFill > 0.5){
-        gl_FragColor = vec4(baseColor, gridAlpha * 0.85);
-      } else {
-        float alpha = max(gridAlpha * 0.42, 0.24);
-        gl_FragColor = vec4(baseColor, alpha);
-      }
+      float farFade = 1.0 - smoothstep(220.0, 2200.0, dist);
+      float alpha = thinLine * farFade * 0.85;
+      if (alpha < 0.01) discard;
+      gl_FragColor = vec4(0.24, 0.36, 0.92, alpha);
     }
   `
 });
@@ -521,145 +602,167 @@ const planetMaterial = new THREE.ShaderMaterial({
 const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
 scene.add(planetMesh);
 
-fillToggleBtn.addEventListener('click', () => {
-  fillDisabled = !fillDisabled;
-  planetMaterial.uniforms.uNoFill.value = fillDisabled ? 1.0 : 0.0;
-  fillToggleBtn.textContent = fillDisabled ? 'Solid' : 'Wire';
-  fillToggleBtn.classList.toggle('active-mode', fillDisabled);
-});
-
 /* =========================================================
-   BOUNDARY CROSSING GATES ON THE R=1500 SPHERE SHELL
-   ========================================================= */
-const boundaryGates = [];
-const gateGeo = new THREE.TorusGeometry(24, 1.4, 12, 36);
-const gateCoords = [
-  { lat: 0.22, lon: 0.2, color: 0x38bdf8 },
-  { lat: -0.25, lon: 1.57, color: 0x4ade80 },
-  { lat: 0.28, lon: 3.14, color: 0xfbbf24 },
-  { lat: -0.22, lon: 4.71, color: 0xf472b6 },
-  { lat: 0.65, lon: 1.0, color: 0xc084fc },
-  { lat: -0.65, lon: 2.6, color: 0xfb7185 }
-];
-
-gateCoords.forEach((g) => {
-  const dir = new THREE.Vector3(
-    Math.cos(g.lat) * Math.cos(g.lon),
-    Math.sin(g.lat),
-    Math.cos(g.lat) * Math.sin(g.lon)
-  ).normalize();
-  const pos = dir.clone().multiplyScalar(PLANET_RADIUS);
-  const mesh = new THREE.Mesh(
-    gateGeo,
-    new THREE.MeshBasicMaterial({ color: g.color, transparent: true, opacity: 0.85 })
-  );
-  mesh.position.copy(pos);
-  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
-  scene.add(mesh);
-  boundaryGates.push({ dir, pos, cooldownUntil: 0 });
-});
-
-/* =========================================================
-   DISTINCT ARCHITECTURAL CENTERS WITH INFLUENCE ZONES
+   SIX DIRECTIONS — ARCHITECTURAL CENTERS ON BOTH SIDES,
+   GROWING AS BUILDINGS INCREASE
    ========================================================= */
 const collidableObjects = [planetMesh];
 const linePalette = [0x38bdf8, 0xf472b6, 0xfbbf24, 0x4ade80, 0xc084fc, 0xfb7185];
 
-const centerSpecs = [
-  { id: 'c_ziggurat', arch: 'ziggurat', lat: 0.35, lon: 0.4, side: 1, color: 0x38bdf8, influenceRadius: 190 },
-  { id: 'c_archgate', arch: 'archgate', lat: -0.35, lon: 2.1, side: 1, color: 0xf472b6, influenceRadius: 190 },
-  { id: 'c_hexspire', arch: 'hexspire', lat: 0.25, lon: 4.0, side: 1, color: 0xfbbf24, influenceRadius: 190 },
-  { id: 'c_domebeacon', arch: 'domebeacon', lat: 0.55, lon: 5.4, side: 1, color: 0x4ade80, influenceRadius: 190 },
-  { id: 'c_pagoda', arch: 'pagoda', lat: -0.25, lon: 1.2, side: -1, color: 0x4ade80, influenceRadius: 190 },
-  { id: 'c_twinportal', arch: 'twinportal', lat: 0.4, lon: 3.7, side: -1, color: 0xc084fc, influenceRadius: 190 }
+const sixDirections = [
+  new THREE.Vector3(1, 0, 0).normalize(),
+  new THREE.Vector3(-1, 0, 0).normalize(),
+  new THREE.Vector3(0, 1, 0).normalize(),
+  new THREE.Vector3(0, -1, 0).normalize(),
+  new THREE.Vector3(0, 0, 1).normalize(),
+  new THREE.Vector3(0, 0, -1).normalize()
 ];
 
+const archTypes = ['ziggurat', 'archgate', 'hexspire', 'domebeacon', 'pagoda', 'twinportal'];
+const centerSpecs = [];
+
+sixDirections.forEach((_, dirIndex) => {
+  const arch = archTypes[dirIndex % archTypes.length];
+  const color = linePalette[dirIndex % linePalette.length];
+  centerSpecs.push({
+    id: `c_out_${dirIndex}`,
+    arch,
+    dirIndex,
+    side: 1,
+    color,
+    influenceRadius: 320
+  });
+  centerSpecs.push({
+    id: `c_in_${dirIndex}`,
+    arch,
+    dirIndex,
+    side: -1,
+    color,
+    influenceRadius: 320
+  });
+});
+
 const centerObjects = [];
+const animatedGyroParts = [];
+
+function addArchAccentToParent(parent, archType, yOffset, scale, colorHex, registerAnim = false){
+  const mat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.55, metalness: 0.35 });
+  const edgeMat = new THREE.LineBasicMaterial({ color: colorHex });
+  const accentMat = new THREE.LineBasicMaterial({ color: 0xffffff });
+  const holder = new THREE.Group();
+  holder.position.set(0, yOffset, 0);
+  holder.scale.setScalar(scale);
+
+  function part(geo, lx, ly, lz, rx = 0, ry = 0, rz = 0, accent = false){
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(lx, ly, lz);
+    m.rotation.set(rx, ry, rz);
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 20), accent ? accentMat : edgeMat));
+    holder.add(m);
+    return m;
+  }
+
+  if (archType === 'ziggurat'){
+    part(new THREE.BoxGeometry(4.4, 1.1, 4.4), 0, 0.55, 0);
+    part(new THREE.BoxGeometry(2.8, 1.3, 2.8), 0, 1.75, 0);
+    part(new THREE.OctahedronGeometry(1.45, 0), 0, 3.6, 0, 0.3, 0.4, 0, true);
+    const ring = part(new THREE.TorusGeometry(2.4, 0.16, 8, 24), 0, 3.6, 0, Math.PI * 0.35, 0.2, 0);
+    if (registerAnim) animatedGyroParts.push({ obj: ring, speed: 0.015 });
+  } else if (archType === 'archgate'){
+    part(new THREE.BoxGeometry(0.9, 4.4, 1.3), -2.1, 2.2, 0);
+    part(new THREE.BoxGeometry(0.9, 4.4, 1.3), 2.1, 2.2, 0);
+    part(new THREE.TorusGeometry(2.1, 0.28, 10, 24, Math.PI), 0, 4.4, 0, 0, 0, 0, true);
+    part(new THREE.ConeGeometry(0.85, 2.2, 4), 0, 7.3, 0);
+  } else if (archType === 'hexspire'){
+    part(new THREE.CylinderGeometry(1.7, 2.5, 1.8, 6), 0, 0.9, 0);
+    part(new THREE.CylinderGeometry(0.7, 1.4, 3.4, 6), 0, 3.5, 0);
+    part(new THREE.ConeGeometry(1.3, 2.8, 6), 0, 6.6, 0, 0, 0, 0, true);
+    const fin = part(new THREE.BoxGeometry(0.25, 2.4, 3.2), 0, 4.2, 0);
+    if (registerAnim) animatedGyroParts.push({ obj: fin, speed: -0.02 });
+  } else if (archType === 'domebeacon'){
+    part(new THREE.CylinderGeometry(2.3, 2.5, 1.2, 16), 0, 0.6, 0);
+    part(new THREE.SphereGeometry(2.1, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), 0, 1.2, 0);
+    part(new THREE.TorusGeometry(2.5, 0.16, 8, 28), 0, 2.4, 0, Math.PI * 0.5, 0, 0, true);
+    part(new THREE.CylinderGeometry(0.2, 0.45, 3.4, 8), 0, 4.8, 0);
+  } else if (archType === 'pagoda'){
+    part(new THREE.CylinderGeometry(2.6, 3.0, 0.9, 8), 0, 0.45, 0);
+    part(new THREE.ConeGeometry(2.8, 1.4, 8), 0, 1.6, 0);
+    part(new THREE.ConeGeometry(1.9, 1.3, 8), 0, 2.9, 0, 0, 0, 0, true);
+    part(new THREE.OctahedronGeometry(0.9, 0), 0, 4.4, 0);
+  } else {
+    part(new THREE.BoxGeometry(0.85, 4.6, 0.85), -1.5, 2.3, -1.1);
+    part(new THREE.BoxGeometry(0.85, 4.6, 0.85), 1.5, 2.3, 1.1);
+    part(new THREE.BoxGeometry(4.2, 0.65, 3.0), 0, 3.8, 0, 0, 0, 0, true);
+    part(new THREE.TetrahedronGeometry(1.3, 0), 0, 5.1, 0);
+  }
+
+  parent.add(holder);
+}
 
 function buildUniqueCenterGroup(spec){
   const group = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({ color: 0x162033, roughness: 0.65, metalness: 0.25 });
-  const lineMat = new THREE.LineBasicMaterial({ color: spec.color });
-  const whiteLine = new THREE.LineBasicMaterial({ color: 0xffffff });
-
-  function addPart(geo, lx, ly, lz, useWhite = false){
-    const m = new THREE.Mesh(geo, mat);
-    m.position.set(lx, ly, lz);
-    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo, 22), useWhite ? whiteLine : lineMat);
-    m.add(edges);
-    group.add(m);
-  }
-
-  if (spec.arch === 'ziggurat'){
-    addPart(new THREE.BoxGeometry(28, 10, 28), 0, 5, 0);
-    addPart(new THREE.BoxGeometry(20, 12, 20), 0, 16, 0);
-    addPart(new THREE.BoxGeometry(12, 14, 12), 0, 29, 0, true);
-    addPart(new THREE.ConeGeometry(5, 18, 4), 0, 45, 0);
-  } else if (spec.arch === 'archgate'){
-    addPart(new THREE.BoxGeometry(7, 36, 10), -11, 18, 0);
-    addPart(new THREE.BoxGeometry(7, 36, 10), 11, 18, 0);
-    addPart(new THREE.BoxGeometry(30, 7, 10), 0, 39, 0, true);
-    addPart(new THREE.TorusGeometry(8, 1.4, 8, 20), 0, 22, 0);
-  } else if (spec.arch === 'hexspire'){
-    addPart(new THREE.CylinderGeometry(14, 18, 14, 6), 0, 7, 0);
-    addPart(new THREE.CylinderGeometry(9, 12, 22, 6), 0, 25, 0, true);
-    addPart(new THREE.CylinderGeometry(3, 7, 26, 6), 0, 49, 0);
-  } else if (spec.arch === 'domebeacon'){
-    addPart(new THREE.CylinderGeometry(16, 16, 12, 16), 0, 6, 0);
-    addPart(new THREE.SphereGeometry(14, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), 0, 12, 0, true);
-    addPart(new THREE.CylinderGeometry(1.5, 1.5, 22, 8), 0, 37, 0);
-  } else if (spec.arch === 'pagoda'){
-    addPart(new THREE.CylinderGeometry(17, 20, 8, 8), 0, 4, 0);
-    addPart(new THREE.CylinderGeometry(12, 15, 8, 8), 0, 14, 0, true);
-    addPart(new THREE.CylinderGeometry(7, 10, 8, 8), 0, 24, 0);
-    addPart(new THREE.ConeGeometry(4, 16, 8), 0, 36, 0);
-  } else {
-    addPart(new THREE.BoxGeometry(6, 42, 6), -8, 21, -5);
-    addPart(new THREE.BoxGeometry(6, 42, 6), 8, 21, 5);
-    addPart(new THREE.BoxGeometry(22, 5, 14), 0, 32, 0, true);
-  }
-
+  addArchAccentToParent(group, spec.arch, 0, 8.5, spec.color, true);
   return group;
 }
 
 centerSpecs.forEach((spec) => {
-  const dir = new THREE.Vector3(
-    Math.cos(spec.lat) * Math.cos(spec.lon),
-    Math.sin(spec.lat),
-    Math.cos(spec.lat) * Math.sin(spec.lon)
-  ).normalize();
+  const dir = sixDirections[spec.dirIndex].clone().normalize();
   const baseR = PLANET_RADIUS;
   const up = dir.clone().multiplyScalar(spec.side);
   const group = buildUniqueCenterGroup(spec);
   group.position.copy(dir).multiplyScalar(baseR);
   group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), up);
   scene.add(group);
-  centerObjects.push({ spec, dir, baseR, up, group, elevationBoost: 0 });
+  centerObjects.push({ spec, dir, baseR, up, group, elevationBoost: 0, growthScale: 1.0 });
 });
 
+function getNearestCenterSpec(pos){
+  const pDir = pos.length() > 0.001 ? pos.clone().normalize() : new THREE.Vector3(1, 0, 0);
+  let best = centerSpecs[0];
+  let bestDot = -Infinity;
+  for (const c of centerSpecs){
+    const d = pDir.dot(sixDirections[c.dirIndex]);
+    if (d > bestDot){
+      bestDot = d;
+      best = c;
+    }
+  }
+  return best;
+}
+
 function updateCentersInfluence(){
+  const totalBuildings = buildings.length;
   for (const c of centerObjects){
     const cPos = c.dir.clone().multiplyScalar(c.baseR);
+    let localCount = 0;
     let score = 0;
+
     for (const b of buildings){
       const bPos = new THREE.Vector3(b.x, b.y, b.z);
-      const bSide = bPos.length() >= PLANET_RADIUS ? 1 : -1;
+      const bSide = b.side ?? (bPos.length() >= PLANET_RADIUS ? 1 : -1);
       if (bSide !== c.spec.side) continue;
+      localCount++;
       const dist = bPos.distanceTo(cPos);
-      if (dist <= c.spec.influenceRadius){
-        const weight = 1 - dist / c.spec.influenceRadius;
-        const housePower = 1 + (b.storedTokens || 0) * 0.45 + ((b.tier || 1) - 1) * 1.2;
-        score += weight * housePower;
-      }
+      const proximity = dist <= c.spec.influenceRadius ? (1.25 - dist / c.spec.influenceRadius) : 0.35;
+      const housePower = 1 + (b.storedTokens || 0) * 0.45 + ((b.tier || 1) - 1) * 1.2;
+      score += proximity * housePower;
     }
-    const targetBoost = Math.min(85, score * 9.5);
+
+    const globalGrowth = 1 + Math.min(1.6, totalBuildings * 0.08 + localCount * 0.14 + score * 0.06);
+    c.growthScale += (globalGrowth - c.growthScale) * 0.12;
+    c.group.scale.setScalar(c.growthScale);
+
+    const targetBoost = Math.min(110, score * 9.5 + localCount * 4.0);
     c.elevationBoost += (targetBoost - c.elevationBoost) * 0.12;
     c.group.position.copy(c.dir).multiplyScalar(c.baseR + c.spec.side * c.elevationBoost);
   }
 }
 
+/* =========================================================
+   MORE RINGS FARTHER FROM SURFACE ON BOTH SIDES
+   ========================================================= */
 const routeRings = [];
-const ringGeo = new THREE.TorusGeometry(15, 1.0, 12, 32);
+const ringGeo = new THREE.TorusGeometry(18, 1.1, 12, 32);
 
 function makeVerticalRingQuaternion(radialDir, rowHeading){
   const normal = new THREE.Vector3().crossVectors(radialDir, rowHeading);
@@ -671,39 +774,46 @@ function makeVerticalRingQuaternion(radialDir, rowHeading){
   return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
 }
 
-const ringRows = [
-  { lat0: -0.75, lon0: 1.1, dLat: 0.14, dLon: 0.14, count: 11, side: 1, heading: new THREE.Vector3(1, 0.5, 0.2).normalize() },
-  { lat0: 0.7, lon0: 2.8, dLat: -0.14, dLon: 0.16, count: 11, side: 1, heading: new THREE.Vector3(-0.4, 0.8, 0.4).normalize() },
-  { lat0: 0.85, lon0: 0.7, dLat: -0.16, dLon: 0.15, count: 10, side: 1, heading: new THREE.Vector3(0.6, -0.5, 0.6).normalize() },
-  { lat0: -0.85, lon0: 3.9, dLat: 0.15, dLon: 0.15, count: 10, side: 1, heading: new THREE.Vector3(-0.7, 0.2, -0.6).normalize() },
-  { lat0: 0.55, lon0: 3.4, dLat: -0.12, dLon: 0.17, count: 10, side: -1, heading: new THREE.Vector3(0.7, 0.4, -0.5).normalize() },
-  { lat0: -0.6, lon0: 2.0, dLat: 0.13, dLon: 0.16, count: 10, side: -1, heading: new THREE.Vector3(-0.3, 0.9, 0.2).normalize() },
-  { lat0: -0.7, lon0: 5.1, dLat: 0.13, dLon: 0.15, count: 10, side: -1, heading: new THREE.Vector3(0.5, -0.6, -0.6).normalize() }
+const ringBands = [
+  { side: 1, rOffset: 38, latSteps: 7, lonSteps: 12 },
+  { side: -1, rOffset: 38, latSteps: 7, lonSteps: 12 },
+  { side: 1, rOffset: 135, latSteps: 6, lonSteps: 10 },
+  { side: -1, rOffset: 135, latSteps: 6, lonSteps: 10 },
+  { side: 1, rOffset: 260, latSteps: 5, lonSteps: 10 },
+  { side: -1, rOffset: 260, latSteps: 5, lonSteps: 10 },
+  { side: 1, rOffset: 440, latSteps: 4, lonSteps: 8 },
+  { side: -1, rOffset: 440, latSteps: 4, lonSteps: 8 }
 ];
 
-ringRows.forEach((row, rIdx) => {
-  for (let k = 0; k < row.count; k++){
-    const lat = Math.max(-1.25, Math.min(1.25, row.lat0 + k * row.dLat));
-    const lon = row.lon0 + k * row.dLon;
-    const dir = new THREE.Vector3(
-      Math.cos(lat) * Math.cos(lon),
-      Math.sin(lat),
-      Math.cos(lat) * Math.sin(lon)
-    ).normalize();
-    const r = PLANET_RADIUS + row.side * 22;
-    const pos = dir.clone().multiplyScalar(r);
+let ringIdxCounter = 0;
+ringBands.forEach((band) => {
+  for (let i = 0; i < band.latSteps; i++){
+    const v = (i + 0.5) / band.latSteps;
+    const lat = -1.2 + v * 2.4;
+    for (let j = 0; j < band.lonSteps; j++){
+      const lon = (j / band.lonSteps) * Math.PI * 2 + i * 0.25;
+      const dir = new THREE.Vector3(
+        Math.cos(lat) * Math.cos(lon),
+        Math.sin(lat),
+        Math.cos(lat) * Math.sin(lon)
+      ).normalize();
+      const tangentHeading = new THREE.Vector3(-Math.sin(lon), 0.35 * Math.cos(i + j), Math.cos(lon)).normalize();
+      const r = PLANET_RADIUS + band.side * band.rOffset;
+      const pos = dir.clone().multiplyScalar(r);
 
-    const mat = new THREE.MeshBasicMaterial({
-      color: linePalette[(rIdx + k) % linePalette.length],
-      transparent: true,
-      opacity: RING_ACTIVE_OPACITY
-    });
-    const mesh = new THREE.Mesh(ringGeo, mat);
-    mesh.position.copy(pos);
-    mesh.quaternion.copy(makeVerticalRingQuaternion(dir, row.heading));
-    scene.add(mesh);
+      const mat = new THREE.MeshBasicMaterial({
+        color: linePalette[ringIdxCounter % linePalette.length],
+        transparent: true,
+        opacity: RING_ACTIVE_OPACITY
+      });
+      const mesh = new THREE.Mesh(ringGeo, mat);
+      mesh.position.copy(pos);
+      mesh.quaternion.copy(makeVerticalRingQuaternion(dir, tangentHeading));
+      scene.add(mesh);
 
-    routeRings.push({ mesh, mat, cooldownUntil: 0 });
+      routeRings.push({ mesh, mat, cooldownUntil: 0 });
+      ringIdxCounter++;
+    }
   }
 });
 
@@ -720,7 +830,7 @@ function updateRouteRingsFade(nowMs){
 }
 
 /* =========================================================
-   HOUSES FLUSH ON SURFACE (R = 1500) OR STACKED ON ROOF TOP
+   HOUSES ON PLAYER SIDE, NO OVERLAPS, ROOF ACCENTS & BRIDGES/ARCHES
    ========================================================= */
 const buildingsGroup = new THREE.Group();
 scene.add(buildingsGroup);
@@ -729,6 +839,35 @@ const buildingMeshes = new Map();
 function getHouseHeight(b){
   const invested = Math.max(0, (b.storedTokens || 0) + ((b.tier || 1) - 1) * 2);
   return Math.max(4, 7 + invested * 2.2);
+}
+
+function getHouseSpan(b){
+  return b.isBridge ? 22 : 8;
+}
+
+function getBuildingSide(b){
+  if (b.side === 1 || b.side === -1) return b.side;
+  return player.position.length() < PLANET_RADIUS ? -1 : 1;
+}
+
+function getSurfaceSupportRadius(dir, side, ignoreId = null){
+  const nDir = dir.clone().normalize();
+  let topR = PLANET_RADIUS;
+  for (const b of buildings){
+    if (ignoreId && b.id === ignoreId) continue;
+    const bBase = new THREE.Vector3(b.x, b.y, b.z);
+    if (bBase.lengthSq() < 1e-4) continue;
+    const bSide = getBuildingSide(b);
+    if (bSide !== side) continue;
+    const bDir = bBase.clone().normalize();
+    const arcDist = nDir.angleTo(bDir) * PLANET_RADIUS;
+    const halfFootprint = (getHouseSpan(b) * 0.5) + 0.5;
+    if (arcDist < halfFootprint){
+      const roofR = PLANET_RADIUS + Math.abs(bBase.length() - PLANET_RADIUS) + getHouseHeight(b);
+      if (roofR > topR) topR = roofR;
+    }
+  }
+  return topR;
 }
 
 function upsertBuildingMesh(b){
@@ -745,18 +884,43 @@ function upsertBuildingMesh(b){
 
   const basePos = new THREE.Vector3(b.x, b.y, b.z);
   const dir = basePos.length() > 0.001 ? basePos.clone().normalize() : new THREE.Vector3(0, 1, 0);
-  const side = basePos.length() >= PLANET_RADIUS ? 1 : -1;
+  const side = getBuildingSide(b);
   const up = dir.clone().multiplyScalar(side);
   const h = getHouseHeight(b);
+  const span = getHouseSpan(b);
+  const depth = b.isBridge ? 7 : 8;
 
-  const flushBase = dir.clone().multiplyScalar(basePos.length());
-  const boxGeo = new THREE.BoxGeometry(8, h, 8);
+  const supportR = getSurfaceSupportRadius(dir, side, b.id);
+  const offsetFromSurface = Math.max(0, supportR - PLANET_RADIUS);
+  const actualR = PLANET_RADIUS + side * offsetFromSurface;
+  const flushBase = dir.clone().multiplyScalar(actualR);
+
+  const boxGeo = new THREE.BoxGeometry(span, h, depth);
   const houseMesh = new THREE.Mesh(
     boxGeo,
     new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 })
   );
   houseMesh.position.copy(flushBase).addScaledVector(up, h * 0.5);
-  houseMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), up);
+
+  const alignQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), up);
+  if (b.isBridge && b.bridgeAxis){
+    const axisDir = new THREE.Vector3(b.bridgeAxis[0], b.bridgeAxis[1], b.bridgeAxis[2]).normalize();
+    const projAxis = axisDir.clone().sub(up.clone().multiplyScalar(axisDir.dot(up)));
+    if (projAxis.lengthSq() > 1e-4){
+      projAxis.normalize();
+      const localRight = new THREE.Vector3(1, 0, 0).applyQuaternion(alignQuat).normalize();
+      const yawAngle = localRight.angleTo(projAxis);
+      const cross = new THREE.Vector3().crossVectors(localRight, projAxis);
+      const sign = cross.dot(up) >= 0 ? 1 : -1;
+      const yawQuat = new THREE.Quaternion().setFromAxisAngle(up, sign * yawAngle);
+      houseMesh.quaternion.copy(yawQuat).multiply(alignQuat);
+    } else {
+      houseMesh.quaternion.copy(alignQuat);
+    }
+  } else {
+    houseMesh.quaternion.copy(alignQuat);
+  }
+
   houseMesh.userData.buildingId = b.id;
 
   const outlineCol = b.color || linePalette[buildings.length % linePalette.length];
@@ -764,40 +928,30 @@ function upsertBuildingMesh(b){
   const lineMesh = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: outlineCol }));
   houseMesh.add(lineMesh);
 
+  const nearestCenter = getNearestCenterSpec(flushBase);
+  addArchAccentToParent(houseMesh, nearestCenter.arch, h * 0.5, b.isBridge ? 0.9 : 0.78, outlineCol, false);
+
   buildingsGroup.add(houseMesh);
   buildingMeshes.set(b.id, houseMesh);
   collidableObjects.push(houseMesh);
 }
 buildings.forEach(upsertBuildingMesh);
 
-function computeTopPlacementOnUserSide(aimPoint){
-  const playerSide = player.position.length() >= PLANET_RADIUS ? 1 : -1;
-  const dir = aimPoint.length() > 0.001
-    ? aimPoint.clone().normalize()
-    : (player.position.length() > 0.001 ? player.position.clone().normalize() : new THREE.Vector3(0, -1, 0));
-
-  let topRadius = PLANET_RADIUS;
-  let stackedTier = 1;
-
+function doesOverlapExistingBuilding(candidatePos, candidateRadius, ignoreId = null){
   for (const b of buildings){
-    const bBase = new THREE.Vector3(b.x, b.y, b.z);
-    const bSide = bBase.length() >= PLANET_RADIUS ? 1 : -1;
-    if (bSide !== playerSide) continue;
-    const bDir = bBase.clone().normalize();
-    const angDist = dir.angleTo(bDir) * PLANET_RADIUS;
-    if (angDist < 4.5){
-      const roofRadius = bBase.length() + getHouseHeight(b);
-      if (roofRadius > topRadius){
-        topRadius = roofRadius;
-        stackedTier = (b.tier || 1) + 1;
-      }
+    if (ignoreId && b.id === ignoreId) continue;
+    const bPos = new THREE.Vector3(b.x, b.y, b.z);
+    const bSide = getBuildingSide(b);
+    const bDir = bPos.length() > 0.001 ? bPos.clone().normalize() : new THREE.Vector3(0, 1, 0);
+    const bUp = bDir.clone().multiplyScalar(bSide);
+    const bH = getHouseHeight(b);
+    const bCenter = bPos.clone().addScaledVector(bUp, bH * 0.5);
+    const minSep = candidateRadius + Math.max(4.5, bH * 0.45);
+    if (candidatePos.distanceTo(bCenter) < minSep){
+      return true;
     }
   }
-
-  return {
-    basePos: dir.multiplyScalar(topRadius),
-    tier: stackedTier
-  };
+  return false;
 }
 
 const aimRaycaster = new THREE.Raycaster();
@@ -811,12 +965,115 @@ function getAimedWorldPoint(){
   );
   camera.updateMatrixWorld();
   aimRaycaster.setFromCamera(ndc, camera);
-  const hits = aimRaycaster.intersectObjects([planetMesh], false);
-  if (hits.length > 0 && hits[0].distance < 2500){
-    return hits[0].point.clone();
+
+  const camPos = camera.getWorldPosition(new THREE.Vector3());
+  const rayDir = aimRaycaster.ray.direction.clone().normalize();
+  const playerSide = player.position.length() < PLANET_RADIUS ? -1 : 1;
+
+  const oc = camPos.clone();
+  const b = oc.dot(rayDir);
+  const c = oc.lengthSq() - PLANET_RADIUS * PLANET_RADIUS;
+  const disc = b * b - c;
+
+  if (disc >= 0){
+    const sqrtDisc = Math.sqrt(disc);
+    const tNear = -b - sqrtDisc;
+    const tFar = -b + sqrtDisc;
+
+    if (playerSide === 1){
+      if (tNear > 0.1) return camPos.clone().addScaledVector(rayDir, tNear);
+      if (tFar > 0.1) return camPos.clone().addScaledVector(rayDir, tFar);
+    } else {
+      if (tFar > 0.1) return camPos.clone().addScaledVector(rayDir, tFar);
+    }
   }
-  const fallbackDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
-  return camera.getWorldPosition(new THREE.Vector3()).addScaledVector(fallbackDir, 60);
+
+  return rayDir.clone().multiplyScalar(PLANET_RADIUS);
+}
+
+function computePlacementOnPlayerSide(aimPoint){
+  const playerSide = player.position.length() < PLANET_RADIUS ? -1 : 1;
+  let dir = aimPoint.length() > 0.001 ? aimPoint.clone().normalize() : new THREE.Vector3(0, 1, 0);
+
+  let anchorBuilding = null;
+  let bestAnchorDist = 26;
+  for (const b of buildings){
+    const bBase = new THREE.Vector3(b.x, b.y, b.z);
+    const bSide = getBuildingSide(b);
+    if (bSide !== playerSide) continue;
+    const bDir = bBase.clone().normalize();
+    const d = dir.angleTo(bDir) * PLANET_RADIUS;
+    if (d > 5.0 && d < bestAnchorDist){
+      bestAnchorDist = d;
+      anchorBuilding = b;
+    }
+  }
+
+  if (anchorBuilding){
+    const aBase = new THREE.Vector3(anchorBuilding.x, anchorBuilding.y, anchorBuilding.z);
+    const aDir = aBase.clone().normalize();
+    const aUp = aDir.clone().multiplyScalar(playerSide);
+    const tangent = dir.clone().sub(aDir.clone().multiplyScalar(dir.dot(aDir)));
+    if (tangent.lengthSq() > 1e-5){
+      tangent.normalize();
+      const rotAxis = new THREE.Vector3().crossVectors(aDir, tangent).normalize();
+      const midDir = aDir.clone().applyAxisAngle(rotAxis, 11 / PLANET_RADIUS).normalize();
+      const midSupportR = getSurfaceSupportRadius(midDir, playerSide);
+      const bridgeOffset = Math.max(0, midSupportR - PLANET_RADIUS);
+      const bridgeBase = midDir.clone().multiplyScalar(PLANET_RADIUS + playerSide * bridgeOffset);
+      const candCenter = bridgeBase.clone().addScaledVector(aUp, 3.5);
+      if (!doesOverlapExistingBuilding(candCenter, 6.5)){
+        return {
+          basePos: bridgeBase,
+          side: playerSide,
+          tier: (anchorBuilding.tier || 1) + 1,
+          isBridge: true,
+          bridgeAxis: [tangent.x, tangent.y, tangent.z]
+        };
+      }
+    }
+  }
+
+  let topSupportR = getSurfaceSupportRadius(dir, playerSide);
+  let stackedTier = 1;
+
+  for (const b of buildings){
+    const bBase = new THREE.Vector3(b.x, b.y, b.z);
+    const bSide = getBuildingSide(b);
+    if (bSide !== playerSide) continue;
+    const bDir = bBase.clone().normalize();
+    const angDist = dir.angleTo(bDir) * PLANET_RADIUS;
+    if (angDist < 4.5){
+      const roofSupportR = PLANET_RADIUS + Math.max(0, getSurfaceSupportRadius(bDir, playerSide) - PLANET_RADIUS) + getHouseHeight(b);
+      if (roofSupportR > topSupportR){
+        topSupportR = roofSupportR;
+        stackedTier = (b.tier || 1) + 1;
+      }
+    }
+  }
+
+  const up = dir.clone().multiplyScalar(playerSide);
+  let basePos = dir.clone().multiplyScalar(PLANET_RADIUS + playerSide * Math.max(0, topSupportR - PLANET_RADIUS));
+  let candCenter = basePos.clone().addScaledVector(up, 4.5);
+  let attempt = 0;
+  while (doesOverlapExistingBuilding(candCenter, 4.8) && attempt < 12){
+    attempt++;
+    const rotAxis = new THREE.Vector3(0, 1, 0).cross(dir);
+    if (rotAxis.lengthSq() < 1e-4) rotAxis.set(1, 0, 0);
+    rotAxis.normalize();
+    dir.applyAxisAngle(rotAxis, 0.008 * attempt).normalize();
+    const rTry = Math.max(0, getSurfaceSupportRadius(dir, playerSide) - PLANET_RADIUS);
+    basePos = dir.clone().multiplyScalar(PLANET_RADIUS + playerSide * rTry);
+    candCenter = basePos.clone().addScaledVector(dir.clone().multiplyScalar(playerSide), 4.5);
+  }
+
+  return {
+    basePos,
+    side: playerSide,
+    tier: stackedTier,
+    isBridge: false,
+    bridgeAxis: null
+  };
 }
 
 const backgroundPlanets = [];
@@ -835,7 +1092,7 @@ const backgroundPlanets = [];
 });
 
 /* =========================================================
-   MQTT MULTIPLAYER & CHAT
+   MQTT MULTIPLAYER, CHAT & FLYING PLAYER HACKING
    ========================================================= */
 const BROKER = 'wss://broker.emqx.io:8084/mqtt';
 const TOPIC = 'outside_in_planet/megacity/v1';
@@ -911,6 +1168,11 @@ try{
       appendChatLine(data.sender || 'Peer', data.text);
     } else if (data.type === 'TRANSFER' && data.to === myPeerId){
       recordTokenDelta(data.amount, `Transfer from ${data.sender}`, false);
+    } else if (data.type === 'PEER_HACKED' && data.target === myPeerId){
+      const stolen = Math.min(tokens, Number(data.amount || 1));
+      if (stolen > 0){
+        recordTokenDelta(-stolen, `Hacked by ${data.attacker || data.sender || 'peer'}`, true);
+      }
     } else if (data.type === 'BUILDING_BUILT'){
       upsertBuildingMesh(data.building);
       store.set('buildings', buildings);
@@ -921,12 +1183,11 @@ try{
         upsertBuildingMesh(b);
         store.set('buildings', buildings);
       }
-    } else if (data.type === 'AUTHOR_SHARE' && data.source === 'house_build' && data.buildingId){
-      const b = buildings.find(item => item.id === data.buildingId);
-      if (b){
-        b.storedTokens = Math.max(0, (b.storedTokens || 0) - (data.amount || 1));
-        upsertBuildingMesh(b);
-        store.set('buildings', buildings);
+    } else if (data.type === 'AUTHOR_SHARE' && data.to === myPeerId){
+      const shareAmt = Number(data.amount || 0);
+      if (shareAmt > 0){
+        const srcLabel = data.source === 'house_build' ? 'House fee' : 'Transfer fee';
+        recordTokenDelta(shareAmt, `${srcLabel} from ${data.from || data.sender || 'peer'}`, false);
       }
     } else if (data.type === 'FREEZE_PLAYER' && data.target === myPeerId){
       applyFreezeToSelf(data.durationMs || 6000);
@@ -971,16 +1232,26 @@ peerIdInput.addEventListener('blur', () => {
 });
 
 /* =========================================================
-   RETICLE: TAP = MENU -> PICK MODE -> LONG-PRESS = RUN
+   RETICLE: TAP ONLY TOGGLES MENU; EXPLICIT CLICK SELECTS MODE;
+   LONG-PRESS ACTIVATES SELECTED MODE
    ========================================================= */
 let selectedReticleMode = 'build';
+let menuOpenedAt = 0;
+
+function syncMenuSelectionUI(){
+  reticleMenu.querySelectorAll('.rm-item').forEach(b => {
+    b.classList.toggle('selected', b.dataset.mode === selectedReticleMode);
+  });
+}
 
 function openReticleMenu(){
+  syncMenuSelectionUI();
   const r = attackBtn.getBoundingClientRect();
-  const left = Math.max(8, Math.min(window.innerWidth - 184, r.left - 58));
-  const top = Math.max(40, r.top - 156);
+  const left = Math.max(8, Math.min(window.innerWidth - 194, r.left - 62));
+  const top = Math.max(40, r.top - 160);
   reticleMenu.style.left = left + 'px';
   reticleMenu.style.top = top + 'px';
+  menuOpenedAt = performance.now();
   reticleMenu.classList.add('open');
 }
 function closeReticleMenu(){
@@ -990,10 +1261,25 @@ function closeReticleMenu(){
 reticleMenu.querySelectorAll('.rm-item').forEach(btn => {
   btn.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
+    e.preventDefault();
+  });
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!reticleMenu.classList.contains('open')) return;
+    if (performance.now() - menuOpenedAt < 260) return;
     selectedReticleMode = btn.dataset.mode;
-    reticleMenu.querySelectorAll('.rm-item').forEach(b => b.classList.toggle('selected', b === btn));
+    syncMenuSelectionUI();
     closeReticleMenu();
   });
+});
+
+document.addEventListener('pointerdown', (e) => {
+  if (!reticleMenu.classList.contains('open')) return;
+  if (performance.now() - menuOpenedAt < 180) return;
+  if (!reticleMenu.contains(e.target) && !attackBtn.contains(e.target)){
+    closeReticleMenu();
+  }
 });
 
 const keys = {};
@@ -1064,11 +1350,16 @@ function findNearestBuilding(fromPos, maxDist = 35){
   return best;
 }
 
-function findNearestPeer(maxDist = 55){
+function findNearestPeer(maxDist = 65){
+  let bestId = null, bestD = maxDist;
   for (const [pid, entry] of remotePeers.entries()){
-    if (player.position.distanceTo(entry.mesh.position) < maxDist) return pid;
+    const d = player.position.distanceTo(entry.mesh.position);
+    if (d < bestD){
+      bestD = d;
+      bestId = pid;
+    }
   }
-  return null;
+  return bestId;
 }
 
 function startSelectedAction(){
@@ -1081,10 +1372,23 @@ function startSelectedAction(){
   const aimPt = getAimedWorldPoint();
 
   if (selectedReticleMode === 'hack'){
+    const nearPeer = findNearestPeer(65);
     const nearB = findNearestBuilding(aimPt, 35) || findNearestBuilding(player.position, 35);
+    if (nearPeer){
+      holdMode = 'hack_peer';
+      targetPeerId = nearPeer;
+      targetBuildingId = null;
+      lastDrainStep = 0;
+      isHoldingAttack = true;
+      holdStartTime = performance.now();
+      attackBtn.classList.add('active');
+      publishMqtt({ type: 'PEER_HACK_ALERT', target: nearPeer, attacker: myPeerId });
+      return;
+    }
     if (!nearB || nearB.owner === myPeerId || (nearB.storedTokens || 0) <= 0) return;
     holdMode = 'hack';
     targetBuildingId = nearB.id;
+    targetPeerId = null;
     lastDrainStep = 0;
     isHoldingAttack = true;
     holdStartTime = performance.now();
@@ -1113,22 +1417,25 @@ function startSelectedAction(){
 
     recordTokenDelta(-1, 'Build house', true);
 
-    const placed = computeTopPlacementOnUserSide(aimPt);
+    const placed = computePlacementOnPlayerSide(aimPt);
     const newB = {
       id: 'b_' + Date.now() + '_' + Math.random().toString(16).slice(2, 6),
       owner: myPeerId,
       x: Number(placed.basePos.x.toFixed(1)),
       y: Number(placed.basePos.y.toFixed(1)),
       z: Number(placed.basePos.z.toFixed(1)),
+      side: placed.side,
       storedTokens: 0,
       tier: placed.tier,
+      isBridge: placed.isBridge,
+      bridgeAxis: placed.bridgeAxis,
       color: linePalette[buildings.length % linePalette.length]
     };
     targetBuildingId = newB.id;
     upsertBuildingMesh(newB);
     store.set('buildings', buildings);
     publishMqtt({ type: 'BUILDING_BUILT', building: newB });
-    notifyAuthor(1, 'house_build', newB.id);
+    routeAuthorFee(1, 'house_build', newB.id);
   }
 }
 
@@ -1148,6 +1455,7 @@ function stopHoldAction(){
 
 attackBtn.addEventListener('pointerdown', (e) => {
   e.stopPropagation();
+  e.preventDefault();
   attackBtn.setPointerCapture(e.pointerId);
   const r = attackBtn.getBoundingClientRect();
   longPressTriggered = false;
@@ -1186,9 +1494,11 @@ attackBtn.addEventListener('pointermove', (e) => {
   }
 });
 
-const onReticleRelease = () => {
+const onReticleRelease = (e) => {
+  if (e) e.stopPropagation();
   if (!btnDrag.active) return;
-  const wasQuickTap = !btnDrag.moved && !longPressTriggered && (performance.now() - btnDrag.downAt) < LONG_PRESS_MS;
+  const elapsed = performance.now() - btnDrag.downAt;
+  const wasQuickTap = !btnDrag.moved && !longPressTriggered && elapsed < LONG_PRESS_MS;
   btnDrag.active = false;
   stopHoldAction();
 
@@ -1202,9 +1512,12 @@ attackBtn.addEventListener('pointerup', onReticleRelease);
 attackBtn.addEventListener('pointercancel', onReticleRelease);
 
 /* =========================================================
-   STATS MODAL (FULL HEIGHT + WITHDRAW + WITHDRAW ALL)
+   STATS MODAL (TIMEFRAMES + TOUCH SCROLL ON CHART + WITHDRAW)
    ========================================================= */
 const statsModal = document.getElementById('statsModal');
+const statsCard = statsModal.querySelector('.modal-card');
+const statsChartEl = document.getElementById('statsChart');
+const timeframeBar = document.getElementById('timeframeBar');
 const recipientSelect = document.getElementById('recipientSelect');
 const expenseHistoryList = document.getElementById('expenseHistoryList');
 const deleteSelectedHistBtn = document.getElementById('deleteSelectedHistBtn');
@@ -1213,11 +1526,63 @@ const builtCountEl = document.getElementById('builtCountEl');
 const builtHousesList = document.getElementById('builtHousesList');
 const withdrawAllBtn = document.getElementById('withdrawAllBtn');
 
+function syncTimeframeUI(){
+  timeframeBar.querySelectorAll('.tf-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tf === selectedTimeframe);
+  });
+}
+syncTimeframeUI();
+
+timeframeBar.querySelectorAll('.tf-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedTimeframe = btn.dataset.tf;
+    store.set('chart_timeframe', selectedTimeframe);
+    syncTimeframeUI();
+    drawChart();
+  });
+});
+
+function getFilteredSeries(){
+  const base = tokenSeries.length ? tokenSeries : [{ t: Date.now(), val: tokens }];
+  if (selectedTimeframe === 'all') return base;
+  const now = Date.now();
+  const msMap = {
+    day: 24 * 60 * 60 * 1000,
+    week: 7 * 24 * 60 * 60 * 1000,
+    month: 30 * 24 * 60 * 60 * 1000
+  };
+  const cutoff = now - (msMap[selectedTimeframe] || msMap.day);
+  const filtered = base.filter(p => (p.t || now) >= cutoff);
+  if (filtered.length) return filtered;
+  return [base[base.length - 1]];
+}
+
+let chartScrollDrag = { active: false, lastY: 0 };
+statsChartEl.addEventListener('pointerdown', (e) => {
+  chartScrollDrag.active = true;
+  chartScrollDrag.lastY = e.clientY;
+  try{ statsChartEl.setPointerCapture(e.pointerId); }catch{}
+});
+statsChartEl.addEventListener('pointermove', (e) => {
+  if (!chartScrollDrag.active) return;
+  const dy = chartScrollDrag.lastY - e.clientY;
+  chartScrollDrag.lastY = e.clientY;
+  statsCard.scrollTop += dy;
+  statsModal.scrollTop += dy;
+});
+const stopChartScroll = (e) => {
+  if (!chartScrollDrag.active) return;
+  chartScrollDrag.active = false;
+  try{ if (e && e.pointerId !== undefined) statsChartEl.releasePointerCapture(e.pointerId); }catch{}
+};
+statsChartEl.addEventListener('pointerup', stopChartScroll);
+statsChartEl.addEventListener('pointercancel', stopChartScroll);
+
 function drawChart(){
-  const canvas = document.getElementById('statsChart');
+  const canvas = statsChartEl;
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const pts = tokenSeries.length ? tokenSeries : [{ val: tokens }];
+  const pts = getFilteredSeries();
   const maxV = Math.max(10, ...pts.map(p => p.val));
   const minV = Math.min(0, ...pts.map(p => p.val));
   const span = Math.max(1, maxV - minV);
@@ -1235,7 +1600,7 @@ function drawChart(){
 
   ctx.fillStyle = '#94a3b8';
   ctx.font = '12px sans-serif';
-  ctx.fillText(`Balance: ${tokens.toFixed(1)} | Peak: ${maxV.toFixed(1)}`, 14, 18);
+  ctx.fillText(`[${selectedTimeframe.toUpperCase()}] Balance: ${tokens.toFixed(1)} | Peak: ${maxV.toFixed(1)}`, 14, 18);
 }
 
 function syncDeleteButtonState(){
@@ -1266,7 +1631,8 @@ function renderExpenseHistory(){
       syncDeleteButtonState();
     });
     const txt = document.createElement('span');
-    txt.textContent = `-${item.amount} • ${item.reason}`;
+    const timeStr = item.ts ? new Date(item.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+    txt.textContent = `-${item.amount} • ${item.reason}${timeStr ? ` (${timeStr})` : ''}`;
     row.appendChild(cb);
     row.appendChild(txt);
     expenseHistoryList.appendChild(row);
@@ -1355,7 +1721,7 @@ document.getElementById('sendTokensBtn').addEventListener('click', () => {
   const fee = Number((amt * 0.01).toFixed(2));
   const net = Number((amt - fee).toFixed(2));
   recordTokenDelta(-amt, `Transfer to ${to}`, true);
-  if (fee > 0) notifyAuthor(fee, 'transfer');
+  if (fee > 0) routeAuthorFee(fee, 'transfer');
   publishMqtt({ type: 'TRANSFER', to, amount: net });
   drawChart();
   renderExpenseHistory();
@@ -1376,6 +1742,7 @@ function openStats(){
     });
   }
   selectedExpenseIds.clear();
+  syncTimeframeUI();
   drawChart();
   renderExpenseHistory();
   renderBuiltHouses();
@@ -1389,20 +1756,25 @@ document.getElementById('helpBtn').addEventListener('click', () => helpModal.cla
 document.getElementById('closeHelpBtn').addEventListener('click', () => helpModal.classList.remove('show'));
 
 /* =========================================================
-   FLIGHT PHYSICS, SAFE BOUNDS & BOUNDARY CROSSING
+   FLIGHT PHYSICS: LINEAR SPEED, ZERO GRAVITY AT CENTER &
+   MATCHING OUTER HEIGHT, UNBOUNDED FREE FLIGHT IN ANY DIRECTION
    ========================================================= */
 let velocity = new THREE.Vector3(0, 0, 0);
 let angularVelocityX = 0;
 let angularVelocityZ = 0;
 const clock = new THREE.Clock();
 
+const OUTER_ZERO_GRAVITY_RADIUS = PLANET_RADIUS + 1200;
+
 function computeGravity(pos){
   const r = pos.length();
   if (r < 0.001) return new THREE.Vector3(0, 0, 0);
+  if (r >= OUTER_ZERO_GRAVITY_RADIUS) return new THREE.Vector3(0, 0, 0);
+
   const dir = pos.clone().normalize();
-  const coreMask = THREE.MathUtils.smoothstep(r, 120, 340);
-  const outerMask = 1.0 - THREE.MathUtils.smoothstep(r, PLANET_RADIUS + 450, PLANET_RADIUS + 1150);
-  const g = GRAVITY * coreMask * outerMask;
+  const innerZeroMask = THREE.MathUtils.smoothstep(r, 0, 260);
+  const outerZeroMask = 1.0 - THREE.MathUtils.smoothstep(r, OUTER_ZERO_GRAVITY_RADIUS - 320, OUTER_ZERO_GRAVITY_RADIUS);
+  const g = GRAVITY * innerZeroMask * outerZeroMask;
   return r < PLANET_RADIUS ? dir.multiplyScalar(g) : dir.multiplyScalar(-g);
 }
 
@@ -1441,6 +1813,18 @@ function updateHoldActions(nowMs){
         }
       }
     }
+  } else if (holdMode === 'hack_peer' && targetPeerId){
+    const peerEntry = remotePeers.get(targetPeerId);
+    if (!peerEntry || player.position.distanceTo(peerEntry.mesh.position) > 85){
+      stopHoldAction();
+      return;
+    }
+    const stealStep = Math.floor(elapsed / 850);
+    if (stealStep > lastDrainStep){
+      lastDrainStep = stealStep;
+      recordTokenDelta(1, `Mid-flight hack ${targetPeerId}`, false);
+      publishMqtt({ type: 'PEER_HACKED', target: targetPeerId, attacker: myPeerId, amount: 1 });
+    }
   }
 }
 
@@ -1470,11 +1854,11 @@ function animate(){
 
     let signedThrust = 0;
     if (keys['Space']){
-      signedThrust = FLY_SPEED * (superThrust ? 2.5 : 1.0);
+      signedThrust = FLY_SPEED * (superThrust ? 2.0 : 1.0);
     } else if (keys['KeyB']){
       signedThrust = -FLY_SPEED * (superThrust ? 2.0 : 1.0);
-    } else if (Math.abs(currentThrottle) > 0.05){
-      signedThrust = FLY_SPEED * (currentThrottle * 2.0);
+    } else if (Math.abs(currentThrottle) > 0.02){
+      signedThrust = FLY_SPEED * currentThrottle;
     }
 
     const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(player.quaternion);
@@ -1492,33 +1876,12 @@ function animate(){
   velocity.multiplyScalar(DAMPING_MOVE);
   player.position.add(velocity);
 
-  let r = player.position.length();
-  if (r > PLANET_RADIUS + 900){
-    const dir = player.position.clone().normalize();
-    player.position.copy(dir.multiplyScalar(PLANET_RADIUS + 420));
-    velocity.addScaledVector(dir, -0.35);
-    r = player.position.length();
-  } else if (r < 140){
-    const dir = r > 0.001 ? player.position.clone().normalize() : new THREE.Vector3(0, 1, 0);
-    player.position.copy(dir.multiplyScalar(PLANET_RADIUS - 120));
-    velocity.set(0, 0, 0);
-    r = player.position.length();
-  }
-
-  const curSide = r >= PLANET_RADIUS ? 1 : -1;
-
-  for (const gate of boundaryGates){
-    if (nowMs >= gate.cooldownUntil && player.position.distanceTo(gate.pos) < 24){
-      gate.cooldownUntil = nowMs + 1500;
-      const dir = player.position.length() > 0.001 ? player.position.clone().normalize() : gate.dir;
-      const targetSide = curSide > 0 ? -1 : 1;
-      player.position.copy(dir.multiplyScalar(PLANET_RADIUS + targetSide * 6));
-      velocity.addScaledVector(dir, targetSide * 0.25);
-    }
+  for (const item of animatedGyroParts){
+    item.obj.rotation.z += item.speed;
   }
 
   for (const ring of routeRings){
-    if (nowMs >= ring.cooldownUntil && player.position.distanceTo(ring.mesh.position) < 17){
+    if (nowMs >= ring.cooldownUntil && player.position.distanceTo(ring.mesh.position) < 19){
       ring.cooldownUntil = nowMs + RING_COOLDOWN_MS;
       ring.mat.opacity = RING_FADED_OPACITY;
       recordTokenDelta(2, 'Route ring', false);
