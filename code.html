@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-<meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="description" content="Simple Code Editor" />
   <link rel="manifest" href="manifest.json">
@@ -165,6 +165,24 @@ body {
   flex: 0 0 auto;
 }
 
+#openButton {
+  display: block;
+  width: 60px;
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: 5px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
 #saveButton {
   display: block;
   width: 60px;
@@ -284,6 +302,7 @@ body {
     width: 80px;
   }
 
+  #openButton,
   #saveButton {
     width: 80px;
   }
@@ -335,7 +354,15 @@ body {
           <option value="css">CSS</option>
         </select>
 
-        <button id="saveButton">Save</button>
+        <button id="openButton" type="button">Load</button>
+        <input
+          type="file"
+          id="fileInput"
+          accept=".html,.htm,.json,.txt,.js,.css,text/*,application/json"
+          style="display: none;"
+        >
+
+        <button id="saveButton" type="button">Save</button>
 
         <!-- Обернули логотип в ссылку с классом, чтобы зафиксировать его размеры -->
         <a href="research.html" class="logoLink">
@@ -402,6 +429,8 @@ body {
 `;
 
     const editor = document.getElementById("editor");
+    const openButton = document.getElementById("openButton");
+    const fileInput = document.getElementById("fileInput");
     const saveButton = document.getElementById("saveButton");
     const fileFormat = document.getElementById("fileFormat");
     const searchField = document.getElementById("searchField");
@@ -409,6 +438,7 @@ body {
     const nextMatchButton = document.getElementById("nextMatchButton");
     const strictToggle = document.getElementById("strictNoCache");
 
+    let currentFileBaseName = "code";
     let searchMatches = [];
     let currentMatchIndex = -1;
     let currentSearchTerm = "";
@@ -420,6 +450,20 @@ body {
       js: "application/javascript",
       css: "text/css",
     };
+
+    function splitFileName(fileName) {
+      const lastDot = fileName.lastIndexOf(".");
+      if (lastDot <= 0) {
+        return {
+          baseName: fileName || "code",
+          ext: "",
+        };
+      }
+      return {
+        baseName: fileName.slice(0, lastDot),
+        ext: fileName.slice(lastDot + 1).toLowerCase(),
+      };
+    }
 
     function getPrelude() {
       return document.getElementById('strictNoCache').checked
@@ -447,12 +491,40 @@ body {
       renderPreview(editor.value);
     });
 
+    openButton.addEventListener("click", () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const { baseName, ext } = splitFileName(file.name);
+      currentFileBaseName = baseName;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        editor.value = typeof reader.result === "string" ? reader.result : "";
+
+        if (ext === "htm") {
+          fileFormat.value = "html";
+        } else if (mimeTypes[ext]) {
+          fileFormat.value = ext;
+        }
+
+        renderPreview(editor.value);
+        fileInput.value = "";
+      };
+      reader.readAsText(file, "UTF-8");
+    });
+
     saveButton.addEventListener("click", () => {
       const format = fileFormat.value;
+      const safeBaseName = (currentFileBaseName || "code").replace(/[\\/:*?"<>|]+/g, "_");
       const blob = new Blob([editor.value], { type: mimeTypes[format] || "text/plain" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `code.${format}`;
+      a.download = `${safeBaseName}.${format}`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     });
