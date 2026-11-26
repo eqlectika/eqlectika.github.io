@@ -149,11 +149,7 @@ body {
   margin: 0;
 }
 
-.searchButtons {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-}
+
 
 #fileFormat {
   font-size: 14px;
@@ -231,60 +227,30 @@ body {
   display: block;
 }
 
-/* --- ШИРИНА ПОЛЯ ПО ОРИЕНТАЦИИ --- */
-@media (orientation: landscape) {
-  #searchField {
-    width: 70px;
-    flex: 0 0 70px;
-  }
-}
-
-@media (orientation: portrait) {
-  #searchField {
-    width: 200px;
-    flex: 0 0 200px;
-  }
-}
-
-/* --- В РЯД (ПОРТРЕТ И ШИРОКИЕ ЭКРАНЫ) --- */
+/* --- В ОДИН РЯД ЗА СЧЁТ ПОЛЯ ВВОДА (ПОРТРЕТ) --- */
 @media (orientation: portrait) {
   .searchRow {
     flex-direction: row;
-    align-items: center; /* Строго по центру по вертикали */
-    justify-content: flex-start; /* Элементы прижаты влево */
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
+
+
 
   .actionsRow {
     flex-direction: row;
-    align-items: center; /* Строго по центру по вертикали */
-    justify-content: flex-start; /* Элементы прижаты влево */
+    align-items: center;
+    justify-content: flex-start;
     flex-wrap: wrap;
+    width: 100%;
+    box-sizing: border-box;
   }
 }
 
-/* --- ПОРТРЕТ < 768px --- */
-@media (orientation: portrait) and (max-width: 767px) {
-  body {
-    flex-direction: column;
-  }
-  #editorContainer {
-    flex: 40;
-    min-height: 0;
-  }
-  #preview {
-    flex: 50;
-    min-height: 0;
-  }
-  #controlPanel {
-    border-left: none;
-    border-top: 1px solid #222;
-  }
-  #controlPanel > div {
-    padding: 10px;
-    height: auto;
-    width: 100%;
-  }
-}
 
 /* --- ШИРОКИЙ ПОРТРЕТ --- */
 @media (orientation: portrait) and (min-width: 768px) {
@@ -296,9 +262,15 @@ body {
     box-sizing: border-box;
   }
 
+  #searchField {
+    width: 200px;
+    flex: 0 0 200px;
+  }
+
   .actionsRow {
     flex-wrap: nowrap;
   }
+
 
   #fileFormat {
     width: 80px;
@@ -343,13 +315,12 @@ body {
       <!-- Строка 1 -->
       <div class="searchRow">
         <input type="text" id="searchField" placeholder="Search">
-        <div class="searchButtons">
-          <button id="prevMatchButton" title="Previous Match">▲</button>
-          <button id="nextMatchButton" title="Next Match">▼</button>
-          <button id="undoButton" title="Undo">↶</button>
-<button id="redoButton" title="Redo">↷</button>
-        </div>
+        <button id="prevMatchButton" title="Previous Match">▲</button>
+        <button id="nextMatchButton" title="Next Match">▼</button>
+        <button id="undoButton" title="Undo">↶</button>
+        <button id="redoButton" title="Redo">↷</button>
       </div>
+
 
       <!-- Строка 2 -->
       <div class="actionsRow">
