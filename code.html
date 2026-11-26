@@ -127,8 +127,10 @@ body {
   -webkit-appearance: none;
   margin: 0;
 }
-
-#prevMatchButton, #nextMatchButton {
+#prevMatchButton,
+#nextMatchButton,
+#undoButton,
+#redoButton {
   width: 30px;
   height: 30px;
   min-height: 30px;
@@ -323,6 +325,9 @@ body {
     -webkit-background-clip: text;
     color: transparent;
 }
+.searchRow {
+  transition: transform 0.15s ease;
+}
   </style>
 </head>
 <body>
@@ -341,6 +346,8 @@ body {
         <div class="searchButtons">
           <button id="prevMatchButton" title="Previous Match">▲</button>
           <button id="nextMatchButton" title="Next Match">▼</button>
+          <button id="undoButton" title="Undo">↶</button>
+<button id="redoButton" title="Redo">↷</button>
         </div>
       </div>
 
@@ -437,7 +444,80 @@ body {
     const prevMatchButton = document.getElementById("prevMatchButton");
     const nextMatchButton = document.getElementById("nextMatchButton");
     const strictToggle = document.getElementById("strictNoCache");
+// UNDO / REDO
+const undoStack = [];
+const redoStack = [];
+const MAX_HISTORY = 100;
 
+let lastEditorValue = editor.value;
+let historyTimer = null;
+
+function saveHistory() {
+  const value = editor.value;
+
+  if (value === lastEditorValue) return;
+
+  undoStack.push(lastEditorValue);
+
+  if (undoStack.length > MAX_HISTORY) {
+    undoStack.shift();
+  }
+
+  redoStack.length = 0;
+  lastEditorValue = value;
+}
+
+function undo() {
+  clearTimeout(historyTimer);
+  saveHistory();
+
+  if (!undoStack.length) return;
+
+  redoStack.push(editor.value);
+  editor.value = undoStack.pop();
+  lastEditorValue = editor.value;
+
+  renderPreview(editor.value);
+}
+
+function redo() {
+  clearTimeout(historyTimer);
+  saveHistory();
+
+  if (!redoStack.length) return;
+
+  undoStack.push(editor.value);
+  editor.value = redoStack.pop();
+  lastEditorValue = editor.value;
+
+  renderPreview(editor.value);
+}
+document.getElementById("undoButton")
+  .addEventListener("click", undo);
+
+document.getElementById("redoButton")
+  .addEventListener("click", redo);
+
+// Объединяем последовательные изменения
+editor.addEventListener("input", () => {
+  clearTimeout(historyTimer);
+  historyTimer = setTimeout(saveHistory, 400);
+});
+
+// Горячие клавиши
+document.addEventListener("keydown", (e) => {
+  if (!(e.ctrlKey || e.metaKey)) return;
+
+  if (e.key.toLowerCase() === "z") {
+    e.preventDefault();
+    e.shiftKey ? redo() : undo();
+  }
+
+  if (e.key.toLowerCase() === "y") {
+    e.preventDefault();
+    redo();
+  }
+});
     let currentFileBaseName = "code";
     let searchMatches = [];
     let currentMatchIndex = -1;
@@ -505,7 +585,10 @@ body {
       const reader = new FileReader();
       reader.onload = () => {
         editor.value = typeof reader.result === "string" ? reader.result : "";
-
+clearTimeout(historyTimer);
+undoStack.length = 0;
+redoStack.length = 0;
+lastEditorValue = editor.value;
         if (ext === "htm") {
           fileFormat.value = "html";
         } else if (mimeTypes[ext]) {
@@ -614,6 +697,32 @@ body {
         navigator.serviceWorker.register("sw.js").catch(() => {});
       });
     }
+    const viewport = window.visualViewport;
+const searchRow = document.querySelector(".searchRow");
+
+function moveSearchRow() {
+  if (!viewport) return;
+
+  const keyboardHeight = Math.max(
+    0,
+    window.innerHeight - viewport.height - viewport.offsetTop
+  );
+
+  const rect = searchRow.getBoundingClientRect();
+  const availableBottom = viewport.offsetTop + viewport.height;
+
+  const overflow = rect.bottom - availableBottom;
+
+  searchRow.style.transform =
+    keyboardHeight > 100 && overflow > 0
+      ? `translateY(-${overflow + 8}px)`
+      : "";
+}
+
+if (viewport) {
+  viewport.addEventListener("resize", moveSearchRow);
+  viewport.addEventListener("scroll", moveSearchRow);
+}
   </script>
 </body>
 </html>
