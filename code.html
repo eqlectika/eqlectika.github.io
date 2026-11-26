@@ -56,19 +56,22 @@ body {
 }
 
 #controlPanel {
-  flex: 1 0 auto;
+  flex: 0 0 auto;
   background-color: black;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 #controlPanel > div {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: flex-start; /* Блоки (строки) прижаты влево */
+  align-items: flex-start;
   justify-content: flex-start;
   padding: 15px 10px;
   box-sizing: border-box;
   height: 100%;
+  max-width: 110px;
 }
 
 #editor {
@@ -90,20 +93,25 @@ body {
   min-width: 0;
 }
 
-/* --- БАЗОВЫЕ СТИЛИ (столбиком) --- */
+/* --- БАЗОВЫЕ СТИЛИ --- */
 .searchRow {
   display: flex;
-  flex-direction: column;
-  align-items: center; /* Центрируем элементы по горизонтали внутри колонки (для поиска и стрелок) */
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  transition: transform 0.15s ease;
 }
 
 .actionsRow {
   display: flex;
   flex-direction: column;
-  align-items: center; /* Центрируем элементы по горизонтали внутри колонки */
+  align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
@@ -126,7 +134,11 @@ body {
   appearance: none;
   -webkit-appearance: none;
   margin: 0;
+  width: 70px;
+  flex: 0 0 70px;
+  min-width: 0;
 }
+
 #prevMatchButton,
 #nextMatchButton,
 #undoButton,
@@ -141,15 +153,13 @@ body {
   cursor: pointer;
   font-size: 18px;
   border-radius: 5px;
-  flex-shrink: 0;
+  flex: 0 0 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   margin: 0;
 }
-
-
 
 #fileFormat {
   font-size: 14px;
@@ -227,30 +237,53 @@ body {
   display: block;
 }
 
-/* --- В ОДИН РЯД ЗА СЧЁТ ПОЛЯ ВВОДА (ПОРТРЕТ) --- */
+/* --- ПОРТРЕТ --- */
 @media (orientation: portrait) {
-  .searchRow {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    align-items: center;
-    justify-content: flex-start;
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
+  body {
+    flex-direction: column;
   }
 
+  #editorContainer {
+    flex: 1 1 40%;
+    min-height: 0;
+    width: 100%;
+  }
 
+  #preview {
+    flex: 1 1 50%;
+    min-height: 0;
+    width: 100%;
+  }
+
+  #controlPanel {
+    flex: 0 0 auto;
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #222;
+  }
+
+  #controlPanel > div {
+    padding: 10px;
+    height: auto;
+    width: 100%;
+    max-width: none;
+  }
+
+  #searchField {
+    width: auto;
+    flex: 1 1 80px;
+    min-width: 60px;
+  }
 
   .actionsRow {
     flex-direction: row;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     flex-wrap: wrap;
     width: 100%;
     box-sizing: border-box;
   }
 }
-
 
 /* --- ШИРОКИЙ ПОРТРЕТ --- */
 @media (orientation: portrait) and (min-width: 768px) {
@@ -260,6 +293,7 @@ body {
     padding: 8px 10px;
     width: 100%;
     box-sizing: border-box;
+    max-width: none;
   }
 
   #searchField {
@@ -270,7 +304,6 @@ body {
   .actionsRow {
     flex-wrap: nowrap;
   }
-
 
   #fileFormat {
     width: 80px;
@@ -285,20 +318,18 @@ body {
     height: 32px !important;
   }
 }
+
 .ios-blur-fix {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 11px;
-    z-index: 2147483647;
-    pointer-events: none;
-    background-color: #000;  /* подставьте цвет фона вашего файла */
-    -webkit-background-clip: text;
-    color: transparent;
-}
-.searchRow {
-  transition: transform 0.15s ease;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 11px;
+  z-index: 2147483647;
+  pointer-events: none;
+  background-color: #000;
+  -webkit-background-clip: text;
+  color: transparent;
 }
   </style>
 </head>
@@ -321,7 +352,6 @@ body {
         <button id="redoButton" title="Redo">↷</button>
       </div>
 
-
       <!-- Строка 2 -->
       <div class="actionsRow">
         <select id="fileFormat">
@@ -342,7 +372,6 @@ body {
 
         <button id="saveButton" type="button">Save</button>
 
-        <!-- Обернули логотип в ссылку с классом, чтобы зафиксировать его размеры -->
         <a href="research.html" class="logoLink">
           <img src="logo.png" alt="Feedback" style="height: 40px; opacity: 0.9; width: auto;">
         </a>
@@ -415,80 +444,80 @@ body {
     const prevMatchButton = document.getElementById("prevMatchButton");
     const nextMatchButton = document.getElementById("nextMatchButton");
     const strictToggle = document.getElementById("strictNoCache");
-// UNDO / REDO
-const undoStack = [];
-const redoStack = [];
-const MAX_HISTORY = 100;
 
-let lastEditorValue = editor.value;
-let historyTimer = null;
+    // UNDO / REDO
+    const undoStack = [];
+    const redoStack = [];
+    const MAX_HISTORY = 100;
 
-function saveHistory() {
-  const value = editor.value;
+    let lastEditorValue = editor.value;
+    let historyTimer = null;
 
-  if (value === lastEditorValue) return;
+    function saveHistory() {
+      const value = editor.value;
 
-  undoStack.push(lastEditorValue);
+      if (value === lastEditorValue) return;
 
-  if (undoStack.length > MAX_HISTORY) {
-    undoStack.shift();
-  }
+      undoStack.push(lastEditorValue);
 
-  redoStack.length = 0;
-  lastEditorValue = value;
-}
+      if (undoStack.length > MAX_HISTORY) {
+        undoStack.shift();
+      }
 
-function undo() {
-  clearTimeout(historyTimer);
-  saveHistory();
+      redoStack.length = 0;
+      lastEditorValue = value;
+    }
 
-  if (!undoStack.length) return;
+    function undo() {
+      clearTimeout(historyTimer);
+      saveHistory();
 
-  redoStack.push(editor.value);
-  editor.value = undoStack.pop();
-  lastEditorValue = editor.value;
+      if (!undoStack.length) return;
 
-  renderPreview(editor.value);
-}
+      redoStack.push(editor.value);
+      editor.value = undoStack.pop();
+      lastEditorValue = editor.value;
 
-function redo() {
-  clearTimeout(historyTimer);
-  saveHistory();
+      renderPreview(editor.value);
+    }
 
-  if (!redoStack.length) return;
+    function redo() {
+      clearTimeout(historyTimer);
+      saveHistory();
 
-  undoStack.push(editor.value);
-  editor.value = redoStack.pop();
-  lastEditorValue = editor.value;
+      if (!redoStack.length) return;
 
-  renderPreview(editor.value);
-}
-document.getElementById("undoButton")
-  .addEventListener("click", undo);
+      undoStack.push(editor.value);
+      editor.value = redoStack.pop();
+      lastEditorValue = editor.value;
 
-document.getElementById("redoButton")
-  .addEventListener("click", redo);
+      renderPreview(editor.value);
+    }
 
-// Объединяем последовательные изменения
-editor.addEventListener("input", () => {
-  clearTimeout(historyTimer);
-  historyTimer = setTimeout(saveHistory, 400);
-});
+    document.getElementById("undoButton").addEventListener("click", undo);
+    document.getElementById("redoButton").addEventListener("click", redo);
 
-// Горячие клавиши
-document.addEventListener("keydown", (e) => {
-  if (!(e.ctrlKey || e.metaKey)) return;
+    // Объединяем последовательные изменения
+    editor.addEventListener("input", () => {
+      clearTimeout(historyTimer);
+      historyTimer = setTimeout(saveHistory, 400);
+    });
 
-  if (e.key.toLowerCase() === "z") {
-    e.preventDefault();
-    e.shiftKey ? redo() : undo();
-  }
+    // Горячие клавиши
+    document.addEventListener("keydown", (e) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
 
-  if (e.key.toLowerCase() === "y") {
-    e.preventDefault();
-    redo();
-  }
-});
+      if (e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        e.shiftKey ? redo() : undo();
+      }
+
+      if (e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        redo();
+      }
+    });
+
     let currentFileBaseName = "code";
     let searchMatches = [];
     let currentMatchIndex = -1;
@@ -556,10 +585,10 @@ document.addEventListener("keydown", (e) => {
       const reader = new FileReader();
       reader.onload = () => {
         editor.value = typeof reader.result === "string" ? reader.result : "";
-clearTimeout(historyTimer);
-undoStack.length = 0;
-redoStack.length = 0;
-lastEditorValue = editor.value;
+        clearTimeout(historyTimer);
+        undoStack.length = 0;
+        redoStack.length = 0;
+        lastEditorValue = editor.value;
         if (ext === "htm") {
           fileFormat.value = "html";
         } else if (mimeTypes[ext]) {
@@ -668,32 +697,33 @@ lastEditorValue = editor.value;
         navigator.serviceWorker.register("sw.js").catch(() => {});
       });
     }
+
     const viewport = window.visualViewport;
-const searchRow = document.querySelector(".searchRow");
+    const searchRow = document.querySelector(".searchRow");
 
-function moveSearchRow() {
-  if (!viewport) return;
+    function moveSearchRow() {
+      if (!viewport) return;
 
-  const keyboardHeight = Math.max(
-    0,
-    window.innerHeight - viewport.height - viewport.offsetTop
-  );
+      const keyboardHeight = Math.max(
+        0,
+        window.innerHeight - viewport.height - viewport.offsetTop
+      );
 
-  const rect = searchRow.getBoundingClientRect();
-  const availableBottom = viewport.offsetTop + viewport.height;
+      const rect = searchRow.getBoundingClientRect();
+      const availableBottom = viewport.offsetTop + viewport.height;
 
-  const overflow = rect.bottom - availableBottom;
+      const overflow = rect.bottom - availableBottom;
 
-  searchRow.style.transform =
-    keyboardHeight > 100 && overflow > 0
-      ? `translateY(-${overflow + 8}px)`
-      : "";
-}
+      searchRow.style.transform =
+        keyboardHeight > 100 && overflow > 0
+          ? `translateY(-${overflow + 8}px)`
+          : "";
+    }
 
-if (viewport) {
-  viewport.addEventListener("resize", moveSearchRow);
-  viewport.addEventListener("scroll", moveSearchRow);
-}
+    if (viewport) {
+      viewport.addEventListener("resize", moveSearchRow);
+      viewport.addEventListener("scroll", moveSearchRow);
+    }
   </script>
 </body>
 </html>
